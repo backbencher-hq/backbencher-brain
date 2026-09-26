@@ -1,0 +1,811 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-26T17:23:04.713Z",
+  "commit": "dc40d290a5438c756b087881180279782c27783a",
+  "method": "sha256 of every wasm/ file compared against every .wasm found under the roots below (bounded depth). Byte identity is the only claim; absence means the bytes exist in no local distribution copy, not that they are unprovenanced.",
+  "rootsScanned": [
+    {
+      "source": "mirror",
+      "dir": "~/.bb/wasm",
+      "maxDepth": 1
+    },
+    {
+      "source": "repo-node_modules",
+      "dir": "~/mcp/backbencher-brain/node_modules",
+      "maxDepth": 4
+    },
+    {
+      "source": "bun-cache-cli",
+      "dir": "~/.bun/install/cache",
+      "maxDepth": 3
+    }
+  ],
+  "wasmFilesScannedInRoots": 161,
+  "files": [
+    {
+      "wasm": "dart.wasm",
+      "sha256": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1",
+      "bytes": 1158738,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-bash.wasm",
+      "sha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+      "bytes": 1405135,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-c.wasm",
+      "sha256": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7",
+      "bytes": 650175,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-c_sharp.wasm",
+      "sha256": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+      "bytes": 5350581,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-c_sharp.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-c-sharp@0.23.5@@@1/tree-sitter-c_sharp.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-clean.wasm",
+      "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
+      "bytes": 6743856,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-clojure.wasm",
+      "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
+      "bytes": 91957,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-clojure.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (mirror)"
+    },
+    {
+      "wasm": "tree-sitter-core_schema.wasm",
+      "sha256": "5004e822d1e71e3d7e5af6f592c93e510be83d8170d462f5ee71ee0c2f0ea0a6",
+      "bytes": 5192,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-core_schema.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@tree-sitter-grammars/tree-sitter-yaml@0.7.1@@@1/tree-sitter-core_schema.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-cpp.wasm",
+      "sha256": "5a1b78bef9cf2f9c6962e80e631cfe5137be7222acf0aaceec35c3de39a18ae2",
+      "bytes": 3552974,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-css.wasm",
+      "sha256": "8a23977fe271357cce6f254ef88c9bebf3854602d8046605aef6a45c02135c59",
+      "bytes": 128668,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-css.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-css@0.25.0@@@1/tree-sitter-css.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-dart.wasm",
+      "sha256": "7d05aa385f3b59a6fa9c10263c1cbabcd002ca5d0880b8b9cd61b3db169d98f1",
+      "bytes": 1158738,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-elisp.wasm",
+      "sha256": "deedb03ccf150329ddfcc4ed92861c235bbae6f9692be6b93cac71617a4d42ab",
+      "bytes": 53740,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-elisp.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-elisp.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-elixir.wasm",
+      "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
+      "bytes": 1617756,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-elixir.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-elm.wasm",
+      "sha256": "962b8668a0e16a6fb1fe232ba3e07ba4537a6b72c47293fddea0f6ea6ff9912e",
+      "bytes": 148886,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-elm.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-elm.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-embedded_template.wasm",
+      "sha256": "68584527f712dbf2cc39776c56980c08516991f184a4a17bb67c2f436f0fc373",
+      "bytes": 5124,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-embedded_template.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-embedded_template.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-erlang.wasm",
+      "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
+      "bytes": 401807,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-erlang.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@lumis-sh/wasm-erlang@0.26.0@@@1/tree-sitter-erlang.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-fsharp.wasm",
+      "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
+      "bytes": 12613928,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-fsharp_signature.wasm",
+      "sha256": "2b7e31da4f87e4dbd226cedcb9caba6390c650e31b3155a27ab628368204f0e3",
+      "bytes": 3135768,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-fsharp_signature.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-fsharp@0.1.0@@@1/tree-sitter-fsharp_signature.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-go.wasm",
+      "sha256": "9963ca89b616eaf04b08a43bc1fb0f07b85395bec313330851f1f1ead2f755b6",
+      "bytes": 235957,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-go.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-go.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-graphql.wasm",
+      "sha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
+      "bytes": 41223,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-graphql.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (mirror)"
+    },
+    {
+      "wasm": "tree-sitter-groovy.wasm",
+      "sha256": "151eeee54d50e3f07e080c10c0ea798d7ad0323a6d147b50b082a2a6b46e72b9",
+      "bytes": 4382232,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-haskell.wasm",
+      "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
+      "bytes": 3805902,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-haskell.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-haskell@0.23.1@@@1/tree-sitter-haskell.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-hcl.wasm",
+      "sha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+      "bytes": 92478,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-hcl.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@tree-sitter-grammars/tree-sitter-hcl@1.2.0@@@1/tree-sitter-hcl.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-html.wasm",
+      "sha256": "11b3405c1543fb012f5ed7f8ee73125076dce8b168301e1e787e4c717da6b456",
+      "bytes": 18468,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-html.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-java.wasm",
+      "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
+      "bytes": 430239,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-java.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-javascript.wasm",
+      "sha256": "63812b9e275d26851264734868d27a1656bd44a2ef6eb3e85e6b03728c595ab5",
+      "bytes": 647334,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-javascript.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-json.wasm",
+      "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+      "bytes": 5961,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-json.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-json_schema.wasm",
+      "sha256": "f4d1423bcd7c714f7bcf3a72f00821cb53e6a91040528d28054a1d0c7151dab4",
+      "bytes": 1654,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-json_schema.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@tree-sitter-grammars/tree-sitter-yaml@0.7.1@@@1/tree-sitter-json_schema.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-kotlin.wasm",
+      "sha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+      "bytes": 5837109,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-lua.wasm",
+      "sha256": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+      "bytes": 50917,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-make.wasm",
+      "sha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
+      "bytes": 148909,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-markdown.wasm",
+      "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "bytes": 421534,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-markdown.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (mirror)"
+    },
+    {
+      "wasm": "tree-sitter-markdown_inline.wasm",
+      "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+      "bytes": 426020,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-markdown_inline.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (mirror)"
+    },
+    {
+      "wasm": "tree-sitter-objc.wasm",
+      "sha256": "0b8b3c480d08d6f8b85f220a6a4b4e67aad0696fdc00c31e8be01ba1de53f525",
+      "bytes": 5374903,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-ocaml.wasm",
+      "sha256": "60849b6320ee956233d77b017c65c45660e507d03ae70aa1bd5783458e2e9e18",
+      "bytes": 5018068,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-ocaml.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-ocaml.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-perl.wasm",
+      "sha256": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169",
+      "bytes": 4757625,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-php.wasm",
+      "sha256": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7",
+      "bytes": 1058041,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-php.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-php@0.24.2@@@1/tree-sitter-php.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-php_only.wasm",
+      "sha256": "fd1bcff3ac7699be20012089f6af81e6829cd73d640ab13d16adef236cc4b2af",
+      "bytes": 1002407,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-php_only.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-php@0.24.2@@@1/tree-sitter-php_only.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-powershell.wasm",
+      "sha256": "1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154",
+      "bytes": 983236,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-powershell.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (mirror)"
+    },
+    {
+      "wasm": "tree-sitter-python.wasm",
+      "sha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+      "bytes": 457883,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-ql.wasm",
+      "sha256": "836b2a51f6b2b4605ef7bfa908b978fed0fe838afb4eabaa9451552f12e953c1",
+      "bytes": 544940,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-ql.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-ql.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-r.wasm",
+      "sha256": "b11a872a88ad8a9ebc85607ef3fd4cabdf6cbead51421ec1492b4591b6854553",
+      "bytes": 490899,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-r.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@eagleoutice/tree-sitter-r@1.1.2@@@1/tree-sitter-r.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-rescript.wasm",
+      "sha256": "ae18d46336768b6c0eea07eb0b003408848766b3b67df1d807b40cbd93017bda",
+      "bytes": 677948,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-rescript.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-rescript.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-ruby.wasm",
+      "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
+      "bytes": 2106447,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-ruby.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-rust.wasm",
+      "sha256": "f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57",
+      "bytes": 1102547,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-rust.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-rust@0.24.0@@@1/tree-sitter-rust.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-scala.wasm",
+      "sha256": "393cc91ba940440f598a2102cddd6fee92217096cedaef7f793392598f0c9917",
+      "bytes": 3971488,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-solidity.wasm",
+      "sha256": "160745e470f234cae903a9ba445d19e758d0b02e1197401fc765976c6254d2b6",
+      "bytes": 423940,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-solidity.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-solidity.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-sql.wasm",
+      "sha256": "bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800",
+      "bytes": 2440507,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-svelte.wasm",
+      "sha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+      "bytes": 47873,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-swift.wasm",
+      "sha256": "41c4fdb2249a3aa6d87eed0d383081ff09725c2248b4977043a43825980ffcc7",
+      "bytes": 3147876,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-swift.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-swift.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-systemrdl.wasm",
+      "sha256": "09129542bbea6d19aa33b54f93bae2b41128144970be13ce09af6697146c4527",
+      "bytes": 82495,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-systemrdl.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-systemrdl.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-terraform.wasm",
+      "sha256": "0d9ef3ae926acc0411bfecba9b34df4ea659061917b96455570a45a70824e890",
+      "bytes": 92484,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-terraform.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/@tree-sitter-grammars/tree-sitter-hcl@1.2.0@@@1/tree-sitter-terraform.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-tlaplus.wasm",
+      "sha256": "72a07f94b0bc88b9123a6e41058e37ab9ca70d84a03b79511b25af7f435129b5",
+      "bytes": 4878724,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-tlaplus.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-tlaplus.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-toml.wasm",
+      "sha256": "7849ac8ce9d10a4684ca189ea8ad3654c20c38acb2d674a014a164398cbd37a2",
+      "bytes": 25436,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-toml.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-toml.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-tsx.wasm",
+      "sha256": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6",
+      "bytes": 2411272,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-tsx.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-typescript.wasm",
+      "sha256": "8515404dceed38e1ed86aa34b09fcf3379fff1b4ff9dd3967bcd6d1eb5ac3d8f",
+      "bytes": 2342690,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-typescript.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-vue.wasm",
+      "sha256": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250",
+      "bytes": 23895,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-vue.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-vue.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 2 local copy/copies (mirror, bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter-xml.wasm",
+      "sha256": "50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1",
+      "bytes": 50008,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-yaml.wasm",
+      "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+      "bytes": 189255,
+      "byteIdenticalCopies": [],
+      "verdict": "no local copy of these bytes — provenance cannot be re-derived offline"
+    },
+    {
+      "wasm": "tree-sitter-zig.wasm",
+      "sha256": "59cc4531aa661e2de4c5bc04e4045b6bdd5d2bfa75045cbda5f673102d140eef",
+      "bytes": 690754,
+      "byteIdenticalCopies": [
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-zig.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 1 local copy/copies (bun-cache-cli)"
+    },
+    {
+      "wasm": "tree-sitter.wasm",
+      "sha256": "f38dcc4b43b818f9a0785bc1c6d5611a75ac4cdd428ff3f02757c34ca4e46d7f",
+      "bytes": 205488,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter.wasm"
+        },
+        {
+          "source": "repo-node_modules",
+          "path": "~/mcp/backbencher-brain/node_modules/web-tree-sitter/tree-sitter.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/web-tree-sitter@0.25.9@@@1/tree-sitter.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 3 local copy/copies (mirror, repo-node_modules, bun-cache-cli)"
+    },
+    {
+      "wasm": "tsx.wasm",
+      "sha256": "79e5da75ea62855a0cd67177685f0164eac87d5f630b3cbe1e0a099751ad30f8",
+      "bytes": 1445638,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-tsx.wasm"
+        },
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tsx.wasm"
+        },
+        {
+          "source": "repo-node_modules",
+          "path": "~/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-tsx.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-typescript@0.23.2@@@1/tree-sitter-tsx.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 4 local copy/copies (mirror, repo-node_modules, bun-cache-cli)"
+    },
+    {
+      "wasm": "typescript.wasm",
+      "sha256": "778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d",
+      "bytes": 1413849,
+      "byteIdenticalCopies": [
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/typescript.wasm"
+        },
+        {
+          "source": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-typescript.wasm"
+        },
+        {
+          "source": "repo-node_modules",
+          "path": "~/mcp/backbencher-brain/node_modules/tree-sitter-typescript/tree-sitter-typescript.wasm"
+        },
+        {
+          "source": "bun-cache-cli",
+          "path": "~/.bun/install/cache/tree-sitter-typescript@0.23.2@@@1/tree-sitter-typescript.wasm"
+        }
+      ],
+      "verdict": "byte-identical to 4 local copy/copies (mirror, repo-node_modules, bun-cache-cli)"
+    }
+  ]
+}

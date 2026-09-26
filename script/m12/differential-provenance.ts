@@ -168,9 +168,31 @@ export function computeInputs(root: string, lang: string): Inputs {
   const truth = path.join(root, "validation/m12/ground-truth", `${lang}.json`)
   add(truth)
 
-  // In-tree grammar source, when the grammar lives here (groovy, fsharp).
-  const grammarJs = path.join(root, "grammars", `tree-sitter-${lang}`, "grammar.js")
-  add(grammarJs)
+  // In-tree grammar source, when the grammar lives here (groovy, fsharp, and the
+  // functional family's vendored trees). The rule is ENTRY POINTS + hand-written
+  // sources, not "everything under grammars/":
+  //
+  //   - generated files (`src/parser.c`, `src/grammar.json`, `src/node-types.json`)
+  //     are deliberately NOT hard inputs. They are not byte-reproducible across
+  //     generator versions, so a regeneration that changes no behaviour would flag
+  //     every artifact — the same false-positive mode that keeps the wasm
+  //     informational below.
+  //   - `src/scanner.c` is not a candidate either, on purpose: `cpp` vendors one too,
+  //     and adding it here would stale another family's artifacts from this
+  //     module. Scanner drift is caught by `script/m14/verify-grammar-pins.ts`,
+  //     which fails on ANY drift in a pinned grammar's file set, including scanners.
+  const grammarSourceCandidates = [
+    path.join(root, "grammars", `tree-sitter-${lang}`, "grammar.js"),
+    // split-grammar layout (haskell): grammar.js requires ./grammar/*.js
+    ...filesUnder(root, path.join(root, "grammars", `tree-sitter-${lang}`, "grammar"))
+      .filter((f) => f.endsWith(".js"))
+      .map((f) => path.join(root, f)),
+    // per-language subdirectory layout (fsharp: <pkg>/fsharp/grammar.js)
+    path.join(root, "grammars", `tree-sitter-${lang}`, lang, "grammar.js"),
+    // external scanner implementation shared by both sub-grammars (fsharp)
+    path.join(root, "grammars", `tree-sitter-${lang}`, "common", "scanner.h"),
+  ]
+  for (const cand of grammarSourceCandidates) add(cand)
 
   const digest = sha256Text(Object.entries(files).map(([p, fp]) => `${p}:${fp.sha256}`).sort().join("\n"))
   return { files, digest, parser: resolvedParser(root, lang) }
