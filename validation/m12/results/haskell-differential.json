@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "2e5c71e75cb874461acea0bc3a2b48a3142a64a4a84fe2beb4d37312e8cdd6a7",
-        "bytes": 59420
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -248,11 +248,11 @@
         "bytes": 1489
       },
       "validation/m12/ground-truth/haskell.json": {
-        "sha256": "c4ff38728499aee088667413ee3d7229e77f228f74e78f91397ef283569dc99c",
-        "bytes": 28184
+        "sha256": "dff2ee50e8fbe302960f9580357c01ec41f40c87eebc6bdf6698218dd9da010f",
+        "bytes": 29413
       }
     },
-    "digest": "3b385b6de8b0ebef87e255cea3599dd72f395624b15a4ae57e98714c342be021",
+    "digest": "dcb48725814adc9ad8933b7d4fb0dc47ad3fd376222f07364bdc8d69d53cfec1",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm",
       "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
@@ -260,7 +260,7 @@
     }
   },
   "truthSource": "haskell-observed-dump.ts (audited against fixtures + FP-family contract)",
-  "truthReference": "validation/m12/fixtures/haskell/ (Negative.hs, Service.hs) — hand-audited against Haskell semantics: module→module, data/newtype→type + constructor + record-field properties, class→class, instance/deriving→implements, function/method→function (multi-clause and pattern-head binds merged), operators (infix a +.+ b, prefix (<!>), backtick infix_id)→function; relationships: references (module→imported module), implements (instance/deriving target→class, incl. qualified and applied class heads), extends (class→superclass, from the context constraint tree: tuple lists, parens, applied heads), instantiates (body-position constructor application: bare, qualified M.Just, record construction — record UPDATE and all pattern positions excluded), calls (leaf sources; qualified heads taken VERBATIM, M.lookup; unqualified heads ONLY when the name is declared in-file — imported/Prelude names and parameters produce no edge; self-recursion IS emitted), contains (module→top-level symbol, class/interface→method). WHERE/LET-LOCALS (2026-09-25 adjudication of the HSD6/HSD19 wave): a local callable is NOT a symbol, but a call made inside a local's body attributes to the LOCAL itself — never leaked to the enclosing function, which does not make that call — and a local resolves as a call target; Negative.hs's where-clause therefore yields helper→go and go→go. KNOWN LIMITATION (measured, not assumed): local endpoints are BARE names, so a module-level symbol of the same name in the same file (e.g. `pure`/`fmap`/`show` shadowed by a where-binder) leaves the edge ambiguous — 282 of 2,356 files (hledger+cabal full extent, script/m14/tmp/haskell-local-calls-collision.ts) carry such a shadowing binder; scoping local identity is owed.",
+  "truthReference": "validation/m12/fixtures/haskell/ (Negative.hs, Service.hs) — hand-audited against Haskell semantics: module→module, data/newtype→type + constructor + record-field properties, class→class, instance/deriving→implements, function/method→function (multi-clause and pattern-head binds merged), operators (infix a +.+ b, prefix (<!>), backtick infix_id)→function; relationships: references (module→imported module), implements (instance/deriving target→class, incl. qualified and applied class heads), extends (class→superclass, from the context constraint tree: tuple lists, parens, applied heads), instantiates (body-position constructor application: bare, qualified M.Just, record construction — record UPDATE and all pattern positions excluded), calls (leaf sources; qualified heads taken VERBATIM, M.lookup; unqualified heads ONLY when the name is declared in-file — imported/Prelude names and parameters produce no edge; self-recursion IS emitted), contains (module→top-level symbol, class/interface→method). WHERE/LET-LOCALS (2026-09-25 adjudication of the HSD6/HSD19 wave): a local callable is NOT a symbol, but a call made inside a local's body attributes to the LOCAL itself — never leaked to the enclosing function, which does not make that call — and a local resolves as a call target; Negative.hs's where-clause therefore yields helper→helper.go and helper.go→helper.go. SCOPED LOCAL IDENTITY (2026-09-26, closes the limitation recorded here the day before): a local's edges carry its lexical owner chain — `owner.local`, nested `owner.inner.local` — so a module-level callable of the same name can never merge with it, and target resolution is LEXICAL (a local is a target only from inside its own scope; a shadowing binder wins for its whole RHS). Instrument correction, recorded rather than quietly fixed: the earlier '282 of 2,356 files carry a shadowing binder' count came from script/m14/tmp/haskell-local-calls-collision.ts, whose regex `(where|let)` + whitespace + NAME also matched INSTANCE/CLASS `where` clauses (their first member, e.g. `instance Show Account where showsPrec ...`), not only local binders — inflated. The tree-based re-measurement (script/m14/tmp/hs-local-identity.ts: direct children of local_binds/let/let_in, hledger+cabal full extent 2,356 files) is 16 files / 67 names with a shadowing binder, over 708 files / 11,487 local binder names; 12,309 source and 6,314 target calls endpoints were bare local attributions and are now scoped. The m14 fixture exercises the collision (module-level `go` vs a where-binder `go`, sibling `hop` locals, the out-of-scope negative), and haskell/local-identity-flat + haskell/local-scope-blind guard both halves of the revert.",
   "fixtureDir": "validation/m12/fixtures/haskell",
   "fixtures": [
     "Negative.hs",
@@ -297,8 +297,8 @@
     },
     "earliestFailingLayer": null,
     "truePositiveIds": [
-      "rel:Negative.hs:calls:go:go",
-      "rel:Negative.hs:calls:helper:go",
+      "rel:Negative.hs:calls:helper.go:helper.go",
+      "rel:Negative.hs:calls:helper:helper.go",
       "rel:Negative.hs:contains:Negative:compareOp",
       "rel:Negative.hs:contains:Negative:helper",
       "rel:Negative.hs:contains:Negative:isBid",
@@ -385,11 +385,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:haskell",
-      "wallTimeMs": 83.441536,
-      "userCpuMs": 171.327,
-      "systemCpuMs": 27.328,
-      "peakRssBytes": 265195520,
-      "rssDeltaBytes": 17817600,
+      "wallTimeMs": 43.716384,
+      "userCpuMs": 189.835,
+      "systemCpuMs": 17.047,
+      "peakRssBytes": 281706496,
+      "rssDeltaBytes": 18612224,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
