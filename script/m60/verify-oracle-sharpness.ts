@@ -66,7 +66,34 @@
  *
  * State: $BB_M60_OS_STATE, default $TMPDIR/m60-oracle-sharpness.json (a working
  * file, NOT evidence — `--emit` is what turns a measurement into evidence).
- * Logs: one file per lane next to the state file, so a kill loses at most one lane.
+ *
+ * WHAT KILLED THE FIRST SWEEP, because the fix has to be the real cause. It died at
+ * lane 9 of 25 with "a [strict] line with no repo line above it". The [strict] line
+ * was real and its repo line was real: `[svelte] svelte: files=4456 … covered=3189
+ * (99.9%) …`. REPO_RE demanded `\((\d+)%\)` — an INTEGER percentage — and the
+ * harness prints coverage as a decimal the moment it is not whole, so the repo line
+ * was invisible, the strict line was orphaned, and the parser threw. Nothing about the
+ * lane was wrong: the instrument could not read its own harness's output for a
+ * non-integer, and the row it lost (svelte, truth 3,193, MISSING 4) was a real result.
+ * The first hypothesis ("another sweep truncated the log") was FALSIFIED by reading the
+ * log and testing the pattern: the same bytes fail in a private log directory with no
+ * other run alive. The parser now reads decimals, and a repo line it still cannot read
+ * is a `parseError`, never silence.
+ *
+ * CONCURRENCY, hardened anyway: a shared state and log directory is a real hazard even
+ * though it was not this crash (the log's lane timestamps overlap, which two
+ * processes explain and one sequential loop does not). Logs live in a PER-RUN
+ * directory (`m60-os-logs/<run>/<lane>.log`, run = pid + base36 clock) and a
+ * measuring run takes a lock. Three properties make the class survivable, each
+ * falsified in `--selftest`:
+ *   (1) an unreadable lane log is a `parseError`, not a throw: the lane is recorded
+ *       `instrument-breach` (uncitable, re-measured by the next `--full`) while the
+ *       sweep continues;
+ *   (2) a measuring run takes a lock (`<state>.lock`) and REFUSES to start while
+ *       another live sweep holds it — a lock whose holder is gone, or whose pid was
+ *       recycled by an unrelated process, is reclaimed with a printed note;
+ *   (3) every progress line carries the run id, so a log written by two runs can be
+ *       told apart instead of being read as one non-monotonic timeline.
  */
 import * as fs from "node:fs"
 import * as os from "node:os"
@@ -78,7 +105,12 @@ import { LANGS, normTarget, strictKey, strictTargetText, qualifierOf, sharpnessI
 const ROOT = path.resolve(import.meta.dir, "..", "..")
 const DIFFERENTIAL = path.join(ROOT, "script", "m14", "differential.ts")
 const STATE = process.env.BB_M60_OS_STATE ?? path.join(os.tmpdir(), "m60-oracle-sharpness.json")
-const LOG_DIR = path.join(path.dirname(STATE), "m60-os-logs")
+// The run id: this process's pid plus a base36 clock, so two sweeps started in the same
+// second still differ. It names this run's log directory, the lock, and every progress
+// line — the three places a concurrent run used to be invisible.
+const RUN = process.env.BB_M60_OS_RUN ?? `${process.pid.toString(36)}-${Date.now().toString(36)}`
+const LOG_DIR = path.join(path.dirname(STATE), "m60-os-logs", RUN)
+const LOCK = `${STATE}.lock`
 // A PRIVATE cold pool: the sweep draws a whole corpus, so rotation is irrelevant to
 // its counts, but sharing a pool with another agent's runs would make the two runs
 // race on the same journal file.
@@ -173,6 +205,13 @@ interface RepoRow {
 }
 interface LaneRow {
   lang: string
+  /** Which run measured it (pid+clock). Two sweeps sharing one state used to be
+   *  indistinguishable in the record; a row that cannot name its run cannot be
+   *  ordered against another run's rows. */
+  run: string
+  /** Set when the lane's log could not be read as this parser's own output. Such a row
+   *  is `instrument-breach` and never cites: no count is derived from it. */
+  parseError: string | null
   at?: string
   measuredAt: ReturnType<typeof fingerprint>
   after: ReturnType<typeof fingerprint> | null
@@ -186,12 +225,21 @@ interface LaneRow {
   verdict: string
 }
 
-const REPO_RE = /^\[([^\]]+)\] ([a-z0-9_]+): files=(\d+) tree-truth=(\d+) covered=(\d+) \((\d+)%\) MISSING=(\d+) \| analyzer-edges=(\d+) unexplained=(\d+) \((\d+)%\) heuristic=(\d+) hash=([0-9a-f]+)/
+// Coverage is printed as a DECIMAL when it is not whole: the pattern's `(\d+)%`
+// refused `(99.9%)`, the svelte repo line became invisible, and the sweep died at lane
+// 9 of 25 blaming an orphan [strict] line. A percentage is decoration — the counts are
+// read by name — so it is matched as a number, not as an integer.
+const REPO_RE = /^\[([^\]]+)\] ([a-z0-9_]+): files=(\d+) tree-truth=(\d+) covered=(\d+) \((\d+(?:\.\d+)?)%\) MISSING=(\d+) \| analyzer-edges=(\d+) unexplained=(\d+) \((\d+(?:\.\d+)?)%\) heuristic=(\d+) hash=([0-9a-f]+)/
+/** The SHAPE of a repo line, without the fields: used to prove that a line the strict
+ *  pattern cannot read is reported as a PARSER failure, not as a lane that has no repo
+ *  line. Without this, an unreadable repo line silently becomes "there was no repo line
+ *  here" — the exact sentence this instrument shipped when it lost a sweep. */
+const LOOSE_REPO_RE = /^\[[^\]]+\] [a-z0-9_]+: files=\d+ tree-truth=\d+/
 const STRICT_RE = /^\s+\[strict\] ([a-z0-9_]+): truth=(\d+) covered-as-written=(\d+) strict-missing=(\d+) hidden=(\d+) hard=(\d+) soft=(\d+)\s+\(published rule: covered=(\d+) missing=(\d+)\)/
 const HOLD_RE = /^\s+\[strict\] ([a-z0-9_]+): identities hold/
 const BREACH_RE = /STRICT-INVARIANT BREACH ([a-z0-9_]+): (.+)$/
 
-export function parseLane(lang: string, log: string): { repos: RepoRow[]; breaches: string[]; hardSamples: string[]; softSamples: string[] } {
+export function parseLane(lang: string, log: string): { repos: RepoRow[]; breaches: string[]; hardSamples: string[]; softSamples: string[]; parseError: string | null } {
   const repos: RepoRow[] = []
   const breaches: string[] = []
   const hardSamples: string[] = []
@@ -208,9 +256,30 @@ export function parseLane(lang: string, log: string): { repos: RepoRow[]; breach
       repos.push(pending)
       continue
     }
+    if (LOOSE_REPO_RE.test(line)) {
+      // Fail closed with a message that names the parser, not the lane: the line LOOKS
+      // like a repo row and the strict pattern refused it, so no count in this log can
+      // be trusted to be complete (a missing repo row silently drops its whole corpus
+      // from the lane's totals).
+      return {
+        repos, breaches, hardSamples, softSamples,
+        parseError: `a repo line matches this log's shape but not this parser's field pattern — the missing field is the parser's, not the lane's: ${line.trim().slice(0, 160)}`,
+      }
+    }
     const s = STRICT_RE.exec(line)
     if (s) {
-      if (!pending) throw new Error(`${lang}: a [strict] line with no repo line above it — the log is not the one this parser reads`)
+      if (!pending) {
+        // FAIL CLOSED, BUT NOT FAIL-THE-SWEEP (measured 2026-09-25): a concurrent run
+        // truncated this lane's log, the orphan check threw, and a 25-lane sweep died at
+        // lane 9 — losing the other 16 lanes' measurements to one unreadable file. The
+        // refusal is the same (no row is fabricated from this log); the blast radius is
+        // one lane, and the next `--full` re-measures it, because an `instrument-breach`
+        // verdict is uncitable by construction.
+        return {
+          repos, breaches, hardSamples, softSamples,
+          parseError: `a [strict] line with no repo line above it — the log is not the one this parser reads: ${line.trim().slice(0, 140)}`,
+        }
+      }
       // GROUPS: 2 truth, 3 covered-as-written, 4 strict-missing, 5 hidden, 6 hard, 7 soft,
       // 8 published covered, 9 published missing. Read by NAME, then verified — this
       // parser shipped an off-by-one that printed `strict-missing=12790` over a log that
@@ -248,10 +317,13 @@ export function parseLane(lang: string, log: string): { repos: RepoRow[]; breach
     if (/^    HARD /.test(line)) { if (hardSamples.length < 60) hardSamples.push(line.replace(/^    HARD /, "")); continue }
     if (/^    SOFT /.test(line)) { if (softSamples.length < 20) softSamples.push(line.replace(/^    SOFT /, "")); continue }
   }
-  return { repos, breaches, hardSamples, softSamples }
+  return { repos, breaches, hardSamples, softSamples, parseError: null }
 }
 
 function verdictOf(row: Omit<LaneRow, "verdict">): string {
+  // An unreadable log is refused FIRST and by name: the row is not a measurement of the
+  // lane at all, so no count derived from it may be read as one (header, CONCURRENCY).
+  if (row.parseError) return "instrument-breach"
   if (row.breaches.length) return "instrument-breach"
   if (row.after && fpKey(row.measuredAt) !== fpKey(row.after)) return "tree-moved"
   if (row.repos.length === 0) return "no-output"
@@ -284,14 +356,70 @@ function measureLane(lang: string): LaneRow {
   const log = fs.readFileSync(logPath, "utf8")
   const parsed = parseLane(lang, log)
   const row: Omit<LaneRow, "verdict"> = {
-    lang, at: new Date().toISOString(), measuredAt: before, after, durationMs, log: logPath,
-    repos: parsed.repos, breaches: parsed.breaches,
+    lang, run: RUN, at: new Date().toISOString(), measuredAt: before, after, durationMs, log: logPath,
+    repos: parsed.repos, parseError: parsed.parseError,
+    breaches: parsed.parseError ? [...parsed.breaches, parsed.parseError] : parsed.breaches,
     hardSamples: parsed.hardSamples, softSamples: parsed.softSamples,
     stdoutTail: proc.status === 0 ? null : log.trim().split("\n").slice(-6),
   }
   const verdict = proc.status === 0 ? verdictOf(row) : "run-failed"
   return { ...row, verdict }
 }
+
+interface LockFile { pid: number; run: string; startedAt: string; head: string }
+
+/** Whether the sweep that took the lock is still there. Liveness first (a dead pid is
+ *  reclaimable), then identity: a pid RECYCLED by an unrelated process is not a holder,
+ *  and a lock left by a killed sweep must not block the next run forever. */
+function lockHolder(pid: number): { alive: boolean; isThisScript: boolean } {
+  try { process.kill(pid, 0) } catch { return { alive: false, isThisScript: false } }
+  try {
+    const cmd = fs.readFileSync(`/proc/${pid}/cmdline`, "utf8")
+    return { alive: true, isThisScript: cmd.includes("verify-oracle-sharpness") }
+  } catch {
+    // No /proc (or not readable): the pid IS alive, so refuse. The conservative side of
+    // a lock is to leave the other run's state alone.
+    return { alive: true, isThisScript: true }
+  }
+}
+
+/** The lock decision as a PURE function, so `--selftest` can falsify it instead of
+ *  trusting the three-branch IO path above. */
+export function lockOutcome(
+  lock: LockFile | null,
+  holder: { alive: boolean; isThisScript: boolean },
+): "take" | "refuse" | "reclaim" {
+  if (!lock || !lock.pid) return "take"
+  if (!holder.alive || !holder.isThisScript) return "reclaim"
+  return "refuse"
+}
+
+function readLock(): LockFile | null {
+  try { return JSON.parse(fs.readFileSync(LOCK, "utf8")) } catch { return null }
+}
+
+/** Take the state's lock for a MEASURING run. Returns false when another live sweep
+ *  holds it — that run's rows are safe (its logs and lock are per-run), so this one
+ *  refuses rather than interleaving two runs into one state file. */
+function acquireLock(): boolean {
+  const held = readLock()
+  const outcome = lockOutcome(held, held ? lockHolder(held.pid) : { alive: false, isThisScript: false })
+  if (outcome === "refuse") {
+    console.error(`refused: another sweep is measuring with this state — pid ${held!.pid}, run ${held!.run}, started ${held!.startedAt}, head ${held!.head}.`)
+    console.error(`  its logs and lock are per-run, so its rows are safe; wait for it, or give this run its own state with BB_M60_OS_STATE.`)
+    return false
+  }
+  if (outcome === "reclaim") {
+    console.log(`note: reclaiming a stale lock (pid ${held!.pid}, run ${held!.run}) — its holder is gone, or the pid was recycled by another process`)
+  }
+  fs.mkdirSync(path.dirname(LOCK), { recursive: true })
+  fs.writeFileSync(LOCK, JSON.stringify({
+    pid: process.pid, run: RUN, startedAt: new Date().toISOString(), head: git(["rev-parse", "HEAD"]).trim(),
+  }, null, 2) + "\n")
+  return true
+}
+
+function releaseLock(): void { try { fs.unlinkSync(LOCK) } catch { /* already gone */ } }
 
 function loadState(): any {
   try { return JSON.parse(fs.readFileSync(STATE, "utf8")) } catch { return { schemaVersion: 1, lanes: {} } }
@@ -369,6 +497,7 @@ function emitArtifact(state: any): number {
     const sum = (f: (r: RepoRow) => number) => row.repos.reduce((a, r) => a + f(r), 0)
     rows[lang] = {
       verdict: row.verdict,
+      run: row.run ?? null,
       at: row.at ?? state.updatedAt ?? null,
       head: row.measuredAt.headShort,
       digest: row.measuredAt.digest,
@@ -412,6 +541,7 @@ function emitArtifact(state: any): number {
     refused,
     columns: {
       verdict: "agrees | hidden-soft-only | soft-asymmetry (hard>0 is `hard-masks` and is refused only when its inputs moved — it is published, because it is a finding)",
+      run: "which sweep measured the row (pid+clock): a state shared by two runs used to be indistinguishable, so a row could not be ordered against another run's rows",
       files: "corpus files the lane's own discovery admitted, at full extent",
       truth: "truth rows derived for those files",
       publishedMissing: "rows MISSING under the published leaf rule (normTarget = last segment)",
@@ -504,9 +634,37 @@ function selftest(): number {
   check("parser CONVICTS a log whose hidden count breaks identity B", shifted.breaches.some((b) => /identity B/.test(b)))
   const renamed = parseLane("javascript", `${repoLine}\n  [strict] javascript: truth=12232 covered-as-written=0 strict-missing=12232 hidden=0 hard=0 soft=0  (published rule: covered=12232 missing=0)\n`)
   check("parser CONVICTS a log that reports the wrong field for the wrong value", renamed.breaches.length > 0)
-  check("parser refuses a [strict] line with no repo row above it (fail-closed)", (() => {
-    try { parseLane("javascript", `${strictLine}\n`); return false } catch { return true }
+  // FAIL CLOSED, BUT NOT FAIL-THE-SWEEP. Measured 2026-09-25: a concurrent run
+  // truncated one lane's log, the orphan check threw, and a 25-lane sweep died at lane
+  // 9 — that lane's row was never fabricated (correct), but the other 16 lanes went
+  // unmeasured (not correct). The contract is now: no row, no throw.
+  // THE REAL LINE THAT KILLED LANE 9 OF 25, copied from the log, not synthesised:
+  // a fractional coverage (`99.9%`) that the old `(\d+)%` refused.
+  const decimalRepoLine = "[svelte] svelte: files=4456 tree-truth=3193 covered=3189 (99.9%) MISSING=4 | analyzer-edges=3080 unexplained=0 (0%) heuristic=7 hash=f10e015bdc6a0b30"
+  const decimalLog = `${decimalRepoLine}\n  [strict] svelte: truth=3193 covered-as-written=3189 strict-missing=4 hidden=0 hard=0 soft=0  (published rule: covered=3189 missing=4)\n`
+  const decimalParse = parseLane("svelte", decimalLog)
+  check("parser reads a FRACTIONAL coverage (99.9%) — the real svelte line that killed lane 9 of 25",
+    decimalParse.parseError === null && decimalParse.repos.length === 1 && decimalParse.repos[0].truth === 3193 && decimalParse.repos[0].strictMissing === 4)
+  check("parser still reads an integer coverage (the decimal fix is not a widening of the counts)",
+    parseLane("javascript", okLog).repos.length === 1 && parseLane("javascript", okLog).parseError === null)
+  check("a repo-SHAPED line the parser cannot read fails closed instead of vanishing", (() => {
+    const unreadable = `${decimalRepoLine.replace("heuristic=7 hash=", "heuristic=seven hash=")}\n${strictLine}\n`
+    const r = parseLane("svelte", unreadable)
+    return r.parseError !== null && r.repos.length === 0 && /missing field is the parser's/.test(r.parseError ?? "")
   })())
+  const orphan = parseLane("javascript", `${strictLine}\n`)
+  check("parser FAILS CLOSED on a [strict] line with no repo row (no row is fabricated)",
+    orphan.parseError !== null && orphan.repos.length === 0)
+  check("parser does NOT throw on an unreadable log (the defect that killed lane 9 of 25)", (() => {
+    try { parseLane("javascript", `${strictLine}\n`); parseLane("javascript", "not a log at all\n"); return true } catch { return false }
+  })())
+  check("an unreadable lane log lands as an instrument breach, never as a measurement",
+    verdictOf({ parseError: orphan.parseError, breaches: [orphan.parseError ?? ""], repos: [] } as any) === "instrument-breach")
+  // The lock, as a decision table: a live sweep refuses, a stale or recycled pid reclaims.
+  check("lock: nothing held -> take", lockOutcome(null, { alive: false, isThisScript: false }) === "take")
+  check("lock: a LIVE sweep holds it -> refuse", lockOutcome({ pid: 4242, run: "x", startedAt: "t", head: "h" }, { alive: true, isThisScript: true }) === "refuse")
+  check("lock: a dead holder is reclaimed", lockOutcome({ pid: 4242, run: "x", startedAt: "t", head: "h" }, { alive: false, isThisScript: false }) === "reclaim")
+  check("lock: a RECYCLED pid is reclaimed (the holder is not this script)", lockOutcome({ pid: 4242, run: "x", startedAt: "t", head: "h" }, { alive: true, isThisScript: false }) === "reclaim")
   check("parser records HARD/SOFT samples for triage", parseLane("javascript", `${repoLine}\n${strictLine}\n    HARD file.js :: calls a -> X.y   vs analyzer -> Z.y\n`).hardSamples.length === 1)
 
   // The emission's own negatives. An artefact that publishes a lane it should refuse
@@ -602,39 +760,54 @@ function main() {
     const row: LaneRow | undefined = state.lanes[lang]
     if (!row) return true
     if (!wantFull && !langsArg) return false
-    // re-measure a row whose OWN inputs changed under it, or that was measured dirty
-    return fpKey(row.measuredAt) !== fpKey(fingerprint(lang)) || row.verdict === "tree-moved" || row.verdict === "dirty" || row.verdict === "run-failed"
+    // Re-measure a row whose OWN inputs changed under it, and every row whose verdict
+    // says it describes a RUN rather than the lane — the SAME predicate the emission
+    // refuses with, so "cannot be cited" and "must be measured again" cannot drift
+    // apart. (The first version listed three of those six verdicts by hand and so re-ran
+    // neither `instrument-breach` nor `no-output` rows, which is how the breach
+    // message's own instruction — "re-measure it" — was unfulfillable.)
+    return fpKey(row.measuredAt) !== fpKey(fingerprint(lang)) || NOT_CITABLE.has(row.verdict)
   })
 
-  console.log(`oracle sharpness sweep — ${todo.length} lane(s) to measure, at ${now.headShort} (harness closure ${now.inputs} file(s), digest ${now.digest}${now.dirtyInputs ? ` DIRTY: ${now.dirty.join(", ")}` : ""})`)
-  console.log(`state ${STATE}; one log per lane in ${LOG_DIR}\n`)
+  if (!acquireLock()) process.exit(3)
+  try {
+    console.log(`oracle sharpness sweep — ${todo.length} lane(s) to measure, at ${now.headShort} (harness closure ${now.inputs} file(s), digest ${now.digest}${now.dirtyInputs ? ` DIRTY: ${now.dirty.join(", ")}` : ""})`)
+    console.log(`state ${STATE}; run ${RUN}; one log per lane in ${LOG_DIR}\n`)
 
-  for (const lang of todo) {
-    process.stdout.write(`[${new Date().toISOString()}] ${lang} … `)
-    const row = measureLane(lang)
-    state.lanes[lang] = row
+    for (const lang of todo) {
+      const row = measureLane(lang)
+      state.lanes[lang] = row
+      saveState(state)
+      const sum = (f: (r: RepoRow) => number) => row.repos.reduce((a, r) => a + f(r), 0)
+      // ONE console.log, built AFTER the row exists: the prefix used to be written
+      // before measuring, so a lane that died left `[ts] svelte … ` in the sweep's log
+      // with the error under it, which reads as a truncated RESULT rather than a
+      // missing one (measured 2026-09-25, and it is what made the crash look like it
+      // happened while printing svelte).
+      console.log(
+        `[${new Date().toISOString()}] ${RUN} ${pad(lang, 11)} … ${(row.durationMs / 1000).toFixed(0)}s files=${sum((r) => r.files)} truth=${sum((r) => r.truth)}` +
+        ` published-missing=${sum((r) => r.publishedMissing)} strict-missing=${sum((r) => r.strictMissing)}` +
+        ` hidden=${sum((r) => r.hidden)} hard=${sum((r) => r.hard)} soft=${sum((r) => r.soft)} → ${row.verdict}`,
+      )
+      if (row.breaches.length) for (const b of row.breaches) console.log(`    BREACH ${b}`)
+      if (row.stdoutTail) for (const l of row.stdoutTail) console.log(`    ${l}`)
+    }
+
+
+    console.log()
+    printTable(state)
     saveState(state)
-    const sum = (f: (r: RepoRow) => number) => row.repos.reduce((a, r) => a + f(r), 0)
-    console.log(
-      `${(row.durationMs / 1000).toFixed(0)}s files=${sum((r) => r.files)} truth=${sum((r) => r.truth)}` +
-      ` published-missing=${sum((r) => r.publishedMissing)} strict-missing=${sum((r) => r.strictMissing)}` +
-      ` hidden=${sum((r) => r.hidden)} hard=${sum((r) => r.hard)} soft=${sum((r) => r.soft)} → ${row.verdict}`,
-    )
-    if (row.breaches.length) for (const b of row.breaches) console.log(`    BREACH ${b}`)
-    if (row.stdoutTail) for (const l of row.stdoutTail) console.log(`    ${l}`)
+
+    const hard = LANE_ORDER.filter((l) => state.lanes[l]?.verdict === "hard-masks")
+    const breach = LANE_ORDER.filter((l) => state.lanes[l]?.verdict === "instrument-breach")
+    const missing = LANE_ORDER.filter((l) => !state.lanes[l])
+    if (hard.length) console.error(`\nHARD MASKS (the published rule hid rows): ${hard.join(", ")} — triage each, then fix the analyzer or the rule`)
+    if (breach.length) console.error(`\nINSTRUMENT BREACH: ${breach.join(", ")} — a breach invalidates the lane's row, and the next --full re-measures it (its verdict is uncitable by construction)`)
+    if (missing.length) console.log(`\nnot measured yet: ${missing.join(", ")}`)
+    process.exitCode = hard.length || breach.length ? 1 : 0
+  } finally {
+    releaseLock()
   }
-
-  console.log()
-  printTable(state)
-  saveState(state)
-
-  const hard = LANE_ORDER.filter((l) => state.lanes[l]?.verdict === "hard-masks")
-  const breach = LANE_ORDER.filter((l) => state.lanes[l]?.verdict === "instrument-breach")
-  const missing = LANE_ORDER.filter((l) => !state.lanes[l])
-  if (hard.length) console.error(`\nHARD MASKS (the published rule hid rows): ${hard.join(", ")} — triage each, then fix the analyzer or the rule`)
-  if (breach.length) console.error(`\nINSTRUMENT BREACH: ${breach.join(", ")} — a breach invalidates the lane's row, re-measure it`)
-  if (missing.length) console.log(`\nnot measured yet: ${missing.join(", ")}`)
-  process.exitCode = hard.length || breach.length ? 1 : 0
 }
 
 if (process.argv[1]?.endsWith("verify-oracle-sharpness.ts")) main()
