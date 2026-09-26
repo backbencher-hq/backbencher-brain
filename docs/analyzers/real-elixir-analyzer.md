@@ -3,10 +3,14 @@
 ## Language
 
 - Analyzer file: `src/ast/real-elixir-analyzer.ts`
-- Parser: `tree-sitter-elixir` (pinned `wasm/tree-sitter-elixir.wasm`; npm
-  tree-sitter-elixir 0.3.5 downloaded and verified behaviorally identical on
-  the corpus via the production `parseFile` path — 0 vs 0 grammar-error files,
-  0 fixed, 0 regressed — so no upgrade was warranted; `source` →
+- Parser: `tree-sitter-elixir` **v0.3.5** (pinned `wasm/tree-sitter-elixir.wasm`,
+  sha256 `ed99093c…`; **swapped in** by the 2026-09-26 grammar-pin round — the
+  incumbent 2024 prebuilt was byte-identical to tree-sitter-wasms@0.1.13's build and
+  carried one legacy anonymous token, `^^`, under which `x = ^^y` parsed into an
+  ERROR node while v0.3.5 parses it cleanly, and the two builds produce identical
+  trees on 773/773 corpus files; the npm tarball's source is vendored in
+  `grammars/tree-sitter-elixir/`. Registry: `validation/m14/grammar-pins.json`;
+  round: `reviews/functional-family/m60-grammar-pins.md`. `source` →
   `call` (identifier target) tree: `defmodule`/`def`/`defp`/`defmacro`/
   `defprotocol`/`defimpl`/`defstruct`/`use`/`import`/`alias`/`require` are all
   calls whose first child is the keyword identifier; module attributes are
