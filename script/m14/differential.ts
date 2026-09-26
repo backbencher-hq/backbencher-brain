@@ -284,12 +284,6 @@ export const LANG_REPOS: Record<string, string> = {
   clojure: "clojure",
   // F5 wave (CLEAN): Clyde (109 icl/dcl) is the lane's primary corpus.
   clean: "Clyde",
-  // M60 fsharp lane (2026-09-26): the box has exactly ONE F# corpus. A depth-4
-  // scan of all 65 checkouts under the corpus root finds .fs/.fsi/.fsx files
-  // under `fsharp/` only, so the lane runs single-corpus and there is no
-  // SECOND_CORPUS entry to invent: a second lane pointed at a non-F# repo
-  // would report files=0 (the vacuous-pass class the sweep already refuses).
-  fsharp: "fsharp",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -451,13 +445,6 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // F5 wave (CLEAN): tree-sitter-clean v1.2.7 (pinned sha
   // 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec).
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
-  // M60 fsharp lane: the wired wasm is a local rebuild of ionide 0.3.11 + two
-  // rules (sha 16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e,
-  // validation/m14/grammar-pins.json). `ext` is the PRODUCTION universe:
-  // language-detection.ts routes fs, fsi AND fsx to this analyzer, so the
-  // lane's sampling space is all three (fsx included — the extension the
-  // analyzer is wired for but no earlier instrument ever drew).
-  fsharp: { wasm: "tree-sitter-fsharp.wasm", analyzerFile: "real-fsharp-analyzer", className: "RealFsharpAnalyzer", ext: "fs,fsi,fsx" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -10568,269 +10555,6 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
   return edges
 }
 
-// ---------------------------------------------------------------------------
-// M60 fsharp lane: the F5 seat the lane never had. Rules are FSD1..FSD12 of
-// script/m14/spec/fsharp-completeness.json, written against the measured shapes
-// in validation/m14/results/fsharp-shape-census.json (a 120-file draw of the
-// fsharp corpus through this same wired wasm) — not by importing the analyzer's
-// walk. Audited labels for this lane: extends, implements, instantiates,
-// overrides, calls, references (the harness allowlist); symbols/contains are
-// out of scope for F5 by construction.
-//
-// The five rules the CURRENT analyzer cannot satisfy are named in the spec's gap
-// block (dead branches, the 73-of-604 member-arg misclassification, unhandled
-// `val`, no `new`-prefix instantiates); this oracle implements the SPEC, so they
-// surface as MISSING/unexplained on the lane's first honest row.
-export function deriveFsharpEdges(root: any): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  const seen = new Set<string>()
-  const push = (label: string, from: string, target: string) => {
-    if (!from || !target) return
-    const k = `${label}|${from}|${target}`
-    if (seen.has(k)) return
-    seen.add(k)
-    edges.push({ label, from, target })
-  }
-  const kids = (n: any): any[] => {
-    const r: any[] = []
-    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) r.push(c) }
-    return r
-  }
-  const childByType = (n: any, t: string): any => {
-    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c && c.type === t) return c }
-    return undefined
-  }
-  const firstNamed = (n: any): any => (n?.namedChildCount > 0 ? n.namedChild(0) : undefined)
-  /** Descendant search, depth-capped (the analyzer's findDescendant mirror).
-   *  It is NOT a convenience: measured on FSharpProjectSnapshot.fs, a class with
-   *  a primary constructor has `type_definition -> [attributes, anon_type_defn]`
-   *  with the `type_name` INSIDE the anon_type_defn — so a direct-child read
-   *  finds the name of a record and misses the name of every class. */
-  const descendantByType = (n: any, t: string, maxDepth: number): any => {
-    if (maxDepth <= 0) return undefined
-    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) {
-      const c = n.namedChild(i)
-      if (!c) continue
-      if (c.type === t) return c
-      const d = descendantByType(c, t, maxDepth - 1)
-      if (d) return d
-    }
-    return undefined
-  }
-  const text = (n: any): string => String(n?.text ?? "")
-  /** Last segment of a dotted/generic name, the lane's leaf rule (normTarget). */
-  const leaf = (t: string): string => {
-    const bare = t.replace(/<.*$/, "").replace(/\[.*$/, "").trim()
-    const parts = bare.split(".").filter(Boolean)
-    return parts.length > 0 ? parts[parts.length - 1] : ""
-  }
-  /** The name child of a declaration wrapper: identifier | long_identifier | identifier_pattern. */
-  const nameOf = (n: any): string => {
-    for (const t of ["identifier", "long_identifier", "identifier_pattern"]) {
-      const c = childByType(n, t)
-      if (c) {
-        const inner = childByType(c, "identifier")
-        return text(inner ?? c)
-      }
-    }
-    return ""
-  }
-  // FSD11: the shared builtin list is a LANGUAGE FACT (transcription hazard, not
-  // a rule the differential can derive); everything around it is independent.
-  const CONSOLE_BUILTINS = new Set([
-    "printfn", "printf", "eprintfn", "eprintf", "fprintfn", "fprintf",
-    "Console.WriteLine", "Console.Write", "Console.Error.WriteLine", "Console.Error.Write",
-  ])
-  const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
-  const isBuiltin = (full: string, lf: string): boolean =>
-    CONSOLE_BUILTINS.has(full) || OBJECT_LEAF_METHODS.has(lf) || full.startsWith("Console.")
-
-  interface St {
-    scope?: string // innermost namespace/module name (FSD1)
-    typeName?: string // enclosing type_definition (base-name + constructor-chain target)
-    baseName?: string // the enclosing type's class_inherits_decl target (FSD5)
-    owner?: string // enclosing function/method/constructor; undefined = no call attribution
-    bodyDepth: number
-    inConstructor?: boolean
-  }
-
-  /** Callee leaf of a call site (FSD6); "" when the shape names nothing. */
-  const calleeLeaf = (n: any): { full: string; lf: string } => {
-    if (!n) return { full: "", lf: "" }
-    if (n.type === "long_identifier_or_op" || n.type === "identifier" || n.type === "long_identifier") {
-      const t = text(n)
-      return { full: t, lf: leaf(t) }
-    }
-    if (n.type === "dot_expression") {
-      const f = n.childForFieldName ? n.childForFieldName("field") : undefined
-      const t = text(f ?? n)
-      return { full: text(n), lf: leaf(t) }
-    }
-    if (n.type === "infix_expression") {
-      // FSD6: a pipeline's callee is the infix's LAST named child.
-      const last = n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : undefined
-      if (last && last.type === "application_expression") return calleeLeaf(firstNamed(last))
-      return calleeLeaf(last)
-    }
-    if (n.type === "application_expression") return calleeLeaf(firstNamed(n))
-    return { full: "", lf: "" }
-  }
-  const isNewPrefixed = (n: any): boolean => {
-    for (let i = 0; i < (n?.childCount ?? 0); i++) {
-      const c = n.child(i)
-      if (c && !c.isNamed && c.type === "new") return true
-      if (c && c.isNamed) break // `new` precedes the first named child
-    }
-    return false
-  }
-
-  const walk = (n: any, st: St): void => {
-    const t = n.type
-    if (t === "namespace" || t === "named_module" || t === "module_defn") {
-      const nm = nameOf(n)
-      const next: St = nm ? { ...st, scope: nm } : st
-      for (const c of kids(n)) walk(c, next)
-      return
-    }
-    if (t === "type_definition") {
-      const tn = childByType(n, "type_name") ?? descendantByType(n, "type_name", 3)
-      const name = tn
-        ? (() => { const li = childByType(tn, "long_identifier") ?? childByType(tn, "identifier"); return li ? text(childByType(li, "identifier") ?? li) : "" })()
-        : nameOf(n)
-      const inh = childByType(n, "class_inherits_decl") ?? descendantByType(n, "class_inherits_decl", 4)
-      let baseName = ""
-      if (inh) {
-        const baseNode = childByType(inh, "simple_type") ?? childByType(inh, "generic_type") ?? childByType(inh, "long_identifier")
-        if (baseNode) baseName = text(childByType(baseNode, "long_identifier") ?? baseNode)
-      }
-      const next: St = { ...st, typeName: name || st.typeName, baseName: baseName || undefined, owner: undefined, bodyDepth: 0 }
-      for (const c of kids(n)) walk(c, next)
-      return
-    }
-    if (t === "class_inherits_decl") {
-      // FSD3: `inherit` is ALWAYS extends — the language implements interfaces
-      // with `interface ... with`, so there is no name heuristic left to guess.
-      const baseNode = childByType(n, "simple_type") ?? childByType(n, "generic_type") ?? childByType(n, "long_identifier")
-      if (baseNode) {
-        const target = text(childByType(baseNode, "long_identifier") ?? baseNode)
-        if (target) push("extends", st.typeName ?? st.scope ?? "Global", target)
-      }
-      for (const c of kids(n)) walk(c, st)
-      return
-    }
-    if (t === "interface_implementation") {
-      const iface = childByType(n, "simple_type") ?? childByType(n, "generic_type")
-      const target = iface ? text(childByType(iface, "long_identifier") ?? iface) : ""
-      if (target) push("implements", st.typeName ?? st.scope ?? "Global", target)
-      // Members inside implement interface members; they are not `override`s.
-      for (const c of kids(n)) walk(c, { ...st, owner: "" })
-      return
-    }
-    if (t === "object_expression") {
-      const iface = childByType(n, "long_identifier") ?? childByType(n, "identifier")
-      const src = st.typeName ?? st.scope
-      if (iface && src) push("implements", src, text(iface))
-      for (const c of kids(n)) walk(c, st)
-      return
-    }
-    if (t === "additional_constr_defn") {
-      const nm = nameOf(n)
-      const next: St = { ...st, owner: "constructor", bodyDepth: st.bodyDepth + 1, inConstructor: true }
-      for (const c of kids(n)) walk(c, next)
-      return
-    }
-    if (t === "member_signature") {
-      for (const c of kids(n)) walk(c, st)
-      return
-    }
-    if (t === "member_defn" || t === "function_or_value_defn" || t === "value_declaration") {
-      // FSD12: a binding inside a body publishes no symbol; its calls attribute
-      // to the enclosing callable.
-      if (st.bodyDepth > 0 && (t === "function_or_value_defn" || t === "value_declaration")) {
-        for (const c of kids(n)) walk(c, st)
-        return
-      }
-      let name = nameOf(n)
-      let isMethod = false
-      if (t === "member_defn") {
-        const mop = childByType(n, "method_or_prop_defn")
-        if (mop) {
-          const poi = childByType(mop, "property_or_ident")
-          if (poi) {
-            const ids: any[] = []
-            for (const c of kids(poi)) if (c.type === "identifier") ids.push(c)
-            if (ids.length > 0) name = text(ids[ids.length - 1])
-          }
-          // FSD7: the `args:` FIELD decides method vs property. Measured: 449 of
-          // 604 members carry it (paren_pattern 241, const 135,
-          // identifier_pattern 73) — the analyzer recognises two of the four.
-          for (let i = 0; i < (mop.childCount ?? 0); i++) {
-            const cn = mop.child(i)
-            if (!cn) continue
-            const fld = typeof mop.fieldNameForChild === "function" ? mop.fieldNameForChild(i) : null
-            if (fld === "args") { isMethod = true; break }
-          }
-        }
-      } else {
-        const left = childByType(n, "function_declaration_left") ?? childByType(n, "value_declaration_left")
-        if (left) {
-          const id = childByType(left, "identifier")
-          if (id) name = text(id)
-          else { const ip = childByType(left, "identifier_pattern"); if (ip) name = nameOf(ip) }
-        }
-        isMethod = !!childByType(n, "function_declaration_left") || !!childByType(n, "argument_patterns")
-      }
-      // FSD5: the `override` token is the only override declaration.
-      let isOverride = false
-      for (let i = 0; i < (n.childCount ?? 0); i++) { const c = n.child(i); if (c && c.type === "override") { isOverride = true; break } }
-      if (t === "member_defn" && isOverride && st.typeName) {
-        const base = st.baseName
-        push("overrides", `${st.typeName}.${name}`, base ? `${base}.${name}` : name)
-      }
-      const owner = t === "member_defn" ? (isMethod ? name || st.owner : undefined) : (isMethod ? name || st.owner : st.owner)
-      const next: St = { ...st, owner, bodyDepth: st.bodyDepth + 1 }
-      for (const c of kids(n)) walk(c, next)
-      return
-    }
-    if (t === "import_decl") {
-      // FSD10: `open X` references X from the declaring scope; a module-less
-      // file sources from Global, never from the opened name itself.
-      const target = childByType(n, "long_identifier") ?? childByType(n, "identifier")
-      if (target) push("references", st.scope ?? st.typeName ?? st.owner ?? "Global", text(target))
-      return
-    }
-    if (t === "application_expression") {
-      const { full, lf } = calleeLeaf(firstNamed(n))
-      if (full && full.length > 1 && st.owner && !isBuiltin(full, lf)) {
-        if (st.inConstructor && lf === st.typeName) {
-          push("instantiates", st.owner, lf)
-        } else {
-          push("calls", st.owner, lf)
-        }
-      }
-      for (const c of kids(n)) walk(c, st)
-      return
-    }
-    if (t === "prefixed_expression") {
-      // FSD8(b): an explicit `new Foo(...)` is a construction — and the inner
-      // application must NOT also emit a call (it would double-count the site).
-      if (isNewPrefixed(n)) {
-        const operand = firstNamed(n)
-        if (operand && (operand.type === "application_expression" || operand.type === "long_identifier_or_op")) {
-          const { lf } = operand.type === "application_expression" ? calleeLeaf(firstNamed(operand)) : calleeLeaf(operand)
-          if (lf && st.owner) push("instantiates", st.owner, lf)
-          walk(operand, { ...st, owner: undefined })
-          return
-        }
-      }
-    }
-    for (const c of kids(n)) walk(c, st)
-  }
-
-  walk(root, { bodyDepth: 0 })
-  return edges
-}
-
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -13906,18 +13630,6 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
-      if (lang === "fsharp") {
-        // M60 fsharp lane: the seat the lane never had. Rules are FSD1..FSD12
-        // of script/m14/spec/fsharp-completeness.json, written from the
-        // measured shapes in validation/m14/results/fsharp-shape-census.json —
-        // including the rulings the current analyzer cannot satisfy (no dead
-        // branches, the `args:`-field method split, `val` declarations, the
-        // `new`-prefix instantiates, `inherit` is always extends), which is
-        // exactly what the first row is for.
-        for (const e of deriveFsharpEdges(root)) {
-          ;(truth as any[]).push(e)
-        }
-      }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
         // opaque raw_text - re-parse them and derive the SAME structural
@@ -14021,7 +13733,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -14036,7 +13748,7 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "references"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+        ...(lang === "csharp" ? ["calls", "references"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -14409,7 +14121,6 @@ async function main() {
       // and a REFUSAL — never a silent computed id — for an undeclared scope.
 
       if (scope === "clean") emitEvidence({ ...base, issueId: "M14.0.F5.clean" })
-      else if (scope === "fsharp") emitEvidence({ ...base, issueId: "M14.0.F5.fsharp" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
         + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
