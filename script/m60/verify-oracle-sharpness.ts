@@ -344,19 +344,44 @@ function measureLane(lang: string): LaneRow {
   fs.mkdirSync(WORK, { recursive: true })
   const before = fingerprint(lang)
   const logPath = path.join(LOG_DIR, `${lang}.log`)
+  // stdout and stderr are SEPARATE files (measured 2026-09-25, run 1z7l-muhm9vrp). The
+  // instrument used to hand spawnSync ONE fd for both streams, and two lanes then produced
+  // logs whose `[strict]` line had no repo line above it — while re-parsing the very same
+  // file afterwards yields every repo line. The breached svelte log is 25 INFO lines where
+  // the clean one is 94: lines went MISSING FROM THE MIDDLE of a file that had two writers.
+  // Whatever the precise interleaving, the class is removed by construction — the parser
+  // reads stdout only, and the engine's stderr noise gets a sidecar nobody parses.
+  const errPath = path.join(LOG_DIR, `${lang}.stderr.log`)
   const fd = fs.openSync(logPath, "w")
+  const fdErr = fs.openSync(errPath, "w")
   const t0 = Date.now()
   const proc = spawnSync("bun", ["script/m14/differential.ts", "--lang", lang, "--sample", SAMPLE], {
-    cwd: ROOT, stdio: ["ignore", fd, fd],
+    cwd: ROOT, stdio: ["ignore", fd, fdErr],
     env: { ...process.env, BB_F5_STRICT: "1", BB_F5_SHOW_SAMPLES: "1", BB_M14_WORK: WORK },
   })
   fs.closeSync(fd)
+  fs.closeSync(fdErr)
   const durationMs = Date.now() - t0
   const after = fingerprint(lang)
   const log = fs.readFileSync(logPath, "utf8")
   const parsed = parseLane(lang, log)
+  // Breach capture (added after the svelte/haskell breaches of run 1z7l-muhm9vrp could not be
+  // reproduced: re-parsing those very logs yields every repo line). When the parser refuses a
+  // log, the bytes it refused are preserved NEXT TO IT — length, line count, the parser's
+  // sentence, and the first lines — because the log can be rewritten by a later run and a
+  // breach that cannot be re-derived is a story, not evidence. The capture may never be the
+  // failure: it is best-effort and does not touch the row.
+  if (parsed.parseError) {
+    try {
+      const lines = log.split("\n")
+      fs.writeFileSync(`${logPath}.breach.txt`,
+        `lang=${lang} run=${RUN} bytes=${Buffer.byteLength(log, "utf8")} lines=${lines.length} stderr=${errPath}\n` +
+        `parseError=${parsed.parseError}\n--- first 40 line(s) as this run read them ---\n` +
+        lines.slice(0, 40).map((l, i) => `${String(i + 1).padStart(4)}| ${l.slice(0, 200)}`).join("\n") + "\n")
+    } catch { /* the capture must never be the failure */ }
+  }
   const row: Omit<LaneRow, "verdict"> = {
-    lang, run: RUN, at: new Date().toISOString(), measuredAt: before, after, durationMs, log: logPath,
+    lang, run: RUN, at: new Date().toISOString(), measuredAt: before, after, durationMs, log: logPath, stderrLog: errPath,
     repos: parsed.repos, parseError: parsed.parseError,
     breaches: parsed.parseError ? [...parsed.breaches, parsed.parseError] : parsed.breaches,
     hardSamples: parsed.hardSamples, softSamples: parsed.softSamples,
