@@ -76,6 +76,16 @@ const LANES: Record<string, Lane> = {
   // disclosed as below the owner's heavy-corpus standard (900+), which the lane still owes.
   // `eastwood` is a Clean language server, not the Clojure linter of the same name.
   clean: { wasm: "wasm/tree-sitter-clean.wasm", repos: ["Clyde", "clean-stdlib", "Prelude", "cloogle.org", "eastwood"], sample: 400 },
+  // M60 sql lane. TWO corpora, deliberately, and the reason is a caveat the M12
+  // claim could not discharge on its own:
+  //   proxicall (438 tracked .sql) is the owner's OWN project
+  //     (github.com/ishaq2321/ProxiCall) — PostgreSQL DDL, one team's style. A
+  //     verdict taken on it alone is a claim about their corpus, not about SQL.
+  //   postgrest (32 tracked .sql) is a public third-party Postgres project, and
+  //     it is the only public Postgres DDL corpus on this box, so the same
+  //     grammar decision gets read against a corpus nobody here wrote.
+  // Both are reported; a candidate that only wins on one is not a win.
+  sql: { wasm: "wasm/tree-sitter-sql.wasm", repos: ["proxicall", "postgrest"], sample: 400 },
 }
 const CORPUS = "$HOME/fixtures/repositories"
 
@@ -554,6 +564,7 @@ if (hasArg("--emit")) {
   let out: string
   if (ownsCanonical) out = emitEvidence({ ...base, issueId: "M14.0.F11" })
   else if (LANG === "clean") out = emitEvidence({ ...base, issueId: "M14.0.F11.clean" })
+  else if (LANG === "sql") out = emitEvidence({ ...base, issueId: "M14.0.F11.sql" })
   else throw new Error(
     `verify-grammar-leaves: --emit has no declared artifact id for lane "${LANG}" — add one literal emit call `
     + '(`{ ...base, issueId: "M14.0.F11.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
