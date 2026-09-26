@@ -217,6 +217,9 @@ interface LaneRow {
   after: ReturnType<typeof fingerprint> | null
   durationMs: number
   log: string
+  /** The stderr sidecar. Separate since 2026-09-25: both streams used to share one fd and
+   *  two lanes then produced logs with lines missing from the middle (see measureLane). */
+  stderrLog?: string
   repos: RepoRow[]
   breaches: string[]
   hardSamples: string[]
