@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -252,7 +252,7 @@
         "bytes": 17754
       }
     },
-    "digest": "da8cc3048db4a971d66f52d96009fe143b21102618d71038d0453494b27d59b1",
+    "digest": "6da839a7c25930957c9fb1a21605127d900bcf82633c60e1f3902d47db16ca11",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 165.797559,
-      "userCpuMs": 251.949,
-      "systemCpuMs": 38.603,
-      "peakRssBytes": 235118592,
-      "rssDeltaBytes": 1941504,
+      "wallTimeMs": 111.87283,
+      "userCpuMs": 103.021,
+      "systemCpuMs": 14.592,
+      "peakRssBytes": 250036224,
+      "rssDeltaBytes": -7045120,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

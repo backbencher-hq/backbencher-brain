@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -252,7 +252,7 @@
         "bytes": 10168
       }
     },
-    "digest": "525d1ae519e8eb12d86d5cff1209938a8599be2cd78d1d30984bb43689d6b74f",
+    "digest": "bfc88f1a1617d15b3b11ffac930effe5811ca025386eb1beb6766b5523e07e3b",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -357,11 +357,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 32.518014,
-      "userCpuMs": 68.005,
-      "systemCpuMs": 6.861,
-      "peakRssBytes": 227831808,
-      "rssDeltaBytes": 2490368,
+      "wallTimeMs": 23.583742,
+      "userCpuMs": 56.313,
+      "systemCpuMs": 1.645,
+      "peakRssBytes": 228651008,
+      "rssDeltaBytes": 2940928,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
