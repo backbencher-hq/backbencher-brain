@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (32/41 languages pass)",
+      "description": "per-literal shrink-only register with reasons (34/41 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
-  "committedAt": "2026-09-24T19:14:33-04:00",
+  "commit": "85b2c4a9794c35f897a06152247ba4c2f520fc28",
+  "committedAt": "2026-09-26T13:49:01-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -36,7 +36,7 @@
         "unregistered": []
       },
       "counts": {
-        "bash": 1,
+        "bash": 0,
         "c": 0,
         "clean": 0,
         "clojure": 0,
@@ -45,7 +45,7 @@
         "css": 4,
         "dart": 0,
         "elixir": 0,
-        "erlang": 2,
+        "erlang": 0,
         "fsharp": 0,
         "go": 0,
         "graphql": 0,
@@ -79,14 +79,6 @@
         "zig": 0
       },
       "literals": {
-        "bash": [
-          {
-            "kind": "type",
-            "literal": "identifier",
-            "owner": "bash lane",
-            "reason": "real-bash-analyzer.ts:299, a `.type ===` guard. The pinned tree-sitter-bash wasm does not enumerate this literal, so the branch cannot fire. Count unchanged from the v1 baseline of 2026-08-23 (1), i.e. pre-existing debt rather than a regression. Repayment: read the pinned grammar's real name for this position, then fix or delete the branch — not guessed here."
-          }
-        ],
         "css": [
           {
             "kind": "type",
@@ -113,20 +105,7 @@
             "reason": "real-css-analyzer.ts:756. Not enumerated by the pinned tree-sitter-css wasm (the grammar has no `variable_name` node type). Count unchanged from the v1 baseline of 2026-08-23 (4). Repayment: read the grammar's real node for a custom property, then fix or delete."
           }
         ],
-        "erlang": [
-          {
-            "kind": "type",
-            "literal": "string_literal",
-            "owner": "erlang lane",
-            "reason": "real-erlang-analyzer.ts:60 (getChildByType). Not enumerated by the pinned tree-sitter-erlang wasm. Count unchanged from the v1 baseline of 2026-08-23 (2). Repayment: read the grammar's real string node type, then fix or delete."
-          },
-          {
-            "kind": "type",
-            "literal": "macro_name",
-            "owner": "erlang lane",
-            "reason": "real-erlang-analyzer.ts:203 (getChildByType). Not enumerated by the pinned tree-sitter-erlang wasm. Count unchanged from the v1 baseline of 2026-08-23 (2)."
-          }
-        ],
+        "erlang": [],
         "lua": [
           {
             "kind": "field",
@@ -287,16 +266,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 26,
-        "status": "fail",
+        "referencedTypeLiterals": 32,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-bash-analyzer.ts:comparison",
-            "line": 299,
-            "literal": "identifier"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-bash.wasm"
@@ -329,9 +302,9 @@
         "fieldless": false,
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 271,
-        "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 34,
+        "oracleNodeTypeCount": 278,
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 37,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -447,7 +420,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 80,
+        "referencedTypeLiterals": 81,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -464,7 +437,7 @@
         "fieldless": false,
         "oracleFieldCount": 9,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 205,
+        "oracleNodeTypeCount": 204,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 32,
         "status": "pass",
@@ -485,21 +458,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 302,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 20,
-        "status": "fail",
+        "referencedTypeLiterals": 26,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-erlang-analyzer.ts:getChildByType",
-            "line": 60,
-            "literal": "string_literal"
-          },
-          {
-            "context": "real-erlang-analyzer.ts:getChildByType",
-            "line": 203,
-            "literal": "macro_name"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-erlang.wasm"
@@ -591,7 +553,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 55,
+        "referencedTypeLiterals": 54,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -629,7 +591,7 @@
         "oracleGrammars": 2,
         "oracleNodeTypeCount": 285,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 11,
+        "referencedTypeLiterals": 13,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -822,11 +784,11 @@
       "objective-c": {
         "analyzer": "src/ast/real-objective-c-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 46,
+        "oracleFieldCount": 48,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 535,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 49,
+        "oracleNodeTypeCount": 554,
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 50,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -835,7 +797,7 @@
           "tree-sitter-objc.wasm"
         ],
         "wasmFieldCounts": [
-          46
+          48
         ]
       },
       "perl": {
@@ -1117,7 +1079,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 85,
+        "referencedTypeLiterals": 92,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1315,10 +1277,10 @@
       }
     },
     "summary": {
-      "fail": 9,
+      "fail": 7,
       "languagesAudited": 41,
-      "pass": 32,
-      "totalUnknownReferences": 30
+      "pass": 34,
+      "totalUnknownReferences": 27
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1346,8 +1308,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-24T23:29:51.373Z",
-  "regeneratedAtCommit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
+  "regeneratedAt": "2026-09-26T18:33:56.466Z",
+  "regeneratedAtCommit": "85b2c4a9794c35f897a06152247ba4c2f520fc28",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

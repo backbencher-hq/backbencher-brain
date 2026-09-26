@@ -1,12 +1,13 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-25T16:13:50.064Z",
-  "atCommit": "d09934d98a74c0e4bfd3b31e55616cbc994dcddd",
-  "passed": 157,
-  "failed": 1,
+  "at": "2026-09-26T00:15:36.177Z",
+  "atCommit": "93cf6ed6610e2b5e5055ce9f6eb8aa1b0497d80f",
+  "passed": 156,
+  "failed": 2,
   "negatives": 132,
   "failures": [
+    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at d6a7cd897aad822b6028e324de244b2af16e1cbe, HEAD is 93cf6ed6610e2b5e5055ce9f6eb8aa1b0497d80f",
     "R10 live: every lane's target spelling matches the register exactly (convictions and separator vocabulary) — R10: 1 lane(s) drifted from the register — cpp drifted: convictions {\"delimiter\":40} measured vs {\"delimiter\":45} recorded — a finding may only be paid down by re-writing the register"
   ],
   "verdict": "FAIL",
