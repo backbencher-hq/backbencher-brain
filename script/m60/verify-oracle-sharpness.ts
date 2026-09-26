@@ -130,6 +130,12 @@ const LOCK = `${STATE}.lock`
 const WORK = process.env.BB_M60_OS_WORK ?? path.join(os.tmpdir(), "m60-os-work")
 const SAMPLE = "100000"
 
+/** The identity rule this instrument computes rows under. Rows recorded under an older
+ *  rule carry no `rule` field, and `emitRefusal` names that difference instead of
+ *  misreporting it as a content move. Bump when the input set CHANGES SHAPE, not when it
+ *  changes content (content is what the digest is for). */
+const IDENTITY_RULE = "lane-scoped-v1"
+
 const LANE_ORDER = Object.keys(LANGS)
 
 const sha = (buf: Buffer | string) => createHash("sha256").update(buf).digest("hex").slice(0, 16)
@@ -189,30 +195,102 @@ function resolveImport(fromFile: string, spec: string): string | null {
   }
   return null
 }
+/** One file's import specs. Relative resolution happens in `resolveImport`, which drops
+ *  package and node: specs — a dependency outside the checkout is not an input this
+ *  instrument can hash. */
+function importsOf(src: string): string[] {
+  return [...src.matchAll(/(?:from|import|import\(|require\()\s*["']([^"']+)["']/g)].map((m) => m[1])
+}
 export function closure(entry: string, seen = new Set<string>()): Set<string> {
   const abs = path.resolve(entry)
   if (seen.has(abs)) return seen
   seen.add(abs)
   let src = ""
   try { src = fs.readFileSync(abs, "utf8") } catch { return seen }
-  for (const m of src.matchAll(/(?:from|import|import\(|require\()\s*["']([^"']+)["']/g)) {
-    const r = resolveImport(abs, m[1])
+  for (const spec of importsOf(src)) {
+    const r = resolveImport(abs, spec)
     if (r) closure(r, seen)
   }
   return seen
 }
 
-/** The inputs one lane's row depends on: the harness's own closure, the lane's
- *  analyzer closure, and the lane's grammar binary. Sampled before and after. */
+/** The harness's closure SPLIT into what one lane's measurement reads and what it does
+ *  not: a traversal that reaches another lane's analyzer file stops THERE (that file and
+ *  its exclusive subtree are `foreign`), while a module reachable by a path that never
+ *  crosses a foreign analyzer is `owned`. Pure, so `--selftest` can pin the semantics on a
+ *  fixture; `owned ∪ foreign === closure(entry)` by construction, so the split can never
+ *  silently drop a file from the instrument's view of the tree. */
+export function splitClosure(entry: string, foreignEntries: string[]): { owned: string[]; foreign: string[] } {
+  const foreignSet = new Set(foreignEntries.map((f) => path.resolve(f)))
+  const owned = new Set<string>()
+  const stack = [path.resolve(entry)]
+  while (stack.length > 0) {
+    const abs = stack.pop()!
+    if (foreignSet.has(abs) || owned.has(abs)) continue
+    owned.add(abs)
+    let src = ""
+    try { src = fs.readFileSync(abs, "utf8") } catch { continue }
+    for (const spec of importsOf(src)) {
+      const r = resolveImport(abs, spec)
+      if (r) stack.push(r)
+    }
+  }
+  return { owned: [...owned], foreign: [...closure(entry)].filter((f) => !owned.has(f)) }
+}
+
+/** The lane's own input split: every OTHER lane's analyzer is pruned. */
+export function laneInputs(lang: string): { owned: string[]; foreign: string[] } {
+  const foreignEntries = LANE_ORDER.filter((l) => l !== lang)
+    .map((l) => (LANGS as any)[l]?.analyzerFile)
+    .filter((f: unknown): f is string => typeof f === "string")
+    .map((f) => path.join(ROOT, "src", "ast", `${f}.ts`))
+  return splitClosure(DIFFERENTIAL, foreignEntries)
+}
+
+/** The inputs one lane's row depends on: the harness core it shares with every lane, its
+ *  OWN analyzer's subtree, and its grammar binary. The other 24 analyzers are pruned out of
+ *  the traversal and recorded as an environment digest instead. Sampled before and after.
+ *
+ *  Why the narrowing, and what it rests on. The digest used to be the whole harness closure
+ *  — 62 files, all 44 analyzers among them — so ONE agent saving a foreign analyzer moved
+ *  every lane's identity: measured twice, as run `2soo-muhq7d4l`'s zig row (`tree-moved` by
+ *  the co-agent's then-uncommitted haskell bytes) and as run `hho-muikinql`'s javascript and
+ *  typescript rows. The over-claim was then measured DIRECTLY: the ruby lane was re-measured
+ *  while `src/ast/real-haskell-analyzer.ts` carried an uncommitted +241/−23 against the blob
+ *  run `a1o-muijeuy7` measured, and every count came back identical with both per-repo hashes
+ *  unchanged (`0fbb6654cea56068`, `e763e8da76c183e7`) — so that file's content is not an input
+ *  to ruby's row, and a digest that says otherwise refuses a row that IS a measurement of this
+ *  tree.
+ *
+ *  The boundary was then tested from BOTH sides in a replica of this tree, because "the file is
+ *  not loaded" is a claim about the runtime, not about the import text. Broken foreign: a syntax
+ *  error appended to `real-haskell-analyzer.ts` left the ruby row not merely unchanged but
+ *  `agrees`, with the same two hashes on a 5.9 s run — so a foreign analyzer is not evaluated for
+ *  this lane at all, and its content is environment in the strict sense. Broken owned: a syntax
+ *  error in `real-fsharp-analyzer.ts` — an input because a core module reaches it through a
+ *  DYNAMIC import (`import(...)`, which the traversal follows but the run evaluates lazily) — also
+ *  measured, because that path is not taken; the row was refused as `dirty` instead, by the digest
+ *  and the dirt query, exactly where fail-closed lives. So `owned` is a CONSERVATIVE SUPERSET of
+ *  what a run evaluates: a change in any of it refuses the row (right — the row cannot say which
+ *  of those bytes its numbers came from), while a change in `foreign` is disclosed and never a
+ *  refusal. The residue that remains is the same one the text-derived closure always had: a
+ *  specifier COMPUTED at runtime is invisible to this traversal, for the old rule as much as for
+ *  this one. The foreign side is still hashed (`foreignDigest`) and its dirt counted
+ *  (`foreignDirty`, null when git could not say) on every fingerprint — recorded on every row,
+ *  disclosed by `--emit`, never a refusal, and never silent. */
 function fingerprint(lang: string) {
   const cfg = (LANGS as any)[lang] as { analyzerFile: string; wasm: string } | undefined
-  const files = new Set<string>([...closure(DIFFERENTIAL)])
-  if (cfg?.analyzerFile) for (const f of closure(path.join(ROOT, "src", "ast", `${cfg.analyzerFile}.ts`))) files.add(f)
+  const { owned, foreign } = laneInputs(lang)
   const wasm = cfg?.wasm ? path.join(ROOT, "wasm", cfg.wasm) : null
-  const inputs = [...files].map((f) => path.relative(ROOT, f)).sort()
+  const inputs = owned.map((f) => path.relative(ROOT, f)).sort()
   const digests = inputs.map((rel) => `${rel}:${shaFile(path.join(ROOT, rel))}`)
   if (wasm) digests.push(`wasm/${path.basename(wasm)}:${shaFile(wasm)}`)
+  const foreignRel = foreign.map((f) => path.relative(ROOT, f)).sort()
+  const foreignDigests = foreignRel.map((rel) => `${rel}:${shaFile(path.join(ROOT, rel))}`)
   const st = gitRun(["status", "--porcelain", "--", ...statusPaths(inputs, wasm ? path.relative(ROOT, wasm) : null)])
+  // The foreign dirt query is DISCLOSURE, so unlike the lane's own query above a failure
+  // here is recorded as unreadable (null) rather than a breach: no verdict depends on it.
+  const foreignSt = foreignRel.length > 0 ? gitRun(["status", "--porcelain", "--", ...foreignRel]) : null
   // HEAD is informational (the identity is the bytes, see above), so a failed rev-parse
   // is recorded as an absent head and refuses nothing.
   const headRun = gitRun(["rev-parse", "HEAD"])
@@ -221,11 +299,15 @@ function fingerprint(lang: string) {
   return {
     head,
     headShort: head.slice(0, 8),
+    rule: IDENTITY_RULE,
     inputs: inputs.length + (wasm ? 1 : 0),
     digest: sha(digests.join("\n")),
     dirty,
     dirtyInputs: dirty.length,
     dirtyUnknown: st.failed,
+    foreignInputs: foreignRel.length,
+    foreignDigest: sha(foreignDigests.join("\n")),
+    foreignDirty: foreignSt === null ? 0 : foreignSt.failed ? null : porcelainPaths(foreignSt.stdout).length,
   }
 }
 const fpKey = (f: ReturnType<typeof fingerprint>) => f.digest
@@ -527,8 +609,16 @@ export function emitRefusal(
   measuredDigest: string,
   nowDigest: string,
   dirty: { atMeasurement: string[]; now: string[] },
+  rule?: { measured?: string; now: string },
 ): string | null {
   if (verdict === "not-measured") return "not measured"
+  // A row measured before the identity rule changed has a digest over a DIFFERENT file
+  // set, so the digest comparison below would report "inputs moved" about a move that
+  // never happened. The rule is checked first and named: the reader is owed the class of
+  // refusal, not a plausible-looking content move.
+  if (rule && rule.measured !== rule.now) {
+    return `measured under a different IDENTITY RULE (${rule.measured ?? "pre-scope: closure ∪ analyzer file"} → ${rule.now}) — the digest covers a different file set; re-measure`
+  }
   if (measuredDigest !== nowDigest) return `inputs moved since measurement (${measuredDigest} → ${nowDigest})`
   const uniq = (xs: string[]) => [...new Set(xs)].filter(Boolean)
   const a = uniq(dirty.atMeasurement)
@@ -562,7 +652,7 @@ export function measuredSourcesOf(published: string[], rows: Record<string, any>
   return {
     clean: published.length > 0 && dirty.length === 0,
     dirty,
-    rule: "git status --porcelain over each lane's import closure (differential + the lane's analyzer + its grammar binary), sampled before and after every lane",
+    rule: "git status --porcelain over each published lane's OWN inputs (the harness core reachable without crossing another lane's analyzer, plus that lane's analyzer subtree, plus its grammar binary), sampled before and after every lane; the other lanes' analyzers are the ENVIRONMENT and are disclosed, not enforced — a foreign analyzer that cannot load fails the measurement itself (run-failed)",
   }
 }
 
@@ -587,7 +677,7 @@ function emitArtifact(state: any): number {
     const reason = emitRefusal(row.verdict, row.measuredAt.digest, now.digest, {
       atMeasurement: [...(row.measuredAt.dirty ?? []), ...(row.after?.dirty ?? [])],
       now: now.dirty ?? [],
-    })
+    }, { measured: row.measuredAt.rule, now: now.rule })
     if (reason) { refused.push({ lang, reason }); continue }
     const sum = (f: (r: RepoRow) => number) => row.repos.reduce((a, r) => a + f(r), 0)
     rows[lang] = {
@@ -596,6 +686,16 @@ function emitArtifact(state: any): number {
       at: row.at ?? state.updatedAt ?? null,
       head: row.measuredAt.headShort,
       digest: row.measuredAt.digest,
+      inputs: row.measuredAt.inputs,
+      // The environment half: never a reason to refuse (the row is a measurement of this
+      // tree), always a fact a reader deserves — whether the other lanes' analyzers have
+      // moved since, and whether they are dirty NOW.
+      environment: {
+        files: row.measuredAt.foreignInputs,
+        digest: row.measuredAt.foreignDigest,
+        drift: now.foreignDigest !== row.measuredAt.foreignDigest,
+        dirtyNow: now.foreignDirty,
+      },
       files: sum((r) => r.files),
       truth: sum((r) => r.truth),
       publishedMissing: sum((r) => r.publishedMissing),
@@ -623,7 +723,11 @@ function emitArtifact(state: any): number {
     at: new Date().toISOString(),
     commit: git(["rev-parse", "HEAD"]).trim(),
     instrument: "script/m60/verify-oracle-sharpness.ts",
-    method: "one `bun script/m14/differential.ts --lang X --sample " + SAMPLE + "` per lane with BB_F5_STRICT=1 BB_F5_SHOW_SAMPLES=1 into a private cold pool; the artefact publishes a lane only when its import closure still has the digest it was measured at and carries no dirty input; a lane whose published rule matched a DIFFERENT qualified target is `hard` and revokes the lane's `diff` cell in M60.LCM (a lane with hard>0 cannot be reported as done), `soft` is a spelling asymmetry and is disclosed, not libelled",
+    method: "one `bun script/m14/differential.ts --lang X --sample " + SAMPLE + "` per lane with BB_F5_STRICT=1 BB_F5_SHOW_SAMPLES=1 into a private cold pool; the artefact publishes a lane only when its OWN inputs (harness core + its analyzer subtree + its grammar binary) still have the digest the row was measured at and carry no dirty input; a lane whose published rule matched a DIFFERENT qualified target is `hard` and revokes the lane's `diff` cell in M60.LCM (a lane with hard>0 cannot be reported as done), `soft` is a spelling asymmetry and is disclosed, not libelled",
+    environment: {
+      rule: "the other lanes' analyzers are NOT inputs of a row: their content is hashed per row as `environment.digest` and their dirtiness disclosed, never a refusal. Measured from both sides in a replica (2026-09-26): a +241/−23 uncommitted change in the haskell analyzer left the ruby row's counts and both hashes identical, and a SYNTAX ERROR appended to that file still left the lane `agrees` — the foreign analyzer is never evaluated for that lane. A lane's own `inputs` stay fail-closed: a change there refuses the row, and an uncommitted one is `dirty`, both by digest.",
+      lanesWithForeignDrift: Object.keys(rows).filter((l) => rows[l].environment.drift).sort(),
+    },
     measuredSources: measuredSourcesOf(Object.keys(rows), state.lanes ?? {}),
     expected: LANE_ORDER.length,
     citable: Object.keys(rows).length,
@@ -640,6 +744,8 @@ function emitArtifact(state: any): number {
       hidden: "strict misses the published rule nevertheless covered (- hidden == publishedMissing is asserted per repo)",
       hard: "hidden rows where BOTH sides are qualified and disagree — the groovy d6a7cd89 shape",
       soft: "hidden rows where one side is a bare leaf — a spelling contract question",
+      inputs: "how many files the row's identity covers (a conservative superset of what the run evaluates): the harness core reachable without crossing another lane's analyzer, this lane's analyzer subtree, and its grammar binary",
+      environment: "the other lanes' analyzers and their exclusive subtrees: hashed and dirt-counted per row, disclosed but never a refusal — measured: changing one (even breaking its syntax) leaves the lane's row identical",
     },
   }
   fs.mkdirSync(path.dirname(ARTIFACT), { recursive: true })
@@ -772,6 +878,16 @@ function selftest(): number {
   check("emit: every run-describing verdict is refused",
     ["tree-moved", "dirty", "run-failed", "instrument-breach", "no-output", "no-corpus"].every((v) => (emitRefusal(v, "d1", "d1", cleanDirty) ?? "").startsWith("verdict ")))
   check("emit: an unmeasured lane is refused by name", emitRefusal("not-measured", "d1", "d1", cleanDirty) === "not measured")
+  // A rule change is not a content move. Rows written before the lane-scoped identity carry
+  // no `rule` field, and their digest covers the old (wider) file set — so the digest
+  // comparison would say "inputs moved since measurement" about a tree nobody touched. The
+  // refusal names the RULE instead, and the old rule is named rather than anonymised.
+  check("emit: a row measured under the OLD identity rule is refused BY THE RULE, not as a content move",
+    /different IDENTITY RULE/.test(emitRefusal("agrees", "old", "new", cleanDirty, { measured: undefined, now: IDENTITY_RULE }) ?? "") &&
+    /pre-scope/.test(emitRefusal("agrees", "old", "new", cleanDirty, { measured: undefined, now: IDENTITY_RULE }) ?? ""))
+  check("emit: same rule + same digest stays publishable (the rule check is not a blanket refusal)",
+    emitRefusal("agrees", "d1", "d1", cleanDirty, { measured: IDENTITY_RULE, now: IDENTITY_RULE }) === null)
+  check("fingerprint: rows carry the identity rule they were measured under", fingerprint("ruby").rule === IDENTITY_RULE)
   check("emit: a moved input is refused and the two digests are named",
     /inputs moved since measurement \(d1 → d2\)/.test(emitRefusal("agrees", "d1", "d2", cleanDirty) ?? ""))
   check("emit: a closure dirty WHEN MEASURED is refused even if that file has landed since",
@@ -828,6 +944,50 @@ function selftest(): number {
   check("fingerprint: the closure contains its own entry (a one-file fingerprint would be vacuous)", jsClosure.has(path.resolve(DIFFERENTIAL)))
   check("fingerprint: the closure is relative-import only (a package spec is not a local input)", resolveImport(DIFFERENTIAL, "node:fs") === null && resolveImport(DIFFERENTIAL, "../m14/differential") !== null)
   check("fingerprint: a lane's identity is the analyzer it names, and differs between lanes", fpKey(fingerprint("javascript")) !== fpKey(fingerprint("typescript")))
+  // The lane-scoped split (2026-09-26). The digest used to cover the whole harness closure,
+  // so one agent saving a foreign analyzer refused all 25 lanes — measured twice (run
+  // `2soo-muhq7d4l`'s zig row, run `hho-muikinql`'s javascript+typescript rows). The
+  // narrowing rests on a measurement (a +241/−23 foreign change left ruby's row byte-identical),
+  // and the fixtures below pin the split's semantics so a reformatting of the traversal cannot
+  // silently hand a lane its neighbour's bytes back.
+  const sc = fs.mkdtempSync(path.join(os.tmpdir(), "m60-os-scope-"))
+  try {
+    fs.writeFileSync(path.join(sc, "core.ts"), `import "./own.ts"\nimport "./other.ts"\n`)
+    fs.writeFileSync(path.join(sc, "own.ts"), `import "./shared.ts"\nexport const a = 1\n`)
+    fs.writeFileSync(path.join(sc, "other.ts"), `import "./shared.ts"\nimport "./exclusive.ts"\nexport const b = 2\n`)
+    fs.writeFileSync(path.join(sc, "shared.ts"), `export const s = 3\n`)
+    fs.writeFileSync(path.join(sc, "exclusive.ts"), `export const e = 4\n`)
+    const split = splitClosure(path.join(sc, "core.ts"), [path.join(sc, "other.ts")])
+    const ownNames = new Set(split.owned.map((f) => path.basename(f)))
+    const envNames = new Set(split.foreign.map((f) => path.basename(f)))
+    check("scope: a foreign analyzer is not one of the lane's inputs", envNames.has("other.ts") && !ownNames.has("other.ts"))
+    check("scope: the pruned analyzer's exclusive subtree is foreign too", envNames.has("exclusive.ts") && !ownNames.has("exclusive.ts"))
+    check("scope: a module the lane's OWN analyzer imports stays an input even when the foreign one imports it", ownNames.has("shared.ts") && !envNames.has("shared.ts"))
+    const seenAll = new Set([...ownNames, ...envNames])
+    const whole = new Set([...closure(path.join(sc, "core.ts"))].map((f) => path.basename(f)))
+    check("scope: owned ∪ foreign IS the harness closure (no file is silently dropped)",
+      seenAll.size === whole.size && [...whole].every((f) => seenAll.has(f)))
+    check("scope: the fixture's own analyzer is an input", ownNames.has("own.ts") && ownNames.has("core.ts"))
+  } finally { fs.rmSync(sc, { recursive: true, force: true }) }
+  const rubyIn = laneInputs("ruby")
+  const rubyOwn = new Set(rubyIn.owned.map((f) => path.basename(f)))
+  const rubyEnv = new Set(rubyIn.foreign.map((f) => path.basename(f)))
+  check("scope: on the real tree, ruby's inputs hold its own analyzer and the harness entry",
+    rubyOwn.has("real-ruby-analyzer.ts") && rubyOwn.has("differential.ts"))
+  check("scope: a lane's own analyzer is an INPUT, never environment (the split's direction)",
+    rubyOwn.has("real-ruby-analyzer.ts") && !rubyEnv.has("real-ruby-analyzer.ts"))
+  check("scope: a core-reached analyzer stays an input even when only a DYNAMIC import reaches it (fsharp, engine.ts)",
+    rubyOwn.has("real-fsharp-analyzer.ts") && rubyEnv.has("real-haskell-analyzer.ts"))
+  check("scope: on the real tree, the haskell analyzer is environment for ruby (the file whose save refused every lane)",
+    !rubyOwn.has("real-haskell-analyzer.ts") && rubyEnv.has("real-haskell-analyzer.ts"))
+  check("scope: on the real tree, the split still covers the whole closure",
+    rubyIn.owned.length + rubyIn.foreign.length === closure(DIFFERENTIAL).size)
+  check("scope: two lanes do not share an input set (each carries its own analyzer)",
+    JSON.stringify(laneInputs("ruby").owned.sort()) !== JSON.stringify(laneInputs("haskell").owned.sort()))
+  check("scope: the fingerprint counts the grammar binary as one of the lane's inputs",
+    fingerprint("ruby").inputs === laneInputs("ruby").owned.length + 1)
+  check("scope: a dirty ENVIRONMENT is disclosed, never a verdict (the row still agrees)",
+    verdictOf({ ...cleanRow, measuredAt: { ...cleanRow.measuredAt, foreignInputs: 24, foreignDigest: "e1", foreignDirty: 9 } } as any) === "agrees")
   console.log(failures.length === 0 ? "selftest: the instrument separates the known-hidden pair, its identities convict a broken pass, and its parser round-trips a real log" : `selftest: ${failures.length} FAILURE(S)`)
   return failures.length === 0 ? 0 : 1
 }
@@ -852,11 +1012,16 @@ function main() {
     const only = langsArg ? langsArg.split(",").map((s) => s.trim()).filter(Boolean) : LANE_ORDER
     for (const lang of only) {
       const fp = fingerprint(lang)
-      const cfg = (LANGS as any)[lang]
-      const closureFiles = [...closure(DIFFERENTIAL)].map((f) => path.relative(ROOT, f))
-        .concat(cfg?.analyzerFile ? [...closure(path.join(ROOT, "src", "ast", `${cfg.analyzerFile}.ts`))].map((f) => path.relative(ROOT, f)) : [])
-      console.log(`${pad(lang, 11)} ${fp.inputs} input(s) digest=${fp.digest}${fp.dirtyInputs ? ` DIRTY(${fp.dirtyInputs}): ${fp.dirty.join(", ")}` : " clean"}`)
-      if (args.includes("--verbose")) for (const f of [...new Set(closureFiles)].sort()) console.log(`    ${f}`)
+      const { owned, foreign } = laneInputs(lang)
+      // The ENFORCED half prints first (it is the row's identity); the environment half is
+      // disclosed after it, with its own dirt count — a foreign analyzer being dirty is a
+      // fact about the tree, not a reason to refuse this lane.
+      console.log(`${pad(lang, 11)} ${fp.inputs} input(s) digest=${fp.digest}${fp.dirtyInputs ? ` DIRTY(${fp.dirtyInputs}): ${fp.dirty.join(", ")}` : " clean"}` +
+        ` | env ${fp.foreignInputs} file(s) digest=${fp.foreignDigest}${fp.foreignDirty === null ? " dirt-unreadable" : fp.foreignDirty ? ` dirty(${fp.foreignDirty})` : " clean"}`)
+      if (args.includes("--verbose")) {
+        for (const f of owned.map((f) => path.relative(ROOT, f)).sort()) console.log(`    own  ${f}`)
+        if (foreign.length) console.log(`    env  ${foreign.length} file(s) not inputs of this lane (other lanes' analyzers): ${foreign.map((f) => path.basename(f)).sort().join(", ")}`)
+      }
     }
     process.exit(0)
   }
