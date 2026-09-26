@@ -65,7 +65,17 @@ const canon = (l: string) => ALIAS[l.toLowerCase()] ?? l.toLowerCase()
 
 const FAMILIES: Record<string, string[]> = {
   jvm: ["java", "kotlin", "scala", "groovy"],
-  web: ["typescript", "javascript", "vue", "svelte"],
+  // html is a WEB language and was filed under `config` with json/yaml/xml/sql.
+  // That is the #857 class one level up: two artifacts disagreeing about which
+  // family a lane belongs to is how a lane gets counted twice or not at all, and
+  // the consequence here is concrete rather than bookkeeping — a `web family
+  // closed` claim is computed from this map, so with html outside it NO web-family
+  // closure claim could ever have covered an html defect. The web family's
+  // boundary is "the browser's document and script languages", and html is its
+  // document language; the four lanes already here are its script and component
+  // languages. `css` stays in `config` deliberately: it has no analyzer lane in
+  // this milestone and its detection story is not the web family's.
+  web: ["typescript", "javascript", "vue", "svelte", "html"],
   // ManagedOO (the M14.4 wave, plans/M14-issues.json #264–#270): swift and
   // objc were filed under `systems` here, which contradicted the wave that
   // actually owns them AND the family the OO plan assigns its lanes to. The
@@ -75,7 +85,7 @@ const FAMILIES: Record<string, string[]> = {
   oo: ["python", "ruby", "php", "dart", "csharp", "swift", "objc"],
   systems: ["c", "cpp", "rust", "go", "zig"],
   functional: ["haskell", "clojure", "elixir", "erlang", "fsharp", "clean"],
-  config: ["json", "yaml", "xml", "html", "css", "sql", "graphql", "hcl", "markdown", "makefile", "bash", "powershell", "lua", "perl", "r"],
+  config: ["json", "yaml", "xml", "css", "sql", "graphql", "hcl", "markdown", "makefile", "bash", "powershell", "lua", "perl", "r"],
 }
 const familyOf = (l: string) =>
   Object.entries(FAMILIES).find(([, ls]) => ls.includes(l))?.[0] ?? "other"
