@@ -12,6 +12,14 @@ interface CssContext {
   mixinNames: Record<string, boolean>
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
+  /**
+   * Whether the stylesheet carries a parse error anywhere. The grammar signals a
+   * construct it could not read by emitting an ERROR for that construct's head
+   * and re-parsing the remainder as a SIBLING, so the damaged region is only
+   * identifiable relative to an error — which is what this flag records. Set
+   * once, before the walk, so the test costs nothing per node.
+   */
+  fileHasParseError: boolean
 }
 
 interface StackFrame {
@@ -59,6 +67,29 @@ function replaceAll(text: string, needle: string, replacement: string): string {
       out += text[i]
       i++
     }
+  }
+  return out
+}
+
+// Collapse every run of whitespace to a single space and trim. A symbol name
+// must be single-line and deterministic: an at-rule prelude can wrap across
+// lines in real stylesheets, and two spellings of the same name would be two
+// graph nodes. Pure-String.
+function collapseWhitespace(text: string): string {
+  let out = ""
+  let pendingSpace = false
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    const isWs = c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f"
+    if (isWs) {
+      if (out.length > 0) pendingSpace = true
+      continue
+    }
+    if (pendingSpace) {
+      out += " "
+      pendingSpace = false
+    }
+    out += c
   }
   return out
 }
@@ -150,6 +181,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       mixinNames: {},
       frameworks: {},
       patterns: {},
+      fileHasParseError: rootNode.hasError === true,
     }
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", currentSelector: "" }]
@@ -157,9 +189,40 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (stack.length > 0) {
       const { node, media, layer, container, currentSelector } = stack.pop()!
 
-      if (node.hasError || node.isMissing || node.type === "ERROR") {
+      // Record every parse error the tree reports, and NEVER claim otherwise.
+      //
+      // A previous version of this block recorded the error and then walked
+      // straight into the broken region, while its message claimed "The Brain
+      // Engine is bypassing this broken node" — a `doc-channel` defect, the
+      // message describing behaviour the code did not have.
+      //
+      // A second version made the message true by skipping the subtree of any
+      // node that IS an error, and that was WORSE, not better. The pinned
+      // grammar does not enumerate every `property_name` it will meet
+      // (`text-align` is enough), so a real stylesheet shatters into THOUSANDS of
+      // ERROR/MISSING nodes — grails-core's `docs-core/.../main.css` produces
+      // 3,418 of them, and the first spans the ENTIRE 1,217-line file. Skipping
+      // error subtrees deleted 883 of that file's 964 lost output lines, i.e. the
+      // whole file, including the rules the grammar had read perfectly well.
+      //
+      // The suppression was also never necessary. Inside a real ERROR node the
+      // children are tokens the switch does not match — for the
+      // `startColorStr =` case an `identifier` and an `=` — so the walk emits
+      // nothing from them regardless. What actually needed suppressing was two
+      // shapes of RECOVERED rule, and those are suppressed where they are
+      // recognised, by `isRecoveryDebris` and `isKeyframeStepSelector` below,
+      // against a CSS invariant rather than against a node's error flag.
+      if (this.isErrorNode(node)) {
         ctx.errors.push({
-          message: `Syntax ERROR detected. The Brain Engine is bypassing this broken node.`,
+          message: `Syntax ERROR: the grammar could not read this token.`,
+          range: this.nodeToRange(node),
+          severity: `warning`,
+        })
+      } else if (node.hasError) {
+        // Contains a broken descendant but is itself well-formed — the common
+        // case, and the one that must keep its declarations.
+        ctx.errors.push({
+          message: `Syntax ERROR detected inside this rule; the rule itself is extracted.`,
           range: this.nodeToRange(node),
           severity: `warning`,
         })
@@ -283,6 +346,72 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * True when the node IS the parse failure, rather than merely containing one.
+   *
+   * `Node.hasError` is true for a node with a broken descendant too, so using it
+   * as a suppression test would discard declarations that are perfectly well
+   * formed. A MISSING node is a token the parser inserted where the source had
+   * none, which is equally not a declaration.
+   */
+  private isErrorNode(node: Node): boolean {
+    return node.type === "ERROR" || node.isMissing === true
+  }
+
+  /**
+   * True when a `selectors` node can only be error-recovery debris.
+   *
+   * A stylesheet-level selector is never a bare string. The one way a `rule_set`
+   * gets a `string_value` in selector position is the grammar abandoning a
+   * construct's head (emitting an ERROR for it) and re-parsing the remainder as
+   * a sibling rule — measured on `@keyframes "fade" { … }`, whose fabricated
+   * output was three symbols whose names carried literal quote characters.
+   *
+   * The `selectors` node is examined for ANY real selector form; if it has one,
+   * this is a genuine rule and nothing is suppressed. A genuine CSS selector can
+   * contain a string only inside `[attr="value"]`, and there the string sits
+   * under an `attribute_selector`, never as a selector of its own.
+   */
+  private isKeyframeStepSelector(selectorsNode: Node): boolean {
+    const t = selectorsNode.text.trim()
+    return t === "from" || t === "to"
+  }
+
+  private isRecoveryDebris(selectorsNode: Node): boolean {
+    let hasString = false
+    let hasRealSelector = false
+    for (let i = 0; i < selectorsNode.namedChildCount; i++) {
+      const c = selectorsNode.namedChild(i)
+      if (!c) continue
+      const t = c.type
+      if (t === "string_value") { hasString = true; continue }
+      if (
+        t === "class_selector" ||
+        t === "id_selector" ||
+        t === "tag_name" ||
+        t === "universal_selector" ||
+        t === "pseudo_class_selector" ||
+        t === "pseudo_element_selector" ||
+        t === "attribute_selector" ||
+        t === "nesting_selector" ||
+        t === "namespace_selector" ||
+        t === "child_selector" ||
+        t === "descendant_selector" ||
+        t === "sibling_selector" ||
+        t === "adjacent_sibling_selector"
+      ) {
+        hasRealSelector = true
+        continue
+      }
+      // A `class_name`/`id_name` leaf can only appear under its `*_selector`
+      // wrapper, which is counted above; anything else is a combinator wrapper
+      // already listed. Unlisted named types are treated as real, so a future
+      // selector form cannot be silently suppressed by omission.
+      hasRealSelector = true
+    }
+    return hasString && !hasRealSelector
+  }
+
   private determineSelectorKind(
     hasId: boolean,
     hasClass: boolean,
@@ -332,6 +461,62 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): string | null {
     const selectorsNode = this.findChild(node, (c) => c?.type === "selectors")
     if (!selectorsNode) return null
+
+    // Recovery debris is not a rule. When the pinned grammar cannot read a
+    // construct it emits an ERROR node for the construct's HEAD and re-parses
+    // the remainder as a sibling of that ERROR — so the fabricated nodes are
+    // perfectly well-formed and no subtree suppression can reach them. The
+    // measured case is `@keyframes "fade" { from {…} to {…} }` (a quoted
+    // keyframes name, which the grammar cannot represent):
+    //
+    //   stylesheet [hasError]
+    //     ERROR      "@keyframes"          <- the head the grammar gave up on
+    //     rule_set   "\"fade\" { from {…} to {…} }"   <- a SIBLING, not a child
+    //       selectors -> string_value "\"fade\""
+    //       block     -> rule_set "from {…}", rule_set "to {…}"
+    //
+    // which produced three symbols with quote characters baked into the name —
+    // `class:"\"fade\""`, `type:"\"fade\" from"`, `type:"\"fade\" to"` — none of
+    // which is a name written on a valid line of the file, plus a `contains`
+    // edge between them. Two of the three were `from`/`to` KEYFRAME steps, which
+    // the M12 ground truth explicitly declares to be structural noise and NOT
+    // symbols, so this contradicted the lane's own declared contract.
+    //
+    // The discriminator is a CSS invariant, not a name shape: a stylesheet-level
+    // selector is never a bare string. A `rule_set` whose `selectors` hold a
+    // `string_value` and none of the real selector forms can only be debris.
+    // (The grammar does admit `string_value` in its `_selector` choice, so this
+    // cannot be read off the node types alone — it is a property of what a
+    // selector may legally be.)
+    if (this.isRecoveryDebris(selectorsNode)) {
+      ctx.errors.push({
+        message: `Syntax ERROR: this selector is not a valid CSS rule (the grammar could not read the construct it belongs to), so nothing is extracted from it.`,
+        range: this.nodeToRange(node),
+        severity: `warning`,
+      })
+      return null
+    }
+
+    // The same recovery also re-parses a keyframe's `from`/`to` STEPS as
+    // top-level rules whose selector is the bare tag `from` / `to`. That is why
+    // the quoted-keyframes probe still yielded two symbols after the debris rule
+    // above: their selectors are `tag_name`, so they are well-formed rules by
+    // that test. The observable signal is the ERROR SIBLING — the grammar gave
+    // up on the construct's head in the same stylesheet.
+    //
+    // `from`/`to` are suppressed only in a stylesheet that HAS a parse error,
+    // because that is the only situation in which the grammar can have produced
+    // them this way. A real `from { }` element selector in a clean stylesheet is
+    // still extracted. The cost of the rule is measured over the corpus rather
+    // than assumed (see the edge-set digest).
+    if (ctx.fileHasParseError && this.isKeyframeStepSelector(selectorsNode)) {
+      ctx.errors.push({
+        message: `Syntax ERROR: a keyframe step was re-parsed as a rule by error recovery, so it is not extracted as a selector.`,
+        range: this.nodeToRange(node),
+        severity: `warning`,
+      })
+      return null
+    }
 
     const rawParts = selectorsNode.text.split(",")
     const rawSelectors: string[] = []
@@ -655,15 +840,43 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processSupports(node: Node, ctx: CssContext) {
-    const queryNode = this.findChild(node, (c) => c && c.type !== "at_keyword" && c.type !== "block")
+    // The predicate used to be `c.type !== "at_keyword" && c.type !== "block"`,
+    // on the belief that `supports_statement` carries an `at_keyword` child. It
+    // does NOT: the pinned grammar's shape is
+    //
+    //   supports_statement
+    //     ├── "@supports"   (ANONYMOUS — not an at_keyword node)
+    //     ├── feature_query / parenthesized_query / …
+    //     └── block
+    //
+    // so the exclusion list never matched the keyword and the predicate selected
+    // the ANONYMOUS `"@supports"` token. Every `@supports` in every stylesheet in
+    // the world was therefore named `@supports @supports` — 157 identical
+    // `interface` symbols in a 148-file sample — and the query CONDITION, which is
+    // the entire semantic content, was never read at all. That is a
+    // placeholder-literal name (M60 R7) and an identity collision both.
+    //
+    // The condition is now taken from the query node itself, and the name carries
+    // it, so two different `@supports` blocks in one file are two different
+    // symbols.
+    const queryNode = this.findChild(
+      node,
+      (c) =>
+        c &&
+        c.type !== "block" &&
+        c.type !== "at_keyword" &&
+        c.type !== "@supports" &&
+        c.text.trim() !== "@supports",
+    )
     if (queryNode) {
+      const condition = queryNode.text.trim()
       ctx.symbols.push({
-        name: `@supports ${queryNode.text.trim()}`,
+        name: `@supports ${condition}`,
         kind: ASTEngine.SymbolKind.Interface,
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
-        metadata: { isSupports: true },
+        metadata: { isSupports: true, supportsCondition: condition },
       })
       ctx.patterns["Feature Queries (@supports)"] = true
     }
@@ -697,40 +910,39 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       keyword === "@forward" ||
       keyword === "@use"
     ) {
-      const identifiers: Node[] = []
-      for (let i = 0; i < node.childCount; i++) {
-        const c = node.child(i)
-        if (
-          c !== null &&
-          (c.type === "identifier" ||
-            c.type === "string_value" ||
-            c.type === "call_expression" ||
-            c.type === "keyword_query")
-        ) {
-          identifiers.push(c)
-        }
-      }
-      const texts: string[] = []
-      for (let i = 0; i < identifiers.length; i++) {
-        const nodeToText = identifiers[i]
-        if (nodeToText.type === "call_expression") {
-          const identChild = this.findChild(
-            nodeToText,
-            (child) => child?.type === "identifier" || child?.type === "function_name",
-          )
-          if (identChild) {
-            texts.push(identChild.text)
-          } else {
-            // first token before `(` — pure-String (call_expression text)
-            const raw = nodeToText.text
-            const parenIdx = raw.indexOf("(")
-            texts.push(parenIdx === -1 ? raw : raw.slice(0, parenIdx))
-          }
-        } else {
-          texts.push(nodeToText.text)
-        }
-      }
-      namePart = texts.join(" ")
+      // The name is the keyword plus the at-rule's OWN PRELUDE — the source text
+      // between the keyword and the at-rule's block or terminating `;`.
+      //
+      // This replaces a list of child node types (`identifier`, `string_value`,
+      // `call_expression`, `keyword_query`) which was a type-list that had to be
+      // maintained against the grammar by hand, and which was WRONG for the one
+      // at-rule whose condition is its whole meaning: a container query's
+      // condition is a `feature_query`, which was not in the list, so
+      // `@container (min-width: 400px)` produced the bare name `@container` — the
+      // condition discarded — and two `@container` blocks in one file produced two
+      // IDENTICALLY named symbols, with both blocks' `contains` edges pointing at
+      // the same string. `@container style(--x: 1)` was worse still: it took the
+      // bare keyword `style` as the name.
+      //
+      // The bound is the at-rule production itself — `at-keyword prelude? (block
+      // | ';')` — so the prelude ends at the first `{` or `;`, whichever comes
+      // first. An earlier attempt bounded it by the `block` CHILD's start index
+      // and overran whenever the block was not a direct child (error recovery
+      // nests it), swallowing the block into the name:
+      //   `@container (min-width: 900px) { .b { color: blue; } }`
+      // and leaving a trailing `;` on the statement forms (`@include card;`).
+      // Slicing the node's own text cannot fall behind a grammar change, because
+      // it never names a node type. Whitespace is collapsed so a multi-line
+      // prelude still yields a single-line, stable symbol name (M60 R10 — a target
+      // must be spelled the way the lane spells its own symbols, and that
+      // spelling has to be deterministic).
+      const afterKeyword = node.text.slice(keyword.length)
+      const braceAt = afterKeyword.indexOf("{")
+      const semiAt = afterKeyword.indexOf(";")
+      let cut = afterKeyword.length
+      if (braceAt !== -1) cut = braceAt
+      if (semiAt !== -1 && semiAt < cut) cut = semiAt
+      const namePart = stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
       const ruleName = `${keyword}${namePart ? " " + namePart : ""}`
 
       ctx.symbols.push({
