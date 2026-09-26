@@ -1456,6 +1456,31 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
     // skipping it here cannot miss one. Both edge kinds are covered by
     // construction rather than by a guard per branch.
     if (t === "decorator") continue
+    // ---------------------------------------------------------------------
+    // JD14 (M60, 2026-09-26): `contains` TRUTH.
+    //
+    // The javascript lane's differential compared only
+    // extends/implements/instantiates/overrides/calls/uses, so `contains` was
+    // never audited even though it is the edge class the lane's largest measured
+    // gap lives in (10.9% of real symbols have no containment edge, because
+    // ownerName is only set for CLASS scopes — review JD3).
+    //
+    // The truth is the LANGUAGE's containment rule, stated directly: a
+    // `method_definition` or `field_definition` is a member of whatever encloses
+    // it — a class body OR an object literal. Deliberately NOT modelled on the
+    // analyzer's owner logic: mirroring the analyzer here would reproduce its
+    // blind spot by construction, which is exactly the defect class this
+    // differential exists to catch (the same mistake `differential.ts:11700`
+    // makes for class-expression heritage).
+    //
+    // The name is the DECLARED spelling, `#private` included, because the
+    // analyzer emits the declared spelling (M49 #813) and the comparison is
+    // site-agnostic on label+target.
+    // ---------------------------------------------------------------------
+    if (t === "method_definition" || t === "field_definition") {
+      const nm = t === "field_definition" ? n.childForFieldName("property") : n.childForFieldName("name")
+      if (nm && nm.text) push("contains", nm.text)
+    }
     if (t === "call_expression") {
       const fn = n.childForFieldName("function")
       const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
@@ -13380,9 +13405,15 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
             const scheme = oracleScheme(decoded)
             const external = scheme === "http" || scheme === "https" || scheme === "ftp" || scheme === "ftps"
             const protocolRelative = decoded.length >= 2 && decoded[0] === "/" && decoded[1] === "/"
-            if (!external && !protocolRelative && !ORACLE_HTML_SCHEME_SKIP.has(scheme) && scheme !== "javascript" && scheme !== "data") {
-              push("uses", next, decoded)
-            }
+            // A `javascript:` URL is a real hazard the document contains and the
+            // analyzer records as one, so the oracle must agree — otherwise the edge
+            // has no truth behind it. F9-PROBE-HTML-SCHEME found that asymmetry and
+            // the corpus lanes could not: `otp` and `sqlite` carry no javascript: URL,
+            // so `unexplained=0` never had to confront it. All five spellings collapse
+            // to one row here because the value is DECODED first, which is the whole
+            // reason the decode runs before the scheme test on both sides.
+            if (scheme === "javascript") push("uses", next, "javascript:")
+            else if (!external && !protocolRelative && !ORACLE_HTML_SCHEME_SKIP.has(scheme) && scheme !== "data") push("uses", next, decoded)
           }
         }
       }
@@ -14457,6 +14488,16 @@ async function main() {
           // `references` half is added in the list below for the same reason
           // (macro uses, fun values, includes/imports, type dependencies).
           ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),
+          // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
+          // The label was excluded by construction before this change, so the
+          // lane could not have caught containment going missing even once — and
+          // it is the edge class the lane's largest measured defect lives in
+          // (10.9% of real symbols carry no containment edge: ownerName is set
+          // only for CLASS scopes, so every object-literal method and every
+          // class-expression member is an orphan — review JD3). The matching
+          // truth is derived in deriveJavaScriptEdges from the language's own
+          // containment rule, deliberately NOT from the analyzer's owner logic.
+          ...(lang === "javascript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -15200,7 +15241,15 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
       scopeStack.push(nm || scriptName)
       push("contains", parent, nm)
     }
-    if (n.type === "variable_assignment" || n.type === "declaration_command" || n.type === "unset_command") {
+    // `unset` is RULED unemittable by the lane (BA-G1/BD6): no relationship type
+    // in the ontology expresses unbinding a binding, so the oracle must not
+    // corroborate one either. The first version of this oracle DID treat
+    // `unset CDPATH ENV BASH_ENV` as three declarations, and the second corpus
+    // reported them as false negatives — the differential catching the ORACLE
+    // contradicting the lane's own written decision, which is the only direction
+    // in which a shared-truth instrument can catch anything the analyzer's own
+    // gates cannot.
+    if (n.type === "variable_assignment" || n.type === "declaration_command") {
       const owner = scopeStack[scopeStack.length - 1] ?? scriptName
       const declaredIn = n.type === "declaration_command" ? (n.child(0)?.text ?? "") : ""
       const collects = (k: any, cb: (name: string) => void) => {
