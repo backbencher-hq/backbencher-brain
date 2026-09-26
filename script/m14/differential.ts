@@ -8234,6 +8234,101 @@ export function derivePythonEdges(root: any): { label: string; from: string; tar
 // Haskell oracle (HSD wave 2026-09-03): independently derivable truth for
 // class/instance/data/deriving/superclass structure + in-file calls. Mirrors
 // the analyzer's declared contract (see script/m14/spec/haskell-completeness.json).
+
+/**
+ * Scoped local identity (M60 functional lane, 2026-09-26) — oracle mirror of
+ * the analyzer's `collectLocalScopes`. A where/let local is NOT a module
+ * symbol, but its edges carry its lexical owner chain (`owner.local`, nested
+ * `owner.inner.local`), and its visibility is lexical: the flat module set no
+ * longer makes any local in the file a candidate target from anywhere.
+ */
+function haskellLocalScopes(root: any): {
+  scopedOf: Map<number, string>
+  blockLocals: Map<number, Map<string, string>>
+  frameLocals: Map<number, Map<string, string>>
+} {
+  const scopedOf = new Map<number, string>()
+  const blockLocals = new Map<number, Map<string, string>>()
+  const frameLocals = new Map<number, Map<string, string>>()
+  const headName = (node: any): string | undefined => {
+    if (!node || (node.type !== "function" && node.type !== "bind")) return undefined
+    if (node.type === "function" && (node.childForFieldName?.("parameter") || node.childForFieldName?.("result"))) return undefined
+    if (node.type === "bind" && node.children.some((c: any) => c.type === "<-")) return undefined
+    const head = node.namedChildCount > 0 ? node.namedChild(0) : null
+    if (!head) return undefined
+    if (head.type === "variable") return head.text
+    if (head.type === "infix" || head.type === "prefix_id") {
+      const op = head.namedChildren.find((c: any) => c.type === "operator")
+      if (op?.text) return op.text
+      const infixId = head.namedChildren.find((c: any) => c.type === "infix_id")
+      const tv = infixId?.namedChildren.find((c: any) => c.type === "variable")
+      return tv?.text
+    }
+    return undefined
+  }
+  const stack: any[] = [{ n: root, frameId: -1, frameScoped: undefined }]
+  while (stack.length > 0) {
+    const { n, frameId, frameScoped } = stack.pop()
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c) continue
+      const t = c.type
+      if (t === "local_binds" || t === "let" || t === "let_in") {
+        const map = new Map<string, string>()
+        const binderIds = new Set<number>()
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const b = c.namedChild(j)
+          const nm = headName(b)
+          if (nm === undefined) continue
+          const scoped = frameScoped !== undefined ? `${frameScoped}.${nm}` : nm
+          map.set(nm, scoped)
+          scopedOf.set(b.id, scoped)
+          binderIds.add(b.id)
+        }
+        if (map.size > 0) {
+          blockLocals.set(c.id, map)
+          // where-blocks shadow for the whole RHS of their callable; do-block
+          // `let` blocks are forward-only (handled by the walk, source order).
+          if (t === "local_binds" && frameId >= 0) {
+            const fm = frameLocals.get(frameId) ?? new Map<string, string>()
+            for (const [k, v] of map) fm.set(k, v)
+            frameLocals.set(frameId, fm)
+          }
+        }
+        for (let j = 0; j < c.namedChildCount; j++) {
+          const b = c.namedChild(j)
+          if (!b) continue
+          const scoped = binderIds.has(b.id) ? scopedOf.get(b.id) : undefined
+          if (scoped !== undefined) stack.push({ n: b, frameId: b.id, frameScoped: scoped })
+          else stack.push({ n: b, frameId, frameScoped })
+        }
+        continue
+      }
+      const nm = headName(c)
+      if (nm !== undefined) {
+        const scoped = frameScoped !== undefined ? `${frameScoped}.${nm}` : nm
+        scopedOf.set(c.id, scoped)
+        stack.push({ n: c, frameId: c.id, frameScoped: scoped })
+      } else {
+        stack.push({ n: c, frameId, frameScoped })
+      }
+    }
+  }
+  return { scopedOf, blockLocals, frameLocals }
+}
+
+/** Innermost visible local wins (shadowing), else the module-level set. */
+function haskellResolveTarget(
+  name: string,
+  locals: Map<string, string>,
+  declared: Set<string>,
+  declaredOps: Set<string>,
+): string | undefined {
+  const hit = locals.get(name)
+  if (hit !== undefined) return hit
+  return declared.has(name) || declaredOps.has(name) ? name : undefined
+}
+
 export function deriveHaskellEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -8254,6 +8349,7 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
   const instanceBases = new Map<string, string>() // instance CLASS name -> anonymous
   const declared = new Set<string>()
   const declaredOps = new Set<string>()
+  const localScopes = haskellLocalScopes(root)
 
   // Pass 1: declarations — classes (name/methods/superclass context),
   // instances (class + target), data/newtype (constructors), callables.
@@ -8429,22 +8525,30 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
-      if (c) stack1.push({ n: c, cls: nextCls, inBody: inBody || t === "function" || t === "bind" })
+      if (!c) continue
+      // Where/let locals are scoped callables, never module-level ones: they
+      // must not enter the flat `declared`/`declaredOps` sets (mirror of the
+      // analyzer's prepass skip).
+      if (c.type === "local_binds" || c.type === "let" || c.type === "let_in") continue
+      stack1.push({ n: c, cls: nextCls, inBody: inBody || t === "function" || t === "bind" })
     }
   }
 
   // Pass 2: call sites — apply heads (variable/qualified/constructor) and
   // backtick infix_id, attributed to the enclosing callable; record
   // construction in body position (constructor head) -> instantiates.
-  const stack2: any[] = [{ n: root, fn: undefined as string | undefined, inBody: false }]
+  const stack2: any[] = [{ n: root, fn: undefined as string | undefined, inBody: false, locals: new Map<string, string>() }]
   while (stack2.length > 0) {
-    const { n, fn, inBody } = stack2.pop()
+    const { n, fn, inBody, locals } = stack2.pop()
     const t = n.type
 
     if (t === "apply" || t === "infix" || t === "record") {
       if (t === "apply" && fn) {
         const head = n.namedChildCount > 0 ? n.namedChild(0) : null
-        if (head?.type === "variable" && declared.has(head.text)) push("calls", fn, head.text)
+        if (head?.type === "variable") {
+          const tg = haskellResolveTarget(head.text, locals, declared, declaredOps)
+          if (tg !== undefined) push("calls", fn, tg)
+        }
         else if (head?.type === "qualified") {
           const mod = head.namedChildren.find((c: any) => c.type === "module")
           const modText = mod?.text?.replace(/\.$/, "") ?? ""
@@ -8474,13 +8578,17 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
             // fall through: no call emission from a definition head
           } else {
             const target = infixId.namedChildren.find((c: any) => c.type === "variable")
-            if (target?.text && (declared.has(target.text) || declaredOps.has(target.text))) push("calls", fn, target.text)
+            const tg = target?.text !== undefined ? haskellResolveTarget(target.text, locals, declared, declaredOps) : undefined
+            if (tg !== undefined) push("calls", fn, tg)
           }
         } else if (opNode?.text === "$") {
           for (let i = 0; i < n.namedChildCount; i++) {
             const c = n.namedChild(i)
             if (!c || c.type === "operator") continue
-            if (c.type === "variable" && declared.has(c.text)) push("calls", fn, c.text)
+            if (c.type === "variable") {
+              const tg = haskellResolveTarget(c.text, locals, declared, declaredOps)
+              if (tg !== undefined) push("calls", fn, tg)
+            }
             else if (c.type === "qualified") {
               const mod = c.namedChildren.find((x: any) => x.type === "module")
               const func = c.namedChildren.find((x: any) => x.type === "variable")
@@ -8521,7 +8629,30 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       const isDeclSig = p2 === "declarations" || p2 === "local_binds" || p2 === "class" || p2 === "instance" || p2 === "class_declarations" || p2 === "instance_declarations" || p2 === "foreign_import"
       if (isDeclSig) continue
       const expr = n.namedChildCount > 0 ? n.namedChild(0) : null
-      if (expr) stack2.push({ n: expr, fn, inBody })
+      if (expr) stack2.push({ n: expr, fn, inBody, locals })
+      continue
+    }
+    if (t === "local_binds" || t === "let" || t === "let_in") {
+      // Block binders are visible inside the block. A do-block `let` is
+      // SPECIAL: its binders stay visible for the REST of the do block, whose
+      // later statements are SIBLINGS — folded into the shared map as the walk
+      // reaches them (children are processed in source order below), or
+      // `do { let addPaths ...; ... addPaths ... }` loses its edge.
+      const bl = localScopes.blockLocals.get(n.id)
+      let nextLocals = locals
+      if (bl) {
+        const isDoLet = n.parent?.type === "let" && n.parent?.parent?.type === "do"
+        if (isDoLet) {
+          for (const [k, v] of bl) locals.set(k, v)
+        } else {
+          nextLocals = new Map(locals)
+          for (const [k, v] of bl) nextLocals.set(k, v)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack2.push({ n: c, fn, inBody, locals: nextLocals })
+      }
       continue
     }
     if (t === "function" || t === "bind") {
@@ -8545,16 +8676,28 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
             if (tv?.text) nextFn = tv.text
           }
         }
-        for (let i = 0; i < n.namedChildCount; i++) {
+        // Scoped identity + lexical visibility (mirror of the analyzer's
+        // frame push): the frame's where-locals join the inherited set.
+        const scoped = localScopes.scopedOf.get(n.id)
+        if (scoped !== undefined) nextFn = scoped
+        const frameLocals = localScopes.frameLocals.get(n.id)
+        let nextLocals = locals
+        if (frameLocals) {
+          nextLocals = new Map(locals)
+          for (const [k, v] of frameLocals) nextLocals.set(k, v)
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
-          if (c) stack2.push({ n: c, fn: nextFn, inBody: true })
+          if (c) stack2.push({ n: c, fn: nextFn, inBody: true, locals: nextLocals })
         }
         continue
       }
     }
-    for (let i = 0; i < n.namedChildCount; i++) {
+    // Source order (reverse push): do-block `let` forward visibility depends on
+    // reaching the block before its later sibling statements.
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
-      if (c) stack2.push({ n: c, fn, inBody: inBody || t === "do" })
+      if (c) stack2.push({ n: c, fn, inBody: inBody || t === "do", locals })
     }
   }
   for (const op of declaredOps) if (!declared.has(op)) declared.add(op)
