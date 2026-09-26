@@ -6889,6 +6889,18 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
                 const mn = m.childForFieldName?.("name")
                 if (mn?.text) names.add(mn.text)
               }
+              // A nested class/module is its OWN owner frame — collectDecls visits it
+              // separately — so descending into it here poured the nested class's methods into
+              // the ENCLOSING class's set. The override pairing below then found a method the
+              // enclosing class never redeclared and invented an edge: rack's
+              // test/spec_request.rb (`class TestProxyRequest < RackRequestTest` containing
+              // `class DelegateRequest`) published `RackRequestTest.query_parser` / `.delegate?`
+              // / `.initialize` while the analyzer published the real bases (`Request.*` /
+              // `Spec.*`). Three hard rows, from a base the source never re-opened. Blocks and
+              // factory assignments are deliberately NOT cut: the analyzer attributes a
+              // lowercase-assigned `c = Class.new(Base) do … end` block's members to the
+              // ENCLOSING owner, so that lease is the contract (probe case B), not the defect.
+              if (m.type === "class" || m.type === "module") continue
               for (let i = 0; i < m.namedChildCount; i++) mstack.push(m.namedChild(i))
             }
             classMethods.set(nameNode.text, names)
@@ -8717,26 +8729,48 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     }
     return ""
   }
-  interface Scope { node: any; name: string; kind: string }
+  // `afm` is the frame's alias-write table (pass 1 builds it, pass 2 looks it up position-gated).
+  // The pushes below were the only places tsc could not see the field the code already stored.
+  interface Scope { node: any; name: string; kind: string; afm?: AliasFrame }
   const declaredByScope = new Map<string, Set<string>>()
   // W23-E1 mirror: alias scoping is LEXICAL on both sides. The old flat Map
   // leaked a module's explicit aliases to later siblings (Leak.After) and a
   // nested module's implied alias to the file root (Nest.After). Each scope
   // frame now owns a Map; lookups fall through enclosing frames to a root
   // (the Map analog of the analyzer's Object.create(parent) chain).
-  const aliasesRoot = new Map<string, string>()
-  const aliasFrames: Map<string, string>[] = []
-  const aliasFrameOf = new Map<number, Map<string, string>>()
-  const aliasLookup = (k: string): string | undefined => {
+  // One alias write: its value, and WHERE in the file it went live. The position is not
+  // decoration. Pass 2 resolves references against a table Pass 1 finished building, and the
+  // first version read the FINAL table, so a definition written after a reference applied to it:
+  // `alias(List, as: Nested)` inside a later `test "..." do` block turned an earlier
+  // `Nested.value()` into `List.value` (mask 1 of run 1z7l-muhm9vrp), and a nested
+  // `defmodule Map` closing at line 2,595 turned `Map.to_list` at line 849 into
+  // `EnumTest.Map.to_list` (mask 2). A lookup now takes the LAST write at or before the
+  // reference's own position.
+  //
+  // Measured contract (script/m14/tmp/elx-alias-order-repro.ts, both sides printed): the analyzer
+  // keeps ONE flat, order-gated table — an alias written inside a macro do-block still resolves a
+  // reference AFTER the block — so the oracle must not invent block scoping while it adds the
+  // position gate (case 7 pins that leak as the contract, not as a defect).
+  interface AliasWrite { value: string; at: number }
+  type AliasFrame = Map<string, AliasWrite[]>
+  const aliasesRoot: AliasFrame = new Map()
+  const aliasFrames: AliasFrame[] = []
+  const aliasFrameOf = new Map<number, AliasFrame>()
+  const aliasLookup = (k: string, pos = Number.POSITIVE_INFINITY): string | undefined => {
     for (let i = aliasFrames.length - 1; i >= 0; i--) {
-      const m = aliasFrames[i]!
-      if (m.has(k)) return m.get(k)
+      const ws = aliasFrames[i]!.get(k)
+      if (!ws) continue
+      for (let j = ws.length - 1; j >= 0; j--) if (ws[j]!.at <= pos) return ws[j]!.value
     }
-    return aliasesRoot.get(k)
+    const ws = aliasesRoot.get(k)
+    if (ws) for (let j = ws.length - 1; j >= 0; j--) if (ws[j]!.at <= pos) return ws[j]!.value
+    return undefined
   }
-  const aliasSetCurrent = (k: string, v: string): void => {
+  const aliasSetCurrent = (k: string, v: string, at: number): void => {
     const m = aliasFrames.length > 0 ? aliasFrames[aliasFrames.length - 1]! : aliasesRoot
-    m.set(k, v)
+    const ws = m.get(k) ?? []
+    ws.push({ value: v, at })
+    m.set(k, ws)
   }
   // ELXD17 mirror: ordered :only-constrained imports per scope.
   // (Keyword-colon stripping reuses the module-level stripAfterColon.)
@@ -8751,11 +8785,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
   // module through its alias table; this oracle emitted raw `.text` on those
   // paths, so `Phx.New.Project` vs `Project` agreed only because the lane
   // comparison normalizes to the last segment (19 masked pairs measured).
-  const resolveAliasO = (name: string): string => {
+  const resolveAliasO = (name: string, pos = Number.POSITIVE_INFINITY): string => {
     if (!name) return name
     const parts = name.split(".")
     const root = parts[0] ?? ""
-    const hit = root ? aliasLookup(root) : undefined
+    const hit = root ? aliasLookup(root, pos) : undefined
     if (hit) {
       parts[0] = hit
       return parts.join(".")
@@ -8813,7 +8847,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           // analyzer was corrected to the same timing).
           if ((sc.kind === "module" || sc.kind === "interface") && sc.name) {
             const implied = String(sc.name).split(".").pop()
-            if (implied && !aliasLookup(implied)) aliasSetCurrent(implied, String(sc.name))
+            // The implied alias goes live when the definition CLOSES, and the write's position
+            // records that: a reference inside the module's own body precedes it, so `use
+            // Supervisor` inside Registry.Supervisor cannot resolve to itself — the job a
+            // hand-maintained hide/restore pair in pass 2 used to do (now redundant, removed).
+            if (implied && !aliasLookup(implied)) aliasSetCurrent(implied, String(sc.name), n.endIndex)
           }
         }
         continue
@@ -8828,7 +8866,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             const nm = modName(args)
             if (nm) {
               const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
-              const mfr = new Map<string, string>()
+              const mfr: AliasFrame = new Map()
               stack.push({ node: n, name: full, kind: target === "defmodule" ? "module" : "interface", afm: mfr })
               aliasFrameOf.set(n.startIndex, mfr)
               aliasFrames.push(mfr)
@@ -8868,7 +8906,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             if (forTypeList.length > 0) {
               for (const t of forTypeList) if (t && t !== "Unknown" && t !== protocol) push("implements", t, protocol)
             } else if (implName !== protocol) push("implements", implName, protocol)
-            const implMfr = new Map<string, string>()
+            const implMfr: AliasFrame = new Map()
             stack.push({ node: n, name: implName, kind: "class", afm: implMfr })
             aliasFrameOf.set(n.startIndex, implMfr)
             aliasFrames.push(implMfr)
@@ -8878,7 +8916,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const nm = declName(n)
           if (nm) {
             decl(ownerOf(stack), nm)
-            const fnMfr = new Map<string, string>()
+            const fnMfr: AliasFrame = new Map()
             stack.push({ node: n, name: nm, kind: (target === "defmacro" || target === "defmacrop" || target === "defguard" || target === "defguardp") ? "macro" : "function", afm: fnMfr })
             aliasFrameOf.set(n.startIndex, fnMfr)
             aliasFrames.push(fnMfr)
@@ -8917,7 +8955,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                   const full = prefix ? `${prefix}.${kid.text}` : kid.text
                   const key = kid.text.split(".").pop()
                   if (key && full) {
-                    aliasSetCurrent(key, full)
+                    aliasSetCurrent(key, full, n.startIndex)
                     depModules.push(full)
                   }
                 }
@@ -8937,7 +8975,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 }
                 const parts = moduleName.split(".")
                 const key = asName ?? parts[parts.length - 1]
-                if (key) aliasSetCurrent(key, moduleName)
+                if (key) aliasSetCurrent(key, moduleName, n.startIndex)
               }
             }
             if (target === "import" && moduleName) {
@@ -9064,7 +9102,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     }
     const parts = finalTarget.split(".")
     if (parts.length > 1) {
-      const hit = aliasLookup(parts[0] ?? "")
+      const hit = aliasLookup(parts[0] ?? "", node.startIndex)
       if (hit) {
         parts[0] = hit
         finalTarget = parts.join(".")
@@ -9102,7 +9140,6 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           // W23-E1 mirror: leave the frame's alias map; the implied alias
           // hidden at entry (if any) goes back into the map that held it.
           if (sc.afm) aliasFrames.pop()
-          if (sc.hiddenImplied && sc.hiddenIn) sc.hiddenIn.set(sc.hiddenImplied, sc.name)
         }
         continue
       }
@@ -9115,28 +9152,14 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const nm = args ? modName(args) : ""
           if (nm) {
             const full = stack.length > 0 ? `${stack[stack.length - 1].name}.${nm}` : nm
-            // EX-L5 mirror (CLJ1 session): the module's OWN implied alias
-            // must be hidden while walking its body (pass 1 registered it at
-            // scope EXIT; pass 2 walks in source order), or body-time
-            // references resolve to the module itself (`use Supervisor`
-            // inside Registry.Supervisor). W23-E1: with scoped frames the
-            // pair may live in the root OR any enclosing frame map — find
-            // the map that holds exactly (impliedKey -> full) and hide
-            // there; restore at close. Search BEFORE entering this frame's
-            // own map so body directives are never false-hidden.
-            const impliedKey = String(full).split(".").pop() ?? ""
-            let hiddenIn: Map<string, string> | null = null
-            if (impliedKey && aliasLookup(impliedKey) === full) {
-              for (let i = aliasFrames.length - 1; i >= 0; i--) {
-                const m = aliasFrames[i]!
-                if (m.get(impliedKey) === full) { hiddenIn = m; m.delete(impliedKey); break }
-              }
-              if (!hiddenIn && aliasesRoot.get(impliedKey) === full) { hiddenIn = aliasesRoot; aliasesRoot.delete(impliedKey) }
-            }
+            // EX-L5 mirror (CLJ1 session): the module's OWN implied alias must not resolve
+            // references inside its body (`use Supervisor` inside Registry.Supervisor). That used
+            // to be a hand-maintained hide/restore pair here, because pass 1 registered the alias
+            // at scope EXIT while pass 2 walks in source order; the write's POSITION (the
+            // definition's close) now does it by construction, so the pair is gone.
             const frame: any = { node: n, name: full, kind: target === "defmodule" ? "module" : "interface" }
             const p2m = aliasFrameOf.get(n.startIndex)
             if (p2m) { frame.afm = p2m; aliasFrames.push(p2m) }
-            if (hiddenIn) { frame.hiddenImplied = impliedKey; frame.hiddenIn = hiddenIn }
             stack.push(frame)
             pushed = true
           }
@@ -9144,7 +9167,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const args = find(n, (c) => c.type !== "identifier" && c.type !== "do_block")
           if (args) {
             const als = kids(args).filter((c: any) => c.type === "alias")
-            const protocol = als.length > 0 && als[0] ? resolveAliasO(als[0].text) : "Unknown"
+            const protocol = als.length > 0 && als[0] ? resolveAliasO(als[0].text, n.startIndex) : "Unknown"
             let forType = "Unknown"
             const kw = find(args, (c: any) => c.type === "keywords")
             if (kw) {
@@ -9154,11 +9177,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 const kwn = find(pair, (c: any) => c.type === "keyword")
                 if (kwn && stripAfterColon(kwn.text) === "for" && pair.namedChildCount > 1) {
                   const v = pair.namedChild(1)
-                  if (v) forType = resolveAliasO(v.text)
+                  if (v) forType = resolveAliasO(v.text, n.startIndex)
                 }
               }
             }
-            const forAlias = als.length > 1 ? resolveAliasO(als[1].text) : forType
+            const forAlias = als.length > 1 ? resolveAliasO(als[1].text, n.startIndex) : forType
             // ELXD6/ELXD7 mirror (scope naming must match pass 1 exactly —
             // resolution sets diverge otherwise).
             const implName = forAlias && forAlias !== "Unknown" ? forAlias : (stack.length > 0 ? stack[stack.length - 1].name : protocol)
@@ -9197,7 +9220,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 if (x !== n && (x.type === "do_block" || x.type === "anonymous_function")) continue
                 for (let i = x.namedChildCount - 1; i >= 0; i--) { const c = x.namedChild(i); if (c) dscan.push(c) }
               }
-              if (toMod) push("calls", innerOf(stack), `${resolveAliasO(toMod)}.${asName || nm}`)
+              if (toMod) push("calls", innerOf(stack), `${resolveAliasO(toMod, n.startIndex)}.${asName || nm}`)
             }
           }
         } else if ((target === "struct" || target === "struct!") && !isAttr(n) && !isHead(n)) {
@@ -9205,7 +9228,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           // dynamic first args stay silent. (Quote already excluded above.)
           const structArgs = find(n, (c: any) => c.type === "arguments")
           const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
-          if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(first.text))
+          if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(first.text, n.startIndex))
           else if (first?.type === "identifier" && first.text === "__MODULE__") {
             let modScope = ""
             for (let i = stack.length - 1; i >= 0; i--) {
@@ -9241,7 +9264,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n) && !isPattern(n)) {
         const st = find(n, (c: any) => c.type === "struct")
         const al = st ? find(st, (c: any) => c.type === "alias") : undefined
-        if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(al.text))
+        if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(al.text, n.startIndex))
         else {
           // ELXD12 mirror: %__MODULE__{} resolves to the nearest
           // module/interface scope; with no such scope it stays silent.
@@ -12990,6 +13013,19 @@ async function main() {
     } catch {
       /* warm-up is best-effort; timing proceeds regardless */
     }
+    // Remedy (b), measured 2026-09-26. Three sites in the measuring loop used to drop a
+    // file with `catch { continue }` — an unreadable file, a parse that throws or yields no
+    // root, an analyzer that throws — and the oracle call was outside any try at all, so an
+    // oracle throw killed the lane anonymously (`new Parser()` aborted csharp at file 12,836
+    // after it had already "measured" 1,275 files, and scala3's Macro_1.scala killed a run
+    // with no file named). A lane that skipped files then published coverage over the
+    // SURVIVORS as if it were coverage of the corpus. Every skip is now counted by kind and
+    // named, and any skip REFUSES the lane: coverage over a partial read is not coverage.
+    const skipped: { kind: string; file: string; why: string }[] = []
+    const noteSkip = (kind: string, file: string, err?: unknown) => {
+      const why = err instanceof Error ? err.message : String(err ?? "")
+      skipped.push({ kind, file, why: why.slice(0, 160) })
+    }
     // Same retained-tree remedy as the retry loop above: the tree is freed at the top of
     // the NEXT iteration, so every node reference the body takes stays valid for as long as
     // the body can use it, and the lane's peak memory stops growing with the sample size.
@@ -12997,14 +13033,15 @@ async function main() {
     for (const f of sample) {
       try { prevTree?.delete?.() } catch { /* an aborted instance refuses politely */ }
       prevTree = null
-      const content = fs.readFileSync(f, "utf8")
       const relPath = path.relative(repoDir, f)
+      let content: string
+      try { content = fs.readFileSync(f, "utf8") } catch (err) { noteSkip("unreadable", relPath, err); continue }
       let root
       let result
       const tf0 = performance.now()
       let tree: any = null
-      try { tree = parser.parse(content); root = tree?.rootNode } catch { continue }
-      if (!root) { try { tree?.delete?.() } catch { /* nothing to free */ } ; continue }
+      try { tree = parser.parse(content); root = tree?.rootNode } catch (err) { noteSkip("unparsed", relPath, err); continue }
+      if (!root) { try { tree?.delete?.() } catch { /* nothing to free */ } ; noteSkip("unparsed", relPath, "no root node"); continue }
       prevTree = tree
       try {
         if (lang === "vue" || lang === "svelte") {
@@ -13015,10 +13052,18 @@ async function main() {
         } else {
           result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> } : undefined)
         }
-      } catch { continue }
+      } catch (err) { noteSkip("analyzer-threw", relPath, err); continue }
       durations.push(performance.now() - tf0)
 
-      const truth = deriveTreeEdges(root, lang)
+      let truth: any[]
+      try {
+        truth = deriveTreeEdges(root, lang)
+      } catch (err) {
+        // This call used to sit outside every try: a throw here took down the whole run with
+        // no file named (scala3 tests/neg-macros/i18825/Macro_1.scala).
+        noteSkip("oracle-threw", relPath, err)
+        continue
+      }
       if (lang === "vue") {
         // template component-usage oracle: independent HTML-core filter
         for (const e of deriveVueComponentUsages(root)) {
@@ -13215,12 +13260,12 @@ async function main() {
                   if (body.endsWith("}")) body = body.slice(0, -1)
                   const paren = body.indexOf("(")
                   if (paren >= 0) body = body.slice(0, paren)
-                  const parts = body.split(".").map((p) => {
+                  const parts = body.split(".").map((p: string) => {
                     let q = p.trim()
                     if (q.endsWith("?")) q = q.slice(0, -1).trim()
                     return q
                   })
-                  if (parts.length >= 2 && parts.every((p) => isIdent(p))) target = parts[parts.length - 1]
+                  if (parts.length >= 2 && parts.every((p: string) => isIdent(p))) target = parts[parts.length - 1]
                 }
                 if (target && !seenRender.has("r|" + target)) {
                   seenRender.add("r|" + target)
@@ -13642,6 +13687,17 @@ async function main() {
       }
     }
 
+    if (skipped.length > 0) {
+      const byKind = new Map<string, number>()
+      for (const sk of skipped) byKind.set(sk.kind, (byKind.get(sk.kind) ?? 0) + 1)
+      const kinds = [...byKind.entries()].map(([k, n]) => `${k}=${n}`).join(", ")
+      const first = skipped.slice(0, 5).map((sk) => `${sk.kind}: ${sk.file}${sk.why ? ` (${sk.why})` : ""}`).join("; ")
+      throw new Error(
+        `differential: ${lang} skipped ${skipped.length} of ${sample.length} sampled file(s) [${kinds}] — ` +
+        `coverage over a partial read is not coverage. First: ${first}`,
+      )
+    }
+
     const row = {
       filesSampled: sample.length,
       treeTruthEdges: treeEdgesTotal,
@@ -13870,13 +13926,17 @@ async function main() {
       })
       const base = {
         title: `Differential corpus harness, LANE-SCOPED (${scope}: ${measuredKeys.join(", ")}) — NOT the canonical ${Object.keys(LANGS).length}-language claim`,
-        claimLevel: "L1",
+        // `as const`: the literal must reach `EvidenceInput` as its TYPE, not widened to `string`
+        // (a spread object carries the widened type, so the canonical emit below is unaffected).
+        claimLevel: "L1" as const,
         layers: ["differential"],
         checks: [
           {
             id: "differential-lane-code-inputs",
             description: "THIS lane's own analyzer and spec are this commit's",
-            status: laneDirt.length === 0 ? "pass" : "fail",
+            // `as "pass" | "fail"`: a fresh literal union in a mutable property widens to
+            // `string`, which is not the `Check` contract (rowCheck below casts for the same reason).
+            status: (laneDirt.length === 0 ? "pass" : "fail") as "pass" | "fail",
             detail: laneDirt.length === 0
               ? `${[...ownInputs].join(", ")} clean at head ${codeInputs.head.slice(0, 10)}`
               : `${laneDirt.length} of this lane's own input(s) differ from head ${codeInputs.head.slice(0, 10)}: ${laneDirt.join(", ")}`,
@@ -13884,7 +13944,7 @@ async function main() {
           {
             id: "differential-harness-code-inputs",
             description: "the SHARED oracle/harness that produced these rows is this commit's",
-            status: sharedDirt.length === 0 ? "pass" : "fail",
+            status: (sharedDirt.length === 0 ? "pass" : "fail") as "pass" | "fail",
             detail: sharedDirt.length === 0
               ? `shared harness clean at head ${codeInputs.head.slice(0, 10)}`
               : `${sharedDirt.length} shared harness file(s) differ from head ${codeInputs.head.slice(0, 10)}: ${sharedDirt.join(", ")} — the harness is shared by every lane, so this can be another lane's uncommitted work and is NOT evidence about this lane's rows`,
@@ -13916,6 +13976,7 @@ async function main() {
       // had none, and the same ternary in verify-parse-success.ts cost the
       // canonical M14.0.F10 its claim too). Hence one declared branch per lane,
       // and a REFUSAL — never a silent computed id — for an undeclared scope.
+
       if (scope === "clean") emitEvidence({ ...base, issueId: "M14.0.F5.clean" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
