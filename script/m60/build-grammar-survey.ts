@@ -495,9 +495,23 @@ for (const lane of target) {
     ...c,
     upstream: upstreamHealth(c.package ?? null),
     // A candidate is NEVER accepted here. Only F11 can set that, in a review
-    // document, and H9 in the verifier checks the document exists.
+    // document, and C6 in verify-grammar-consistency.ts checks the document exists.
     verdict: "unmeasured",
     verdictRuling: null as string | null,
+    // The RECOVERY SCREEN, named but not run. Upstream health only shortlists; the
+    // screen is what makes the shortlist predictive. It exists because the sql
+    // adjudication found that for a grammar already failing on most of its corpus,
+    // error recovery IS the product, and that no gate measures it: the refused
+    // @l1xnan 0.4.7 IMPROVED sites (2504->2271) and MISSING (19->17) on one corpus
+    // while destroying 84 symbols and 150 relationships, which no count can tell
+    // apart from a win. `recovery` is filled in by the adjudication, never here —
+    // this generator does not build grammars, so it cannot measure one.
+    screening: {
+      instrument: "script/m60/measure-grammar-recovery.ts",
+      command: `bun run script/m60/measure-grammar-recovery.ts --lang ${lane} --candidate <built-candidate.wasm>`,
+      requires: "a candidate wasm built from the candidate's source (npm package, then `tree-sitter build --wasm`)",
+      recovery: null as null | { filesLosingMaterialStructure: number; files: number; medianFileDeltaPct: number | null; aggregateNamedNodesDeltaPct: number | null; errorsDeltaPct: number | null },
+    },
   }))
 
   const f10Rows = f10RowsFor(lane)
