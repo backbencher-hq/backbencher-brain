@@ -138,12 +138,108 @@ string split. No O(n²) or per-symbol O(n) scans.
   previous grammar build swallowed ~1,000 more errors inside one giant
   ERROR node).
 
+### Corpus census, 2026-09-25 (full extent, sharded and merged)
+
+`script/m14/tmp/fsharp-corpus-census.ts` (chunker: `fsharp-census-chunks.ts`),
+rows in `validation/m14/results/fsharp-corpus-census.json` with the five shard
+artifacts kept beside it in `fsharp-corpus-census.shards/`. Full extent, no
+sample: **6,627 files**, 0 analyzer throws, 5,192 dangling sources / 189,824
+dangling targets (the dangling targets are the **leaf-target contract** doing its
+job — `sprintf` 9,314, `Line`/`Col` 6,481, `Next`, `AreEqual`, `Some`, `not`,
+`map`; haskell refuses exactly these by contract, which is an identity policy
+difference, not a defect), 135,990 symbols, 378,873 relationships
+(calls 246,327 · contains 113,906 · references 11,611 · overrides 3,941 ·
+implements 1,656 · extends 1,275 · instantiates 157).
+
+**Parse health re-measured, now by bucket.** The M12.08 row above stands as the
+baseline (1,156/6,627 = 17.4 %); this census re-reads 1,196/6,627 = 18.0 %, a
++40-file drift, and adds the split that was never broken out — `src` (the
+compiler itself) **133/497 = 26.8 %**, `buildtools` 9/23, `vsintegration`
+19/277 = 6.9 %, `docs` 1/25, `tests` 1,034/5,793 = 17.8 % (the
+`resources/tests/Diagnostics` and Conformance negative cases are *intentionally*
+invalid F#, so that bucket cannot be read as analyzer feed quality). The
+compiler-tree rate is the honest headline: a quarter of the compiler's own files
+arrive through error recovery, and no gate had reported it per-tree.
+
+**The F10 gate's own row is not this lane.** `M14.0.F10.json`'s parse-success row
+for fsharp reads `lane: "fsharp:csharp"`, `exts: { cs: 243 }` — it measured 243
+`.cs` files in the fsharp repo through the C# lane, so the F# grammar's surface
+has never been in that gate. The census above is the F#-grammar measurement.
+
+**Override identity.** 3,923 edges carry a source that names no symbol of the
+file, and that population is the `overrides` population to within 18 edges
+(3,941 across the same shards). Cause is in the emission: a qualified override
+emits `source: \`${owner}.${name}\``, `target: \`${base}.${name}\`` while the
+member's symbol is emitted bare (`Interface 01.fs`: `overrides T.P1 -> P1`,
+symbol `P1`). The truth pins "qualified overrides", so this is a deliberate
+spelling — but a consumer joining by symbol name loses or mis-joins every
+override in the corpus. Moving it needs truth + fixture + mutants in lockstep.
+
+**Path-valued endpoints: 0.** The first cut of the probe reported 331 and all of
+them were the instrument: F# quoted identifiers (`` ``text with / and (https://…)`` ``)
+are legal names containing slashes, and `CompilerOptions.Fsi` ends in `.fsi` as a
+string. Two probe bugs were found while producing the row (a plain-object
+histogram whose `constructor` key inherited `Object.prototype.constructor` and
+printed a function's source instead of a count — in the per-file path and again
+in the merge; and an "ambiguous leaf" counter that was dead code) and are
+recorded in the artifact's note.
+
+### Parse-health triage, 2026-09-25 — the constructs the pinned grammar rejects
+
+Instruments: `script/m14/tmp/fsharp-error-triage.ts` (rows in
+`validation/m14/results/fsharp-error-triage.json`) and
+`script/m14/tmp/fsharp-error-repro.ts` (rows in
+`validation/m14/results/fsharp-error-repro.json` — 24 cases, 8 breaking, 16
+controls). The triage walks every ERROR node in the compiler's `src` and clusters
+it by parent node + first token; the minimizer reduces each suspect shape to a
+minimal snippet, so **a cluster is never called a diagnosis on its own** — the
+controls are what killed four plausible hypotheses (a UTF-8 BOM before the module
+header, nested `(* … (* … *) … *)` comments, `#if` around match arms, and
+`and`-joined constraint lists all parse).
+
+**src, full extent:** 497 files, 133 (26.8 %) with `hasError`, 130 with ERROR
+nodes, 1,387 ERROR nodes + 62 missing nodes, 24,867 error lines of 183,711
+(13.5 %); per-file span median 4 lines, p90 115, max 14,035
+(`prim-types-prelude.fs`, the array-type IL block). 66 distinct *root* shapes
+(first ERROR per file).
+
+| # | construct the grammar rejects | repro ids | root files | nodes |
+|---|---|---|---|---|
+| 1 | inline IL literal `(# "opcode …" args #)`, body and type-body position | `inline-il-let`, `inline-il-type-body` | 3 | 179 with its cascades (`namespace :: #)` 62, `application_expression :: ^` 32, `function_or_value_defn :: (#` 29, `:: #` 23, `namespace :: type` 33) |
+| 2 | `not null` constraint: `type M<'T when 'T:not null> = …` | `not-null-constraint` | 18 (9 `type_arguments :: when` + 9 `:: and` — ONE gap: the control `and-joined-constraints-no-nullness` parses) | 18+ |
+| 3 | `#if`/`#endif` inside a record field list | `preproc-in-record-fields` | 6 (+2 `field_initializers :: #`) | 8 |
+| 4 | multi-line named-field pattern `SynBinding(kind = …\n Pat = …)` nested in a list/record pattern | `named-field-pattern-multiline` (single-line control parses) | 3 | 79 — the largest single cluster |
+| 5 | `T \| null` in a value-declaration annotation (`let mutable x: string \| null`) | `nullable-annotation` (the parameter form parses) | 3 | 44 |
+| 6 | bare `interface IY` type body (the `.fsi` shorthand) | `interface-in-signature-type` (`interface … end` parses) | 8 | 8 |
+
+Named but **unreduced**, with starting points, rather than quietly dropped:
+`(root) :: //` 6 files (CheckIncrementalClasses.fs:1; the BOM hypothesis was
+tested and killed), `preproc_if :: |` 8 + `:: else` 2 (isolated directives parse,
+so the failing shape needs one spanning constructs — NicePrint.fs:2276),
+`namespace :: )` 4, `module_defn :: let` 3, `sequential_expression :: |` 2,
+`curried_spec :: |` 2, plus a long tail of 66 distinct root shapes.
+
+**Symbol loss: not observed. The loss is structural and lies in body content.**
+Every declaration the triage found inside an error region carries a symbol at a
+rate equal to or *higher* than outside: `union_type_defn` 36/38 = 94.7 % in vs
+1,164/1,324 = 87.9 % out, `record_type_defn` 10/10 vs 566/640, `module_defn`
+10/10 vs 665/665, `exception_definition` 47/48 vs 234/237, `member_defn` 60/232 =
+25.9 % in vs 768/12,923 = 5.9 % out. `type_definition` and `value_declaration`
+are wrappers carrying 0 % in both regions — consistent, therefore not a loss
+signal. What IS lost is inside the malformed region: an inline-IL body is a single
+ERROR node, so no expression node exists within it and that body emits no
+`calls`/`instantiates`/`overrides` at all — the FSharp.Core primitives implemented
+in IL (`array2.fs`, `nativeptr.fs`, the ``[,...]`` types) contribute declarations
+whose bodies are invisible. Quantifying relationship loss per gap is owed.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m12/fixtures/fsharp/`
 - Ground truth: `validation/m12/ground-truth/fsharp.json`
 - Differential: `validation/m12/results/fsharp-differential.json`
 - Complexity: `validation/m12/results/fsharp-complexity.json`
+- Corpus census (2026-09-25, full extent): `validation/m14/results/fsharp-corpus-census.json` (+ `fsharp-corpus-census.shards/`)
+- Parse-health triage: `validation/m14/results/fsharp-error-triage.json`; grammar-gap reproducers: `validation/m14/results/fsharp-error-repro.json`
 - Corpus sample: `validation/m12/results/fsharp-corpus-sample.txt`
 - Grammar source: `grammars/tree-sitter-fsharp/` (patched scanner + grammar)
 - Docs: this file
