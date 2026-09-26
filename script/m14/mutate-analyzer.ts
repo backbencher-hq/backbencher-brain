@@ -9657,8 +9657,48 @@ export const MUTANTS: Mutant[] = [
     id: "erlang/type-refs-dropped",
     language: "erlang",
     defectClass: "relationship-loss",
-    description: "ER2 (user finding #6, ER-D10) regression: the type dependency graph disappears - -type/-opaque emit no references to the named types in their expressions (refs-er2 pins maybe -> undefined on 11 and token -> binary on 12)",
+    description: "ER2 (user finding #6, ER-D10) regression: the type dependency graph disappears - -type/-opaque emit no references to the named types in their expressions (refs-er2 pins token -> binary on 12, job -> binary/atom/term on 35, ctx_rec -> ctx/pid on 36 and ext -> dict:dict on 37 after ER3 re-authored the pins)",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "type reference") }),
+  },
+  {
+    id: "erlang/type-atoms-as-refs",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: the type-dependency walk goes back to counting EVERY bare atom in a type expression as a reference, so a map field KEY and an atom LITERAL become dependencies - the exact rows the M12 differential caught on Service.erl (references job -> id and job -> kind out of the map keys of #{id := job_id()}, which resolved to the record PROPERTIES of the same name) plus the ER2 authoring's atom-literal class (maybe -> undefined). In Erlang type syntax a bare unquoted atom is the atom literal of that name and a field key is a declaration; only an APPLIED name is a type use. Caught by refs-er2, whose expectRelationships pin the applied forms (job -> binary/atom/term at 35, ctx_rec -> ctx/pid at 36) and whose forbid entries name each unapplied one",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "job", target: "id", confidence: 1, metadata: { context: "type reference" },
+      }, {
+        type: "references", source: "job", target: "kind", confidence: 1, metadata: { context: "type reference" },
+      }, {
+        type: "references", source: "maybe", target: "undefined", confidence: 1, metadata: { context: "type reference" },
+      }],
+    }),
+  },
+  {
+    id: "erlang/record-type-instantiates",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: a record TYPE inside a -type/-opaque declaration is read as a construction again (`-type ctx_rec() :: #ctx{server :: pid()}` emits instantiates -> ctx). This is the pre-ER3 behaviour exactly: measured over OTP's 4,154 .erl/.hrl files it produced 471 instantiates edges sitting inside type declarations, and MISSING/UNEXPLAINED 1,376/4,344 against the mirrored oracle; after the gate, 0 and 0/0. Caught by refs-er2's forbid entries (instantiates refs_er2 -> ctx, instantiates ctx_rec -> ctx) - the DECL-ONLY boundary the calls rule already had",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "instantiates", source: "refs_er2", target: "ctx", confidence: 1, metadata: { isRecordExpr: true },
+      }],
+    }),
+  },
+  {
+    id: "erlang/remote-type-unqualified",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: a remote type application goes back to emitting its bare halves - `-type ext() :: dict:dict().` publishes references -> dict rather than the qualified dict:dict (ER-D1: the separator is semantic, the same rule the remote call and fun-value targets follow). Measured over OTP: 988 remote type applications; the pre-fix walk spelled each as two bare atoms, both of which the site check rejects. Caught by refs-er2, which pins references ext -> dict:dict at 37 and forbids the bare dict",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "ext", target: "dict", confidence: 1, metadata: { context: "type reference" },
+      }],
+    }),
   },
   {
     id: "erlang/opaque-symbol-dropped",
