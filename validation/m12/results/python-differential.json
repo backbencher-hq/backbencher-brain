@@ -76,8 +76,8 @@
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "fb1e509caa798ce5a9dd750b8c4b8276063edfec631ed5016d7ac00dc0e2c21d",
-        "bytes": 161744
+        "sha256": "1516a4bd3a0426bf676d174df756c059db0d69192ac82d3db465abc4842f5d27",
+        "bytes": 165452
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "9dfe33702e52bc2a2529d49e8bd41d42fe1f4ea6ffa92e15dc617ab2ba8df192",
-        "bytes": 60855
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -252,7 +252,7 @@
         "bytes": 38276
       }
     },
-    "digest": "9805052bb22c7ec082325c7a02a35d93346efaf90c0fd15910a9f03419c40160",
+    "digest": "860b2b4119e3a827309550d4145ad5fd8bd1aa1c742a49f4a6c9792bf44210c2",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-python_tree-sitter-python.wasm",
       "sha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
@@ -422,11 +422,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:python",
-      "wallTimeMs": 44.024698,
-      "userCpuMs": 183.731,
-      "systemCpuMs": 19.102,
-      "peakRssBytes": 241586176,
-      "rssDeltaBytes": 14909440,
+      "wallTimeMs": 69.734319,
+      "userCpuMs": 186.521,
+      "systemCpuMs": 21.502,
+      "peakRssBytes": 241311744,
+      "rssDeltaBytes": 16826368,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

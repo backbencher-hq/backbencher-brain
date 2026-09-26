@@ -242,7 +242,7 @@ for (const c of memberAccessCases) {
 }
 
 // ── INTEGRATION: full refactor on indexed projects ──────────────────────────
-async function runIntegration(label: string, file: string, code: string, symbol: string, assert: (after: string) => void): Promise<void> {
+async function runIntegration(label: string, file: string, code: string, symbol: string, assert: (after: string) => void, lineStart?: number): Promise<void> {
   const root = mkdtempSync(path.join(tmpdir(), `bb-e2-${label}-`))
   const dir = path.dirname(file)
   if (dir !== ".") mkdirSync(path.join(root, dir), { recursive: true })
@@ -250,7 +250,7 @@ async function runIntegration(label: string, file: string, code: string, symbol:
   const projectId = getProjectId(root)
   try {
     await indexProjectParallel(projectId, root, {})
-    const result = await executeEdit(root, projectId, { mode: "refactor", symbolName: symbol, filePath: file, newName: "renamedTarget", format: false })
+    const result = await executeEdit(root, projectId, { mode: "refactor", symbolName: symbol, filePath: file, ...(lineStart !== undefined ? { lineStart } : {}), newName: "renamedTarget", format: false })
     harness.check(`${label}: refactor produces exactly one change`, result.changes.length === 1, `got ${result.changes.length}`)
     const after = readFileSync(path.join(root, file), "utf8")
     assert(after)
@@ -271,7 +271,37 @@ await runIntegration("ts", "src/app.ts", tsFixture, "target", (after) => {
   harness.negative("TS: member access NOT renamed", after.includes("config.target"))
   harness.negative("TS: string NOT renamed", after.includes('"target in string"'))
   harness.negative("TS: comment NOT renamed", after.includes("// target in comment"))
-})
+}, 1) // `target` also names an object property and an object method in this file → lineStart picks the declaration
+
+// ── INTEGRATION: file-scoped ambiguity is refused, and names the remedy ─────
+// `target` appears twice as a SYMBOL in app.ts (the function at line 1 and
+// `helper.target`), so a filePath alone does not say which declaration is
+// meant. The tool must refuse and name the documented fix (lineStart) rather
+// than pick one — picking is a wrong write, and the wrong write is silent.
+// The disambiguated call is the `ts` integration above.
+{
+  const root = mkdtempSync(path.join(tmpdir(), "bb-e2-ambig-"))
+  mkdirSync(path.join(root, "src"), { recursive: true })
+  writeFileSync(path.join(root, "src", "app.ts"), tsFixture)
+  const projectId = getProjectId(root)
+  try {
+    await indexProjectParallel(projectId, root, {})
+    await harness.rejectsAsync(
+      "ambiguous name in a file is refused, naming lineStart",
+      () => executeEdit(root, projectId, { mode: "refactor", symbolName: "target", filePath: "src/app.ts", newName: "renamedTarget", format: false }),
+      "ambiguous",
+    )
+    harness.check(
+      "ambiguous refusal leaves the file byte-identical",
+      readFileSync(path.join(root, "src", "app.ts"), "utf8") === tsFixture,
+    )
+  } catch (e) {
+    harness.check("ambiguity session", false, e instanceof Error ? (e.stack ?? e.message) : String(e))
+  } finally {
+    rmSync(root, { recursive: true, force: true })
+    rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
+  }
+}
 
 const pyFixture = `def target():\n    return 1\n\ndef caller():\n    config = {"target": 99}\n    return target() + config["target"] + "target in string"\n    # target in comment\n`
 await runIntegration("python", "app.py", pyFixture, "target", (after) => {

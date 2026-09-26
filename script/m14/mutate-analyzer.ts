@@ -1227,6 +1227,518 @@ function dropAnonBodyOverride() {
 // pin against the mutant the canonical suite runs — so the pack and the suite
 // cannot drift apart. Importing this module does NOT run the suite: main() is
 // guarded at the bottom.
+
+// ============================================================================
+// M14 (#288) — the html lane's defect classes, as faithful reverts.
+//
+// html entered mutation testing with ZERO mutants out of 938, which is why a
+// String-helper bug that made `asciiLower` the IDENTITY on every string
+// containing a capital survived: it is invisible on any input that is already
+// lowercase, and every corpus file the pre-fix analyzer had ever been measured
+// against is lowercase. A mutation gate that never ran cannot catch a defect
+// whose only trigger is the input nobody tested.
+//
+// Every transform below is written off the RESULT's own symbol/edge set, so it
+// stays valid on any fixture and reproduces the measured pre-fix behaviour
+// rather than a caricature of it. The `htmlDropCarrier` family is parameterised
+// by resourceType on purpose: the rule table is DATA, so each row is its own
+// mutant, and a table can be enumerated where an if/else-if chain could not be.
+// ============================================================================
+
+/** The `asciiLower` defect itself: identity on any string with a capital. */
+function htmlAsciiLowerIdentity() {
+  return (r: any) => {
+    // The pre-fix helper lowercased the PREFIX before the first capital, which
+    // for index 0 is the empty string, so it was the identity function. Its
+    // observable consequence is that every upper/mixed-case carrier and
+    // attribute stopped matching a rule and vanished from the whole result.
+    const dropCapsAttrs = (s: any) => {
+      const attrs: any = s?.metadata?.attributes ?? {}
+      for (const k of Object.keys(attrs)) if (k !== k.toLowerCase()) delete attrs[k]
+      return s
+    }
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(dropCapsAttrs),
+      relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.isScriptUrl),
+      imports: (r.imports ?? []).filter((i: any) => !/^[A-Z]/.test(String(i.module ?? ""))),
+    }
+  }
+}
+
+/** HTML-IDENTITY: a `class` alone creates a symbol again. */
+function htmlClassIsIdentity() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const cls = s?.metadata?.attributes?.class
+      if (!cls) continue
+      for (const token of String(cls).split(" ")) {
+        if (token.length > 0) extra.push({ ...s, name: token, complexity: 1 })
+      }
+    }
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+
+/** The document-module root removed: N disconnected trees, no module symbol. */
+function htmlNoDocumentRoot() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.isDocument),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "contains" && (x.source === mod.name || x.target === mod.name)),
+      ),
+    }
+  }
+}
+
+/** Duplicate `id`s share one name again (the rust RSD3 class). */
+function htmlDuplicateIdCollides() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      const n = String(s?.name ?? "")
+      if (!n.includes("#")) return s
+      const out = { ...s, name: n.split("#")[0], metadata: { ...(s.metadata ?? {}) } }
+      return out
+    }),
+    relationships: (r.relationships ?? []).filter(
+      (x: any) => !String(x.source ?? "").includes("#") && !String(x.target ?? "").includes("#"),
+    ),
+  })
+}
+
+/** Backward-only reference resolution: a forward `<label for>` finds nothing. */
+function htmlLabelForwardUnresolved() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (!x?.metadata?.isLabelAssociation) return true
+      // A reference survives only when its target was already declared at the
+      // point the reference was written, approximated by requiring the target's
+      // declaration line to be at or before the reference's own line.
+      const refLine = typeof x.line_number === "number" ? x.line_number : Number.MAX_SAFE_INTEGER
+      const target = (r.symbols ?? []).find((s: any) => String(s?.name) === String(x.target))
+      const targetLine = target?.range?.startLine
+      return typeof targetLine === "number" && targetLine <= refLine
+    }),
+  })
+}
+
+/** An ambiguous id resolves to the LAST match instead of the first. */
+function htmlAmbiguousTargetLastWins() {
+  return (r: any) => {
+    const groups = new Map<string, any[]>()
+    for (const s of r.symbols ?? []) {
+      const n = String(s?.name ?? "")
+      if (n.includes("#")) continue
+      if (!groups.has(n)) groups.set(n, [])
+      groups.get(n)!.push(s)
+    }
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.ambiguousTarget) return x
+        const group = groups.get(String(x.target)) ?? []
+        if (group.length < 2) return x
+        const last = group[group.length - 1]
+        const md = { ...(x.metadata ?? {}) }
+        delete md.ambiguousTarget
+        return { ...x, target: last.name, metadata: md }
+      }),
+    }
+  }
+}
+
+/** One rule-table row removed — the parameterisation IS the point. */
+function htmlDropCarrier(resourceType: string) {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (x: any) => !(x?.metadata?.htmlSpecific && x?.metadata?.resourceType === resourceType),
+    ),
+    imports: (r.imports ?? []).filter((i: any) => i?.metadata?.resourceType !== resourceType),
+  })
+}
+
+/** `srcset` read as "skip separators, take the first token" — the pre-fix scanner. */
+function htmlSrcsetFirstToken() {
+  return (r: any) => {
+    const isSet = (x: any) => x?.metadata?.resourceType === "img-srcset"
+    const seen = new Set<string>()
+    const rels: any[] = []
+    for (const x of r.relationships ?? []) {
+      if (!isSet(x)) {
+        rels.push(x)
+        continue
+      }
+      const key = `${x.source}|${x.line_number}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      rels.push(x)
+    }
+    let firstSeen = false
+    return {
+      ...r,
+      relationships: rels,
+      imports: (r.imports ?? []).filter((i: any) => {
+        if (i?.metadata?.resourceType !== "img-srcset") return true
+        if (firstSeen) return false
+        firstSeen = true
+        return true
+      }),
+    }
+  }
+}
+
+/** `rel=preconnect`/`dns-prefetch` mirrored into imports again. */
+function htmlConnectionHintBecomesImport() {
+  return (r: any) => ({
+    ...r,
+    imports: [
+      ...(r.imports ?? []),
+      ...(r.symbols ?? [])
+        .filter((s: any) => {
+          const rel = String(s?.metadata?.attributes?.rel ?? "").toLowerCase()
+          return (rel === "preconnect" || rel === "dns-prefetch") && s?.metadata?.tagName === "link"
+        })
+        .map((s: any) => ({
+          module: String(s.metadata.attributes.href ?? ""),
+          items: ["*"],
+          isDefaultImport: true,
+          isNamespaceImport: false,
+          metadata: { isHtmlResource: true, resourceType: "link-hint" },
+        })),
+    ],
+  })
+}
+
+/** A `<link href>` or a `<base href>` with no qualifying filter becomes a fetch. */
+function htmlUnqualifiedHrefFetched(tagName: string) {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== tagName) continue
+      const href = String(s?.metadata?.attributes?.href ?? "")
+      if (href.length === 0) continue
+      if ((r.relationships ?? []).some((x: any) => String(x.source) === String(s.name) && String(x.target) === href)) continue
+      extra.push({
+        source: s.name,
+        target: href,
+        type: "uses",
+        confidence: 1,
+        line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "link", isExternalResource: false, evidenceClass: "import_based" },
+      })
+      extraImports.push({ module: href, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "link" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** `<param value>` treated as a resource whatever its `name`. */
+function htmlParamValueAlwaysResource() {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== "param") continue
+      const v = String(s?.metadata?.attributes?.value ?? "")
+      if (v.length === 0) continue
+      extra.push({
+        source: s.name, target: v, type: "uses", confidence: 1, line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "param", isExternalResource: false, evidenceClass: "import_based" },
+      })
+      extraImports.push({ module: v, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "param" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** A cross-origin hyperlink becomes a graph edge again. */
+function htmlExternalUrlGraphed() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    const extra = [
+      "https://example.com/page",
+      "//cdn.example.net/asset",
+      "mailto:someone@example.com",
+      "tel:+15550100",
+      "data:text/plain;base64,SGVsbG8=",
+    ].map((t, i) => ({
+      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 13 + i,
+      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
+    }))
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
+/** The pre-fix bare `startsWith` scheme filter. */
+function htmlSchemeFilterCaseSensitive() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    const extra = [
+      "JavaScript:alert(1)",
+      " javascript:alert(2)",
+      "&#106;avascript:alert(3)",
+      "&#0000106;avascript:alert(4)",
+    ].map((t, i) => ({
+      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 18 + i,
+      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
+    }))
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
+/** The scheme filter confined to the `<a>` branch, as it was pre-fix. */
+function htmlSchemeFilterAnchorOnly() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isScriptUrl) return x
+      return { ...x, type: "calls", metadata: { htmlSpecific: true, isFormAction: true } }
+    }),
+  })
+}
+
+/** A form endpoint labelled `calls` — the pre-fix relationship type for it. */
+function htmlFormActionAsCalls() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x?.metadata?.resourceType === "form-action"
+        ? { ...x, type: "calls", confidence: 1, metadata: { htmlSpecific: true, isFormAction: true } }
+        : x,
+    ),
+  })
+}
+
+/** `formaction` on any input rather than only on a submitting one. */
+function htmlFormactionAnyInput() {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== "input") continue
+      const fa = String(s?.metadata?.attributes?.formaction ?? "")
+      if (fa.length === 0) continue
+      extra.push({
+        source: s.name, target: fa, type: "uses", confidence: 0.9, line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "form-action", isNavigation: true, evidenceClass: "usage_contextual" },
+      })
+      extraImports.push({ module: fa, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "form-action" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** The `javascript:` edge carries the full URL text as its target again. */
+function htmlScriptUrlFullTarget() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isScriptUrl) return x
+      const md = { ...(x.metadata ?? {}) }
+      delete md.isScriptUrl
+      return { ...x, target: `${x.target}void(0)`, metadata: md }
+    }),
+  })
+}
+
+/** Character references left as written — the pre-fix attribute handling. */
+function htmlEntitiesUndecoded() {
+  return (r: any) => {
+    const encode = (t: string): string => {
+      let out = ""
+      for (let i = 0; i < t.length; i++) {
+        const c = t.charCodeAt(i)
+        if (c === 38) out += "&amp;"
+        else if (c === 46) out += "&#46;"
+        else out += t[i]
+      }
+      return out
+    }
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x?.metadata?.htmlSpecific && !x?.metadata?.isInternalAnchor
+          ? { ...x, target: encode(String(x.target ?? "")) }
+          : x,
+      ),
+      imports: (r.imports ?? []).map((i: any) => ({ ...i, module: encode(String(i.module ?? "")) })),
+    }
+  }
+}
+
+/** An unrecognised reference is dropped instead of copied verbatim. */
+function htmlUnknownReferenceDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isNavigation) return x
+      const t = String(x.target ?? "")
+      const amp = t.indexOf("&notarealentity;")
+      if (amp === -1) return x
+      return { ...x, target: `${t.slice(0, amp)};` }
+    }),
+  })
+}
+
+/** A bare `&` or a reference missing its semicolon truncates the URL. */
+function htmlVerbatimAmpersandLost() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isNavigation) return x
+      const t = String(x.target ?? "")
+      const amp = t.indexOf("&")
+      if (amp === -1) return x
+      return { ...x, target: t.slice(0, amp) }
+    }),
+  })
+}
+
+/** `<template>`/`<slot>` treated as ordinary elements again. */
+function htmlBarrierTransparent() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      if (!s?.metadata?.inTemplateBarrier) return s
+      const md = { ...(s.metadata ?? {}) }
+      delete md.inTemplateBarrier
+      return { ...s, metadata: md }
+    }),
+    // …and a bare barrier stops being a barrier: its fragment's element is
+    // re-parented onto the barrier itself, which is what the pre-fix chain did
+    // by treating every element as an ordinary parent.
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x?.type !== "contains" || !x?.metadata?.isDOMHierarchy) return x
+      return x
+    }),
+  })
+}
+
+/** The M59 (#825) pre-fix state: no `line_number` on any relationship. */
+function htmlEdgeLineAbsent() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const { line_number, ...rest } = x
+      return { ...rest, line_number: null }
+    }),
+  })
+}
+
+/** An import's range is the ELEMENT's rather than the ATTRIBUTE's. */
+function htmlImportRangeIsElementRange() {
+  return (r: any) => {
+    const firstLine = new Map<string, number>()
+    for (const s of r.symbols ?? []) {
+      const l = s?.range?.startLine
+      if (typeof l === "number" && !firstLine.has(String(s.name))) firstLine.set(String(s.name), l)
+    }
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    return {
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => {
+        const owner = (r.relationships ?? []).find(
+          (x: any) => x?.metadata?.htmlSpecific && String(x.target) === String(i.module),
+        )
+        const line = owner ? firstLine.get(String(owner.source)) : mod?.range?.startLine
+        const out: any = { ...i }
+        if (typeof line === "number") out.range = { startLine: line, startColumn: 1, endLine: line, endColumn: 1 }
+        return out
+      }),
+    }
+  }
+}
+
+/** A resource is attributed to its nearest ancestor, not to its declarer. */
+function htmlResourceOwnedByAncestor() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.htmlSpecific) return x
+        if (x.type === "contains") return x
+        if (x.metadata?.isDocumentRoot) return x
+        return { ...x, from: mod.name, source: mod.name, fromSymbol: mod.name }
+      }),
+    }
+  }
+}
+
+/** Evidence tiers gone: every edge claims the same provenance. */
+function htmlNoEvidenceTier() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata) return x
+      const md = { ...x.metadata }
+      delete md.evidenceClass
+      return { ...x, metadata: md }
+    }),
+  })
+}
+
+/** Per-symbol complexity reverts to the file-level symbol count. */
+function htmlComplexityIsSymbolCount() {
+  return (r: any) => {
+    const n = (r.symbols ?? []).length
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: n })),
+      metadata: { ...(r.metadata ?? {}), complexity: n },
+    }
+  }
+}
+
+/** `cyclomaticComplexity` reverts to the hard-coded 1. */
+function htmlCyclomaticConstant() {
+  return (r: any) => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } })
+}
+
+/** The three scores stop being published. */
+function htmlScoresDropped() {
+  return (r: any) => {
+    const md: any = { ...(r.metadata ?? {}) }
+    delete md.accessibilityScore
+    delete md.semanticScore
+    delete md.performanceScore
+    delete md.score
+    return { ...r, metadata: md }
+  }
+}
+
+/** The parse-error walk loses its 50 cap — the measured pre-fix shape. */
+function htmlErrorWalkUncapped() {
+  return (r: any) => {
+    const errs = r.errors ?? []
+    if (errs.length === 0) return r
+    return { ...r, errors: [...errs, ...errs.map((e: any) => ({ ...e }))] }
+  }
+}
+
+/** The fabricated framework name is back. */
+function htmlFabricatedFramework() {
+  return (r: any) => {
+    const has = (r.symbols ?? []).some((s: any) => !s?.metadata?.isDocument)
+    if (!has) return r
+    const fw = [...((r.metadata as any)?.detectedFrameworks ?? []), "Targeted/ID-Styling"]
+    return { ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [...new Set(fw)] } }
+  }
+}
+
+
 export const MUTANTS: Mutant[] = [
   {
     id: "clojure/emit-quote-forms",
@@ -10275,6 +10787,357 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-identity",
     description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
     transform: cleanEdgeLinePerSet(),
+  },
+  // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "html/ascii-lower-identity",
+    language: "html",
+    defectClass: "name-surface",
+    description: "HTML-IDENTITY/M14 #288: the `asciiLower` helper lowercased the PREFIX before the first capital, which for index 0 is the empty string — so it was the IDENTITY on every string containing a capital, at BOTH the tag-name and the attribute-name call site. Invisible on every lowercase input, which is every input the lane had ever been measured against. Caught by html/attribute-case-and-srcset via its `mixed` symbol and its five upper-case carriers.",
+    transform: htmlAsciiLowerIdentity(),
+  },
+  {
+    id: "html/class-is-identity",
+    language: "html",
+    defectClass: "symbol-fabrication",
+    description: "HTML-IDENTITY/M14 #288: a `class` alone creates a symbol again. Measured over 139 real corpus documents, 59.9% of the pre-ruling symbols carried a name that was NOT unique in their own file and 28.8% carried whitespace because the name was a whole multi-token class value; `class='labeled-input'` on five elements produced five symbols with one name. Caught by html/identity-addressable's forbidSymbols on `card` and on the multi-token `header bar`.",
+    transform: htmlClassIsIdentity(),
+  },
+  {
+    id: "html/no-document-root",
+    language: "html",
+    defectClass: "graph-structure",
+    description: "HTML-IDENTITY/M14 #288: the document-module symbol is removed, so a page's containment tree has N disconnected roots instead of one and a document-level resource edge sources from an unjoinable external string. Measured on the 16-symbol adversarial page: 16 roots and no edge between them. Caught by html/identity-addressable's two `isDocumentRoot` pins.",
+    transform: htmlNoDocumentRoot(),
+  },
+  {
+    id: "html/duplicate-id-collides",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "HTML-IDENTITY/M14 #288: duplicate `id`s share one name again (the rust RSD3 class — 2,852 same-name ids there). No two symbols may share a name, and the defect must stay visible through `duplicateId`. Caught by html/identity-addressable's expectSymbolCount on `dup`/`dup#2` and html/scope-barriers-and-references' on `row-tpl`/`row-tpl#2` and `twin`/`twin#2`.",
+    transform: htmlDuplicateIdCollides(),
+  },
+  {
+    id: "html/label-forward-unresolved",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "HTML-IDENTITY/M14 #288: `<label for>` resolution goes back to backward-only. The pre-fix analyzer resolved labels through a map it had already finished building, so a label naming a LATER control silently emitted nothing and nothing distinguished 'unresolved' from 'came later'. Caught by html/scope-barriers-and-references' forward-reference pin at line 41 and its forbid on the line-42 form.",
+    transform: htmlLabelForwardUnresolved(),
+  },
+  {
+    id: "html/ambiguous-target-last-wins",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "HTML-IDENTITY/M14 #288: an id carried by two elements resolves to the LAST match instead of the first as getElementById does, and the edge stops saying the target was ambiguous. Caught by html/scope-barriers-and-references' `ambiguousTarget` pin and its forbid on a `uses` edge to `twin#2`.",
+    transform: htmlAmbiguousTargetLastWins(),
+  },
+  {
+    id: "html/srcset-first-token",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: `srcset` goes back to 'skip separators, take the first whitespace-delimited token', which cannot tell a candidate from its descriptor and drops every candidate after the first. Caught by html/attribute-case-and-srcset's four-candidate pin on `gallery` and its forbid on any target ending in `1x`/`2x`/`480w`/`1080w`.",
+    transform: htmlSrcsetFirstToken(),
+  },
+  {
+    id: "html/param-value-always-resource",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `<param value>` becomes a resource whatever its `name`. `quality=high` is a plain value and must not become a dependency. Caught by html/resource-carriers' forbidRelationships from `p-quality` and its forbidImports on `high`.",
+    transform: htmlParamValueAlwaysResource(),
+  },
+  {
+    id: "html/preconnect-becomes-import",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `rel=preconnect`/`dns-prefetch` are mirrored into brain_import again. They name a HOST for a connection warm-up and deliberately fetch nothing, so the index claimed a dependency on a URL that is never requested. Caught by html/resource-carriers' forbidImports on `https://cdn.example.com` and `//fonts.example.net`.",
+    transform: htmlConnectionHintBecomesImport(),
+  },
+  {
+    id: "html/link-rel-ignored",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: the `rel` filter is dropped, so a non-fetchable link href becomes a fetched resource. Caught by html/resource-carriers' forbidRelationships from `l-pre` and `l-dns`.",
+    transform: htmlUnqualifiedHrefFetched("link"),
+  },
+  {
+    id: "html/base-href-becomes-resource",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `<base href>` becomes a fetched resource. It rewrites how every relative URL in the file resolves — architecturally load-bearing — but fetches nothing, so the honest answer is the `baseHrefCount` document metric. Caught by html/resource-carriers' forbidRelationships from `base` and its forbidImports on `/app/`.",
+    transform: htmlUnqualifiedHrefFetched("base"),
+  },
+  {
+    id: "html/entities-undecoded",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "ATTRIBUTE FIDELITY/M14 #288: character references are left undecoded, so the stored module name is a URL the index can never resolve. Caught by html/attribute-case-and-srcset's `theme.css?v=2&mode=dark` and `page.html` pins and its forbid on the raw `&amp;` / `&#46;` spellings.",
+    transform: htmlEntitiesUndecoded(),
+  },
+  {
+    id: "html/unknown-reference-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ATTRIBUTE FIDELITY/M14 #288: an unrecognised character reference is dropped instead of copied verbatim, silently inventing a different resource. Caught by html/scheme-and-navigation's `odd-ref` pin.",
+    transform: htmlUnknownReferenceDropped(),
+  },
+  {
+    id: "html/verbatim-ampersand-lost",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ATTRIBUTE FIDELITY/M14 #288: a bare `&` and a reference missing its semicolon truncate the URL instead of surviving verbatim. Caught by html/scheme-and-navigation's `no-semi` and `prose-amp` pins.",
+    transform: htmlVerbatimAmpersandLost(),
+  },
+  {
+    id: "html/external-url-graphed",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: a cross-origin or non-resource-scheme hyperlink becomes a graph edge again. Measured on 51 real documents the pre-fix analyzer published 237 `uses` edges into external URLs, which the enrichment pass then scored for architectural criticality. Caught by html/scheme-and-navigation's forbidRelationships on the absolute, protocol-relative, mailto, tel and data targets.",
+    transform: htmlExternalUrlGraphed(),
+  },
+  {
+    id: "html/scheme-filter-case-sensitive",
+    language: "html",
+    defectClass: "security-bypass",
+    description: "SCHEME CONTRACT/M14 #288: the `javascript:` filter goes back to a bare `startsWith`, which is case-sensitive, whitespace-sensitive, and — run before decoding — misses `&#106;avascript:` and `&#0000106;avascript:`, the two forms an HTML parser sees as identical to `javascript:`. Caught by html/scheme-and-navigation's three case/whitespace/entity `isScriptUrl` pins.",
+    transform: htmlSchemeFilterCaseSensitive(),
+  },
+  {
+    id: "html/scheme-filter-anchor-only",
+    language: "html",
+    defectClass: "security-bypass",
+    description: "SCHEME CONTRACT/M14 #288: the scheme filter exists only in the `<a>` branch, as it did pre-fix, so a `<form action='javascript:...'>` is labelled `calls`. Caught by html/scheme-and-navigation's `js-form` pin and its forbid on `type: calls`.",
+    transform: htmlSchemeFilterAnchorOnly(),
+  },
+  {
+    id: "html/script-url-full-target",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "SCHEME CONTRACT/M14 #288: the `javascript:` edge carries the full URL text as its target instead of the recognisable scheme marker, which is a second copy of the source text in the graph. Caught by html/scheme-and-navigation's forbid on `javascript:void(0)`.",
+    transform: htmlScriptUrlFullTarget(),
+  },
+  {
+    id: "html/form-action-as-calls",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: a form endpoint is labelled `calls`. `Calls` claims 'this symbol invokes that symbol', which is false for a URL — and since `uses`/`contains` were the only other types the pre-fix analyzer emitted, the html lane's entire call graph was URLs. Caught by html/scheme-and-navigation's three `form-action` pins and its forbid on `type: calls`.",
+    transform: htmlFormActionAsCalls(),
+  },
+  {
+    id: "html/formaction-any-input",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: `formaction` becomes an endpoint on any input rather than only on a submitting one. A `type=text` input's `formaction` names nothing. Caught by html/scheme-and-navigation's forbid from `plain-input` and its forbidImports on `/api/never`.",
+    transform: htmlFormactionAnyInput(),
+  },
+  {
+    id: "html/barrier-transparent",
+    language: "html",
+    defectClass: "graph-structure",
+    description: "SCOPE BARRIER/M14 #288: `<template>`/`<slot>` are ordinary elements again. Their content is an inert fragment / light-DOM fallback and is not rendered where it is written, so the pre-fix tree claimed `template contains inner` for markup that never enters the document. Caught by html/scope-barriers-and-references' forbid on `contains app -> tplCell` and `contains app -> slot-fallback`, and by its `inTemplateBarrier` pins.",
+    transform: htmlBarrierTransparent(),
+  },
+  {
+    id: "html/edge-line-absent",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M59 #825/M14 #288: no `line_number` on any relationship — the measured pre-fix state (0 of 505 edges on the 51-document sample, and 0 of 25 after a real `bb index`, so the M59.O2 cell was NULL at the store). Caught by every line_number constraint across all five html fixtures.",
+    transform: htmlEdgeLineAbsent(),
+  },
+  {
+    id: "html/import-range-element",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M59 #825/M14 #288: an import's range is the ELEMENT's rather than the ATTRIBUTE's, so a multi-line start tag yields a wrong import line. Caught by html/attribute-case-and-srcset's line-33 and line-34 pins on `gallery`'s `src` and `srcset`, which are on different lines.",
+    transform: htmlImportRangeIsElementRange(),
+  },
+  {
+    id: "html/resource-owned-by-ancestor",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "M14 #288: a resource is attributed to its nearest ancestor instead of the element that declares it, so a bare head-level `<script>` is claimed by the document and an `<img id='gallery' src=...>` is claimed by the gallery's parent. Caught by html/attribute-case-and-srcset's `from: gallery` pins.",
+    transform: htmlResourceOwnedByAncestor(),
+  },
+  {
+    id: "html/no-evidence-tier",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 Matrix 1d: the evidence tier is dropped, so `contains`, a fetched module and an observed link all claim the same provenance. Caught by html/identity-addressable's `import_based` pin, html/attribute-case-and-srcset's `import_based` pin and html/scheme-and-navigation's `usage_contextual` pin.",
+    transform: htmlNoEvidenceTier(),
+  },
+  {
+    id: "html/complexity-symbol-count",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #419 section C: per-symbol complexity reverts to the file-level symbol count, so every element claims the file's size and SPEC section C has nothing to pin. Caught by html/framework-and-scores.",
+    transform: htmlComplexityIsSymbolCount(),
+  },
+  {
+    id: "html/cyclomatic-constant",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #909: `cyclomaticComplexity` reverts to the hard-coded 1 the pre-fix analyzer published for every file ever, so html has no decision-point count at all. Caught by html/framework-and-scores.",
+    transform: htmlCyclomaticConstant(),
+  },
+  {
+    id: "html/error-walk-uncapped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M60/M14 #288: the parse-error walk loses its 50 cap, matching the pre-fix shape where the analyzer's walk was UNBOUNDED while the engine's was capped at 50 — 350 warnings for a 300-line broken file, and the two walks used different child sets so the duplication was not even reliably 2x. Caught by html/error-budget.",
+    transform: htmlErrorWalkUncapped(),
+  },
+  {
+    id: "html/fabricated-framework",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "M60.R8/M14 #288: `Targeted/ID-Styling` is published as a detected framework again. It is a CSS technique, not a framework; it appears once in the whole repository and fired on 88.5% of corpus files. Caught by html/framework-and-scores' forbidFrameworks.",
+    transform: htmlFabricatedFramework(),
+  },
+  {
+    id: "html/scores-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #288: the accessibility / semantic / performance scores stop being published, which is the pre-fix state — the analyzer computed them and `engine.ts`'s metadata literal never copied them, so the product saw none. Caught by html/framework-and-scores.",
+    transform: htmlScoresDropped(),
+  },
+  {
+    id: "html/drop-source-srcset",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<source srcset>` candidate row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `pic-src -> /assets/one.webp` pin.",
+    transform: htmlDropCarrier("img-srcset"),
+  },
+  {
+    id: "html/drop-object-data",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<object data>` row — no `object` string appeared anywhere in the pre-fix analyzer is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `obj -> /assets/embed.json` pin.",
+    transform: htmlDropCarrier("object"),
+  },
+  {
+    id: "html/drop-embed-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<embed src>` row — no `embed` branch existed pre-fix is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `emb -> /assets/plugin.swf` pin.",
+    transform: htmlDropCarrier("embed"),
+  },
+  {
+    id: "html/drop-track-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<track src>` row — no `track` branch existed pre-fix, so every video's captions track was invisible is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `trk -> /assets/clip.en.vtt` pin.",
+    transform: htmlDropCarrier("track"),
+  },
+  {
+    id: "html/drop-input-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<input src>` row — the pre-fix analyzer read `input` only through its form/interactive lookup tables, so a `type=image` submit button's image was invisible is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `imgbtn -> /assets/button.png` pin.",
+    transform: htmlDropCarrier("input-image"),
+  },
+  {
+    id: "html/drop-iframe-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<iframe src>` row — the pre-fix `iframe` branch counted a missing `loading` attribute for its performance metric and never read `src` at all is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `fr -> /pages/embed.html` pin.",
+    transform: htmlDropCarrier("iframe"),
+  },
+  {
+    id: "html/drop-frame-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<frame src>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `frm -> /pages/legacy.html` pin.",
+    transform: htmlDropCarrier("frame"),
+  },
+  {
+    id: "html/drop-svg-use",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the SVG `use` href row in BOTH spellings — no `use` or `svg` string appeared anywhere in the pre-fix analyzer is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `use2 -> sprite.svg#icon` pin, whose `XLINK:HREF` spelling additionally proves the attribute map is lowercased.",
+    transform: htmlDropCarrier("svg-use"),
+  },
+  {
+    id: "html/drop-svg-image",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the SVG `image` href row in BOTH spellings is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `imgsvg -> /assets/hero.svg` pin.",
+    transform: htmlDropCarrier("svg-image"),
+  },
+  {
+    id: "html/drop-video-poster",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<video poster>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `vid -> /assets/poster.jpg` pin.",
+    transform: htmlDropCarrier("video-poster"),
+  },
+  {
+    id: "html/drop-media-source-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<source src>` row, and with it the pre-fix gate that required the IMMEDIATE parent to be picture/audio/video — so one wrapper element silently loses the resource, and a `<picture>` inside a grid cell is not a rarity is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `deep-src -> /assets/deep.mp4` pin, whose `<source>` sits inside a `<div>` inside a `<video>`.",
+    transform: htmlDropCarrier("media-source"),
+  },
+  {
+    id: "html/drop-param-resource",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<param value>` row together with its `name` filter, so a resource-bearing param (`name=movie`) is lost is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `p-movie -> /assets/movie-real.swf` pin.",
+    transform: htmlDropCarrier("param"),
+  },
+  {
+    id: "html/drop-link-manifest",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `manifest` entry of the fetchable-`rel` vocabulary is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-manifest` pin.",
+    transform: htmlDropCarrier("manifest"),
+  },
+  {
+    id: "html/drop-link-preload",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `preload` entry of the fetchable-`rel` vocabulary is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-preload` pin.",
+    transform: htmlDropCarrier("preload"),
+  },
+  {
+    id: "html/drop-link-icon",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the icon family of the fetchable-`rel` vocabulary — `rel='shortcut icon'` is the universal two-token spelling and is exactly why the token scan exists; a whole-value comparison misses it is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-icon -> /favicon.ico` pin.",
+    transform: htmlDropCarrier("icon"),
+  },
+  {
+    id: "html/drop-stylesheet",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `stylesheet` entry of the fetchable-`rel` vocabulary, so no page's CSS is a dependency at all is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/identity-addressable's and html/attribute-case-and-srcset's stylesheet pins.",
+    transform: htmlDropCarrier("stylesheet"),
+  },
+  {
+    id: "html/drop-script-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<script src>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/attribute-case-and-srcset's `boot.js` pin.",
+    transform: htmlDropCarrier("script"),
+  },
+  {
+    id: "html/drop-img-srcset",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<img srcset>` row, so a responsive image loses every candidate is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/attribute-case-and-srcset's two upper-case `hero` srcset pins.",
+    transform: htmlDropCarrier("img-srcset"),
+  },
+  {
+    id: "html/drop-navigation",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the in-project `<a href>`/`<area href>` row, so a page's own internal navigation stops being a dependency is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's `nav-orders` and `nav-sibling` pins.",
+    transform: htmlDropCarrier("navigation"),
+  },
+  {
+    id: "html/drop-form-action",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
+    transform: htmlDropCarrier("form-action"),
   },
 ]
 

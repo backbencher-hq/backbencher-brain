@@ -96,8 +96,8 @@
         "bytes": 14474
       },
       "src/ast/real-html-analyzer.ts": {
-        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
-        "bytes": 20521
+        "sha256": "617a14080a6cc75d9b94f3f35820bf0191e58f2acdfbfecebae5d247e4d68000",
+        "bytes": 61040
       },
       "src/ast/real-java-analyzer.ts": {
         "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
@@ -176,8 +176,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
-        "bytes": 236668
+        "sha256": "92f934c4113d8729a8c5de2e3a9eb52bc49348668b3e62abf616a343c344c126",
+        "bytes": 236797
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -250,9 +250,93 @@
       "validation/m12/ground-truth/haskell.json": {
         "sha256": "dff2ee50e8fbe302960f9580357c01ec41f40c87eebc6bdf6698218dd9da010f",
         "bytes": 29413
+      },
+      "grammars/tree-sitter-haskell/grammar.js": {
+        "sha256": "a8bd15e99d2e276685ab2f41d58eef2c00e6e47615aad9dc6691065fc75e9873",
+        "bytes": 2615
+      },
+      "grammars/tree-sitter-haskell/grammar/class.js": {
+        "sha256": "296eba1fd07719ec43c6a872a6becd5a4237d461b6e96e00a111075f1fa31a1a",
+        "bytes": 3126
+      },
+      "grammars/tree-sitter-haskell/grammar/conflicts.js": {
+        "sha256": "68e12fb8436ac4db0b1e748b576160a79e3a49e2c5b2aac9288065ab0fef4e0f",
+        "bytes": 3841
+      },
+      "grammars/tree-sitter-haskell/grammar/context.js": {
+        "sha256": "27f94cd1ea6814e703040f405206e827e6224ec5132ff68492bb40a17b0f85c5",
+        "bytes": 1969
+      },
+      "grammars/tree-sitter-haskell/grammar/data.js": {
+        "sha256": "e8f51c84f5f5693e10998bb07a28fbf15bb3b43edd049f292c386dcee68f0e1b",
+        "bytes": 5745
+      },
+      "grammars/tree-sitter-haskell/grammar/decl.js": {
+        "sha256": "ae45ef486c74799fa4e5a308abc3023bddbe879beb88075717250aabd1b75410",
+        "bytes": 4656
+      },
+      "grammars/tree-sitter-haskell/grammar/exp.js": {
+        "sha256": "420b3288e676bdde5ce0290be7baf8133e285bd8e25e6317e15d9123c35fcba8",
+        "bytes": 11764
+      },
+      "grammars/tree-sitter-haskell/grammar/externals.js": {
+        "sha256": "f720226791ef96feea7458e7482e1077bbb539f877625b59db86072a1de94aea",
+        "bytes": 9335
+      },
+      "grammars/tree-sitter-haskell/grammar/general.js": {
+        "sha256": "430fa55cbb3aeeddb00e75ca98f5cb92e3becba9d963060ad531499133940ce9",
+        "bytes": 1230
+      },
+      "grammars/tree-sitter-haskell/grammar/id.js": {
+        "sha256": "647a25d5d009ba966da9f26339112be8d3f16a6b20e1b069226ba6626ebb55db",
+        "bytes": 3648
+      },
+      "grammars/tree-sitter-haskell/grammar/inline.js": {
+        "sha256": "8d2254fb7379f30c11ed10402e4a9ebad4465342cb62542d6c56aff9077dd77b",
+        "bytes": 1978
+      },
+      "grammars/tree-sitter-haskell/grammar/lexeme.js": {
+        "sha256": "251810dc8f2b68f5e2d96e5859bb5d79fceaca160b9045fe9e952703a0afea39",
+        "bytes": 2025
+      },
+      "grammars/tree-sitter-haskell/grammar/literal.js": {
+        "sha256": "759554548a48a151205e61274e9aa27608dcc61d4cc5235740fdc2d04c8250a2",
+        "bytes": 1945
+      },
+      "grammars/tree-sitter-haskell/grammar/module.js": {
+        "sha256": "dbbd7e3852b98cfb26cda062d3b305c9a680bf2a3f4165e8adabed7fc673401d",
+        "bytes": 4097
+      },
+      "grammars/tree-sitter-haskell/grammar/operator.js": {
+        "sha256": "3d06e0ddc82b269c92df748b372a7c44715b32321db646ffa80d1e09870931d8",
+        "bytes": 2113
+      },
+      "grammars/tree-sitter-haskell/grammar/pat.js": {
+        "sha256": "c0bde5178f2db937b13c19da519c81288731659ff8a8a500a3847f58a9ec9351",
+        "bytes": 4935
+      },
+      "grammars/tree-sitter-haskell/grammar/patsyn.js": {
+        "sha256": "a95871be73db39e7bd6fbb3e409de09e86f10eb7c0addf4b82caaf7e83b6e42a",
+        "bytes": 1114
+      },
+      "grammars/tree-sitter-haskell/grammar/precedences.js": {
+        "sha256": "1ee791f68405081f5db6356da91312b569e2cee145dabb831f6bc8eedab52d93",
+        "bytes": 2109
+      },
+      "grammars/tree-sitter-haskell/grammar/th.js": {
+        "sha256": "a367d878adf0034a73b02f0747f82c1abe8dfa6f850490cfb6e09ae8d87acc74",
+        "bytes": 2479
+      },
+      "grammars/tree-sitter-haskell/grammar/type.js": {
+        "sha256": "1786ca725ec1b41c9a27bd3186108fb793c85179fc24a1119cadb070a0a2376b",
+        "bytes": 11989
+      },
+      "grammars/tree-sitter-haskell/grammar/util.js": {
+        "sha256": "8e6eedccd339393bd721d31a26bcda9f1ba133079419075289c90f122f1d3b19",
+        "bytes": 4861
       }
     },
-    "digest": "dcb48725814adc9ad8933b7d4fb0dc47ad3fd376222f07364bdc8d69d53cfec1",
+    "digest": "9e1fff85b4fd8446832b65054283fda06bc111ef94c953a53cdc88513fcc950b",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm",
       "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
@@ -385,11 +469,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:haskell",
-      "wallTimeMs": 43.716384,
-      "userCpuMs": 189.835,
-      "systemCpuMs": 17.047,
-      "peakRssBytes": 281706496,
-      "rssDeltaBytes": 18612224,
+      "wallTimeMs": 306.241769,
+      "userCpuMs": 154.249,
+      "systemCpuMs": 15.775,
+      "peakRssBytes": 235163648,
+      "rssDeltaBytes": 10362880,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
