@@ -9,6 +9,9 @@
  *   expectSymbols / expectRelationships : each entry must match >=1 actual item.
  *       An entry matches when EVERY specified constraint field matches
  *       (unspecified fields are wildcards). Extra actual items are fine.
+ *   expectErrorCount { equals | atLeast | atMost } : the TOTAL number of parse
+ *       errors. `expectErrors` is a >=1 match, so two copies of ONE error satisfy
+ *       it — the channel a duplicated-error defect needs.
  *   forbidSymbols / forbidRelationships / forbidDecorators : NO actual item may match the entry.
  *       forbidDecorators takes { symbol?, contains } — the negative half of the decorator
  *       payload, added by the C2a alias-qualifier round because a `contains` assertion on a
@@ -68,6 +71,32 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // which is why an inert fixture is worse than a missing one: it looks like
   // evidence. A fixture lane is not a directory, it is a directory this map names.
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
+  // M14 (#288 / M60.LCM): html joins the fixture lane. html was the LAST
+  // ungated web-family language: its analyzer had an M12 corpus claim, a regex
+  // census row and a grammar-audit pass, and no fixture, no mutant, no
+  // differential oracle and no completeness spec. Every M14/M49/M60 cell read
+  // `n/a` — the gates could not ask the question, which is how 59.9% of its
+  // symbols were measured carrying a name that is not unique in their own file
+  // while every gate stayed green. The lane is what makes the rest possible:
+  // F4's runner throws `unknown language html` without it, and
+  // `script/m60/payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so html had no P1 row to convict it either.
+  // `ext` carries BOTH html spellings because `language-detection.ts` routes
+  // `.htm` to the same analyzer and a lane that only claimed `.html` would
+  // silently skip half its own routing.
+  html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
+  // runner entry, so nothing could have caught a regression in any of them —
+  // and the four are a differential whose truth was authored by the same hand
+  // as the analyzer (55 facts, all `authority: manual_audit`, 12 of which
+  // pinned the pre-wave `global` phantom endpoint and 2 of which pinned a trap
+  // edge whose SOURCE was a signal name and whose TARGET was a whole command
+  // string), a corpus measurement, a grammar-limit census, and a node-type
+  // "safety" check whose referenced-type list was hardcoded rather than
+  // measured (retired to `script/m12/bash-node-types-legacy-inventory.ts`,
+  // reasoning preserved, and replaced by a derived gate). A fixture lane is
+  // not a directory, it is a directory this map names.
+  bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
 }
 
 interface Entry { [k: string]: any }
@@ -212,10 +241,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const content = fs.readFileSync(path.join(dir, src), "utf8")
     const tree = parser.parse(content)
 
-    // vue/svelte: production parity — engine parseFile performs the SFC
-    // script-block pre-parse exactly as real indexing does.
+    // vue/svelte/html: production parity — engine parseFile performs the
+    // sub-parse seams (the SFC script-block pre-parse, and for html the inline
+    // <script>/<style> block pre-parse that closes HTML-G1) exactly as real
+    // indexing does. A fixture that ran the analyzer directly would see NO
+    // embedded symbols at all, so every script-side pin in these lanes would be
+    // vacuous — and html/inline-embedded-code failed on exactly that when it was
+    // first run, which is the correct behaviour of a gate and not a flake.
     let result: any
-    if (runLangLang === "vue" || runLangLang === "svelte") {
+    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
       // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
@@ -479,6 +513,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           if (k === "comment") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
+          // M14 (#888, html): an OBJECT payload compares by value. `range` is the
+          // one that matters — an import's line is what makes it checkable
+          // against the source, and the pre-fix html analyzer published the
+          // ELEMENT's range rather than the ATTRIBUTE's, so a multi-line start
+          // tag produced a wrong import line. With identity comparison a pin
+          // naming `range` could never match, which is exactly how that defect
+          // stayed unpinned. No existing pin names an object field on an import,
+          // so this changes no pin's existing meaning.
+          if (v !== null && typeof v === "object") return JSON.stringify(imp[k]) === JSON.stringify(v)
           return imp[k] === v
         }),
       )
@@ -627,6 +670,30 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         (want.kind === undefined || s.kind === want.kind)).length
       if (n !== want.equals) {
         problems.push(`expected ${want.equals} symbol(s) named "${want.name}"${want.ownerName ? ` in ${want.ownerName}` : ""}${want.kind ? ` kind=${want.kind}` : ""}; got ${n}`)
+      }
+    }
+    for (const want of exp.expectErrorCount ?? []) {
+      // M14 (#888, html): the only pre-existing channel for this was
+      // `expectErrors`, which is a >=1 match — so a lane that reported the SAME
+      // parse error twice passed it. That is exactly the html defect the parse
+      // walk carried: the analyzer walked for ERROR/MISSING nodes with an
+      // UNBOUNDED stack while the engine walks the same tree with a cap of 50,
+      // and a 300-line broken file published 350 warnings for 300 lines. Two
+      // copies of one error are indistinguishable to `expectErrors` and obvious
+      // to a count, so the count is the channel the class needed.
+      // `{ equals: N }` for the total, `{ atLeast: N }` / `{ atMost: N }` for a
+      // bound — the same shape `expectSymbolCount`'s `equals` uses, plus bounds
+      // because a cap is a bound and not a constant.
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const n = errList.length
+      if (want.equals !== undefined && n !== want.equals) {
+        problems.push(`expected ${want.equals} parse error(s); got ${n}`)
+      }
+      if (want.atLeast !== undefined && !(n >= want.atLeast)) {
+        problems.push(`expected at least ${want.atLeast} parse error(s); got ${n}`)
+      }
+      if (want.atMost !== undefined && !(n <= want.atMost)) {
+        problems.push(`expected at most ${want.atMost} parse error(s); got ${n}`)
       }
     }
     for (const want of exp.expectRelationshipCount ?? []) {
