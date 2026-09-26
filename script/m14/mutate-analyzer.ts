@@ -754,6 +754,51 @@ function cleanEdgeLinePerSet() {
   }
 }
 
+/** M59.A7 / dimension 8 (haskell), half one: the pre-fix payload. `pushRel`
+ *  published `{source,target,type,confidence,metadata}` with no `line_number`
+ *  field at all, so a consumer of the graph has an edge it cannot navigate —
+ *  measured before the change: 0 of 15,151 edges on the FULL hledger extent
+ *  (186 files) named a site. Caught by every `line_number` constraint in the
+ *  lane's fixture (12 pins) and by the line-coverage probe's coverage clause. */
+function haskellEdgeLineAbsent() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    if (!rels.some((rel) => rel && "line_number" in rel)) return r
+    return {
+      ...r,
+      relationships: rels.map((rel) => {
+        const { line_number, ...rest } = rel
+        return rest
+      }),
+    }
+  }
+}
+
+/** M59.A7 / dimension 8 (haskell), half two: the field stays and the dedupe key
+ *  goes back to `source|type|target` — the pre-fix key verbatim — so the FIRST
+ *  site's line is kept and every later site's edge is swallowed: per-SET, not
+ *  per-site. Measured on the corpus: the FULL hledger extent (186 files) holds
+ *  15,151 edges against 12,526 pre-change groups (2,625 edges are later sites,
+ *  worst group 40 sites, `calls`); the FULL cabal extent (2,134 files) holds
+ *  55,974 against 46,753 (9,221 later sites, worst group 186, `calls`). A
+ *  fixture that pinned only the field's
+ *  PRESENCE survives this, which is why the lane's pins are written in PAIRS
+ *  (`calls recount -> signed` at both 197 and 198 with a count of 2). */
+function haskellEdgeLinePerSet() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const seen = new Set<string>()
+    const out: any[] = []
+    for (const rel of rels) {
+      const key = `${rel.source}|${rel.type}|${rel.target}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(rel)
+    }
+    return out.length === rels.length ? r : { ...r, relationships: out }
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -9487,6 +9532,26 @@ export const MUTANTS: Mutant[] = [
       ...(r.relationships ?? []),
       { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
     ] }),
+  },
+  // M59.A7 / formula §8 (dimension 8): the site line. Two mutants, because the
+  // contract has two halves and the lane's fixture pins the pair (the same
+  // source+target at two lines with a count) precisely so that neither half can
+  // hide behind the other.
+  {
+    id: "haskell/edge-line-absent",
+    language: "haskell",
+    defectClass: "payload-loss",
+    description:
+      "The pre-dimension-8 state: every relationship is published with no `line_number` field at all (measured on the full 186-file hledger extent: 0 of 15,151 edges name a site after this landed, 0 of 12,526 before it — the family sweep recorded haskell's `lines` cell as absent, unlike clean/erlang which had landed the field; validation/m14/results/haskell-line-coverage.json beforeAfter). The store can then navigate an edge to nothing. Caught by all 12 line_number constraints in payload-and-complexity (references Data.User->Data.Text@17, contains Data.User->UserId@29 and @61, implements UserId->Show@30 and ->Mergeable@61, extends Mergeable->Semigroup@36, calls lookupName->M.lookup@92 and merged->merge@96, instantiates mkUser->Person@75 and maybeOne->M.Just@156, calls recount->signed@197/198) — evidence: validation/m14/results/haskell-line-mutant-pins.json, where this transform leaves 79 of 79 edges unlined and 12 of 12 pins unsatisfied.",
+    transform: haskellEdgeLineAbsent(),
+  },
+  {
+    id: "haskell/edge-line-per-set",
+    language: "haskell",
+    defectClass: "relationship-identity",
+    description:
+      "The line stays but the dedupe key reverts to `source|type|target` — the pre-fix key verbatim — i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: the full hledger extent loses 2,625 of 15,151 edges, worst group 40 sites; the full cabal extent loses 9,221 of 55,974, worst group 186). Caught by the per-site half of the pins and by the coverage probe's expansion clause (`preChangeEdges < edges`): payload-and-complexity holds exactly two multi-site groups and both are pinned at BOTH sites and counted — `calls recount -> signed`@197/198 and `contains Data.User -> UserId`@29/61 (the second is the universal impl-naming contract: the instance at 61 publishes a symbol named after its target type, so the file has two same-named children and only the child's own line tells them apart — #921). Evidence: validation/m14/results/haskell-line-mutant-pins.json (edges 79 -> 77, 2 of 12 pins and 2 of 2 count pins fail). A fixture pinning only `line_number: <one line>` would NOT catch this, which is why those pins are written in pairs.",
+    transform: haskellEdgeLinePerSet(),
   },
   {
     id: "javascript/template-callee-uses",
