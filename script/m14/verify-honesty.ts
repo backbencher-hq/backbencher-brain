@@ -233,7 +233,16 @@ const EVIDENCE_INPUTS: Record<string, string[]> = {
   // rule below). F8 is emitted by the corpus census, not the probe battery;
   // F9 is emitted by the probe battery, not the spec/completeness path; SPEC
   // is emitted by completeness-inventory, not by its verifier.
-  "M14.0.F8": ["src/ast/", "script/m14/verify-corpus-census.ts"],
+  //
+  // M49 W8 follow-up (2026-09-25): F8 also READS the two things its claimed
+  // content depends on and did not declare. The census parses with the pinned
+  // grammars in `wasm/` and classifies against `script/m14/spec/<lang>-completeness.json`;
+  // neither path was an input, so the M60 objc grammar wave (f2a20b62) rebuilt a
+  // wasm and added two node types the spec never ruled, and the census went red
+  // while its artifact stayed "fresh" — the gate caught the defect, the freshness
+  // rule could not have. An input set that omits what the artifact reads is the
+  // same defect the producer rule above fixes, one step out.
+  "M14.0.F8": ["src/ast/", "wasm/", "script/m14/spec/", "script/m14/verify-corpus-census.ts"],
   "M14.0.F9": ["src/ast/", "script/m14/verify-probe-battery.ts"],
   "M14.0.SPEC": ["script/m14/spec/", "wasm/", "script/m14/completeness-inventory.ts", "script/m14/verify-completeness.ts"],
   "M14.CC1": ["src/ast/"],

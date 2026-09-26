@@ -1,0 +1,487 @@
+{
+ "issue": "#612 follow-up \u2014 contains-owner-span-612 over the pinned heavy corpus (DB-only, no re-index)",
+ "arm": "after",
+ "worktree": "$HOME/mcp/backbencher-brain/.merge-tmp",
+ "commit": "ac097be017451d981f2871869cc48f682533bb57",
+ "regeneratedAtCommit": "ac097be017451d981f2871869cc48f682533bb57",
+ "regeneratedAt": "2026-09-25T21:12:37-0400",
+ "commitSubject": "review(merge): census the merge's evidence conflicts by gate IDENTITY",
+ "sourceDirtyVsCommit": false,
+ "indexerSha256": "207b71d3dba1c1d5f60c8aecbb1e51e2c57738700bed9f079389d3393cbe4a53",
+ "probe": "script/m14/tmp/contains-owner-span-612.ts",
+ "probeSha256": "065d4f158317ef5de1bf1953a8427e165845aea3fc19353755b8d9a375704fe8",
+ "runner": "python3 script/m14/tmp/containment-owner-span-612.py --probe contains-owner-span-612 --arm after --out validation/m14/results/containment-owner-span-612.json",
+ "dbsNotReindexed": true,
+ "dbLineage": {
+  "note": "the DBs read here were written by this record's own index runs",
+  "record": "validation/m14/results/containment-612.json",
+  "commit": "b6f0ae0dca4ed085b719e635b1e8e894c4b1bc7c",
+  "indexerSha256": "1541f1a6ca8710e6db0f278b61aa38ff8474865c924780017f36eef395abadee",
+  "sourceDirtyVsCommit": false,
+  "finishedAt": "2026-09-25T21:06:59-0400"
+ },
+ "startedAt": "2026-09-25T21:11:55-0400",
+ "repos": [
+  {
+   "repo": "nlohmann-json",
+   "lang": "cpp",
+   "db": {
+    "path": "$HOME/.bb/projects/dca613b7d066f9153ef6fb1846112caac8df5983/brain.db",
+    "bytes": 411373568,
+    "mtime": "2026-09-25T20:07:13-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "nlohmann-json",
+    "lang": "cpp",
+    "ownedSymbolsWithLine": 5621,
+    "ownerNameNotUnique": 2024,
+    "contradictedOwner": 505,
+    "contradictedOwnerAmbiguousName": 2,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 3,
+    "samples": [
+     {
+      "at": "tests/src/unit-32bit.cpp:30",
+      "child": "of_type",
+      "owner": "TEST_CASE_TEMPLATE_DEFINE(\"value_in_range_of trait\", T, value_in_range_of_test)@26-26",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-32bit.cpp:31",
+      "child": "type",
+      "owner": "TEST_CASE_TEMPLATE_DEFINE(\"value_in_range_of trait\", T, value_in_range_of_test)@26-26",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-allocator.cpp:45",
+      "child": "bad_json",
+      "owner": "TEST_CASE(\"bad_alloc\")@40-40",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-allocator.cpp:126",
+      "child": "my_json",
+      "owner": "TEST_CASE(\"controlled bad_alloc\")@123-123",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-allocator.cpp:250",
+      "child": "bad_alloc_json",
+      "owner": "TEST_CASE(\"bad my_allocator::construct\")@246-246",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-modifiers.cpp:229",
+      "child": "j",
+      "owner": "TEST_CASE(\"modifiers\")@14-14",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-modifiers.cpp:457",
+      "child": "j",
+      "owner": "TEST_CASE(\"modifiers\")@14-14",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "tests/src/unit-msgpack.cpp:1608",
+      "child": "f_json",
+      "owner": "TEST_CASE(\"single MessagePack roundtrip\")@1601-1601",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     }
+    ]
+   }
+  },
+  {
+   "repo": "fmt",
+   "lang": "cpp",
+   "db": {
+    "path": "$HOME/.bb/projects/927e0fd7875c210d7e99e0924021741676cc29fe/brain.db",
+    "bytes": 95694848,
+    "mtime": "2026-09-25T20:07:44-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "fmt",
+    "lang": "cpp",
+    "ownedSymbolsWithLine": 1968,
+    "ownerNameNotUnique": 840,
+    "contradictedOwner": 3,
+    "contradictedOwnerAmbiguousName": 1,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 1,
+    "samples": [
+     {
+      "at": "include/fmt/base.h:512",
+      "child": "is_constant_evaluated",
+      "owner": "detail@372-509",
+      "nameCands": 2,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "include/fmt/base.h:2424",
+      "child": "do_check_arg_id",
+      "owner": "parse_context@842-897",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "include/fmt/base.h:2434",
+      "child": "check_dynamic_spec",
+      "owner": "parse_context@842-897",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     }
+    ]
+   }
+  },
+  {
+   "repo": "jq",
+   "lang": "c",
+   "db": {
+    "path": "$HOME/.bb/projects/56ac4a2f524d40176d4dc0263fa0dff4f37b9375/brain.db",
+    "bytes": 181960704,
+    "mtime": "2026-09-25T20:08:40-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "jq",
+    "lang": "c",
+    "ownedSymbolsWithLine": 521,
+    "ownerNameNotUnique": 228,
+    "contradictedOwner": 0,
+    "contradictedOwnerAmbiguousName": 0,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "sqlite",
+   "lang": "c",
+   "db": {
+    "path": "$HOME/.bb/projects/d7a43f62342bad8c4754860ab28a4fb1ed968cf6/brain.db",
+    "bytes": 805150720,
+    "mtime": "2026-09-25T20:12:21-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "sqlite",
+    "lang": "c",
+    "ownedSymbolsWithLine": 4946,
+    "ownerNameNotUnique": 142,
+    "contradictedOwner": 0,
+    "contradictedOwnerAmbiguousName": 0,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "ripgrep",
+   "lang": "rust",
+   "db": {
+    "path": "$HOME/.bb/projects/a65e53f2a2b3113027192b7bd846d8b5ca38a33a/brain.db",
+    "bytes": 186470400,
+    "mtime": "2026-09-25T20:13:35-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "ripgrep",
+    "lang": "rust",
+    "ownedSymbolsWithLine": 3773,
+    "ownerNameNotUnique": 2888,
+    "contradictedOwner": 0,
+    "contradictedOwnerAmbiguousName": 0,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "cargo",
+   "lang": "rust",
+   "db": {
+    "path": "$HOME/.bb/projects/0b1e358a0ebfebdd3f234f21e962c630a4eab13d/brain.db",
+    "bytes": 799174656,
+    "mtime": "2026-09-25T20:17:34-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "cargo",
+    "lang": "rust",
+    "ownedSymbolsWithLine": 6914,
+    "ownerNameNotUnique": 5021,
+    "contradictedOwner": 0,
+    "contradictedOwnerAmbiguousName": 0,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 1,
+    "samples": []
+   }
+  },
+  {
+   "repo": "go-tools",
+   "lang": "go",
+   "db": {
+    "path": "$HOME/.bb/projects/f58244847d810aee6ece4959e595d1c704e7f3ec/brain.db",
+    "bytes": 669818880,
+    "mtime": "2026-09-25T20:20:38-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "go-tools",
+    "lang": "go",
+    "ownedSymbolsWithLine": 9354,
+    "ownerNameNotUnique": 1068,
+    "contradictedOwner": 3239,
+    "contradictedOwnerAmbiguousName": 236,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": [
+     {
+      "at": "present/link.go:24",
+      "child": "PresentCmd",
+      "owner": "Link@18-22",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "present/link.go:25",
+      "child": "TemplateName",
+      "owner": "Link@18-22",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "present/image.go:23",
+      "child": "PresentCmd",
+      "owner": "Image@16-21",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "present/image.go:24",
+      "child": "TemplateName",
+      "owner": "Image@16-21",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "present/iframe.go:23",
+      "child": "PresentCmd",
+      "owner": "Iframe@16-21",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "present/iframe.go:24",
+      "child": "TemplateName",
+      "owner": "Iframe@16-21",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "benchmark/parse/parse.go:64",
+      "child": "parseMeasurement",
+      "owner": "Benchmark@28-37",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "benchmark/parse/parse.go:89",
+      "child": "String",
+      "owner": "Benchmark@28-37",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     }
+    ]
+   }
+  },
+  {
+   "repo": "terraform",
+   "lang": "go",
+   "db": {
+    "path": "$HOME/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+    "bytes": 1562750976,
+    "mtime": "2026-09-25T20:25:15-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "terraform",
+    "lang": "go",
+    "ownedSymbolsWithLine": 20312,
+    "ownerNameNotUnique": 1444,
+    "contradictedOwner": 10440,
+    "contradictedOwnerAmbiguousName": 784,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": [
+     {
+      "at": "main_test.go:353",
+      "child": "Run",
+      "owner": "testCommandCLI@349-351",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "main_test.go:358",
+      "child": "Synopsis",
+      "owner": "testCommandCLI@349-351",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "main_test.go:359",
+      "child": "Help",
+      "owner": "testCommandCLI@349-351",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "internal/addrs/check.go:17",
+      "child": "String",
+      "owner": "Check@12-15",
+      "nameCands": 3,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "internal/addrs/check.go:23",
+      "child": "InModule",
+      "owner": "Check@12-15",
+      "nameCands": 3,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "internal/addrs/check.go:32",
+      "child": "Absolute",
+      "owner": "Check@12-15",
+      "nameCands": 3,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "internal/addrs/check.go:39",
+      "child": "Equal",
+      "owner": "Check@12-15",
+      "nameCands": 3,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "internal/addrs/check.go:43",
+      "child": "UniqueKey",
+      "owner": "Check@12-15",
+      "nameCands": 3,
+      "innermostAtChild": "none"
+     }
+    ]
+   }
+  },
+  {
+   "repo": "zls",
+   "lang": "zig",
+   "db": {
+    "path": "$HOME/.bb/projects/41fc91da95828c1d0426b643ae1081800aa778e1/brain.db",
+    "bytes": 79507456,
+    "mtime": "2026-09-25T20:26:18-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "zls",
+    "lang": "zig",
+    "ownedSymbolsWithLine": 1706,
+    "ownerNameNotUnique": 196,
+    "contradictedOwner": 0,
+    "contradictedOwnerAmbiguousName": 0,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "zig",
+   "lang": "zig",
+   "db": {
+    "path": "$HOME/.bb/projects/a49d61f6788f4fad582b2bb386eb7e6e37bc69dd/brain.db",
+    "bytes": 4984680448,
+    "mtime": "2026-09-25T21:04:18-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "zig",
+    "lang": "zig",
+    "ownedSymbolsWithLine": 80358,
+    "ownerNameNotUnique": 12421,
+    "contradictedOwner": 944,
+    "contradictedOwnerAmbiguousName": 598,
+    "fixableByOwnName": 0,
+    "ownerDiffersFromInnermost": 3,
+    "samples": [
+     {
+      "at": "src/Sema.zig:178",
+      "child": "idx",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:285",
+      "child": "index",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:307",
+      "child": "start",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:308",
+      "child": "map_start",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:312",
+      "child": "old_start",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:313",
+      "child": "better_capacity",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:314",
+      "child": "better_start",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     },
+     {
+      "at": "src/Sema.zig:316",
+      "child": "extra_capacity",
+      "owner": "ComptimeAlloc@164-164",
+      "nameCands": 1,
+      "innermostAtChild": "none"
+     }
+    ]
+   }
+  }
+ ],
+ "finishedAt": "2026-09-25T21:12:37-0400"
+}

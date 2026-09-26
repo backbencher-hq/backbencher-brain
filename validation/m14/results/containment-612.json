@@ -1,0 +1,1728 @@
+{
+ "issue": "#612 follow-up \u2014 containment target rule and the source question, over the pinned heavy corpus",
+ "arm": "after",
+ "worktree": "$HOME/mcp/backbencher-brain/.merge-tmp",
+ "commit": "b6f0ae0dca4ed085b719e635b1e8e894c4b1bc7c",
+ "regeneratedAtCommit": "b6f0ae0dca4ed085b719e635b1e8e894c4b1bc7c",
+ "regeneratedAt": "2026-09-25T21:06:59-0400",
+ "commitSubject": "fix(m14): a `contains` edge resolves both ends by the container its child line falls inside",
+ "sourceDirtyVsCommit": false,
+ "indexerSha256": "1541f1a6ca8710e6db0f278b61aa38ff8474865c924780017f36eef395abadee",
+ "runner": "python3 script/m14/tmp/containment-corpus-612.py",
+ "probes": [
+  "contains-ambiguity-612",
+  "contains-line-hint-612",
+  "contains-residual-612",
+  "contains-source-hint-612",
+  "contains-source-owner-agreement-612",
+  "contains-source-span-delta-612"
+ ],
+ "startedAt": "2026-09-25T20:05:30-0400",
+ "corpusRoot": "$HOME/fixtures/repositories",
+ "repos": [
+  {
+   "repo": "nlohmann-json",
+   "lang": "cpp",
+   "path": "$HOME/fixtures/repositories/nlohmann-json",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 102.9,
+    "indexed": {
+     "files": 758,
+     "symbols": 13334,
+     "relationships": 70893,
+     "embeddings": 6590,
+     "reportedSeconds": 95.9
+    },
+    "breakdown": {
+     "newlyParsed": 757,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 23,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 1
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "containmentEdgesSameFile": 5625,
+      "targetNameNotUnique": 3199,
+      "sourceNameNotUnique": 2027,
+      "topAmbiguousTargets": [
+       {
+        "name": "constructor",
+        "kind": "constructor",
+        "c": 307
+       },
+       {
+        "name": "j",
+        "kind": "function",
+        "c": 142
+       },
+       {
+        "name": "operator=",
+        "kind": "method",
+        "c": 89
+       },
+       {
+        "name": "to_json",
+        "kind": "function",
+        "c": 58
+       },
+       {
+        "name": "construct",
+        "kind": "method",
+        "c": 56
+       },
+       {
+        "name": "j_nonobject",
+        "kind": "function",
+        "c": 56
+       },
+       {
+        "name": "value",
+        "kind": "constant",
+        "c": 54
+       },
+       {
+        "name": "json_value",
+        "kind": "method",
+        "c": 48
+       },
+       {
+        "name": "sdp",
+        "kind": "function",
+        "c": 42
+       },
+       {
+        "name": "type",
+        "kind": "type",
+        "c": 40
+       },
+       {
+        "name": "j_nonobject_const",
+        "kind": "function",
+        "c": 36
+       },
+       {
+        "name": "from_json",
+        "kind": "function",
+        "c": 33
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "containsEdgesTotal": 5625,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 5625,
+      "ambiguousTargetName": 3199,
+      "edgeLineEqualsTargetLine": 5554,
+      "ambiguousAndEdgeLineEqualsTargetLine": 3151,
+      "ambiguousHintPinsExactlyOne": 3151,
+      "ambiguousHintPinsNone": 48,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 3188,
+      "ambiguousCurrentChoiceMatchesHint": 3151,
+      "ambiguousOldChoiceWouldBeWrong": 2422
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "edgesWithLine": 5625,
+      "ambiguousSource": 2027,
+      "spanPinsExactlyOne": 2004,
+      "spanPinsNone": 2,
+      "spanPinsSeveral": 21,
+      "innermostPinsExactlyOne": 2025,
+      "lineSelfPinsExactlyOne": 41
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "sameFileContainsEdges": 5625,
+      "targetHasStructuralOwner": 5619,
+      "edgeDisagreesWithStructuralOwner": 28,
+      "structuralOwnerNameNotUnique": 19
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "nlohmann-json",
+      "lang": "cpp",
+      "containsEdges": 5625,
+      "storedSourceDoesNotEncloseChildLine": 505,
+      "ambiguousSourceName": 2027,
+      "ambiguousSourceDoesNotEncloseChildLine": 2,
+      "ambiguousWithSpanCandidate": 2025,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "fmt",
+   "lang": "cpp",
+   "path": "$HOME/fixtures/repositories/fmt",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 22.9,
+    "indexed": {
+     "files": 52,
+     "symbols": 3684,
+     "relationships": 9231,
+     "embeddings": 2016,
+     "reportedSeconds": 21.1
+    },
+    "breakdown": {
+     "newlyParsed": 51,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 4,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 1
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "containmentEdgesSameFile": 1970,
+      "targetNameNotUnique": 1220,
+      "sourceNameNotUnique": 842,
+      "topAmbiguousTargets": [
+       {
+        "name": "constructor",
+        "kind": "constructor",
+        "c": 156
+       },
+       {
+        "name": "format",
+        "kind": "method",
+        "c": 51
+       },
+       {
+        "name": "operator()",
+        "kind": "method",
+        "c": 36
+       },
+       {
+        "name": "map",
+        "kind": "method",
+        "c": 30
+       },
+       {
+        "name": "parse",
+        "kind": "method",
+        "c": 30
+       },
+       {
+        "name": "write",
+        "kind": "method",
+        "c": 20
+       },
+       {
+        "name": "anonymous",
+        "kind": "enum",
+        "c": 17
+       },
+       {
+        "name": "char_type",
+        "kind": "type",
+        "c": 14
+       },
+       {
+        "name": "value",
+        "kind": "constant",
+        "c": 14
+       },
+       {
+        "name": "type",
+        "kind": "type",
+        "c": 13
+       },
+       {
+        "name": "carrier_uint",
+        "kind": "type",
+        "c": 9
+       },
+       {
+        "name": "check",
+        "kind": "method",
+        "c": 9
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "containsEdgesTotal": 1970,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 1970,
+      "ambiguousTargetName": 1220,
+      "edgeLineEqualsTargetLine": 1960,
+      "ambiguousAndEdgeLineEqualsTargetLine": 1211,
+      "ambiguousHintPinsExactlyOne": 1211,
+      "ambiguousHintPinsNone": 9,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 1215,
+      "ambiguousCurrentChoiceMatchesHint": 1211,
+      "ambiguousOldChoiceWouldBeWrong": 880
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "edgesWithLine": 1970,
+      "ambiguousSource": 842,
+      "spanPinsExactlyOne": 832,
+      "spanPinsNone": 1,
+      "spanPinsSeveral": 9,
+      "innermostPinsExactlyOne": 841,
+      "lineSelfPinsExactlyOne": 36
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "sameFileContainsEdges": 1970,
+      "targetHasStructuralOwner": 1967,
+      "edgeDisagreesWithStructuralOwner": 4,
+      "structuralOwnerNameNotUnique": 3
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "fmt",
+      "lang": "cpp",
+      "containsEdges": 1970,
+      "storedSourceDoesNotEncloseChildLine": 3,
+      "ambiguousSourceName": 842,
+      "ambiguousSourceDoesNotEncloseChildLine": 1,
+      "ambiguousWithSpanCandidate": 841,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "jq",
+   "lang": "c",
+   "path": "$HOME/fixtures/repositories/jq",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 34.4,
+    "indexed": {
+     "files": 84,
+     "symbols": 10694,
+     "relationships": 22309,
+     "embeddings": 3449,
+     "reportedSeconds": 31.5
+    },
+    "breakdown": {
+     "newlyParsed": 84,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 4,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 0
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "containmentEdgesSameFile": 584,
+      "targetNameNotUnique": 137,
+      "sourceNameNotUnique": 228,
+      "topAmbiguousTargets": [
+       {
+        "name": "refcnt",
+        "kind": "property",
+        "c": 5
+       },
+       {
+        "name": "bc",
+        "kind": "property",
+        "c": 3
+       },
+       {
+        "name": "ALTERNATION",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "AND",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "AS",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "BINDING",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "BREAK",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "CATCH",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "DEF",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "DEFINEDOR",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "ELSE",
+        "kind": "enum_member",
+        "c": 2
+       },
+       {
+        "name": "ELSE_IF",
+        "kind": "enum_member",
+        "c": 2
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "containsEdgesTotal": 584,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 584,
+      "ambiguousTargetName": 137,
+      "edgeLineEqualsTargetLine": 584,
+      "ambiguousAndEdgeLineEqualsTargetLine": 137,
+      "ambiguousHintPinsExactlyOne": 137,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 137,
+      "ambiguousCurrentChoiceMatchesHint": 137,
+      "ambiguousOldChoiceWouldBeWrong": 49
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "edgesWithLine": 584,
+      "ambiguousSource": 228,
+      "spanPinsExactlyOne": 228,
+      "spanPinsNone": 0,
+      "spanPinsSeveral": 0,
+      "innermostPinsExactlyOne": 228,
+      "lineSelfPinsExactlyOne": 0
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "sameFileContainsEdges": 584,
+      "targetHasStructuralOwner": 521,
+      "edgeDisagreesWithStructuralOwner": 0,
+      "structuralOwnerNameNotUnique": 0
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "jq",
+      "lang": "c",
+      "containsEdges": 584,
+      "storedSourceDoesNotEncloseChildLine": 0,
+      "ambiguousSourceName": 228,
+      "ambiguousSourceDoesNotEncloseChildLine": 0,
+      "ambiguousWithSpanCandidate": 228,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "sqlite",
+   "lang": "c",
+   "path": "$HOME/fixtures/repositories/sqlite",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 212.4,
+    "indexed": {
+     "files": 490,
+     "symbols": 27063,
+     "relationships": 147864,
+     "embeddings": 13414,
+     "reportedSeconds": 201.7
+    },
+    "breakdown": {
+     "newlyParsed": 488,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 33,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 2
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "containmentEdgesSameFile": 5322,
+      "targetNameNotUnique": 1030,
+      "sourceNameNotUnique": 203,
+      "topAmbiguousTargets": [
+       {
+        "name": "base",
+        "kind": "property",
+        "c": 107
+       },
+       {
+        "name": "pNext",
+        "kind": "property",
+        "c": 42
+       },
+       {
+        "name": "db",
+        "kind": "property",
+        "c": 30
+       },
+       {
+        "name": "interp",
+        "kind": "property",
+        "c": 21
+       },
+       {
+        "name": "flags",
+        "kind": "property",
+        "c": 16
+       },
+       {
+        "name": "E",
+        "kind": "macro",
+        "c": 11
+       },
+       {
+        "name": "next",
+        "kind": "property",
+        "c": 11
+       },
+       {
+        "name": "count",
+        "kind": "property",
+        "c": 10
+       },
+       {
+        "name": "z",
+        "kind": "property",
+        "c": 10
+       },
+       {
+        "name": "name",
+        "kind": "property",
+        "c": 9
+       },
+       {
+        "name": "size",
+        "kind": "property",
+        "c": 9
+       },
+       {
+        "name": "type",
+        "kind": "property",
+        "c": 9
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "containsEdgesTotal": 5322,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 5322,
+      "ambiguousTargetName": 1030,
+      "edgeLineEqualsTargetLine": 5322,
+      "ambiguousAndEdgeLineEqualsTargetLine": 1030,
+      "ambiguousHintPinsExactlyOne": 1030,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 1030,
+      "ambiguousCurrentChoiceMatchesHint": 1030,
+      "ambiguousOldChoiceWouldBeWrong": 608
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "edgesWithLine": 5322,
+      "ambiguousSource": 203,
+      "spanPinsExactlyOne": 203,
+      "spanPinsNone": 0,
+      "spanPinsSeveral": 0,
+      "innermostPinsExactlyOne": 203,
+      "lineSelfPinsExactlyOne": 65
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "sameFileContainsEdges": 5322,
+      "targetHasStructuralOwner": 4948,
+      "edgeDisagreesWithStructuralOwner": 2,
+      "structuralOwnerNameNotUnique": 1
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "sqlite",
+      "lang": "c",
+      "containsEdges": 5322,
+      "storedSourceDoesNotEncloseChildLine": 0,
+      "ambiguousSourceName": 203,
+      "ambiguousSourceDoesNotEncloseChildLine": 0,
+      "ambiguousWithSpanCandidate": 203,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "ripgrep",
+   "lang": "rust",
+   "path": "$HOME/fixtures/repositories/ripgrep",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 63.2,
+    "indexed": {
+     "files": 158,
+     "symbols": 7355,
+     "relationships": 29591,
+     "embeddings": 3215,
+     "reportedSeconds": 59.6
+    },
+    "breakdown": {
+     "newlyParsed": 158,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 13,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 0
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "containmentEdgesSameFile": 3776,
+      "targetNameNotUnique": 1905,
+      "sourceNameNotUnique": 2890,
+      "topAmbiguousTargets": [
+       {
+        "name": "doc_category",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "doc_long",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "doc_short",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "is_switch",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "name_long",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "update",
+        "kind": "method",
+        "c": 108
+       },
+       {
+        "name": "new",
+        "kind": "method",
+        "c": 71
+       },
+       {
+        "name": "name_negated",
+        "kind": "method",
+        "c": 42
+       },
+       {
+        "name": "name_short",
+        "kind": "method",
+        "c": 42
+       },
+       {
+        "name": "doc_variable",
+        "kind": "method",
+        "c": 37
+       },
+       {
+        "name": "config",
+        "kind": "property",
+        "c": 19
+       },
+       {
+        "name": "path",
+        "kind": "property",
+        "c": 15
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "containsEdgesTotal": 3776,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 3776,
+      "ambiguousTargetName": 1905,
+      "edgeLineEqualsTargetLine": 3776,
+      "ambiguousAndEdgeLineEqualsTargetLine": 1905,
+      "ambiguousHintPinsExactlyOne": 1905,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 1905,
+      "ambiguousCurrentChoiceMatchesHint": 1905,
+      "ambiguousOldChoiceWouldBeWrong": 1434
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "edgesWithLine": 3776,
+      "ambiguousSource": 2890,
+      "spanPinsExactlyOne": 2890,
+      "spanPinsNone": 0,
+      "spanPinsSeveral": 0,
+      "innermostPinsExactlyOne": 2890,
+      "lineSelfPinsExactlyOne": 2
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "sameFileContainsEdges": 3776,
+      "targetHasStructuralOwner": 3773,
+      "edgeDisagreesWithStructuralOwner": 0,
+      "structuralOwnerNameNotUnique": 0
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "ripgrep",
+      "lang": "rust",
+      "containsEdges": 3776,
+      "storedSourceDoesNotEncloseChildLine": 0,
+      "ambiguousSourceName": 2890,
+      "ambiguousSourceDoesNotEncloseChildLine": 0,
+      "ambiguousWithSpanCandidate": 2890,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "cargo",
+   "lang": "rust",
+   "path": "$HOME/fixtures/repositories/cargo",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 229.4,
+    "indexed": {
+     "files": 1678,
+     "symbols": 29191,
+     "relationships": 159222,
+     "embeddings": 10248,
+     "reportedSeconds": 215.2
+    },
+    "breakdown": {
+     "newlyParsed": 1678,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 282,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 0
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "containmentEdgesSameFile": 6917,
+      "targetNameNotUnique": 2090,
+      "sourceNameNotUnique": 5024,
+      "topAmbiguousTargets": [
+       {
+        "name": "new",
+        "kind": "method",
+        "c": 105
+       },
+       {
+        "name": "fmt",
+        "kind": "method",
+        "c": 77
+       },
+       {
+        "name": "from",
+        "kind": "method",
+        "c": 35
+       },
+       {
+        "name": "deserialize",
+        "kind": "method",
+        "c": 33
+       },
+       {
+        "name": "name",
+        "kind": "property",
+        "c": 33
+       },
+       {
+        "name": "version",
+        "kind": "property",
+        "c": 18
+       },
+       {
+        "name": "inner",
+        "kind": "property",
+        "c": 16
+       },
+       {
+        "name": "eq",
+        "kind": "method",
+        "c": 15
+       },
+       {
+        "name": "features",
+        "kind": "property",
+        "c": 15
+       },
+       {
+        "name": "path",
+        "kind": "property",
+        "c": 14
+       },
+       {
+        "name": "serialize",
+        "kind": "method",
+        "c": 14
+       },
+       {
+        "name": "Error",
+        "kind": "type",
+        "c": 12
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "containsEdgesTotal": 6917,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 6917,
+      "ambiguousTargetName": 2090,
+      "edgeLineEqualsTargetLine": 6917,
+      "ambiguousAndEdgeLineEqualsTargetLine": 2090,
+      "ambiguousHintPinsExactlyOne": 2090,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 2085,
+      "ambiguousCurrentChoiceMatchesHint": 2090,
+      "ambiguousOldChoiceWouldBeWrong": 1224
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "edgesWithLine": 6917,
+      "ambiguousSource": 5024,
+      "spanPinsExactlyOne": 5021,
+      "spanPinsNone": 0,
+      "spanPinsSeveral": 3,
+      "innermostPinsExactlyOne": 5024,
+      "lineSelfPinsExactlyOne": 4
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "sameFileContainsEdges": 6917,
+      "targetHasStructuralOwner": 6914,
+      "edgeDisagreesWithStructuralOwner": 1,
+      "structuralOwnerNameNotUnique": 1
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "cargo",
+      "lang": "rust",
+      "containsEdges": 6917,
+      "storedSourceDoesNotEncloseChildLine": 0,
+      "ambiguousSourceName": 5024,
+      "ambiguousSourceDoesNotEncloseChildLine": 0,
+      "ambiguousWithSpanCandidate": 5024,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "go-tools",
+   "lang": "go",
+   "path": "$HOME/fixtures/repositories/go-tools",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 169.4,
+    "indexed": {
+     "files": 1381,
+     "symbols": 25727,
+     "relationships": 117787,
+     "embeddings": 10083,
+     "reportedSeconds": 158.7
+    },
+    "breakdown": {
+     "newlyParsed": 1380,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 4,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 1
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "containmentEdgesSameFile": 9357,
+      "targetNameNotUnique": 3029,
+      "sourceNameNotUnique": 1071,
+      "topAmbiguousTargets": [
+       {
+        "name": "Value",
+        "kind": "property",
+        "c": 89
+       },
+       {
+        "name": "String",
+        "kind": "method",
+        "c": 76
+       },
+       {
+        "name": "Name",
+        "kind": "property",
+        "c": 61
+       },
+       {
+        "name": "Operands",
+        "kind": "method",
+        "c": 46
+       },
+       {
+        "name": "WorkDoneProgressParams",
+        "kind": "property",
+        "c": 42
+       },
+       {
+        "name": "URI",
+        "kind": "property",
+        "c": 39
+       },
+       {
+        "name": "DynamicRegistration",
+        "kind": "property",
+        "c": 37
+       },
+       {
+        "name": "Kind",
+        "kind": "property",
+        "c": 35
+       },
+       {
+        "name": "Name",
+        "kind": "method",
+        "c": 34
+       },
+       {
+        "name": "Range",
+        "kind": "property",
+        "c": 34
+       },
+       {
+        "name": "TextDocumentRegistrationOptions",
+        "kind": "property",
+        "c": 32
+       },
+       {
+        "name": "WorkDoneProgressOptions",
+        "kind": "property",
+        "c": 31
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "containsEdgesTotal": 9357,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 9357,
+      "ambiguousTargetName": 3029,
+      "edgeLineEqualsTargetLine": 9357,
+      "ambiguousAndEdgeLineEqualsTargetLine": 3029,
+      "ambiguousHintPinsExactlyOne": 3029,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 3029,
+      "ambiguousCurrentChoiceMatchesHint": 3029,
+      "ambiguousOldChoiceWouldBeWrong": 2151
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "edgesWithLine": 9357,
+      "ambiguousSource": 1071,
+      "spanPinsExactlyOne": 835,
+      "spanPinsNone": 236,
+      "spanPinsSeveral": 0,
+      "innermostPinsExactlyOne": 835,
+      "lineSelfPinsExactlyOne": 3
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "sameFileContainsEdges": 9357,
+      "targetHasStructuralOwner": 9354,
+      "edgeDisagreesWithStructuralOwner": 0,
+      "structuralOwnerNameNotUnique": 0
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "go-tools",
+      "lang": "go",
+      "containsEdges": 9357,
+      "storedSourceDoesNotEncloseChildLine": 3239,
+      "ambiguousSourceName": 1071,
+      "ambiguousSourceDoesNotEncloseChildLine": 236,
+      "ambiguousWithSpanCandidate": 835,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "terraform",
+   "lang": "go",
+   "path": "$HOME/fixtures/repositories/terraform",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 251.6,
+    "indexed": {
+     "files": 2431,
+     "symbols": 53838,
+     "relationships": 248644,
+     "embeddings": 24246,
+     "reportedSeconds": 229.8
+    },
+    "breakdown": {
+     "newlyParsed": 2431,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 22,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 0
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "containmentEdgesSameFile": 20312,
+      "targetNameNotUnique": 9532,
+      "sourceNameNotUnique": 1444,
+      "topAmbiguousTargets": [
+       {
+        "name": "String",
+        "kind": "method",
+        "c": 680
+       },
+       {
+        "name": "Descriptor",
+        "kind": "method",
+        "c": 577
+       },
+       {
+        "name": "ProtoMessage",
+        "kind": "method",
+        "c": 539
+       },
+       {
+        "name": "ProtoReflect",
+        "kind": "method",
+        "c": 539
+       },
+       {
+        "name": "Reset",
+        "kind": "method",
+        "c": 539
+       },
+       {
+        "name": "sizeCache",
+        "kind": "property",
+        "c": 539
+       },
+       {
+        "name": "state",
+        "kind": "property",
+        "c": 539
+       },
+       {
+        "name": "unknownFields",
+        "kind": "property",
+        "c": 539
+       },
+       {
+        "name": "Diagnostics",
+        "kind": "property",
+        "c": 120
+       },
+       {
+        "name": "TypeName",
+        "kind": "property",
+        "c": 83
+       },
+       {
+        "name": "Config",
+        "kind": "property",
+        "c": 78
+       },
+       {
+        "name": "GetDiagnostics",
+        "kind": "method",
+        "c": 78
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "containsEdgesTotal": 20312,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 20312,
+      "ambiguousTargetName": 9532,
+      "edgeLineEqualsTargetLine": 20312,
+      "ambiguousAndEdgeLineEqualsTargetLine": 9532,
+      "ambiguousHintPinsExactlyOne": 9532,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 9532,
+      "ambiguousCurrentChoiceMatchesHint": 9532,
+      "ambiguousOldChoiceWouldBeWrong": 7780
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "edgesWithLine": 20312,
+      "ambiguousSource": 1444,
+      "spanPinsExactlyOne": 660,
+      "spanPinsNone": 784,
+      "spanPinsSeveral": 0,
+      "innermostPinsExactlyOne": 660,
+      "lineSelfPinsExactlyOne": 0
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "sameFileContainsEdges": 20312,
+      "targetHasStructuralOwner": 20312,
+      "edgeDisagreesWithStructuralOwner": 0,
+      "structuralOwnerNameNotUnique": 0
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "terraform",
+      "lang": "go",
+      "containsEdges": 20312,
+      "storedSourceDoesNotEncloseChildLine": 10440,
+      "ambiguousSourceName": 1444,
+      "ambiguousSourceDoesNotEncloseChildLine": 784,
+      "ambiguousWithSpanCandidate": 660,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "zls",
+   "lang": "zig",
+   "path": "$HOME/fixtures/repositories/zls",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 15.1,
+    "indexed": {
+     "files": 99,
+     "symbols": 3720,
+     "relationships": 15683,
+     "embeddings": 1178,
+     "reportedSeconds": 13.2
+    },
+    "breakdown": {
+     "newlyParsed": 99,
+     "unchanged": 0,
+     "skipped": 0,
+     "symbolLossFiles": 4,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 0
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "containmentEdgesSameFile": 1707,
+      "targetNameNotUnique": 519,
+      "sourceNameNotUnique": 197,
+      "topAmbiguousTargets": [
+       {
+        "name": "eql",
+        "kind": "method",
+        "c": 17
+       },
+       {
+        "name": "deinit",
+        "kind": "method",
+        "c": 16
+       },
+       {
+        "name": "ty",
+        "kind": "property",
+        "c": 15
+       },
+       {
+        "name": "actual",
+        "kind": "property",
+        "c": 13
+       },
+       {
+        "name": "init",
+        "kind": "method",
+        "c": 10
+       },
+       {
+        "name": "foo",
+        "kind": "property",
+        "c": 9
+       },
+       {
+        "name": "type",
+        "kind": "property",
+        "c": 9
+       },
+       {
+        "name": "wanted",
+        "kind": "property",
+        "c": 9
+       },
+       {
+        "name": "hashWithHasher",
+        "kind": "method",
+        "c": 8
+       },
+       {
+        "name": "bar",
+        "kind": "property",
+        "c": 7
+       },
+       {
+        "name": "Index",
+        "kind": "enum",
+        "c": 6
+       },
+       {
+        "name": "handle",
+        "kind": "property",
+        "c": 6
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "containsEdgesTotal": 1707,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 1707,
+      "ambiguousTargetName": 519,
+      "edgeLineEqualsTargetLine": 1707,
+      "ambiguousAndEdgeLineEqualsTargetLine": 519,
+      "ambiguousHintPinsExactlyOne": 519,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 517,
+      "ambiguousCurrentChoiceMatchesHint": 519,
+      "ambiguousOldChoiceWouldBeWrong": 330
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "edgesWithLine": 1707,
+      "ambiguousSource": 197,
+      "spanPinsExactlyOne": 195,
+      "spanPinsNone": 0,
+      "spanPinsSeveral": 2,
+      "innermostPinsExactlyOne": 197,
+      "lineSelfPinsExactlyOne": 9
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "sameFileContainsEdges": 1707,
+      "targetHasStructuralOwner": 1706,
+      "edgeDisagreesWithStructuralOwner": 0,
+      "structuralOwnerNameNotUnique": 0
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zls",
+      "lang": "zig",
+      "containsEdges": 1707,
+      "storedSourceDoesNotEncloseChildLine": 0,
+      "ambiguousSourceName": 197,
+      "ambiguousSourceDoesNotEncloseChildLine": 0,
+      "ambiguousWithSpanCandidate": 197,
+      "spanCandidateDiffersFromStoredSource": 0,
+      "spanCandidateDiffersAndIsContainerLike": 0,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 0,
+      "samples": []
+     }
+    }
+   }
+  },
+  {
+   "repo": "zig",
+   "lang": "zig",
+   "path": "$HOME/fixtures/repositories/zig",
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 2274.8,
+    "indexed": {
+     "files": 15463,
+     "symbols": 1082233,
+     "relationships": 979399,
+     "embeddings": 199568,
+     "reportedSeconds": 2161.6
+    },
+    "breakdown": {
+     "newlyParsed": 15459,
+     "unchanged": 3,
+     "skipped": 0,
+     "symbolLossFiles": 1147,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 6
+    }
+   },
+   "probes": {
+    "contains-ambiguity-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "containmentEdgesSameFile": 80352,
+      "targetNameNotUnique": 35444,
+      "sourceNameNotUnique": 12423,
+      "topAmbiguousTargets": [
+       {
+        "name": "id_result",
+        "kind": "enum_member",
+        "c": 503
+       },
+       {
+        "name": "id_result_type",
+        "kind": "enum_member",
+        "c": 461
+       },
+       {
+        "name": "Rn",
+        "kind": "property",
+        "c": 386
+       },
+       {
+        "name": "decoded24",
+        "kind": "property",
+        "c": 323
+       },
+       {
+        "name": "Rd",
+        "kind": "property",
+        "c": 286
+       },
+       {
+        "name": "decoded10",
+        "kind": "property",
+        "c": 275
+       },
+       {
+        "name": "opcode",
+        "kind": "property",
+        "c": 195
+       },
+       {
+        "name": "decoded21",
+        "kind": "property",
+        "c": 188
+       },
+       {
+        "name": "deinit",
+        "kind": "method",
+        "c": 187
+       },
+       {
+        "name": "size",
+        "kind": "property",
+        "c": 182
+       },
+       {
+        "name": "name",
+        "kind": "property",
+        "c": 173
+       },
+       {
+        "name": "U",
+        "kind": "property",
+        "c": 155
+       }
+      ]
+     }
+    },
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "containsEdgesTotal": 80352,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 80352,
+      "ambiguousTargetName": 35444,
+      "edgeLineEqualsTargetLine": 80352,
+      "ambiguousAndEdgeLineEqualsTargetLine": 35444,
+      "ambiguousHintPinsExactlyOne": 35444,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 35415,
+      "ambiguousCurrentChoiceMatchesHint": 35444,
+      "ambiguousOldChoiceWouldBeWrong": 28327
+     }
+    },
+    "contains-residual-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "residual": 0,
+      "samples": []
+     }
+    },
+    "contains-source-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "edgesWithLine": 80352,
+      "ambiguousSource": 12423,
+      "spanPinsExactlyOne": 11740,
+      "spanPinsNone": 598,
+      "spanPinsSeveral": 85,
+      "innermostPinsExactlyOne": 11825,
+      "lineSelfPinsExactlyOne": 51
+     }
+    },
+    "contains-source-owner-agreement-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "sameFileContainsEdges": 80352,
+      "targetHasStructuralOwner": 80343,
+      "edgeDisagreesWithStructuralOwner": 1,
+      "structuralOwnerNameNotUnique": 1
+     }
+    },
+    "contains-source-span-delta-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "zig",
+      "lang": "zig",
+      "containsEdges": 80352,
+      "storedSourceDoesNotEncloseChildLine": 944,
+      "ambiguousSourceName": 12423,
+      "ambiguousSourceDoesNotEncloseChildLine": 598,
+      "ambiguousWithSpanCandidate": 11825,
+      "spanCandidateDiffersFromStoredSource": 3,
+      "spanCandidateDiffersAndIsContainerLike": 3,
+      "spanCandidateDiffersAndCurrentIsNotContainerLike": 3,
+      "samples": [
+       {
+        "at": "L37",
+        "sourceName": "__isPlatformVersionAtLeast",
+        "current": "constant@31",
+        "spanPick": "function@37",
+        "target": "__isPlatformVersionAtLeast"
+       },
+       {
+        "at": "L1210",
+        "sourceName": "panic",
+        "current": "constant@1205",
+        "spanPick": "function@1210",
+        "target": "panic"
+       },
+       {
+        "at": "L519",
+        "sourceName": "getauxval",
+        "current": "constant@510",
+        "spanPick": "function@519",
+        "target": "getauxval"
+       }
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "updatedAt": "2026-09-25T21:06:59-0400",
+ "finishedAt": "2026-09-25T21:06:59-0400"
+}

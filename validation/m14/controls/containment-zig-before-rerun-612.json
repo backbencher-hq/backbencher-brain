@@ -1,0 +1,90 @@
+{
+ "issue": "#612 follow-up \u2014 containment target rule and the source question, over the pinned heavy corpus",
+ "arm": "before",
+ "worktree": "/tmp/b612-prefix-arm",
+ "commit": "55010e77a7084c7b65ef1d024ba9f8bfc430ea78",
+ "regeneratedAtCommit": "55010e77a7084c7b65ef1d024ba9f8bfc430ea78",
+ "regeneratedAt": "2026-09-25T23:38:33-0400",
+ "commitSubject": "test(m14): define the PRE-FIX arm of the #612 containment A/B as a revision",
+ "sourceDirtyVsCommit": false,
+ "indexerSha256": "7adb509973faf612a20d62c9237e93c228eb94ffe747706fa44f95d34e93bb79",
+ "loadAverageAtStart": [
+  12.4,
+  15.5,
+  14.54
+ ],
+ "cpus": 8,
+ "runner": "python3 script/m14/tmp/containment-corpus-612.py",
+ "probes": [
+  "contains-line-hint-612"
+ ],
+ "startedAt": "2026-09-25T23:11:59-0400",
+ "corpusRoot": "$HOME/fixtures/repositories",
+ "repos": [
+  {
+   "repo": "zig",
+   "lang": "zig",
+   "path": "/tmp/b612-zig-pinned",
+   "checkout": {
+    "head": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+    "dirtyFiles": 0
+   },
+   "index": {
+    "exitCode": 0,
+    "wallSeconds": 1566.9,
+    "loadAverage": {
+     "before": [
+      12.4,
+      15.5,
+      14.54
+     ],
+     "cpus": 8,
+     "after": [
+      7.42,
+      8.08,
+      9.73
+     ]
+    },
+    "indexed": {
+     "files": 15464,
+     "symbols": 1090236,
+     "relationships": 984026,
+     "embeddings": 199594,
+     "reportedSeconds": 1556.6
+    },
+    "breakdown": {
+     "newlyParsed": 15462,
+     "unchanged": 3,
+     "skipped": 0,
+     "symbolLossFiles": 1145,
+     "symbolLossParsedSymbols": 0,
+     "errors": 0,
+     "timeouts": 3
+    }
+   },
+   "probes": {
+    "contains-line-hint-612": {
+     "exitCode": 0,
+     "result": {
+      "repo": "b612-zig-pinned",
+      "lang": "zig",
+      "containsEdgesTotal": 80352,
+      "containsTargetInAnotherFile": 0,
+      "sameFileContainmentEdges": 80352,
+      "ambiguousTargetName": 35444,
+      "edgeLineEqualsTargetLine": 80352,
+      "ambiguousAndEdgeLineEqualsTargetLine": 35444,
+      "ambiguousHintPinsExactlyOne": 35444,
+      "ambiguousHintPinsNone": 0,
+      "ambiguousHintPinsSeveral": 0,
+      "ambiguousSpanPinsExactlyOne": 35415,
+      "ambiguousCurrentChoiceMatchesHint": 35444,
+      "ambiguousOldChoiceWouldBeWrong": 28327
+     }
+    }
+   }
+  }
+ ],
+ "updatedAt": "2026-09-25T23:38:33-0400",
+ "finishedAt": "2026-09-25T23:38:33-0400"
+}

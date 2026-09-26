@@ -1856,7 +1856,10 @@ export async function storeResults(
    // names, not `M14.0.*`: that namespace belongs to gates that call `emitEvidence`,
    // and a corpus sweep is a measurement, not a gate. Probe contains-line-hint-612;
    // `line pins 1` = the target name repeats AND exactly one same-file candidate
-   // sits on the edge's own line):
+   // sits on the edge's own line. The table is the CONTROL arm, and a rule cannot
+   // re-resolve a name it never sees, so the after arm's figures are identical on
+   // the nine repos whose symbol selection did not move; only zig's index run did
+   // (report §8.4), so its row and the totals appear once per arm):
    //
    //   repo / lang          ambiguous  line pins 1  pins none  old id-tier WRONG
    //   nlohmann-json cpp        3,199        3,151         48             2,422
@@ -1867,37 +1870,57 @@ export async function storeResults(
    //   zig zig                 27,068       27,068          0            20,440
    //   all ten repos           49,729       49,672         57            37,318
    //
+   //   after arm only:
+   //   zig zig                 35,444       35,444          0            28,327
+   //   all ten repos           58,105       58,048         57            45,205
+   //
    // `old id-tier WRONG` is the probe's counterfactual for the LAST tier of the
    // statement this one replaces: the id is `${projectId}:${path}:${name}:${line}`
    // compared as TEXT, so among candidates tied on the tiers above it the
    // lexicographically smallest LINE wins — `constructor:227` beats
    // `constructor:25`. The count of edges the WHOLE old statement would misresolve
    // is larger, and it is measured by replay for exactly that reason: 37,532 of the
-   // 127,521 edges would resolve to a different symbol, 37,611 to a symbol whose
-   // line the edge contradicts, and 437 to a symbol in ANOTHER FILE — containment
-   // is intra-file, so those edges leave the file they describe (records:
+   // control arm's 127,521 edges would resolve to a different symbol, 37,611 to a
+   // symbol whose line the edge contradicts, and 437 to a symbol in ANOTHER FILE —
+   // containment is intra-file, so those edges leave the file they describe. The
+   // after arm's own replay reads 45,419 of its 135,922, 45,498, and the SAME 437
+   // and 436 escapes: the escape counts are arm-invariant, which is how the change
+   // is separated from the population it moved (records:
    // validation/m14/controls/containment-old-rule-612.before.json and
    // validation/m14/results/containment-old-rule-612.json, probe
    // contains-old-rule-612, which replays the old ORDER BY against the same
    // candidate sets, so no pre-#612 build has to be resurrected to compare).
-   // Every one of the 49,672 edges the line pins resolves to the candidate on that
-   // line (`ambiguousCurrentChoiceMatchesHint` == `ambiguousHintPinsExactlyOne` on
-   // all ten repos), and the 57 the line cannot pin fall through to the remaining
-   // keys, so an edge the hint cannot place loses nothing. 0 of the 127,521 edges
-   // carries a target in another file (`containsTargetInAnotherFile`) and 0 is left
-   // unplaced although its line pins one candidate (`contains-residual-612`). The
-   // field means what this rule reads it to mean, verified rather than assumed:
-   // 77,768 of the 77,792 edges whose target name is unique — the case where the
-   // old choice is provably right — store the target on the edge's own line
-   // (99.97%; both figures derived from the recorded totals), and all 24 exceptions
-   // are the benign shape below rather than a wrong symbol.
+   // Every one of the 49,672 edges the line pins (58,048 on the after arm) resolves
+   // to the candidate on that line (`ambiguousCurrentChoiceMatchesHint` ==
+   // `ambiguousHintPinsExactlyOne` on all ten repos), and the 57 the line cannot pin
+   // fall through to the remaining keys, so an edge the hint cannot place loses
+   // nothing. 0 of the 127,521 edges carries a target in another file
+   // (`containsTargetInAnotherFile`; 0 of the after arm's 135,922 too — the rule must
+   // not lose a property the old one did not have either) and 0 is left unplaced
+   // although its line pins one candidate (`contains-residual-612`: 0 rows on both
+   // arms — every after row carries `residual: 0`, and the control record keeps the
+   // same answer as unparsed stdout). The field means what this rule reads it to
+   // mean, verified rather than assumed: 77,793 of the after arm's 77,817 edges
+   // whose target name is unique — the case where the old choice is provably right —
+   // store the target on the edge's own line (99.97%; the control arm reads the same
+   // 24 exceptions as 77,768 of 77,792. Both pairs are the recorded gauges
+   // `containsEdgesTotal` minus `ambiguousTargetName`, and `edgeLineEqualsTargetLine`
+   // minus `ambiguousAndEdgeLineEqualsTargetLine`).
    //
-   // "On the line" is exact equality of `line_start`, and those 24 exceptions are
-   // declarations whose NAME sits on an inner line of their own span: nlohmann's
-   // `lexer::get_decimal_point` is stored at 171-177 with the edge on 172,
-   // `basic_json::create` at 410-424 with the edge on 411. The same-file candidate
-   // is still the only one, so the same-file preference resolves these correctly;
-   // only the equality test is strict, not the resolution.
+   // "On the line" is exact equality of `line_start`, and those 24 rows are a SPAN
+   // shape, not a wrong symbol: every one of them was listed and checked against the
+   // source text (record: validation/m14/controls/containment-inner-line-samples-612.json,
+   // probe contains-inner-line-samples-612). In all 24 the edge's line IS a line the
+   // name is written on, and the stored span simply OPENS EARLIER — either on the
+   // line directly above (17 rows; nlohmann's `lexer::get_decimal_point`, span
+   // 171-177 with the edge on 172, line 171 being `JSON_HEDLEY_PURE`; `basic_json::create`,
+   // span 410-424, edge 411, line 410 being `JSON_HEDLEY_RETURNS_NON_NULL`) or further
+   // up the file (7 rows; fmt's `write2digits`, span 1193-1218 with the edge on 1210,
+   // a `typedef struct sha1nfo {…} sha1nfo;` whose edge names the trailing
+   // declarator, and the `NLOHMANN_JSON_NAMESPACE_END` macro, whose span is a whole
+   // namespace body). The target name is unique in the file by construction — that
+   // is what selects these rows — so the same-file preference resolves them
+   // correctly; only the equality test is strict, not the resolution.
    //
    // The key ORDER is part of the rule, and the first cut of it got this wrong:
    // `COALESCE(s.is_declaration, 0) ASC` — the definitions-over-declarations

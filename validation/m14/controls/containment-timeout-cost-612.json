@@ -1,0 +1,240 @@
+{
+ "issue": "#612 follow-up \u2014 the measured cost of one parse timeout, on the files that time out",
+ "instrument": "BB_FILE_TIMEOUT_MS (src/ast/parallel-indexer.ts config; src/ast/pool-worker.ts self-timeout)",
+ "worktree": "$HOME/mcp/backbencher-brain/.merge-tmp",
+ "commit": "ac097be017451d981f2871869cc48f682533bb57",
+ "commitSubject": "review(merge): census the merge's evidence conflicts by gate IDENTITY",
+ "indexerSha256": "207b71d3dba1c1d5f60c8aecbb1e51e2c57738700bed9f079389d3393cbe4a53",
+ "sampleSource": "/tmp/b612-zig-pinned",
+ "sample": {
+  "dir": "/tmp/b612-zig-sample",
+  "files": 35,
+  "bytes": 37278169,
+  "largest": [
+   {
+    "name": "CodeGen.zig",
+    "bytes": 10941553,
+    "source": "src/codegen/x86_64/CodeGen.zig"
+   },
+   {
+    "name": "udivmodti4_test.zig",
+    "bytes": 10249535,
+    "source": "lib/compiler_rt/udivmodti4_test.zig"
+   },
+   {
+    "name": "udivmoddi4_test.zig",
+    "bytes": 1895062,
+    "source": "lib/compiler_rt/udivmoddi4_test.zig"
+   },
+   {
+    "name": "Sema.zig",
+    "bytes": 1610629,
+    "source": "src/Sema.zig"
+   },
+   {
+    "name": "cast.zig",
+    "bytes": 863008,
+    "source": "test/behavior/x86_64/cast.zig"
+   },
+   {
+    "name": "spec.zig",
+    "bytes": 776382,
+    "source": "src/codegen/spirv/spec.zig"
+   },
+   {
+    "name": "encoding.zig",
+    "bytes": 666794,
+    "source": "src/codegen/aarch64/encoding.zig"
+   },
+   {
+    "name": "Select.zig",
+    "bytes": 655975,
+    "source": "src/codegen/aarch64/Select.zig"
+   },
+   {
+    "name": "llvm.zig",
+    "bytes": 594172,
+    "source": "src/codegen/llvm.zig"
+   },
+   {
+    "name": "Builder.zig",
+    "bytes": 590478,
+    "source": "lib/std/zig/llvm/Builder.zig"
+   }
+  ]
+ },
+ "budgets": [
+  600000,
+  15000,
+  3000,
+  600000
+ ],
+ "runs": [
+  {
+   "timeoutBudgetMs": 600000,
+   "exitCode": 0,
+   "wallSeconds": 116.8,
+   "loadAverage": [
+    12.82,
+    12.2,
+    11.38
+   ],
+   "indexed": {
+    "files": 33,
+    "symbols": 36848,
+    "relationships": 73413,
+    "embeddings": 4411,
+    "reportedSeconds": 113.8
+   },
+   "breakdown": {
+    "newlyParsed": 33,
+    "unchanged": 2,
+    "skipped": 0,
+    "symbolLossFiles": 0,
+    "symbolLossParsedSymbols": 0,
+    "errors": 0,
+    "timeouts": 0
+   },
+   "db": {
+    "symbols": 36848,
+    "relationships": 73413,
+    "contains": 27866
+   }
+  },
+  {
+   "timeoutBudgetMs": 15000,
+   "exitCode": 0,
+   "wallSeconds": 179.7,
+   "loadAverage": [
+    10.63,
+    11.6,
+    11.32
+   ],
+   "indexed": {
+    "files": 31,
+    "symbols": 28704,
+    "relationships": 59042,
+    "embeddings": 3823,
+    "reportedSeconds": 176.8
+   },
+   "breakdown": {
+    "newlyParsed": 25,
+    "unchanged": 2,
+    "skipped": 0,
+    "symbolLossFiles": 0,
+    "symbolLossParsedSymbols": 0,
+    "errors": 3,
+    "timeouts": 5
+   },
+   "db": {
+    "symbols": 28704,
+    "relationships": 59042,
+    "contains": 19920
+   }
+  },
+  {
+   "timeoutBudgetMs": 3000,
+   "exitCode": 0,
+   "wallSeconds": 44.9,
+   "loadAverage": [
+    12.39,
+    11.89,
+    11.43
+   ],
+   "indexed": {
+    "files": 6,
+    "symbols": 3885,
+    "relationships": 5940,
+    "embeddings": 350,
+    "reportedSeconds": 43.0
+   },
+   "breakdown": {
+    "newlyParsed": 6,
+    "unchanged": 2,
+    "skipped": 0,
+    "symbolLossFiles": 0,
+    "symbolLossParsedSymbols": 0,
+    "errors": 14,
+    "timeouts": 13
+   },
+   "db": {
+    "symbols": 3885,
+    "relationships": 5940,
+    "contains": 2814
+   }
+  },
+  {
+   "timeoutBudgetMs": 600000,
+   "exitCode": 0,
+   "wallSeconds": 156.4,
+   "loadAverage": [
+    14.25,
+    13.83,
+    12.31
+   ],
+   "indexed": {
+    "files": 33,
+    "symbols": 36848,
+    "relationships": 73413,
+    "embeddings": 4411,
+    "reportedSeconds": 152.1
+   },
+   "breakdown": {
+    "newlyParsed": 33,
+    "unchanged": 2,
+    "skipped": 0,
+    "symbolLossFiles": 0,
+    "symbolLossParsedSymbols": 0,
+    "errors": 0,
+    "timeouts": 0
+   },
+   "db": {
+    "symbols": 36848,
+    "relationships": 73413,
+    "contains": 27866
+   }
+  }
+ ],
+ "startedAt": "2026-09-25T22:07:24-0400",
+ "updatedAt": "2026-09-25T22:15:42-0400",
+ "verdict": {
+  "baselineRunsAgreeOnCounts": true,
+  "baselineSeconds": [
+   113.8,
+   152.1
+  ],
+  "forcedSeconds": 176.8,
+  "failedFilesForced": 8,
+  "lossPerFailedFile": {
+   "symbols": 1018.0,
+   "relationships": 1796.4,
+   "contains": 993.2
+  },
+  "corpusArithmetic": {
+   "note": "the two first-pass zig arms differ by 17 failed files (22 timeouts + 1 error vs 6 + 0), +21,540 symbols, +24,976 relationships, +8,401 containment edges",
+   "perFailedFile_observed": {
+    "symbols": 1267.1,
+    "relationships": 1469.2,
+    "contains": 494.2
+   }
+  },
+  "baselineCounts": {
+   "indexed": {
+    "files": 33,
+    "symbols": 36848,
+    "relationships": 73413,
+    "embeddings": 4411
+   },
+   "db": {
+    "symbols": 36848,
+    "relationships": 73413,
+    "contains": 27866
+   }
+  },
+  "baselineReportedSeconds": [
+   113.8,
+   152.1
+  ]
+ },
+ "finishedAt": "2026-09-25T22:15:42-0400"
+}
