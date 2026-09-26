@@ -1854,7 +1854,10 @@ export async function storeResults(
    // validation/m14/measurements/containment-612.before.json — the control arm; the
    // arm after this rule is validation/m14/measurements/containment-612.json. Those two
    // names, not `M14.0.*`: that namespace belongs to gates that call `emitEvidence`,
-   // and a corpus sweep is a measurement, not a gate. Probe contains-line-hint-612;
+   // and a corpus sweep is a measurement, not a gate. They also sit outside
+   // validation/m14/results/ itself, because the evidence harness validates every
+   // JSON in that directory and a non-harness record there fails it. Probe
+   // contains-line-hint-612;
    // `line pins 1` = the target name repeats AND exactly one same-file candidate
    // sits on the edge's own line. The table is the CONTROL arm, and a rule cannot
    // re-resolve a name it never sees, so the after arm's figures are identical on

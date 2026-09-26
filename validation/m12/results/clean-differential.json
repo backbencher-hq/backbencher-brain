@@ -236,8 +236,8 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
       },
       "validation/m12/fixtures/clean/Negative.icl": {
         "sha256": "104cea62d55b5cf8b7d3c02d2734496f0ab00fbf540976490fdee27eb228d339",
@@ -252,7 +252,7 @@
         "bytes": 26401
       }
     },
-    "digest": "497d60eb003d716f8006bea3f358681eab9ea59b2419ebd3e61315523cbef7be",
+    "digest": "0087361d1c2f7ff1dcc4de71bfe0acaf667aaa2bed94e3f42e3f8c5e1a9d7c6e",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clean_tree-sitter-clean.wasm",
       "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
@@ -376,11 +376,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clean",
-      "wallTimeMs": 45.863403,
-      "userCpuMs": 105.758,
-      "systemCpuMs": 11.034,
-      "peakRssBytes": 266981376,
-      "rssDeltaBytes": 6926336,
+      "wallTimeMs": 185.2775,
+      "userCpuMs": 82.024,
+      "systemCpuMs": 7.217,
+      "peakRssBytes": 252616704,
+      "rssDeltaBytes": 4161536,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -390,10 +390,5 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for clean. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.840Z",
-    "contentSha256": "12ea4fd5f3ea08eb0ba397174e6baae5e8690ac99399d136ab89136b0c69d8c3"
-  }
+  "note": "M12 per-analyzer differential for clean. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
 }
