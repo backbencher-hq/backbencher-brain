@@ -1,0 +1,1169 @@
+{
+ "schemaVersion": 1,
+ "kind": "m60-haskell-local-identity",
+ "basis": "script/m14/tmp/hs-local-identity.ts, one instrument, both runs, same draw (hledger 186 .hs + cabal 2,150 .hs): `before` = the analyzer at 35e80314 (bare local endpoints), `after` = the scoped-local identity round. `bareBinder` = an endpoint whose name equals a local binder name in the same file (the pre-fix local attribution); `localChain` = an endpoint whose head is a function/method symbol and whose tail is a local binder name (the scoped `owner.local` identity); `resolved` = endpoint is a file symbol; `bareUndeclared` = any other bare endpoint (constructors, imported names). Endpoint classification is rule-agnostic — it reads only emitted text, the symbol table and the tree's binder names — so both runs are comparable. Recorded refinement: the local-chain head test was tightened mid-round from `head is any symbol` to `head is a function/method symbol` after the first after-run let single-uppercase CONSTRUCTOR symbols (`data Side = L | R`) masquerade as owners; the before-side bucket is unaffected (its local-chain count was 0 by measurement, and dotted non-chain endpoints were unclassified under both spellings).",
+ "before": {
+  "probe": "hs-local-identity",
+  "basis": "script/m14/tmp/hs-local-identity.ts on the same draw; before = analyzer @35e80314 (bare local endpoints), after = scoped local identity",
+  "roots": [
+   "$HOME/fixtures/repositories/hledger",
+   "$HOME/fixtures/repositories/cabal"
+  ],
+  "files": 2356,
+  "parseFailed": 0,
+  "filesWithShadowingBinder": 16,
+  "shadowingBinderNames": 67,
+  "filesWithLocalBinders": 708,
+  "localBinderNames": 11487,
+  "binderEndpointTop": [
+   [
+    "go",
+    803
+   ],
+   [
+    "render",
+    177
+   ],
+   [
+    "db",
+    115
+   ],
+   [
+    "goals",
+    110
+   ],
+   [
+    "parser",
+    82
+   ],
+   [
+    "alg",
+    60
+   ],
+   [
+    "combinedSavedConfigureFlags",
+    57
+   ],
+   [
+    "f",
+    52
+   ],
+   [
+    "env",
+    45
+   ],
+   [
+    "checkGeneral",
+    45
+   ],
+   [
+    "pp",
+    44
+   ],
+   [
+    "flags",
+    43
+   ],
+   [
+    "dummyFlags'",
+    43
+   ],
+   [
+    "opts",
+    40
+   ],
+   [
+    "combinedSavedInstallFlags",
+    37
+   ],
+   [
+    "expected",
+    36
+   ],
+   [
+    "resolverParams",
+    36
+   ],
+   [
+    "parseSection",
+    35
+   ],
+   [
+    "cs",
+    34
+   ],
+   [
+    "table",
+    33
+   ],
+   [
+    "combinedSavedInitFlags",
+    32
+   ],
+   [
+    "settings",
+    32
+   ],
+   [
+    "ghcExtension",
+    31
+   ],
+   [
+    "args",
+    30
+   ],
+   [
+    "checkTarget",
+    29
+   ],
+   [
+    "test",
+    29
+   ],
+   [
+    "parseOne",
+    28
+   ],
+   [
+    "aux",
+    28
+   ],
+   [
+    "cases",
+    28
+   ],
+   [
+    "result",
+    27
+   ]
+  ],
+  "filesWithLocalAttributedEdges": 551,
+  "localAttributedEdgesSeen": 551,
+  "undeclaredSourceTop": [
+   [
+    "go",
+    803
+   ],
+   [
+    "render",
+    177
+   ],
+   [
+    "db",
+    115
+   ],
+   [
+    "goals",
+    110
+   ],
+   [
+    "parser",
+    82
+   ],
+   [
+    "alg",
+    60
+   ],
+   [
+    "combinedSavedConfigureFlags",
+    57
+   ],
+   [
+    "f",
+    52
+   ],
+   [
+    "env",
+    45
+   ],
+   [
+    "checkGeneral",
+    45
+   ],
+   [
+    "pp",
+    44
+   ],
+   [
+    "flags",
+    43
+   ],
+   [
+    "dummyFlags'",
+    43
+   ],
+   [
+    "opts",
+    40
+   ],
+   [
+    "combinedSavedInstallFlags",
+    37
+   ],
+   [
+    "expected",
+    36
+   ],
+   [
+    "resolverParams",
+    36
+   ],
+   [
+    "parseSection",
+    35
+   ],
+   [
+    "cs",
+    34
+   ],
+   [
+    "table",
+    33
+   ],
+   [
+    "combinedSavedInitFlags",
+    32
+   ],
+   [
+    "settings",
+    32
+   ],
+   [
+    "ghcExtension",
+    31
+   ],
+   [
+    "args",
+    30
+   ],
+   [
+    "checkTarget",
+    29
+   ],
+   [
+    "test",
+    29
+   ],
+   [
+    "parseOne",
+    28
+   ],
+   [
+    "aux",
+    28
+   ],
+   [
+    "cases",
+    28
+   ],
+   [
+    "result",
+    27
+   ]
+  ],
+  "undeclaredTargetTop": [
+   [
+    "Just",
+    1548
+   ],
+   [
+    "Right",
+    495
+   ],
+   [
+    "Flag",
+    460
+   ],
+   [
+    "go",
+    354
+   ],
+   [
+    "Left",
+    312
+   ],
+   [
+    "combine",
+    216
+   ],
+   [
+    "assertHasCommentLine",
+    186
+   ],
+   [
+    "ExAny",
+    167
+   ],
+   [
+    "Fingerprint",
+    122
+   ],
+   [
+    "ExFix",
+    115
+   ],
+   [
+    "i",
+    106
+   ],
+   [
+    "P",
+    77
+   ],
+   [
+    "CExeName",
+    71
+   ],
+   [
+    "addCmd",
+    62
+   ],
+   [
+    "DateSpan",
+    62
+   ],
+   [
+    "REUnion",
+    59
+   ],
+   [
+    "mk",
+    59
+   ],
+   [
+    "CLibName",
+    59
+   ],
+   [
+    "log",
+    56
+   ],
+   [
+    "escape",
+    55
+   ],
+   [
+    "test",
+    55
+   ],
+   [
+    "equal",
+    54
+   ],
+   [
+    "f",
+    52
+   ],
+   [
+    "CommandUI",
+    50
+   ],
+   [
+    "RepoName",
+    47
+   ],
+   [
+    "opt",
+    45
+   ],
+   [
+    "u",
+    44
+   ],
+   [
+    "WideBuilder",
+    44
+   ],
+   [
+    "AvailableTarget",
+    42
+   ],
+   [
+    "QualIndep",
+    41
+   ]
+  ],
+  "callsEdges": 22483,
+  "instantiatesEdges": 9828,
+  "sources": {
+   "resolved": 20002,
+   "bareShadowed": 0,
+   "bareBinder": 12309,
+   "bareUndeclared": 12309,
+   "localChain": 0
+  },
+  "targets": {
+   "resolved": 12059,
+   "bareShadowed": 0,
+   "bareBinder": 6314,
+   "bareUndeclared": 13854,
+   "localChain": 0
+  },
+  "elapsedSeconds": 19.3,
+  "shadowEdgeHistogram": [],
+  "shadowExamples": [
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/Configure.hs",
+    "names": [
+     "internalPackageSet",
+     "promisedDepsSet"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/InstallDirs.hs",
+    "names": [
+     "flibdir",
+     "includedir",
+     "mandir"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/SetupHooks/HooksMain.hs",
+    "names": [
+     "hookName"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-dev-scripts/src/GenCabalMacros.hs",
+    "names": [
+     "fromValue",
+     "toType",
+     "toValue"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/CmdInstall.hs",
+    "names": [
+     "mkExeName",
+     "mkFinalExeName",
+     "verbosity"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/DistDirLayout.hs",
+    "names": [
+     "distBinDirectory",
+     "distBuildDirectory",
+     "distBuildRootDirectory",
+     "distDirectory",
+     "distDownloadSrcDirectory",
+     "distHaddockOutputDir",
+     "distPackageCacheDirectory",
+     "distPackageCacheFile",
+     "distPackageDB",
+     "distProjectCacheDirectory",
+     "distProjectCacheFile",
+     "distProjectFile",
+     "distProjectRootDirectory",
+     "distSdistDirectory",
+     "distSdistFile",
+     "distTempDirectory",
+     "distUnpackedSrcDirectory",
+     "distUnpackedSrcRootDirectory",
+     "storeDirectory",
+     "storeIncomingDirectory",
+     "storeIncomingLock",
+     "storePackageDB",
+     "storePackageDBPath",
+     "storePackageDBStack",
+     "storePackageDirectory"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/IndexUtils.hs",
+    "names": [
+     "isiHeadTime",
+     "isiMaxTime"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/Init/Utils.hs",
+    "names": [
+     "fileExtension"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/ProjectOrchestration.hs",
+    "names": [
+     "availableTargetsByPackageId",
+     "availableTargetsByPackageIdAndComponentName",
+     "availableTargetsByPackageName",
+     "availableTargetsByPackageNameAndComponentName",
+     "availableTargetsByPackageNameAndUnqualComponentName",
+     "buildSettings",
+     "distDirLayout",
+     "installedPackages"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs",
+    "names": [
+     "packagesAlreadyInStore",
+     "packagesBuildInplace",
+     "packagesBuildLocal",
+     "packagesDefinitelyUpToDate",
+     "packagesInvalidByChangedLibDeps",
+     "packagesInvalidByFailedBuild",
+     "packagesLibDepGraph",
+     "packagesOutOfDate",
+     "packagesProbablyUpToDate"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/VCS.hs",
+    "names": [
+     "vcsCloneRepo",
+     "vcsSyncRepos"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksC2HsRules/SetupHooks.hs",
+    "names": [
+     "inDir",
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksNonHs/SetupHooks.hs",
+    "names": [
+     "mbWorkDir",
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksRecursiveGlob/SetupHooks.hs",
+    "names": [
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/hledger/hledger-lib/Hledger/Reports/ReportOptions.hs",
+    "names": [
+     "querystring"
+    ]
+   }
+  ],
+  "shadowEdgeExamples": [],
+  "localChainExamples": []
+ },
+ "after": {
+  "probe": "hs-local-identity",
+  "basis": "script/m14/tmp/hs-local-identity.ts on the same draw; before = analyzer @35e80314 (bare local endpoints), after = scoped local identity",
+  "roots": [
+   "$HOME/fixtures/repositories/hledger",
+   "$HOME/fixtures/repositories/cabal"
+  ],
+  "files": 2356,
+  "parseFailed": 0,
+  "filesWithShadowingBinder": 16,
+  "shadowingBinderNames": 67,
+  "filesWithLocalBinders": 708,
+  "localBinderNames": 11487,
+  "binderEndpointTop": [],
+  "filesWithLocalAttributedEdges": 0,
+  "localAttributedEdgesSeen": 0,
+  "undeclaredSourceTop": [],
+  "undeclaredTargetTop": [
+   [
+    "Just",
+    1548
+   ],
+   [
+    "Right",
+    495
+   ],
+   [
+    "Flag",
+    460
+   ],
+   [
+    "Left",
+    312
+   ],
+   [
+    "ExAny",
+    167
+   ],
+   [
+    "Fingerprint",
+    122
+   ],
+   [
+    "ExFix",
+    115
+   ],
+   [
+    "P",
+    77
+   ],
+   [
+    "CExeName",
+    71
+   ],
+   [
+    "DateSpan",
+    62
+   ],
+   [
+    "REUnion",
+    59
+   ],
+   [
+    "CLibName",
+    59
+   ],
+   [
+    "CommandUI",
+    50
+   ],
+   [
+    "RepoName",
+    47
+   ],
+   [
+    "WideBuilder",
+    44
+   ],
+   [
+    "AvailableTarget",
+    42
+   ],
+   [
+    "QualIndep",
+    41
+   ],
+   [
+    "Precision",
+    38
+   ],
+   [
+    "MonitoredFileChanged",
+    37
+   ],
+   [
+    "PackageIdentifier",
+    36
+   ],
+   [
+    "Location",
+    35
+   ],
+   [
+    "Header",
+    34
+   ],
+   [
+    "Fail",
+    33
+   ],
+   [
+    "Group",
+    33
+   ],
+   [
+    "WriteOpts",
+    31
+   ],
+   [
+    "PackageDistInexcusable",
+    30
+   ],
+   [
+    "And",
+    30
+   ],
+   [
+    "CTestName",
+    27
+   ],
+   [
+    "Dependency",
+    27
+   ],
+   [
+    "Transaction",
+    27
+   ]
+  ],
+  "callsEdges": 21047,
+  "instantiatesEdges": 9828,
+  "sources": {
+   "resolved": 19043,
+   "bareShadowed": 0,
+   "bareBinder": 0,
+   "bareUndeclared": 0,
+   "localChain": 11832
+  },
+  "targets": {
+   "resolved": 12034,
+   "bareShadowed": 0,
+   "bareBinder": 0,
+   "bareUndeclared": 7536,
+   "localChain": 4907
+  },
+  "elapsedSeconds": 32.4,
+  "shadowEdgeHistogram": [],
+  "shadowExamples": [
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/Configure.hs",
+    "names": [
+     "internalPackageSet",
+     "promisedDepsSet"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/InstallDirs.hs",
+    "names": [
+     "flibdir",
+     "includedir",
+     "mandir"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal/src/Distribution/Simple/SetupHooks/HooksMain.hs",
+    "names": [
+     "hookName"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-dev-scripts/src/GenCabalMacros.hs",
+    "names": [
+     "fromValue",
+     "toType",
+     "toValue"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/CmdInstall.hs",
+    "names": [
+     "mkExeName",
+     "mkFinalExeName",
+     "verbosity"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/DistDirLayout.hs",
+    "names": [
+     "distBinDirectory",
+     "distBuildDirectory",
+     "distBuildRootDirectory",
+     "distDirectory",
+     "distDownloadSrcDirectory",
+     "distHaddockOutputDir",
+     "distPackageCacheDirectory",
+     "distPackageCacheFile",
+     "distPackageDB",
+     "distProjectCacheDirectory",
+     "distProjectCacheFile",
+     "distProjectFile",
+     "distProjectRootDirectory",
+     "distSdistDirectory",
+     "distSdistFile",
+     "distTempDirectory",
+     "distUnpackedSrcDirectory",
+     "distUnpackedSrcRootDirectory",
+     "storeDirectory",
+     "storeIncomingDirectory",
+     "storeIncomingLock",
+     "storePackageDB",
+     "storePackageDBPath",
+     "storePackageDBStack",
+     "storePackageDirectory"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/IndexUtils.hs",
+    "names": [
+     "isiHeadTime",
+     "isiMaxTime"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/Init/Utils.hs",
+    "names": [
+     "fileExtension"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/ProjectOrchestration.hs",
+    "names": [
+     "availableTargetsByPackageId",
+     "availableTargetsByPackageIdAndComponentName",
+     "availableTargetsByPackageName",
+     "availableTargetsByPackageNameAndComponentName",
+     "availableTargetsByPackageNameAndUnqualComponentName",
+     "buildSettings",
+     "distDirLayout",
+     "installedPackages"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/ProjectPlanOutput.hs",
+    "names": [
+     "packagesAlreadyInStore",
+     "packagesBuildInplace",
+     "packagesBuildLocal",
+     "packagesDefinitelyUpToDate",
+     "packagesInvalidByChangedLibDeps",
+     "packagesInvalidByFailedBuild",
+     "packagesLibDepGraph",
+     "packagesOutOfDate",
+     "packagesProbablyUpToDate"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-install/src/Distribution/Client/VCS.hs",
+    "names": [
+     "vcsCloneRepo",
+     "vcsSyncRepos"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksC2HsRules/SetupHooks.hs",
+    "names": [
+     "inDir",
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksNonHs/SetupHooks.hs",
+    "names": [
+     "mbWorkDir",
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/cabal-testsuite/PackageTests/SetupHooks/SetupHooksRecursiveGlob/SetupHooks.hs",
+    "names": [
+     "verbosityFlags"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/hledger/hledger-lib/Hledger/Reports/ReportOptions.hs",
+    "names": [
+     "querystring"
+    ]
+   }
+  ],
+  "shadowEdgeExamples": [],
+  "localChainExamples": [
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-QuickCheck/src/Test/QuickCheck/Instances/Cabal.hs",
+    "edges": [
+     "arbitrary.nameComponent -> shortListOf1 (arbitrary.nameComponent)",
+     "arbitrary -> arbitrary.smallListOf1 (arbitrary.smallListOf1)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.verRangeExp)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.recurse)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.verRangeExp)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.recurse)",
+     "arbitrary.recurse -> arbitrary.verRangeExp (arbitrary.recurse)",
+     "arbitrary.recurse -> arbitrary.verRangeExp (arbitrary.verRangeExp)",
+     "arbitrary.orLaterVersion' -> LaterVersion (arbitrary.orLaterVersion')",
+     "arbitrary.orLaterVersion' -> ThisVersion (arbitrary.orLaterVersion')",
+     "arbitrary.orEarlierVersion' -> EarlierVersion (arbitrary.orEarlierVersion')",
+     "arbitrary.orEarlierVersion' -> ThisVersion (arbitrary.orEarlierVersion')",
+     "arbitrary.comp -> shortListOf1 (arbitrary.comp)",
+     "arbitrary.flagident -> shortListOf1 (arbitrary.flagident)",
+     "arbitrary.arb.arbA -> arbitrary.arb (arbitrary.arb.arbA)",
+     "arbitrary.arb.arbA -> arbitrary.arb (arbitrary.arb)",
+     "arbitrary.arb.arbB -> arbitrary.arb (arbitrary.arb.arbB)",
+     "arbitrary.arb.arbB -> arbitrary.arb (arbitrary.arb)",
+     "arbitrary.mk -> NES.fromNonEmpty (arbitrary.mk)",
+     "shrink.mk -> NES.fromNonEmpty (shrink.mk)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.verRangeExp)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.recurse)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.verRangeExp)",
+     "arbitrary.verRangeExp -> arbitrary.recurse (arbitrary.recurse)",
+     "arbitrary.recurse -> arbitrary.verRangeExp (arbitrary.recurse)",
+     "arbitrary.recurse -> arbitrary.verRangeExp (arbitrary.verRangeExp)",
+     "arbitrary.orLaterVersion' -> PcUnionVersionRanges (arbitrary.orLaterVersion')",
+     "arbitrary.orLaterVersion' -> PcLaterVersion (arbitrary.orLaterVersion')",
+     "arbitrary.orLaterVersion' -> PcThisVersion (arbitrary.orLaterVersion')",
+     "arbitrary.orEarlierVersion' -> PcUnionVersionRanges (arbitrary.orEarlierVersion')",
+     "arbitrary.orEarlierVersion' -> PcEarlierVersion (arbitrary.orEarlierVersion')",
+     "arbitrary.orEarlierVersion' -> PcThisVersion (arbitrary.orEarlierVersion')",
+     "arbitraryShortPath.winDevice -> arbitraryShortPath.splitBy (arbitraryShortPath.winDevice)",
+     "arbitraryShortPath.winDevice -> arbitraryShortPath.splitBy (arbitraryShortPath.splitBy)",
+     "arbitraryShortPath.splitBy -> arbitraryShortPath.splitBy (arbitraryShortPath.splitBy)",
+     "arbitraryShortPath.splitBy -> arbitraryShortPath.splitBy (arbitraryShortPath.splitBy)",
+     "intSqrt -> intSqrt.iter (intSqrt.iter)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-described/src/Distribution/Described.hs",
+    "edges": [
+     "reHsString.impl -> REMunch (reHsString.impl)",
+     "reHsString.impl -> REUnion (reHsString.impl)",
+     "reHsString.strChar -> CS.difference (reHsString.strChar)",
+     "reHsString.strChar -> CS.fromList (reHsString.strChar)",
+     "reHsString.escChar -> REUnion (reHsString.escChar)",
+     "reHsString.escChar -> REUnion (reHsString.escChar)",
+     "reHsString.escChar -> RENamed (reHsString.escChar)",
+     "reHsString.escChar -> RECharSet (reHsString.escChar)",
+     "reHsString.escChar -> RECharSet (reHsString.escChar)",
+     "reHsString.escChar -> RECharSet (reHsString.escChar)",
+     "reHsString.escChar -> REUnion (reHsString.escChar)",
+     "reHsString.escChar -> RENamed (reHsString.escChar)",
+     "reHsString.escChar -> REUnion (reHsString.escChar)",
+     "reHsString.escChar -> RENamed (reHsString.escChar)",
+     "reUnqualComponent.component -> REMunch (reUnqualComponent.component)",
+     "reUnqualComponent.component -> RECharSet (reUnqualComponent.component)",
+     "reUnqualComponent.component -> RECharSet (reUnqualComponent.component)",
+     "reUnqualComponent.component -> REMunch (reUnqualComponent.component)",
+     "reUnqualComponent.component -> RECharSet (reUnqualComponent.component)",
+     "convert -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> RE.Ch (convert.go)",
+     "convert.go -> convertCS (convert.go)",
+     "convert.go -> RE.string_ (convert.go)",
+     "convert.go -> RE.star_ (convert.go)",
+     "convert.go.sep' -> convert.go (convert.go.sep')",
+     "convert.go.sep' -> convert.go (convert.go)",
+     "convert.go.r' -> convert.go (convert.go.r')",
+     "convert.go.r' -> convert.go (convert.go)",
+     "convert.go -> RE.star_ (convert.go)",
+     "convert.go.sep' -> convert.go (convert.go.sep')",
+     "convert.go.sep' -> convert.go (convert.go)",
+     "convert.go.r' -> convert.go (convert.go.r')",
+     "convert.go.r' -> convert.go (convert.go)",
+     "convert.go -> convert.go.go' (convert.go)",
+     "convert.go -> convert.go.go' (convert.go.go')",
+     "convert.go.sep' -> convert.go (convert.go.sep')",
+     "convert.go.sep' -> convert.go (convert.go)",
+     "convert.go.r' -> convert.go (convert.go.r')",
+     "convert.go.r' -> convert.go (convert.go)",
+     "convert.go.go' -> convert.go.go' (convert.go.go')",
+     "convert.go.go' -> convert.go.go' (convert.go.go')",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> RE.Var (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> RE.fix_ (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> RE.ch_ (convert.go)",
+     "convert.go -> RE.ch_ (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> expandedCommaList (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> expandedCommaNonEmpty (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> convert.go (convert.go)",
+     "convert.go -> expandedOptCommaList (convert.go)",
+     "testDescribed.rr -> convert (testDescribed.rr)",
+     "testDescribed.rr -> describe (testDescribed.rr)",
+     "testDescribed.propPretty -> RE.matchR (testDescribed.propPretty)",
+     "describe.vr -> RENamed (describe.vr)",
+     "describe.vr -> describe (describe.vr)",
+     "describe.mr -> describe (describe.mr)",
+     "describe.component -> RECharSet (describe.component)",
+     "describe.component -> REMunch (describe.component)",
+     "describe.component -> REUnion (describe.component)",
+     "describe -> describe.bp (describe.bp)",
+     "describe -> describe.bp (describe.bp)",
+     "describe.mn -> RENamed (describe.mn)",
+     "describe.mn -> describe (describe.mn)",
+     "describe.entry -> REOpt (describe.entry)",
+     "describe.reDigits -> REUnion (describe.reDigits)",
+     "describe.reDigits -> REMunchR (describe.reDigits)",
+     "describe.ver' -> describe (describe.ver')",
+     "describe.ver -> RENamed (describe.ver)",
+     "describe.verSet -> REMunch1 (describe.verSet)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-described/src/Distribution/Utils/CharSet.hs",
+    "edges": [
+     "normalise'.go -> normalise'.go' (normalise'.go)",
+     "normalise'.go -> normalise'.go' (normalise'.go')",
+     "normalise'.go' -> normalise'.go' (normalise'.go')",
+     "normalise'.go' -> normalise'.go' (normalise'.go')",
+     "normalise'.go' -> normalise'.go (normalise'.go')",
+     "normalise'.go' -> normalise'.go (normalise'.go)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-described/src/Distribution/Utils/GrammarRegex.hs",
+    "edges": [
+     "<> -> <>.unAppend (<>.unAppend)",
+     "regexDoc -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> PP.hcat (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> PP.hsep (regexDoc.go)",
+     "regexDoc.go -> PP.hcat (regexDoc.go)",
+     "regexDoc.go -> PP.punctuate (regexDoc.go)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> PP.hcat (regexDoc.go)",
+     "regexDoc.go -> PP.punctuate (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> PP.int (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.go -> PP.hcat (regexDoc.go)",
+     "regexDoc.go -> charsetDoc (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> terminalDoc (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.go)",
+     "regexDoc.go -> regexDoc.parensIf (regexDoc.parensIf)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go -> regexDoc.go (regexDoc.go)",
+     "regexDoc.go.n' -> terminalDoc (regexDoc.go.n')",
+     "regexDoc.go -> PP.text (regexDoc.go)",
+     "regexDoc.parensIf -> PP.text (regexDoc.parensIf)",
+     "charsetDoc.notAcs -> CS.complement (charsetDoc.notAcs)",
+     "charsetDoc.rangeDoc -> inquotes (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> mathtt (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> charDoc (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> inquotes (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> mathtt (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> charDoc (charsetDoc.rangeDoc)",
+     "charsetDoc.rangeDoc -> PP.text (charsetDoc.rangeDoc)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-hooks/src/Distribution/Simple/SetupHooks.hs",
+    "edges": [
+     "registerRule.rId -> RuleId (registerRule.rId)",
+     "findAndMonitorSourceDirsFileExts.fileGlob -> Literal (findAndMonitorSourceDirsFileExts.fileGlob)",
+     "findAndMonitorSourceDirsFileExts.fileGlob -> Literal (findAndMonitorSourceDirsFileExts.fileGlob)",
+     "findAndMonitorSourceDirsFileExts.fileGlob -> Union (findAndMonitorSourceDirsFileExts.fileGlob)",
+     "findAndMonitorSourceDirsFileExts.glob -> GlobDirRecursive (findAndMonitorSourceDirsFileExts.glob)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Backpack.hs",
+    "edges": [
+     "parsec.parseOpenUnitId -> P.between (parsec.parseOpenUnitId)",
+     "parsec.parseOpenUnitId -> P.char (parsec.parseOpenUnitId)",
+     "parsec.parseOpenUnitId -> P.char (parsec.parseOpenUnitId)",
+     "parsec.parseOpenUnitId -> IndefFullUnitId (parsec.parseOpenUnitId)",
+     "parsec.parsecOpenModule -> P.char (parsec.parsecOpenModule)",
+     "parsec.parsecModuleVar -> P.char (parsec.parsecModuleVar)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Compat/Binary.hs",
+    "edges": [
+     "decodeOrFailIO.handler -> Left (decodeOrFailIO.handler)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Compat/CharParsing.hs",
+    "edges": [
+     "integral.d -> satisfyRange (integral.d)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Compat/Graph.hs",
+    "edges": [
+     "stronglyConnComp.forest -> G.scc (stronglyConnComp.forest)",
+     "stronglyConnComp.decode -> stronglyConnComp.mentions_itself (stronglyConnComp.decode)",
+     "stronglyConnComp.decode -> stronglyConnComp.mentions_itself (stronglyConnComp.mentions_itself)",
+     "stronglyConnComp.decode -> CyclicSCC (stronglyConnComp.decode)",
+     "stronglyConnComp.decode -> AcyclicSCC (stronglyConnComp.decode)",
+     "stronglyConnComp.decode -> CyclicSCC (stronglyConnComp.decode)",
+     "stronglyConnComp.decode -> stronglyConnComp.decode.dec (stronglyConnComp.decode)",
+     "stronglyConnComp.decode -> stronglyConnComp.decode.dec (stronglyConnComp.decode.dec)",
+     "stronglyConnComp.decode.dec -> foldr (stronglyConnComp.decode.dec)",
+     "stronglyConnComp.mentions_itself -> elem (stronglyConnComp.mentions_itself)",
+     "fromMap -> fromMap.key_to_vertex (fromMap.key_to_vertex)",
+     "fromMap.g -> Array.listArray (fromMap.g)",
+     "fromMap.ns -> Map.elems (fromMap.ns)",
+     "fromMap.vertex_map -> Map.fromAscList (fromMap.vertex_map)",
+     "fromMap.key_to_vertex -> Map.lookup (fromMap.key_to_vertex)",
+     "fromMap.nodeTable -> Array.listArray (fromMap.nodeTable)",
+     "fromMap.bounds -> Map.size (fromMap.bounds)",
+     "fromDistinctList.duplicateError -> show (fromDistinctList.duplicateError)",
+     "fromDistinctList.duplicateError -> nodeKey (fromDistinctList.duplicateError)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Compat/NonEmptySet.hs",
+    "edges": [
+     "delete.res -> Set.delete (delete.res)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/Compiler.hs",
+    "edges": [
+     "parsec.component -> P.munch1 (parsec.component)",
+     "classifyCompilerFlavor.compilerMap -> lowercase (classifyCompilerFlavor.compilerMap)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/FieldGrammar.hs",
+    "edges": [
+     "partitionFields.f -> PS (partitionFields.f)",
+     "partitionFields.f -> Map.insertWith (partitionFields.f)",
+     "partitionFields.f -> MkNamelessField (partitionFields.f)",
+     "partitionFields.f -> PS (partitionFields.f)",
+     "partitionFields.f -> MkSection (partitionFields.f)",
+     "takeFields.finalize -> Map.fromListWith (takeFields.finalize)",
+     "takeFields.match -> Just (takeFields.match)",
+     "takeFields.match -> MkNamelessField (takeFields.match)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/FieldGrammar/FieldDescrs.hs",
+    "edges": [
+     "blurFieldGrammar.blur -> SP (blurFieldGrammar.blur)",
+     "booleanFieldDef.f -> Disp.text (booleanFieldDef.f)",
+     "parsecFreeText.dotToEmpty -> parsecFreeText.trim' (parsecFreeText.dotToEmpty)",
+     "parsecFreeText.dotToEmpty -> parsecFreeText.trim' (parsecFreeText.trim')"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/FieldGrammar/Newtypes.hs",
+    "edges": [
+     "parsec -> parsec.simpleSpecVersionRangeSyntax (parsec.simpleSpecVersionRangeSyntax)",
+     "parsec.range -> parsec.specVersionFromRange (parsec.range)",
+     "parsec.range -> parsec.specVersionFromRange (parsec.specVersionFromRange)"
+    ]
+   },
+   {
+    "file": "$HOME/fixtures/repositories/cabal/Cabal-syntax/src/Distribution/FieldGrammar/Parsec.hs",
+    "edges": [
+     "warnMultipleSingularFields.pos -> namelessFieldAnn (warnMultipleSingularFields.pos)"
+    ]
+   }
+  ]
+ }
+}

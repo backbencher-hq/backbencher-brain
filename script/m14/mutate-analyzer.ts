@@ -799,6 +799,81 @@ function haskellEdgeLinePerSet() {
   }
 }
 
+/** Scoped local identity (M60 functional lane, 2026-09-26), half one: the
+ *  identity COLLAPSE. Every endpoint carrying a local's lexical owner chain
+ *  (`owner.local`, nested `owner.inner.local`) is flattened back to the pre-fix
+ *  BARE local name — the shape the analyzer published before the change, when a
+ *  where/let local and a module-level callable of the same name shared one node.
+ *  Measured before the fix on the full hledger+cabal extent (2,356 files):
+ *  12,309 source and 6,314 target `calls` endpoints were bare local
+ *  attributions, over 708 files / 11,487 local binder names; 16 files / 67
+ *  binder names were a shadowing binder (binder name == a module-level symbol
+ *  name). Only endpoints whose HEAD segment is a file symbol are touched, so
+ *  module-qualified targets (`M.lookup`) are never stripped. */
+function haskellLocalIdentityFlat() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const symbolNames = new Set<string>()
+    for (const s of r.symbols ?? []) if (s?.name) symbolNames.add(String(s.name))
+    let changed = false
+    const flat = (name: any) => {
+      if (typeof name !== "string") return name
+      const dot = name.indexOf(".")
+      if (dot <= 0) return name
+      if (!symbolNames.has(name.slice(0, dot))) return name
+      changed = true
+      return name.slice(name.lastIndexOf(".") + 1)
+    }
+    const out = rels.map((rel) => {
+      const source = flat(rel.source)
+      const target = flat(rel.target)
+      return source === rel.source && target === rel.target ? rel : { ...rel, source, target }
+    })
+    return changed ? { ...r, relationships: out } : r
+  }
+}
+
+/** Scoped local identity, half two: the LEXICAL-VISIBILITY revert. Before the
+ *  fix the declared set was FLAT, so a local of ANY function was a candidate
+ *  target from anywhere in the file — the fixture's `outOfScope n = hop n`
+ *  called a name that only exists as a where-local of `siblingA`/`siblingB`,
+ *  and the pre-fix analyzer emitted `calls outOfScope -> hop` for it (bare
+ *  target). The post-fix analyzer emits NOTHING there, so the pre-fix edge
+ *  cannot be recovered by transforming the result — it is re-injected here from
+ *  the source text (the site's own line), which is what makes this mutant a
+ *  faithful replay of the old output rather than a synthetic corruption. */
+function haskellLocalScopeBlind() {
+  return (r: any, source?: string) => {
+    const rels: any[] = r.relationships ?? []
+    if (rels.some((x: any) => String(x.type ?? x.relationshipType) === "calls" && x.source === "outOfScope" && x.target === "hop")) {
+      return r
+    }
+    const lines = String(source ?? "").split("\n")
+    let line = 0
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*outOfScope\b[^=]*=\s*hop\b/.test(lines[i])) {
+        line = i + 1
+        break
+      }
+    }
+    if (!line) return r
+    return {
+      ...r,
+      relationships: [
+        ...rels,
+        {
+          type: "calls",
+          source: "outOfScope",
+          target: "hop",
+          confidence: 0.9,
+          line_number: line,
+          metadata: { haskellSpecific: true, context: "local function call" },
+        },
+      ],
+    }
+  }
+}
+
 interface Mutant {
   id: string
   language: string
@@ -9552,6 +9627,22 @@ export const MUTANTS: Mutant[] = [
     description:
       "The line stays but the dedupe key reverts to `source|type|target` — the pre-fix key verbatim — i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: the full hledger extent loses 2,625 of 15,151 edges, worst group 40 sites; the full cabal extent loses 9,221 of 55,974, worst group 186). Caught by the per-site half of the pins and by the coverage probe's expansion clause (`preChangeEdges < edges`): payload-and-complexity holds exactly two multi-site groups and both are pinned at BOTH sites and counted — `calls recount -> signed`@197/198 and `contains Data.User -> UserId`@29/61 (the second is the universal impl-naming contract: the instance at 61 publishes a symbol named after its target type, so the file has two same-named children and only the child's own line tells them apart — #921). Evidence: validation/m14/results/haskell-line-mutant-pins.json (edges 79 -> 77, 2 of 12 pins and 2 of 2 count pins fail). A fixture pinning only `line_number: <one line>` would NOT catch this, which is why those pins are written in pairs.",
     transform: haskellEdgeLinePerSet(),
+  },
+  {
+    id: "haskell/local-identity-flat",
+    language: "haskell",
+    defectClass: "relationship-identity",
+    description:
+      "Scoped local identity (2026-09-26) regression, half one — the IDENTITY COLLAPSE: a where/let local's edges revert to the pre-fix BARE name (`siblingA.hop -> siblingA.hop` becomes `hop -> hop`, `buildUsers -> buildUsers.double` becomes `buildUsers -> double`), which is exactly the state in which two sibling locals of the same name pooled into one node and a local could not be told apart from a module-level namesake (measured before the fix on the full hledger+cabal extent: 12,309 source / 6,314 target bare local-attributed calls endpoints over 708 files / 11,487 binder names, 16 files / 67 names carrying a shadowing binder; the same draw after the fix shows 0 bare local endpoints against 11,832 source / 4,907 target scoped chain endpoints, with the qualified-target universe unchanged at 6,398 on both sides — see validation/m14/results/haskell-local-identity.json). Caught by every scoped pin in payload-and-complexity and by its bare-form forbids (`calls buildUsers -> double`, `pickUser -> choose`, `instantiates choose -> Bot`, `siblingA/siblingB -> hop`, `calls hop -> hop`) — evidence: validation/m14/results/haskell-local-mutant-pins.json.",
+    transform: haskellLocalIdentityFlat(),
+  },
+  {
+    id: "haskell/local-scope-blind",
+    language: "haskell",
+    defectClass: "relationship-fabrication",
+    description:
+      "Scoped local identity (2026-09-26) regression, half two — the LEXICAL-VISIBILITY revert: target resolution goes back to the FLAT file-wide declared set, whose most visible consequence is an edge the post-fix analyzer correctly does not emit — `calls outOfScope -> hop`, where `hop` is a where-local of siblingA/siblingB ONLY and `outOfScope` cannot see it (Haskell scoping; the same flat set also resolved a local of any function from anywhere). Re-injected faithfully from the source text because the fixed analyzer no longer records the site at all. Caught by the `calls outOfScope -> hop` forbid in payload-and-complexity.",
+    transform: haskellLocalScopeBlind(),
   },
   {
     id: "javascript/template-callee-uses",

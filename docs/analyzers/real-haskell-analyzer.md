@@ -192,7 +192,7 @@ v0.23.1 stays (latest release; M12.25 behavioral identity on full corpus;
 upstream main has an unreleased full rewrite — re-run F1 + wasm-compare when
 it ships).
 
-## Where/let locals — the rule, the 2026-09-25 adjudication, the caveat
+## Where/let locals — the rule, the 2026-09-25 adjudication, scoped identity
 
 **The rule** (pinned by code and by the lane's own fixture): a where/let-bound
 callable is **not a symbol** — locals are not module entities — but it *is* a
@@ -213,15 +213,63 @@ of 1.000. Verdict: analyzer rule stands, truth extended 75 → 77, precision
 the fabrication the wave removed. The fixture comment that still described the
 pre-wave behaviour was corrected in the same act.
 
-**The caveat, measured:** local endpoints are **bare names**. Over
-hledger+cabal at full extent (**2,356 files**, `script/m14/tmp/
-haskell-local-calls-collision.ts`): 680 files carry an endpoint with no symbol
-(6,265 sources / 8,626 targets — mostly the intentional qualified imports), and
-**282 files (12 %)** bind a where/let local whose name is also a module-level
-symbol of that file (`pure`, `fmap`, `show`, `rnf`, `parsec`, `pretty`,
-`structure`), which leaves those edges ambiguous to any consumer that resolves
-by name. Scoping local identity (elixir #17 `scope-arity` precedent) is owed
-and requires truth + fixture + F5 oracle + mutants to move in lockstep.
+**Scoped identity — the caveat closed (2026-09-26).** Local endpoints are no
+longer bare. A local's **edge identity** is its lexical owner chain,
+`owner.local` (nested: `owner.inner.local`), and target resolution is
+**lexical**: a local is a candidate target only from inside its own scope, and
+a shadowing binder wins for the whole RHS of its callable. `Negative.hs`
+therefore emits `helper → helper.go` and `helper.go → helper.go`. Locals still
+publish **no symbol** — the chain is an edge identity, exactly the elixir #17
+`scope-arity` split (the symbol keeps its bare name + owner; the scope identity
+is what gets qualified). Module-qualified targets are untouched (`M.lookup`),
+and a chain can never be confused with one: Haskell capitalises module aliases
+while a local's owner is a lowercase function/method name.
+
+**Instrument correction, recorded rather than quietly fixed.** The pre-round
+caveat cited "282 of 2,356 files (12 %) carry a shadowing binder" from
+`script/m14/tmp/haskell-local-calls-collision.ts`, whose regex
+`(where|let)` + whitespace + NAME also matched INSTANCE/CLASS `where` clauses
+(their first member: `instance Show Account where showsPrec …`), not only local
+binders. Re-measured with the tree (`local_binds`/`let`/`let_in` direct
+children) by `script/m14/tmp/hs-local-identity.ts`: **16 files / 67 binder
+names** carry a shadowing binder, over **708 files / 11,487 local binder
+names**. The ambiguity was latent, not exercised by an emitted edge — no
+endpoint in either run was a bare name that a module symbol and a binder
+share (`bareShadowed = 0`).
+
+**Before/after, one instrument, the same draw** (full hledger 186 + cabal
+2,150 `.hs`, **2,356 files, 0 parse failures**; artifact
+`validation/m14/results/haskell-local-identity.json`, machine-composed
+`before` + `after` blocks over one basis):
+
+| Side | Before (analyzer @35e80314) | After |
+| --- | --- | --- |
+| sources | 20,002 symbol / **12,309 bare local** / 0 chain | 19,043 symbol / **11,832 scoped chain** / **0 bare local** |
+| targets | 12,059 symbol / **6,314 bare local** / 7,540 other bare | 12,034 symbol / **4,907 scoped chain** / 7,536 other bare |
+| qualified dotted targets (untouched) | 6,398 | 6,398 |
+| `calls` / `instantiates` edges | 22,483 / 9,828 | 21,047 / 9,828 |
+
+Every bucket reconciles exactly: before, sources = 20,002 + 12,309 = the edge
+count (32,311); after, 19,043 + 11,832 the same. The 1,436 `calls` edges that
+disappeared are the flat set's cross-scope attributions (the fixture's
+`outOfScope n = hop n` case): −959 sourced from module functions, −477 from
+locals, against −1,407 binder targets and −25 symbol targets. `instantiates`
+did not move. The local-chain test is kind-aware (a *function/method* symbol
+can own a local; single-uppercase CONSTRUCTOR symbols like `data Side = L | R`
+must not masquerade as owners), which is why the qualified-target universe
+reconciles to the same 6,398 on both sides.
+
+**Gates.** Fixture `payload-and-complexity` gained the collision section
+(module-level `go` vs a where-binder `go`, sibling `hop` locals, the
+out-of-scope negative, the do-let bind case) with **6 scoped pins + 8 bare-form
+forbids**; mutants `haskell/local-identity-flat` and
+`haskell/local-scope-blind` are both caught (16/16 haskell mutants), and
+`validation/m14/results/haskell-local-mutant-pins.json` records WHICH pin
+breaks under each (identity-flat: 8 pins missing + 7 forbids tripped;
+scope-blind: the `calls outOfScope -> hop` forbid). M12 truth moved in lockstep
+(`rel:Negative.hs:calls:helper:helper.go`, `…:helper.go:helper.go`; 77/77,
+precision/recall 1.000), and the F5 oracle `deriveHaskellEdges` mirrors the
+rule — full-extent draw, 0 MISSING / 0 unexplained on both hledger and cabal.
 
 ## The site line — dimension 8 / M59.A7 (2026-09-26)
 
