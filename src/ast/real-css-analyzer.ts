@@ -191,9 +191,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processSupports(node, ctx)
           break
         case "at_rule":
-        case "include_statement":
-        case "mixin_statement":
         case "postcss_statement": {
+          // M14 F1 debt repaid 2026-09-26. `include_statement` and
+          // `mixin_statement` were registered dead literals: the pinned
+          // tree-sitter-css wasm enumerates 151 node types and neither is among
+          // them (measured, script/m14/tmp/css-grammar-repayment.ts). The CSS
+          // grammar has no SCSS productions at all, so `@mixin card { }` and
+          // `.a { @include card; }` arrive as `at_rule` with an `at_keyword`
+          // child, and the `at_rule` case above already handles both — verified
+          // live: the mixin symbol, the `@include` symbol and the
+          // `uses .a -> "@mixin card"` edge all resolve. The two cases were
+          // therefore REDUNDANT, not load-bearing, and deleting them is
+          // behaviour-preserving (the corpus edge-set digest over 457 files is
+          // byte-identical: script/m14/tmp/css-edge-digest.ts).
           const scopeUpdate = this.processAtRule(node, currentSelector, ctx)
           if (scopeUpdate.layer) nextLayer = scopeUpdate.layer
           if (scopeUpdate.container) nextContainer = scopeUpdate.container
@@ -583,15 +593,35 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processMedia(node: Node, ctx: CssContext): string | null {
+    // M14 F1 debt repaid 2026-09-26, and it carried a real defect with it.
+    //
+    // The union used to read `{media_query_list, keyword_query, binary_query,
+    // feature_query, parenthesized_query}`. `media_query_list` is NOT a node
+    // type the pinned grammar has (it was a registered dead literal), and the
+    // two types the grammar DOES use for a media query's outermost form were
+    // missing from the list. Measured against the pinned wasm:
+    //
+    //   @media (max-width: 700px)   -> feature_query         worked before
+    //   @media print                -> keyword_query         worked before
+    //   @media (400px <= width <= 700px) -> binary_query     GRAMMAR ERROR (not this union's problem)
+    //   @media not print            -> unary_query           SILENTLY SCOPE-LOST before
+    //   @media selector(.a)         -> selector_query        SILENTLY SCOPE-LOST before
+    //
+    // A lost scope is not a cosmetic miss: the `contains` edge from the media
+    // scope to the rule inside it was never emitted, AND the
+    // `Responsive Design (Media Queries)` pattern was never set, so the file's
+    // own reporting changed. Adding the two live names and dropping the dead one
+    // is what makes `@media not …` and `@media selector(…)` scope at all.
     const queryNode = this.findChild(
       node,
       (c) =>
         c &&
-        (c.type === "media_query_list" ||
-          c.type === "keyword_query" ||
+        (c.type === "keyword_query" ||
           c.type === "binary_query" ||
           c.type === "feature_query" ||
-          c.type === "parenthesized_query"),
+          c.type === "parenthesized_query" ||
+          c.type === "unary_query" ||
+          c.type === "selector_query"),
     )
     if (queryNode) {
       const mediaName = `@media ${queryNode.text}`
@@ -642,9 +672,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processAtRule(node: Node, currentSelector: string, ctx: CssContext): { layer?: string; container?: string } {
     const atKeywordNode = this.findChild(node, (c) => c?.type === "at_keyword")
 
-    let keyword = atKeywordNode ? atKeywordNode.text : ""
-    if (node.type === "mixin_statement") keyword = "@mixin"
-    if (node.type === "include_statement") keyword = "@include"
+    // M14 F1 debt repaid 2026-09-26. The two `node.type === "mixin_statement"`
+    // / `"include_statement"` overrides that used to sit here were DEAD: neither
+    // type is enumerated by the pinned wasm, and an SCSS `@mixin` reaches this
+    // function as an `at_rule` whose `at_keyword` child already reads `@mixin`
+    // (and `@include` likewise). The keyword is therefore taken from the tree and
+    // never from the node type — which is also the only spelling that can be
+    // right, since a node type is not a keyword.
+    const keyword = atKeywordNode ? atKeywordNode.text : ""
 
     if (!keyword) return {}
 
@@ -753,7 +788,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
     }
-    const propNode = this.findChild(node, (c) => c?.type === "property_name" || c?.type === "variable_name")
+    // M14 F1 debt repaid 2026-09-26. `variable_name` was a registered dead
+    // literal: the pinned grammar enumerates 151 node types and has no such
+    // node. The disjunct is dropped rather than left where it can never match.
+    const propNode = this.findChild(node, (c) => c?.type === "property_name")
     if (!propNode) return
 
     const propName = propNode.text
@@ -779,7 +817,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (propName.startsWith("--") || propName.startsWith("$") || propName.startsWith("@")) {
+    // M14 F1 debt repaid 2026-09-26. The `$` (SCSS) and `@` (LESS) prefixes
+    // were DEAD VALUE-POSITION branches — a class the F1 type-literal audit
+    // cannot see, which is why they survived the register. Measured against the
+    // pinned wasm: `$primary: #fff` and `@primary: #fff` each produce ERROR
+    // nodes and ZERO `property_name` nodes, at top level and inside a rule, in
+    // both declaration and value position. So no text beginning `$` or `@` can
+    // ever reach this predicate, and the two framework signals it set were
+    // unreachable: `SCSS/SASS` is in fact detected — but from the `at_rule`
+    // path (`@mixin`/`@include`/`@use`/`@forward`), and LESS was never detected
+    // by anything. Only `--` is reachable, so only `--` is tested.
+    if (propName.startsWith("--")) {
       ctx.symbols.push({
         name: propName,
         kind: ASTEngine.SymbolKind.Variable,
@@ -800,9 +848,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { cssSpecific: true, isCustomPropertyScope: true },
         })
       }
-      if (propName.startsWith("--")) ctx.patterns["CSS Custom Properties"] = true
-      if (propName.startsWith("$")) ctx.frameworks["SCSS/SASS"] = true
-      if (propName.startsWith("@")) ctx.frameworks["LESS"] = true
+      // Reached only by `--`, so the pattern test needs no prefix guard.
+      ctx.patterns["CSS Custom Properties"] = true
     }
 
     if ((propName === "animation" || propName === "animation-name") && currentSelector) {

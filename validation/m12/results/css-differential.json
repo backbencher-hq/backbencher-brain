@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-css-analyzer.ts": {
-        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
-        "bytes": 33011
+        "sha256": "eed47516e47dae1a6f230d2dcc1707661c638ce55dae8f75eec77edc8a555b80",
+        "bytes": 36416
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -96,7 +96,7 @@
         "bytes": 13994
       }
     },
-    "digest": "0a62d6563c7ef874c384a577b4a30d589b510efbcb9a8275add38a02399dcc86",
+    "digest": "6814b238d001c829bd4c5a9c0682d3cc1cbe487298095077c8a878ffadbb059b",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-css_tree-sitter-css.wasm",
       "sha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
@@ -140,8 +140,8 @@
         "bytes": 41969
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
-        "bytes": 32473
+        "sha256": "293692bcdab494a1c2ba5dd046ebe9fd2c7b684574cb4e64c952f7e433a6dae1",
+        "bytes": 36596
       },
       "src/ast/real-go-analyzer.ts": {
         "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
@@ -244,8 +244,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "27be3b983d03ff87d094eab3c3b4c9f1c307a210eae0d644f25187062c616504",
-        "bytes": 236629
+        "sha256": "b6f391f0085c62c40b4dcdc5b27ebd441e1c8581f8fb5265bb9e5bca3943e480",
+        "bytes": 234781
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -346,11 +346,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:css",
-      "wallTimeMs": 86.826408,
-      "userCpuMs": 35.932,
-      "systemCpuMs": 7.981,
-      "peakRssBytes": 207015936,
-      "rssDeltaBytes": 3665920,
+      "wallTimeMs": 61.292193,
+      "userCpuMs": 40.722,
+      "systemCpuMs": 5.564,
+      "peakRssBytes": 224796672,
+      "rssDeltaBytes": 2166784,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
