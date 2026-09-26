@@ -7,9 +7,9 @@
     "roots": [
       "."
     ],
-    "files": 432,
-    "rows": 5782,
-    "filesWithTables": 279
+    "files": 433,
+    "rows": 5809,
+    "filesWithTables": 280
   },
   "violationCount": 28,
   "fileCount": 19,
