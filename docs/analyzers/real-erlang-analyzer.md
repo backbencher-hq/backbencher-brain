@@ -48,7 +48,47 @@
 | calls | ✅ | `call` nodes in EVALUATION contexts (a clause head is a pattern; type syntax is DECL-ONLY — ER-D3). Source = the named function, else the enclosing `-record` (a field default, ER-D12), else the module. Remote calls keep `module:function` (ER-D1) with STRUCTURAL extraction (the module atom of `remote_module`, the function atom of `remote`) and `?MODULE:` expands to the current module (ER-D14, `meta.macroModule`); local calls resolve against the file's declared name/ARITY set (forward references included). Self-recursion IS emitted. `meta.callArity` is the call's `expr_args` named-child count, comments excluded, and it is part of the edge identity: `f/1` and `f/2` sites are distinct edges (ER-D2) | 0.9 |
 | instantiates | ✅ | `record_expr` (`#state{...}`) in BODY/guard position only → `instantiates run -> state`. Record literals in PATTERN position (function heads, `expr_args` before the guard/body) emit NOTHING. `record_update_expr` (`State#state{...}`) is a member WRITE, not a construction — no instantiates (ER-D4) | 1.0 |
 | uses | ✅ | record member READ (`State#state.q`, `#state.label` index reads) → `uses -> <record>` AND `uses -> <field>`; record member UPDATE (`State#state{count = X}`) → `uses -> <record>` and → each assigned field. Evaluation contexts only: a head pattern emits nothing (ER-D7, closes ER-G4). `meta.context` is `record member read` or `record field update` | 1.0 |
-| references | ✅ | module dependencies (`-include`/`-include_lib` path string, `-import` module); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every NAMED type in the expression (atoms + applied call heads; vars are parameters, ER-D10, closes ER-G5). Body variable uses emit NOTHING | 1.0 |
+| references | ✅ | module dependencies (`-include`/`-include_lib` path string, `-import` module); macro USES (`?TIMEOUT`, `?MODULE`, `?SERVER_HEADER` — emitted whether or not the macro is defined here, ER-D8, closes ER-G1); fun VALUES (`fun f/1` bare, `fun lists:map/2` qualified — a value is not an invocation, ER-D9, closes ER-G2); type dependencies from `-type`/`-opaque` to every type name the expression APPLIES (ER-D10 narrowed by ER3, closes ER-G5). Body variable uses emit NOTHING | 1.0 |
+
+### Type dependencies: an applied name, never a bare one (ER3, 2026-09-25)
+
+In Erlang type syntax a **bare unquoted atom is the atom LITERAL of that name**
+(`-type day() :: monday | tuesday.` declares two literals; writing `integer`
+without parens is the ATOM integer, not the type `integer()`), and a **map or
+record field key is a DECLARATION** (`#{id := job_id()}` declares the field
+`id`). Only an APPLIED name is a type use:
+
+| Shape (pinned grammar) | Emits | Why |
+| --- | --- | --- |
+| `call` with an atom head — `binary()`, `atom()`, `term()` | `references <type> -> <name>` | an application |
+| `call` under `remote(remote_module(atom M, ':'), atom T)` — `dict:dict()` | `references <type> -> M:T` | an application, qualification KEPT (ER-D1: a bare leaf would conflate every module's `dict`) |
+| `record_expr` naming a record — `#ctx{server :: pid()}` | `references <type> -> ctx` **and** each field TYPE (`pid()`) | a record type is a declaration that depends on its record and on its field types |
+| bare `atom` — `monday`, `undefined` | nothing | an atom literal |
+| field key of a `map_field` / `record_field` — `id`, `server` | nothing | a declaration site |
+
+The ER2 authoring counted every bare atom. The M12 differential caught the
+consequence on its own fixtures: `references job -> id` and `references job ->
+kind` were fabricated out of the map keys of `#{id := job_id()}` and RESOLVED to
+the record properties of the same name. On the two pinned corpora the old rule
+produced **4,043 type-dependency edges whose own site line does not apply the
+name it cites** (OTP, 4,154 files) and **244** (rebar3, 269 files); after the
+narrowing both are **0**, measured per edge against the site line
+(`validation/m14/results/erlang-er3-corpus-census.json`).
+
+The same DECL-ONLY boundary now covers record types: a `record_expr` inside
+`-type`/`-opaque`/`-spec` is a declaration of the record's SHAPE and emits no
+`instantiates` (it produced **471** such edges inside OTP's type declarations,
+now 0). Not a calls edge, not a construction — a type.
+
+### Where a file-level edge's source lives
+
+A module-less file (every `.hrl` header, and a `.erl` before its `-module`)
+attributes its include/behaviour/import edges to `Global` — the same fallback
+the expression paths use (`callSource`). These three sites used to fall back to
+the FILE PATH, so all 290 module-less headers of the pinned corpora hung their
+edges off an absolute checkout path: an identity that changes with the
+checkout, and one no gate could see (F5 compares `label + target` and never
+reads `from`).
 
 ## Noise-elimination contract (what produces NO edges)
 
@@ -66,6 +106,12 @@
 - Type syntax (`-spec`, `-callback`, `-type`, `-opaque`) — DECL-ONLY (ER-D3):
   `state()` there is a type application, never a call site. `-spec` records
   nothing standalone; `-callback` declares a Method symbol.
+- Bare atoms and field keys inside type syntax (ER3): an atom literal
+  (`monday | tuesday`) and a map/record field key (`id := binary()`) are
+  declarations, never type dependencies — only applied names are.
+- Record types in `-type`/`-opaque` (`#ctx{server :: pid()}`) — a declaration
+  of a record's SHAPE, never an `instantiates` (ER3, the same DECL-ONLY
+  boundary as calls).
 - Params/locals never become symbols.
 
 ## Complexity model (live, verified against emitted shapes)
@@ -123,15 +169,57 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 `script/m12/verify-analyzer.ts erlang`):
 
 - Fixtures: `Service.erl` (positive) + `Negative.erl` (negative)
-- **69/69 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown**
-- Corpus error scan (`script/m12/erlang-corpus-errors.ts`): all 225 .erl files
-  ≥ 1KB — **11 grammar-error files (4.9%), 0 crashes, 0 timeouts**. All 11
-  classified honestly as grammar limitations, same category as Go's testdata:
-  `?WITH_STACKTRACE(C,T,S)` macro expansion (arrow inside the macro body —
-  unparseable without macro expansion; the macro test file itself parses fine)
-  and 2 template files with `{{placeholder}}` syntax (not real Erlang).
+- **86/86 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown**
+  (69 before ER3/ER2: the truth was hand-audited against the pre-ER2 contract,
+  which knew no `uses` edges and no macro/fun-value/type references at all.
+  The 17 added facts are each justified from Erlang semantics in the truth's
+  own `source` prose — `uses` for record member reads and updates, references
+  for `?MACRO` uses, fun values and applied type names — never copied from the
+  analyzer's output. `inputs` digest `d9f612f17026`, 62 files.)
+- Corpus error scan (`script/m12/erlang-corpus-errors.ts`, mode
+  `deterministic-first-400-sorted`): **12 error files of the first 400**
+  (3.0%), 0 crashes. The exhaustive ER3 census over ALL 4,154 .erl/.hrl files
+  of the OTP checkout (no sampling) found **122 (117 .erl + 5 .hrl = 2.9%)**,
+  0 crashes, names recorded in the census artifact — the same rate on a 10×
+  wider base. The classes are grammar limitations, not analyzer defects:
+  `?WITH_STACKTRACE(C,T,S)`-style macro expansions (an arrow inside a macro
+  body is unparseable without expansion), template files with
+  `{{placeholder}}` syntax, and the intentional errors OTP's own test suites
+  ship (`erts/emulator/test/*_SUITE_data`).
 - Shape-safety (`script/m12/erlang-node-types-compare.ts`): 9/9 analyzer
   node-type refs live against the pinned grammar's emitted types, 0 dead.
+
+### Exhaustive corpus census (ER3, 2026-09-25)
+
+`script/m14/tmp/erlang-er3-corpus-census.ts` reads **every** `.erl` and `.hrl`
+under a corpus, one parse per file, and compares the analyzer's edges against
+the mirrored F5 oracle on the same tree — no sampling, and both sides of the
+ER3 change are recorded in one artifact
+(`validation/m14/results/erlang-er3-corpus-census.json`):
+
+| Corpus (rev) | files | oracle edges | analyzer edges | MISSING | UNEXPLAINED | type-ref sites that do not apply their name | record-type instantiates |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| OTP `9e84d463ac3d` pre | 4,154 | 429,888 | 198,341 | 1,376 | 4,344 | 4,043 | 471 |
+| OTP post | 4,154 | 429,888 | 195,122 | **0** | **0** | **0** | **0** |
+| rebar3 `0c947d3b86c5` pre | 269 | 17,057 | 9,261 | 50 | 265 | 244 | 26 |
+| rebar3 post | 269 | 17,057 | 9,035 | **0** | **0** | **0** | **0** |
+| elixir `024beb1bfcca` post | 48 | 3,088 | 1,746 | **0** | **0** | **0** | **0** |
+
+The artifact also carries a **post2** copy of each post row, produced by the same
+probe (rebar3 in one run, OTP in three deterministic shards summed by the
+probe's own `--merge`, which reads the numbers back out of the artifact), and:
+totals, edge-class groups and type-ref forms are identical to `post` to the
+digit on both corpora — the pipeline is deterministic (single-threaded, sorted
+file order, one parse per file), so a pre/post delta is code and not machine
+noise.
+
+The post/pre pair matches exactly on the class table: only the two ER3 classes
+move (`references|type reference` 8,127 -> 5,204 on OTP, `instantiates` 5,731 ->
+5,341), every other class — calls local/remote, uses, implements, macro uses,
+fun values — is identical to the digit. MISSING/UNEXPLAINED are also 0 under
+EXACT target matching (not just the harness's leaf-normalized rule). Two
+identical post runs agreed on every total, class and form, so the deltas are
+code and not machine noise.
 
 ## Supported / unsupported constructs
 
