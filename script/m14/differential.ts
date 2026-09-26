@@ -12942,13 +12942,28 @@ async function main() {
       // true steady-state cost; a budget breach surviving 3 min-taken runs
       // under load is treated as a REAL regression.
       retryDurations = []
+      // Retained-tree remedy (M60, measured on proxicall/dart 2026-09-26): this harness
+      // never freed a parsed Tree — the only `.delete()` in the file tears the PARSER down
+      // at lane end (line ~13730) — so a pass retained one tree per file in the wasm heap
+      // and the lane's peak RSS grew ~0.8 MB/file: measured 1,824 MB for 2,352 dart files,
+      // against 173 MB with the tree freed (+16 MB per 1,000 files instead of +618 MB). The
+      // retry loop is three EXTRA whole-sample passes, so a 2,000-file lane asked for ~8 GB
+      // and the wasm heap died before the measuring pass ran — which is exactly how
+      // dart/go/zig/csharp published ZERO truth edges at full extent. Freeing the PREVIOUS
+      // iteration's tree at the top of each iteration is safe by construction (the loop body
+      // may hold node references until its own end) and keeps exactly one tree live.
+      let prevTree: any = null
       for (let attempt = 0; attempt < 3; attempt++) {
         const durs: number[] = []
         for (const f of sample) {
+          try { prevTree?.delete?.() } catch { /* an aborted instance refuses politely */ }
+          prevTree = null
           const content = fs.readFileSync(f, "utf8")
           let r0
-          try { r0 = parser.parse(content).rootNode } catch { continue }
-          if (!r0) continue
+          let tree0: any = null
+          try { tree0 = parser.parse(content); r0 = tree0?.rootNode } catch { continue }
+          if (!r0) { try { tree0?.delete?.() } catch { /* nothing to free */ } ; continue }
+          prevTree = tree0
           const t0 = performance.now()
           try {
             if (lang === "vue" || lang === "svelte") {
@@ -12975,14 +12990,22 @@ async function main() {
     } catch {
       /* warm-up is best-effort; timing proceeds regardless */
     }
+    // Same retained-tree remedy as the retry loop above: the tree is freed at the top of
+    // the NEXT iteration, so every node reference the body takes stays valid for as long as
+    // the body can use it, and the lane's peak memory stops growing with the sample size.
+    let prevTree: any = null
     for (const f of sample) {
+      try { prevTree?.delete?.() } catch { /* an aborted instance refuses politely */ }
+      prevTree = null
       const content = fs.readFileSync(f, "utf8")
       const relPath = path.relative(repoDir, f)
       let root
       let result
       const tf0 = performance.now()
-      try { root = parser.parse(content).rootNode } catch { continue }
-      if (!root) continue
+      let tree: any = null
+      try { tree = parser.parse(content); root = tree?.rootNode } catch { continue }
+      if (!root) { try { tree?.delete?.() } catch { /* nothing to free */ } ; continue }
+      prevTree = tree
       try {
         if (lang === "vue" || lang === "svelte") {
           // SFC parity: script blocks must be pre-parsed by the engine or
