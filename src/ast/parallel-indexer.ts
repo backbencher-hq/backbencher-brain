@@ -2779,8 +2779,33 @@ export async function storeResults(
                const m = /:(\d+)$/.exec(cand)
                if (!m) return false
                const line = Number(m[1])
-               const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
-               return storeableName(leaf, line)
+               // The symbol's NAME, recovered by removing the fileId prefix and
+               // the trailing `:<line>` — NOT the last colon-segment.
+               //
+               // The distinction is load-bearing and was a real defect. A symbol
+               // id is `${fileId}:${name}:${line}`, and a NAME MAY CONTAIN A
+               // COLON: the CSS selector `:root` has id `…:a.css::root:1`. The
+               // old `/^.*:([^:]+):\d+$/` took the last colon-segment, so it read
+               // that name as `root` — and `"root"` is in SYMBOL_NAME_DENYLIST
+               // ("root-level nodes that are always noise"). The check therefore
+               // concluded the `:root` row would not be stored, and UN-BOUND
+               // every `contains :root -> --x` edge to an external reference.
+               // The row IS stored, because the insert-time guard tests the FULL
+               // name (`:root`), which is not on the list.
+               //
+               // So this was a third implementation of the storeable test that
+               // was not an exact mirror of the insert-time guards — the exact
+               // failure M51.A1/A3 documents ("the storeable-row replica used by
+               // BOTH the owner-assignment path and the relationship-source path
+               // must stay an exact mirror"). It hit CSS hardest because `:root`
+               // is the single most common custom-property scope in the language,
+               // and it was invisible because the lane had no store-scale check.
+               //
+               // Any language with a symbol whose leaf is a denylisted scope word
+               // was affected the same way — a class named `Root` in Java or
+               // C#, a `global` in JavaScript.
+               const name = cand.slice(fileId.length + 1, cand.length - m[0].length)
+               return storeableName(name, line)
              }
              // M59/#855: the analyzer's own call-site line, hoisted so the
              // source-attribution fallback below can key on it. NULL when the
