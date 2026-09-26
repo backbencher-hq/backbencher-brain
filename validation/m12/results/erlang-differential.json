@@ -394,11 +394,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:erlang",
-      "wallTimeMs": 58.553038,
-      "userCpuMs": 118.101,
-      "systemCpuMs": 23.559,
-      "peakRssBytes": 261582848,
-      "rssDeltaBytes": 15790080,
+      "wallTimeMs": 242.71223,
+      "userCpuMs": 470.614,
+      "systemCpuMs": 73.384,
+      "peakRssBytes": 228245504,
+      "rssDeltaBytes": 15101952,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

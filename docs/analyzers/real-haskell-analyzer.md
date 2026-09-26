@@ -191,3 +191,34 @@ Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
 v0.23.1 stays (latest release; M12.25 behavioral identity on full corpus;
 upstream main has an unreleased full rewrite — re-run F1 + wasm-compare when
 it ships).
+
+## Where/let locals — the rule, the 2026-09-25 adjudication, the caveat
+
+**The rule** (pinned by code and by the lane's own fixture): a where/let-bound
+callable is **not a symbol** — locals are not module entities — but it *is* a
+declared callable, so a call made inside its body attributes to the **local
+itself**, never to the enclosing function, and a local resolves as a call
+target. `Negative.hs`'s where-clause therefore emits `helper → go` and
+`go → go`.
+
+**Why it needed adjudicating.** The rule landed in the 2026-09-03 HSD6/HSD19
+wave and was pinned by `validation/m14/fixtures/haskell/payload-and-complexity`
+("where-local resolution", authored before the run, mutants 12/12). The **M12
+truth did not move with it**: the artifact in the tree dated to 2026-08-20 and
+carried no `inputs` block, so nothing re-ran it. The 2026-09-25 re-pin read
+precision **0.974** (2 FP — exactly these two edges) against a committed claim
+of 1.000. Verdict: analyzer rule stands, truth extended 75 → 77, precision
+1.000, because the two calls exist in the source text and the alternative
+(attributing `go`'s recursion to `helper`) asserts a call `helper` never makes —
+the fabrication the wave removed. The fixture comment that still described the
+pre-wave behaviour was corrected in the same act.
+
+**The caveat, measured:** local endpoints are **bare names**. Over
+hledger+cabal at full extent (**2,356 files**, `script/m14/tmp/
+haskell-local-calls-collision.ts`): 680 files carry an endpoint with no symbol
+(6,265 sources / 8,626 targets — mostly the intentional qualified imports), and
+**282 files (12 %)** bind a where/let local whose name is also a module-level
+symbol of that file (`pure`, `fmap`, `show`, `rnf`, `parsec`, `pretty`,
+`structure`), which leaves those edges ambiguous to any consumer that resolves
+by name. Scoping local identity (elixir #17 `scope-arity` precedent) is owed
+and requires truth + fixture + F5 oracle + mutants to move in lockstep.
