@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-bash-analyzer.ts": {
-        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
-        "bytes": 29157
+        "sha256": "63151af55edf583b99bc117b3232ee586392e69bece5de95dae886cd737920e2",
+        "bytes": 54462
       },
       "src/ast/real-c-analyzer.ts": {
         "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
@@ -96,8 +96,8 @@
         "bytes": 14474
       },
       "src/ast/real-html-analyzer.ts": {
-        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
-        "bytes": 20521
+        "sha256": "4083f02708fb8f4e8ca52b5b272b369757cd89c33b5e1deca74dc6b69b1238c8",
+        "bytes": 70162
       },
       "src/ast/real-java-analyzer.ts": {
         "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
@@ -176,8 +176,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
-        "bytes": 236668
+        "sha256": "fe237f95b21987d29b4f8e3a90456c6ea598afdb0265f458218a3a2df923ae83",
+        "bytes": 236821
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -250,13 +250,17 @@
       "validation/m12/ground-truth/elixir.json": {
         "sha256": "a53a2d214fad9b0c9e735068d88029ec6ab9d72581ff837200a98bd247d1b23b",
         "bytes": 17754
+      },
+      "grammars/tree-sitter-elixir/grammar.js": {
+        "sha256": "930a986debc8b83772bab3475e363c5fdae66d540962696327839d32cef0885b",
+        "bytes": 26639
       }
     },
-    "digest": "6da839a7c25930957c9fb1a21605127d900bcf82633c60e1f3902d47db16ca11",
+    "digest": "717dda228341879b351972425a0b87f47d5eb8d78efe19f9dabff23f8a185fee",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
-      "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
-      "bytes": 1617756
+      "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
+      "bytes": 1412267
     }
   },
   "truthSource": "manual_audit",
@@ -377,11 +381,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 111.87283,
-      "userCpuMs": 103.021,
-      "systemCpuMs": 14.592,
-      "peakRssBytes": 250036224,
-      "rssDeltaBytes": -7045120,
+      "wallTimeMs": 263.733257,
+      "userCpuMs": 91.131,
+      "systemCpuMs": 17.445,
+      "peakRssBytes": 216256512,
+      "rssDeltaBytes": 6725632,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
