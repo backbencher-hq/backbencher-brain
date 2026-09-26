@@ -10632,7 +10632,9 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
   const impls: { ty: string; trait: string }[] = []
-  const supertraits: Record<string, string[]> = {}
+  // Prototype-safe (M14.0.F13): this registry is keyed by SOURCE type names, and a plain
+  // `{}` answers for `toString`/`__proto__` before the source has said anything.
+  const supertraits: Record<string, string[]> = Object.create(null)
   // D2 mirror (rust extreme review): the analyzer resolves `Self` to the
   // enclosing impl type in struct literals (`Self { }`), `Self::new()` and
   // bare `Self(..)` (cargo src/compiler/rustdoc.rs + manifest/mod.rs lanes:
@@ -11759,7 +11761,12 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // (cpp/override-signature-aware, cpp/virtual-override-resolution).
   // Only declarations related by extends/implements within THIS file count -
   // cross-file override resolution is the analyzer's job, not the oracle's.
-  const decls: Record<string, { parents: string[]; methods: Set<string>; sigs: Map<string, Set<string>> }> = {}
+  // Prototype-safe (M14.0.F13): keyed by SOURCE declaration names. With a plain `{}` the
+  // guard below never initializes `decls["toString"]` (it inherits Object.prototype's
+  // function) and `decls[nm].methods.add` throws — measured at full extent on scala3
+  // `tests/neg-macros/i18825/Macro_1.scala` (`class toString extends MacroAnnotation :`),
+  // and the harness calls this oracle outside any try, so ONE such file kills the lane.
+  const decls: Record<string, { parents: string[]; methods: Set<string>; sigs: Map<string, Set<string>> }> = Object.create(null)
   const declParents: { child: string; parent: string }[] = []
   // M49.S1 #715 scala companion-union guard: per-occurrence provenance.
   // decls[nm] unions methods across same-named declarations (ScalaD-F
@@ -11802,7 +11809,9 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const occMethods = new Map<string, Set<string>>()
   const occSigs = new Map<string, Map<string, Set<string>>>()
   const occParents: { childOcc: string; childName: string; parentName: string }[] = []
-  const scalaOccCounter: Record<string, number> = {}
+  // Prototype-safe (M14.0.F13): keyed by SOURCE names (see `decls` above) — an inherited
+  // function reads as a count here and turns the per-occurrence key into a string.
+  const scalaOccCounter: Record<string, number> = Object.create(null)
   // Best-effort parameter TYPE signature for a method node (java/kotlin/scala/
   // groovy/csharp/dart style typed params). Empty/unknown -> the language keeps
   // the legacy name-only pairing (never a false negative from a missing sig).
