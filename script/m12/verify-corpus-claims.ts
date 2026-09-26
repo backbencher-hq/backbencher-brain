@@ -15,6 +15,16 @@
 //       artifact — the map is contradicted by the measurement.
 //   H4. An artifact whose `passed` is true while it records unexpected errors
 //       or crashes (self-contradiction).
+//   H5. A manifest `corpusSymbols` / `corpusRelationships` claim that
+//       disagrees with the artifact carrying those counts — and, when NO
+//       artifact carries them, that is reported as `unbacked`, never as a
+//       pass. Found 2026-09-26 on css: the manifest claimed 1,854
+//       relationships for the svelte corpus where the same corpus measures
+//       2,722 (a 47% undercount), and the gate was green for the whole time,
+//       because H1 reconciled exactly ONE of the four numbers in the
+//       `measured` block. A gate that checks one field of a claim and reports
+//       the claim as agreed is worse than no gate: it lends the unchecked
+//       fields a credibility they did not earn.
 // Remainder (visible, must equal the tracker's registered debt):
 //   R1. Languages with a manifest grammar-error claim (or an analyzer row)
 //       and no `*-corpus-errors.json` artifact. Registered under the
@@ -28,7 +38,16 @@ const manifest = JSON.parse(readFileSync("validation/m12/corpus-manifest.json", 
 
 const hard: string[] = []
 const remainder: string[] = []
-const checked: { language: string; manifest: number | null; artifact: number | null; agreement: boolean | null }[] = []
+/** Claims in the `measured` block that no artifact backs. Named, never a pass. */
+const unbacked: { language: string; claim: string; value: number }[] = []
+const checked: {
+  language: string
+  manifest: number | null
+  artifact: number | null
+  agreement: boolean | null
+  volume?: { manifestSymbols: number | null; manifestRelationships: number | null; artifactSymbols: number | null; artifactRelationships: number | null; source: string | null }
+}[] = []
+
 
 for (const a of manifest.analyzers) {
   const lg: string = a.analyzer
@@ -68,6 +87,44 @@ for (const a of manifest.analyzers) {
   if (art.passed === true && (unexpected > 0 || (art.crashFiles ?? 0) > 0)) {
     hard.push(`H4 ${lg}: passed=true but unexpectedErrorFiles=${unexpected} crashFiles=${art.crashFiles}`)
   }
+
+  // H5 — the VOLUME claims. An earlier draft of this compared the manifest's
+  // `corpusSymbols`/`corpusRelationships` against the complexity envelope's
+  // `corpus_subset` run and failed 4 languages on the spot. That comparison was
+  // WRONG and the gate was wrong with it: `measure-analyzer.ts` documents that
+  // run as "subject walk WITH the ext/size filter" — it is capped by `--limit`
+  // and filtered by `--ext`/`--min-bytes`, so it is a DELIBERATELY SUBSET
+  // measurement and cannot back an unfiltered corpus claim. Inventing a contract
+  // the artifacts do not support is the `unsupportedClaimsPresentedAsProven`
+  // failure M12's final audit exists to forbid, so the hard-failure branch is
+  // gone.
+  //
+  // What is left is the honest state: the corpus-errors artifact is a
+  // FULL-CORPUS measurement through the production pipeline, so when it carries
+  // `symbols`/`relationships` it backs the claim exactly, with no filter to
+  // reason about. Languages whose artifact does not carry them are reported in
+  // `unbackedClaims` — named, never counted as agreed.
+  const mSym: number | null = meas.corpusSymbols ?? null
+  const mRel: number | null = meas.corpusRelationships ?? null
+  const volume = { manifestSymbols: mSym, manifestRelationships: mRel, artifactSymbols: null as number | null, artifactRelationships: null as number | null, source: null as string | null }
+  const artSym: number | null = art.symbols ?? null
+  const artRel: number | null = art.relationships ?? null
+  if (artSym !== null || artRel !== null) {
+    volume.artifactSymbols = artSym
+    volume.artifactRelationships = artRel
+    volume.source = `${lg}-corpus-errors.json (mode=${art.mode}, ${art.measuredFiles} files)`
+    if (mSym !== null && artSym !== null && mSym !== artSym) {
+      hard.push(`H5 ${lg}: manifest claims corpusSymbols=${mSym} but ${volume.source} measures ${artSym}`)
+    }
+    if (mRel !== null && artRel !== null && mRel !== artRel) {
+      hard.push(`H5 ${lg}: manifest claims corpusRelationships=${mRel} but ${volume.source} measures ${artRel}`)
+    }
+  }
+  if ((mSym !== null || mRel !== null) && volume.source === null) {
+    unbacked.push({ language: lg, claim: "corpusSymbols", value: mSym ?? -1 })
+    unbacked.push({ language: lg, claim: "corpusRelationships", value: mRel ?? -1 })
+  }
+  checked[checked.length - 1].volume = volume
 }
 
 const passed = hard.length === 0
@@ -79,18 +136,25 @@ const result = {
   hardFailures: hard,
   remainderLanguages: remainder.sort(),
   remainderIssue: remainder.length > 0 ? "#897" : null,
+  unbackedClaims: unbacked,
   checked,
   passed,
   policy:
-    "Every manifest grammarErrorFiles claim must agree with its measured artifact (H1), limit-map entries must carry reasons and be backed by the measurement (H2/H3), and no artifact may declare pass while recording unexpected errors or crashes (H4). Languages without artifacts are the registered remainder R1 — named here, never smoothed — and the gate goes green with them only while the tracker still carries the follow-up that owns them.",
+    "Every manifest grammarErrorFiles claim must agree with its measured artifact (H1), limit-map entries must carry reasons and be backed by the measurement (H2/H3), no artifact may declare pass while recording unexpected errors or crashes (H4), and every corpusSymbols/corpusRelationships claim must agree with the artifact that carries those counts (H5). A volume claim with NO artifact behind it is reported in `unbackedClaims` — named, never counted as agreed. Languages without artifacts are the registered remainder R1 — named here, never smoothed — and the gate goes green with them only while the tracker still carries the follow-up that owns them.",
 }
 
 const out = "validation/m12/results/corpus-claims-gate.json"
 writeFileSync(out, JSON.stringify(result, null, 2) + "\n")
 
-console.log(`H1-H4: ${hard.length === 0 ? "clean" : "FAIL"}`)
+console.log(`H1-H5: ${hard.length === 0 ? "clean" : "FAIL"}`)
 for (const h of hard) console.log("  " + h)
 console.log(`R1 remainder: ${remainder.length} language(s) without artifacts: ${remainder.sort().join(", ") || "(none)"}`)
+if (unbacked.length) {
+  const langs = [...new Set(unbacked.map((u) => u.language))].sort()
+  console.log(`UNBACKED volume claims: ${unbacked.length} across ${langs.length} language(s) — named, NOT counted as agreed:`)
+  for (const u of unbacked) console.log(`  ${u.language} ${u.claim}=${u.value} (no artifact carries this count)`)
+}
 console.log(`gate ${passed ? "PASS" : "FAIL"} (remainder non-empty is a registered debt, not a hard failure)`)
+
 console.log(`wrote ${out}`)
 if (!passed) process.exit(1)

@@ -50,3 +50,10 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 # Found while vendoring tree-sitter-cpp for #743: the ignore list named the
 # scanner by its C++-in-fsharp-style filename instead of by its role.
 !grammars/tree-sitter-cpp/src/scanner.c
+# Same trap, second grammar: tree-sitter-css ships a hand-written external scanner
+# (src/scanner.c — DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON, ERROR_RECOVERY).
+# Without it the tracked tree cannot rebuild the wasm, and the wired wasm is a
+# LOCAL build of grammars/tree-sitter-css/grammar.js (two patched hunks), so the
+# scanner is now load-bearing for CSS exactly as it is for cpp. Found while
+# vendoring tree-sitter-css for the CSS lane's url(../..) parse class.
+!grammars/tree-sitter-css/src/scanner.c
