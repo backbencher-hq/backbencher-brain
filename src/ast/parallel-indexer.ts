@@ -1852,9 +1852,11 @@ export async function storeResults(
    // on that line. MEASURED before landing, over the same-file containment edges
    // of the ten pinned heavy repos (record:
    // validation/m14/controls/containment-612.before.json — the control arm; the
-   // arm after this rule is validation/m14/results/M14.0.containment-612.json —
-   // probe contains-line-hint-612; `line pins 1` = the target name repeats AND exactly
-   // one same-file candidate sits on the edge's own line):
+   // arm after this rule is validation/m14/results/containment-612.json. Those two
+   // names, not `M14.0.*`: that namespace belongs to gates that call `emitEvidence`,
+   // and a corpus sweep is a measurement, not a gate. Probe contains-line-hint-612;
+   // `line pins 1` = the target name repeats AND exactly one same-file candidate
+   // sits on the edge's own line):
    //
    //   repo / lang          ambiguous  line pins 1  pins none  old id-tier WRONG
    //   nlohmann-json cpp        3,199        3,151         48             2,422
@@ -1873,10 +1875,9 @@ export async function storeResults(
    // is larger, and it is measured by replay for exactly that reason: 37,532 of the
    // 127,521 edges would resolve to a different symbol, 37,611 to a symbol whose
    // line the edge contradicts, and 437 to a symbol in ANOTHER FILE — containment
-   // is intra-file, so those edges leave the file they describe (record:
-   // validation/m14/controls/containment-old-rule-612.before.json and its
-   // after-arm twin validation/m14/results/M14.0.containment-old-rule-612.json,
-   // probe
+   // is intra-file, so those edges leave the file they describe (records:
+   // validation/m14/controls/containment-old-rule-612.before.json and
+   // validation/m14/results/containment-old-rule-612.json, probe
    // contains-old-rule-612, which replays the old ORDER BY against the same
    // candidate sets, so no pre-#612 build has to be resurrected to compare).
    // Every one of the 49,672 edges the line pins resolves to the candidate on that
@@ -2344,9 +2345,10 @@ export async function storeResults(
                // landing over the ten pinned heavy repos — owned symbols with a
                // line / owner name not unique in its file / owner does NOT enclose
                // its child / of those, a covering candidate of the same name
-               // exists (record:
-               // validation/m14/controls/containment-owner-span-612.before.json,
-               // probe contains-owner-span-612):
+               // exists (records:
+               // validation/m14/controls/containment-owner-span-612.before.json and
+               // validation/m14/results/containment-owner-span-612.json, probe
+               // contains-owner-span-612):
                //   nlohmann-json cpp  5,621 / 2,024 /  1,661 / 1,156
                //   fmt cpp            1,968 /   840 /    535 /   532
                //   jq c                 521 /   228 /      0 /     0
@@ -2851,7 +2853,7 @@ export async function storeResults(
              // corpus arms of this rule — the same gauges over all ten repos,
              // before and after — are
              // validation/m14/controls/containment-612.before.json and
-             // validation/m14/results/M14.0.containment-612.json (probes
+             // validation/m14/results/containment-612.json (probes
              // contains-source-hint-612 and contains-source-span-delta-612).
              const relLine =
                typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
