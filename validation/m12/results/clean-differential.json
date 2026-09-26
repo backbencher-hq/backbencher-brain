@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -252,7 +252,7 @@
         "bytes": 26401
       }
     },
-    "digest": "6f1ec264e6354d011868d6ce50a56163f8aac32b60ce40694f1251c133cfd242",
+    "digest": "b4e6248efa2423fa12c8ebd62244c4a86dea76f325dee0aa81a86ea3268455b8",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clean_tree-sitter-clean.wasm",
       "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
@@ -376,11 +376,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clean",
-      "wallTimeMs": 80.548971,
-      "userCpuMs": 108.026,
-      "systemCpuMs": 15.3,
-      "peakRssBytes": 269426688,
-      "rssDeltaBytes": 4685824,
+      "wallTimeMs": 39.123752,
+      "userCpuMs": 77.322,
+      "systemCpuMs": 8.408,
+      "peakRssBytes": 265388032,
+      "rssDeltaBytes": 3801088,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
