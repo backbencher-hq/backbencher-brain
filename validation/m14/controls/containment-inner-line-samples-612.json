@@ -1,0 +1,571 @@
+{
+ "issue": "#612 follow-up \u2014 contains-inner-line-samples-612 over the pinned heavy corpus (DB-only, no re-index)",
+ "arm": "after",
+ "worktree": "$HOME/mcp/backbencher-brain/.merge-tmp",
+ "commit": "ac097be017451d981f2871869cc48f682533bb57",
+ "regeneratedAtCommit": "ac097be017451d981f2871869cc48f682533bb57",
+ "regeneratedAt": "2026-09-25T23:44:40-0400",
+ "commitSubject": "review(merge): census the merge's evidence conflicts by gate IDENTITY",
+ "sourceDirtyVsCommit": true,
+ "indexerSha256": "bfba91342933213ffe5fb094b112cd811f80b79a100e14058e4cc3a1bde6fa7d",
+ "probe": "script/m14/tmp/contains-inner-line-samples-612.ts",
+ "probeSha256": "86eb49a382e84aaea833025e5ed7c29868e083fe4d0de289f2dada4fa74009d6",
+ "runner": "python3 script/m14/tmp/containment-owner-span-612.py --probe contains-inner-line-samples-612 --arm after --lineage validation/m14/results/containment-612.json --out validation/m14/controls/containment-inner-line-samples-612.json",
+ "dbsNotReindexed": true,
+ "dbLineage": {
+  "note": "the DBs read here were written by this record's own index runs",
+  "record": "validation/m14/results/containment-612.json",
+  "commit": "b6f0ae0dca4ed085b719e635b1e8e894c4b1bc7c",
+  "indexerSha256": "1541f1a6ca8710e6db0f278b61aa38ff8474865c924780017f36eef395abadee",
+  "sourceDirtyVsCommit": false,
+  "finishedAt": "2026-09-25T21:06:59-0400"
+ },
+ "startedAt": "2026-09-25T23:44:05-0400",
+ "repos": [
+  {
+   "repo": "nlohmann-json",
+   "lang": "cpp",
+   "db": {
+    "path": "$HOME/.bb/projects/dca613b7d066f9153ef6fb1846112caac8df5983/brain.db",
+    "bytes": 411373568,
+    "mtime": "2026-09-25T20:07:13-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "nlohmann-json",
+    "lang": "cpp",
+    "sameFileContainmentEdges": 5625,
+    "uniqueTargetNameEdges": 2426,
+    "uniqueTargetNameLineMismatches": 23,
+    "textChecked": 23,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 23,
+    "nameAboveWithinSpan": 2,
+    "samples": [
+     {
+      "at": "include/nlohmann/detail/input/binary_reader.hpp:107",
+      "name": "sax_parse",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 107,
+      "lineGap": 1,
+      "spanStart": 106,
+      "spanEnd": 159,
+      "spanLines": 54,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/detail/input/lexer.hpp:1335",
+      "name": "scan_literal",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 1335,
+      "lineGap": 1,
+      "spanStart": 1334,
+      "spanEnd": 1348,
+      "spanLines": 15,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/detail/input/lexer.hpp:1588",
+      "name": "get_error_message",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 1588,
+      "lineGap": 1,
+      "spanStart": 1587,
+      "spanEnd": 1591,
+      "spanLines": 5,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/detail/input/lexer.hpp:172",
+      "name": "get_decimal_point",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 172,
+      "lineGap": 1,
+      "spanStart": 171,
+      "spanEnd": 177,
+      "spanLines": 7,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/detail/input/parser.hpp:163",
+      "name": "sax_parse",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 163,
+      "lineGap": 1,
+      "spanStart": 162,
+      "spanEnd": 177,
+      "spanLines": 16,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/detail/output/serializer.hpp:403",
+      "name": "byte",
+      "type": "property",
+      "isDeclaration": false,
+      "edgeLine": 403,
+      "lineGap": 2,
+      "spanStart": 401,
+      "spanEnd": 403,
+      "spanLines": 3,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "include/nlohmann/json.hpp:411",
+      "name": "create",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 411,
+      "lineGap": 1,
+      "spanStart": 410,
+      "spanEnd": 424,
+      "spanLines": 15,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "single_include/nlohmann/json.hpp:13957",
+      "name": "NLOHMANN_JSON_NAMESPACE_END",
+      "type": "variable",
+      "isDeclaration": false,
+      "edgeLine": 13957,
+      "lineGap": 3201,
+      "spanStart": 10756,
+      "spanEnd": 13970,
+      "spanLines": 3215,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "single_include/nlohmann/json.hpp:6851",
+      "name": "tie",
+      "type": "variable",
+      "isDeclaration": false,
+      "edgeLine": 6851,
+      "lineGap": 39,
+      "spanStart": 6812,
+      "spanEnd": 6851,
+      "spanLines": 40,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": true
+     },
+     {
+      "at": "single_include/nlohmann/json.hpp:7955",
+      "name": "get_decimal_point",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 7955,
+      "lineGap": 1,
+      "spanStart": 7954,
+      "spanEnd": 7960,
+      "spanLines": 7,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "single_include/nlohmann/json.hpp:9118",
+      "name": "scan_literal",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 9118,
+      "lineGap": 1,
+      "spanStart": 9117,
+      "spanEnd": 9131,
+      "spanLines": 15,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "single_include/nlohmann/json.hpp:9371",
+      "name": "get_error_message",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 9371,
+      "lineGap": 1,
+      "spanStart": 9370,
+      "spanEnd": 9374,
+      "spanLines": 5,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/abi/include/nlohmann/json_v3_10_5.hpp:10619",
+      "name": "unexpect_eof",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 10619,
+      "lineGap": 1,
+      "spanStart": 10618,
+      "spanEnd": 10627,
+      "spanLines": 10,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/abi/include/nlohmann/json_v3_10_5.hpp:12263",
+      "name": "friend",
+      "type": "property",
+      "isDeclaration": false,
+      "edgeLine": 12263,
+      "lineGap": 1,
+      "spanStart": 12262,
+      "spanEnd": 12263,
+      "spanLines": 2,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/abi/include/nlohmann/json_v3_10_5.hpp:12452",
+      "name": "top",
+      "type": "function",
+      "isDeclaration": false,
+      "edgeLine": 12452,
+      "lineGap": 193,
+      "spanStart": 12259,
+      "spanEnd": 12462,
+      "spanLines": 204,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/abi/include/nlohmann/json_v3_10_5.hpp:6545",
+      "name": "get_decimal_point",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 6545,
+      "lineGap": 1,
+      "spanStart": 6544,
+      "spanEnd": 6550,
+      "spanLines": 7,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/abi/include/nlohmann/json_v3_10_5.hpp:7705",
+      "name": "JSON_ASSERT",
+      "type": "method",
+      "isDeclaration": true,
+      "edgeLine": 7705,
+      "lineGap": 4,
+      "spanStart": 7701,
+      "spanEnd": 7705,
+      "spanLines": 5,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/thirdparty/Fuzzer/FuzzerDriver.cpp:53",
+      "name": "Flags",
+      "type": "variable",
+      "isDeclaration": false,
+      "edgeLine": 53,
+      "lineGap": 10,
+      "spanStart": 43,
+      "spanEnd": 53,
+      "spanLines": 11,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/thirdparty/Fuzzer/FuzzerLoop.cpp:141",
+      "name": "MallocHook",
+      "type": "function",
+      "isDeclaration": false,
+      "edgeLine": 141,
+      "lineGap": 1,
+      "spanStart": 140,
+      "spanEnd": 149,
+      "spanLines": 10,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/thirdparty/Fuzzer/FuzzerLoop.cpp:152",
+      "name": "FreeHook",
+      "type": "function",
+      "isDeclaration": false,
+      "edgeLine": 152,
+      "lineGap": 1,
+      "spanStart": 151,
+      "spanEnd": 159,
+      "spanLines": 9,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/thirdparty/Fuzzer/FuzzerSHA1.cpp:61",
+      "name": "sha1nfo",
+      "type": "class",
+      "isDeclaration": false,
+      "edgeLine": 61,
+      "lineGap": 7,
+      "spanStart": 54,
+      "spanEnd": 61,
+      "spanLines": 8,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": true
+     },
+     {
+      "at": "tests/thirdparty/Fuzzer/FuzzerValueBitMap.h:54",
+      "name": "MergeFrom",
+      "type": "method",
+      "isDeclaration": false,
+      "edgeLine": 54,
+      "lineGap": 1,
+      "spanStart": 53,
+      "spanEnd": 69,
+      "spanLines": 17,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     },
+     {
+      "at": "tests/thirdparty/doctest/doctest.h:1514",
+      "name": "if",
+      "type": "function",
+      "isDeclaration": false,
+      "edgeLine": 1514,
+      "lineGap": 1,
+      "spanStart": 1513,
+      "spanEnd": 1516,
+      "spanLines": 4,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     }
+    ]
+   }
+  },
+  {
+   "repo": "fmt",
+   "lang": "cpp",
+   "db": {
+    "path": "$HOME/.bb/projects/927e0fd7875c210d7e99e0924021741676cc29fe/brain.db",
+    "bytes": 95694848,
+    "mtime": "2026-09-25T20:07:44-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "fmt",
+    "lang": "cpp",
+    "sameFileContainmentEdges": 1970,
+    "uniqueTargetNameEdges": 750,
+    "uniqueTargetNameLineMismatches": 1,
+    "textChecked": 1,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 1,
+    "nameAboveWithinSpan": 0,
+    "samples": [
+     {
+      "at": "include/fmt/format.h:1210",
+      "name": "write2digits",
+      "type": "function",
+      "isDeclaration": false,
+      "edgeLine": 1210,
+      "lineGap": 17,
+      "spanStart": 1193,
+      "spanEnd": 1218,
+      "spanLines": 26,
+      "nameOnEdgeLine": true,
+      "nameAboveWithinSpan": false
+     }
+    ]
+   }
+  },
+  {
+   "repo": "jq",
+   "lang": "c",
+   "db": {
+    "path": "$HOME/.bb/projects/56ac4a2f524d40176d4dc0263fa0dff4f37b9375/brain.db",
+    "bytes": 181960704,
+    "mtime": "2026-09-25T20:08:40-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "jq",
+    "lang": "c",
+    "sameFileContainmentEdges": 584,
+    "uniqueTargetNameEdges": 447,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "sqlite",
+   "lang": "c",
+   "db": {
+    "path": "$HOME/.bb/projects/d7a43f62342bad8c4754860ab28a4fb1ed968cf6/brain.db",
+    "bytes": 805150720,
+    "mtime": "2026-09-25T20:12:21-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "sqlite",
+    "lang": "c",
+    "sameFileContainmentEdges": 5322,
+    "uniqueTargetNameEdges": 4292,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "ripgrep",
+   "lang": "rust",
+   "db": {
+    "path": "$HOME/.bb/projects/a65e53f2a2b3113027192b7bd846d8b5ca38a33a/brain.db",
+    "bytes": 186470400,
+    "mtime": "2026-09-25T20:13:35-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "ripgrep",
+    "lang": "rust",
+    "sameFileContainmentEdges": 3776,
+    "uniqueTargetNameEdges": 1871,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "cargo",
+   "lang": "rust",
+   "db": {
+    "path": "$HOME/.bb/projects/0b1e358a0ebfebdd3f234f21e962c630a4eab13d/brain.db",
+    "bytes": 799174656,
+    "mtime": "2026-09-25T20:17:34-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "cargo",
+    "lang": "rust",
+    "sameFileContainmentEdges": 6917,
+    "uniqueTargetNameEdges": 4827,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "go-tools",
+   "lang": "go",
+   "db": {
+    "path": "$HOME/.bb/projects/f58244847d810aee6ece4959e595d1c704e7f3ec/brain.db",
+    "bytes": 669818880,
+    "mtime": "2026-09-25T20:20:38-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "go-tools",
+    "lang": "go",
+    "sameFileContainmentEdges": 9357,
+    "uniqueTargetNameEdges": 6328,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "terraform",
+   "lang": "go",
+   "db": {
+    "path": "$HOME/.bb/projects/af3457599add6de2b94227c20625f2469975d0f2/brain.db",
+    "bytes": 1562750976,
+    "mtime": "2026-09-25T20:25:15-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "terraform",
+    "lang": "go",
+    "sameFileContainmentEdges": 20312,
+    "uniqueTargetNameEdges": 10780,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "zls",
+   "lang": "zig",
+   "db": {
+    "path": "$HOME/.bb/projects/41fc91da95828c1d0426b643ae1081800aa778e1/brain.db",
+    "bytes": 79507456,
+    "mtime": "2026-09-25T20:26:18-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "zls",
+    "lang": "zig",
+    "sameFileContainmentEdges": 1707,
+    "uniqueTargetNameEdges": 1188,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  },
+  {
+   "repo": "zig",
+   "lang": "zig",
+   "db": {
+    "path": "$HOME/.bb/projects/a49d61f6788f4fad582b2bb386eb7e6e37bc69dd/brain.db",
+    "bytes": 4984680448,
+    "mtime": "2026-09-25T21:04:18-0400"
+   },
+   "exitCode": 0,
+   "result": {
+    "repo": "zig",
+    "lang": "zig",
+    "sameFileContainmentEdges": 80352,
+    "uniqueTargetNameEdges": 44908,
+    "uniqueTargetNameLineMismatches": 0,
+    "textChecked": 0,
+    "textSkipped": 0,
+    "fileUnreadable": 0,
+    "nameOnEdgeLine": 0,
+    "nameAboveWithinSpan": 0,
+    "samples": []
+   }
+  }
+ ],
+ "finishedAt": "2026-09-25T23:44:40-0400"
+}
