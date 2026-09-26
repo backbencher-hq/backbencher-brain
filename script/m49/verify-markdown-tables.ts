@@ -38,6 +38,7 @@
 // Run: bun script/m49/verify-markdown-tables.ts [--strict] [--write] [--selftest] [paths…]
 import fs from "node:fs"
 import path from "node:path"
+import os from "node:os"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 
@@ -141,6 +142,25 @@ function walk(dir: string, acc: string[]): void {
   }
 }
 
+/** Turn the command line's paths into the file list to scan. Only directories were walked in the
+ *  first version, so a path that named a FILE was silently skipped: `… verify-markdown-tables.ts
+ *  reviews/x.md` scanned nothing and reported `0 file(s), 0 row(s)` with exit 0 — a gate that
+ *  appeared to check a file it never read, which is the defect class this whole gate exists for.
+ *  Now a markdown file argument is scanned, and a path that is neither a directory nor a markdown
+ *  file is refused instead of vanishing. */
+export function collectFiles(paths: string[]): { files: string[]; bad: string[] } {
+  const files: string[] = []
+  const bad: string[] = []
+  for (const r of paths) {
+    let st: fs.Stats
+    try { st = fs.statSync(r) } catch { bad.push(r); continue }
+    if (st.isDirectory()) walk(r, files)
+    else if (st.isFile() && r.endsWith(".md")) files.push(r)
+    else bad.push(r)
+  }
+  return { files: [...new Set(files)], bad }
+}
+
 function selftest(): number {
   let pass = 0, fail = 0
   const check = (label: string, ok: boolean, detail = "") => { if (ok) pass++; else { fail++; console.log(`FAIL: ${label}${detail ? " — " + detail : ""}`) } }
@@ -172,6 +192,28 @@ function selftest(): number {
   check("selftest: a second table after prose is scanned with its OWN header width", scanTables(second).length === 1 && scanTables(second)[0].line === 9,
     JSON.stringify(scanTables(second)))
 
+  // Path collection: a file argument must be scanned, and a path that is neither a directory nor
+  // markdown must be refused — never quietly turned into "0 files, 0 rows, exit 0".
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "m49-g11-"))
+  try {
+    const md = path.join(tmpDir, "one.md")
+    const txt = path.join(tmpDir, "notes.txt")
+    fs.writeFileSync(md, "| a | b |\n| --- | --- |\n| 1 | 2 |\n")
+    fs.writeFileSync(txt, "not markdown\n")
+    const one = collectFiles([md])
+    check("selftest: a markdown FILE argument is scanned (a file is not a silent no-op)", one.files.length === 1 && one.bad.length === 0, JSON.stringify(one))
+    const dir = collectFiles([tmpDir])
+    check("selftest: a directory argument still walks its markdown", dir.files.length === 1 && dir.files[0] === md, JSON.stringify(dir.files))
+    const absent = collectFiles([path.join(tmpDir, "nope.md")])
+    check("selftest: a path that does not exist is refused, not silently skipped", absent.files.length === 0 && absent.bad.length === 1)
+    const nonMd = collectFiles([txt])
+    check("selftest: a non-markdown file argument is refused", nonMd.files.length === 0 && nonMd.bad.length === 1)
+    const both = collectFiles([md, path.join(tmpDir, "nope.md")])
+    check("selftest: a good path plus a bad path keeps the bad one visible", both.files.length === 1 && both.bad.length === 1)
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true })
+  }
+
   console.log(`\nM49.G11 selftest: ${pass} passed, ${fail} failed`)
   return fail > 0 ? 1 : 0
 }
@@ -190,8 +232,13 @@ function main(): number {
   const all = args.includes("--all")
   const roots = paths.length > 0 ? paths.map((p) => path.resolve(ROOT, p)) : (all ? [ROOT] : ["reviews", "docs", "validation"].map((d) => path.join(ROOT, d)))
 
-  const files: string[] = []
-  for (const r of roots) if (fs.existsSync(r) && fs.statSync(r).isDirectory()) walk(r, files)
+  const { files, bad } = collectFiles(roots)
+  if (bad.length > 0) {
+    // Only a path the CALLER named can be refused: the default roots are directories this gate
+    // guarantees, and a tree without one of them is a different problem (the lineage gate's).
+    console.error(`REFUSED: ${bad.length} path(s) are neither a directory nor a markdown file: ${bad.map((b) => path.relative(ROOT, b) || b).join(", ")}`)
+    return 2
+  }
   const violations: Violation[] = []
   let tables = 0, rows = 0
   for (const f of files) {
