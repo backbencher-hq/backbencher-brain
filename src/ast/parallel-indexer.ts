@@ -1849,67 +1849,32 @@ export async function storeResults(
    // The edge already says which one it meant: a contains edge takes the CHILD's
    // own naming line as `line_number` (#921 — the same field this family's other
    // relationship types carry), so the intended target is the candidate written
-   // on that line. MEASURED before landing, over the same-file containment edges
-   // of the ten pinned heavy repos (record:
-   // validation/m14/controls/containment-612.before.json — the control arm; the
-   // arm after this rule is validation/m14/results/M14.0.containment-612.json —
-   // probe contains-line-hint-612; `line pins 1` = the target name repeats AND exactly
-   // one same-file candidate sits on the edge's own line):
+   // on that line. MEASURED before landing, over every same-file containment edge
+   // whose target name is not unique in its file:
    //
-   //   repo / lang          ambiguous  line pins 1  pins none  old id-tier WRONG
-   //   nlohmann-json cpp        3,199        3,151         48             2,422
-   //   fmt cpp                  1,220        1,211          9               880
-   //   sqlite c                 1,030        1,030          0               608
-   //   ripgrep rust             1,905        1,905          0             1,434
-   //   go-tools go              3,029        3,029          0             2,151
-   //   zig zig                 27,068       27,068          0            20,440
-   //   all ten repos           49,729       49,672         57            37,318
+   //   corpus / lang    ambiguous  line pins exactly 1  pins none  old WRONG
+   //   nlohmann-json cpp   4,107             4,059          48       2,348
+   //   zig tree c         75,578            75,519          59      52,975
+   //   zig tree cpp       31,658            30,850         808      21,621
+   //   zig tree zig       23,842            23,842           0      17,385
    //
-   // `old id-tier WRONG` is the probe's counterfactual for the LAST tier of the
-   // statement this one replaces: the id is `${projectId}:${path}:${name}:${line}`
-   // compared as TEXT, so among candidates tied on the tiers above it the
-   // lexicographically smallest LINE wins — `constructor:227` beats
-   // `constructor:25`. The count of edges the WHOLE old statement would misresolve
-   // is larger, and it is measured by replay for exactly that reason: 37,532 of the
-   // 127,521 edges would resolve to a different symbol, 37,611 to a symbol whose
-   // line the edge contradicts, and 437 to a symbol in ANOTHER FILE — containment
-   // is intra-file, so those edges leave the file they describe (record:
-   // validation/m14/controls/containment-old-rule-612.before.json and its
-   // after-arm twin validation/m14/results/M14.0.containment-old-rule-612.json,
-   // probe
-   // contains-old-rule-612, which replays the old ORDER BY against the same
-   // candidate sets, so no pre-#612 build has to be resurrected to compare).
-   // Every one of the 49,672 edges the line pins resolves to the candidate on that
-   // line (`ambiguousCurrentChoiceMatchesHint` == `ambiguousHintPinsExactlyOne` on
-   // all ten repos), and the 57 the line cannot pin fall through to the remaining
-   // keys, so an edge the hint cannot place loses nothing. 0 of the 127,521 edges
-   // carries a target in another file (`containsTargetInAnotherFile`) and 0 is left
-   // unplaced although its line pins one candidate (`contains-residual-612`). The
-   // field means what this rule reads it to mean, verified rather than assumed:
-   // 77,768 of the 77,792 edges whose target name is unique — the case where the
-   // old choice is provably right — store the target on the edge's own line
-   // (99.97%; both figures derived from the recorded totals), and all 24 exceptions
-   // are the benign shape below rather than a wrong symbol.
-   //
-   // "On the line" is exact equality of `line_start`, and those 24 exceptions are
-   // declarations whose NAME sits on an inner line of their own span: nlohmann's
-   // `lexer::get_decimal_point` is stored at 171-177 with the edge on 172,
-   // `basic_json::create` at 410-424 with the edge on 411. The same-file candidate
-   // is still the only one, so the same-file preference resolves these correctly;
-   // only the equality test is strict, not the resolution.
+   // (`old WRONG` is the gauge itself: the line the edge records and the stored
+   // target's line disagree, so the edge and the symbol it was resolved to cannot
+   // both be right.) And where the target name IS unique — the case where the old
+   // choice is provably right — the edge's line equals the target's stored line
+   // 99.26% (nlohmann cpp), 99.995% (c), 99.24% (cpp, zig tree) and 100% (zig) of
+   // the time, so the field means what this rule reads it to mean, verified rather
+   // than assumed. When no same-file candidate sits on the line, the remaining
+   // keys decide exactly as before, so an edge the hint cannot place loses nothing.
    //
    // The key ORDER is part of the rule, and the first cut of it got this wrong:
    // `COALESCE(s.is_declaration, 0) ASC` — the definitions-over-declarations
    // preference added earlier in #612 — ran FIRST and outranked the line, so an
    // edge whose child is a PROTOTYPE resolved to the same-named DEFINITION below
-   // it. The shape exists in this corpus by name: nlohmann-json's
-   // tests/src/unit-class_lexer.cpp stores `scan_string` twice — the one-line
-   // `void scan_string(...)` declaration at 18 (is_declaration = 1) and its
-   // definition at 19-23 — and carries a `contains` edge from `anonymous@15` to
-   // each, on lines 18 and 19. With the declaration preference first, the line-18
-   // edge falls to the definition and the two edges collapse onto one symbol; with
-   // the order below, each resolves to the symbol its own line names. The two
-   // preferences do not conflict when the order is right, because
+   // it. Measured on nlohmann-json: `anonymous contains scan_string` at line 18
+   // (a one-line `void scan_string(...)` declaration, is_declaration = 1) landed
+   // on the definition at 19-23, and 115 edges of exactly that shape survived the
+   // rule. The two preferences do not conflict when the order is right, because
    // they answer different questions: declaration-vs-definition distinguishes two
    // CANDIDATES for one entity across files, while the line identifies WHICH
    // declaration the edge means — and a declaration and its definition are two
@@ -2106,7 +2071,7 @@ export async function storeResults(
          // `kind` was added for #879: the OWNER fallback below needs to know
          // whether an enclosing span is a container. The #855 edge path reads
          // only id/start/end, so the extra field changes nothing for it.
-         const storeableSpans: { id: string; name: string; start: number; end: number; kind: string }[] = []
+         const storeableSpans: { id: string; start: number; end: number; kind: string }[] = []
          // Hoisted out of the relationship loop: it closes over storeableSpans
          // only, so defining it per relationship would allocate a closure per
          // edge for no reason.
@@ -2116,30 +2081,6 @@ export async function storeResults(
            // begins at or before the line returns the INNERMOST holder first.
            for (let i = storeableSpans.length - 1; i >= 0; i--) {
              const sp = storeableSpans[i]
-             if (sp.start > line) continue
-             if (sp.end >= line) return sp.id
-           }
-           return null
-         }
-         // #612 follow-up (the SOURCE half of the containment target rule): the
-         // innermost STOREABLE span carrying this NAME whose extent covers
-         // `line`. A `contains` edge names its container by name only, and the
-         // in-memory lookups below are FIRST-WINS — so a name that repeats in the
-         // file (cpp's synthetic `anonymous` namespaces, rust's `impl Foo` beside
-         // `struct Foo`, zig's `Group`) resolves to the first candidate rather
-         // than to the one the edge belongs to. The child's own naming line is a
-         // point INSIDE the intended container, so among same-named candidates
-         // the innermost one whose extent covers that line is the only reading the
-         // edge supports. Scanned backwards over storeableSpans (sorted by start
-         // ascending), so the first hit is the innermost. Returns null when NO
-         // candidate of that name covers the line — the edge's own evidence cannot
-         // place it, and the caller keeps the existing choice rather than inventing
-         // one.
-         const enclosingStoreableIdByName = (name: string, line: number | null): string | null => {
-           if (!name || !line || line < 1) return null
-           for (let i = storeableSpans.length - 1; i >= 0; i--) {
-             const sp = storeableSpans[i]
-             if (sp.name !== name) continue
              if (sp.start > line) continue
              if (sp.end >= line) return sp.id
            }
@@ -2254,9 +2195,6 @@ export async function storeResults(
              if (!storeableName(s.name, sStart)) continue
              storeableSpans.push({
                id: `${fileId}:${s.name}:${sStart}`,
-               // #612 source half reads this: the name lookup's FIRST-WINS order
-               // is what the containment rule replaces for same-name candidates.
-               name: String(s.name || ""),
                start: sStart,
                end: Math.max(sEnd, sStart),
                kind: String(s.type || s.kind || "unknown"),
@@ -2330,60 +2268,11 @@ export async function storeResults(
              const _ownerName = symbol.ownerName || symbol.scope
              if (_ownerName) {
                const parentSymbol = nameToSymbol.get(_ownerName)
-               const ownSymbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
-               // #612 (the structural twin of the containment source rule): the
-               // lookup above is FIRST-WINS, so a file that repeats a container
-               // name assigns this symbol's owner to whichever declaration the
-               // analyzer emitted first — and the store then emits its OWN
-               // `contains` edge from that owner, which asserts ENCLOSURE. An
-               // owner whose extent does not cover the child's own naming line
-               // therefore contradicts the edge it just emitted. Prefer the
-               // innermost same-name candidate whose extent COVERS that line; a
-               // name whose candidates all fail the enclosure test keeps the
-               // historical choice rather than inventing one. MEASURED before
-               // landing over the ten pinned heavy repos — owned symbols with a
-               // line / owner name not unique in its file / owner does NOT enclose
-               // its child / of those, a covering candidate of the same name
-               // exists (record:
-               // validation/m14/controls/containment-owner-span-612.before.json,
-               // probe contains-owner-span-612):
-               //   nlohmann-json cpp  5,621 / 2,024 /  1,661 / 1,156
-               //   fmt cpp            1,968 /   840 /    535 /   532
-               //   jq c                 521 /   228 /      0 /     0
-               //   sqlite c           4,946 /   142 /     11 /    11
-               //   ripgrep rust       3,773 / 2,888 /  2,135 / 2,135
-               //   cargo rust         6,914 / 5,021 /  3,064 / 3,064
-               //   go-tools go        9,354 / 1,068 /  3,290 /    51
-               //   terraform go      20,312 / 1,444 / 10,450 /    10
-               //   zls zig            1,706 /   196 /     24 /    24
-               //   zig zig           71,957 / 12,421 / 8,097 / 7,153
-               // The go rows are why the test is ENCLOSURE, not the name alone:
-               // Go's owner contract is a receiver TYPE, and the language allows
-               // that type in another file, so go-tools' 3,290 contradicted owners
-               // (terraform's 10,450) are not name collisions at all — only 51
-               // (resp. 10) have a covering same-name candidate to prefer, and the
-               // rest keep the analyzer's owner rather than a nearer name that is
-               // not it. Where the current owner DOES enclose but a deeper
-               // same-name candidate also does, the innermost still wins — the
-               // reading the edge-source rule uses (nlohmann-json: 1,170 rows
-               // change owner, 1,156 of them contradicted).
-               // Owner spellings reach here qualified in several languages
-               // (`ns.Class`, cpp's `Class::member` scope, rust's impl-target
-               // path). Try the exact spelling first — a same-file symbol really
-               // can be named with dots — then its leaf, the same order the
-               // edge-source rule uses.
-               const ownerLeaf = String(_ownerName).split(/[:.]/).filter(Boolean).pop() ?? String(_ownerName)
-               const coveringOwnerId =
-                 enclosingStoreableIdByName(String(_ownerName), symbolStartLine) ??
-                 (ownerLeaf !== String(_ownerName) ? enclosingStoreableIdByName(ownerLeaf, symbolStartLine) : null)
-               if (coveringOwnerId && coveringOwnerId !== ownSymbolId && String(_ownerName) !== String(symbol.name)) {
-                 ownerSymbolId = coveringOwnerId
-               }
                // M51.A1: the old unconditional `${ownerName}:0` module fallback
                // wrote ids that can never resolve (no stored row can have line
                // 0 with an owner), and a same-named parent would self-own. If
                // the named parent is not a storeable row, leave the owner NULL.
-               if (!ownerSymbolId && parentSymbol && parentSymbol.name !== symbol.name) {
+               if (parentSymbol && parentSymbol.name !== symbol.name) {
                  const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
                  if (storeableName(parentSymbol.name, parentStartLine)) {
                    ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
@@ -2829,38 +2718,7 @@ export async function storeResults(
              }
              const sourceLeaf = extractLeaf(sourceName)
              const targetLeaf = extractLeaf(targetName)
-
-             // #612 follow-up (the SOURCE half of the containment rule): a
-             // `contains` edge carries the CHILD's naming line — a point INSIDE
-             // the container it belongs to — so for a container name that repeats
-             // in this file (cpp's synthetic `anonymous` namespaces, rust's
-             // `impl Foo` beside `struct Foo`, zig's `Group`) the edge itself says
-             // which candidate it means, while the name lookups below are
-             // FIRST-WINS and land on whichever declaration the analyzer happened
-             // to emit first. Pre-landing measurement, nlohmann-json (cpp), on the
-             // 5,625 same-file containment edges: source name not unique in its
-             // file 2,027; of those, exactly one candidate's extent covers the
-             // child's line 2,004 (98.9%); stored source for which the enclosure
-             // the edge asserts is FALSE (its span does not cover the child's
-             // line) 1,161 of the ambiguous ones — the shape in which the current
-             // choice cannot be right. A `contains` edge asserts ENCLOSURE, the
-             // same reasoning that removed the degenerate-container owner clause
-             // in #612. Where no candidate of that name covers the line, nothing
-             // is invented: the existing choice stands (residual 2 of the 2,027
-             // here, plus the unique-name cases no name rule can place). The two
-             // corpus arms of this rule — the same gauges over all ten repos,
-             // before and after — are
-             // validation/m14/controls/containment-612.before.json and
-             // validation/m14/results/M14.0.containment-612.json (probes
-             // contains-source-hint-612 and contains-source-span-delta-612).
-             const relLine =
-               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
-             const sourceIdFromSpan =
-               relType === "contains" && relLine !== null
-                 ? (enclosingStoreableIdByName(String(sourceLeaf), relLine) ??
-                    enclosingStoreableIdByName(String(sourceName), relLine))
-                 : null
-
+ 
              // Find source symbol: O(1) name match first, then ends-with/qualified
              // fallbacks over a pre-built list (avoids Array.find closure per rel).
              let sourceSymbol: any = undefined
@@ -2879,12 +2737,7 @@ export async function storeResults(
  
              let sourceId: string | null
              let sourceExternal: string | null = null
-             if (sourceIdFromSpan) {
-               // #612 source half: the edge's own line placed its container, and
-               // that placement is the one the enclosure asserts. `sourceExternal`
-               // stays null — the source IS resolved.
-               sourceId = sourceIdFromSpan
-             } else if (sourceSymbol) {
+             if (sourceSymbol) {
                // Defensive export filter: reject exports of non-public or package-decl symbols
                if (relType === "exports") {
                  const vis = sourceSymbol.visibility || sourceSymbol.modifiers
@@ -2922,11 +2775,12 @@ export async function storeResults(
                sourceExternal = relativePath
              }
 
-             // (the analyzer's own line — `relLine` — is declared far above: it
-             // feeds the #612 source half, the #612 containment target rule
-             // immediately below, and the source-attribution fallback further
-             // down. NULL when the analyzer could not derive one — never a
-             // fabricated 0.)
+             // M59/#855: the analyzer's own line, hoisted to here because TWO
+             // readers need it: the #612 containment target rule immediately
+             // below, and the source-attribution fallback further down. NULL when
+             // the analyzer could not derive one — never a fabricated 0.
+             const relLine =
+               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
              // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later.
              // #612 follow-up: a `contains` edge is resolved with the line it
              // carries (see resolveContainsTargetStmt), which is the only anchor
