@@ -35,9 +35,16 @@ function writeProject() {
   fs.writeFileSync(path.join(TMP, "src", "math.c"),
     '#include "math.h"\n#include <stdio.h>\n\nint rect_area(const Rect* r) {\n  return r->w * r->h;\n}\n\nextern int run_engine(void);\n\nint main(void) {\n  Rect r = { 3, 4 };\n  printf("%d\\n", rect_area(&r) + run_engine());\n  return 0;\n}\n')
 
-  // cpp — provides run_engine (c-callable) + a class method
+  // cpp — provides run_engine (c-callable) + a class method.
+  //
+  // #612 follow-up: `Engine` and `Turbine` each declare a member named `width`,
+  // so the file holds TWO symbols with the same name — the shape a `contains`
+  // edge, which names its target by NAME alone, cannot disambiguate on its own.
+  // Line 6 vs line 11 is deliberate: the store's old tiebreak compared the
+  // symbol ids as TEXT ("...:width:11" < "...:width:6"), so BOTH edges landed
+  // on line 11 and at most one of them could be right.
   fs.writeFileSync(path.join(TMP, "src", "engine.cpp"),
-    '#include <string>\n\nclass Engine {\npublic:\n  int run() { return 7; }\n};\n\nint run_engine(void) {\n  Engine e;\n  return e.run();\n}\n')
+    '#include <string>\n\nclass Engine {\npublic:\n  int run() { return 7; }\n  int width;\n};\n\nclass Turbine {\npublic:\n  int width;\n};\n\nint run_engine(void) {\n  Engine e;\n  return e.run();\n}\n')
 
   // rust — use import + fn
   fs.writeFileSync(path.join(TMP, "src", "util.rs"),
@@ -88,6 +95,32 @@ async function main() {
     expect(Number(c.c) > 0, `relationships persisted for ${lang} (got ${c.c})`)
   }
 
+  // 5. #612 follow-up: a `contains` edge names its TARGET by NAME, and the
+  //    members containment is built from are exactly the names a file repeats
+  //    (every constructor normalizes to `constructor`, every class may declare
+  //    `width`). The edge carries the CHILD's naming line (#921), and that line
+  //    is the only anchor that says WHICH same-named member it meant. Assert the
+  //    resolved target sits on it — which forces the two `width` edges to
+  //    different rows, since the two members are on different lines.
+  const widthEdges = db.prepare(`
+    SELECT s.name sname, r.line_number rline, t.line_start tline
+      FROM brain_relationship r
+      JOIN brain_symbol s ON s.id = r.source_symbol_id
+      JOIN brain_symbol t ON t.id = r.target_symbol_id
+      JOIN brain_file f ON f.id = s.file_id
+     WHERE r.relationship_type = 'contains' AND t.name = 'width' AND f.id = t.file_id`).all() as any[]
+  expect(widthEdges.length >= 2, `same-named members of two classes produce a contains edge each (got ${widthEdges.length})`)
+  for (const e of widthEdges) {
+    expect(
+      e.rline === e.tline,
+      `contains target resolved on the edge's own line (${e.sname} contains width: edge line ${e.rline}, resolved target line ${e.tline})`,
+    )
+  }
+  expect(
+    new Set(widthEdges.map((e) => e.tline)).size === widthEdges.length,
+    `the two same-named members resolved to DIFFERENT symbols (got lines ${widthEdges.map((e) => e.tline).join(",")})`,
+  )
+
   // evidence
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
@@ -102,7 +135,12 @@ async function main() {
     claimLevel: "L1",
     layers: ["cluster-e2e"],
     checks: [
-      { id: "systems-cluster-e2e", description: "polyglot systems project (c/cpp/rust/go/zig) indexed via real CLI, all assertions pass", status: failures.length ? ("fail" as const) : ("pass" as const) },
+      {
+        id: "systems-cluster-e2e",
+        description:
+          "polyglot systems project (c/cpp/rust/go/zig) indexed via real CLI: symbols/imports/relationships per language, cross-language edges (c->cpp run_engine), AND two same-named members of one file resolving to distinct `contains` targets on the edge's own line (#612 follow-up)",
+        status: failures.length ? ("fail" as const) : ("pass" as const),
+      },
     ],
     limitations: [
       { description: "covers systems cluster (c, cpp, rust, go, zig); managed-OO/functional clusters still pending their gates" },

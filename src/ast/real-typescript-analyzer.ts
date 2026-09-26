@@ -1711,7 +1711,11 @@ class TypeScriptAnalysisRunner {
     // members collapse last-wins (family contract with the JS analyzer).
     // Runs before the symbol-map build and every relationship phase so
     // exports/calls/contains all derive from the collapsed array.
-    this.collapseDuplicateObjectMembers(rootNode, symbols)
+    // ONE call: this used to run the full-tree collapse twice and throw the
+    // first result away (a whole redundant walk per file, and a reader's
+    // first question was "which one is authoritative?"). The pass is
+    // tree-derived, so the second call also re-derived the same dead spans to
+    // splice symbols that were already spliced.
     this._dupKeyDeadSpans =
       this.collapseDuplicateObjectMembers(rootNode, symbols)
 
@@ -1953,6 +1957,10 @@ class TypeScriptAnalysisRunner {
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
     const apiContract = this.extractApiContract(node)
+    // ONE complexity walk per symbol: the top-level field and the metadata
+    // mirror are the same number by contract, and each call re-walked the
+    // whole function subtree.
+    const ownComplexity = this.calculateComplexity(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       name,
@@ -1966,7 +1974,7 @@ class TypeScriptAnalysisRunner {
       returnType,
       // Top-level per family contract: DB ingester reads symbol.complexity
       // (|| 1) for gravity scoring.
-      complexity: this.calculateComplexity(node),
+      complexity: ownComplexity,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
@@ -1981,7 +1989,7 @@ class TypeScriptAnalysisRunner {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
         isDeclare: modifiers.isDeclare,
-        complexity: this.calculateComplexity(node),
+        complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
@@ -2669,6 +2677,9 @@ class TypeScriptAnalysisRunner {
     }
 
     const ownerInfo = this.scopeManager.getOwnerInfo()
+    // ONE complexity walk per method: the top-level field and the metadata
+    // mirror are the same number by contract.
+    const ownComplexity = this.calculateComplexity(node)
     const apiContract = this.extractApiContract(
       node,
       decoratorNodes && decoratorNodes.length > 0 ? decoratorNodes : undefined,
@@ -2706,7 +2717,7 @@ class TypeScriptAnalysisRunner {
       returnType,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
-      complexity: this.calculateComplexity(node),
+      complexity: ownComplexity,
       comments: this.extractComments(node),
       qualified_calls: this.extractQualifiedCalls(node),
       apiContractPath,
@@ -2725,7 +2736,7 @@ class TypeScriptAnalysisRunner {
           return false
         })(),
         isAccessor,
-        complexity: this.calculateComplexity(node),
+        complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
@@ -5655,39 +5666,12 @@ class TypeScriptAnalysisRunner {
   }
 
   private calculateCyclomaticComplexity(node: Node): number {
-    // Cyclomatic complexity = E - N + 2P
-    // For a single function: decision points + 1
-    let decisions = 0
-
-    const countDecisions = (n: Node) => {
-      switch (n.type) {
-        case "if_statement":
-        case "for_statement":
-        case "for_in_statement":
-        case "while_statement":
-        case "do_statement":
-        case "switch_case":
-        case "catch_clause":
-        case "ternary_expression":
-        case "conditional_expression":
-          decisions++
-          break
-        case "binary_expression":
-          const op = n.childForFieldName("operator")?.text
-          if (op === "&&" || op === "||" || op === "??") {
-            decisions++
-          }
-          break
-      }
-
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) countDecisions(child)
-      }
-    }
-
-    countDecisions(node)
-    return decisions + 1
+    // SAME algorithm as `calculateComplexity` (1 + decision points — the M14
+    // family contract). This used to be a second, byte-identical
+    // implementation: two full-tree walks per file whose answers could drift,
+    // plus the "two names, one body" maintenance hazard the master review
+    // flagged. One implementation, one walk, one answer.
+    return this.calculateComplexity(node)
   }
 
   private calculateArchitecturalScore(

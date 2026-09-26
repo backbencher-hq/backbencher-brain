@@ -3,8 +3,9 @@
 // Per-mode adversarial UNIT coverage for bb_edit. Each mode (write/update/
 // insert/delete/refactor) has a positive case plus the negatives the E2–E6
 // verifiers did not yet exercise: path/symlink escape, heredoc, block comment,
-// interpolation, ambiguous symbol, and stale update/delete bounds. No check
-// is a no-op — every assertion verifies a specific, named behavior.
+// interpolation, ambiguous symbol, and the stale-file paths (refresh-and-edit,
+// refuse-when-the-symbol-is-gone). No check is a no-op — every assertion
+// verifies a specific, named behavior.
 
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -26,6 +27,7 @@ const harness = new Harness({
     scope: "this verifier fills the per-mode + negative gaps the focused E2–E6 verifiers left; it does not duplicate their assertions",
     pathSafety: "resolveSafeEditPath rejects '..' and symlink escapes before any file is touched",
     renameSafety: "refactor skips heredoc, block comment, and interpolation text (never rewrites string/comment content)",
+    staleFile: "M59.A11 (#890): a stale target file is refreshed and the edit lands (reported in warnings); a symbol gone after the refresh is refused, never written to a guessed span",
   },
   limitations: [
     "Comprehensive cross-language rename classification is proven in E2 (65 checks); E7 adds only the per-mode and adversarial-fixture gaps.",
@@ -104,19 +106,36 @@ function teardown(f: Fixture): void {
     const res = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 42", format: false })
     harness.check("update: rewrites the symbol body", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 42"))
     harness.check("update: reports a single change", res.changes.length === 1)
-    // Stale bounds: change the file on disk so the indexed bounds no longer
-    // match, then update. The operation must abort loudly (no silent wrong
-    // write). M48.C2 note: this assertion previously matched "not found" —
-    // which only fired because the OLD destructive update removed the symbol
-    // from the DB. With fragment-safe updates the symbol survives, so the
-    // correct loud failure is the stale-bounds refusal.
+    // Stale file: changed on disk after indexing (another tool, a git pull, the
+    // human). M59.A11 (#890) retired the old "refuse every stale edit" rule —
+    // the edit now refreshes just this file and applies to the bytes on disk,
+    // because the indexed byte bounds are what is stale, not the caller.
+    // E7 pins the CURRENT contract; it must not pin a retired one.
     writeFileSync(path.join(f.srcDir, "mod.ts"), `export function target(): number { return 99 }\n`)
-    await harness.rejectsAsync(
-      "update: stale index aborts (no silent wrong write)",
-      () => executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false }),
-      "stale index bounds",
+    const stale = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false })
+    harness.check(
+      "update: a stale target file is refreshed and the edit lands",
+      readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 1"),
+      readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").slice(0, 80),
     )
-    harness.check("update: stale abort leaves the file untouched", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 99"))
+    harness.check(
+      "update: the refresh is reported in warnings (not silent)",
+      (stale.warnings ?? []).some((w) => /refreshed stale index rows/.test(String(w))),
+      JSON.stringify(stale.warnings ?? []),
+    )
+    // Refreshing is not a licence to guess: if the symbol is gone after the
+    // refresh, the correct outcome is a loud refusal — never a write to a
+    // guessed span.
+    writeFileSync(path.join(f.srcDir, "mod.ts"), `export function targetRenamed(): number { return 99 }\n`)
+    await harness.rejectsAsync(
+      "update: symbol gone after refreshing is refused (no guessed-span write)",
+      () => executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false }),
+      "not found after refreshing",
+    )
+    harness.check(
+      "update: that refusal leaves the refreshed file untouched",
+      readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("targetRenamed"),
+    )
   } finally {
     teardown(f)
   }

@@ -1836,6 +1836,59 @@ export async function storeResults(
       LIMIT 1`
    )
 
+   // #612 follow-up: a `contains` edge names its TARGET by NAME only, and the
+   // graph's most repeated names are exactly the ones containment is built from —
+   // every constructor normalizes to `constructor` (the family contract), and a
+   // member name recurs in every class that has it. Same-file, same-name
+   // candidates therefore abound and the statement above picks between them by
+   // `s.id` alone, which is `${fileId}:${name}:${line}` compared as TEXT — so it
+   // is the LEXICOGRAPHICALLY smallest line that wins, not the intended symbol
+   // (`constructor:22` beats `constructor:227`, but `constructor:227` beats
+   // `constructor:25`).
+   //
+   // The edge already says which one it meant: a contains edge takes the CHILD's
+   // own naming line as `line_number` (#921 — the same field this family's other
+   // relationship types carry), so the intended target is the candidate written
+   // on that line. MEASURED before landing, over every same-file containment edge
+   // whose target name is not unique in its file:
+   //
+   //   corpus / lang    ambiguous  line pins exactly 1  pins none  old WRONG
+   //   nlohmann-json cpp   4,107             4,059          48       2,348
+   //   zig tree c         75,578            75,519          59      52,975
+   //   zig tree cpp       31,658            30,850         808      21,621
+   //   zig tree zig       23,842            23,842           0      17,385
+   //
+   // (`old WRONG` is the gauge itself: the line the edge records and the stored
+   // target's line disagree, so the edge and the symbol it was resolved to cannot
+   // both be right.) And where the target name IS unique — the case where the old
+   // choice is provably right — the edge's line equals the target's stored line
+   // 99.26% (nlohmann cpp), 99.995% (c), 99.24% (cpp, zig tree) and 100% (zig) of
+   // the time, so the field means what this rule reads it to mean, verified rather
+   // than assumed. When no same-file candidate sits on the line, the remaining
+   // keys decide exactly as before, so an edge the hint cannot place loses nothing.
+   //
+   // The key ORDER is part of the rule, and the first cut of it got this wrong:
+   // `COALESCE(s.is_declaration, 0) ASC` — the definitions-over-declarations
+   // preference added earlier in #612 — ran FIRST and outranked the line, so an
+   // edge whose child is a PROTOTYPE resolved to the same-named DEFINITION below
+   // it. Measured on nlohmann-json: `anonymous contains scan_string` at line 18
+   // (a one-line `void scan_string(...)` declaration, is_declaration = 1) landed
+   // on the definition at 19-23, and 115 edges of exactly that shape survived the
+   // rule. The two preferences do not conflict when the order is right, because
+   // they answer different questions: declaration-vs-definition distinguishes two
+   // CANDIDATES for one entity across files, while the line identifies WHICH
+   // declaration the edge means — and a declaration and its definition are two
+   // distinct stored symbols that the edge's own `line_number` already tells
+   // apart. So proximity/identity first, and the declaration preference kept for
+   // the case it was added for (the fallback where no candidate sits on the line).
+   const resolveContainsTargetStmt = rawDb.prepare(
+     `SELECT s.id, s.file_id, f.language FROM brain_symbol s
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE s.project_id = ? AND s.name = ?
+      ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC, COALESCE(s.is_declaration, 0) ASC, (f.language = ?) DESC, s.id
+      LIMIT 1`
+   )
+
    // #737 diagnostics wiring: every batch call site runs through the `stmt`
    // map (originals kept in stmtOriginal) so the diagnose pass can swap in
    // capturing wrappers and restore them afterwards. The per-batch closure is
@@ -2722,8 +2775,22 @@ export async function storeResults(
                sourceExternal = relativePath
              }
 
-             // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
-             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any
+             // M59/#855: the analyzer's own line, hoisted to here because TWO
+             // readers need it: the #612 containment target rule immediately
+             // below, and the source-attribution fallback further down. NULL when
+             // the analyzer could not derive one — never a fabricated 0.
+             const relLine =
+               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+             // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later.
+             // #612 follow-up: a `contains` edge is resolved with the line it
+             // carries (see resolveContainsTargetStmt), which is the only anchor
+             // that distinguishes the many same-named members a C-family file
+             // declares. Every other relationship type keeps line_number as a
+             // SITE (where the call/read happened) and must NOT be resolved by it.
+             const resolvedRow =
+               relType === "contains" && relLine !== null
+                 ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
+                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -2782,11 +2849,9 @@ export async function storeResults(
                const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
                return storeableName(leaf, line)
              }
-             // M59/#855: the analyzer's own call-site line, hoisted so the
-             // source-attribution fallback below can key on it. NULL when the
-             // analyzer could not derive one — never a fabricated 0.
-             const relLine =
-               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+             // (the analyzer's own line is hoisted far above — see the `relLine`
+             // declaration next to the target resolution; it feeds both the
+             // #612 containment target rule and the M59/#855 source fallback)
              // M59/#855: an edge whose analyzer source is a synthetic scope this
              // file will not store (anonymous_*/block_N/lambda_N/object_N) used to
              // be stored with a NULL source id — FK-legal, but UNATTRIBUTABLE, so

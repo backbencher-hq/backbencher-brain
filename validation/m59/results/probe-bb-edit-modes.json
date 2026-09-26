@@ -1,7 +1,7 @@
 {
   "probe": "M59.EDIT — bb_edit per-mode behavioural probe",
-  "at": "2026-09-19T03:21:17.705Z",
-  "dataDir": "/tmp/m59-edit-data-tBhfAq",
+  "at": "2026-09-21T17:36:52.656Z",
+  "dataDir": "/tmp/m59-edit-data-5XAiWb",
   "cases": 18,
   "refused": 4,
   "expectationsUnmet": 0,
@@ -164,7 +164,7 @@
         {
           "tool": "bb_index",
           "isError": false,
-          "head": "{ \"mode\": \"file\", \"path\": \"/tmp/m59-edit-fix-3rbQqd/src/shapes.ts\", \"indexed\": 1, \"deleted\": 0, \"errors\": 0, \"derived\": "
+          "head": "{ \"mode\": \"file\", \"path\": \"/tmp/m59-edit-fix-FW75iP/src/shapes.ts\", \"indexed\": 1, \"deleted\": 0, \"errors\": 0, \"derived\": "
         }
       ],
       "changedOnDisk": true,
@@ -181,7 +181,7 @@
         {
           "tool": "bb_edit",
           "isError": false,
-          "head": "{ \"mode\": \"update\", \"dryRun\": false, \"changes\": [ { \"path\": \"/tmp/m59-edit-fix-L0uNKn/src/shapes.ts\", \"before\": \"export "
+          "head": "{ \"mode\": \"update\", \"dryRun\": false, \"changes\": [ { \"path\": \"/tmp/m59-edit-fix-t3D4m3/src/shapes.ts\", \"before\": \"export "
         }
       ],
       "changedOnDisk": true,
@@ -193,7 +193,7 @@
     {
       "case": "18-stale-then-symbol-renamed-outside",
       "toolRefused": true,
-      "reason": "symbol helper not found after refreshing /tmp/m59-edit-fix-LZDH0X/src/shapes.ts — it was renamed or removed since it was indexed",
+      "reason": "symbol helper not found after refreshing /tmp/m59-edit-fix-rTmhGz/src/shapes.ts — it was renamed or removed since it was indexed",
       "changedOnDisk": false,
       "reindexed": null,
       "derived": null,
