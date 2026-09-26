@@ -20,6 +20,26 @@ interface CssContext {
    * once, before the walk, so the test costs nothing per node.
    */
   fileHasParseError: boolean
+  /**
+   * selector name -> the properties it declares. See `recordDeclaredProperty`:
+   * a CSS property name is a token in a declaration, not a graph node, so this
+   * rides the symbol payload rather than a relationship to a name that does not
+   * exist in the graph.
+   */
+  declaredProperties: Record<string, string[]>
+  /** Distinct media-scope names already published as symbols, and where first seen. */
+  mediaScopes: Record<string, boolean>
+  mediaScopeFirstRange: Record<string, ASTEngine.UniversalSymbol["range"]>
+  /**
+   * Selector-chain edges, held until every symbol is known. A `contains` edge is
+   * a claim about two graph nodes, and a chain leaf is not a node — see the
+   * ruling at the emission site.
+   */
+  deferredChainEdges: { from: string; to: string; rule: string }[]
+  /** raw selector group -> the chain leaves it is composed of. */
+  selectorChains: Record<string, string[]>
+  /** emitted vs withheld selector-chain edges, for the F6/F9 pins. */
+  chainEdgeTally?: { emitted: number; withheld: number }
 }
 
 interface StackFrame {
@@ -178,6 +198,12 @@ function isFoundationClass(cls: string): boolean {
 
 export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    // The importing stylesheet's own name, for `@import` edges. Pure-String, and
+    // the LAST path segment: `a/b/theme.css` imports as `theme.css`, which is how
+    // the module is written in the import itself and how the store spells a file.
+    const segs = filePath.split(/[\\/]/)
+    this.importerName = segs[segs.length - 1] || filePath || "stylesheet"
+
     const ctx: CssContext = {
       symbols: [],
       relationships: [],
@@ -190,6 +216,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       frameworks: {},
       patterns: {},
       fileHasParseError: rootNode.hasError === true,
+      declaredProperties: {},
+      mediaScopes: {},
+      mediaScopeFirstRange: {},
+      deferredChainEdges: [],
+      selectorChains: {},
     }
 
     // D5 (2026-09-26). The keyframe-name set was filled DURING the walk, so an
@@ -322,6 +353,104 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
     }
+
+    // The deferred selector-chain edges are resolved HERE, once every symbol the
+    // analyzer will publish is known — which is the only point at which "does
+    // this name name a node?" has an answer. An edge whose both ends resolve is
+    // emitted; an edge whose end is a chain LEAF is not, because the leaf is a
+    // component of a selector rather than a declared thing, and the composition
+    // is already carried by the rule's name and by `selectorChain` metadata.
+    //
+    // Resolution uses the SAME rules parallel-indexer uses to bind a
+    // relationship to a symbol at insert time, so "resolves" here means what it
+    // means there — a name that would be stored as `target_external` is a name
+    // that resolves to nothing.
+    {
+      const names = new Set<string>()
+      for (const sym of ctx.symbols) {
+        names.add(sym.name)
+        if (sym.scope) names.add(`${sym.scope}.${sym.name}`)
+      }
+      const leafOf = (n: string): string => {
+        const segs = n.replace(/:\d+$/, "").split(":").filter((x) => x.length > 0)
+        const last = segs[segs.length - 1] ?? ""
+        const dots = last.split(".")
+        return dots[dots.length - 1]
+      }
+      const resolves = (n: string): boolean => {
+        if (!n) return false
+        if (names.has(n)) return true
+        const l = leafOf(n)
+        if (names.has(l)) return true
+        for (const nm of names) {
+          if (n.endsWith(`:${nm}`)) return true
+          if (n.endsWith(`.${nm}`)) return true
+        }
+        return false
+      }
+      let emitted = 0
+      let withheld = 0
+      const seen = new Set<string>()
+      for (const e of ctx.deferredChainEdges) {
+        const key = `${e.from}\u001f${e.to}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        if (resolves(e.from) && resolves(e.to)) {
+          emitted++
+          ctx.relationships.push({
+            source: e.from,
+            target: e.to,
+            type: ASTEngine.RelationshipType.Contains,
+            metadata: { cssSpecific: true, isSelectorChain: true },
+          })
+        } else {
+          withheld++
+        }
+      }
+      ctx.chainEdgeTally = { emitted, withheld }
+    }
+
+    // The declared-property map is keyed by the CURRENT selector a declaration
+    // was seen under, which for a nested rule is the RESOLVED selector text —
+    // the same string the symbol is named. It is attached here, after the walk,
+    // because a declaration can precede its rule's symbol in the walk order.
+    //
+    // A selector that resolved to several comma-separated names (`.a, .b { … }`)
+    // has the property recorded under the joined text, so the lookup has to try
+    // the joined name AND each comma part. The metadata is attached to every
+    // symbol it can be attributed to, and omitted where it cannot — an honest
+    // absence rather than a copy on the wrong node.
+    const attachDeclared = (sym: { name: string; metadata?: Record<string, unknown> }): void => {
+      const direct = ctx.declaredProperties[sym.name]
+      const parts = sym.name.split(",").map((x) => x.trim()).filter(Boolean)
+      const merged: string[] = []
+      const push = (list: string[] | undefined): void => {
+        if (!list) return
+        for (const p of list) if (merged.indexOf(p) === -1) merged.push(p)
+      }
+      push(direct)
+      for (const part of parts) push(ctx.declaredProperties[part])
+      if (merged.length === 0) return
+      if (!sym.metadata) sym.metadata = {}
+      sym.metadata.declaresProperties = merged
+      sym.metadata.declaredPropertyCount = merged.length
+    }
+    const attachChain = (sym: { name: string; metadata?: Record<string, unknown> }): void => {
+      const direct = ctx.selectorChains[sym.name]
+      const parts = sym.name.split(",").map((x) => x.trim()).filter(Boolean)
+      const merged: string[] = []
+      const push = (list: string[] | undefined): void => {
+        if (!list) return
+        for (const p of list) if (merged.indexOf(p) === -1) merged.push(p)
+      }
+      push(direct)
+      for (const part of parts) push(ctx.selectorChains[part])
+      if (merged.length < 2) return
+      if (!sym.metadata) sym.metadata = {}
+      sym.metadata.selectorChain = merged
+    }
+    for (const s2 of ctx.symbols) attachChain(s2)
+    for (const s of ctx.symbols) attachDeclared(s)
 
     for (const s of ctx.symbols) { if (!s.scope || s.scope === "") { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility || "public" }) } }
     this.detectFrameworksFromClasses(ctx)
@@ -477,6 +606,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     return hasString && !hasRealSelector
   }
+
+  /** The importing stylesheet's name; set per `analyze` run. */
+  private importerName = "stylesheet"
 
   private determineSelectorKind(
     hasId: boolean,
@@ -740,13 +872,34 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         maxSpecificity = [specId, specClass, specTag]
 
       if (isComplex && chain.length >= 2) {
+        // RULING (2026-09-26). A selector chain is DEFERRED, not emitted blind.
+        //
+        // `contains .nav -> a` for `.nav a` asserts containment between two
+        // things the analyzer does not publish: the rule is ONE symbol named
+        // `.nav a`, and neither `.nav` nor `a` is a symbol unless it happens to
+        // be its own rule elsewhere in the file. Measured over 3 corpora: 14,188
+        // chain edges, of which 2,664 (18.8%) resolve at both ends — and those
+        // resolve only ACCIDENTALLY, when a chain leaf is also a whole selector
+        // somewhere else. The shapes that do not resolve are the common ones:
+        // `.nav -> a` 468, `.where -> .svelte-xyz` 432, `a -> .hover` 398,
+        // `ul -> li` 229.
+        //
+        // No respelling can fix this: the edge names two things that are not
+        // nodes. Publishing them would create a symbol per element-type
+        // occurrence per selector, none of which is a declaration. So the chain
+        // is what it is — a COMPOSITION of the rule's selector — and it rides the
+        // rule's payload as `selectorChain`, while the `contains` edges are
+        // emitted only for the chains where both leaves ARE published symbols.
+        // The composition is not lost by ceasing to be a fabricated edge: the
+        // rule's own NAME is the resolved chain.
         for (let i = 0; i < chain.length - 1; i++) {
-          ctx.relationships.push({
-            source: chain[i],
-            target: chain[i + 1],
-            type: ASTEngine.RelationshipType.Contains,
-            metadata: { cssSpecific: true, isSelectorChain: true },
-          })
+          ctx.deferredChainEdges.push({ from: chain[i], to: chain[i + 1], rule: rawSelectors.join(", ") })
+        }
+        for (let i = 0; i < chain.length; i++) {
+          if (chain[i].length === 0) continue
+          ctx.selectorChains[rawSelectors.join(", ")] = ctx.selectorChains[rawSelectors.join(", ")] ?? []
+          const list = ctx.selectorChains[rawSelectors.join(", ")]
+          if (list.indexOf(chain[i]) === -1) list.push(chain[i])
         }
       }
     }
@@ -873,13 +1026,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         isTypeOnly: false,
         range: this.nodeToRange(node),
       })
-      // depends: @import = compile-time dependency
+      // `@import` is the one CSS edge that is genuinely an IMPORT, and the
+      // ontology has a type for it. It was emitted as `references` from the
+      // literal string `"global"` — a magic source that names no symbol in any
+      // stylesheet (M60 R7: no placeholder literals in name-bearing fields), so
+      // every import edge in the corpus was unjoinable at BOTH ends.
+      //
+      // The source is now the importing stylesheet's own name, which is what an
+      // import is FROM. The store records an edge whose source is not a symbol in
+      // the file as `source_external` — the same handling every other language's
+      // top-level cross-file import gets — so the edge is honest rather than
+      // dangling by construction.
       ctx.relationships.push({
-        source: "global",
+        source: this.importerName,
         target: moduleName,
-        type: ASTEngine.RelationshipType.References,
-        confidence: 0.9,
-        metadata: { isCssImport: true }
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1.0,
+        metadata: { isCssImport: true, importSource: this.importerName },
       })
       if (moduleName.indexOf("tailwind") !== -1) ctx.frameworks["Tailwind CSS"] = true
       if (moduleName.indexOf("bootstrap") !== -1) ctx.frameworks["Bootstrap"] = true
@@ -920,11 +1083,37 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           c.type === "selector_query"),
     )
     if (queryNode) {
-      const mediaName = `@media ${queryNode.text}`
-      // NOTE: a media query is a structural scope, not a symbol — it is NOT
-      // emitted as a standalone symbol. It still scopes contained selectors
-      // via the returned name (used for contains relationships).
+      const mediaName = `@media ${collapseWhitespace(queryNode.text)}`
       ctx.patterns["Responsive Design (Media Queries)"] = true
+      // RULING (2026-09-26). The comment this replaces read "a media query is a
+      // structural scope, not a symbol — it is NOT emitted as a standalone
+      // symbol", and that decision is what made 5,115 relationships carry a
+      // source that exists nowhere in the graph: `@media (max-width: 768px)`
+      // scoped its rules through a NAME with no symbol behind it, so every
+      // media containment edge was unjoinable at query.
+      //
+      // It was also inconsistent with the lane's own treatment of the identical
+      // construct: `@layer base` and `@container (min-width: 400px)` are both
+      // structural scopes and both ARE emitted as `module` symbols with
+      // containment edges. A media query is the same kind of thing and is now
+      // treated the same way.
+      //
+      // Deduplicated by name: the same condition appearing twice in a file is the
+      // SAME scope, and emitting two symbols with one name would be the identity
+      // collision this wave exists to remove (the defect that gave every
+      // `@container` the bare name `@container`).
+      if (!ctx.mediaScopes[mediaName]) {
+        ctx.mediaScopes[mediaName] = true
+        ctx.symbols.push({
+          name: mediaName,
+          kind: ASTEngine.SymbolKind.Module,
+          range: this.nodeToRange(node),
+          scope: "",
+          visibility: "public",
+          metadata: { isMediaScope: true, mediaCondition: collapseWhitespace(queryNode.text) },
+        })
+        ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
+      }
       return mediaName
     }
     return null
@@ -1059,22 +1248,37 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // transition entry condition, a fallback position), so a symbol for them
     // would be a name with no referent. They are recorded as silent in
     // script/m14/spec/css-completeness.json with that reason.
-    if (
-      keyword === "@layer" ||
-      keyword === "@container" ||
-      keyword === "@scope" ||
-      keyword === "@font-face" ||
-      keyword === "@property" ||
-      keyword === "@namespace" ||
-      keyword === "@tailwind" ||
-      keyword === "@apply" ||
-      keyword === "@theme" ||
-      keyword === "@config" ||
-      keyword === "@mixin" ||
-      keyword === "@include" ||
-      keyword === "@forward" ||
-      keyword === "@use"
-    ) {
+    // D10 (2026-09-26). The whitelist below conflated two different things: an
+    // at-rule that DECLARES a named entity, and an at-rule CONSUMED BY A BUILD
+    // TOOL. Measured, the second kind was 71 fabricated `module` symbols in a
+    // 148-file sample — `@apply flex` became a symbol named after a Tailwind
+    // utility, `@theme` a symbol named after its own keyword, `@config` likewise.
+    // None of them declares anything: they are instructions to a compiler, and a
+    // symbol with no declaration behind it is a name with no referent.
+    //
+    // DECLARING (published as symbols):
+    //   @layer      a named cascade layer
+    //   @container  a named container-query scope
+    //   @scope      a DOM-scoping prelude
+    //   @font-face  a font family           (D6)
+    //   @property   a custom-property registration (D6)
+    //   @namespace  a prefix -> URL mapping (D6)
+    //   @mixin      an SCSS mixin
+    // CONSUMING (no symbol; recorded as a pattern, or as an import):
+    //   @tailwind   a Tailwind directive
+    //   @apply      applies utilities; the utilities are named in its prelude and
+    //               are not entities this stylesheet defines
+    //   @theme      a Tailwind theme BLOCK — the custom properties inside it are
+    //               already emitted as variable symbols in their own right
+    //   @config     a Tailwind config path
+    //   @include    USES a mixin; the fact is the `uses` edge below, not a symbol
+    //   @use/@forward  Sass module imports, emitted as `imports` like @import
+    const DECLARING = new Set([
+      "@layer", "@container", "@scope", "@font-face", "@property", "@namespace", "@mixin",
+    ])
+    const CONSUMING = new Set(["@tailwind", "@apply", "@theme", "@config", "@include", "@use", "@forward"])
+
+    if (DECLARING.has(keyword) || CONSUMING.has(keyword)) {
       // Set for `@font-face`, whose prelude is empty and whose declared name
       // lives in its block; declared first so its use below is in scope.
       let namePartOverride = ""
@@ -1135,23 +1339,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       const namePart = namePartOverride || stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
       const ruleName = `${keyword}${namePart ? " " + namePart : ""}`
 
-      ctx.symbols.push({
-        name: ruleName,
-        // A declared `@font-face` and a registered `@property` are both
-        // declarations of a named thing, which is what `variable` and
-        // `interface` mean in this ontology; the rest are structural scopes,
-        // which is `module`.
-        kind:
-          keyword === "@mixin"
-            ? ASTEngine.SymbolKind.Function
-            : keyword === "@font-face" || keyword === "@property"
-              ? ASTEngine.SymbolKind.Variable
-              : ASTEngine.SymbolKind.Module,
-        range: this.nodeToRange(node),
-        scope: keyword === "@include" ? currentSelector : "",
-        visibility: "public",
-        metadata: { isAtRule: true, atKeyword: keyword },
-      })
+      // A CONSUMING at-rule gets NO symbol. `@apply flex` is an instruction to a
+      // Tailwind build, not a declaration; `@theme` is a block whose custom
+      // properties are already published in their own right; `@config` names a
+      // file; `@include` is a USE, and the `uses` edge below is the fact.
+      if (DECLARING.has(keyword)) {
+        ctx.symbols.push({
+          name: ruleName,
+          // A declared `@font-face` and a registered `@property` are both
+          // declarations of a named thing, which is what `variable` means in this
+          // ontology; `@mixin` is a callable, so `function`; the rest are
+          // structural scopes, which is `module`.
+          kind:
+            keyword === "@mixin"
+              ? ASTEngine.SymbolKind.Function
+              : keyword === "@font-face" || keyword === "@property"
+                ? ASTEngine.SymbolKind.Variable
+                : ASTEngine.SymbolKind.Module,
+          range: this.nodeToRange(node),
+          scope: "",
+          visibility: "public",
+          metadata: { isAtRule: true, atKeyword: keyword },
+        })
+      }
 
       if (keyword === "@layer") ctx.patterns["Cascade Layers (@layer)"] = true
       if (keyword === "@container") ctx.patterns["Container Queries (@container)"] = true
@@ -1165,11 +1375,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (keyword === "@mixin" && namePart) ctx.mixinNames[namePart] = true
 
       if (keyword === "@include" && currentSelector && namePart) {
+        // The mixin reference resolves to the `@mixin` symbol when the mixin is
+        // declared in this file. It is emitted unconditionally rather than
+        // gated on `mixinNames`, because an `@include` of a mixin declared
+        // elsewhere is a real reference to something this file does not define —
+        // the same honest external reference a `var(--x)` to another
+        // stylesheet's custom property is.
         ctx.relationships.push({
           source: currentSelector,
           target: `@mixin ${namePart}`,
           type: ASTEngine.RelationshipType.Uses,
-          metadata: { cssSpecific: true, isMixinRef: true },
+          metadata: { cssSpecific: true, isMixinRef: true, isDeclaredLocally: ctx.mixinNames[namePart] === true },
+        })
+      }
+
+      if ((keyword === "@use" || keyword === "@forward") && namePart) {
+        // A Sass module import, which is what `@import` is for CSS: a
+        // compile-time dependency on another file.
+        ctx.relationships.push({
+          source: this.importerName,
+          target: stripAllQuotes(namePart.split(/\s+/)[0] ?? namePart),
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          metadata: { isCssImport: true, isSassModuleImport: true, importSource: this.importerName },
         })
       }
 
@@ -1186,24 +1414,52 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return {}
   }
 
+  /**
+   * Every property a selector declares, recorded on the SELECTOR SYMBOL rather
+   * than emitted as a relationship to the property name.
+   *
+   * RULING (2026-09-26, measured — script/m14/tmp/css-ontology-census.ts, 457
+   * files / 13 corpora). This used to emit `uses <selector> -> <property>` for
+   * every declaration, and the class table says what that cost:
+   *
+   *   uses   34,727 edges   2,073 resolve at both ends    6.0%
+   *          of which 32,654 have a RESOLVABLE SOURCE and an unresolvable target,
+   *          and 0 have an unresolvable source
+   *
+   * The class is homogeneous: the source is always a selector (always a
+   * published symbol) and the target is always a CSS property name — `color`,
+   * `margin`, `font-family` — which the analyzer never publishes as a symbol and
+   * never will, because a property name is a token in a declaration, not an
+   * entity a stylesheet defines. So 32,654 of 59,940 relationships (54%) were
+   * edges to a name that exists nowhere in the graph: stored as
+   * `target_external`, unjoinable at query, and then discarded outright by
+   * pool-worker's CSS branch of `filterNoiseRelationships`, which keeps
+   * `contains` only. The information was paid for twice and delivered neither
+   * time.
+   *
+   * A relationship is a claim about two graph nodes. `declaresProperties` is the
+   * right shape for "this rule sets these properties" — it rides the symbol
+   * payload, which M60 P1 treats as a first-class channel (produced by the
+   * analyzer, preserved by the store, reachable at query, truthful at the tool).
+   *
+   * The relationships that DO survive in this handler are the ones whose target
+   * is a real node: a custom property, a `@keyframes` name, a `@mixin`. Those
+   * are untouched.
+   */
+  private recordDeclaredProperty(currentSelector: string, property: string, ctx: CssContext): void {
+    if (!currentSelector) return
+    ctx.declaredProperties[currentSelector] = ctx.declaredProperties[currentSelector] ?? []
+    const list = ctx.declaredProperties[currentSelector]
+    if (list.indexOf(property) === -1) list.push(property)
+  }
+
   private processDeclaration(node: Node, currentSelector: string, ctx: CssContext) {
-    // Create Uses relationship between selector and property
-    if (currentSelector) {
-      // Positional lookup only: the pinned tree-sitter-css wasm exposes
-      // fieldCount=0 (probe: childForFieldName("property") is UNDEFINED on
-      // `color: red`), so a field call here would be provably dead code. F1's
-      // field audit now fails on any field literal a grammar cannot resolve.
-      const propNode = this.findChild(node, (c: Node) => c.type === "property_name")
-      if (propNode) {
-        ctx.relationships.push({
-          source: currentSelector,
-          target: propNode.text,
-          type: ASTEngine.RelationshipType.Uses,
-          confidence: 0.9,
-          metadata: { cssSpecific: true, isStyleRule: true },
-        })
-      }
-    }
+    // Positional lookup only: the pinned tree-sitter-css wasm exposes
+    // fieldCount=0 (probe: childForFieldName("property") is UNDEFINED on
+    // `color: red`), so a field call here would be provably dead code. F1's
+    // field audit now fails on any field literal a grammar cannot resolve.
+    const declPropNode = this.findChild(node, (c: Node) => c.type === "property_name")
+    if (declPropNode) this.recordDeclaredProperty(currentSelector, declPropNode.text, ctx)
     // M14 F1 debt repaid 2026-09-26. `variable_name` was a registered dead
     // literal: the pinned grammar enumerates 151 node types and has no such
     // node. The disjunct is dropped rather than left where it can never match.
