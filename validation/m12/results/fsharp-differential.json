@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -260,7 +260,7 @@
         "bytes": 37487
       }
     },
-    "digest": "c355da2ba7dc86476b90ac1bf05b260b307ac6d25ec78fa377fbb22573355899",
+    "digest": "3ae4c8baceee61140a12509f30dedc869a5cb79040e5d4fd38b04dec98db9423",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-fsharp_tree-sitter-fsharp.wasm",
       "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
@@ -447,11 +447,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:fsharp",
-      "wallTimeMs": 161.763552,
-      "userCpuMs": 454.022,
-      "systemCpuMs": 53.82,
-      "peakRssBytes": 313024512,
-      "rssDeltaBytes": -3063808,
+      "wallTimeMs": 357.446036,
+      "userCpuMs": 545.516,
+      "systemCpuMs": 44.698,
+      "peakRssBytes": 280555520,
+      "rssDeltaBytes": 19849216,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

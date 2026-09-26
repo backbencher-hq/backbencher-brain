@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -252,7 +252,7 @@
         "bytes": 22946
       }
     },
-    "digest": "d9f612f1702649de779f4235818ce937e0e33ecb71aedf37c1d5901f0d3acfb0",
+    "digest": "57e2f08f4ccff3f6d83c165909cdb2990115ff1e7df632b7dea83a482d8304fb",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-erlang_tree-sitter-erlang.wasm",
       "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
@@ -394,11 +394,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:erlang",
-      "wallTimeMs": 242.71223,
-      "userCpuMs": 470.614,
-      "systemCpuMs": 73.384,
-      "peakRssBytes": 228245504,
-      "rssDeltaBytes": 15101952,
+      "wallTimeMs": 96.520357,
+      "userCpuMs": 107.642,
+      "systemCpuMs": 11.476,
+      "peakRssBytes": 250740736,
+      "rssDeltaBytes": 8503296,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
