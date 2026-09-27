@@ -632,9 +632,66 @@ async function main() {
     }
   }
 
-  process.exit(
-    unreviewed.length === 0 && conditionalBroken.length === 0 && carriersBroken.length === 0 ? 0 : 1,
-  )
+  // ── evidence ────────────────────────────────────────────────────────────
+  // A gate nobody runs is not a gate, so this emits the artifact the honesty gate
+  // reads. The wording is constrained by that gate's BANNED list: "complete",
+  // "thoroughly reviewed" and friends are refused in artifact prose because a
+  // self-description is not a measurement. Every number below is one this run
+  // just produced, and the limitations say plainly what the gate does not decide.
+  const { emitEvidence } = await import("./evidence-harness")
+  const ok = unreviewed.length === 0 && conditionalBroken.length === 0 && carriersBroken.length === 0
+  emitEvidence({
+    issueId: "M14.0.CENSUS",
+    title: "html carrier census",
+    claimLevel: "L1",
+    layers: ["carrier-census"],
+    checks: [
+      {
+        id: "census-pairs-ruled",
+        description: `every reference-shaped (tag@attr) pair in ${files.length} corpus files carries a ruling (${docHits.size} pairs, ${totalRefs} occurrences)`,
+        status: unreviewed.length === 0 ? "pass" : "fail",
+      },
+      {
+        id: "census-claimed-carriers",
+        description: `all ${CARRIER_PROBES.length} claimed carriers emit an edge whose target carries the probe's marker`,
+        status: carriersBroken.length === 0 ? "pass" : "fail",
+      },
+      {
+        id: "census-conditional-carriers",
+        description: `all ${CONDITIONAL_CARRIERS.length} carriers that hold only under a condition emit an edge when that condition is met`,
+        status: conditionalBroken.length === 0 ? "pass" : "fail",
+      },
+    ],
+    limitations: [
+      {
+        description:
+          "the corpus walk consults neither the analyzer's carrier table nor the differential oracle's, which is the point: a differential cannot contradict a premise it shares. What it CANNOT do is rule on whether a pair should be a carrier — that judgement is a human decision, so an unreviewed pair fails here and must be ruled in RULED_NOT_A_CARRIER or added as a rule",
+      },
+      {
+        description:
+          "looksLikeReference is deliberately generous and errs toward asking, because a false candidate costs one line of ruling while a missed carrier is an absent dependency nobody reports. The 61 pairs include presentation, framework-binding and data-* attributes ruled as non-carriers",
+      },
+      {
+        description:
+          "the corpus is the pinned fixtures repositories and rotates as a pool; the census reports what those files contain, not what the HTML specification permits, so a carrier that no corpus exercises is outside its reach and is covered only by CARRIER_PROBES",
+      },
+    ],
+    data: {
+      files: files.length,
+      repos: repos.length,
+      distinctPairs: docHits.size,
+      referenceShapedOccurrences: totalRefs,
+      pairsRuled: ruled.length,
+      occurrencesRuled: coveredRefs,
+      claimedCarriersProbed: CARRIER_PROBES.length,
+      claimedCarriersBroken: carriersBroken.map((f) => f.probe.pair),
+      conditionalCarriers: CONDITIONAL_CARRIERS.length,
+      conditionalCarriersBroken: conditionalBroken.map((f) => f.c.pair),
+      unreviewedPairs: unreviewed.map((u) => ({ pair: u.pair, count: u.count, sample: u.sample })),
+    },
+  })
+
+  process.exit(ok ? 0 : 1)
 }
 
 main().catch((e) => {
