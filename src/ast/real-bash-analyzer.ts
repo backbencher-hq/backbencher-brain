@@ -584,13 +584,45 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   private isRecoveredCommandWord(command: Node, nameNode: Node | null): boolean {
     if (!nameNode) return true
     if (nameNode.isMissing) return true
-    // A name that is one plain word is trustworthy even inside a damaged
-    // command: the damage is elsewhere on the line and the call is real.
+
+    // A command's name is a WORD. A `concatenation` under `command_name` is the
+    // grammar gluing fragments together, and the two real-world shapes that
+    // produce one are both fabrications: a zsh `case` arm's alternation, and a
+    // quoted string the grammar could not classify. Measured on ohmyzsh's
+    // `tools/changelog.sh`, the analyzer emitted `calls: -> ]+` and
+    // `calls: -> \e[2m\1\e[0m` from exactly this shape — a sed argument and an
+    // escape sequence promoted to callees, neither of which any symbol can ever
+    // be. A plain `word` name is required.
     const nameIsPlainWord =
       nameNode.namedChildCount === 0 ||
       (nameNode.namedChildCount === 1 && nameNode.namedChild(0)?.type === "word")
     if (nameIsPlainWord) return false
+
+    // Damage is looked for in the name's ANCESTORS as well as the command's own
+    // subtree. Both real shapes put the ERROR one or two levels UP:
+    // `command <- command_substitution <- command <- ERROR`. The first version
+    // of this guard walked UP from the name (and so missed the case where the
+    // damage is a SIBLING, `${value/]/%5D}`) and the second walked DOWN into the
+    // command's subtree (and so missed the case where the damage is an
+    // ANCESTOR). Both are real; the check has to be both directions. The walk
+    // stops at the enclosing statement so a damaged region does not disqualify
+    // the whole file — that would be the `#907` swallow class wearing a
+    // different hat.
+    if (this.enclosingStatementIsDamaged(nameNode)) return true
     return this.subtreeIsDamaged(command)
+  }
+
+  /** Is there an ERROR/MISSING node between `node` and its enclosing statement? */
+  private enclosingStatementIsDamaged(node: Node): boolean {
+    let p: Node | null = node.parent
+    let depth = 0
+    while (p && depth < 8) {
+      if (p.type === "ERROR" || p.isMissing) return true
+      if (p.type === "list" || p.type === "program" || p.type === "compound_statement") return false
+      p = p.parent
+      depth++
+    }
+    return false
   }
 
   private subtreeIsDamaged(root: Node): boolean {
