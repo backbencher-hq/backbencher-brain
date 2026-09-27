@@ -18,12 +18,13 @@ import { createStoreDiagnostics } from "./store-diagnostics"
 import { encodeVectorBlob, scanJsonVectorInto } from "../brain/semantic/vector-binary"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
-import { readdir, stat } from "fs/promises"
+import { readdir, stat, open } from "fs/promises"
 import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
+import { resolveImportTargets } from "./import-resolution"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -520,6 +521,45 @@ export function hasValidExtension(filePath: string): boolean {
 }
 
 /**
+ * M14 #277 — admit an EXTENSIONLESS file whose `#!` line names a shell.
+ *
+ * `hasValidExtension` above is deliberately PURE: it answers from the path
+ * alone, so the change-detection paths that call it (an explicit file list, a
+ * rename, a cached mtime) never touch the disk. This helper is the one place
+ * that is allowed to, and it is called only from the directory walk.
+ *
+ * The read is bounded twice over — an extension check first, so only
+ * extensionless candidates are opened at all, and 256 bytes, because a `#!`
+ * line is short by definition. Measured cost on the five bash corpora used for
+ * the routing census: 385 admitted out of 2,582 extensionless files examined,
+ * i.e. 2,582 bounded reads of at most 256 bytes to gain 385 files at a 97.7%
+ * clean-parse rate.
+ *
+ * A recognised extension short-circuits before any read, so this can only ever
+ * ADD files the router previously returned null for. It cannot re-route a file
+ * another lane already owns.
+ */
+export async function admitsShellShebang(filePath: string): Promise<boolean> {
+  const base = filePath.replace(/\\/g, "/").slice(filePath.replace(/\\/g, "/").lastIndexOf("/") + 1)
+  if (base.includes(".")) return false
+  if (detectLanguageFromPath(filePath) !== null) return false
+  let head: string
+  try {
+    const fh = await open(filePath, "r")
+    try {
+      const buf = Buffer.alloc(256)
+      const { bytesRead } = await fh.read(buf, 0, 256, 0)
+      head = buf.subarray(0, bytesRead).toString("utf8")
+    } finally {
+      await fh.close()
+    }
+  } catch {
+    return false
+  }
+  return detectLanguageFromPath(filePath, head) !== null
+}
+
+/**
  * Tokenize code snippet + name for TF-IDF semantic embedding.
  * Splits camelCase, PascalCase, snake_case, kebab-case identifiers
  * and returns token-weight pairs for similarity matching.
@@ -725,8 +765,15 @@ async function discoverAndFilterFiles(
 
           if (entry.isDirectory()) {
             promises.push(walk(fullPath, localIg, depth + 1))
-          } else if (entry.isFile() && hasValidExtension(fullPath)) {
-            promises.push(processFile(fullPath))
+          } else if (entry.isFile()) {
+            // Two gates, cheapest first: the PURE path-only check admits every
+            // recognised extension with no I/O, and only an extensionless file
+            // pays for the bounded shebang read.
+            if (hasValidExtension(fullPath)) {
+              promises.push(processFile(fullPath))
+            } else if (await admitsShellShebang(fullPath)) {
+              promises.push(processFile(fullPath))
+            }
           }
         }
         await Promise.all(promises)
@@ -1747,8 +1794,8 @@ export async function storeResults(
  
    const insertFile = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_file 
-     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertSymbol = rawDb.prepare(`
@@ -1964,6 +2011,15 @@ export async function storeResults(
            fileLayer,
            now,
            now,
+           // The analyzer's FileMetadata, which every analyzer returns and this
+           // table had nowhere to store. The framework_type column above is the
+           // only field ever promoted out of it, so patterns, detectedFrameworks,
+           // architecturalInsights, complexity, cyclomaticComplexity and
+           // codeQuality were computed for all 29 languages and discarded on the
+           // way in. Serialized whole rather than split into columns, matching
+           // brain_relationship.metadata, so a field an analyzer adds later needs
+           // no migration. See ensureFileMetadataColumn in schema-ddl.ts.
+           result.metadata ? JSON.stringify(result.metadata) : null,
          )
  
          // Hoisted per-file index structures — used by both symbol storage and
@@ -2779,8 +2835,33 @@ export async function storeResults(
                const m = /:(\d+)$/.exec(cand)
                if (!m) return false
                const line = Number(m[1])
-               const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
-               return storeableName(leaf, line)
+               // The symbol's NAME, recovered by removing the fileId prefix and
+               // the trailing `:<line>` — NOT the last colon-segment.
+               //
+               // The distinction is load-bearing and was a real defect. A symbol
+               // id is `${fileId}:${name}:${line}`, and a NAME MAY CONTAIN A
+               // COLON: the CSS selector `:root` has id `…:a.css::root:1`. The
+               // old `/^.*:([^:]+):\d+$/` took the last colon-segment, so it read
+               // that name as `root` — and `"root"` is in SYMBOL_NAME_DENYLIST
+               // ("root-level nodes that are always noise"). The check therefore
+               // concluded the `:root` row would not be stored, and UN-BOUND
+               // every `contains :root -> --x` edge to an external reference.
+               // The row IS stored, because the insert-time guard tests the FULL
+               // name (`:root`), which is not on the list.
+               //
+               // So this was a third implementation of the storeable test that
+               // was not an exact mirror of the insert-time guards — the exact
+               // failure M51.A1/A3 documents ("the storeable-row replica used by
+               // BOTH the owner-assignment path and the relationship-source path
+               // must stay an exact mirror"). It hit CSS hardest because `:root`
+               // is the single most common custom-property scope in the language,
+               // and it was invisible because the lane had no store-scale check.
+               //
+               // Any language with a symbol whose leaf is a denylisted scope word
+               // was affected the same way — a class named `Root` in Java or
+               // C#, a `global` in JavaScript.
+               const name = cand.slice(fileId.length + 1, cand.length - m[0].length)
+               return storeableName(name, line)
              }
              // M59/#855: the analyzer's own call-site line, hoisted so the
              // source-attribution fallback below can key on it. NULL when the
@@ -2993,6 +3074,17 @@ export async function storeResults(
              AND INSTR(brain_relationship.target_external, '.') > 0
          `)
  
+         // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+         // See the standalone resolver for the full note. SAME shared
+         // implementation as site 2 — the decision logic is unit tested in
+         // src/ast/import-resolution.ts, so this is a call rather than a third
+         // copy of the rules. Before the cross-language pass on purpose, for
+         // the reason spelled out there.
+         {
+           const imp4 = resolveImportTargets(rawDb as any, projectId)
+           if (imp4.resolved > 0) log.debug("import-target resolution (M60 JD2, inline)", { scanned: imp4.scanned, resolved: imp4.resolved })
+         }
+
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
          // the strategies above recompute is_cross_file but left is_cross_language
          // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
@@ -3146,6 +3238,32 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
     const resolved = (r1?.changes || 0) + (r2?.changes || 0)
     log.debug("relationship resolution completed", { resolved, unresolved })
+
+    // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+    //
+    // Strategies 1-3 match a bare `name`, a `qualified_name` (`Owner.member`),
+    // or — for a dotted target — everything after the first `.`. None of them
+    // can match `./util.js:helper`, which is what every analyzer emitting the
+    // `module:item` convention actually writes: javascript, typescript,
+    // python, dart, and vue/svelte by delegation. Measured end to end on a
+    // 2-file project: 4 of 4 `imports` edges UNRESOLVED while `exports` edges
+    // (a bare name) and cross-file `calls`/`instantiates` all resolved — the
+    // `path:item` FORM is what failed, not the targets.
+    //
+    // The decision logic lives in src/ast/import-resolution.ts and is unit
+    // tested there (30 assertions, including every shape it must refuse), so
+    // this is a call, not a fourth copy. It runs BEFORE the cross-language
+    // normalization below on purpose: an edge resolved after that pass would
+    // store cross_file=1 with cross_lang=0 and no bridge, which is the exact
+    // silent-invisibility bug that pass exists to prevent.
+    {
+      const imp = resolveImportTargets(rawDb as any, projectId)
+      if (imp.resolved > 0) {
+        log.debug("import-target resolution (M60 JD2)", {
+          scanned: imp.scanned, resolved: imp.resolved, remaining: imp.byReason,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default

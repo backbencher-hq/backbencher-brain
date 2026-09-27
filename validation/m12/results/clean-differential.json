@@ -40,8 +40,8 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
-        "bytes": 36816
+        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
+        "bytes": 38104
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -68,16 +68,16 @@
         "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
-        "bytes": 20347
+        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
+        "bytes": 41969
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
-        "bytes": 169638
+        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
+        "bytes": 170963
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -112,8 +112,8 @@
         "bytes": 22151
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
-        "bytes": 151789
+        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
+        "bytes": 154594
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
-        "bytes": 69581
+        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
+        "bytes": 70460
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -252,7 +252,7 @@
         "bytes": 26401
       }
     },
-    "digest": "497d60eb003d716f8006bea3f358681eab9ea59b2419ebd3e61315523cbef7be",
+    "digest": "b4e6248efa2423fa12c8ebd62244c4a86dea76f325dee0aa81a86ea3268455b8",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clean_tree-sitter-clean.wasm",
       "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
@@ -376,11 +376,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clean",
-      "wallTimeMs": 45.863403,
-      "userCpuMs": 105.758,
-      "systemCpuMs": 11.034,
-      "peakRssBytes": 266981376,
-      "rssDeltaBytes": 6926336,
+      "wallTimeMs": 39.123752,
+      "userCpuMs": 77.322,
+      "systemCpuMs": 8.408,
+      "peakRssBytes": 265388032,
+      "rssDeltaBytes": 3801088,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

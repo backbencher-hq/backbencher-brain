@@ -64,6 +64,32 @@ function getObjectKeysLength(obj: any): number {
   return count
 }
 
+/**
+ * ≡ /^[A-Za-z_][A-Za-z0-9_]*$/.test(s) — zero-regex helper (M49.R2 wave 2026-09-25).
+ *
+ * The census classified the literal as `needs_review` after the merge, and this is a
+ * character predicate on AST node text, which the policy's "char-scan second" rule
+ * covers (`\w` ≡ `[A-Za-z0-9_]` without the unicode flag; the anchors are the ends of
+ * the string). The csharp lane converted the same literal in its own closure wave and
+ * this mirrors that helper rather than inventing a second shape.
+ *
+ * ONE DELIBERATE TIGHTENING: in JavaScript, `$` without `m` also matches before a
+ * FINAL newline, so the regex accepted `"Name\n"` and the analyzer would have published
+ * a symbol whose name ends in a newline. The scan rejects it. The difference is
+ * measured on this lane's pinned corpora (script/m14/tmp/r2-go-ident-delta.ts) rather
+ * than assumed absent: the probe counts leaves the regex accepted and this rejects.
+ */
+function isBareGoIdentifier(s: string): boolean {
+  if (s.length === 0) return false
+  const c0 = s.charCodeAt(0)
+  if (!((c0 >= 65 && c0 <= 90) || (c0 >= 97 && c0 <= 122) || c0 === 95)) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (!((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95)) return false
+  }
+  return true
+}
+
 function getUniqueStrings(arr: string[]): string[] {
   const seen: Record<string, boolean> = {}
   const result: string[] = []
@@ -771,7 +797,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // A dot-imported external type still names its own leaf; a leaf that is not
     // an identifier (a qualified type with generics, an error-recovered node)
     // names nothing honest, so it contributes no symbol.
-    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : undefined
+    return isBareGoIdentifier(leaf) ? leaf : undefined
   }
 
   /**

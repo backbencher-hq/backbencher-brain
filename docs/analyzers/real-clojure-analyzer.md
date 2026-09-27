@@ -3,7 +3,7 @@
 ## Language
 
 - Analyzer file: `src/ast/real-clojure-analyzer.ts`
-- Parser: `@yogthos/tree-sitter-clojure` 0.0.14 (WASM, via project pipeline `engine.ts resolveWasm`; `wasm/tree-sitter-clojure.wasm` + `~/.bb/wasm` cache)
+- Parser: `@yogthos/tree-sitter-clojure` 0.0.14 (WASM, via project pipeline `engine.ts resolveWasm`; `wasm/tree-sitter-clojure.wasm` + `~/.bb/wasm` cache; sha256 `90f8866b…`, 91,957 B — matched in the 2026-09-26 grammar-pin round to the package's *published* file hash, i.e. an external corroboration rather than a local re-derivation: `validation/m14/grammar-pins.json`, round record `reviews/functional-family/m60-grammar-pins.md`)
 - Language detection: extension `.clj` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealClojureAnalyzer`
 

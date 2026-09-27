@@ -1,8 +1,272 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:css",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "02962dd561ae1e77c92405556eded244231ab57f2982ef3a7c2cb4dbedd6e50a",
+        "bytes": 82611
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "4de0e1a8c8f1a98491ffc3349515e841f624369ec9990e75ab9bfdf8393d7dea",
+        "bytes": 48440
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "26848a9d7d7f725b77ec9ea81df4a57adb44361b6e0a70fc7dd58129819a970c",
+        "bytes": 81107
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
+        "bytes": 18451
+      },
+      "src/brain/database.ts": {
+        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
+        "bytes": 18136
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
+        "bytes": 29793
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/css/Negative.css": {
+        "sha256": "f7e5a2c91c4f38f622d0f2cb93e6073a109a42dedf39d8f25a3e573ac421b404",
+        "bytes": 907
+      },
+      "validation/m12/fixtures/css/Theme.css": {
+        "sha256": "f65e33d25c5ff198934a7eeed4c027447bac6b1ce278ebb9c74e19779a6de1cc",
+        "bytes": 1048
+      },
+      "validation/m12/ground-truth/css.json": {
+        "sha256": "f41f0ac71f40e35296b79a76c7f443db8158d4b1cdb41d582cce91b64012a2ae",
+        "bytes": 23640
+      },
+      "grammars/tree-sitter-css/grammar.js": {
+        "sha256": "f699498cf35ac104c42a06201f3b0897df42e714d89e4c302918de952c38716c",
+        "bytes": 13994
+      }
+    },
+    "digest": "0fd5d1f9bfe3437c53b56a0b7fead2618fb083c5a29f543cae6e34474c4e06b6",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-css_tree-sitter-css.wasm",
+      "sha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
+      "bytes": 150539
+    },
+    "siblings": {
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "a4e6e9355e03c3f15908ec4c78550b113e6973d7cc79d17facb0457701f303b5",
+        "bytes": 63379
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
+        "bytes": 38104
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
+        "bytes": 134291
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
+        "bytes": 119919
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
+        "bytes": 41969
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "ffb794762aa3f5c0ca8bfa36b3978568607f2baeeb509c6668dd6552c208819f",
+        "bytes": 36482
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
+        "bytes": 170963
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
+        "bytes": 126319
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
+        "bytes": 70021
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "3ff9eedf70b3d236c1ea35820c277017a47ff392155912feeec0990d19e12b74",
+        "bytes": 82960
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "cd6d9d106999f392962ee724981de718540c3a1c2c95da86face5dfaf1339680",
+        "bytes": 116760
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
+        "bytes": 154594
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
+        "bytes": 74340
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "b5c2eb81598455a762342203df84ec4085fe499a9312c139361903a92e472634",
+        "bytes": 63331
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
+        "bytes": 70460
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
+        "bytes": 107870
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
+        "bytes": 107709
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "5a031756c3bb8015146fde5c49cb37b5b4129ca13e9ad30c9c573e506bfef315",
+        "bytes": 239741
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
+        "bytes": 62122
+      }
+    }
+  },
   "truthSource": "manual_audit",
-  "truthReference": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics and the M11 CSS contract (validated 1.000/1.000 in M11.12). Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text (e.g. `.card .title`, `#orders-table th, #orders-table td`), with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@mixin` at-rules -> module/function symbols; `@supports` -> interface symbol. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), `@media` queries (structural scope only), keyframe `from`/`to` blocks. Relationships: the production pipeline (filterNoiseRelationships, M11 port d7b5015) deliberately narrows CSS to `contains` only as a hyphenated-property noise guard — verified contract here is `contains` (custom-property scope `:root contains --primary`; at-rule scope `@layer base contains body`; media scope `@media (...) contains .header`; nested-selector scope `.nav contains .nav .item`; selector-chain scoping `.card contains .title` / `#orders-table contains th` where the chain source/target are the selector parts as they appear in symbols). The analyzer additionally emits `uses` (selector -> property), `references` (var() -> --var), animation refs and `@include` mixin refs — verified via direct analyzer probe but intentionally filtered from production storage for CSS, documented in the analyzer doc.",
+  "truthReference": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics. Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text, with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@scope`/`@namespace` -> module symbols; `@font-face`/`@property` -> variable symbols; `@mixin` -> function; `@supports` -> interface; `@media` -> module carrying its condition. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), keyframe `from`/`to` blocks, and the build-tool at-rules that declare nothing (`@tailwind`, `@apply`, `@theme`, `@config`, `@include`). Relationships: `contains` for structural scope (media/layer/container/scope -> rule, parent selector -> nested selector, selector -> its custom properties); `references` for `var(--x)` -> the custom property and `animation:` -> the `@keyframes` name; `uses` for `composes` and `@include` -> a mixin; `imports` for `@import` and Sass `@use`/`@forward`, sourced by the importing stylesheet's own name. A CSS PROPERTY NAME is not a graph node, so there is no `uses` edge to one; the properties a rule declares ride its symbol payload as `declaresProperties`. Every relationship carries the 1-based line of the NAME it is about, and a synthesized name (a `&`-nested rule's resolved selector, which is written nowhere) carries NO line rather than a borrowed one.  AMENDED 2026-09-26 (CSS identity + ontology waves). This audit had stopped describing the analyzer in six ways, and every row below was resolved by reading it back against the fixture SOURCE TEXT (each added fact's reference quotes its line), never by moving the observed number. (a) `@media` was listed as structural noise that is NOT a symbol, and the analyzer emitted no symbol for it — while emitting `contains` edges FROM that non-symbol, so every media containment edge had a source that existed nowhere in the graph (5,115 relationships over 457 files). A media query is a scope exactly as `@layer` and `@container` are, and those two WERE published; a media query is now a `module` symbol carrying its condition, deduplicated by name. Two facts ADDED below. (b) `uses` and `references` were declared as emitted-but-filtered, on the stated ground that the production pipeline keeps `contains` only. The filter was discarding the lane's only semantically load-bearing edges — the `var()` and `animation:` references, 1,437 of which resolve at both ends. The CSS branch of the filter is REMOVED, and those edges are now compared: eight facts ADDED below. (c) `uses <selector> -> <css-property>` was not in this audit at all, which is why its 32,654 unjoinable edges went unseen for so long: a CSS property name is a token in a declaration, not an entity a stylesheet defines, so it is not a graph node. That relation is REMOVED and the information rides the symbol payload as `declaresProperties`. No fact is added, because there is no longer such a relationship to compare. (d) `@import` produced a `references` edge from the literal source string `global` — a placeholder naming no symbol in any stylesheet. It is now an `imports` edge from the importing stylesheet's own name; two facts ADDED. (e) Four at-rules that name something produced no symbol at all (`@font-face`, `@property`, `@namespace`, `@scope`); no fixture exercises them, so no fact is added here — they are pinned by the M14 lane's own fixtures instead, and recorded as such rather than claimed here. (f) Selector-chain `contains` edges are now emitted only where both endpoints resolve to a published symbol; the fixture's selectors are all single-part, so no chain edge is expected and none is added. Every added fact's `evidence.reference` quotes the fixture line it asserts. (g) THREE relationship facts are RETIRED by ruling, not deleted: the selector-chain containments `#orders-table contains th`, `#orders-table contains td` and `.card contains .title`. A chain edge asserts containment between two things the analyzer does not publish — the rule is ONE symbol named `#orders-table th` and neither `th` nor `td` is a symbol unless it is also its own rule elsewhere. Measured over 457 files / 13 corpora, 14,188 chain edges resolved at both ends 18.8% of the time, and only ACCIDENTALLY, when a chain leaf is also a whole selector somewhere else. No respelling fixes it, and publishing every element-type occurrence in every selector would create symbols that are not declarations. The composition is therefore carried as the rule symbol's `selectorChain` payload — and the rule's own NAME is the resolved chain, so nothing is lost — while a `contains` edge is emitted only where both ends resolve. The three facts removed here were: rel:Theme.css:contains:#orders-table:td; rel:Theme.css:contains:#orders-table:th; rel:Theme.css:contains:.card:.title. Their retirement is a ruling, and the analyzer's behaviour is pinned by the M14 lane's own fixtures, which assert both directions: a chain edge present when both leaves are published symbols, and absent when they are not.",
   "fixtureDir": "validation/m12/fixtures/css",
   "fixtures": [
     "Negative.css",
@@ -10,21 +274,21 @@
   ],
   "perFile": {
     "Negative.css": {
-      "symbols": 7,
-      "relationships": 2
+      "symbols": 8,
+      "relationships": 5
     },
     "Theme.css": {
-      "symbols": 15,
-      "relationships": 8
+      "symbols": 16,
+      "relationships": 14
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 32,
-      "observedResolved": 32,
-      "truePositive": 32,
+      "expected": 41,
+      "observedResolved": 41,
+      "truePositive": 41,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -41,14 +305,22 @@
     "truePositiveIds": [
       "rel:Negative.css:contains:.nav:.nav .item",
       "rel:Negative.css:contains:@media (min-width: 1024px):.desktop-only",
-      "rel:Theme.css:contains:#orders-table:td",
-      "rel:Theme.css:contains:#orders-table:th",
-      "rel:Theme.css:contains:.card:.title",
+      "rel:Negative.css:imports:Negative.css:base.css",
+      "rel:Negative.css:references:.callout:--primary",
       "rel:Theme.css:contains::root:--danger",
       "rel:Theme.css:contains::root:--primary",
       "rel:Theme.css:contains::root:--spacing",
       "rel:Theme.css:contains:@layer base:body",
       "rel:Theme.css:contains:@media (max-width: 768px):.header",
+      "rel:Theme.css:imports:Theme.css:print.css",
+      "rel:Theme.css:imports:Theme.css:theme-tokens.css",
+      "rel:Theme.css:references:.card .title:--primary",
+      "rel:Theme.css:references:.card:--spacing",
+      "rel:Theme.css:references:.header:--primary",
+      "rel:Theme.css:references:.header:--spacing",
+      "rel:Theme.css:references:body:--background",
+      "rel:Theme.css:uses:.card:fade-in",
+      "symbol:Negative.css:13:module:@media (min-width: 1024px)",
       "symbol:Negative.css:14:class:.desktop-only",
       "symbol:Negative.css:20:function:spin",
       "symbol:Negative.css:26:class:.nav",
@@ -58,6 +330,7 @@
       "symbol:Negative.css:45:class:.callout",
       "symbol:Theme.css:10:module:@layer base",
       "symbol:Theme.css:11:type:body",
+      "symbol:Theme.css:19:module:@media (max-width: 768px)",
       "symbol:Theme.css:20:class:.header",
       "symbol:Theme.css:28:function:fade-in",
       "symbol:Theme.css:33:class:.card",
@@ -82,11 +355,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:css",
-      "wallTimeMs": 20.269982,
-      "userCpuMs": 46.92,
-      "systemCpuMs": 4.975,
-      "peakRssBytes": 216166400,
-      "rssDeltaBytes": 5042176,
+      "wallTimeMs": 53.180828,
+      "userCpuMs": 62.861,
+      "systemCpuMs": 7.37,
+      "peakRssBytes": 226398208,
+      "rssDeltaBytes": 5505024,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

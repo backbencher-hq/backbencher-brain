@@ -130,7 +130,11 @@ for (const gate of STRENGTHENED_GATES) {
 }
 
 // 2d. Cluster / pipeline e2e gates, on their own identities.
-for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1"]) {
+// M14.0.CENSUS is here for the same reason and with the same shape: a gate whose
+// artifact is never read by the honesty gate is a gate whose failure nobody is
+// told about, and a carrier census nobody reads is exactly the gate that would
+// have caught the six carriers that were missing from BOTH tables at once.
+for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1", "M14.0.CENSUS"]) {
   const p = path.join(M14, "results", `${id}.json`)
   if (!fs.existsSync(p)) { fail(`missing evidence file for ${id}`); continue }
   const ev = JSON.parse(fs.readFileSync(p, "utf8"))
@@ -240,6 +244,9 @@ const EVIDENCE_INPUTS: Record<string, string[]> = {
   "M14.0.PIPE": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-pipeline-e2e.ts"],
   "M14.0.WC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-web-cluster-e2e.ts"],
   "M14.0.SC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-systems-cluster-e2e.ts"],
+  // The census reads the corpora and the analyzer, not the fixture files, so the
+  // lineage prefixes name what can actually move its verdict.
+  "M14.0.CENSUS": ["src/ast/real-html-analyzer.ts", "script/m14/verify-carrier-census.ts"],
 }
 
 function commitOk(rev: string): boolean {

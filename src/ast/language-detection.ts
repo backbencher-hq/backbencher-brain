@@ -67,13 +67,81 @@ const BASENAME_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
  *   C++ if class/namespace/template/virtual/override or std::/C++ includes,
  *   else C. Everything else stays filename-only.
  */
+/**
+ * The interpreter a file's `#!` line names, or null.
+ *
+ * Read from the FIRST LINE only, and only for a file with no recognised
+ * extension. Two properties make this safe rather than clever:
+ *
+ *  1. It is a NAME lookup, not a parse. `#!` followed by a known interpreter
+ *     path is the POSIX definition of an interpreter line; nothing is inferred
+ *     from the body.
+ *  2. A recognised extension always wins, because the caller only consults this
+ *     when the file has no extension at all. `foo.py` with a bash shebang is
+ *     python.
+ *
+ * `node`, `python`, `ruby` and friends are deliberately ABSENT even though the
+ * same argument would apply to them: this rule was added for a measured gap in
+ * one lane (bash, 385 files), and a shebang table that grows languages nobody
+ * measured is how a router starts disagreeing with the analyzers it feeds. The
+ * bash lane's own census is the evidence for the bash entry; another lane's
+ * evidence should add its own.
+ */
+const SHEBANG_LANGUAGE: ReadonlyArray<readonly [string, DetectedLanguage]> = [
+  ["/bin/bash", "bash"],
+  ["/usr/bin/bash", "bash"],
+  ["/usr/bin/env bash", "bash"],
+  ["/bin/sh", "bash"],
+  ["/usr/bin/sh", "bash"],
+  ["/usr/bin/env sh", "bash"],
+  ["/bin/zsh", "bash"],
+  ["/usr/bin/zsh", "bash"],
+  ["/usr/bin/env zsh", "bash"],
+  ["/bin/dash", "bash"],
+  ["/usr/bin/dash", "bash"],
+  ["/bin/ksh", "bash"],
+  ["/usr/bin/ksh", "bash"],
+  ["/usr/bin/env ksh", "bash"],
+]
+
+function languageFromShebang(content: string): DetectedLanguage | null {
+  // The first line only, and bounded: a `#!` line is short by definition, and
+  // an unbounded read of a large binary would be a cost with no benefit.
+  const nl = content.indexOf("\n")
+  const first = (nl === -1 ? content : content.slice(0, nl)).trim()
+  if (!first.startsWith("#!")) return null
+  for (const [interpreter, lang] of SHEBANG_LANGUAGE) {
+    if (first === `#!${interpreter}` || first.startsWith(`#!${interpreter} `)) return lang
+  }
+  return null
+}
+
 export function detectLanguageFromPath(filePath: string, content?: string): DetectedLanguage | null {
   const normalized = filePath.replace(/\\/g, "/")
   const basename = normalized.slice(normalized.lastIndexOf("/") + 1)
   const basenameMatch = BASENAME_LANGUAGE[basename.toLowerCase()]
   if (basenameMatch) return basenameMatch
   const dot = basename.lastIndexOf(".")
-  if (dot < 0 || dot === basename.length - 1) return null
+  if (dot < 0 || dot === basename.length - 1) {
+    // M14 #277: an EXTENSIONLESS file is decided by its shebang. `nvm` and
+    // `rbenv` put their entry points in files with no extension at all
+    // (`nvm`, `libexec/rbenv`, `libexec/rbenv-init`), and a router that
+    // returns null for them cannot see the single most-executed script in
+    // either project. Measured over five bash corpora: 385 extensionless files
+    // carry a shell shebang and 97.7% of them parse with ZERO error nodes —
+    // a BETTER rate than the `.sh` files already being routed (89.1%). The
+    // earlier census also measured the candidates this rule deliberately does
+    // NOT take, and the reasons are the measurement: `.zsh` is 386 files at
+    // 34.7% clean (the pinned grammar does not model zsh) and `.zsh-theme` is
+    // 144 at 80.6% (below the rate of the files already routed, so admitting
+    // them would lower average fidelity). `.sh` naming zsh content is a
+    // SEPARATE finding and is not addressed here — see the lane's spec.
+    //
+    // The shebang is read only for files with no extension, so a recognised
+    // extension always wins: `foo.py` carrying a bash shebang stays python.
+    if (dot < 0 && content && content.length > 0) return languageFromShebang(content)
+    return null
+  }
   const ext = basename.slice(dot + 1).toLowerCase()
   const byExtension = EXTENSION_LANGUAGE[ext]
   if (ext === "h" && content && content.length > 0) {

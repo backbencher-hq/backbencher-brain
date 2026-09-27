@@ -112,6 +112,33 @@ end
   (pick 1)
   (pick 2))
 `)
+  // html (M14 #288): every payload class the identity rewrite introduced, and the
+  // one shape that is html's alone. The fixtures and the differential both read the
+  // analyzer's RETURN VALUE; nothing before this asked whether those rows survive
+  // emit -> worker -> store, which is exactly the gap that kept brain_import empty
+  // for every language for months.
+  fs.writeFileSync(path.join(TMP, "src", "seam.html"), `<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/app.css">
+    <script src="/assets/vendor.js"></script>
+  </head>
+  <body>
+    <header id="site-header">
+      <a href="/orders">Orders</a>
+      <a href="#content">Skip to content</a>
+    </header>
+    <main id="content">
+      <section id="order-list">
+        <img src="/assets/logo.png" srcset="/assets/logo-480.png 480w, /assets/logo-1080.png 1080w">
+      </section>
+    </main>
+    <div id="dup-target">first</div>
+    <div id="dup-target">second</div>
+    <a href="#dup-target">go to dup</a>
+  </body>
+</html>
+`)
 }
 
 async function main() {
@@ -233,6 +260,63 @@ async function main() {
   const cljImpl = count(`SELECT COUNT(*) c FROM brain_relationship WHERE relationship_type = 'implements' AND source_external = 'String' AND target_external = 'P' AND line_number = 9`)
   expect(cljImpl >= 1, `clojure extend-protocol implements persisted with its line (got ${cljImpl}, want >=1: String → P at line 9, external source)`)
 
+
+  // HTML seam (M14 #288): the payloads the identity rewrite introduced, measured
+  // in the DATABASE rather than in the analyzer's return value. The document-root
+  // containment edge is the one that has no analogue in any other language — a
+  // page is the root of its own graph — and a duplicate `id` is the one shape that
+  // only html produces (`dup-target#2`). Both are asserted by name, because a count
+  // would pass just as happily on a row that means something else.
+  const htmlSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.html'`)
+  // Exactly six, and the arithmetic is the assertion: the document module, the
+  // THREE elements that carry an `id` (site-header, content, order-list), and the
+  // two `<div id="dup-target">` declarations. The `<a href>` and `<img src>` in
+  // this file have NO `id`, so they are not symbols — they are RESOURCE OWNERS,
+  // and the `uses` edges below are sourced from their nearest addressable
+  // ancestor. A count of seven was written first, on the assumption that every
+  // element with a resource is an element; the store disagreed, correctly.
+  expect(htmlSymbols >= 6, `html symbols persisted (got ${htmlSymbols}, want >=6: the document module + 3 id-bearing elements + both dup-target declarations)`)
+  const htmlContains = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.html' AND r.relationship_type = 'contains'`)
+  expect(htmlContains >= 5, `html containment persisted (got ${htmlContains}, want >=5: document root + the addressable tree)`)
+  // The document root: the module symbol is the SOURCE of a containment edge, not
+  // merely the owner of one. This is the edge that gives a page a root at all.
+  const htmlRoot = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           WHERE s.file_id LIKE '%.html' AND s.symbol_type = 'module'
+             AND r.relationship_type = 'contains' AND r.line_number IS NOT NULL`)
+  expect(htmlRoot >= 2, `html document-root containment persisted with its line (got ${htmlRoot}, want >=2: module -> site-header and module -> content)`)
+  // The duplicate `id` must survive as its OWN symbol. The pre-#288 contract dropped
+  // the second declaration entirely, which made the element unrepresentable: it
+  // existed in the document, was addressable, and had no node to be it.
+  const htmlDup = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.html' AND name = 'dup-target#2'`)
+  expect(htmlDup === 1, `html duplicate id persisted as its own symbol (got ${htmlDup}, want 1: dup-target#2)`)
+  // Resource edges keep their LINES through the store, and the srcset fan-out
+  // survives: three distinct rows for one <img>, which a collapsed attribute
+  // would have turned into one.
+  const htmlSrcset = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.html' AND r.relationship_type = 'uses'
+             AND r.line_number IS NOT NULL AND r.line_number > 0`)
+  expect(htmlSrcset >= 7, `html resource uses persisted with lines (got ${htmlSrcset}, want >=7: stylesheet, script, 2 links, img src + 2 srcset candidates)`)
+  const htmlNullLines = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.html' AND r.line_number IS NULL`)
+  expect(htmlNullLines === 0, `no html relationship lost its line in the store (got ${htmlNullLines} NULL)`)
+  // The fragment reference resolved to the SYMBOL `content`, not to the source text
+  // `#content`. The target-side assertion is what distinguishes a resolved
+  // reference from an unresolvable one, and an unresolvable target is the defect
+  // class that reads as a real node in the graph.
+  const htmlFragment = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.html' AND r.relationship_type = 'uses'
+             AND r.target_external = 'content'`)
+  expect(htmlFragment >= 1, `html fragment href persisted as the resolved symbol (got ${htmlFragment}, want >=1: #content -> content, not the text "#content")`)
 
   // cross-language edge flagged with bridge
   const xlang = db.prepare(`

@@ -6,6 +6,19 @@
 - Parser: `tree-sitter-html` (`document` → `element`/`script_element`/
   `style_element` tree; `start_tag`/`self_closing_tag` → `tag_name` +
   `attribute`; `quoted_attribute_value` → `attribute_value`)
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: a **REDISTRIBUTOR BUILD**, not a build of this lane's own
+  npm package. `wasm/tree-sitter-html.wasm` is
+  byte-identical to `tree-sitter-wasms@0.1.12`'s `out/` wasm (sha256 `11b3405c1543fb01…`).
+
+  **That collection publishes no source** — 0 `grammar.js`, 0 `parser.c`, only prebuilt wasms —
+  so these bytes cannot be regenerated from it, and the underlying GRAMMAR version is recorded
+  nowhere in this repository and must not be inferred from the collection's version.
+
+  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
+  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`. This matters for the
+  web-tree-sitter 0.27.0 migration: this is one of the lanes whose wasm cannot simply be
+  rebuilt from what we have, only re-sourced and re-admitted.
 - Language detection: `.html` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealHtmlAnalyzer`
 - Pure AST — no source-text scanning. The only string processing is on

@@ -1,0 +1,26 @@
+{
+  // The script surface. `tsconfig.json` includes only `src/**/*.ts`, so every
+  // `npx tsc --noEmit` in this program never read one of the 790 script files — which is how a
+  // script can be committed with a type error, and how a file that does not even parse can sit in
+  // the tree unnoticed (measured 2026-09-25: `script/m29/verify-wave-protocol.ts` failed to parse
+  // under tsc 5.9.3 while bun compiled and ran it).
+  //
+  // This config extends the project's options and overrides the two that fight the wider root:
+  // rootDir is widened to the repository (script files are not under `src`), and declaration emit
+  // is off — declaration output from a noEmit check of the script surface is meaningless, and
+  // rootDir+declaration were the pair that produced 744 TS6059 lines the first time script/** was
+  // compiled at all.
+  //
+  // Exclusions are deliberate: `script/m14/tmp/**` is scratch (and holds deliberately malformed
+  // fixture copies — the elixir fixture under it has its own TS1110), `tests` is the project's,
+  // `node_modules`/`dist` are not source. Everything else under script/ is in scope, including
+  // untracked probe scripts: an untracked script that does not typecheck is still a script someone
+  // will run.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "declaration": false
+  },
+  "include": ["script/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests", "script/m14/tmp/**"]
+}

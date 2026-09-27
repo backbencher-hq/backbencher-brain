@@ -73,6 +73,21 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   // `.icl` is the implementation — the F6 check must see both or the ruling's
   // first half is unexercised by construction.
   clean:      { wasm: "tree-sitter-clean.wasm",     ext: [".icl", ".dcl"], analyzer: "real-clean-analyzer.ts" },
+  // M14 (#288): html joins this gate. Its F6 claim has two halves and the second
+  // is the one that mattered: every node-type-looking string literal in the
+  // analyzer must be a real node type in the pinned grammar AND be classified in
+  // script/m14/spec/html-completeness.json. Pre-fix html had neither the fixtures
+  // nor the spec, so a literal could name a node the grammar never produces and
+  // nothing would say so. The oracle's union grammar is declared too — the
+  // analyzer's F1 union includes tree-sitter-javascript, so a literal that is
+  // real in one but not the other must not be reported as unknown.
+  html:       { wasm: "tree-sitter-html.wasm",     ext: [".html", ".htm"], analyzer: "real-html-analyzer.ts", extraWasm: ["tree-sitter-javascript.wasm"] },
+  // M60 functional family (ER2 restoration, 2026-09-25): erlang was absent
+  // from this gate entirely — which is one reason its fixture lane could read
+  // 0/9 committed while nothing measured what the analyzer referenced versus
+  // what its fixtures pinned. Enrolled now, with the restored surface:
+  // record member ops, macro/fun/type references, -callback/-opaque.
+  erlang:     { wasm: "tree-sitter-erlang.wasm",     ext: [".erl"],    analyzer: "real-erlang-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
