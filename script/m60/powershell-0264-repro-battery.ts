@@ -62,6 +62,14 @@ interface PinRecord { wired?: { file: string; sha256: string; bytes: number }; p
 // first attempt at this read both from `lanes` and printed "?" for the version
 // while still reporting a confident-looking header — the sha check passed, so
 // nothing looked wrong.
+//
+// And the provenance SHAPE depends on the lane's history, which is not something a
+// reader should hardcode: `byte-identical-to-npm-tarball` carries `version`, while
+// `local-rebuild-from-vendored-source` carries `base: { repo, version }` and no
+// `version` at all. This reader originally assumed the first shape, so the moment
+// the lane took its first grammar patch it printed `pinned undefined (423 types)`
+// — a header that looks like a missing value rather than a wrong assumption, on an
+// instrument whose job is to say which grammar it measured.
 function readPinIdentity(): { package: string; version: string; sha256: string; evidence: string } {
   const regPath = path.join(ROOT, "validation/m14/grammar-pins.json")
   if (!existsSync(regPath)) return { package: "tree-sitter-powershell", version: "UNKNOWN (no pin record)", sha256: sha256(readFileSync(PINNED)), evidence: "no validation/m14/grammar-pins.json — the identity is UNVERIFIED" }
@@ -70,8 +78,16 @@ function readPinIdentity(): { package: string; version: string; sha256: string; 
   const measured = reg?.lanes?.powershell?.wired
   const sha = sha256(readFileSync(PINNED))
   if (!prov) return { package: "tree-sitter-powershell", version: "UNPINNED", sha256: sha, evidence: "the pin record's decisions carry no powershell provenance" }
-  if (measured?.sha256 !== sha) return { package: prov.package, version: prov.version, sha256: sha, evidence: `MISMATCH: the pin records ${measured?.sha256} and the wired file is ${sha} — re-run verify-grammar-pins.ts --write` }
-  return { package: prov.package, version: prov.version, sha256: sha, evidence: `sha matches the gated pin record (${prov.kind})` }
+  if (measured?.sha256 !== sha) return { package: prov.package ?? prov.base?.repo ?? "?", version: "SHA MISMATCH", sha256: sha, evidence: `the pin records ${measured?.sha256} and the wired file is ${sha} — re-run verify-grammar-pins.ts --write` }
+  // Read the version from whichever shape this lane's provenance actually has, and
+  // say which: a patched lane is NOT the published release, and a header that says
+  // only "0.26.4" for a patched build would be a false identity.
+  const version = prov.version ?? prov.base?.version
+  const pkg = prov.package ?? prov.base?.repo ?? "tree-sitter-powershell"
+  const patched = prov.kind !== "byte-identical-to-npm-tarball"
+  const patches = Array.isArray(prov.patches) && prov.patches.length ? ` + ${prov.patches.length} local patch(es): ${prov.patches.join("; ")}` : ""
+  if (!version) return { package: pkg, version: "UNREADABLE PROVENANCE", sha256: sha, evidence: `the pin's provenance (${prov.kind}) carries neither `version` nor `base.version` — the reader is out of date with the shape` }
+  return { package: pkg, version: `${version}${patched ? " (patched)" : ""}`, sha256: sha, evidence: `sha matches the gated pin record (${prov.kind})${patches}` }
 }
 const PINNED_IDENTITY = readPinIdentity()
 
