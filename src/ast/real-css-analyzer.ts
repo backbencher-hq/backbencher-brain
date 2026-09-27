@@ -40,6 +40,10 @@ interface CssContext {
   selectorChains: Record<string, string[]>
   /** emitted vs withheld selector-chain edges, for the F6/F9 pins. */
   chainEdgeTally?: { emitted: number; withheld: number }
+  /** Accumulated selector cost and the deepest nesting reached, for the file metric. */
+  fileSelectorComplexity?: number
+  fileNestingDepth?: number
+  fileMaxSelectorComplexity?: number
 }
 
 interface StackFrame {
@@ -221,6 +225,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       mediaScopeFirstRange: {},
       deferredChainEdges: [],
       selectorChains: {},
+      fileSelectorComplexity: 0,
+      fileNestingDepth: 0,
+      fileMaxSelectorComplexity: 0,
     }
 
     // D5 (2026-09-26). The keyframe-name set was filled DURING the walk, so an
@@ -485,7 +492,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length,
         linesOfCode: content.split("\n").length,
-        cyclomaticComplexity: 1,
+        // M60 R6 / CC1. This was a literal 1, and because
+        // `pool-worker.ts` computes `complexity: s.complexity ||
+        // s.metadata?.complexity || 1`, every CSS symbol in the store claimed a
+        // complexity of exactly 1 — measured 9,338 of 9,338, 100%. A CC1 check
+        // that asserts `complexity >= 1` is therefore satisfied vacuously for
+        // this lane: it cannot distinguish a one-line reset from a deeply nested
+        // selector, because both answer 1.
+        //
+        // The number is now MEASURED, and it is the thing a CSS author actually
+        // finds hard: how much selector machinery a single rule carries. See
+        // `selectorComplexity` for the terms and why each is there.
+        cyclomaticComplexity: metrics.complexity,
         framework: frameworks[0] || "Standard CSS",
         patterns,
         detectedFrameworks: frameworks,
@@ -825,6 +843,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     let hasAttributeSelector = false
 
     let maxSpecificity = [0, 0, 0]
+    // A comma group's cost is its most expensive member, not the sum: `.a, .b` is
+    // no harder to read than `.a`. MAX mirrors how `maxSpecificity` aggregates
+    // the same group, so the two numbers describe the same thing.
+    let groupComplexity = 0
 
     const selectorNodes = selectorsNode.namedChildren
     for (let j = 0; j < selectorNodes.length; j++) {
@@ -834,6 +856,15 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let specTag = 0
 
       const chain: string[] = []
+      // Selector complexity, accumulated over the whole selector group. Each term
+      // is something a CSS author pays for at review time, and each is counted
+      // where it is seen rather than inferred from the text:
+      //   chain steps   a descendant/child/sibling combinator
+      //   pseudo        a pseudo-class or pseudo-element
+      //   attribute     an attribute selector
+      //   nesting depth a `&`-composed nested rule (below)
+      let selectorComplexity = 0
+      let nestingDepth = 0
       // M59.A7: each chain LEAF's own line. The rule "the line belongs to the
       // name" means `contains #toc -> a` is named by the `a`, not by the rule's
       // `selectors` node — and in a multi-line selector group those are different
@@ -854,21 +885,30 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         ) {
           isComplex = true
           isUtility = false
+          selectorComplexity += 1
         }
         if (n.type === "pseudo_class_selector") {
           hasPseudoClass = true
           specClass += 1
           isUtility = false
+          selectorComplexity += 1
+          // A functional pseudo-class (`:not(...)`, `:is(...)`, `:where(...)`,
+          // `:has(...)`) carries a SELECTOR inside it, so its own contents are
+          // part of the cost. Counted from the arguments node, which is what
+          // holds them, rather than by matching the function name.
+          if (this.findChild(n, (c) => c?.type === "pseudo_class_arguments") !== null) selectorComplexity += 1
         }
         if (n.type === "pseudo_element_selector") {
           hasPseudoElement = true
           specTag += 1
           isUtility = false
+          selectorComplexity += 1
         }
         if (n.type === "attribute_selector") {
           hasAttributeSelector = true
           specClass += 1
           isUtility = false
+          selectorComplexity += 1
           // D7 (2026-09-26). Every other chain form pushes itself — id, tag,
           // class, universal — and the attribute form did not, so `.a [href]`
           // emitted NO chain edge while `.a .b`, `.a #b` and `.a *` all did. The
@@ -921,6 +961,15 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child) selStack.push(child)
         }
       }
+
+      // Nesting: a selector composed from a parent is harder to reason about than
+      // the same selector written flat, because the author must hold the parent's
+      // context to know what it matches. Counted once per enclosing rule.
+      if (parentSelector) nestingDepth += 1
+      if (selectorComplexity > groupComplexity) groupComplexity = selectorComplexity
+      if (selectorComplexity > 0) ctx.fileSelectorComplexity = (ctx.fileSelectorComplexity ?? 0) + selectorComplexity
+      if (nestingDepth > 0) ctx.fileNestingDepth = Math.max(ctx.fileNestingDepth ?? 0, nestingDepth)
+      if (selectorComplexity > nestingDepth) ctx.fileMaxSelectorComplexity = Math.max(ctx.fileMaxSelectorComplexity ?? 0, selectorComplexity)
 
       if (specId > maxSpecificity[0]) maxSpecificity = [specId, specClass, specTag]
       else if (specId === maxSpecificity[0] && specClass > maxSpecificity[1])
@@ -1014,6 +1063,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         classNames,
         specificity: maxSpecificity,
         cssSpecific: true,
+        // The selector's own complexity, so the store's `complexity` column
+        // carries a real number for this symbol rather than the default 1.
+        // Nesting depth is added here rather than inside the walk, because
+        // `nestingDepth` is a property of the RULE, and the walk above counts
+        // complexity per selector within the group.
+        complexity: groupComplexity + (parentSelector ? ctx.fileNestingDepth ?? 0 : 0),
         selectorComposition: {
           hasId: hasIdSelector,
           hasClass: classNames.length > 0,
@@ -1779,7 +1834,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const score = Math.round((maintainability + performance) / 2)
 
+    // The file's cyclomatic complexity, measured rather than declared. It is the
+    // deepest single selector's cost plus the stylesheet's deepest nesting, so a
+    // flat reset sheet scores 1 and a four-level nest with functional pseudo-
+    // classes scores high — which is the distinction the previous literal 1 could
+    // not make, and the reason CC1's `complexity >= 1` was vacuous here.
+    const complexity = Math.max(
+      1,
+      (ctx.fileMaxSelectorComplexity ?? 0) + (ctx.fileNestingDepth ?? 0),
+    )
+
     return {
+      complexity,
       score: Math.min(100, Math.max(0, score)),
       maintainability: Math.min(100, Math.max(0, maintainability)),
       performance: Math.min(100, Math.max(0, performance)),
