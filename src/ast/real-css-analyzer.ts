@@ -791,6 +791,30 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * Exactly the code points JS `\s` matches, as a set.
+   *
+   * This exists so the whitespace tests in `queryComplexity` are not regexes. The
+   * M12 regex census drives that count DOWN, and five of the nine regexes this lane
+   * carried were added by the complexity work two commits ago — `queryComplexity`
+   * testing `/\s/` once per CHARACTER of every query, which is both a census
+   * regression and slower than a set lookup. The full set is listed rather than the
+   * ASCII five so the replacement is not a NARROWING: `\s` also matches \v, NBSP,
+   * the U+2000 block, the line/paragraph separators and the BOM, and a predicate
+   * that quietly stops matching a code point is a behaviour change wearing a
+   * cleanup's commit message.
+   */
+  private static readonly JS_SPACE = new Set([
+    " ", "\t", "\n", "\v", "\f", "\r",
+    "\u00a0", "\u1680", "\u2000", "\u2001", "\u2002", "\u2003", "\u2004", "\u2005",
+    "\u2006", "\u2007", "\u2008", "\u2009", "\u200a", "\u2028", "\u2029", "\u202f",
+    "\u205f", "\u3000", "\ufeff",
+  ])
+
+  private isSpace(c: string | undefined): boolean {
+    return c !== undefined && RealCssAnalyzer.JS_SPACE.has(c)
+  }
+
+  /**
    * Complexity of a media/supports/container QUERY, in the same spirit as the
    * selector metric: 1, plus one for each boolean operator that joins or negates a
    * condition. `@media print` is 1 (no decision), while
@@ -819,12 +843,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c === "(") { depth++; continue }
       if (c === ")") { depth--; continue }
       if (depth !== 0) continue
-      if (!/\s/.test(src[i - 1] ?? " ") || !/\s/.test(src[i + (c === "o" || c === "r" ? 1 : 2)] ?? " ")) {
-        // fall through to the word test below; this branch only guards adjacency
-      }
-      if (c === "a" && src.startsWith("and", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 2; continue }
-      if (c === "o" && src.startsWith("or", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 1; continue }
-      if (c === "n" && src.startsWith("not", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 2; continue }
+      if (c === "a" && src.startsWith("and", i) && this.isSpace(src[i - 1])) { ops++; i += 2; continue }
+      if (c === "o" && src.startsWith("or", i) && this.isSpace(src[i - 1])) { ops++; i += 1; continue }
+      if (c === "n" && src.startsWith("not", i) && this.isSpace(src[i - 1])) { ops++; i += 2; continue }
     }
     return 1 + ops
   }
@@ -854,10 +875,26 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child) continue
       for (let j = 0; j < child.childCount; j++) {
         const leaf = child.child(j)
-        if (leaf && /var\(\s*--/.test(leaf.text)) reads++
+        if (leaf && this.countsVarRead(leaf.text)) reads++
       }
     }
     return 1 + reads
+  }
+
+  /**
+   * Does this text contain a `var(` immediately followed by a custom-property name?
+   * Replaces `/var\(\s*--/` with a scan rather than narrowing it: the whitespace
+   * between `(` and `--` is skipped with the same `\s` set, so `var( --x)` still
+   * counts exactly as it did.
+   */
+  private countsVarRead(text: string): boolean {
+    for (let i = 0; i + 3 < text.length; i++) {
+      if (text[i] !== "v" || text[i + 1] !== "a" || text[i + 2] !== "r" || text[i + 3] !== "(") continue
+      let k = i + 4
+      while (k < text.length && this.isSpace(text[k])) k++
+      if (text[k] === "-" && text[k + 1] === "-") return true
+    }
+    return false
   }
 
   /**
