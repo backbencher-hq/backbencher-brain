@@ -171,9 +171,37 @@ every gate. Recorded as `CSS-L1` in `script/m14/spec/css-completeness.json`.
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the CSS analyzer has **0
-regex usages** (15 in the previous analyzer eliminated — census 119 → 104;
+From `validation/m12/results/regex-census.json`: the CSS analyzer has **3**
+regex usages (15 in the previous analyzer eliminated — census 119 → 104;
 4 more were in a dead `if (false && ...)` SCSS block removed entirely).
+
+**This section previously said 0, and that was wrong.** The complexity work added
+five regexes — `queryComplexity` testing `/\s/` once per *character* of every
+query, plus a `/var\(\s*--/` test — taking the lane from 0 to 9 while the census
+sat unchanged in the tree, because nothing re-ran it. All five are now gone, so
+the true count is 3, which is also the count before that work. The per-character
+`/\s/` was a performance bug as well as a census regression: a regex test per
+character is far slower than a set lookup, in a method that runs once per scope
+symbol.
+
+| # | Operation | Source | Adjudication |
+| --- | --- | --- | --- |
+| 1 | `split` | `/[\\/]/` | path separator on the file path — a 2-character alphabet, not content matching |
+| 2 | `replace` | `/:\d+$/` | strips a trailing `:<digits>` in `leafOf` (a svelte-emitted `:123` suffix) |
+| 3 | `split` | `/\s+/` | whitespace run in a symbol name |
+
+All three are normalization on identifiers and paths. The census still labels them
+`needs_review` because the classifier only auto-labels some shapes; the
+adjudication above is the record, and none of them inspects a *value* — which is
+the distinction that matters, since a regex over a declaration's value is where a
+CSS analyzer would start inventing structure that is not there.
+
+The whitespace replacement lists the full set JS `\s` matches (including \v, NBSP,
+the U+2000 block, the line/paragraph separators and the BOM) rather than the ASCII
+five, so it is not a narrowing: a predicate that quietly stops matching a code
+point is a behaviour change wearing a cleanup's commit message. Verified directly
+— the scan and the regex agree on all 14 `var(` shapes tested, including
+`var( --x)`, `var(\t--x)` and `var(\n --x)`.
 Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
 `stripAllQuotes` (all quote chars), `unwrapUrl` (`url(...)` unwrap),
 `replaceAll` (`&` substitution for nesting resolution), `isResetSelector`
