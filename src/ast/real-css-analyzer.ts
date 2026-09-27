@@ -384,14 +384,50 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         const dots = last.split(".")
         return dots[dots.length - 1]
       }
+      // A SCOPED name resolves through its SUFFIX: svelte writes the rule as
+      // `.a.svelte-xyz` and publishes `a`, so `.a.svelte-xyz` is a real endpoint
+      // even though it is not itself a symbol.
+      //
+      // This was the lane's only super-linear path, and it was invisible to every
+      // correctness gate because it is invisible to SMALL inputs. Measured with
+      // script/m14/tmp/css-scaling.ts, holding the selector shape fixed and
+      // varying only the rule count:
+      //
+      //   rules   ms/rule   x prev        rules   ms/rule   x prev
+      //      250     0.265                250     0.221
+      //      500     0.385   1.45x        500     0.171   0.77x
+      //     1000     0.442   1.15x       1000     0.149   0.87x
+      //     2000     1.218   2.76x       2000     0.184   1.24x
+      //     4000     2.914   2.39x       4000     0.154   0.83x
+      //     8000     5.485   1.88x       8000     0.145   0.95x
+      //   `.a .b` (descendant)          `.a` (single class)
+      //
+      // The right column is flat, which is what linear looks like. The left one is
+      // not: 43.9 SECONDS for a 254 KB file of 8,000 rules, and the corpus cannot
+      // see it because no corpus file is anywhere near that size. The cause is the
+      // loop this replaced — a FULL SCAN of every published name, per deferred
+      // edge, per direction, after two O(1) lookups had already missed. Deferred
+      // edges are O(rules), so that is O(n^2).
+      //
+      // `resolves` is only reached for chains, which is why exactly one of the four
+      // measured shapes was quadratic and the other three were flat: a single-class
+      // rule, a comma group and a functional pseudo all produce no chain edges.
+      //
+      // Same answer, O(length of n): the original asked "does n end with `:`+name
+      // or `.`+name for ANY name", which is "does some `:`-or-`.` boundary in n
+      // have a published name after it" — so walk n's own boundaries and do one
+      // hash lookup each. Selector names are short, so this is linear in practice
+      // and the semantics are identical.
       const resolves = (n: string): boolean => {
         if (!n) return false
         if (names.has(n)) return true
         const l = leafOf(n)
         if (names.has(l)) return true
-        for (const nm of names) {
-          if (n.endsWith(`:${nm}`)) return true
-          if (n.endsWith(`.${nm}`)) return true
+        for (let i = 0; i < n.length; i++) {
+          const c = n[i]
+          if (c !== ":" && c !== ".") continue
+          const tail = n.slice(i + 1)
+          if (tail.length > 0 && names.has(tail)) return true
         }
         return false
       }
