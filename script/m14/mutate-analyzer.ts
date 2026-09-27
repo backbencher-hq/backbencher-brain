@@ -22,7 +22,6 @@ import { runLang, LANGS } from "./run-fixtures"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
-import { CSS_MUTANTS } from "../m60/css-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2567,6 +2566,28 @@ function svelteRecoveryStopsWalk() {
       relationships: (r.relationships ?? []).filter((e: any) => lineOf(e) === undefined || lineOf(e)! < first),
     }
   }
+}
+
+/** D7: rune invocations are dropped. A named function handed to a rune that
+ *  INVOKES its argument ($effect, $effect.pre, $effect.root, $effect.untracked,
+ *  $derived.by, $host) is a call site, so a component that runs `fn` on every
+ *  effect tick says so in its graph. The mutant removes exactly that emission.
+ *
+ *  Selective rather than blanket, because a blanket "drop every calls edge" would
+ *  be caught by any fixture and would prove nothing about D7. Only edges the rune
+ *  pass produced are removed, so the js-delegate calls inside `$effect(fn())` and
+ *  the template-handler call from D8 both survive — which is what makes a failure
+ *  here attributable to the ruling instead of to the delegate.
+ *
+ *  Caught by svelte/rune-invocations.
+ */
+function svelteRuneInvocationDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (e: any) => !(e.type === "calls" && typeof e?.metadata?.runeCallee === "string"),
+    ),
+  })
 }
 
 export const MUTANTS: Mutant[] = [
@@ -6712,6 +6733,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "underclaim",
     description: "ERROR RECOVERY: the walk STOPS at the first recovery node. Nothing counts symbols-per-file against a floor, so a silently half-analysed document reads as analysed — and the module symbol spans the whole root, so a truncated document still has an identity and every visible count stays plausible. Svelte makes it sharper than html: an unclosed `{#if}` does not clip the damage to the broken line, the parser's ERROR span swallows the REST OF THE FILE, so the tail is valid markup inside the error region. Measured on the real corpus, 2.44% of files carry recovery nodes, and when one does what follows is usually good content — a stopping walk discards the majority of a damaged document. Modelled by dropping every relationship and symbol at or after the FIRST reported error, reading the analyzer's own diagnostic rather than the engine's so the mutated result still looks correctly reported. Caught by svelte/error-recovery, whose `Beta` at L12 and `uses shared` at L12 sit after the error and inside its span.",
     transform: svelteRecoveryStopsWalk(),
+  },
+  {
+    id: "svelte/rune-invocation-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D7: rune invocations are dropped. A named function handed to a rune that INVOKES its argument ($effect, $effect.pre, $effect.root, $effect.untracked, $derived.by, $host) is a call site, so a component that runs `fn` on every effect tick must say so in its graph — before the ruling these six forms emitted nothing, because the delegate suppresses the rune and the argument is an ordinary identifier no edge was made for. Selective rather than blanket: a blanket 'drop every calls edge' would be caught by any fixture and would prove nothing about D7. Only edges carrying the rune-pass marker are removed, so the js-delegate call inside `$effect(inlineCall())` and the D8 template-handler call both survive, which is what makes a failure attributable to the ruling rather than to the delegate. Caught by svelte/rune-invocations.",
+    transform: svelteRuneInvocationDropped(),
   },
   {
     id: "svelte/render-first-segment-calls",
@@ -12373,7 +12401,6 @@ export const MUTANTS: Mutant[] = [
   // in it could go red — see script/m60/yaml-mutants.ts for why that is the finding
   // rather than a footnote, and for which pin carries each class.
   ...YAML_MUTANTS,
-  ...CSS_MUTANTS,
   ...CSS_MUTANTS,
 ]
 
