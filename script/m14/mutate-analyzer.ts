@@ -22,6 +22,7 @@ import { runLang, LANGS } from "./run-fixtures"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
+import { CSS_MUTANTS } from "../m60/css-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -12372,6 +12373,7 @@ export const MUTANTS: Mutant[] = [
   // in it could go red — see script/m60/yaml-mutants.ts for why that is the finding
   // rather than a footnote, and for which pin carries each class.
   ...YAML_MUTANTS,
+  ...CSS_MUTANTS,
   ...CSS_MUTANTS,
 ]
 
