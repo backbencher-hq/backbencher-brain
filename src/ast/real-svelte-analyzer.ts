@@ -133,6 +133,29 @@ const RUNE_LEAF_SEGMENTS = new Set([
   "inspect", "trace", "render",
 ])
 
+// D7 (RULED 2026-09-27): a rune that INVOKES its argument turns a named function
+// reference into a real call site, exactly as `on:click={inc}` is one. The set is
+// the invoking half of Svelte's rune surface, and the split is the whole ruling —
+// it is not "any `$`-call with an argument", because the value-taking runes
+// (`$derived(count)`, `$state(0)`, `$bindable(v)`) hand over a VALUE that is
+// never called, and an edge there would point a call at an expression.
+//
+//   INVOKING   — the primitive calls what it is given: $effect, $effect.pre,
+//                $effect.root, $effect.untracked, $derived.by, $host.
+//   VALUE-TAKING, deliberately absent: $derived (an expression), $state and its
+//                raw/snapshot forms, $props/$props.id/$props.is_safe, $bindable,
+//                $inspect/$inspect.trace, $render, and $effect.tracking (no
+//                argument at all).
+// A user's own `$`-prefixed function is not in either set, so `$myHelper(fn)`
+// stays out — the same reason `isRuneCallee` refuses a bare `$` prefix.
+const SVELTE_INVOKING_RUNES = new Set([
+  "$effect", "$effect.pre", "$effect.root", "$effect.untracked", "$derived.by", "$host",
+])
+
+function isInvokingRune(calleeExpression: string): boolean {
+  return SVELTE_INVOKING_RUNES.has(calleeExpression)
+}
+
 function isRuneCallee(calleeExpression: string): boolean {
   if (!calleeExpression.startsWith("$")) return false
   if (SVELTE_RUNES.has(calleeExpression)) return true
@@ -533,6 +556,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       //     → Property; $: reactive declaration targets → Variable.
       this.extractSvelteDeclarations(scriptTree.rootNode, moduleName, symbols, lineOffset, colOffset, scriptBlockIndex)
 
+      // 3a-runes (D7): a named function handed to an INVOKING rune is a call
+      // site. The JS sub-analyzer sees `$effect(fn)` and correctly suppresses the
+      // rune itself, but `fn` is an ordinary argument and the delegate emits no
+      // edge for it — so before the ruling the component's own graph could not
+      // show that it runs `fn` on every effect tick. The ARROW form
+      // `$effect(() => ...)` is deliberately untouched: its body is already walked,
+      // and an arrow is not a name. Only a bare identifier argument qualifies.
+      this.extractRuneInvocations(scriptTree.rootNode, moduleName, relationships, lineOffset)
+
       // Block-kind: context="module" exports are MODULE API, never
       // component props. Only instance-block export-let/const bindings are
       // the component's public prop surface.
@@ -909,6 +941,66 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /** D7 (RULED 2026-09-27): `calls` edges for named functions passed to an
+   *  INVOKING rune. See SVELTE_INVOKING_RUNES for why the set is the invoking
+   *  half of the rune surface and not all of it.
+   *
+   *  Only a BARE IDENTIFIER argument produces an edge. An arrow function is not a
+   *  name and its body is already walked; a call argument (`$effect(doThing())`)
+   *  is a use, not a call of `doThing`; a member expression (`$effect(obj.m)`)
+   *  names a method the analyzer does not resolve here. Emitting for those would
+   *  be the fabrication class this lane already fixed twice.
+   */
+  private extractRuneInvocations(
+    root: Node,
+    componentName: string,
+    relationships: any[],
+    lineOffset: number,
+  ): void {
+    const seen = new Set<string>()
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "call_expression") {
+        const callee = n.childForFieldName?.("function") ?? n.namedChild(0)
+        const calleeText = callee?.text ?? ""
+        if (isInvokingRune(calleeText)) {
+          const argsField = n.childForFieldName?.("arguments")
+          const argList: Node[] = []
+          if (argsField) {
+            for (let i = 0; i < argsField.namedChildCount; i++) {
+              const a = argsField.namedChild(i)
+              if (a) argList.push(a)
+            }
+          }
+          const line = this.nodeToRange(n).startLine + lineOffset
+          for (const arg of argList) {
+            if (arg.type !== "identifier") continue
+            const name = arg.text
+            // A rune is never its own argument, and a call to the component
+            // itself is not an invocation of one of its members.
+            if (name === componentName || isRuneCallee(name)) continue
+            const key = `${calleeText}|${name}|${line}`
+            if (seen.has(key)) continue
+            seen.add(key)
+            relationships.push({
+              source: componentName,
+              target: name,
+              type: ASTEngine.RelationshipType.Calls,
+              confidence: 0.85,
+              line_number: line,
+              metadata: { context: `Svelte rune ${calleeText}`, runeCallee: calleeText, evidenceClass: "structural" },
+            })
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
