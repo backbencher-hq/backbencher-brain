@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
-  "committedAt": "2026-09-24T19:14:33-04:00",
+  "commit": "6b63e4a7647dbf0c570ec51f1dde41a1aba9a970",
+  "committedAt": "2026-09-26T21:08:07-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -329,9 +329,9 @@
         "fieldless": false,
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 271,
-        "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 34,
+        "oracleNodeTypeCount": 278,
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 37,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -447,7 +447,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 80,
+        "referencedTypeLiterals": 81,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -464,7 +464,7 @@
         "fieldless": false,
         "oracleFieldCount": 9,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 205,
+        "oracleNodeTypeCount": 204,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 32,
         "status": "pass",
@@ -514,8 +514,8 @@
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 36,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 41,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -591,7 +591,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 55,
+        "referencedTypeLiterals": 54,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -822,11 +822,11 @@
       "objective-c": {
         "analyzer": "src/ast/real-objective-c-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 46,
+        "oracleFieldCount": 48,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 535,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 49,
+        "oracleNodeTypeCount": 554,
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 50,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -835,7 +835,7 @@
           "tree-sitter-objc.wasm"
         ],
         "wasmFieldCounts": [
-          46
+          48
         ]
       },
       "perl": {
@@ -1117,7 +1117,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 85,
+        "referencedTypeLiterals": 92,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1346,14 +1346,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-24T23:29:51.373Z",
-  "regeneratedAtCommit": "892e17647d0a623159e54ecd7d2b37272b7886e6",
+  "regeneratedAt": "2026-09-27T01:16:38.538Z",
+  "regeneratedAtCommit": "6b63e4a7647dbf0c570ec51f1dde41a1aba9a970",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Grammar-conformance auditor",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.303Z",
-    "contentSha256": "c173299e28a9f8cd87569ffc28953dd7cf7a3fe257bb42b19cbad0926a57a155"
-  }
+  "title": "Grammar-conformance auditor"
 }
