@@ -281,8 +281,11 @@ both lanes never noticed. Nothing in `deriveTomlEdges` prevents that class of er
 
 | Gate | State |
 |---|---|
-| F3 fixtures | **4/4** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths` |
+| F3 fixtures | **5/5** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths`, `store-seam-probe` |
 | F4 mutation | **7/7 caught** (entered with 0) |
+| M12 differential | **precision 1.000, recall 1.000** — TP=41, FP=0, FN=0, `earliestFailingLayer=none`, against a **hand-audited** 41-fact truth |
+| M14.0.TOML-CENSUS | **PASS** — 21 declared node types all accounted for (7 claimed, 13 ruled silent with a reason, 1 not-seen) over 835 files / 68 repos, plus 6 ruled non-carrier shapes. Consults **neither** the analyzer nor the oracle |
+| M14.0.PIPE | **9 store assertions** green through the real CLI against `brain.db` |
 | F6 fixture coverage | **PASS** — 17 handled, 28 fixture types, 0 uncovered, 0 dead literals |
 | F5 differential | **100% / MISSING=0 / unexplained=0** on both corpora, and **5,515/5,515 at 657-file depth** |
 | SPEC #419 | **A, B, C, G pass**; 21/21 rows, gap list empty. **D red** (one tier, justified in the spec); **E/F** await the canonical baseline pin |
@@ -327,8 +330,27 @@ keys, bare words as values — which the grammar correctly rejects.
 
 **#289.** Open.
 
-**Not closed:** sections E and F await the canonical F5 ceremony, so there is no pinned
-corpus floor yet. Section D is red for a different reason and will not
-become green by writing more code: TOML's graph is entirely `structural`, and
-manufacturing a second tier would mean either emitting a `uses` edge for a
-path-shaped string or pointing an edge at a deliberately non-existent implied parent.
+## The three checks, and what each one is for
+
+The lane's coverage comes from three checks that fail differently, and the reason
+they are not redundant is worth stating because it is the whole argument for having
+built all three:
+
+| Check | Consults | Catches |
+|---|---|---|
+| **F5 differential** | analyzer + oracle | implementation divergence between two implementations — **found 3 real defects** on the oracle's first run |
+| **M12 hand audit** | analyzer + a human's reading of the spec | divergence between the code and what the document *means* — **found 0**, because the oracle had already fixed what it would have found |
+| **M14.0.TOML-CENSUS** | **neither** | a mistake in the reading *itself*, where both implementations would be wrong together and the differential would report the agreement as correctness |
+
+The M12 audit finding nothing is the weaker result and is recorded as such. html's
+hand audit found two places the analyzer was wrong; this one found none, because the
+oracle got there first. Writing "0 found" without that context would read as a
+stronger claim than it is.
+
+## Not closed
+
+**Sections E and F** await the canonical F5 ceremony, so there is no pinned corpus
+floor yet. **Section D** is red for a different reason and will not become green by
+writing more code: TOML's graph is entirely `structural`, and manufacturing a second
+tier would mean either emitting a `uses` edge for a path-shaped string or pointing an
+edge at a deliberately non-existent implied parent.
