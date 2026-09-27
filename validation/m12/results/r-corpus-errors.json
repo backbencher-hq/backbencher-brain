@@ -1,35 +1,68 @@
 {
-  "analyzer": "r",
-  "corpus": "$HOME/fixtures/repositories/dplyr",
-  "corpusRepo": "dplyr",
-  "revision": "d5e94e7fa8fd4a5f79c1a707d1842216bb4c691f",
-  "extensions": [
-    "*.R",
-    "*.r"
-  ],
-  "mode": "full-corpus",
-  "trackedFilesInCorpus": 195,
-  "measuredFiles": 195,
-  "samplePathsAbsentInCorpus": 0,
-  "errorFiles": 0,
-  "cleanFiles": 195,
-  "missingNodeFiles": 0,
-  "errorNodeFiles": 0,
-  "errorRates": {
-    "any": 0,
-    "missing": 0,
-    "error": 0
+  "schemaVersion": 1,
+  "kind": "r_corpus_parse_errors",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-r.wasm",
+    "sha256": "a5cf0d30ccaf5350430dbdbe44d17080988a5838b6a56e072940884b3a5b89cc"
   },
-  "grammarErrorFiles": 0,
-  "crashFiles": 0,
-  "pipelineMismatchCount": 0,
-  "pipelineMismatchFiles": [],
-  "wallMs": 8072,
-  "missingTokens": {},
-  "errorLineSignatures": {},
-  "firstErrorLineSignatures": {},
-  "errorFileList": [],
-  "crashes": [],
-  "passed": true,
-  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+  "repos": [
+    {
+      "repo": "testthat",
+      "revision": "09dcd88",
+      "trackedRFiles": 266,
+      "linesOfCode": 21932,
+      "symbols": 1634,
+      "relationships": 6052,
+      "filesWithParseError": 1
+    },
+    {
+      "repo": "Matrix",
+      "revision": "d598862",
+      "trackedRFiles": 80,
+      "linesOfCode": 29334,
+      "symbols": 3745,
+      "relationships": 8369,
+      "filesWithParseError": 0
+    },
+    {
+      "repo": "dplyr",
+      "revision": "d5e94e7",
+      "trackedRFiles": 195,
+      "linesOfCode": 39535,
+      "symbols": 3528,
+      "relationships": 7003,
+      "filesWithParseError": 0
+    },
+    {
+      "repo": "shiny",
+      "revision": "8184460",
+      "trackedRFiles": 276,
+      "linesOfCode": 50497,
+      "symbols": 3591,
+      "relationships": 10439,
+      "filesWithParseError": 1
+    },
+    {
+      "repo": "ggplot2",
+      "revision": "313d090",
+      "trackedRFiles": 357,
+      "linesOfCode": 65252,
+      "symbols": 3969,
+      "relationships": 10099,
+      "filesWithParseError": 0
+    }
+  ],
+  "totals": {
+    "trackedRFiles": 1174,
+    "symbols": 16467,
+    "relationships": 41962,
+    "filesWithParseError": 2
+  },
+  "note": "Every tracked .R/.r file of every pinned corpus repo, parsed with the shipped grammar. The two remaining parse-error files are CORRECT failures, not defects: shiny/inst/app_template/app.R is a Go text/template file that ships inside the shiny package and is not R, and testthat's tests/.../test-error-1.R is a deliberate syntax-error fixture. Before the hex-float grammar fix Matrix reported 12 error nodes across 4 files.",
+  "currentCommit": "993b61aaeed0404842d4f4db4212144cc860d8e1",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-27T05:26:06.724Z",
+    "contentSha256": "2632d0bb76c9b2508ae355be39e511fba6fb836fba64aa895b344da71a0b5ec4"
+  }
 }
