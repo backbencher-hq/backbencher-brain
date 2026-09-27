@@ -240,21 +240,46 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
   if (node.isMissing) return
 
   if (node.type === "variable_declaration") {
-    // `local a, b = ...` — the names live in a variable_list child reached by
-    // TYPE, because this grammar has no `name_list` field (LUA-00).
-    const asg = node.namedChild(0)
-    if (asg?.type === "assignment_statement") {
-      const vl = asg.namedChild(0)
-      if (vl?.type === "variable_list") {
-        for (let i = 0; i < vl.namedChildCount; i++) {
-          const id = vl.namedChild(i)
-          if (id?.type !== "identifier") continue
-          if (scope !== "global") {
-            if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
-            w.localsIn.get(scope)!.add(id.text)
-          }
-          w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+    // ORA-6: a variable_declaration has TWO shapes, and the oracle handled only
+    // the first. Measured:
+    //   local a, b = 1, 2  ->  variable_declaration > assignment_statement
+    //                                    > variable_list + expression_list
+    //   local solo         ->  variable_declaration > variable_list, and NO
+    //                            assignment_statement at all
+    //
+    // So a bare `local x` was invisible to the oracle on BOTH counts: it emitted
+    // no declaration edge for it, and it never registered `x` as a scope-local,
+    // which made a LATER `x = something` read as a fresh declaration. The
+    // analyzer skips that assignment (correctly — `x` is already declared), so
+    // the two disagreed and the differential reported 30 unexplained edges and
+    // 418 wrong lines against code that was RIGHT.
+    //
+    // This is the sixth time in this lane that the analyzer was correct and the
+    // oracle was not (ORA-1, ORA-2, ORA-4, ORA-5, and now this). The pattern is
+    // stable enough to state as a rule: a disagreement is a question about which
+    // side is wrong, and the oracle is the side that has been wrong, because the
+    // oracle is the thing being written to fit a hypothesis rather than to read
+    // a grammar.
+    //
+    // The names live in a variable_list reached by TYPE, because this grammar has
+    // no `name_list` field (LUA-00).
+    const first = node.namedChild(0)
+    const asg = first?.type === "assignment_statement" ? first : undefined
+    const list = asg ? asg.namedChild(0) : (first?.type === "variable_list" ? first : undefined)
+    if (list?.type === "variable_list") {
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const id = list.namedChild(i)
+        if (id?.type !== "identifier") continue
+        if (scope !== "global") {
+          if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
+          w.localsIn.get(scope)!.add(id.text)
         }
+        w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        // A bare `local x` carries no value, so there is nothing to test for a
+        // table. A declaration WITH a value can bind a table, and the
+        // `instantiates` rule depends on knowing which names those are.
+        const v0 = asg ? asg.namedChild(1)?.namedChild(0) : undefined
+        if (v0?.type === "table_constructor") w.declaredTables.add(id.text)
       }
     }
   }
