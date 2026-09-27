@@ -379,26 +379,37 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * The two SIDES of an assignment, without deciding which is a declaration.
-   * `<-`/`<<-`/`=` can only bind their left operand; `->`/`->>` are the same
-   * operation with the operands swapped, so the bound name is whichever side is a
-   * plain identifier — `5 -> d` binds `d` from the right and `e -> 6` binds `e`
-   * from the left.
+   *
+   * `<-`/`<<-`/`=` bind their LEFT operand. `->`/`->>` bind their RIGHT operand and
+   * nothing else — the left side is always a VALUE.
+   *
+   * This is not a stylistic choice, it is what R does, and it was measured
+   * against R 4.4.3's own runtime rather than assumed:
+   *
+   *     2 -> b          OK, binds b
+   *     2 ->> cc        OK, binds cc
+   *     identity(1) -> gg   OK, binds gg
+   *     bb -> 2         Error: invalid (do_set) left-hand side to assignment
+   *     cc ->> 2        Error: invalid (do_set) left-hand side to assignment
+   *
+   * R desugars both rightward forms to `<-`(value, name) at parse time, so a
+   * name on the LEFT of `->` is not a declaration — it is a runtime error, and
+   * publishing a symbol for it would invent a binding R refuses to make.
+   * tree-sitter-r does NOT desugar (it keeps `->` as an operator), which is
+   * exactly why the two sides have to be distinguished here.
+   *
+   * An earlier revision of this analyzer read whichever side happened to be an
+   * identifier. That published `variable e` for `e -> 6` — a construct R
+   * rejects. Caught by the R oracle, not by the fixtures, because the fixture
+   * had been written to match the same wrong belief.
    */
   private assignmentSides(node: Node): { target: Node | null; value: Node | null } {
     const operator = node.childForFieldName("operator")?.text
     if (operator === undefined) return { target: null, value: null }
     const lhs = node.childForFieldName("lhs")
     const rhs = node.childForFieldName("rhs")
-    if (LEFT_BINDING_OPERATORS.has(operator)) {
-      return { target: lhs ?? null, value: rhs ?? null }
-    }
-    if (RIGHT_BINDING_OPERATORS.has(operator)) {
-      // `a -> b` binds whichever side is the identifier; both sides being
-      // identifiers is not a declaration this analyzer can name.
-      if (lhs?.type === "identifier" && rhs?.type !== "identifier") return { target: lhs, value: rhs }
-      if (rhs?.type === "identifier" && lhs?.type !== "identifier") return { target: rhs, value: lhs }
-      return { target: null, value: null }
-    }
+    if (LEFT_BINDING_OPERATORS.has(operator)) return { target: lhs ?? null, value: rhs ?? null }
+    if (RIGHT_BINDING_OPERATORS.has(operator)) return { target: rhs ?? null, value: lhs ?? null }
     return { target: null, value: null }
   }
 
@@ -450,11 +461,11 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name) return
     const doc = this.extractDocstring(node)
 
-    // Function-local assignments are execution locals, not file-level
-    // declarations. This also prevents indexed/call-shaped local LHS nodes
-    // from becoming phantom symbols in large R packages. The walk already knows
-    // whether an enclosing function is on the stack, so this is O(1).
+    // Function-local and `local()`-scoped assignments are execution locals, not
+    // file-level declarations. The walk already knows whether an enclosing
+    // function is on the stack, so that part is O(1).
     if (insideFunction) return
+    if (this.hasLocalBoundary(node)) return
 
     if (value.type === "function_definition") {
       // An S3 method is registered under `generic.class`; the dot is part of the
@@ -806,7 +817,23 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const classNode = this.secondPositionalValue(tArgs)
       if (!genericNode) return
       const generic = this.nodeAsName(genericNode)
-      const owner = classNode ? this.nodeAsName(classNode) : undefined
+      // S7 dispatches on a SET of classes: `S7::method(`+`, list(class_a, class_b))`.
+      // The owner is the first class in that list, and it must be the first
+      // NAMED argument, so a positionally-indexed list is not mistaken for one.
+      let owner: string | undefined
+      if (classNode) {
+        owner = this.nodeAsName(classNode) || undefined
+        if (!owner && classNode.type === "call" && this.calleeName(classNode.childForFieldName("function")) === "list") {
+          const listArgs = this.getArgumentsNode(classNode)
+          for (let i = 0; listArgs && i < listArgs.namedChildCount; i++) {
+            const entry = listArgs.namedChild(i)
+            if (entry?.type !== "argument") continue
+            if (entry.childForFieldName("name")) continue
+            const v = this.nodeAsName(entry.childForFieldName("value"))
+            if (v) { owner = v; break }
+          }
+        }
+      }
       if (!generic) return
       this.pushIfUnique(metadata.patterns, "S7 Object System")
       symbols.push({
@@ -874,13 +901,64 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** An identifier or string node read as a name. */
-  private nodeAsName(node: Node): string {
+  private nodeAsName(node: Node | null | undefined): string {
+    if (!node) return ""
     if (node.type === "string") return this.stringNodeText(node)
     if (node.type === "identifier" || node.type === "dots") return this.unquoteIdentifier(node.text)
     return ""
   }
 
   /** The value of a named argument of a call, or null. */
+  /**
+   * True when the node sits inside a `local({ ... })` body.
+   *
+   * `local()` is the one construct in ordinary R that evaluates an expression in a
+   * NEW environment without introducing a `function_definition` node, so the
+   * function-ancestor test cannot see it. Assignments inside it are NOT file-level
+   * bindings: R's `local()` creates a child environment and nothing escapes.
+   *
+   * Found by the R oracle, not by reading: dplyr's test-across.R binds
+   * `_local_var` inside `local({ ... })` and the analyzer was publishing it as a
+   * global variable. A plain `{ ... }` block inside a call is deliberately NOT
+   * treated as a boundary, because R evaluates that in the CALLING frame and the
+   * binding really is global.
+   */
+  private hasLocalBoundary(node: Node): boolean {
+    let current: Node | null = node
+    while (current) {
+      const parent: Node | null = current.parent
+      if (!parent) return false
+      // NOT a boundary, and this was measured rather than assumed: R binds a name
+      // assigned inside a SUBSET index, inside parentheses, and as a call argument.
+      // Verified on R 4.4.3:
+      //   m[ci <- 1]                 binds ci
+      //   (r12 <- 5)[-1]             binds r12
+      //   f(r12 <- 5)                binds r12
+      //   tru[i.lt <- 1] <- c(2,3,4) binds i.lt AND tru
+      // An earlier revision treated a `subset` ancestor as a scope boundary on the
+      // reasoning that a complex assignment is evaluated "in the indexing context".
+      // That is wrong, and it silently dropped four real bindings; the R oracle
+      // caught it. Only `local()` and function bodies are boundaries.
+      if (parent.type === "braced_expression" || parent.type === "parenthesized_expression") {
+        // The block is usually the VALUE of an argument, so the chain to the call
+        // is block -> argument -> arguments -> call, not block -> call.
+        let owner: Node | null = parent
+        for (let hop = 0; hop < 3 && owner; hop++) {
+          const up: Node | null = owner.parent
+          if (!up) break
+          if (up.type === "call") {
+            const fn = up.childForFieldName("function")
+            if (fn && this.calleeName(fn) === "local") return true
+            break
+          }
+          owner = up
+        }
+      }
+      current = parent
+    }
+    return false
+  }
+
   /**
    * The line a symbol's NAME is written on.
    *
