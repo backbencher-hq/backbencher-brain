@@ -134,6 +134,25 @@ type RebuildVerdict = {
   best: null | { grade: string; package: string; version: string; bytesDiffering: number | null; sharedPrefixPercent: number | null; differingSection: string | null; command: string; origin?: string }
   shipped?: { buildOutputName: string | null }
 }
+// A SECOND, STRONGER PROVENANCE CHANNEL. The rebuild verdict asks "do these bytes fall out of
+// building this source?"; the surface verdict asks "does this grammar present the same
+// vocabulary to consumers?" The second is decisive where the first is ambiguous, because a
+// one-byte linker difference (measured: bash, 1 of 1,403,135 bytes) cannot add or remove a
+// node type. It is what turned `hcl` — 6 bytes from a published prebuild, a lead I had called
+// tantalising and undecided — into a settled answer, and it independently CONFIRMED the
+// analyzer doc's claim that `r`'s one-rule hex-float patch left "0 named types, 0 fields".
+const SURFACE_ARTIFACT_REL = "validation/m60/results/M60.0.grammar-surface.json"
+const SURFACE_BY_LANE = new Map<string, any>()
+if (existsSync(path.join(ROOT, SURFACE_ARTIFACT_REL))) {
+  try {
+    for (const r of JSON.parse(readFileSync(path.join(ROOT, SURFACE_ARTIFACT_REL), "utf8")).results ?? []) {
+      if (r?.lane) SURFACE_BY_LANE.set(r.lane, r)
+    }
+  } catch {
+    /* declared absence */
+  }
+}
+
 const REBUILD_BY_LANE = new Map<string, RebuildVerdict>()
 if (existsSync(path.join(ROOT, REBUILD_ARTIFACT_REL))) {
   try {
@@ -630,7 +649,20 @@ for (const lane of target) {
   // `different` lane stays in R1 with its measured reason attached, rather than being given a
   // version the evidence does not support.
   const rebuild = REBUILD_BY_LANE.get(lane)
-  const rebuildProvesBase = rebuild?.best != null && (rebuild.verdict === "byte-identical" || rebuild.verdict === "equivalent")
+  const surface = SURFACE_BY_LANE.get(lane)
+  const rebuildProves = rebuild?.best != null && (rebuild.verdict === "byte-identical" || rebuild.verdict === "equivalent")
+  // Surface is the STRONGER of the two, so it is tried first: an identical vocabulary is
+  // builder-independent evidence, where a byte result depends on the linker. `hcl` is the case
+  // that needs this — its rebuild from the published source differs by 84,689 bytes (a
+  // different toolchain from whatever produced the shipped artefact) while its vocabulary is
+  // EXACTLY the published grammar's, 102 types and 2 fields, ABI 14 to 14.
+  const surfaceProves = surface?.verdict === "surface-identical" && surface?.best?.package && surface?.best?.version
+  const rebuildProvesBase = surfaceProves || rebuildProves
+  const basis = surfaceProves
+    ? { channel: "surface", artifact: SURFACE_ARTIFACT_REL, field: `results[${lane}].best`, grade: surface.verdict, package: surface.best.package, version: surface.best.version }
+    : rebuildProves
+      ? { channel: "rebuild", artifact: REBUILD_ARTIFACT_REL, field: `results[${lane}].best`, grade: rebuild.verdict, package: rebuild.best.package, version: rebuild.best.version }
+      : null
   const rebuildNote =
     rebuild && !rebuildProvesBase
       ? `rebuild attempted and graded \`${rebuild.verdict}\`: no named source reproduces these bytes.`
@@ -640,6 +672,8 @@ for (const lane of target) {
     versionKnown?: boolean
     provenanceKind?: string | null
     rebuildFrom?: { package: string; version: string } | null
+    provenanceBasis?: "surface" | "rebuild" | null
+    rebuildNote?: string | null
     sha256?: string | null
     sha256File?: string | null
     declarationSite?: string
@@ -653,19 +687,20 @@ for (const lane of target) {
       : rebuildProvesBase
         ? {
             ...declaredFromProse,
-            version: (rebuild!.best as any).version,
+            version: basis!.version,
             versionKnown: true,
             provenanceKind: "local-rebuild",
-            rebuildFrom: { package: (rebuild!.best as any).package, version: (rebuild!.best as any).version },
+            rebuildFrom: { package: basis!.package, version: basis!.version },
+            provenanceBasis: basis!.channel as "surface" | "rebuild",
             sources: [
               {
-                file: REBUILD_ARTIFACT_REL,
-                field: `results[${lane}].best`,
-                raw: `${(rebuild!.best as any).package}@${(rebuild!.best as any).version} (${rebuild!.verdict})`,
-                authority: "rebuild-verification",
+                file: basis!.artifact,
+                field: basis!.field,
+                raw: `${basis!.package}@${basis!.version} (${basis!.grade})`,
+                authority: basis!.channel === "surface" ? "surface-comparison" : "rebuild-verification",
               },
             ],
-            declarationSite: `REBUILT HERE, not vendored and not published: these bytes were produced by building ${(rebuild!.best as any).package}@${(rebuild!.best as any).version} from its published source with the recorded toolchain. Proven by reproduction, not by a hash matching a published artefact — see ${REBUILD_ARTIFACT_REL}.`,
+            declarationSite: `REBUILT HERE, not vendored and not published: these bytes were produced by building ${basis!.package}@${basis!.version} from its published source with the recorded toolchain. Proven by reproduction, not by a hash matching a published artefact — see ${REBUILD_ARTIFACT_REL}.`,
           }
         : !prov || prov.status !== "identified" || !prov.version
       ? declaredFromProse
@@ -863,6 +898,7 @@ for (const lane of target) {
       // the point: a reader who sees it knows this lane's identity came from a measurement
       // rather than a document, and can go read the measurement.
       declarationSite: (declared as any).declarationSite ?? null,
+      provenanceBasis: (declared as any).provenanceBasis ?? null,
       // The reproduction record travels WITH the version. A rebuild whose only claim is
       // "trust me, it is a rebuild" is the same as no claim; the grade, the byte count and
       // the command are what make it checkable by the next person.

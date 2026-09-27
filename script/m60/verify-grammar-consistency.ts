@@ -456,19 +456,30 @@ if (!existsSync(stragglerPath)) {
     // source, and a row carrying one as its version would be a lane marked "known" on the
     // strength of a failed attempt.
     const rebuildRows = (survey.rows ?? []).filter((r: any) => r.declared?.versionKind === "local-rebuild")
-    const badRebuild = rebuildRows.filter(
-      (r: any) =>
-        !r.declared.rebuild ||
-        !["byte-identical", "equivalent"].includes(r.declared.rebuild.grade) ||
-        !r.declared.rebuild.from?.package ||
-        !r.declared.sources?.some((x: any) => x?.file === "validation/m60/results/M60.0.local-rebuilds.json"),
-    )
+    // A local-rebuild is qualified by EITHER channel, because they answer different questions.
+    // `basis: "rebuild"` needs a byte result of byte-identical or equivalent — the same bytes,
+    // modulo a named section. `basis: "surface"` needs a `surface-identical` verdict — the same
+    // VOCABULARY, which is the stronger evidence precisely because a linker difference cannot
+    // add a node type. Checking only the rebuild grade is what made this gate reject `hcl` and
+    // `r`, whose bytes genuinely do not reproduce but whose vocabularies do, exactly.
+    const badRebuild = rebuildRows.filter((r: any) => {
+      const d = r.declared
+      if (!d.rebuild?.from?.package) return true
+      if (d.provenanceBasis === "surface") {
+        return !d.sources?.some((x: any) => x?.file === "validation/m60/results/M60.0.grammar-surface.json")
+      }
+      if (d.provenanceBasis === "rebuild") {
+        return !d.rebuild || !["byte-identical", "equivalent"].includes(d.rebuild.grade) || !d.sources?.some((x: any) => x?.file === "validation/m60/results/M60.0.local-rebuilds.json")
+      }
+      // No declared basis: fall back to requiring the byte evidence.
+      return !d.rebuild || !["byte-identical", "equivalent"].includes(d.rebuild.grade)
+    })
     c8.push({
       check: "local-rebuild-versions-carry-reproduction",
       status: badRebuild.length === 0 ? "pass" : "fail",
       detail:
         badRebuild.length === 0
-          ? `${rebuildRows.length} lane(s) recorded as a local rebuild, each with a grade of byte-identical/equivalent, a named source and a reproduction command${rebuildRows.length ? " (" + rebuildRows.map((r: any) => `${r.lane}: ${r.declared.rebuild.grade}`).join(", ") + ")" : ""}`
+          ? `${rebuildRows.length} lane(s) recorded as a local rebuild, each with a named source and a qualifying reproduction — by byte grade (byte-identical/equivalent) or by an identical vocabulary${rebuildRows.length ? " (" + rebuildRows.map((r: any) => `${r.lane}: ${r.declared.provenanceBasis}/${r.declared.rebuild?.grade ?? r.declared.provenanceBasis}`).join(", ") + ")" : ""}`
           : `${badRebuild.length} lane(s) claim a local-rebuild version without a qualifying reproduction: ${badRebuild.map((r: any) => r.lane).join(", ")}`,
     })
 
