@@ -21,6 +21,7 @@ import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
+import { CSS_MUTANTS } from "../m60/css-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2520,6 +2521,49 @@ function tomlErrorNodeBecomesSymbol() {
           metadata: { tomlSpecific: true, isRecoveryNode: true },
         })),
       ],
+    }
+  }
+}
+
+/** ERROR RECOVERY: the walk STOPS at the first recovery node. This is the defect
+ *  class html needed a fixture for and that no other gate here can see — nothing
+ *  counts symbols-per-file against a floor, so a silently half-analysed document
+ *  reads as analysed. The module symbol spans the whole root, so a document
+ *  truncated at an error still has an identity, still looks well-formed, and
+ *  every count a consumer can see stays plausible.
+ *
+ *  Svelte makes it sharper than html did. An unclosed `{#if}` does not clip the
+ *  damage to the broken line: the parser's ERROR span swallows the REST OF THE
+ *  FILE, so the tail is valid content sitting inside the error region. Measured on
+ *  the real corpus, 2.44% of files carry recovery nodes at all, and when one does,
+ *  what follows it is usually good markup. A stopping walk therefore discards the
+ *  majority of a damaged document.
+ *
+ *  Modelled by dropping every relationship and symbol that starts at or after the
+ *  FIRST reported error — the analyzer's own diagnostic, not the engine's, so the
+ *  mutated result still looks correctly reported.
+ *
+ *  Caught by svelte/error-recovery, whose `Beta` at L12 and `uses shared` at L12
+ *  sit after the error and inside its span.
+ */
+function svelteRecoveryStopsWalk() {
+  return (r: any) => {
+    const errs = (r.errors ?? []).filter((e: any) => typeof e?.range?.startLine === "number")
+    if (errs.length === 0) return r
+    const first = Math.min(...errs.map((e: any) => e.range.startLine))
+    // A relationship carries `line_number`, NOT `range` — reading only `range`
+    // silently dropped NOTHING on the relationship side, so the first version of
+    // this mutant modelled symbol truncation alone while its description claimed
+    // both. It was still caught, which is exactly why a mutant that does less than
+    // it claims is worse than no mutant: it passes while testing a weaker contract.
+    // Relationship truncation is the heart of the rule (the `instantiates` and
+    // `uses` edges into the swallowed tail), so it is what has to be modelled.
+    const lineOf = (x: any): number | undefined =>
+      typeof x?.range?.startLine === "number" ? x.range.startLine : typeof x?.line_number === "number" ? x.line_number : undefined
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => lineOf(s) === undefined || lineOf(s)! < first),
+      relationships: (r.relationships ?? []).filter((e: any) => lineOf(e) === undefined || lineOf(e)! < first),
     }
   }
 }
@@ -6660,6 +6704,13 @@ export const MUTANTS: Mutant[] = [
       }))
       return { ...r, relationships: [...rels, ...extra] }
     },
+  },
+  {
+    id: "svelte/recovery-stops-walk",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "ERROR RECOVERY: the walk STOPS at the first recovery node. Nothing counts symbols-per-file against a floor, so a silently half-analysed document reads as analysed — and the module symbol spans the whole root, so a truncated document still has an identity and every visible count stays plausible. Svelte makes it sharper than html: an unclosed `{#if}` does not clip the damage to the broken line, the parser's ERROR span swallows the REST OF THE FILE, so the tail is valid markup inside the error region. Measured on the real corpus, 2.44% of files carry recovery nodes, and when one does what follows is usually good content — a stopping walk discards the majority of a damaged document. Modelled by dropping every relationship and symbol at or after the FIRST reported error, reading the analyzer's own diagnostic rather than the engine's so the mutated result still looks correctly reported. Caught by svelte/error-recovery, whose `Beta` at L12 and `uses shared` at L12 sit after the error and inside its span.",
+    transform: svelteRecoveryStopsWalk(),
   },
   {
     id: "svelte/render-first-segment-calls",
@@ -12321,6 +12372,7 @@ export const MUTANTS: Mutant[] = [
   // in it could go red — see script/m60/yaml-mutants.ts for why that is the finding
   // rather than a footnote, and for which pin carries each class.
   ...YAML_MUTANTS,
+  ...CSS_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
