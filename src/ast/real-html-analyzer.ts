@@ -93,9 +93,24 @@
 import type { Node, Tree } from "web-tree-sitter"
 import * as path from "path"
 import { ASTEngine } from "./engine"
-import { RealCssAnalyzer } from "./real-css-analyzer"
-import { RealJavaScriptAnalyzer } from "./real-javascript-analyzer"
-import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
+
+// The three embedded-block delegates are loaded LAZILY and INDEPENDENTLY, and
+// deliberately NOT as static imports. A static import makes a broken delegate a
+// load-time failure of THIS module, so a compile error in the CSS analyzer — which
+// is being rewritten in parallel, and was mid-rewrite with 5 build errors while
+// this line was written — takes the html DOCUMENT surface down with it: the engine
+// falls back to `2.0-basic-fallback` and the file yields zero symbols, zero
+// relationships and zero imports. That is the worst possible coupling for a
+// template language over a script language, and it is invisible until the moment
+// a neighbour's work is half-done.
+//
+// Each delegate is therefore resolved inside `mergeEmbeddedBlocks` in its own
+// try/catch, so an unavailable grammar costs exactly the blocks it would have
+// served and the document's own elements, containment, resources, references and
+// lines are untouched. The failure is DISCLOSED on the result (see
+// `metadata.unavailableEmbeddedLangs`) rather than swallowed, because a silently
+// missing block set reads as a document with no code in it — which is precisely
+// the HTML-G1 defect this seam closed, reappearing through a different door.
 
 // ============================================================================
 // PURE-STRING HELPERS — no regular expression anywhere in this file, which the
@@ -522,6 +537,15 @@ type ResourceOutcome = "fetch" | "fragment" | "navigation" | "external" | "scrip
 const HEADING_ELEMENTS: Record<string, boolean> = { h1: true, h2: true, h3: true, h4: true, h5: true, h6: true }
 
 export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * The embedded-block languages whose delegate analyzer could not be loaded in
+   * this process, populated only by `mergeEmbeddedBlocks` and published as
+   * `metadata.unavailableEmbeddedLangs`. Non-empty means: this document HAS inline
+   * blocks and they were NOT analysed. A field rather than a log line, because a
+   * consumer that asks "does this file contain code?" needs to be able to tell
+   * "no" from "not measured", and only a published field can say that.
+   */
+  private unavailableEmbeddedLangs: string[] = []
   analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -1033,7 +1057,12 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is auditable and its regression is catchable by a fixture rather than
     // discoverable by a consumer noticing a line is off.
     if (context && Array.isArray(context.htmlEmbeddedTrees) && context.htmlEmbeddedTrees.length > 0) {
-      this.mergeEmbeddedBlocks(context, moduleName, symbols, relationships, imports, exports, errors)
+      const unavailable = this.mergeEmbeddedBlocks(context, moduleName, symbols, relationships, imports, exports, errors)
+      // DISCLOSED, never silent. A document whose blocks were skipped must not
+      // read as a document that has no code in it — that is the HTML-G1 defect
+      // returning through a different door, and the honest signal is the absence
+      // named rather than the absence implied.
+      if (unavailable.length > 0) this.unavailableEmbeddedLangs = [...new Set(unavailable)].sort()
     }
 
     return {
@@ -1069,6 +1098,9 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         performanceScore: structural.performance,
         score: structural,
         analysisVersion: "m14-html-identity-v2",
+        ...(this.unavailableEmbeddedLangs.length > 0
+          ? { unavailableEmbeddedLangs: [...this.unavailableEmbeddedLangs] }
+          : {}),
         documentMetrics: {
           totalElements,
           semanticCount,
@@ -1141,6 +1173,16 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (value.length === 0) return "none"
 
     const fragment = fragmentTarget(value)
+    // A BARE `#` is the HTML idiom for "no destination": it is a valid URL that
+    // refers to the top of the current document, so there is no target to name.
+    // Emitting an edge to the literal text `#` produced a node that is neither a
+    // symbol nor a file — the unresolvable-identity class, and a regression
+    // against the M12 Negative fixture's documented contract ("`javascript:` and
+    // empty `#` anchors emit nothing"). The document module already IS the top of
+    // the document, so the reference is satisfied by the node that owns it. An
+    // empty value is the same statement with even less ceremony, and the length
+    // check above already returned for it.
+    if (value === "#") return "none"
     if (fragment.length > 0) {
       if (rule.fragmentRef) {
         // A real reference INTO the document's address space. Deferred, so a
@@ -1274,15 +1316,45 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     imports: ASTEngine.ImportInfo[],
     exports: ASTEngine.ExportInfo[],
     errors: ASTEngine.ParseError[],
-  ): void {
+  ): string[] {
+    const unavailable: string[] = []
     const trees = (context.htmlEmbeddedTrees ?? []) as Tree[]
     const langs = (context.htmlEmbeddedLangs ?? []) as string[]
     const startLines = (context.htmlEmbeddedStartLines ?? []) as number[]
     const startColumns = (context.htmlEmbeddedStartColumns ?? []) as number[]
     const startIndices = (context.htmlEmbeddedStartIndices ?? []) as number[]
-    const js = new RealJavaScriptAnalyzer()
-    const ts = new RealTypeScriptAnalyzer()
-    const css = new RealCssAnalyzer()
+    // Resolved ONCE per merge, per language, each behind its own guard: a module
+    // that fails to load disables only the blocks it would have served.
+    const delegates: Record<string, any> = {}
+    const delegateFor = (lang: string): any | null => {
+      if (delegates[lang] !== undefined) return delegates[lang]
+      let instance: any = null
+      try {
+        // `require` rather than `await import`: `mergeEmbeddedBlocks` is called
+        // from the synchronous analyzer body, and a dynamic import would make the
+        // whole analyzer async for a benefit the engine already provides (it
+        // resolves every analyzer through its own loader). The indirection is
+        // deliberate — it is what makes the failure local instead of fatal.
+        const mod =
+          lang === "css"
+            ? require("./real-css-analyzer")
+            : lang === "ts" || lang === "tsx"
+              ? require("./real-typescript-analyzer")
+              : require("./real-javascript-analyzer")
+        const cls =
+          lang === "css"
+            ? mod.RealCssAnalyzer
+            : lang === "ts" || lang === "tsx"
+              ? mod.RealTypeScriptAnalyzer
+              : mod.RealJavaScriptAnalyzer
+        instance = typeof cls === "function" ? new cls() : null
+      } catch {
+        instance = null
+      }
+      if (instance === null) unavailable.push(lang)
+      delegates[lang] = instance
+      return instance
+    }
 
     for (let i = 0; i < trees.length; i++) {
       const tree = trees[i]
@@ -1290,6 +1362,8 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const lang = langs[i] ?? "js"
       const lineOffset = (startLines[i] ?? 1) - 1
       const byteOffset = startIndices[i] ?? 0
+      const delegate = delegateFor(lang)
+      if (delegate === null) continue
       let sub: any
       try {
         // The delegate is handed the DOCUMENT's module name as its file path, not
@@ -1299,11 +1373,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // unresolvable-identity defect class, visible as a `calls embedded ->
         // renderBanner` row whose source joins to nothing. The document's own
         // module is the scope an inline script actually has.
-        sub = (lang === "css" ? css : lang === "ts" || lang === "tsx" ? ts : js).analyze(
-          tree.rootNode,
-          "",
-          moduleName,
-        )
+        sub = delegate.analyze(tree.rootNode, "", moduleName)
       } catch {
         // A block the delegate cannot analyse is that block's loss, not the
         // document's: the rest of the merge continues.
@@ -1359,7 +1429,13 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (typeof r.line_number === "number") r.line_number += lineOffset
         if (r.metadata) {
           for (const k of Object.keys(r.metadata)) {
-            if (!/line/i.test(k)) continue
+            // Any metadata key that NAMES a line has a block-relative line in it and
+            // needs the same shift `line_number` just got. Matched by hand rather than
+            // `/line/i.test(k)` because the analyzer's no-regex rule is a hard
+            // contract, not a style preference: every regex literal is one more thing
+            // to audit for backtracking, and this needs nothing more than a case-fold
+            // and a substring test over a handful of short keys.
+            if (!asciiLower(k).includes("line")) continue
             const v = (r.metadata as any)[k]
             if (typeof v === "number") (r.metadata as any)[k] = v + lineOffset
             else if (Array.isArray(v) && v.some((x: unknown) => typeof x === "number")) {
@@ -1402,6 +1478,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         errors.push(er)
       }
     }
+    return unavailable
   }
 
   /**
