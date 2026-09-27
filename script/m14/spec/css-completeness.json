@@ -84,7 +84,6 @@
       "float_value": "float_value -> declaration (handled construct)",
       "grid_value": "grid_value -> declaration (handled construct)",
       "integer_value": "integer_value -> declaration (handled construct)",
-      "keyframe_block": "keyframe_block -> keyframe_block_list -> keyframes_statement (handled construct)",
       "keyframe_block_list": "keyframe_block_list -> keyframes_statement (handled construct)",
       "namespace_name": "namespace_name -> namespace_statement (handled construct)",
       "parenthesized_value": "parenthesized_value -> binary_expression -> arguments (handled construct)",
