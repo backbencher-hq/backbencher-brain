@@ -54,6 +54,16 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex" },
+  // M14.7-DataConfigDocs.yaml (#286): yaml joins the fixture lane with 24 fixtures, each
+  // authored from re-probed emission (script/m14/tmp/yaml-fixture-dump.ts ->
+  // validation/m14/results/yaml-fixture-emission.json) and each paired with a NEGATIVE
+  // twin where a channel could over-fire. Six of the twelve grammar node types the lane
+  // did not name are reachable only from a fixture, not from any corpus: a 400-file draw
+  // over eight pinned repositories contains 19 `tag` nodes (all `!vault`/`!unsafe` cipher
+  // markers), ZERO directives, and 2 anchors (script/m14/results/yaml-f8-corpus-census.json).
+  // Without this lane the tags, directives, anchors and merge-key contracts would have had
+  // no evidence at all.
+  yaml: { wasm: "tree-sitter-yaml.wasm", analyzerFile: "real-yaml-analyzer", className: "RealYamlAnalyzer", ext: "yaml,yml" },
   // M59 (#825): xml had NO fixture lane at all, while being one of only two
   // analyzers that emitted a line before the round (27 of 27 relationships on
   // the M59 coverage probe). Nothing pinned its line contract, so nothing could
@@ -99,6 +109,29 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // reasoning preserved, and replaced by a derived gate). A fixture lane is
   // not a directory, it is a directory this map names.
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
+  // M60 (#278): powershell joins the fixture lane. It was the largest
+  // UNGATED analyzer lane in the tree: an M12 corpus claim (34 acceptance
+  // files of 553 tracked), a regex-census row, an F1 grammar PASS — and no
+  // fixture, no mutant, no differential oracle, no completeness spec and no
+  // review folder. F1 is the one gate that passed, and it asks the one
+  // question that cannot fail here: the analyzer names 18 node types and all 18
+  // exist in the grammar, while the 134 it does not name are not F1's question.
+  //
+  // What the ungated lane was measured to be doing, on the production half of
+  // two real corpora (50 files of powershell@91ce9844 + 24 of ansible@7ec731b,
+  // through the production `parseFile`): 2,145 symbols and 3,410 relationships
+  // carrying FOUR relationship kinds, `uses`/`overrides`/`exports` at ZERO,
+  // and `line_number` on 0 of 3,410. Every one of those is a claim no gate in
+  // this repo could ask about, which is the same finding M14 #288 recorded for
+  // html and M60 #884 for clean — an inert lane is worse than a missing one,
+  // because its green cells read as evidence.
+  //
+  // `ext` carries all THREE spellings because `language-detection.ts` routes
+  // `.ps1`, `.psm1` and `.psd1` here, and a lane that claimed only `.ps1` would
+  // silently skip two thirds of the language it is named after — `.psm1` is a
+  // PowerShell MODULE and `.psd1` its manifest, so the module surface (and the
+  // `Export-ModuleMember` export surface with it) would be entirely unpinned.
+  powershell: { wasm: "tree-sitter-powershell.wasm", analyzerFile: "real-powershell-analyzer", className: "RealPowershellAnalyzer", ext: "ps1,psm1,psd1" },
 }
 
 interface Entry { [k: string]: any }
@@ -154,6 +187,16 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
       if (Array.isArray(v)) {
         if (!Array.isArray(mv)) return false
         if (JSON.stringify([...mv].sort()) !== JSON.stringify([...v].sort())) return false
+      } else if (v === null) {
+        // M59 fixed this hole for `line_number`; it is the SAME hole one level
+        // down. Several analyzers emit a metadata label on TRUE only and omit it
+        // otherwise (`isShellDefined`, `isAssignedInFile`), so the ABSENT case is
+        // the one a consumer actually hits most — and a strict `!==` can never be
+        // true for it, so a fixture could not state it. `meta.x: null` now means
+        // "this edge must NOT carry x", reusing the `line_number: null` convention
+        // rather than inventing a second spelling. Additive: every other value
+        // compares exactly as before.
+        if (mv !== undefined && mv !== null) return false
       } else if (mv !== v) return false
     } else if (actual[k] !== v) {
       // relationship field aliases
@@ -469,6 +512,96 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+    // M60 (powershell): three ADDITIVE payload channels. The lane's pre-wave
+    // analyzer wrote `isStatic`, `returnType` and `docstring` into the symbol's
+    // `metadata`, and `pool-worker.ts` drops the whole `metadata` object at the
+    // worker boundary except the narrow `isDeclaration` key — so all three were
+    // discarded before the store saw them, and nothing in the harness could say
+    // so: `expectParameters` covers parameters, `expectDecorators` decorators,
+    // `expectVisibility` visibility, and these three had no channel at all. An
+    // unpinnable payload field is where a regression hides, which is the same
+    // argument that added `forbidDecorators` (C2a) and the parameter-type half of
+    // `forbidParameters` (csharp R7). Each entry is { symbol, ownerName? } plus
+    // one assertion; unspecified fields are wildcards, and `comment`/`note` are
+    // documentation, as everywhere else in this matcher.
+    for (const want of exp.expectReturnType ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectReturnType: symbol ${want.symbol} not found`); continue }
+      if (want.returnType !== undefined && sym.returnType !== want.returnType) {
+        problems.push(`expected ${want.symbol} returnType ${JSON.stringify(want.returnType)}; got ${JSON.stringify(sym.returnType)}`)
+      }
+    }
+    for (const want of exp.expectIsStatic ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectIsStatic: symbol ${want.symbol} not found`); continue }
+      const actual = sym.isStatic === true
+      if (want.isStatic !== undefined && actual !== want.isStatic) {
+        problems.push(`expected ${want.symbol} isStatic ${want.isStatic}; got ${actual}`)
+      }
+    }
+    for (const want of exp.expectDocstring ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectDocstring: symbol ${want.symbol} not found`); continue }
+      const text = String(sym.docstring ?? "")
+      if (want.contains !== undefined && !text.includes(want.contains)) {
+        problems.push(`expected ${want.symbol} docstring to contain ${JSON.stringify(want.contains)}; got ${JSON.stringify(text.slice(0, 200))}`)
+      }
+      if (want.minLength !== undefined && text.length < want.minLength) {
+        problems.push(`expected ${want.symbol} docstring length >= ${want.minLength}; got ${text.length}`)
+      }
+    }
+    // The negative half of the docstring channel, and the class that made it
+    // necessary: the first powershell docstring scanner skipped blank lines while
+    // walking upward, so a FILE BANNER became the documentation of whichever
+    // declaration came first. `forbidDocstring` is the only way to say "this
+    // symbol must have NO documentation", which an expect-channel cannot.
+    for (const want of exp.forbidDocstring ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) continue
+      const text = String(sym.docstring ?? "")
+      if (text.length === 0) continue
+      if (want.contains === undefined) {
+        problems.push(`forbidden docstring present on ${want.symbol}: ${JSON.stringify(text.slice(0, 200))}`)
+      } else if (text.includes(want.contains)) {
+        problems.push(`forbidden docstring content on ${want.symbol}: contains ${JSON.stringify(want.contains)}`)
+      }
+    }
+    // The fourth additive payload channel (M60, powershell): cyclomatic
+    // complexity. `isBranch` decides it, and a node type the predicate never
+    // names is uncounted by construction — powershell's `switch_clause` was, so
+    // a ten-case switch measured 1. `metadata.complexity` (symbols + relationships)
+    // is NOT this and must not be substituted for it: that is a count of emitted
+    // facts and it grows with the analyzer's own output, so pinning it would
+    // pin the regression in place.
+    for (const want of exp.expectComplexity ?? []) {
+      if (want.symbol) {
+        const sym = symbols.find((s: any) => s.name === want.symbol && (want.ownerName === undefined || s.ownerName === want.ownerName))
+        if (!sym) { problems.push(`expectComplexity: symbol ${want.symbol} not found`); continue }
+        const cx = (sym as any).complexity
+        if (want.equals !== undefined && cx !== want.equals) {
+          problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
+        }
+        if (want.min !== undefined && !(typeof cx === "number" && cx >= want.min)) {
+          problems.push(`expected ${want.symbol} complexity >= ${want.min}; got ${cx}`)
+        }
+        continue
+      }
+      const fileCx = (result as any)?.metadata?.cyclomaticComplexity
+      if (want.fileEquals !== undefined && fileCx !== want.fileEquals) {
+        problems.push(`expected file cyclomaticComplexity ${want.fileEquals}; got ${fileCx} (a switch case is a decision point: \`switch_clause\` was never named, so a ten-case switch measured 1)`)
+      }
+      if (want.fileMin !== undefined && !(typeof fileCx === "number" && fileCx >= want.fileMin)) {
+        problems.push(`expected file cyclomaticComplexity >= ${want.fileMin}; got ${fileCx}`)
+      }
+    }
     for (const want of exp.expectVisibility ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       if (!sym) { problems.push(`expectVisibility: symbol ${want.symbol} not found`); continue }
@@ -518,10 +651,16 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       }
     }
     for (const want of exp.expectExports ?? []) {
-      // Each constraint field must match >=1 export (unspecified fields wildcards).
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => e[k] === v),
-      )
+      // `matchConstraints`, not a hand-rolled every-field-equals loop. The
+      // hand-rolled version did not skip the documentation fields, so an export
+      // pin carrying a `comment` compared `e["comment"] === "…"` against an
+      // export object that has no such field and could NEVER match — a
+      // documentation string silently became a failing assertion. Every other
+      // channel in this file already routed through `matchConstraints`, which
+      // skips `comment`/`note` and understands `line_number: null`; the export
+      // channels were the two that did not. Found by the powershell lane's first
+      // module-surface fixture.
+      const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
     for (const want of exp.expectExportRanges ?? []) {
@@ -751,9 +890,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidExports ?? []) {
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => e[k] === v),
-      )
+      const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
     // M49 JVM-closure exports-family invariant — runs on EVERY fixture, every
