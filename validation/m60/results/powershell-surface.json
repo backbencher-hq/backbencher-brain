@@ -1,8 +1,8 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-27T16:55:27.597Z",
-  "commit": "777087d02c702ca6c71d29457244359722e3145c",
+  "at": "2026-09-27T20:59:09.655Z",
+  "commit": "ccedb7a667150017bc57433ee134ee84f13345b3",
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -15,18 +15,18 @@
       "digest": "ef448ff5",
       "damage": {
         "damaged": 14,
-        "errNodes": 112,
-        "missing": 15
+        "errNodes": 106,
+        "missing": 12
       },
       "symbols": 2588,
-      "relationships": 9595,
+      "relationships": 9613,
       "kinds": {
         "contains": 2532,
         "references": 24,
-        "calls": 3163,
+        "calls": 3164,
         "uses": 3796,
         "instantiates": 60,
-        "exports": 20
+        "exports": 37
       },
       "absent": [
         "extends",
@@ -35,8 +35,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 9595,
-        "total": 9595
+        "withLine": 9613,
+        "total": 9613
       },
       "unknownTargets": {
         "count": 0,
@@ -51,9 +51,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 10154,
-        "perFileMs": 207.226,
-        "factsPerMs": 1.2
+        "wallMs": 10395,
+        "perFileMs": 212.14,
+        "factsPerMs": 1.174
       }
     },
     {
@@ -61,19 +61,19 @@
       "files": 24,
       "digest": "4fb726b4",
       "damage": {
-        "damaged": 15,
-        "errNodes": 35,
-        "missing": 2
+        "damaged": 11,
+        "errNodes": 28,
+        "missing": 1
       },
       "symbols": 573,
-      "relationships": 2156,
+      "relationships": 2163,
       "kinds": {
         "references": 52,
         "contains": 549,
-        "calls": 615,
+        "calls": 616,
         "uses": 877,
         "instantiates": 61,
-        "exports": 2
+        "exports": 8
       },
       "absent": [
         "extends",
@@ -82,8 +82,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 2156,
-        "total": 2156
+        "withLine": 2163,
+        "total": 2163
       },
       "unknownTargets": {
         "count": 0,
@@ -98,17 +98,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 1580,
-        "perFileMs": 65.852,
-        "factsPerMs": 1.727
+        "wallMs": 2661,
+        "perFileMs": 110.857,
+        "factsPerMs": 1.028
       }
     }
   ],
   "summary": {
     "files": 73,
     "symbols": 3161,
-    "relationships": 11751,
-    "withLine": 11751,
+    "relationships": 11776,
+    "withLine": 11776,
     "absentKinds": [
       "extends",
       "implements",
