@@ -280,10 +280,38 @@ function siteNodeType(src: string, line: number, callers: Map<string, Array<{ me
     const m = lines[i].match(/case\s+"([a-z_]+)"/)
     if (m && d === here) return [m[1]]
   }
-  // 2. otherwise the literal sits in a helper: type it by that helper's
-  //    callers. Checked BEFORE the depth walk below on purpose — the helper's
-  //    own `private foo(` line is one depth SHALLOWER than its body, so a walk
-  //    that breaks on `d < here` stops there and never reaches the callers.
+  // 2. Still no inline dispatcher: the code may have answered the question
+  //    ITSELF, by narrowing a variable's type immediately above the literal.
+  //    `const f = ...; if (!f || f.type !== "field") continue; const key =
+  //    f.childForFieldName("name")` states plainly which node the field is asked
+  //    of, and the rule this gate enforces is only that the answer be
+  //    recoverable. LUA-09's export-shape fix failed here for exactly this: the
+  //    site is a helper called from `case "return_statement"`, so the caller path
+  //    (3, below) returned "return_statement" and the leg called the field
+  //    unreachable there — a false positive against code that was correct and had
+  //    been checked against the grammar by hand.
+  //
+  //    This RECOGNISES evidence; it does not excuse the site. The guard must be a
+  //    type comparison on the SAME variable the literal is asked of, found above
+  //    the literal and no shallower, so a planted regression that changes a
+  //    `case` target, or asks a field of an un-narrowed variable, is still
+  //    attributed the old way and still fails. It is consulted AFTER the `case`
+  //    walk (1) and BEFORE the caller fallback (3), because a local guard names
+  //    the node precisely while a caller's dispatch context only names the node
+  //    the helper was ENTERED with — a different thing whenever the helper
+  //    re-narrows, which is precisely the LUA-09 shape.
+  const literalSrc = lines[line - 1] ?? ""
+  if (methodIdx >= 0) {
+    for (let i = line - 2; i >= 0; i--) {
+      if (i < methodIdx) break
+      const d = depthAt(i)
+      if (d < here) break
+      const g = lines[i].match(/(\w+)\.type\s*[!=]==?\s*"([a-z_]+)"/)
+      if (g && new RegExp(`\\b${g[1]}\\.childForFieldName\\b`).test(literalSrc)) return [g[2]]
+    }
+  }
+  // 3. otherwise the literal sits in a helper: type it by that helper's
+  //    callers. Checked AFTER the guard above on purpose — see the note there.
   if (method) {
     const sites = callers.get(method)
     if (sites) return [...new Set(sites.map((s) => s.method))]

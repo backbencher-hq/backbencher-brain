@@ -532,6 +532,51 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     if (target.type === "identifier") {
       ctx.exports.push({ name: target.text, isDefault: true, range: this.nodeToRange(node), metadata: { luaSpecific: true } })
+      return
+    }
+    // M60 LUA-09: `return { a = 1, b = 2 }` published NOTHING. Only `return
+    // <ident>` was ever handled, and the returned table literal is the dominant
+    // way a Lua module publishes its surface — 366 of Kong's 1,309 files and 33
+    // of Luvit's 199, carrying 1,377 nameable exports, by the grammar-based
+    // census in script/m60/lua-export-census.ts. Not estimated from a guess at
+    // prevalence: counted off the wired grammar, because the census also
+    // settled which shapes must stay silent (see below).
+    //
+    // The rule is deliberately narrow, and each exclusion is a measurement or a
+    // correctness constraint, not caution for its own sake:
+    //
+    //   - A member with NO `name` field is a POSITIONAL entry (`return { 1, 2 }`)
+    //     and publishes nothing. Publishing it would mean inventing a name that
+    //     no source text supports. The existing `tableFieldNames` helper cannot
+    //     be reused here: it falls back to `namedChild(0)`, which for a
+    //     positional entry is the VALUE, so it would yield the names "1" and
+    //     "2". Only the `name` FIELD is read.
+    //   - A `["k"] = 1` member puts a STRING node in the `name` field, not an
+    //     identifier (measured), with the unquoted text under `content`. An
+    //     identifier-only match would silently drop every string key.
+    //   - A nested `return { sub = { x = 1 } }` publishes `sub` only. `x` is a
+    //     member of sub, not of the module; flattening it would invent a
+    //     top-level export.
+    //   - `return require("x")`, `return "s"` and `return setmetatable(M, mt)`
+    //     stay silent. Naming a re-export would mean inventing an export name
+    //     from a module path or a literal, which is a different relationship
+    //     entirely. Pinned as silent in the gate so a future change cannot start
+    //     inventing them unnoticed.
+    if (target.type === "table_constructor") {
+      for (let i = 0; i < target.namedChildCount; i++) {
+        const f = target.namedChild(i)
+        if (!f || f.type !== "field") continue
+        const key = f.childForFieldName("name")
+        if (!key) continue
+        let name: string | undefined
+        if (key.type === "identifier") name = key.text
+        else if (key.type === "string") name = this.stringValue(key)
+        if (!name) continue
+        // M59: the range is the NAME-BEARING node's own, not the `return`
+        // statement's. On a multi-line literal those differ, and anchoring on
+        // the return would collapse every member onto the `return` line.
+        ctx.exports.push({ name, isDefault: false, range: this.nodeToRange(key), metadata: { luaSpecific: true } })
+      }
     }
   }
 

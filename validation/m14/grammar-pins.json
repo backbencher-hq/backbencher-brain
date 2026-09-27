@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-26T19:01:19.925Z",
-  "commit": "7ad740426e585b211d21f20ba445d1c835f4f5e3",
+  "generatedAt": "2026-09-27T17:43:03.226Z",
+  "commit": "df610c61b6ae821e365833526f10a76a3fe3f08e",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -458,6 +458,108 @@
         "nodeTypesJson": null,
         "note": "no vendored source"
       }
+    },
+    "perl": {
+      "wired": {
+        "file": "wasm/tree-sitter-perl.wasm",
+        "sha256": "ac0248edc4205816163f66d2cc2c99fa85a199eaf6535b2be590741ed293a169",
+        "bytes": 4757625
+      },
+      "surface": {
+        "ids": 595,
+        "uniqueNames": 537,
+        "namedIds": 168,
+        "namedUnique": 140,
+        "anonIds": 427,
+        "anonUnique": 404,
+        "fieldCount": 44,
+        "idOrderDigest": "76600df70b3c1432a2b0c206cfb0df0518f5a4fd040b54d6c5e415784a63bcf2",
+        "typeSetDigest": "bcaaca35cc711c9a5b997d341f7317d224c93b7f8de1b647dec6c1c253ae666a",
+        "fieldSetDigest": "d0e6aa8fb242dcb1e0189a566aa79027abc716277a04a6f2e6f611fc65db06ee"
+      },
+      "copies": [],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-perl",
+        "files": {
+          "grammar.js": {
+            "sha256": "bad8c1957ee1f74b4162315eb332cc8b28ed5e9323ffaed6dd7e1364e8edabe8",
+            "bytes": 66166
+          },
+          "LICENSE": {
+            "sha256": "68a9a526ae357ed5a2f8ca5dabb14131b283554b69639bb04816088d4b1f2fa0",
+            "bytes": 1071
+          },
+          "package.json": {
+            "sha256": "288f4de7a98d8365be67ee1ec45ec152aeee21e2a28e41c43e8a0f4454119be3",
+            "bytes": 1067
+          },
+          "README.md": {
+            "sha256": "ceab5b3b50d2eef4570a75763bda1a153c7832b3a8e6de90fab222871abfc0df",
+            "bytes": 2635
+          },
+          "src/bsearch.h": {
+            "sha256": "6f953a91955c72b1b6b063c34fa877c8b36f5b43c320083ad7361256e67b9484",
+            "bytes": 3794
+          },
+          "src/grammar.json": {
+            "sha256": "0e01f3f43a213eadb4a4d11597de505e42ff7fadc043522262310020c4a5a1ef",
+            "bytes": 246922
+          },
+          "src/node-types.json": {
+            "sha256": "e9f82290ed0bd12dcaba2f6e1579973ca5be14aed7235ca58e5f33c5cc28d5ff",
+            "bytes": 514457
+          },
+          "src/scanner.c": {
+            "sha256": "117d53b68474bf11e0b207d3e63e359b05be6f98d91d2c31b6abcec3a960eb1b",
+            "bytes": 63081
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "src/tsp_intuit_keywords.h": {
+            "sha256": "e65b7139547077b59ad62cb109efcf73d420311706c9dc7b6f9831cb246f2c61",
+            "bytes": 40902
+          },
+          "src/tsp_intuit_more.h": {
+            "sha256": "45ada959185bb4b15f4fe702d52f0aeb5cd992b64cb129248aa843644e6026a2",
+            "bytes": 8073
+          },
+          "src/tsp_intuit_readline.h": {
+            "sha256": "9504b2ef7cce98bd3b22e2226ca05c1b63fd17b56ed3375bf72c4e429af42180",
+            "bytes": 8942
+          },
+          "src/tsp_keywords.h": {
+            "sha256": "2c86ede8eedbaf7854c2f9eef4b835ae55e563d7a85c05e47d8bfee502e5a78f",
+            "bytes": 1710
+          },
+          "src/tsp_unicode.h": {
+            "sha256": "1c81d6e72511578b6ebcafc3e9002427207f5167a7d916b92e34b5f1c36fa01c",
+            "bytes": 24320
+          }
+        },
+        "digest": "48b94034d72c3adc3fe13a3bf4a7bf779b87351f9d5481bab6026a1c207a5147",
+        "fileCount": 16
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-perl/src/node-types.json",
+        "declaredNamedTypes": 144,
+        "declaredSupertypes": 4,
+        "wasmNamedUnique": 140,
+        "wasmUniqueNames": 537,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
     }
   },
   "decisions": {
@@ -652,6 +754,54 @@
         "reviews/m60-clean-grammar-127-adjudication.md"
       ],
       "notVendored": null
+    },
+    "perl": {
+      "provenance": {
+        "kind": "unnamed-build-sha-only",
+        "chain": "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files — the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-perl",
+        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
+      },
+      "decision": "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 — the newest release at the time this lane was first measured — proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
+      "alternatives": [
+        {
+          "option": "keep the wired 1.2.1 build (sha ac0248ed)",
+          "measured": "identical trees on 275/275 mojo files vs a fresh 1.2.1 build; parse damage 4/275 files, 5 error nodes; the analyzer's fieldNodes() read recovers every payload the multi-child field hides, and 5,847 of 5,875 corpus files emit identically under 1.2.1 and 2.0.0",
+          "artifact": "fixtures/perl/out/grammar-ab.json"
+        },
+        {
+          "option": "upstream 2.0.0 (npm source, freshly built)",
+          "measured": "unreachable payload sites 39,897 -> 1,419 and affected files 3,049 -> 564 of 5,875; 36 of the 41 affected field pairs eliminated; parse damage unchanged at 4/275; but 123 of 275 mojo trees differ, and a parenthesised `use Module (...)` argument list carries no field at all in 2.0.0, so a field-driven import read sees nothing until the analyzer descends through the wrapper",
+          "artifact": "fixtures/perl/out/grammar-ab.json"
+        }
+      ],
+      "evidence": [
+        "fixtures/perl/out/grammar-ab.json",
+        "fixtures/perl/out/grammar-pin-survey.json",
+        "fixtures/perl/out/forward-compat-detail.json",
+        "reviews/perl/master-review.md"
+      ],
+      "notVendored": [
+        {
+          "path": "binding.gyp, bindings/",
+          "why": "native node bindings; not parser source"
+        },
+        {
+          "path": "queries/",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js; 29 MB; `tree-sitter generate` rebuilds it"
+        },
+        {
+          "path": "tree-sitter-perl.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
     }
   }
 }

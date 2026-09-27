@@ -395,6 +395,42 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     if (first?.type === "identifier") {
       w.edges.push({ label: "exports", from: "global", target: first.text, line: first.startPosition.row + 1, rule: "return-id", rel })
     }
+    // M60 LUA-09: a returned table literal names its own members, and the
+    // analyzer now publishes them. This branch was added at the same time, and
+    // it is a MIRROR — which is the whole risk of this instrument. If the two
+    // sides are wrong together, the differential reports agreement. So the
+    // independent check on this rule is not the oracle at all: it is
+    // script/m60/lua-export-census.ts, which derives the same expectation from
+    // the grammar by a different walk and compares it to the analyzer over 1,508
+    // corpus files. The oracle's job is only to keep the PIPELINE-side truth
+    // complete so the LUA-14 gap is measured at its true size — it was
+    // understating it as 500 edges when the census derives 1,579.
+    //
+    // Only the `name` FIELD of a member is read. A positional entry has none,
+    // and publishing it would mean inventing a name, so the oracle refuses to
+    // derive one for the same reason the analyzer does.
+    else if (first?.type === "table_constructor") {
+      for (let i = 0; i < first.namedChildCount; i++) {
+        const f = first.namedChild(i)
+        if (!f || f.type !== "field") continue
+        const key = f.childForFieldName("name")
+        if (!key) continue
+        let name: string | undefined
+        if (key.type === "identifier") name = key.text
+        else if (key.type === "string") {
+          // The unquoted text lives in the `content` child; falling back to the
+          // raw text would publish `"k"` with its quotes.
+          let content: any = null
+          for (let j = 0; j < key.namedChildCount; j++) {
+            const c = key.namedChild(j)
+            if (c && c.type === "string_content") { content = c; break }
+          }
+          name = content ? content.text : key.text.replace(/^["']|["']$/g, "")
+        }
+        if (!name) continue
+        w.edges.push({ label: "exports", from: "global", target: name, line: key.startPosition.row + 1, rule: "return-table-member", rel })
+      }
+    }
   }
 
   // The scope a body belongs to is the name field's FULL TEXT, so a method

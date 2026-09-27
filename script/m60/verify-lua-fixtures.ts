@@ -53,6 +53,9 @@ async function main(): Promise<void> {
     const syms: any[] = actual.symbols ?? []
     const rels: any[] = actual.relationships ?? []
     const exportsOf: string[] = (actual.exports ?? []).map((e: any) => e.name)
+    // The export objects themselves, not just their names, so a declared line can
+    // be checked. An export name without a line is what LUA-01 was about.
+    const exportObjs: any[] = actual.exports ?? []
 
     for (const want of exp.expectSymbols ?? []) {
       checks++
@@ -91,6 +94,18 @@ async function main(): Promise<void> {
     for (const want of exp.expectExports ?? []) {
       checks++
       if (!exportsOf.includes(want.name)) failures.push(`expectExports: "${want.name}" is not published (got ${JSON.stringify(exportsOf)})`)
+      // M59 for exports: the line is the line of the member's OWN name-bearing
+      // node. A multi-line table literal puts its members on different lines, and
+      // anchoring on the `return` would collapse them all onto one. Declaring a
+      // line that nothing checked was its own silent gap — the export-shapes
+      // fixture shipped `line` on every row and this loop ignored it.
+      else if (want.line !== undefined) {
+        const e = exportObjs.find((x: any) => x.name === want.name)
+        const got = e?.range?.startLine
+        if (got !== want.line) {
+          failures.push(`expectExports: "${want.name}" is at L${got}, expected L${want.line}${e?.range ? "" : " (no range on the export)"}`)
+        }
+      }
     }
     for (const f of exp.forbidExports ?? []) {
       checks++
