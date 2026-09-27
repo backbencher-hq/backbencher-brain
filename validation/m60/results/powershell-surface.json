@@ -1,8 +1,8 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-27T16:02:14.681Z",
-  "commit": "2c5c01970e561bf5df9d59da263b4aebe5ca15a1",
+  "at": "2026-09-27T16:55:27.597Z",
+  "commit": "777087d02c702ca6c71d29457244359722e3145c",
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -51,9 +51,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 10339,
-        "perFileMs": 210.994,
-        "factsPerMs": 1.178
+        "wallMs": 10154,
+        "perFileMs": 207.226,
+        "factsPerMs": 1.2
       }
     },
     {
@@ -62,16 +62,16 @@
       "digest": "4fb726b4",
       "damage": {
         "damaged": 15,
-        "errNodes": 98,
-        "missing": 23
+        "errNodes": 35,
+        "missing": 2
       },
-      "symbols": 556,
-      "relationships": 2161,
+      "symbols": 573,
+      "relationships": 2156,
       "kinds": {
         "references": 52,
-        "calls": 634,
-        "contains": 532,
-        "uses": 880,
+        "contains": 549,
+        "calls": 615,
+        "uses": 877,
         "instantiates": 61,
         "exports": 2
       },
@@ -82,8 +82,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 2161,
-        "total": 2161
+        "withLine": 2156,
+        "total": 2156
       },
       "unknownTargets": {
         "count": 0,
@@ -98,17 +98,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 2149,
-        "perFileMs": 89.545,
-        "factsPerMs": 1.264
+        "wallMs": 1580,
+        "perFileMs": 65.852,
+        "factsPerMs": 1.727
       }
     }
   ],
   "summary": {
     "files": 73,
-    "symbols": 3144,
-    "relationships": 11756,
-    "withLine": 11756,
+    "symbols": 3161,
+    "relationships": 11751,
+    "withLine": 11751,
     "absentKinds": [
       "extends",
       "implements",
