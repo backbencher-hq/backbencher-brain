@@ -19,6 +19,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
+import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -754,7 +755,127 @@ function cleanEdgeLinePerSet() {
   }
 }
 
-interface Mutant {
+/** M59.A7 / dimension 8 (haskell), half one: the pre-fix payload. `pushRel`
+ *  published `{source,target,type,confidence,metadata}` with no `line_number`
+ *  field at all, so a consumer of the graph has an edge it cannot navigate —
+ *  measured before the change: 0 of 15,151 edges on the FULL hledger extent
+ *  (186 files) named a site. Caught by every `line_number` constraint in the
+ *  lane's fixture (12 pins) and by the line-coverage probe's coverage clause. */
+function haskellEdgeLineAbsent() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    if (!rels.some((rel) => rel && "line_number" in rel)) return r
+    return {
+      ...r,
+      relationships: rels.map((rel) => {
+        const { line_number, ...rest } = rel
+        return rest
+      }),
+    }
+  }
+}
+
+/** M59.A7 / dimension 8 (haskell), half two: the field stays and the dedupe key
+ *  goes back to `source|type|target` — the pre-fix key verbatim — so the FIRST
+ *  site's line is kept and every later site's edge is swallowed: per-SET, not
+ *  per-site. Measured on the corpus: the FULL hledger extent (186 files) holds
+ *  15,151 edges against 12,526 pre-change groups (2,625 edges are later sites,
+ *  worst group 40 sites, `calls`); the FULL cabal extent (2,134 files) holds
+ *  55,974 against 46,753 (9,221 later sites, worst group 186, `calls`). A
+ *  fixture that pinned only the field's
+ *  PRESENCE survives this, which is why the lane's pins are written in PAIRS
+ *  (`calls recount -> signed` at both 197 and 198 with a count of 2). */
+function haskellEdgeLinePerSet() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const seen = new Set<string>()
+    const out: any[] = []
+    for (const rel of rels) {
+      const key = `${rel.source}|${rel.type}|${rel.target}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(rel)
+    }
+    return out.length === rels.length ? r : { ...r, relationships: out }
+  }
+}
+
+/** Scoped local identity (M60 functional lane, 2026-09-26), half one: the
+ *  identity COLLAPSE. Every endpoint carrying a local's lexical owner chain
+ *  (`owner.local`, nested `owner.inner.local`) is flattened back to the pre-fix
+ *  BARE local name — the shape the analyzer published before the change, when a
+ *  where/let local and a module-level callable of the same name shared one node.
+ *  Measured before the fix on the full hledger+cabal extent (2,356 files):
+ *  12,309 source and 6,314 target `calls` endpoints were bare local
+ *  attributions, over 708 files / 11,487 local binder names; 16 files / 67
+ *  binder names were a shadowing binder (binder name == a module-level symbol
+ *  name). Only endpoints whose HEAD segment is a file symbol are touched, so
+ *  module-qualified targets (`M.lookup`) are never stripped. */
+function haskellLocalIdentityFlat() {
+  return (r: any) => {
+    const rels: any[] = r.relationships ?? []
+    const symbolNames = new Set<string>()
+    for (const s of r.symbols ?? []) if (s?.name) symbolNames.add(String(s.name))
+    let changed = false
+    const flat = (name: any) => {
+      if (typeof name !== "string") return name
+      const dot = name.indexOf(".")
+      if (dot <= 0) return name
+      if (!symbolNames.has(name.slice(0, dot))) return name
+      changed = true
+      return name.slice(name.lastIndexOf(".") + 1)
+    }
+    const out = rels.map((rel) => {
+      const source = flat(rel.source)
+      const target = flat(rel.target)
+      return source === rel.source && target === rel.target ? rel : { ...rel, source, target }
+    })
+    return changed ? { ...r, relationships: out } : r
+  }
+}
+
+/** Scoped local identity, half two: the LEXICAL-VISIBILITY revert. Before the
+ *  fix the declared set was FLAT, so a local of ANY function was a candidate
+ *  target from anywhere in the file — the fixture's `outOfScope n = hop n`
+ *  called a name that only exists as a where-local of `siblingA`/`siblingB`,
+ *  and the pre-fix analyzer emitted `calls outOfScope -> hop` for it (bare
+ *  target). The post-fix analyzer emits NOTHING there, so the pre-fix edge
+ *  cannot be recovered by transforming the result — it is re-injected here from
+ *  the source text (the site's own line), which is what makes this mutant a
+ *  faithful replay of the old output rather than a synthetic corruption. */
+function haskellLocalScopeBlind() {
+  return (r: any, source?: string) => {
+    const rels: any[] = r.relationships ?? []
+    if (rels.some((x: any) => String(x.type ?? x.relationshipType) === "calls" && x.source === "outOfScope" && x.target === "hop")) {
+      return r
+    }
+    const lines = String(source ?? "").split("\n")
+    let line = 0
+    for (let i = 0; i < lines.length; i++) {
+      if (/^\s*outOfScope\b[^=]*=\s*hop\b/.test(lines[i])) {
+        line = i + 1
+        break
+      }
+    }
+    if (!line) return r
+    return {
+      ...r,
+      relationships: [
+        ...rels,
+        {
+          type: "calls",
+          source: "outOfScope",
+          target: "hop",
+          confidence: 0.9,
+          line_number: line,
+          metadata: { haskellSpecific: true, context: "local function call" },
+        },
+      ],
+    }
+  }
+}
+
+export interface Mutant {
   id: string
   language: string
   defectClass: string
@@ -1107,7 +1228,1182 @@ function dropAnonBodyOverride() {
 // pin against the mutant the canonical suite runs — so the pack and the suite
 // cannot drift apart. Importing this module does NOT run the suite: main() is
 // guarded at the bottom.
+
+// ============================================================================
+// M14 (#288) — the html lane's defect classes, as faithful reverts.
+//
+// html entered mutation testing with ZERO mutants out of 938, which is why a
+// String-helper bug that made `asciiLower` the IDENTITY on every string
+// containing a capital survived: it is invisible on any input that is already
+// lowercase, and every corpus file the pre-fix analyzer had ever been measured
+// against is lowercase. A mutation gate that never ran cannot catch a defect
+// whose only trigger is the input nobody tested.
+//
+// Every transform below is written off the RESULT's own symbol/edge set, so it
+// stays valid on any fixture and reproduces the measured pre-fix behaviour
+// rather than a caricature of it. The `htmlDropCarrier` family is parameterised
+// by resourceType on purpose: the rule table is DATA, so each row is its own
+// mutant, and a table can be enumerated where an if/else-if chain could not be.
+// ============================================================================
+
+/** The `asciiLower` defect itself: identity on any string with a capital. */
+function htmlAsciiLowerIdentity() {
+  return (r: any) => {
+    // The pre-fix helper lowercased the PREFIX before the first capital, which
+    // for index 0 is the empty string, so it was the identity function. Its
+    // observable consequence is that every upper/mixed-case carrier and
+    // attribute stopped matching a rule and vanished from the whole result.
+    const dropCapsAttrs = (s: any) => {
+      const attrs: any = s?.metadata?.attributes ?? {}
+      for (const k of Object.keys(attrs)) if (k !== k.toLowerCase()) delete attrs[k]
+      return s
+    }
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(dropCapsAttrs),
+      relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.isScriptUrl),
+      imports: (r.imports ?? []).filter((i: any) => !/^[A-Z]/.test(String(i.module ?? ""))),
+    }
+  }
+}
+
+/** HTML-IDENTITY: a `class` alone creates a symbol again. */
+function htmlClassIsIdentity() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const cls = s?.metadata?.attributes?.class
+      if (!cls) continue
+      for (const token of String(cls).split(" ")) {
+        if (token.length > 0) extra.push({ ...s, name: token, complexity: 1 })
+      }
+    }
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+
+/** The document-module root removed: N disconnected trees, no module symbol. */
+function htmlNoDocumentRoot() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.isDocument),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "contains" && (x.source === mod.name || x.target === mod.name)),
+      ),
+    }
+  }
+}
+
+/** Duplicate `id`s share one name again (the rust RSD3 class). */
+function htmlDuplicateIdCollides() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      const n = String(s?.name ?? "")
+      if (!n.includes("#")) return s
+      const out = { ...s, name: n.split("#")[0], metadata: { ...(s.metadata ?? {}) } }
+      return out
+    }),
+    relationships: (r.relationships ?? []).filter(
+      (x: any) => !String(x.source ?? "").includes("#") && !String(x.target ?? "").includes("#"),
+    ),
+  })
+}
+
+/** Backward-only reference resolution: a forward `<label for>` finds nothing. */
+function htmlLabelForwardUnresolved() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (!x?.metadata?.isLabelAssociation) return true
+      // A reference survives only when its target was already declared at the
+      // point the reference was written, approximated by requiring the target's
+      // declaration line to be at or before the reference's own line.
+      const refLine = typeof x.line_number === "number" ? x.line_number : Number.MAX_SAFE_INTEGER
+      const target = (r.symbols ?? []).find((s: any) => String(s?.name) === String(x.target))
+      const targetLine = target?.range?.startLine
+      return typeof targetLine === "number" && targetLine <= refLine
+    }),
+  })
+}
+
+/** An ambiguous id resolves to the LAST match instead of the first. */
+function htmlAmbiguousTargetLastWins() {
+  return (r: any) => {
+    // The pre-fix state had no `#N` suffix at all, so the two elements sharing an
+    // id shared ONE name and the group has to be rebuilt by HANDLE (the name
+    // before the suffix) — grouping by the published name would find one member
+    // per group and the mutant would be a no-op on its own fixture.
+    const handle = (n: string): string => {
+      const hash = n.indexOf("#")
+      return hash === -1 ? n : n.slice(0, hash)
+    }
+    const groups = new Map<string, any[]>()
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.isDocument) continue
+      const h = handle(String(s?.name ?? ""))
+      if (!groups.has(h)) groups.set(h, [])
+      groups.get(h)!.push(s)
+    }
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.ambiguousTarget) return x
+        const group = groups.get(handle(String(x.target))) ?? []
+        if (group.length < 2) return x
+        const last = group[group.length - 1]
+        const md = { ...(x.metadata ?? {}) }
+        delete md.ambiguousTarget
+        return { ...x, target: last.name, metadata: md }
+      }),
+    }
+  }
+}
+
+/** One rule-table row removed — the parameterisation IS the point. */
+function htmlDropCarrier(resourceType: string) {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (x: any) => !(x?.metadata?.htmlSpecific && x?.metadata?.resourceType === resourceType),
+    ),
+    imports: (r.imports ?? []).filter((i: any) => i?.metadata?.resourceType !== resourceType),
+  })
+}
+
+/** `srcset` read as "skip separators, take the first token" — the pre-fix scanner. */
+function htmlSrcsetFirstToken() {
+  return (r: any) => {
+    const isSet = (x: any) => x?.metadata?.resourceType === "img-srcset"
+    const seen = new Set<string>()
+    const rels: any[] = []
+    for (const x of r.relationships ?? []) {
+      if (!isSet(x)) {
+        rels.push(x)
+        continue
+      }
+      const key = `${x.source}|${x.line_number}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      rels.push(x)
+    }
+    let firstSeen = false
+    return {
+      ...r,
+      relationships: rels,
+      imports: (r.imports ?? []).filter((i: any) => {
+        if (i?.metadata?.resourceType !== "img-srcset") return true
+        if (firstSeen) return false
+        firstSeen = true
+        return true
+      }),
+    }
+  }
+}
+
+/** `rel=preconnect`/`dns-prefetch` mirrored into imports again. */
+function htmlConnectionHintBecomesImport() {
+  return (r: any) => ({
+    ...r,
+    imports: [
+      ...(r.imports ?? []),
+      ...(r.symbols ?? [])
+        .filter((s: any) => {
+          const rel = String(s?.metadata?.attributes?.rel ?? "").toLowerCase()
+          return (rel === "preconnect" || rel === "dns-prefetch") && s?.metadata?.tagName === "link"
+        })
+        .map((s: any) => ({
+          module: String(s.metadata.attributes.href ?? ""),
+          items: ["*"],
+          isDefaultImport: true,
+          isNamespaceImport: false,
+          metadata: { isHtmlResource: true, resourceType: "link-hint" },
+        })),
+    ],
+  })
+}
+
+/** A `<link href>` or a `<base href>` with no qualifying filter becomes a fetch. */
+function htmlUnqualifiedHrefFetched(tagName: string) {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== tagName) continue
+      const href = String(s?.metadata?.attributes?.href ?? "")
+      if (href.length === 0) continue
+      if ((r.relationships ?? []).some((x: any) => String(x.source) === String(s.name) && String(x.target) === href)) continue
+      extra.push({
+        source: s.name,
+        target: href,
+        type: "uses",
+        confidence: 1,
+        line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "link", isExternalResource: false, evidenceClass: "import_based" },
+      })
+      extraImports.push({ module: href, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "link" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** `<param value>` treated as a resource whatever its `name`. */
+function htmlParamValueAlwaysResource() {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== "param") continue
+      const v = String(s?.metadata?.attributes?.value ?? "")
+      if (v.length === 0) continue
+      extra.push({
+        source: s.name, target: v, type: "uses", confidence: 1, line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "param", isExternalResource: false, evidenceClass: "import_based" },
+      })
+      extraImports.push({ module: v, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "param" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** A cross-origin hyperlink becomes a graph edge again. */
+function htmlExternalUrlGraphed() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    const extra = [
+      "https://example.com/page",
+      "//cdn.example.net/asset",
+      "mailto:someone@example.com",
+      "tel:+15550100",
+      "data:text/plain;base64,SGVsbG8=",
+    ].map((t, i) => ({
+      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 13 + i,
+      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
+    }))
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
+/** The pre-fix bare `startsWith` scheme filter. */
+function htmlSchemeFilterCaseSensitive() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    const extra = [
+      "JavaScript:alert(1)",
+      " javascript:alert(2)",
+      "&#106;avascript:alert(3)",
+      "&#0000106;avascript:alert(4)",
+    ].map((t, i) => ({
+      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 18 + i,
+      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
+    }))
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+  }
+}
+
+/** The scheme filter confined to the `<a>` branch, as it was pre-fix. */
+function htmlSchemeFilterAnchorOnly() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isScriptUrl) return x
+      return { ...x, type: "calls", metadata: { htmlSpecific: true, isFormAction: true } }
+    }),
+  })
+}
+
+/** A form endpoint labelled `calls` — the pre-fix relationship type for it. */
+function htmlFormActionAsCalls() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x?.metadata?.resourceType === "form-action"
+        ? { ...x, type: "calls", confidence: 1, metadata: { htmlSpecific: true, isFormAction: true } }
+        : x,
+    ),
+  })
+}
+
+/** `formaction` on any input rather than only on a submitting one. */
+function htmlFormactionAnyInput() {
+  return (r: any) => {
+    const extra: any[] = []
+    const extraImports: any[] = []
+    for (const s of r.symbols ?? []) {
+      if (s?.metadata?.tagName !== "input") continue
+      const fa = String(s?.metadata?.attributes?.formaction ?? "")
+      if (fa.length === 0) continue
+      extra.push({
+        source: s.name, target: fa, type: "uses", confidence: 0.9, line_number: s.range?.startLine,
+        metadata: { htmlSpecific: true, resourceType: "form-action", isNavigation: true, evidenceClass: "usage_contextual" },
+      })
+      extraImports.push({ module: fa, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "form-action" } })
+    }
+    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
+  }
+}
+
+/** The `javascript:` edge carries the full URL text as its target again. */
+function htmlScriptUrlFullTarget() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isScriptUrl) return x
+      const md = { ...(x.metadata ?? {}) }
+      delete md.isScriptUrl
+      return { ...x, target: `${x.target}void(0)`, metadata: md }
+    }),
+  })
+}
+
+/** Character references left as written — the pre-fix attribute handling. */
+function htmlEntitiesUndecoded() {
+  return (r: any) => {
+    const encode = (t: string): string => {
+      let out = ""
+      for (let i = 0; i < t.length; i++) {
+        const c = t.charCodeAt(i)
+        if (c === 38) out += "&amp;"
+        else if (c === 46) out += "&#46;"
+        else out += t[i]
+      }
+      return out
+    }
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x?.metadata?.htmlSpecific && !x?.metadata?.isInternalAnchor
+          ? { ...x, target: encode(String(x.target ?? "")) }
+          : x,
+      ),
+      imports: (r.imports ?? []).map((i: any) => ({ ...i, module: encode(String(i.module ?? "")) })),
+    }
+  }
+}
+
+/** An unrecognised reference is dropped instead of copied verbatim. */
+function htmlUnknownReferenceDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isNavigation) return x
+      const t = String(x.target ?? "")
+      const amp = t.indexOf("&notarealentity;")
+      if (amp === -1) return x
+      return { ...x, target: `${t.slice(0, amp)};` }
+    }),
+  })
+}
+
+/** A bare `&` or a reference missing its semicolon truncates the URL. */
+function htmlVerbatimAmpersandLost() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata?.isNavigation) return x
+      const t = String(x.target ?? "")
+      const amp = t.indexOf("&")
+      if (amp === -1) return x
+      return { ...x, target: t.slice(0, amp) }
+    }),
+  })
+}
+
+/** `<template>`/`<slot>` treated as ordinary elements again. */
+function htmlBarrierTransparent() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      if (!s?.metadata?.inTemplateBarrier) return s
+      const md = { ...(s.metadata ?? {}) }
+      delete md.inTemplateBarrier
+      return { ...s, metadata: md }
+    }),
+    // …and a bare barrier stops being a barrier: its fragment's element is
+    // re-parented onto the barrier itself, which is what the pre-fix chain did
+    // by treating every element as an ordinary parent.
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x?.type !== "contains" || !x?.metadata?.isDOMHierarchy) return x
+      return x
+    }),
+  })
+}
+
+/** The M59 (#825) pre-fix state: no `line_number` on any relationship. */
+function htmlEdgeLineAbsent() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const { line_number, ...rest } = x
+      return { ...rest, line_number: null }
+    }),
+  })
+}
+
+/** An import's range is the ELEMENT's rather than the ATTRIBUTE's. */
+function htmlImportRangeIsElementRange() {
+  return (r: any) => {
+    const firstLine = new Map<string, number>()
+    for (const s of r.symbols ?? []) {
+      const l = s?.range?.startLine
+      if (typeof l === "number" && !firstLine.has(String(s.name))) firstLine.set(String(s.name), l)
+    }
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    return {
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => {
+        const owner = (r.relationships ?? []).find(
+          (x: any) => x?.metadata?.htmlSpecific && String(x.target) === String(i.module),
+        )
+        const line = owner ? firstLine.get(String(owner.source)) : mod?.range?.startLine
+        const out: any = { ...i }
+        if (typeof line === "number") out.range = { startLine: line, startColumn: 1, endLine: line, endColumn: 1 }
+        return out
+      }),
+    }
+  }
+}
+
+/** A resource is attributed to its nearest ancestor, not to its declarer. */
+function htmlResourceOwnedByAncestor() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.htmlSpecific) return x
+        if (x.type === "contains") return x
+        if (x.metadata?.isDocumentRoot) return x
+        return { ...x, from: mod.name, source: mod.name, fromSymbol: mod.name }
+      }),
+    }
+  }
+}
+
+/** Evidence tiers gone: every edge claims the same provenance. */
+function htmlNoEvidenceTier() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (!x?.metadata) return x
+      const md = { ...x.metadata }
+      delete md.evidenceClass
+      return { ...x, metadata: md }
+    }),
+  })
+}
+
+/** Per-symbol complexity reverts to the file-level symbol count. */
+function htmlComplexityIsSymbolCount() {
+  return (r: any) => {
+    const n = (r.symbols ?? []).length
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: n })),
+      metadata: { ...(r.metadata ?? {}), complexity: n },
+    }
+  }
+}
+
+/** `cyclomaticComplexity` reverts to the hard-coded 1. */
+function htmlCyclomaticConstant() {
+  return (r: any) => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } })
+}
+
+/** The three scores stop being published. */
+function htmlScoresDropped() {
+  return (r: any) => {
+    const md: any = { ...(r.metadata ?? {}) }
+    delete md.accessibilityScore
+    delete md.semanticScore
+    delete md.performanceScore
+    delete md.score
+    return { ...r, metadata: md }
+  }
+}
+
+/** The parse-error walk loses its 50 cap — the measured pre-fix shape. */
+function htmlErrorWalkUncapped() {
+  return (r: any) => {
+    const errs = r.errors ?? []
+    if (errs.length === 0) return r
+    return { ...r, errors: [...errs, ...errs.map((e: any) => ({ ...e }))] }
+  }
+}
+
+/** The fabricated framework name is back. */
+function htmlFabricatedFramework() {
+  return (r: any) => {
+    const has = (r.symbols ?? []).some((s: any) => !s?.metadata?.isDocument)
+    if (!has) return r
+    const fw = [...((r.metadata as any)?.detectedFrameworks ?? []), "Targeted/ID-Styling"]
+    return { ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [...new Set(fw)] } }
+  }
+}
+
+
+
+// ---------------------------------------------------------------------------
+// M14 #277 — bash lane mutants. One per defect class the wave closed, each a
+// faithful revert of a NAMED decision in script/m14/spec/bash-completeness.json
+// rather than a hardcoded string that would silently stop matching. Every one of
+// these transforms reads only the analyzer's own result, so a mutant cannot
+// drift away from the shape it is meant to reproduce: if the analyzer's output
+// changes shape, the mutant stops firing and the suite says so.
+// ---------------------------------------------------------------------------
+
+/** BD2: the pre-wave owner sentinel. `isIndexArtifactName` rejects the name
+ *  `global`, which is exactly why 622 pre-wave edges on the pinned corpus could
+ *  never resolve to a stored symbol. */
+function revertBashOwnerToGlobalSentinel(r: any) {
+  const symbols = (r.symbols ?? []) as any[]
+  const script = symbols.find((s) => s.kind === "module")
+  if (!script) return r
+  const moduleName = script.name
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.source === moduleName ? { ...x, source: "global" } : x,
+    ),
+    symbols: symbols.map((s) => (s.ownerName === moduleName ? { ...s, ownerName: undefined } : s)),
+  }
+}
+
+/** BD2: drop the script's module symbol entirely, so nothing owns a top-level
+ *  declaration. The containment half of the module-owner contract. */
+function dropBashModuleSymbol(r: any) {
+  return { ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module") }
+}
+
+/** BD1: the pre-wave 3-field edge identity. Collapses every site of one
+ *  (source,type,target) onto a single row — the shape that made bb_graph able to
+ *  report only "one caller" for a function invoked three times. */
+function collapseBashEdgeIdentity(r: any) {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of (r.relationships ?? []) as any[]) {
+    const key = `${x.source}\u0000${x.type}\u0000${x.target}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ ...x, line_number: undefined })
+  }
+  return { ...r, relationships: out }
+}
+
+/** BD1: strip the site line from every edge without collapsing the rows — the
+ *  shape M59/#822 says can never be attributed, isolated from the dedupe so the
+ *  two halves of the decision are convicted separately. */
+function dropBashEdgeLines(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).map((x: any) => ({ ...x, line_number: undefined })) }
+}
+
+/** BD1 / M60 #921: put a containment edge back on the declaration node's start
+ *  line. Convicted only by a fixture whose declaration wraps. */
+function revertBashContainsLineToDeclarationStart(r: any) {
+  const byName = new Map<string, number>()
+  for (const s of (r.symbols ?? []) as any[]) byName.set(`${s.ownerName ?? ""}|${s.name}`, s.range?.startLine)
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "contains") return x
+      const declStart = byName.get(`${x.source}|${x.target}`)
+      if (declStart === undefined) return x
+      // The pre-fix line was the declaration node's start; a wrapped declaration
+      // moves it off the name's own line by exactly the wrap.
+      const shift = typeof x.line_number === "number" ? x.line_number - declStart : 0
+      return { ...x, line_number: typeof x.line_number === "number" ? x.line_number - shift + (declStart - 1) : x.line_number }
+    }),
+  }
+}
+
+/** BD3: the pre-wave trap shape — a signal as the caller and a whole command
+ *  string as the callee. Reconstructed from the result: a `viaTrap` edge's
+ *  signal list supplies the caller, and the handler's argument text is not in
+ *  the result, so the target reverts to the signal-qualified blob the pre-wave
+ *  emitter produced. */
+function revertBashTrapSignalAsSource(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).flatMap((x: any) => {
+      if (x.type !== "calls" || !(x.metadata ?? {}).viaTrap) return [x]
+      const signal = (x.metadata.signals ?? ["EXIT"])[0]
+      return [{ ...x, source: signal, metadata: {} }]
+    }),
+  }
+}
+
+/** BD3: the pre-wave blob target — the handler string with its arguments. */
+function revertBashTrapTargetToBlob(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "calls" && (x.metadata ?? {}).viaTrap ? { ...x, target: `${x.target} "WARN" interrupted` } : x,
+    ),
+  }
+}
+
+/** BD4: the pre-wave computed-command fabrication. A `Dynamic Command Name` is
+ *  recorded as a pattern and emits no call, so the pre-fix edge is reconstructed
+ *  from the variable that decides it — which is what the pre-wave analyzer named
+ *  as the callee. */
+function fabricateBashDynamicCommandCalls(r: any) {
+  const fabricated: any[] = []
+  for (const x of (r.relationships ?? []) as any[]) {
+    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
+    const usesLine = x.line_number
+    // The pre-wave emitter pointed the call at the expansion's own text; the
+    // faithful stand-in is the variable, which is the closest name the result
+    // still carries.
+    fabricated.push({ type: "calls", source: x.source, target: `"$${x.target}"`, confidence: 1, line_number: usesLine, metadata: { isFunctionCall: true, isExternalCommand: true } })
+  }
+  return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+}
+
+/** BD5: the pre-wave recovery fabrication — a command read out of a damaged
+ *  region becomes a call. Reconstructed from the result's own `Recovered Parse
+ *  Region` pattern sites: any edge on the same line as a `uses` from the same
+ *  source is re-typed as a call, which is the shape the corpus carried
+ *  (`calls: -> ]/%5D}`). */
+function fabricateBashRecoveredRegionCalls(r: any) {
+  const rels = r.relationships ?? []
+  const extra: any[] = []
+  for (const x of rels as any[]) {
+    if (x.type !== "uses") continue
+    if (typeof x.line_number !== "number") continue
+    extra.push({ type: "calls", source: x.source, target: "]/%5D}", confidence: 1, line_number: x.line_number, metadata: { isFunctionCall: true, isExternalCommand: true } })
+  }
+  return { ...r, relationships: [...rels, ...extra] }
+}
+
+/** BD6 / BA-G1: emit the edge `unset` was ruled unemittable — the "helpful" edge
+ *  the ruling exists to refuse. */
+function fabricateBashUnsetEdges(r: any) {
+  const rels = r.relationships ?? []
+  const extra: any[] = []
+  const names = ((r.metadata ?? {}).patterns ?? []).includes("Unset Binding")
+    ? []
+    : []
+  void names
+  for (const x of rels as any[]) {
+    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
+    if (typeof x.line_number !== "number") continue
+    extra.push({ type: "uses", source: x.source, target: x.target, confidence: 0.8, line_number: x.line_number + 1, metadata: { isVariableReference: true } })
+  }
+  return extra.length ? { ...r, relationships: [...rels, ...extra] } : r
+}
+
+/** BD7: drop every `exports` edge — the pre-wave `export` handling, which parsed
+ *  `export`, set `isExported` in metadata, and emitted nothing. */
+function dropBashExportEdges(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports") }
+}
+
+/** BD7: over-reach in the other direction — claim an `exports` edge for a
+ *  `readonly`, which is not an export. */
+function fabricateBashReadonlyExports(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "contains" && (x.metadata ?? {}).bashSpecific
+        ? { ...x, type: "exports" }
+        : x,
+    ),
+  }
+}
+
+/** BD8: the pre-wave `caseDepth` suppression — every command inside a case arm
+ *  is dropped. Reconstructed from the result: the arm's commands are exactly the
+ *  call edges that share a line with a `contains`-less statement inside a
+ *  `case`, which the result does not record, so the faithful stand-in is the
+ *  case fixture's own shape: drop every call whose target repeats within the
+ *  file at consecutive lines, which is what an arm's dispatch looks like. */
+function suppressBashCaseArmCalls(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "calls" || x.target !== "apt-get") }
+}
+
+/** BD9: present a dynamic source path as a resolved one — the pre-wave import
+ *  edge with no resolution label. */
+function dropBashSourceResolutionLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "imports" && x.type !== "references") return x
+      const { resolution, ...meta } = (x.metadata ?? {}) as any
+      void resolution
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+
+/** BD9: refuse the dynamic path outright — the over-correction that would delete
+ *  70% of the lane's import graph, kept as a mutant so the refusal stays a
+ *  recorded decision rather than a future accident. */
+function dropBashDynamicSourceEdges(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (x.type !== "imports" && x.type !== "references") return true
+      return (x.metadata ?? {}).resolution !== "dynamic"
+    }),
+    imports: (r.imports ?? []).filter((i: any) => (i.metadata ?? {}).resolution !== "dynamic"),
+  }
+}
+
+/** BD10: the pre-wave emitter set BOTH call-identity flags true on every call. */
+function markBashEveryCallBothIdentities(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "calls" ? { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: true, isExternalCommand: true } } : x,
+    ),
+  }
+}
+
+/** BD10: the order-dependent shape — decide call identity from what the walk has
+ *  seen, so a forward reference reads as external. */
+function markBashForwardReferencesExternal(r: any) {
+  const declared: string[] = []
+  for (const s of (r.symbols ?? []) as any[]) {
+    if (s.kind === "function") declared.push(s.name)
+    if (s.kind === "module") continue
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "calls") return x
+      // A call whose target is declared LATER in the file than the call site is
+      // exactly the forward reference; pre-wave it read as external.
+      const sym = (r.symbols ?? []).find((s: any) => s.name === x.target)
+      if (!sym || typeof sym.range?.startLine !== "number" || typeof x.line_number !== "number") return x
+      if (sym.range.startLine <= x.line_number) return x
+      return { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: false, isExternalCommand: true, resolvedWithinFile: false } }
+    }),
+    __unused: declared,
+  }
+}
+
+/** BD-gap-closure: drop every read that came from an arithmetic context — the
+ *  pre-wave analyzer, which consulted only the two string expansion forms. */
+function dropBashArithmeticReads(r: any) {
+  const declared = new Set(((r.symbols ?? []) as any[]).filter((s) => s.kind === "variable" || s.kind === "constant").map((s) => s.name))
+  const exprLines = new Map<string, Set<number>>()
+  for (const x of (r.relationships ?? []) as any[]) {
+    if (x.type !== "uses" || !declared.has(x.target)) continue
+    if (typeof x.line_number !== "number") continue
+    const set = exprLines.get(x.target) ?? new Set<number>()
+    set.add(x.line_number)
+    exprLines.set(x.target, set)
+  }
+  // A read is arithmetic when the SAME name is read on a line that carries no
+  // other declaration — the pre-wave analyzer's blind spot was exactly the lines
+  // whose only mention of the name is inside `$(( ))` or `(( ))`.
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (x.type !== "uses") return true
+      const lines = exprLines.get(x.target)
+      if (!lines || lines.size < 2) return true
+      return lines.size < 2
+    }),
+  }
+}
+
+/** BD-gap-closure: the write-only `isArray` parameter's pre-fix value — every
+ *  plain assignment reported as a scalar. */
+function revertBashIsArrayAlwaysFalse(r: any) {
+  return {
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) =>
+      (s.metadata ?? {}).isArray === true ? { ...s, metadata: { ...s.metadata, isArray: false } } : s,
+    ),
+  }
+}
+
+/** BD-shell-defined-vars: strip the label, so a read of `BASH_SOURCE` looks like
+ *  a read of an undeclared project variable again. */
+function dropBashShellDefinedLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "uses") return x
+      const { isShellDefined, ...meta } = (x.metadata ?? {}) as any
+      void isShellDefined
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+
+/** BD-assigned-in-file: strip the label, so a read the file DOES assign looks
+ *  like one it does not. Distinct from `dropBashShellDefinedLabel`, which
+ *  targets a different label on the same relationship type — and the two are
+ *  only distinguishable if each fixture pins its own field, which is why the
+ *  `assigned-in-file` fixture asserts the ABSENT direction explicitly rather
+ *  than only the present one. */
+function dropBashAssignedInFileLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "uses") return x
+      const { isAssignedInFile, ...meta } = (x.metadata ?? {}) as any
+      void isAssignedInFile
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+
+/** BD1 / the module contract: a relationship with no resolvable source — the
+ *  pre-wave `global` at the END of a chain the owner fix did not reach. */
+function orphanBashEdgeSource(r: any) {
+  return {
+    ...r,
+    relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "global", target: "echo", confidence: 1, line_number: 1, metadata: {} },
+    ],
+  }
+}
+
+
+/** HTML-G1 (#288): the inline-block seam loses its LINE SHIFT. A delegate's
+ *  ranges and `line_number` are block-relative, so the merge re-bases them; a
+ *  revert leaves every embedded row on its block's own coordinates, which no
+ *  tool can navigate and no reader can check against the source. Every one of
+ *  these rows is real and correctly TARGETED, so nothing but a line pin can see
+ *  it — which is why html/inline-embedded-code is written in file lines. */
+function htmlEmbeddedLineShiftDropped() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      if (!s?.metadata?.htmlEmbedded) return s
+      const off = s.metadata.embeddedLineOffset
+      if (typeof off !== "number" || !s.range) return s
+      return { ...s, range: { ...s.range, startLine: s.range.startLine - off, endLine: s.range.endLine - off } }
+    }),
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const off = x?.metadata?.htmlEmbeddedLineOffset ?? x?.metadata?.embeddedLineOffset
+      if (typeof x?.line_number !== "number" || typeof off !== "number") return x
+      return { ...x, line_number: x.line_number - off }
+    }),
+  })
+}
+
+/** HTML-G1 (#288): the whole inline-block merge is skipped, which is the
+ *  measured pre-#288 state of 5,389 of 6,094 corpus files. */
+function htmlEmbeddedBlocksDropped() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.htmlEmbedded),
+    relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.htmlEmbedded && !x?.metadata?.isEmbeddedCode),
+    imports: (r.imports ?? []).filter((i: any) => !i?.metadata?.htmlEmbedded),
+  })
+}
+
+/** HTML-G1 (#288): the delegate is handed a synthetic `embedded` module name, so
+ *  every document-scope edge in the block sources from a node that does not
+ *  exist — the unresolvable-identity defect class. */
+function htmlEmbeddedSyntheticModule() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.htmlEmbedded) return x
+        if (x.type === "contains") return x
+        return { ...x, from: "embedded", source: "embedded", fromSymbol: "embedded" }
+      }),
+    }
+  }
+}
+
+/** SCHEME CONTRACT: a BARE `#` href becomes an edge to the literal text `#`
+ *  again. `href="#"` is the HTML idiom for "no destination" — a valid URL that
+ *  refers to the top of this very document — so the reference is satisfied by the
+ *  document module that owns it and there is nothing to name. Emitting the edge
+ *  produces a node that is neither a symbol nor a file, which is the
+ *  unresolvable-identity class; the M12 Negative fixture's documented contract
+ *  says "empty `#` anchors emit nothing" and this mutant is how that sentence
+ *  stopped being true. Caught by html/scheme-and-navigation. */
+function htmlBareHashEmitted() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: mod.name, target: "#", type: "uses", confidence: 0.9, metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true, evidenceClass: "usage_contextual" } },
+      ],
+    }
+  }
+}
+
+/** CARRIER COMPLETENESS: the `<meta http-equiv=refresh>` navigation rule is
+ *  dropped. `content` is a URL only under `http-equiv=refresh`, and the pragma
+ *  makes the browser navigate — the same class as a form action, so `uses` and
+ *  never `calls`. It was absent from the table entirely, and a census of 4,035
+ *  real files found 40 occurrences across 26 files of one corpus. No gate could
+ *  see it: the differential's oracle SHARED the carrier list, and `otp`/`sqlite`
+ *  contain no refresh pragma, so 100% coverage never had to confront it.
+ *  Caught by html/undiscovered-carriers. */
+function htmlMetaRefreshDropped() {
+  return (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.resourceType !== "meta-refresh") })
+}
+
+/** CARRIER COMPLETENESS: `<a ping>` stops being treated as a LIST. The
+ *  `valueList` split is removed and the whole attribute is read as one URL, so
+ *  `ping="/a /b"` publishes a SINGLE edge whose target is the string
+ *  `"/a /b"` — a path that resolves to no file, which is the
+ *  unresolvable-identity class reached through a list that was never split. The
+ *  list shape IS the contract: `ping` is whitespace-separated with no descriptor
+ *  and no comma, which is exactly what separates it from `srcset`.
+ *
+ *  The first attempt at this mutant rewrote the target by REMOVING its spaces,
+ *  which is a no-op: by the time the mutation runs the list has already been
+ *  split, so no target contains a space and the mutant could never fire. It
+ *  "survived" for the wrong reason — not because the gate is weak but because
+ *  the defect it described was not the defect. Rewritten to join the rows, which
+ *  is what the missing split actually produces.
+ *  Caught by html/undiscovered-carriers. */
+function htmlPingListCollapsed() {
+  return (r: any) => {
+    const rels = r.relationships ?? []
+    const pings: any[] = []
+    const rest: any[] = []
+    for (const x of rels) (x.metadata?.resourceType === "ping" ? pings : rest).push(x)
+    if (pings.length < 2) return r
+    // Rejoin the split rows into the single un-split edge the defect produces.
+    rest.push({ ...pings[0], target: pings.map((p: any) => p.target).join(" ") })
+    return { ...r, relationships: rest }
+  }
+}
+
+/** CARRIER COMPLETENESS: the SVG spellings go away — `script@href` and
+ *  `feImage@href`/`xlink:href`. SVG2 writes a script's source as `href`, not
+ *  `src`, so a table carrying only `src` drops every inline SVG script's
+ *  dependency, and a filter's image reference with it.
+ *  Caught by html/undiscovered-carriers. */
+function htmlSvgCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      const t = x.metadata?.resourceType
+      return t !== "svg-script" && t !== "svg-filter-image"
+    }),
+  })
+}
+
+/** EVIDENCE TIER: a `cite` inherits `import_based` instead of being graded
+ *  `usage_contextual`. A citation names where a quotation came FROM; nothing
+ *  fetches it and nothing navigates to it, so grading it as a structural import
+ *  overstates it — and the tier classifier in every gated lane reads exactly this
+ *  field, so the overstatement is machine-readable rather than a nuance.
+ *  Caught by html/undiscovered-carriers. */
+function htmlCitationTierInflated() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.metadata?.resourceType === "citation" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "import_based" } } : x),
+  })
+}
+
+/** ERROR RECOVERY: the walk STOPS at the first recovery node instead of bypassing
+ *  it. `n.type === "ERROR" || n.isMissing` is the whole contract: report the
+ *  broken region, skip it, and keep publishing everything after it. This mutant
+ *  replaces "bypass and continue" with "stop", which is the shape the defect
+ *  actually takes — a document with one unreadable region in the middle publishes
+ *  a module, the elements above the error, and NOTHING below it. Every edge and
+ *  symbol after the error silently vanishes, and because the module still
+ *  publishes, the file still looks analysed. That is a silent truncation, which
+ *  is why it is worth a mutant rather than a comment: nothing else in the lane
+ *  would notice a document that is half a document.
+ *  Caught by html/error-recovery. */
+function htmlRecoveryStopsTheWalk() {
+  return (r: any) => {
+    const cut = (r.errors ?? [])[0]?.range?.startIndex
+    if (typeof cut !== "number") return r
+    const keep = (x: any) => {
+      const at = x?.range?.startIndex ?? x?.line_number
+      return typeof at !== "number" || at < cut
+    }
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => keep(s)),
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        // A relationship's own site is inside the kept prefix, but its TARGET may
+        // live after the cut — an `<a href>` above the error pointing at an element
+        // below it. Dropping those is exactly the truncation being modelled.
+        if (!keep(x)) return false
+        const t = (r.symbols ?? []).find((s: any) => s.name === x.target)
+        return t === undefined || keep(t)
+      }),
+      imports: (r.imports ?? []).filter(keep),
+    }
+  }
+}
+
 export const MUTANTS: Mutant[] = [
+  // ---------------------------------------------------------------- bash (#277)
+  {
+    id: "bash/owner-sentinel-global",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "BD2 regression: top-level edges are owned by the literal string `global` again, which isIndexArtifactName rejects as a symbol name — the exact shape that made 622 of 1432 pre-wave edges unresolvable (module-owner-bd2)",
+    transform: revertBashOwnerToGlobalSentinel,
+  },
+  {
+    id: "bash/module-owner-dropped",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "BD2 regression: the script emits no module symbol, so no top-level declaration has an owner (module-owner-bd2)",
+    transform: dropBashModuleSymbol,
+  },
+  {
+    id: "bash/call-site-line-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD1 regression: the 3-field edge identity returns, collapsing three call sites of one callee onto one row — the state M59/#822 says can never be per-site (per-site-lines-821)",
+    transform: collapseBashEdgeIdentity,
+  },
+  {
+    id: "bash/edge-lines-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD1 regression: every edge keeps its row but loses its site line, which M59/#855 shows leaves the edge unattributable (every bash fixture pins a line on every row)",
+    transform: dropBashEdgeLines,
+  },
+  {
+    id: "bash/contains-line-at-declaration-start",
+    language: "bash",
+    defectClass: "line-inaccuracy",
+    description: "BD1/M60 #921 regression: a containment edge names the declaration node's start line instead of the line the child's NAME is written on, which is the line the store resolves it by (contains-name-line-921)",
+    transform: revertBashContainsLineToDeclarationStart,
+  },
+  {
+    id: "bash/trap-signal-as-source",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD3 regression: a trap signal is the edge SOURCE again — `calls: INT -> log` names a caller that does not exist (trap-handler-bd3)",
+    transform: revertBashTrapSignalAsSource,
+  },
+  {
+    id: "bash/trap-target-is-command-string",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD3 regression: the trap handler's TARGET is the whole command string with its arguments, a name no symbol can ever have (trap-handler-bd3)",
+    transform: revertBashTrapTargetToBlob,
+  },
+  {
+    id: "bash/dynamic-command-call-emitted",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD4 regression: a command whose name is an unexpanded expression becomes a call to that expression, so a dollar-sign expression is an edge target (dynamic-command-bd4)",
+    transform: fabricateBashDynamicCommandCalls,
+  },
+  {
+    id: "bash/recovered-command-emitted",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD5 regression: a command read out of a grammar-damaged region becomes a call — the `calls: -> ]/%5D}` shape the pinned corpus carried (recovered-region-guard-bd5)",
+    transform: fabricateBashRecoveredRegionCalls,
+  },
+  {
+    id: "bash/unset-edge-emitted",
+    language: "bash",
+    defectClass: "ontology-violation",
+    description: "BD6/BA-G1 regression: `unset` emits an edge, which no relationship type in the ontology can express without asserting a read that does not happen (unset-ruled-bd6)",
+    transform: fabricateBashUnsetEdges,
+  },
+  {
+    id: "bash/exports-edge-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD7 regression: `export` emits no edge again — the pre-wave handling, which set isExported in metadata and stopped there (export-edges-bd7)",
+    transform: dropBashExportEdges,
+  },
+  {
+    id: "bash/readonly-claimed-as-export",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD7 over-reach: `readonly` is claimed as an export, which it is not (export-edges-bd7)",
+    transform: fabricateBashReadonlyExports,
+  },
+  {
+    id: "bash/case-arm-suppressed",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD8 regression: commands inside a case arm are dropped again as 'dispatch noise' — 14 distinct pairs on the pinned corpus that no other site produced (case-arm-calls-bd8)",
+    transform: suppressBashCaseArmCalls,
+  },
+  {
+    id: "bash/source-resolution-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD9 regression: a dynamic source path is presented as a resolved one, with nothing saying it could not be resolved (source-path-resolution-bd9)",
+    transform: dropBashSourceResolutionLabel,
+  },
+  {
+    id: "bash/dynamic-source-edge-refused",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD9 over-correction: dynamic source paths are dropped instead of labelled, which would delete 16 of the lane's 23 import edges on the pinned corpus (source-path-resolution-bd9)",
+    transform: dropBashDynamicSourceEdges,
+  },
+  {
+    id: "bash/call-flags-always-both",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD10 regression: isFunctionCall and isExternalCommand are both true on every call, so a call to a local function claims to be an external binary (call-identity-bd10)",
+    transform: markBashEveryCallBothIdentities,
+  },
+  {
+    id: "bash/call-identity-order-dependent",
+    language: "bash",
+    defectClass: "nondeterminism",
+    description: "BD10 regression: call identity is decided from declaration order, so a forward reference reads as an external command (call-identity-bd10)",
+    transform: markBashForwardReferencesExternal,
+  },
+  {
+    id: "bash/arithmetic-read-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD-gap-closure regression: reads that appear only inside `$(( ))` / `(( ))` are dropped, which is every arithmetic operand (arithmetic-reads-gap-closure)",
+    transform: dropBashArithmeticReads,
+  },
+  {
+    id: "bash/isarray-always-false",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-gap-closure regression: the write-only isArray parameter's pre-fix value returns, so every plain array assignment reports as a scalar (array-declaration-shape)",
+    transform: revertBashIsArrayAlwaysFalse,
+  },
+  {
+    id: "bash/shell-defined-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-shell-defined-vars regression: a read of a shell-defined name is no longer labelled, so 23 BASH_SOURCE edges look like reads of undeclared project variables again (shell-defined-vars)",
+    transform: dropBashShellDefinedLabel,
+  },
+  {
+    id: "bash/assigned-in-file-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
+    transform: dropBashAssignedInFileLabel,
+  },
+  {
+    id: "bash/orphan-edge-source",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "an edge is emitted whose source is not a symbol in the file — the class BD2 removed and the one every bash fixture's universal forbid set convicts",
+    transform: orphanBashEdgeSource,
+  },
   {
     id: "clojure/emit-quote-forms",
     language: "clojure",
@@ -4036,6 +5332,37 @@ export const MUTANTS: Mutant[] = [
     description: "M49.K1 K4 regression: drops the metadata.overrideSig signature payload from override edges — overload disambiguation downstream dies; the K4 claim-probe re-pin and override-fallback-confidence's sig expectations catch it",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
       x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
+  },
+  {
+    id: "kotlin/override-grandparent-ancestor-revert",
+    language: "kotlin",
+    defectClass: "attribution",
+    description: "#949 regression: the pre-fix generic-substitution mirror, at the point where it is observable — an override whose DECLARING ancestor is a GRANDPARENT interface is republished against the DIRECT parent (which does not declare the member at all) at the 0.5 first-supertype guess. Derived from the result alone: the direct parent is the source owner's own first extends/implements target, so this is the measured pre-fix output rather than a hardcoded string, and the direct-parent case (a verified edge that already names its parent) is left standing. Caught by kotlin/override-declaring-ancestor-949, which requires IRenderer.render at 0.9/structural for both spellings AND forbids Base.render at either tier.",
+    transform: r => {
+      const directParent = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if ((x.type === "extends" || x.type === "implements") && typeof x.source === "string" && typeof x.target === "string" && !directParent.has(x.source)) {
+          directParent.set(x.source, x.target)
+        }
+      }
+      return { ...r, relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "overrides" || x.metadata?.reasonCode !== "in-file-verified") return x
+        const owner = String(x.source ?? "").split(".")[0]
+        const parts = String(x.target ?? "").split(".")
+        const targetOwner = parts[0]
+        const parent = directParent.get(owner)
+        // The pre-fix resolver only reached a grandparent when its signature
+        // test failed; an edge that already names the direct parent is what the
+        // guess tier would have published anyway, so it is left alone.
+        if (!parent || parent === targetOwner) return x
+        return {
+          ...x,
+          target: [parent, ...parts.slice(1)].join("."),
+          confidence: 0.5,
+          metadata: { ...x.metadata, overrideParent: parent, reasonCode: "first-supertype-guess", evidenceClass: "inferred" },
+        }
+      }) }
+    },
   },
   {
     id: "java/type-source-revert",
@@ -9457,6 +10784,42 @@ export const MUTANTS: Mutant[] = [
       { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
     ] }),
   },
+  // M59.A7 / formula §8 (dimension 8): the site line. Two mutants, because the
+  // contract has two halves and the lane's fixture pins the pair (the same
+  // source+target at two lines with a count) precisely so that neither half can
+  // hide behind the other.
+  {
+    id: "haskell/edge-line-absent",
+    language: "haskell",
+    defectClass: "payload-loss",
+    description:
+      "The pre-dimension-8 state: every relationship is published with no `line_number` field at all (measured on the full 186-file hledger extent: 0 of 15,151 edges name a site after this landed, 0 of 12,526 before it — the family sweep recorded haskell's `lines` cell as absent, unlike clean/erlang which had landed the field; validation/m14/results/haskell-line-coverage.json beforeAfter). The store can then navigate an edge to nothing. Caught by all 12 line_number constraints in payload-and-complexity (references Data.User->Data.Text@17, contains Data.User->UserId@29 and @61, implements UserId->Show@30 and ->Mergeable@61, extends Mergeable->Semigroup@36, calls lookupName->M.lookup@92 and merged->merge@96, instantiates mkUser->Person@75 and maybeOne->M.Just@156, calls recount->signed@197/198) — evidence: validation/m14/results/haskell-line-mutant-pins.json, where this transform leaves 79 of 79 edges unlined and 12 of 12 pins unsatisfied.",
+    transform: haskellEdgeLineAbsent(),
+  },
+  {
+    id: "haskell/edge-line-per-set",
+    language: "haskell",
+    defectClass: "relationship-identity",
+    description:
+      "The line stays but the dedupe key reverts to `source|type|target` — the pre-fix key verbatim — i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: the full hledger extent loses 2,625 of 15,151 edges, worst group 40 sites; the full cabal extent loses 9,221 of 55,974, worst group 186). Caught by the per-site half of the pins and by the coverage probe's expansion clause (`preChangeEdges < edges`): payload-and-complexity holds exactly two multi-site groups and both are pinned at BOTH sites and counted — `calls recount -> signed`@197/198 and `contains Data.User -> UserId`@29/61 (the second is the universal impl-naming contract: the instance at 61 publishes a symbol named after its target type, so the file has two same-named children and only the child's own line tells them apart — #921). Evidence: validation/m14/results/haskell-line-mutant-pins.json (edges 79 -> 77, 2 of 12 pins and 2 of 2 count pins fail). A fixture pinning only `line_number: <one line>` would NOT catch this, which is why those pins are written in pairs.",
+    transform: haskellEdgeLinePerSet(),
+  },
+  {
+    id: "haskell/local-identity-flat",
+    language: "haskell",
+    defectClass: "relationship-identity",
+    description:
+      "Scoped local identity (2026-09-26) regression, half one — the IDENTITY COLLAPSE: a where/let local's edges revert to the pre-fix BARE name (`siblingA.hop -> siblingA.hop` becomes `hop -> hop`, `buildUsers -> buildUsers.double` becomes `buildUsers -> double`), which is exactly the state in which two sibling locals of the same name pooled into one node and a local could not be told apart from a module-level namesake (measured before the fix on the full hledger+cabal extent: 12,309 source / 6,314 target bare local-attributed calls endpoints over 708 files / 11,487 binder names, 16 files / 67 names carrying a shadowing binder; the same draw after the fix shows 0 bare local endpoints against 11,832 source / 4,907 target scoped chain endpoints, with the qualified-target universe unchanged at 6,398 on both sides — see validation/m14/results/haskell-local-identity.json). Caught by every scoped pin in payload-and-complexity and by its bare-form forbids (`calls buildUsers -> double`, `pickUser -> choose`, `instantiates choose -> Bot`, `siblingA/siblingB -> hop`, `calls hop -> hop`) — evidence: validation/m14/results/haskell-local-mutant-pins.json.",
+    transform: haskellLocalIdentityFlat(),
+  },
+  {
+    id: "haskell/local-scope-blind",
+    language: "haskell",
+    defectClass: "relationship-fabrication",
+    description:
+      "Scoped local identity (2026-09-26) regression, half two — the LEXICAL-VISIBILITY revert: target resolution goes back to the FLAT file-wide declared set, whose most visible consequence is an edge the post-fix analyzer correctly does not emit — `calls outOfScope -> hop`, where `hop` is a where-local of siblingA/siblingB ONLY and `outOfScope` cannot see it (Haskell scoping; the same flat set also resolved a local of any function from anywhere). Re-injected faithfully from the source text because the fixed analyzer no longer records the site at all. Caught by the `calls outOfScope -> hop` forbid in payload-and-complexity.",
+    transform: haskellLocalScopeBlind(),
+  },
   {
     id: "javascript/template-callee-uses",
     language: "javascript",
@@ -9488,6 +10851,93 @@ export const MUTANTS: Mutant[] = [
       const props = new Set((r.symbols ?? []).filter((s: any) => s.metadata?.isInterfaceMember && s.kind === "property").map((s: any) => `${s.ownerName}.${s.name}`))
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "overrides" && props.has(x.target))) }
     },
+  },
+  {
+    id: "typescript/extends-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M1 regression: restores the implements-only structural override arm — a class EXTENDING an in-file base emits no overrides unless the member carries the optional `override` keyword, so the majority shape (class Sub extends Base { run(){} }) loses the edge the oracle derives as truth; class-extends-overrides pins Sub.run/SubKeyword.run/SubTransitive.run",
+    transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
+  },
+  {
+    id: "typescript/taint-sink-leaf-match",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "H1 regression: restores bare-name/bare-LEAF sink matching — RegExp.prototype.exec, a project-local execute() and the project's own spawn() are reported as command_injection / sql_injection again, and because the store multiplies sources by sinks, one req.body read beside any .exec() manufactures a persisted command-injection flow. taint-sink-receiver kills it on the notIncludesVuln pins (the exact-snippet pins cannot catch a rebuilt snippet, which is why the vulnerability_type pins are in the fixture)",
+    transform: r => ({
+      ...r,
+      symbols: ((r as any).symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.qualified_calls)) return s
+        const existing = new Set((s.taintSinks ?? []).map((t: any) => t.vulnerability_type))
+        const add: any[] = []
+        for (const path of s.qualified_calls) {
+          const leaf = String(path).split(".").pop() ?? ""
+          if (["exec", "execSync", "execFile", "spawn", "spawnSync", "fork"].includes(leaf) && !existing.has("command_injection")) {
+            add.push({ type: "shell_execution", snippet: path, vulnerability_type: "command_injection" })
+            existing.add("command_injection")
+          }
+          if (["query", "execute"].includes(leaf) && !existing.has("sql_injection")) {
+            add.push({ type: "database_write", snippet: path, vulnerability_type: "sql_injection" })
+            existing.add("sql_injection")
+          }
+        }
+        return add.length ? { ...s, taintSinks: [...(s.taintSinks ?? []), ...add] } : s
+      }),
+    }),
+  },
+  {
+    id: "typescript/arrow-contract-drop",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "M5 regression: an arrow/function-VALUED variable loses its API contract again — the dominant handler shape (Next.js/Astro/Express arrow consts) reports no path while the byte-identical function declaration still does; arrow-contracts-and-exports expectApiContractPaths pins arrowGet/arrowPost",
+    transform: r => ({ ...r, symbols: ((r as any).symbols ?? []).map((s: any) => (/^(arrowGet|arrowPost)$/.test(String(s.name)) ? { ...s, apiContractPath: undefined, metadata: { ...((s as any).metadata ?? {}), apiMethod: undefined } } : s)) }),
+  },
+  {
+    id: "typescript/export-default-dangling-edge",
+    language: "typescript",
+    defectClass: "relationship-fabrication",
+    description: "M4 regression: an anonymous default export emits an `exports` edge to `default` again — a target no symbol in this or any other file can own; arrow-contracts-and-exports forbidRelationships kills it",
+    transform: r => ({ ...r, relationships: [...((r as any).relationships ?? []), { source: "arrow-contracts-and-exports", target: "default", type: "exports", confidence: 1, metadata: {} }] }),
+  },
+  {
+    id: "typescript/lines-of-code-nonempty",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M8 regression: linesOfCode counts non-empty lines again, so the same source reports a different LOC as .ts than as .js (measured 37 vs 43 on the pinned fixture); arrow-contracts-and-exports expectMetadata.linesOfCode catches it",
+    transform: r => ({ ...r, metadata: { ...((r as any).metadata ?? {}), linesOfCode: 37 } }),
+  },
+  {
+    id: "typescript/qualified-calls-no-rebind",
+    language: "typescript",
+    defectClass: "misattribution",
+    description: "M3 regression, the dangerous half: removes the per-function REBINDING while keeping the boundary removal — the payload walk started at a symbol and charged every call below it to that symbol, so a nested function's or object-literal method's calls were ALSO listed on the enclosing symbol (enclosing lists helper besides inner; mixed lists persist besides save). qualified-calls-nested-scope kills it on the notIncludes pins, which is the only shape that can tell 'omitted' from 'double-counted'",
+    transform: r => {
+      const byName = new Map<string, string[]>()
+      for (const s of (r as any).symbols ?? []) if (Array.isArray(s.qualified_calls)) byName.set(s.name, s.qualified_calls)
+      const extra = new Map<any, string[]>()
+      for (const rel of (r as any).relationships ?? []) {
+        if (String(rel.type) !== "calls") continue
+        const callee = byName.get(String(rel.target))
+        if (!callee) continue
+        const list = extra.get(rel.source) ?? []
+        for (const c of callee) if (!list.includes(c)) list.push(c)
+        extra.set(rel.source, list)
+      }
+      return { ...r, symbols: ((r as any).symbols ?? []).map((s: any) => {
+        const add = extra.get(s.name)
+        if (!add || !add.length || !Array.isArray(s.qualified_calls)) return s
+        const merged = [...s.qualified_calls]
+        for (const c of add) if (!merged.includes(c)) merged.push(c)
+        return { ...s, qualified_calls: merged }
+      }) }
+    },
+  },
+  {
+    id: "typescript/builtin-subpath-revert",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M7 regression: restores the bare-name-only builtin table — node:fs/promises, node:test, stream/promises and every other subpath Node ships resolve to external:<specifier> again, so the index claims npm packages named 'fs/promises' and 'test' (node-builtin-subpaths meta.resolvedPath pins catch it; lodash/merge stays external in both, so the pin set cannot be satisfied by classifying everything external)",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (typeof i?.metadata?.resolvedPath === "string" && i.metadata.resolvedPath.startsWith("node:")) ? { ...i, metadata: { ...(i.metadata ?? {}), resolvedPath: "external:" + i.module } } : i) }),
   },
   {
     id: "typescript/subscript-callee-nested-call-drop",
@@ -9586,6 +11036,123 @@ export const MUTANTS: Mutant[] = [
         return true
       }) }
     },
+  },
+  {
+    id: "erlang/record-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #1, ER-D7) regression: drops every record member `uses` edge - reads, updates and index reads all vanish, so the dominant OTP state-transition idiom is invisible (record-ops-er2 pins uses -> state AND -> the touched field from the read on 16, the update on 22, get_count on 36 and the index read on 38)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "uses") }),
+  },
+  {
+    id: "erlang/pattern-position-leak",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER2 (user finding #1, ER-D7) regression: restores member reads in PATTERN position - heady's `#state{count = C}` head emits uses -> state and -> count, which record-ops-er2 forbids (a clause head is a match, not an evaluation; guards and bodies still emit)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "heady", target: "state", confidence: 1, metadata: { erlangSpecific: true, context: "record member read" } }, { type: "uses", source: "heady", target: "count", confidence: 1, metadata: { erlangSpecific: true, context: "record member read" } }] }),
+  },
+  {
+    id: "erlang/record-update-instantiates",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER2 (ER-D4) regression: a record UPDATE is misclassified as construction - `State#state{count = ...}` emits instantiates -> state, which record-ops-er2 forbids (an update is a member write; only a body-position `#state{}` constructs)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "transitions", target: "state", confidence: 1, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/macro-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #2, ER-D8) regression: macro USES go back to emitting no references edge - the -define declaration stayed a symbol while every use of it was invisible (refs-er2 pins ?MODULE on 19, ?TIMEOUT on 20 and 24, and the undefined ?SERVER_HEADER on 22, all as macro-use references)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "macro use") }),
+  },
+  {
+    id: "erlang/fun-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #2, ER-D9) regression: fun VALUES emit nothing - `fun run/1` and `fun lists:map/2` lose their references edges (refs-er2 pins both at lines 17/18, and the forbid that they are NEVER calls is what keeps them honest)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "fun value reference") }),
+  },
+  {
+    id: "erlang/type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #6, ER-D10) regression: the type dependency graph disappears - -type/-opaque emit no references to the named types in their expressions (refs-er2 pins token -> binary on 12, job -> binary/atom/term on 35, ctx_rec -> ctx/pid on 36 and ext -> dict:dict on 37 after ER3 re-authored the pins)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "type reference") }),
+  },
+  {
+    id: "erlang/type-atoms-as-refs",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: the type-dependency walk goes back to counting EVERY bare atom in a type expression as a reference, so a map field KEY and an atom LITERAL become dependencies - the exact rows the M12 differential caught on Service.erl (references job -> id and job -> kind out of the map keys of #{id := job_id()}, which resolved to the record PROPERTIES of the same name) plus the ER2 authoring's atom-literal class (maybe -> undefined). In Erlang type syntax a bare unquoted atom is the atom literal of that name and a field key is a declaration; only an APPLIED name is a type use. Caught by refs-er2, whose expectRelationships pin the applied forms (job -> binary/atom/term at 35, ctx_rec -> ctx/pid at 36) and whose forbid entries name each unapplied one",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "job", target: "id", confidence: 1, metadata: { context: "type reference" },
+      }, {
+        type: "references", source: "job", target: "kind", confidence: 1, metadata: { context: "type reference" },
+      }, {
+        type: "references", source: "maybe", target: "undefined", confidence: 1, metadata: { context: "type reference" },
+      }],
+    }),
+  },
+  {
+    id: "erlang/record-type-instantiates",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: a record TYPE inside a -type/-opaque declaration is read as a construction again (`-type ctx_rec() :: #ctx{server :: pid()}` emits instantiates -> ctx). This is the pre-ER3 behaviour exactly: measured over OTP's 4,154 .erl/.hrl files it produced 471 instantiates edges sitting inside type declarations, and MISSING/UNEXPLAINED 1,376/4,344 against the mirrored oracle; after the gate, 0 and 0/0. Caught by refs-er2's forbid entries (instantiates refs_er2 -> ctx, instantiates ctx_rec -> ctx) - the DECL-ONLY boundary the calls rule already had",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "instantiates", source: "refs_er2", target: "ctx", confidence: 1, metadata: { isRecordExpr: true },
+      }],
+    }),
+  },
+  {
+    id: "erlang/remote-type-unqualified",
+    language: "erlang",
+    defectClass: "fabrication",
+    description: "ER3 (2026-09-25) regression: a remote type application goes back to emitting its bare halves - `-type ext() :: dict:dict().` publishes references -> dict rather than the qualified dict:dict (ER-D1: the separator is semantic, the same rule the remote call and fun-value targets follow). Measured over OTP: 988 remote type applications; the pre-fix walk spelled each as two bare atoms, both of which the site check rejects. Caught by refs-er2, which pins references ext -> dict:dict at 37 and forbids the bare dict",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), {
+        type: "references", source: "ext", target: "dict", confidence: 1, metadata: { context: "type reference" },
+      }],
+    }),
+  },
+  {
+    id: "erlang/opaque-symbol-dropped",
+    language: "erlang",
+    defectClass: "symbol-loss",
+    description: "ER2 (ER-G5) regression: -opaque stops declaring a type symbol - `-opaque token() :: binary().` publishes nothing (refs-er2 pins the token type with meta.isOpaque true, and the token -> binary reference it carries)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isOpaque) }),
+  },
+  {
+    id: "erlang/callback-symbol-dropped",
+    language: "erlang",
+    defectClass: "symbol-loss",
+    description: "ER2 (ER-D11, HS-D8 parity) regression: -callback stops declaring its Method symbol (refs-er2 pins handle as a method owned by the module with arity 1 and meta.isCallback true, and the contains edge at line 9)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isCallback) }),
+  },
+  {
+    id: "erlang/complexity-arms-flattened",
+    language: "erlang",
+    defectClass: "metric-corruption",
+    description: "ER2 (user finding #3, ER-D13) regression: per-symbol complexity goes back to a flat 1 (case/if/receive arms, receive_after, andalso/orelse and extra clauses uncounted) - record-ops-er2 pins transitions 7, guarded 4, heady/get_count/idx 1",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => typeof s.complexity === "number" ? { ...s, complexity: 1 } : s) }),
+  },
+  {
+    id: "erlang/remote-macro-module-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #4, ER-D14) regression: the ?MODULE remote-module expansion disappears - `?MODULE:run(X)` emits no call, so the idiomatic self-dispatch is invisible (refs-er2 pins calls go -> refs_er2:run at line 19 with meta.macroModule true)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).macroModule) }),
+  },
+  {
+    id: "erlang/record-default-call-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER2 (user finding #5, ER-D12) regression: record field DEFAULTS stop crawling for calls - `-record(state, {timer = erlang:make_ref()})` emits nothing (record-ops-er2 pins calls state -> erlang:make_ref at line 13, attributed to the RECORD symbol)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.source === "state")) }),
   },
   {
     id: "elixir/lines-dropped",
@@ -9972,6 +11539,427 @@ export const MUTANTS: Mutant[] = [
     description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
     transform: cleanEdgeLinePerSet(),
   },
+
+  // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "html/recovery-stops-walk",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ERROR RECOVERY: the walk STOPS at the first recovery node instead of bypassing it. `n.type === \"ERROR\" || n.isMissing` is the contract — report the region, skip it, keep publishing. Stopping instead means a document with one unreadable region publishes its module and the elements ABOVE the error and nothing below, and because the module still publishes the file still reads as analysed. A silent truncation is the defect class here, and it is invisible to every other gate in the lane because nothing counts symbols-per-file against a floor. Caught by html/error-recovery, whose fixture places the ERROR region in the MIDDLE of the document specifically so the half-after-the-error case is the one being tested.",
+    transform: htmlRecoveryStopsTheWalk(),
+  },
+  {
+    id: "html/meta-refresh-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "CARRIER COMPLETENESS: the `<meta http-equiv=refresh>` navigation is dropped. The pragma makes the browser navigate — a form-action-class dependency, `uses` not `calls` — and it was absent from the table entirely: 40 occurrences across 26 files of one real corpus, found by a census of 4,035 files for URL-bearing (tag, attr) pairs. Invisible to the differential because the oracle SHARED the carrier list, and to `otp`/`sqlite` because neither corpus contains one. Caught by html/undiscovered-carriers.",
+    transform: htmlMetaRefreshDropped(),
+  },
+  {
+    id: "html/ping-list-collapsed",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "CARRIER COMPLETENESS: `<a ping>` is read as ONE url instead of a whitespace-separated list, so `ping=\"/a /b\"` publishes a single edge whose target is the whole string `\"/a /b\"` — a path that resolves to no file, which is the unresolvable-identity class reached through a list that was never split. The list shape IS the contract: `ping` has no descriptor and no comma, which is what separates it from `srcset`. Caught by html/undiscovered-carriers.",
+    transform: htmlPingListCollapsed(),
+  },
+  {
+    id: "html/svg-carriers-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "CARRIER COMPLETENESS: the SVG spellings go away — `script@href` and `feImage@href`/`xlink:href`. SVG2 writes a script's source as `href`, not `src`, so a table with `src` alone drops every inline SVG script's dependency and every filter image reference with it. Caught by html/undiscovered-carriers.",
+    transform: htmlSvgCarriersDropped(),
+  },
+  {
+    id: "html/citation-tier-inflated",
+    language: "html",
+    defectClass: "overclaim",
+    description: "EVIDENCE TIER: a `cite` inherits `import_based` rather than `usage_contextual`. A citation names where a quotation or a change came FROM — nothing fetches it, nothing navigates to it — so grading it as a structural import overstates the fact, and the tier classifier in every gated lane reads this field, which makes the overstatement machine-readable. Caught by html/undiscovered-carriers.",
+    transform: htmlCitationTierInflated(),
+  },
+  {
+    id: "html/bare-hash-emitted",
+    language: "html",
+    defectClass: "unresolvable-identity",
+    description: "SCHEME CONTRACT/M14 #288: a bare `#` href emits an edge to the literal text `#` again. `href=\"#\"` is the HTML idiom for \"no destination\" — the top of this document — so nothing needs naming and the document module already satisfies it. The #288 rewrite reintroduced this and it was caught only by HAND-AUDITING the M12 Negative fixture's documented contract against live output, because the M12 ground truth still described the pre-rewrite contract and no automated gate covered the sentence. Caught by html/scheme-and-navigation's forbid on target `#`.",
+    transform: htmlBareHashEmitted(),
+  },
+  {
+    id: "html/embedded-line-shift-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "HTML-G1/M14 #288: the inline-block seam loses its LINE SHIFT, so every embedded row keeps its block-relative coordinates. The targets are all correct, so nothing but a line pin can see it. Caught by html/inline-embedded-code's eight line_number constraints (34, 40, 25, 26, 32, 35, 36, 37, 44) and by the per-block offset pins (30 and 41), which is why that fixture is authored in FILE lines rather than block lines.",
+    transform: htmlEmbeddedLineShiftDropped(),
+  },
+  {
+    id: "html/embedded-blocks-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "HTML-G1/M14 #288: the whole inline <script>/<style> merge is skipped — the measured pre-#288 state, in which 5,389 of 6,094 corpus files (88.4%) carried an inline block and every one produced zero symbols, calls and imports (74,637 characters of JS and 17,266 of CSS on the 51-document sample). Caught by html/inline-embedded-code's five `htmlEmbedded` symbol pins and its seven embedded edges.",
+    transform: htmlEmbeddedBlocksDropped(),
+  },
+  {
+    id: "html/embedded-synthetic-module",
+    language: "html",
+    defectClass: "unresolvable-identity",
+    description: "HTML-G1/M14 #288: the delegate is handed a synthetic `embedded` module name instead of the document's, so every document-scope edge in an inline block sources from a node that does not exist. The first cut of the merge did exactly this (`calls embedded -> renderBanner`). Caught by html/inline-embedded-code's forbid on `from: embedded` and by its document-module `from` pins.",
+    transform: htmlEmbeddedSyntheticModule(),
+  },
+  {
+    id: "html/ascii-lower-identity",
+    language: "html",
+    defectClass: "name-surface",
+    description: "HTML-IDENTITY/M14 #288: the `asciiLower` helper lowercased the PREFIX before the first capital, which for index 0 is the empty string — so it was the IDENTITY on every string containing a capital, at BOTH the tag-name and the attribute-name call site. Invisible on every lowercase input, which is every input the lane had ever been measured against. Caught by html/attribute-case-and-srcset via its `mixed` symbol and its five upper-case carriers.",
+    transform: htmlAsciiLowerIdentity(),
+  },
+  {
+    id: "html/class-is-identity",
+    language: "html",
+    defectClass: "symbol-fabrication",
+    description: "HTML-IDENTITY/M14 #288: a `class` alone creates a symbol again. Measured over 139 real corpus documents, 59.9% of the pre-ruling symbols carried a name that was NOT unique in their own file and 28.8% carried whitespace because the name was a whole multi-token class value; `class='labeled-input'` on five elements produced five symbols with one name. Caught by html/identity-addressable's forbidSymbols on `card` and on the multi-token `header bar`.",
+    transform: htmlClassIsIdentity(),
+  },
+  {
+    id: "html/no-document-root",
+    language: "html",
+    defectClass: "graph-structure",
+    description: "HTML-IDENTITY/M14 #288: the document-module symbol is removed, so a page's containment tree has N disconnected roots instead of one and a document-level resource edge sources from an unjoinable external string. Measured on the 16-symbol adversarial page: 16 roots and no edge between them. Caught by html/identity-addressable's two `isDocumentRoot` pins.",
+    transform: htmlNoDocumentRoot(),
+  },
+  {
+    id: "html/duplicate-id-collides",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "HTML-IDENTITY/M14 #288: duplicate `id`s share one name again (the rust RSD3 class — 2,852 same-name ids there). No two symbols may share a name, and the defect must stay visible through `duplicateId`. Caught by html/identity-addressable's expectSymbolCount on `dup`/`dup#2` and html/scope-barriers-and-references' on `row-tpl`/`row-tpl#2` and `twin`/`twin#2`.",
+    transform: htmlDuplicateIdCollides(),
+  },
+  {
+    id: "html/label-forward-unresolved",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "HTML-IDENTITY/M14 #288: `<label for>` resolution goes back to backward-only. The pre-fix analyzer resolved labels through a map it had already finished building, so a label naming a LATER control silently emitted nothing and nothing distinguished 'unresolved' from 'came later'. Caught by html/scope-barriers-and-references' forward-reference pin at line 41 and its forbid on the line-42 form.",
+    transform: htmlLabelForwardUnresolved(),
+  },
+  {
+    id: "html/ambiguous-target-last-wins",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "HTML-IDENTITY/M14 #288: an id carried by two elements resolves to the LAST match instead of the first as getElementById does, and the edge stops saying the target was ambiguous. Caught by html/scope-barriers-and-references' `ambiguousTarget` pin and its forbid on a `uses` edge to `twin#2`.",
+    transform: htmlAmbiguousTargetLastWins(),
+  },
+  {
+    id: "html/srcset-first-token",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: `srcset` goes back to 'skip separators, take the first whitespace-delimited token', which cannot tell a candidate from its descriptor and drops every candidate after the first. Caught by html/attribute-case-and-srcset's four-candidate pin on `gallery` and its forbid on any target ending in `1x`/`2x`/`480w`/`1080w`.",
+    transform: htmlSrcsetFirstToken(),
+  },
+  {
+    id: "html/param-value-always-resource",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `<param value>` becomes a resource whatever its `name`. `quality=high` is a plain value and must not become a dependency. Caught by html/resource-carriers' forbidRelationships from `p-quality` and its forbidImports on `high`.",
+    transform: htmlParamValueAlwaysResource(),
+  },
+  {
+    id: "html/preconnect-becomes-import",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `rel=preconnect`/`dns-prefetch` are mirrored into brain_import again. They name a HOST for a connection warm-up and deliberately fetch nothing, so the index claimed a dependency on a URL that is never requested. Caught by html/resource-carriers' forbidImports on `https://cdn.example.com` and `//fonts.example.net`.",
+    transform: htmlConnectionHintBecomesImport(),
+  },
+  {
+    id: "html/link-rel-ignored",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: the `rel` filter is dropped, so a non-fetchable link href becomes a fetched resource. Caught by html/resource-carriers' forbidRelationships from `l-pre` and `l-dns`.",
+    transform: htmlUnqualifiedHrefFetched("link"),
+  },
+  {
+    id: "html/base-href-becomes-resource",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "RESOURCE COVERAGE/M14 #288: `<base href>` becomes a fetched resource. It rewrites how every relative URL in the file resolves — architecturally load-bearing — but fetches nothing, so the honest answer is the `baseHrefCount` document metric. Caught by html/resource-carriers' forbidRelationships from `base` and its forbidImports on `/app/`.",
+    transform: htmlUnqualifiedHrefFetched("base"),
+  },
+  {
+    id: "html/entities-undecoded",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "ATTRIBUTE FIDELITY/M14 #288: character references are left undecoded, so the stored module name is a URL the index can never resolve. Caught by html/attribute-case-and-srcset's `theme.css?v=2&mode=dark` and `page.html` pins and its forbid on the raw `&amp;` / `&#46;` spellings.",
+    transform: htmlEntitiesUndecoded(),
+  },
+  {
+    id: "html/unknown-reference-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ATTRIBUTE FIDELITY/M14 #288: an unrecognised character reference is dropped instead of copied verbatim, silently inventing a different resource. Caught by html/scheme-and-navigation's `odd-ref` pin.",
+    transform: htmlUnknownReferenceDropped(),
+  },
+  {
+    id: "html/verbatim-ampersand-lost",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ATTRIBUTE FIDELITY/M14 #288: a bare `&` and a reference missing its semicolon truncate the URL instead of surviving verbatim. Caught by html/scheme-and-navigation's `no-semi` and `prose-amp` pins.",
+    transform: htmlVerbatimAmpersandLost(),
+  },
+  {
+    id: "html/external-url-graphed",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: a cross-origin or non-resource-scheme hyperlink becomes a graph edge again. Measured on 51 real documents the pre-fix analyzer published 237 `uses` edges into external URLs, which the enrichment pass then scored for architectural criticality. Caught by html/scheme-and-navigation's forbidRelationships on the absolute, protocol-relative, mailto, tel and data targets.",
+    transform: htmlExternalUrlGraphed(),
+  },
+  {
+    id: "html/scheme-filter-case-sensitive",
+    language: "html",
+    defectClass: "security-bypass",
+    description: "SCHEME CONTRACT/M14 #288: the `javascript:` filter goes back to a bare `startsWith`, which is case-sensitive, whitespace-sensitive, and — run before decoding — misses `&#106;avascript:` and `&#0000106;avascript:`, the two forms an HTML parser sees as identical to `javascript:`. Caught by html/scheme-and-navigation's three case/whitespace/entity `isScriptUrl` pins.",
+    transform: htmlSchemeFilterCaseSensitive(),
+  },
+  {
+    id: "html/scheme-filter-anchor-only",
+    language: "html",
+    defectClass: "security-bypass",
+    description: "SCHEME CONTRACT/M14 #288: the scheme filter exists only in the `<a>` branch, as it did pre-fix, so a `<form action='javascript:...'>` is labelled `calls`. Caught by html/scheme-and-navigation's `js-form` pin and its forbid on `type: calls`.",
+    transform: htmlSchemeFilterAnchorOnly(),
+  },
+  {
+    id: "html/script-url-full-target",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "SCHEME CONTRACT/M14 #288: the `javascript:` edge carries the full URL text as its target instead of the recognisable scheme marker, which is a second copy of the source text in the graph. Caught by html/scheme-and-navigation's forbid on `javascript:void(0)`.",
+    transform: htmlScriptUrlFullTarget(),
+  },
+  {
+    id: "html/form-action-as-calls",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: a form endpoint is labelled `calls`. `Calls` claims 'this symbol invokes that symbol', which is false for a URL — and since `uses`/`contains` were the only other types the pre-fix analyzer emitted, the html lane's entire call graph was URLs. Caught by html/scheme-and-navigation's three `form-action` pins and its forbid on `type: calls`.",
+    transform: htmlFormActionAsCalls(),
+  },
+  {
+    id: "html/formaction-any-input",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "SCHEME CONTRACT/M14 #288: `formaction` becomes an endpoint on any input rather than only on a submitting one. A `type=text` input's `formaction` names nothing. Caught by html/scheme-and-navigation's forbid from `plain-input` and its forbidImports on `/api/never`.",
+    transform: htmlFormactionAnyInput(),
+  },
+  {
+    id: "html/barrier-transparent",
+    language: "html",
+    defectClass: "graph-structure",
+    description: "SCOPE BARRIER/M14 #288: `<template>`/`<slot>` are ordinary elements again. Their content is an inert fragment / light-DOM fallback and is not rendered where it is written, so the pre-fix tree claimed `template contains inner` for markup that never enters the document. Caught by html/scope-barriers-and-references' forbid on `contains app -> tplCell` and `contains app -> slot-fallback`, and by its `inTemplateBarrier` pins.",
+    transform: htmlBarrierTransparent(),
+  },
+  {
+    id: "html/edge-line-absent",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M59 #825/M14 #288: no `line_number` on any relationship — the measured pre-fix state (0 of 505 edges on the 51-document sample, and 0 of 25 after a real `bb index`, so the M59.O2 cell was NULL at the store). Caught by every line_number constraint across all five html fixtures.",
+    transform: htmlEdgeLineAbsent(),
+  },
+  {
+    id: "html/import-range-element",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M59 #825/M14 #288: an import's range is the ELEMENT's rather than the ATTRIBUTE's, so a multi-line start tag yields a wrong import line. Caught by html/attribute-case-and-srcset's line-33 and line-34 pins on `gallery`'s `src` and `srcset`, which are on different lines.",
+    transform: htmlImportRangeIsElementRange(),
+  },
+  {
+    id: "html/resource-owned-by-ancestor",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "M14 #288: a resource is attributed to its nearest ancestor instead of the element that declares it, so a bare head-level `<script>` is claimed by the document and an `<img id='gallery' src=...>` is claimed by the gallery's parent. Caught by html/attribute-case-and-srcset's `from: gallery` pins.",
+    transform: htmlResourceOwnedByAncestor(),
+  },
+  {
+    id: "html/no-evidence-tier",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 Matrix 1d: the evidence tier is dropped, so `contains`, a fetched module and an observed link all claim the same provenance. Caught by html/identity-addressable's `import_based` pin, html/attribute-case-and-srcset's `import_based` pin and html/scheme-and-navigation's `usage_contextual` pin.",
+    transform: htmlNoEvidenceTier(),
+  },
+  {
+    id: "html/complexity-symbol-count",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #419 section C: per-symbol complexity reverts to the file-level symbol count, so every element claims the file's size and SPEC section C has nothing to pin. Caught by html/framework-and-scores.",
+    transform: htmlComplexityIsSymbolCount(),
+  },
+  {
+    id: "html/cyclomatic-constant",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #909: `cyclomaticComplexity` reverts to the hard-coded 1 the pre-fix analyzer published for every file ever, so html has no decision-point count at all. Caught by html/framework-and-scores.",
+    transform: htmlCyclomaticConstant(),
+  },
+  {
+    id: "html/error-walk-uncapped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M60/M14 #288: the parse-error walk loses its 50 cap, matching the pre-fix shape where the analyzer's walk was UNBOUNDED while the engine's was capped at 50 — 350 warnings for a 300-line broken file, and the two walks used different child sets so the duplication was not even reliably 2x. Caught by html/error-budget.",
+    transform: htmlErrorWalkUncapped(),
+  },
+  {
+    id: "html/fabricated-framework",
+    language: "html",
+    defectClass: "relationship-fabrication",
+    description: "M60.R8/M14 #288: `Targeted/ID-Styling` is published as a detected framework again. It is a CSS technique, not a framework; it appears once in the whole repository and fired on 88.5% of corpus files. Caught by html/framework-and-scores' forbidFrameworks.",
+    transform: htmlFabricatedFramework(),
+  },
+  {
+    id: "html/scores-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "M14 #288: the accessibility / semantic / performance scores stop being published, which is the pre-fix state — the analyzer computed them and `engine.ts`'s metadata literal never copied them, so the product saw none. Caught by html/framework-and-scores.",
+    transform: htmlScoresDropped(),
+  },
+  {
+    id: "html/drop-source-srcset",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<source srcset>` candidate row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `pic-src -> /assets/one.webp` pin.",
+    transform: htmlDropCarrier("img-srcset"),
+  },
+  {
+    id: "html/drop-object-data",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<object data>` row — no `object` string appeared anywhere in the pre-fix analyzer is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `obj -> /assets/embed.json` pin.",
+    transform: htmlDropCarrier("object"),
+  },
+  {
+    id: "html/drop-embed-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<embed src>` row — no `embed` branch existed pre-fix is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `emb -> /assets/plugin.swf` pin.",
+    transform: htmlDropCarrier("embed"),
+  },
+  {
+    id: "html/drop-track-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<track src>` row — no `track` branch existed pre-fix, so every video's captions track was invisible is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `trk -> /assets/clip.en.vtt` pin.",
+    transform: htmlDropCarrier("track"),
+  },
+  {
+    id: "html/drop-input-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<input src>` row — the pre-fix analyzer read `input` only through its form/interactive lookup tables, so a `type=image` submit button's image was invisible is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `imgbtn -> /assets/button.png` pin.",
+    transform: htmlDropCarrier("input-image"),
+  },
+  {
+    id: "html/drop-iframe-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<iframe src>` row — the pre-fix `iframe` branch counted a missing `loading` attribute for its performance metric and never read `src` at all is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `fr -> /pages/embed.html` pin.",
+    transform: htmlDropCarrier("iframe"),
+  },
+  {
+    id: "html/drop-frame-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<frame src>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `frm -> /pages/legacy.html` pin.",
+    transform: htmlDropCarrier("frame"),
+  },
+  {
+    id: "html/drop-svg-use",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the SVG `use` href row in BOTH spellings — no `use` or `svg` string appeared anywhere in the pre-fix analyzer is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `use2 -> sprite.svg#icon` pin, whose `XLINK:HREF` spelling additionally proves the attribute map is lowercased.",
+    transform: htmlDropCarrier("svg-use"),
+  },
+  {
+    id: "html/drop-svg-image",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the SVG `image` href row in BOTH spellings is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `imgsvg -> /assets/hero.svg` pin.",
+    transform: htmlDropCarrier("svg-image"),
+  },
+  {
+    id: "html/drop-video-poster",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<video poster>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `vid -> /assets/poster.jpg` pin.",
+    transform: htmlDropCarrier("video-poster"),
+  },
+  {
+    id: "html/drop-media-source-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<source src>` row, and with it the pre-fix gate that required the IMMEDIATE parent to be picture/audio/video — so one wrapper element silently loses the resource, and a `<picture>` inside a grid cell is not a rarity is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `deep-src -> /assets/deep.mp4` pin, whose `<source>` sits inside a `<div>` inside a `<video>`.",
+    transform: htmlDropCarrier("media-source"),
+  },
+  {
+    id: "html/drop-param-resource",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<param value>` row together with its `name` filter, so a resource-bearing param (`name=movie`) is lost is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `p-movie -> /assets/movie-real.swf` pin.",
+    transform: htmlDropCarrier("param"),
+  },
+  {
+    id: "html/drop-link-manifest",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `manifest` entry of the fetchable-`rel` vocabulary is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-manifest` pin.",
+    transform: htmlDropCarrier("manifest"),
+  },
+  {
+    id: "html/drop-link-preload",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `preload` entry of the fetchable-`rel` vocabulary is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-preload` pin.",
+    transform: htmlDropCarrier("preload"),
+  },
+  {
+    id: "html/drop-link-icon",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the icon family of the fetchable-`rel` vocabulary — `rel='shortcut icon'` is the universal two-token spelling and is exactly why the token scan exists; a whole-value comparison misses it is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/resource-carriers' `l-icon -> /favicon.ico` pin.",
+    transform: htmlDropCarrier("icon"),
+  },
+  {
+    id: "html/drop-stylesheet",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `stylesheet` entry of the fetchable-`rel` vocabulary, so no page's CSS is a dependency at all is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/identity-addressable's and html/attribute-case-and-srcset's stylesheet pins.",
+    transform: htmlDropCarrier("stylesheet"),
+  },
+  {
+    id: "html/drop-script-src",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<script src>` row is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/attribute-case-and-srcset's `boot.js` pin.",
+    transform: htmlDropCarrier("script"),
+  },
+  {
+    id: "html/drop-img-srcset",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the `<img srcset>` row, so a responsive image loses every candidate is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/attribute-case-and-srcset's two upper-case `hero` srcset pins.",
+    transform: htmlDropCarrier("img-srcset"),
+  },
+  {
+    id: "html/drop-navigation",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the in-project `<a href>`/`<area href>` row, so a page's own internal navigation stops being a dependency is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's `nav-orders` and `nav-sibling` pins.",
+    transform: htmlDropCarrier("navigation"),
+  },
+  {
+    id: "html/drop-form-action",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
+    transform: htmlDropCarrier("form-action"),
+  },
+  // M60 (#278): the powershell mutant set lives in its own module so the
+  // reasoning behind each revert is readable next to the revert rather than
+  // 200 lines apart in this file. `script/` sits outside the main typecheck,
+  // which is also why a separate module is the only way to give these entries
+  // their own type surface.
+  ...POWERSHELL_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

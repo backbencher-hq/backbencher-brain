@@ -5,14 +5,24 @@
 - Analyzer: `src/ast/real-r-analyzer.ts`
 - Grammar: `grammars/tree-sitter-r/grammar.js` (vendored), built to
   `wasm/tree-sitter-r.wasm`
+- Parser: pinned `tree-sitter-r` WASM at `wasm/tree-sitter-r.wasm`
 - Wiring: `ASTEngine.getAnalyzer("r")` -> `RealRAnalyzer`
 - Corpora: `dplyr@d5e94e7`, `Matrix@d598862`, `ggplot2@313d090`, `shiny@8184460`,
   `testthat@09dcd88` under `$HOME/fixtures/repositories` — 1,174 tracked
   `.R`/`.r` files
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: the shipped grammar is a **PATCHED** build, so it
+  is no longer byte-identical to any published artifact. Its **base** was established by
+  byte-identity before the patch: the bytes this repo shipped were byte-identical to
+  `@eagleoutice/tree-sitter-r@1.1.2` (sha256 `b11a872a88ad8a9e…`). The hex-float rule
+  below was then changed and the grammar rebuilt, which is why a fresh
+  `find-grammar-provenance` run now reports no byte match — and that is the correct
+  result, not a regression. Evidence: `validation/m60/results/G-PROVENANCE.json`.
+- Corpus: clean `dplyr@d5e94e7f` tracked R sources
 
 The shipped grammar is a **patched** tree-sitter-r. The base is
 `@eagleoutice/tree-sitter-r@1.1.2` (its published `tree-sitter-r.wasm` was
-byte-identical to the one this repo shipped). One rule was changed; see
+byte-identical to the one this repo shipped before the patch). One rule was changed; see
 [Grammar](#grammar-the-hex-float-rule) below.
 
 ## Grammar: the hex-float rule
@@ -23,8 +33,8 @@ _hex_literal: $ => /0[xX][0-9a-fA-F]+/          # before
 
 R parses every numeric literal with `strtod(3)`, so it accepts the C99
 hexadecimal-float form `0x<hexdigits>[.<hexdigits>]p[+-]<decimals>` — where the
-binary exponent is mandatory. The rule above knew only the integer-hex form, so
-the lexer stopped at `0x1` and the remainder was re-read as an identifier plus an
+binary exponent is mandatory. The rule above knew only the integer-hex form, so the
+lexer stopped at `0x1` and the remainder was re-read as an identifier plus an
 addition. Two failure shapes, both wrong:
 
 | Source | Before | After |

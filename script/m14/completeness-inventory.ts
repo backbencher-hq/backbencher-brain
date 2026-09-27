@@ -68,6 +68,33 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  // M14 #277: bash joins the SPEC gate. The lane had a completeness-shaped
+  // artifact that was not one — the node-type "safety" file whose referenced
+  // list was hardcoded and which never computed observed\referenced — and no
+  // spec at all, so F6 (every handled type exercised, no dead analyzer
+  // literal), F7 (hygiene) and F8 (every corpus type classified) could not be
+  // asked the question for the lane. The classification now lives in
+  // script/m14/spec/bash-completeness.json and is READ by the F8 census, which
+  // fails a gap with no written ruling and a ruling for a type that is no
+  // longer a gap.
+  bash: {
+    id: "bash",
+    wasm: "tree-sitter-bash.wasm",
+    classification: "bash-completeness.json",
+    fixturesDir: "validation/m14/fixtures/bash",
+    docs: ["docs/analyzers/real-bash-analyzer.md"],
+    differentialCheck: "differential-bash",
+    perfKey: "otp:bash",
+    // The six types bash's semantics allow. `extends`/`implements`/`overrides`
+    // (no declaration form creates a type hierarchy) and `instantiates` (no
+    // constructors) are ruled N/A in BD7 of the spec, so they are not required
+    // here — the exclusion is written down rather than left as a silence.
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "bash/payload-and-complexity" },
+    },
+    title: "bash shell wave (M14 #277, BD1-BD10)",
+  },
   cpp: {
     id: "cpp",
     wasm: "tree-sitter-cpp.wasm",
@@ -419,6 +446,98 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "vue pass (#419)",
   },
+  // M14 (#288): html enters the inventory as INVENTORY-DONE, deliberately NOT
+  // in GATED_LANGS yet. The status ladder is NOT-STARTED / INVENTORY-DONE /
+  // GAPS-CLOSED / CONFORMANT, and a language joins GATED_LANGS when it reaches
+  // CONFORMANT — which means all eight sections are green. html's section A is
+  // complete (19/19 named node types classified in script/m14/spec/
+  // html-completeness.json, with one OPEN GAP), B and D are carried by the eight
+  // fixtures, and E/F/G/H are not yet satisfiable: the differential floors are
+  // measured but unpinned, `docs/analyzers/html.md` does not exist, and CC1 has no
+  // html block. Adding html to GATED_LANGS now would turn `npm run verify` red
+  // for three gates that have not been built yet, which is a different statement
+  // from "html is not ready" — the ladder exists precisely so the difference is
+  // visible. Run it directly with `--lang html` in the meantime.
+  //
+  // `requiredKinds` is `uses` + `contains` and nothing else, because that is what
+  // html HAS: the schema's other types describe OO heritage, and html has no
+  // heritage clause. `parameters` is deliberately absent from `payloads` — an
+  // element is not a callable and there is no honest value to pin, so claiming the
+  // Matrix 1b row would be a fabrication dressed as coverage.
+  html: {
+    id: "html",
+    wasm: "tree-sitter-html.wasm",
+    classification: "html-completeness.json",
+    fixturesDir: "validation/m14/fixtures/html",
+    docs: ["docs/analyzers/html.md", "docs/analyzers/real-html-analyzer.md"],
+    differentialCheck: "differential-html",
+    perfKey: "otp:html",
+    requiredKinds: ["uses", "contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
+      visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
+    },
+    title: "html pass (#419, #288)",
+  },
+  // M14 F3: css enters the inventory as INVENTORY-DONE, deliberately NOT in
+  // GATED_LANGS yet, on the same reasoning as html above — but for a different set
+  // of sections, and the difference is the point.
+  //
+  // What is DONE for css, all measured:
+  //   A  129 unique node types across 151 wasm ids classified, 0 gap, every entry
+  //      carrying its reason (script/m14/spec/css-completeness.json), with nine
+  //      rulings CSS-D1..D9 covering the four that looked like dead grammar.
+  //   E  the differential reads 100% truth coverage, MISSING=0 and unexplained=0
+  //      on BOTH corpora (svelte:css 67/67, grails-core:css 480/480) — the first
+  //      lane to reach 0/0 in both directions.
+  //   F  the F8 corpus census passes with 0 blind spots over 46 corpus types.
+  //   G  the grammar lane is pinned with a source↔wasm proof (all 64 declared
+  //      names present, 64 wasm-named types declared, 0 built-in extras).
+  //   H  the M59 line oracle runs in the SHARED instrument as a first-class lane
+  //      (84/84 consistent, 0 INCONSISTENT, 0 notCheckable) and independently in
+  //      the lane's own (7,647 edges, 0 inconsistent, 96 honest synthesized
+  //      names).
+  //
+  // What is NOT done, and why GATED_LANGS stays closed:
+  //   B/D  there is no `validation/m14/fixtures/css` directory. The fixture and
+  //        mutant harnesses are being edited concurrently, so the fixtures cannot
+  //        be registered without colliding, and a fixture that is written but not
+  //        registered protects nothing.
+  //   CC1  NOT a css gap, and worth saying why rather than listing it as one.
+  //        CC1 checks languages that must AGREE with each other — ts/js structural
+  //        parity, the systems families, the OO families, vue/svelte builtin-tag
+  //        parity. css has no partner in any of those sets, so there is no
+  //        cross-language claim for it to make. The RISK CC1 exists to catch is a
+  //        set drifting between two places that must match, and css's version of
+  //        that is the analyzer and the F10 oracle disagreeing about what a
+  //        construct is — which is measured directly (100% coverage, MISSING=0,
+  //        unexplained=0 on both corpora) and is a stronger guard than a
+  //        cross-language tag-set diff would have been for this lane.
+  //
+  // `requiredKinds` is the four kinds css ACTUALLY emits — contains, uses,
+  // references, imports — and not the schema's full list: the others describe OO
+  // heritage and call surfaces, and css has neither. Claiming `calls` for a
+  // language with no call expression would be a fabrication dressed as coverage.
+  //
+  // `payloads` carries ONLY complexity, which is the one Matrix 1b row css can
+  // honestly fill: a selector chain, a functional pseudo-class and a nesting level
+  // are all real review cost. `parameters` is absent because a css rule is not a
+  // callable, and `visibility` is absent because css has no private/package axis
+  // at all — an element selector is not an access level.
+  css: {
+    id: "css",
+    wasm: "tree-sitter-css.wasm",
+    classification: "css-completeness.json",
+    fixturesDir: "validation/m14/fixtures/css",
+    docs: ["docs/analyzers/real-css-analyzer.md"],
+    differentialCheck: "differential-css",
+    perfKey: "svelte:css",
+    requiredKinds: ["uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "css (selector combinators, functional pseudos, attributes, nesting depth)" },
+    },
+    title: "css pass (#419)",
+  },
   svelte: {
     id: "svelte",
     wasm: "tree-sitter-svelte.wasm",
@@ -444,7 +563,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -458,6 +577,15 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
     const n = g.nodeTypeForId(i)
     if (n && !n.startsWith("_")) named.push(n)
   }
+  // ERROR and MISSING are produced by every tree-sitter parser but are NOT
+  // listed by `nodeTypeForId` in the wasm ABI. F1 handles this with an explicit
+  // universal pair (script/m14/audit-analyzer-grammar.ts:93) and the bash F8
+  // census reuses that same pair; this gate now reuses it too, because a spec
+  // that classifies ERROR — correctly, since the analyzer consults it — was
+  // being told its own row was grammar drift. Three instruments, one oracle:
+  // when they disagree, one of them is wrong, and the fix is never to delete the
+  // correct row.
+  for (const u of ["ERROR", "MISSING"]) if (!named.includes(u)) named.push(u)
   return named
 }
 

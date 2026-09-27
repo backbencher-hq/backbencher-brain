@@ -4,6 +4,19 @@
 
 - Analyzer: `src/ast/real-ruby-analyzer.ts`
 - Parser: pinned `tree-sitter-ruby` WASM at `wasm/tree-sitter-ruby.wasm`
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: a **REDISTRIBUTOR BUILD**, not a build of this lane's own
+  npm package. `wasm/tree-sitter-ruby.wasm` is
+  byte-identical to `tree-sitter-wasms@0.1.11`'s `out/` wasm (sha256 `93a5022855314cdb…`).
+
+  **That collection publishes no source** — 0 `grammar.js`, 0 `parser.c`, only prebuilt wasms —
+  so these bytes cannot be regenerated from it, and the underlying GRAMMAR version is recorded
+  nowhere in this repository and must not be inferred from the collection's version.
+
+  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
+  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`. This matters for the
+  web-tree-sitter 0.27.0 migration: this is one of the lanes whose wasm cannot simply be
+  rebuilt from what we have, only re-sourced and re-admitted.
 - Detection: `.rb` → `ruby` in `src/ast/language-detection.ts`
 - Wiring: `ASTEngine.getAnalyzer("ruby")` → `RealRubyAnalyzer`
 
