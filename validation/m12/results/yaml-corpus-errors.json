@@ -11,8 +11,8 @@
    "files": 250,
    "errorFiles": 1,
    "errorNodes": 1,
-   "symbols": 10447,
-   "relationships": 10412,
+   "symbols": 10446,
+   "relationships": 10410,
    "imports": 150
   },
   {
@@ -24,8 +24,8 @@
    "files": 198,
    "errorFiles": 15,
    "errorNodes": 43,
-   "symbols": 236057,
-   "relationships": 245746,
+   "symbols": 236042,
+   "relationships": 244831,
    "imports": 146
   },
   {
@@ -51,7 +51,7 @@
    "errorFiles": 0,
    "errorNodes": 0,
    "symbols": 9107,
-   "relationships": 8940,
+   "relationships": 8892,
    "imports": 0
   },
   {
@@ -89,8 +89,8 @@
    "files": 250,
    "errorFiles": 36,
    "errorNodes": 36,
-   "symbols": 2256,
-   "relationships": 2039,
+   "symbols": 2220,
+   "relationships": 1975,
    "imports": 11
   },
   {
@@ -108,6 +108,18 @@
   }
  ],
  "revision": "grails-core@a83f87480e0c0138caa5a7191a053b1e59a64066 docker@4359a27c23a6218a8a25b136ecfa580cfc48c366 ansible@7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4 kubernetes@dfd7b93a1783878be367e1fc4a780318330cb3bf terraform@2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155 openapi-spec@447c479c9c7136918e80a57a258fd6c84f369c7c helm@d31cd6992fc7858922de6ebe5984a06fd6aa0b80 gh-cli@9b031151a825bda919203c5202876a725d637368",
+ "corpusRevision": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+ "corpusRepo": "kubernetes",
+ "revisions": {
+  "grails-core": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+  "docker": "4359a27c23a6218a8a25b136ecfa580cfc48c366",
+  "ansible": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+  "kubernetes": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+  "terraform": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+  "openapi-spec": "447c479c9c7136918e80a57a258fd6c84f369c7c",
+  "helm": "d31cd6992fc7858922de6ebe5984a06fd6aa0b80",
+  "gh-cli": "9b031151a825bda919203c5202876a725d637368"
+ },
  "extensions": [
   ".yaml",
   ".yml"
@@ -443,8 +455,8 @@
   }
  ],
  "crashes": [],
- "symbols": 275741,
- "relationships": 285332,
+ "symbols": 275689,
+ "relationships": 284303,
  "knownGrammarLimitation": {
   "reason": "multi-line double-quoted scalar (a `description:` folded across a line break) puts a 58-byte ERROR at the document root",
   "files": [
@@ -747,13 +759,13 @@
   "crashFiles": 0,
   "duplicateIdFiles": 0,
   "duplicateIds": 0,
-  "relationshipsWithLine": "285332/285332",
-  "relationshipsWithEvidenceClass": "285332/285332",
+  "relationshipsWithLine": "284303/284303",
+  "relationshipsWithEvidenceClass": "284303/284303",
   "unknownSentinels": 0,
-  "symbolsWithComplexity": "275741/275741",
+  "symbolsWithComplexity": "275689/275689",
   "symbolsWithDocstring": 2500,
   "symbolsWithApiContractPath": 0,
-  "symbolsWithQualifiedCalls": 10735,
+  "symbolsWithQualifiedCalls": 10734,
   "imports": 540,
   "symbolsWithApiContractPathAtWorkerBoundary": 0,
   "seamFindings": [
