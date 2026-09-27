@@ -946,14 +946,119 @@ export default grammar({
 
     // Adapt the grammar to have same behavior
 
+    // G7 (M60 #278): a command ARGUMENT that is a variable-prefixed path.
+    //
+    // MEASURED, and it is the largest remaining class: 1,002 sites in 155 files in
+    // `powershell` and 81 sites in 15 in `ansible` — 1,083 in 170 files, 2.6x the
+    // next class. The battery named it "backslash paths", which is wrong: `\` and
+    // `/` fail IDENTICALLY, and `Import-Module $PSScriptRoot` alone parses clean, so
+    // the class is neither about backslashes nor about paths as such.
+    //
+    // THE DECIDING TOKEN, which is the whole content of this patch.
+    // `generic_token` is
+    //   token(/[^\(\)\$\"'\-\{\}@\|\[`\&\s][^\&\s\(\)\}\|;,]*/)
+    // and the asymmetry is the bug: the CONTINUATION class allows `/` and `\`, but
+    // the FIRST-character class excludes `$`. So `$a/b` cannot be one token — `$a`
+    // lexes as a variable and `/b` as something else — while `a/b` (no sigil) lexes
+    // as one `generic_token` perfectly. In PowerShell `$PSScriptRoot/x` is a single
+    // path argument, so the sigil is exactly what has to be allowed to lead.
+    //
+    // WHY A NEW TOKEN AND NOT A WIDER `generic_token`. Widening the shared class
+    // would change the token in EVERY position, including the right-hand side of an
+    // assignment, where `$a/$b` is DIVISION and already parses correctly. This
+    // token is declared only inside `_command_argument`, and tree-sitter's lexer is
+    // driven by parse state, so it can only be produced where a command argument is
+    // expected. `$x = $a/$b` goes through `assignment_expression`, a different rule,
+    // and is untouched by construction rather than by precedence — the same
+    // structural argument that made the admitted G6 form safe after the rejected one
+    // was not.
+    //
+    // Verified before patching, in argument position: `$a/b` BROKEN, `$a\b` BROKEN,
+    // `${a}/b` BROKEN, `$($a)/b` BROKEN, `($a)/b` BROKEN, and `"$a/b"` ok (quoted, so
+    // it is an expandable string). At statement start and as a command name the same
+    // text is also broken, which is left alone on purpose: this patch is scoped to
+    // argument position because that is where the 1,002 corpus sites are, and every
+    // extra position is extra regression surface for a lexer change.
     _command_argument: ($) =>
       prec.right(
         PREC.PARAM,
         choice(
-          seq($.command_argument_sep, optional($.generic_token)),
+          seq(
+            $.command_argument_sep,
+            optional(choice($.generic_token, alias($._path_argument, $.generic_token))),
+          ),
           seq($.command_argument_sep, $.array_literal_expression),
           $.parenthesized_expression,
           $.script_block_expression,
+        ),
+      ),
+
+    // A sigil-led path argument. The sigil, then an optional drive/scope prefix,
+    // then at least one path SEPARATOR followed by a path segment — the separator
+    // is required, so `$a` alone still lexes as an ordinary `variable` and this
+    // token cannot compete with it. The segment class stops at everything that can
+    // end an argument (`;` `&` `|` `,` whitespace quotes brackets), so the token
+    // cannot swallow structure.
+    // TWO properties this token needs, and the first version of the patch had
+    // neither, which is why it looked like a success and was not one.
+    //
+    // PRECEDENCE 2, because the `variable` token is `reserved(...)` and so carries
+    // `prec(1)`; at equal-or-lower precedence the shorter variable token wins and
+    // the path is split. That is why `$a/b` "parsed" while `$PSScriptRoot\..\..\x`
+    // did not — two separators is where the length advantage stopped being enough.
+    //
+    // ALIASED TO `generic_token`, because a HIDDEN token produces no node. The first
+    // version left it hidden, and the result was the worst failure this lane has
+    // produced: `Write-Output $a/b` reported 0 ERROR nodes and the tree was
+    // `command_elements: (command_argument_sep)` — the argument was silently
+    // GONE. A parse error is visible and a dropped node is not, so the micro-repro
+    // read `ok` and would have been believed; it was caught only by printing the
+    // tree instead of the error count. An argument that lexes into nothing is a
+    // fabrication in the opposite direction from the ones this lane hunts.
+    _path_argument: ($) =>
+      prec(
+        2,
+        token(
+        seq(
+          // sigil, name, and an OPTIONAL SCOPE — `$env:ProgramFiles/x` is one of
+          // the commonest variable-prefixed paths in the corpus and the first
+          // version of this regex rejected it, which a corpus grep found and a
+          // regex unit test then confirmed in one pass. The scope is the same
+          // `[A-Za-z0-9_]+:` shape the grammar's own `variable` token accepts, so
+          // the two agree on what a scoped variable is.
+          /[$@][A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z_][A-Za-z0-9_]*)?/,
+          optional(/[A-Za-z]:/),
+          // ONE OR MORE (separator, segment) pairs. The first version alternated a
+          // single segment against a run that had to END on a separator, so a path
+          // whose last character is a segment — which is every real path — matched
+          // only its first segment and the remainder fell out as ERROR nodes. The
+          // segment body excludes `;` `&` `|` `,` whitespace `(` `)` and quotes, so
+          // the token cannot swallow structure; verified against `$a/b;c`, `$a/b&c`,
+          // `$a/b|c`, `$a/b,c`, `$a/b c` and `$a/b)`, all of which stop at the
+          // delimiter.
+          repeat1(seq(/[\\/]/, /[A-Za-z0-9_.\-\[\]]+/)),
+          // An OPTIONAL TRAILING SEPARATOR, and this is the fix for a real,
+          // measured loss rather than a refinement. A directory argument ends in a
+          // separator — `$testDataPath\UserConfigProv\` — and without this the
+          // token matched only the PREFIX `$testDataPath\UserConfigProv`, leaving
+          // the final `\` orphaned, which broke the whole command and cost 11 REAL
+          // cmdlet calls in one Pester file
+          // (Microsoft.PowerShell.Security/FileCatalog.Tests.ps1: lines 318, 338,
+          // 357, 384, 392 and neighbours — `New-FileCatalog`/`Test-FileCatalog`,
+          // verified by running the analyzer under both grammars: 40 such calls
+          // under the pinned grammar, 29 under the candidate, all still owned by
+          // the file, so they are genuinely GONE and not re-attributed).
+          //
+          // It works because tree-sitter's lexer takes the LONGEST match: adding the
+          // optional separator makes the token one character longer at exactly the
+          // position where the bare variable used to win, so the whole path is
+          // consumed instead of a prefix of it. The regex was checked in isolation
+          // first — against `$a/b`, `$a\b`, a trailing-separator directory, a
+          // `..` chain, a scoped `$env:` path, a drive, and termination at space,
+          // `;` `,`, `|` and `&` — because a lexer change costs ten minutes per
+          // attempt and a regex costs seconds.
+          optional(/[\\/]/),
+        ),
         ),
       ),
 
