@@ -159,10 +159,23 @@ instrumenting both versions in one process):
 Still true after the correction, and worth keeping: the relationship SET is
 unchanged by the fusion (verified per-file as a multiset over 2,457 files:
 2,454 identical, the 3 differences being the intended override/export fixes,
-1,255 of them order-only). The remaining honest costs are the walk count itself
-(the usage pass is separate because it carries per-function `locals`), the
-per-declaration linear resolver scans, and the O(n²) containment pass — none of
-which are measured by a gate today.
+1,255 of them order-only).
+
+Since that correction the two quadratic scans are GONE, both replaced by a
+name -> first-declared-symbol index built in one pass (first-wins preserved, so
+repeated names resolve exactly as the array scan did), and both verified
+behaviour-identical over the same 2,457 files:
+
+| scan | before | after | removed |
+| --- | --- | --- | --- |
+| containment, per owned member | 360,230 comparisons | 24,025 | 93.3% (worst file: 108,755) |
+| enclosing-symbol resolver, per declaration node | 41,966 | 9,032 | 78.5% |
+
+The remaining honest cost is the WALK COUNT itself: the usage pass is still
+separate because it carries per-function `locals`, and the per-file signal scan
+(one walk, shared by the React gate and the taint sink rule) still runs on every
+file. Neither is measured by a gate, because M60 still records this analyzer as
+`unscorable`.
 
 ## Differential ground truth
 
