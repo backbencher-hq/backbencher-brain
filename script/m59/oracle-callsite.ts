@@ -80,7 +80,77 @@ const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] 
   // milestone's own oracle could not see it. Added so that its every line is
   // source-checked like the four JVM languages.
   { lang: "xml", ext: [".xml"] },
+  // CSS (M59.A7 / #825, 2026-09-26). The lane carried NO line at all — 0 of
+  // 29,003 relationships over 13 corpora — so it was absent from this list and
+  // the milestone's own oracle could not see it, which is the same blind spot the
+  // xml entry above records. It now threads a line on every relationship, and
+  // `cssScopeEdge` below teaches the check which endpoint NAMES each class.
+  { lang: "css", ext: [".css"] },
 ]
+
+/**
+ * The CSS scope-containment class: the edge is named by the RULE, not the scope.
+ *
+ * `contains @media (max-width: 768px) -> .header` claims the line of `.header`,
+ * because the containment is a fact ABOUT the rule — and the scope's own text is
+ * on a different line by construction. Checking the target token (the scope's
+ * condition) against that line would accuse a correct edge every time, which is
+ * the false-accusation mode this oracle exists to avoid.
+ *
+ * Narrowed by METADATA MARKER, never by the name string, for the reason the xml
+ * namespace case above states: a name-based rule would let a real claim of a
+ * wrongly-lined edge hide behind the exemption.
+ */
+function isCssScopeEdge(rel: any): boolean {
+  const m = rel?.metadata
+  if (!m) return false
+  return m.isMediaScope === true || m.isLayerScope === true || m.isContainerScope === true || m.isScopeScope === true
+}
+
+/**
+ * The CSS token, derived per relationship class.
+ *
+ * Three CSS-specific shapes the default derivation gets wrong:
+ *
+ *  - a SELECTOR is written with its sigil (`.card`, `#orders-table`), and a comma
+ *    GROUP (`.a, .b`) is written across lines, so the checkable token is the
+ *    group's FIRST part — the `selectors` node starts there, which is what the
+ *    claimed line asserts;
+ *  - a scope edge is named by its TARGET (above);
+ *  - a SYNTHESIZED name — a `&`-nested rule's resolved selector, which the source
+ *    writes as `& .item` — is written nowhere and the analyzer correctly omits the
+ *    line, so it is never checkable rather than being an unaccused pass.
+ */
+function cssNameToken(rel: any, relType?: string): string | null {
+  if (rel?.metadata?.isSynthesizedName === true) return null
+  const t = String(rel?.target ?? rel?.to ?? "")
+  if (!t) return null
+  // A scope edge is named by the rule; everything else by the target.
+  // A comma GROUP is written across lines and its `selectors` node starts on the
+  // first line, which is what the claimed line asserts — so the checkable token is
+  // the group's first part.
+  const firstPart = t.split(",")[0].trim()
+  // A DESCENDANT chain's first part is itself several leaves (`#colset #col2`),
+  // and the first leaf is what the line carries. Taking the first leaf is the
+  // chain form of the same rule, not a loosening: the claimed line must still
+  // contain that leaf, so a wrongly-lined edge is still caught.
+  const firstLeaf = firstPart.split(/[\s>+~]+/)[0] ?? firstPart
+  // An AT-KEYWORD is not a name. `@media` as a target would be a scope used as an
+  // edge endpoint, which this lane never emits; returning it as a checkable token
+  // would look for `@media` on a line that does not carry it, so it is rejected
+  // rather than excused.
+  if (firstLeaf.startsWith("@")) return null
+  // Strip the selector sigil: `.card` is written `card` inside `.card`, and the
+  // sigil is punctuation, not part of the name.
+  const bare = firstLeaf.replace(/^[.#:]+/, "")
+  // A ONE-CHARACTER selector is kept. `.x` and `a` are common in real CSS, and
+  // the containment test matches on word boundaries, so a single letter is a real
+  // check rather than a loose one — rejecting it would have quietly made the
+  // lane's most frequent shape uncheckable.
+  if (bare.length < 1) return null
+  if (/[\s(){}\[\];*]/.test(bare)) return null
+  return bare
+}
 
 const MAX_BYTES = 400_000
 
@@ -507,7 +577,7 @@ async function main() {
           }
           continue
         }
-        const token = calleeToken(rel, relType)
+        const token = lang === "css" ? cssNameToken(rel, relType) : calleeToken(rel, relType)
         // An xml NAMESPACE edge names a namespace, and the DEFAULT namespace has
         // no written prefix: for `xmlns="…"` the analyzer synthesises the
         // element name `default`, which appears nowhere in the source, so the
@@ -632,6 +702,23 @@ async function main() {
     // the protection that is NOT relaxed: a non-imports type keeps its separator
     nonImportCallKeepsSeparator: calleeToken({ target: "Config::get" }, "calls") === "Config::get",
     nonImportReferenceKeepsSeparator: calleeToken({ target: "android:name" }, "references") === "android:name",
+    // CSS, both directions: the sigil is stripped and a comma group reduces to its
+    // first part; a synthesized `&`-nested name is NOT checkable, so the
+    // exemption cannot become a blind spot for a wrongly-lined edge.
+    cssSelectorStripsSigil: cssNameToken({ target: ".card" }, "contains") === "card",
+    cssIdSelectorStripsSigil: cssNameToken({ target: "#orders-table" }, "contains") === "orders-table",
+    cssCommaGroupTakesFirstPart: cssNameToken({ target: ".alpha, .beta" }, "contains") === "alpha",
+    cssGroupFirstPartIsBare: cssNameToken({ target: "#colset #col2, #colset #col1" }, "contains") === "colset",
+    cssDescendantChainTakesFirstLeaf: cssNameToken({ target: "#main .panel" }, "contains") === "main",
+    cssCombinatorChainTakesFirstLeaf: cssNameToken({ target: "a > b + c" }, "contains") === "a",
+    cssStructuralTokenIsRejected: cssNameToken({ target: "@media (max-width: 768px)" }, "contains") === null,
+    cssSingleCharSelectorIsCheckable: cssNameToken({ target: ".x" }, "contains") === "x",
+    cssAtKeywordTargetIsRejected: cssNameToken({ target: "@layer base" }, "contains") === null,
+    cssSynthesizedNameIsUncheckable:
+      cssNameToken({ target: ".nav .item", metadata: { isSynthesizedName: true } }, "contains") === null,
+    cssScopeEdgeUsesTheRule: isCssScopeEdge({ metadata: { isMediaScope: true } }) === true,
+    cssNonScopeEdgeIsNotAScopeEdge: isCssScopeEdge({ metadata: { isNestedSelector: true } }) === false,
+    cssPlainEdgeIsNotAScopeEdge: isCssScopeEdge({ metadata: {} }) === false,
   }
   const tokenOk = Object.values(tokenSelfTest).every(Boolean)
 
