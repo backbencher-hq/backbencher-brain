@@ -107,15 +107,36 @@ Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
 
 ## Complexity envelope
 
+Re-cut 2026-09-26 on the current tree and grammar. The previous table was
+measured on a 181-path sample drawn by a glob that could not match
+`_*expected.css`, against a pre-patch wasm, and on a box whose load was not
+recorded — so none of its numbers could be told apart from a heavy file set or a
+loaded machine, which is exactly what #909 and #871 exist to prevent.
+
 From `validation/m12/results/css-complexity.json`:
 
-| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| fixtures | 2 | 22 | 10 | 774.8 | 28 | 13 | 191.5 MB |
-| corpus_subset | 181 | 722 | 1854 | 2252.5 | 321 | 823 | 279.5 MB |
+| Run | files | symbols | relationships | wall ms | userCpu ms/file | loadAvg1 | load quiet | peak RSS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| fixtures | 2 | 24 | 19 | 1446.6 | 149.0 | 33.90 | no | 202.1 MB |
+| corpus_subset | 185 | 788 | 125 | 6037.8 | 15.9 | 31.76 | no | 246.0 MB |
 
-Declared budgets: fixtures < 2 s (met: 0.77 s); 181-file corpus < 60 s
-(met: 2.25 s).
+Corpus: `$HOME/fixtures/repositories/svelte` @ `26786e92`, 185
+non-empty `*.css` files, 54,453 bytes total (avg 294 B/file) — the manifest and
+the sample file now name ONE file set.
+
+Declared budgets: fixtures < 2 s; 185-file corpus < 60 s. Both met
+(1.45 s and 6.04 s), **but the rows are advisory**: `loadQuiet=false` on both,
+because the box was at load 31–37 while a concurrent wave ran. `script/m60/
+analyzer-complexity-gate.ts` therefore returns `unscorable` for this lane, which
+is the correct verdict under #871 — a row without load context is not scored,
+and a row measured on a loaded box is not scored either. The load-stable number
+to compare is `userCpuMsPerFile`: 149.0 ms on fixtures, 15.9 ms on the corpus.
+
+Note the relationship count fell from 1,854 to 125 while wall time rose 2.7x.
+Both are the ontology ruling, not a regression: 1,770 of the removed edges were
+to names that are not graph nodes (a CSS property name, a selector-chain leaf, a
+`@media` scope with no symbol behind it, the literal source `global`), and the
+wall-time rise is a loaded box, not more work.
 
 Hot-path audit: single-pass DFS stack over AST children (no child-array
 mapping); selector chain/specificity walk is one pass per selector node with a
