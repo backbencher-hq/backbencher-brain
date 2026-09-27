@@ -62,6 +62,24 @@ const WASM_DIR = path.join(ROOT, "wasm")
 
 const survey = JSON.parse(readFileSync(SURVEY, "utf8"))
 
+/** The npm package's own metadata, which is where the declared repository lives. */
+const npmMetaCache = new Map<string, any>()
+function npmView(pkg: string): any {
+  if (npmMetaCache.has(pkg)) return npmMetaCache.get(pkg)
+  const out = sh("npm", ["view", pkg, "--json"])
+  let v: any = null
+  try { v = out ? JSON.parse(out) : null } catch { v = null }
+  npmMetaCache.set(pkg, v)
+  return v
+}
+
+/** `git+https://github.com/owner/repo.git` / `github:owner/repo` -> `owner/repo`. */
+function normalizeRepo(url: string | undefined | null): string | null {
+  if (!url) return null
+  const m = /github\.com[:/]+([^/]+\/[^/.]+)/.exec(url)
+  return m ? m[1].replace(/\.git$/, "") : null
+}
+
 /**
  * Where the engine's grammar asset name is NOT the npm package name. Declared, not
  * guessed: an undeclared divergence here produces a confident "no match found" for a lane
@@ -99,6 +117,53 @@ const PACKAGE_ALIASES: Record<string, string[]> = {
  * wasms the product loads.
  */
 const COLLECTIONS = [{ package: "tree-sitter-wasms", versions: ["0.1.13", "0.1.12", "0.1.11"] }]
+
+/**
+ * GitHub RELEASE ASSETS — a source class npm does not cover.
+ *
+ * Several tree-sitter grammars publish a prebuilt wasm as a release attachment rather
+ * than inside the npm tarball, and for at least one lane here that attachment is the
+ * ONLY published wasm: `MichaHoffmann/tree-sitter-hcl` ships
+ * `tree-sitter-hcl.wasm` and `tree-sitter-terraform.wasm` on its releases, and neither is
+ * in the npm package. Resolved through the npm package's own `repository` field, so the
+ * repo is never guessed from the grammar name.
+ *
+ * Every release is walked, not just the latest: a lane can be pinned to an old attach.
+ */
+function ghReleaseWasms(repoSlug: string, assetNameFilter?: RegExp, maxReleases = 12): Map<string, string> {
+  const idx = new Map<string, string>()
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/.test(repoSlug)) return idx
+  let rels: any[] = []
+  try {
+    rels = JSON.parse(
+      execFileSync("gh", ["api", `repos/${repoSlug}/releases?per_page=100`], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 60_000 }),
+    )
+  } catch {
+    return idx
+  }
+  // BOUNDED ON PURPOSE. The first version walked EVERY release and downloaded EVERY
+  // wasm attachment for every lane — O(releases x assets) network calls each — and the
+  // sweep stalled at 13 of 21 lanes after twenty minutes. The cap is on releases, and
+  // the name filter means a lane only pays for attachments that could plausibly BE its
+  // grammar (`tree-sitter-hcl.wasm` for lane `hcl`), not for every other wasm a repo
+  // has ever attached.
+  for (const r of rels.slice(0, maxReleases)) {
+    for (const a of r.assets ?? []) {
+      if (!a.name?.endsWith(".wasm")) continue
+      if (assetNameFilter && !assetNameFilter.test(a.name)) continue
+      try {
+        const b = execFileSync("gh", ["api", `repos/${repoSlug}/releases/assets/${a.id}`, "-H", "Accept: application/octet-stream"], {
+          maxBuffer: 256 * 1024 * 1024,
+          timeout: 120_000,
+        })
+        idx.set(createHash("sha256").update(b).digest("hex"), `${repoSlug}@${r.tag_name ?? "release"}/${a.name}`)
+      } catch {
+        /* an asset that will not download is not a match, and is not an error worth hiding */
+      }
+    }
+  }
+  return idx
+}
 
 /**
  * Index a collection ONCE: download each version, hash every wasm inside, and keep a
@@ -209,6 +274,14 @@ const targets = ONLY
   : survey.rows.filter((r: any) => ALL || !r.declared.versionKnown)
 
 for (const row of targets as any[]) {
+  // An ALIAS inherits its primary's provenance: `scss` and `sass` are served by
+  // tree-sitter-css and `terraform` by tree-sitter-hcl. Probing them separately
+  // re-answers the same question three times and reports the primary's grammar as
+  // "no match" against each alias, which reads as three broken lanes rather than one.
+  if (row.aliasOf) {
+    results.push({ lane: row.lane, status: "alias", aliasOf: row.aliasOf, reason: `alias of ${row.aliasOf}; shares that lane's grammar and its provenance` })
+    continue
+  }
   if (!row.shipped?.present) {
     results.push({ lane: row.lane, status: "no-artifact", reason: "lane ships no wasm (generic or alias)" })
     continue
@@ -216,12 +289,28 @@ for (const row of targets as any[]) {
   const shippedSha = row.shipped.sha256 as string
   const shippedBytes = row.shipped.bytes as number
   const asset = String(row.wasmChain?.[0] ?? row.engineAsset ?? "")
-  const assetBase = (asset.includes("/") ? asset.slice(asset.lastIndexOf("/") + 1) : asset).replace(/\.wasm$/, "")
+  // The chain is `<package>/<file>.wasm` for some lanes and a BARE RELATIVE PATH for
+  // others, and taking everything before `.wasm` on the latter produced the nonsense
+  // package name `wasm/tree-sitter-hcl`, which npm then 404s on. Take the basename and
+  // accept it only if it actually looks like a grammar name.
+  const raw = asset.includes("/") ? asset.slice(asset.lastIndexOf("/") + 1) : asset
+  const candidate = raw.replace(/\.wasm$/, "")
+  const assetBase = /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/i.test(candidate) ? candidate : `tree-sitter-${lane}`
 
   const packages = new Set<string>()
   if (PACKAGE_ALIASES[assetBase]) for (const p of PACKAGE_ALIASES[assetBase]) packages.add(p)
   else packages.add(assetBase)
-  for (const c of row.candidates ?? []) if (c.package) packages.add(c.package)
+  // The survey's candidate list can carry a BARE RELATIVE PATH as a package name
+  // (`wasm/tree-sitter-hcl`, from a chain that is not `<pkg>/<file>.wasm`), which npm
+  // 404s on. An npm package name never starts with `wasm/`, and never contains a `/`
+  // except as a leading scope.
+  for (const c of row.candidates ?? []) {
+    const p = c.package
+    if (!p) continue
+    if (/^wasm\//.test(p)) continue
+    if (p.includes("/") && !/^@[^/]+\/[^/]+$/.test(p)) continue
+    packages.add(p)
+  }
   // The REDISTRIBUTOR COLLECTION goes FIRST, and that ordering is the whole lesson of
   // this instrument's first run. `tree-sitter-wasms` ships prebuilt wasms for 36
   // grammars, and 12 of the 46 we load are byte-identical to its 0.1.13 build —
@@ -256,6 +345,32 @@ for (const row of targets as any[]) {
       note: "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
     }
     examined++
+  }
+  // GitHub release assets, via each package's own declared repository.
+  if (!match) {
+    for (const pkg of packages) {
+      const v = npmView(pkg)
+      const repoSlug = normalizeRepo(v?.repository?.url ?? v?.repository ?? v?.homepage)
+      if (!repoSlug) continue
+      const assetStem = String(row.lane).replace(/[.*+?^${}()|[\]\\-]/g, "\\$&")
+      const idx = ghReleaseWasms(repoSlug, new RegExp(`(^|-)${assetStem}\\.wasm$`, "i"))
+      const hit = idx.get(shippedSha)
+      if (hit) {
+        const slash = hit.lastIndexOf("/")
+        const at = hit.lastIndexOf("@", slash)
+        match = {
+          package: hit.slice(0, at),
+          version: hit.slice(at + 1, slash),
+          provenanceKind: "github-release-asset",
+          wasmFile: hit.slice(slash + 1),
+          bytes: shippedBytes,
+          sha256: shippedSha,
+          note: "identified from a GitHub RELEASE ASSET, resolved through the npm package's declared repository rather than by guessing the repo from the grammar name.",
+        }
+        examined++
+        break
+      }
+    }
   }
   for (const pkg of match ? [] : packages) {
     if (match) break
