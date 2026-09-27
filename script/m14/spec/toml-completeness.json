@@ -1,1 +1,48 @@
-
+{
+  "_comment": "M14.0.SPEC (#419) \u2014 toml completeness classification. Every public NAMED node type of the pinned wasm/tree-sitter-toml.wasm is in exactly one bucket. The grammar exposes 20 nodeTypeForId slots but only 19 DISTINCT names: `escape_sequence` is declared twice, which is a grammar quirk rather than two node types. ERROR and MISSING are injected by this gate for EVERY language because the wasm ABI does not list them; neither occurs for this grammar and both are silent here. Silence is guilt: a type in no bucket fails section A, and a type the wasm no longer produces is a stale row and also fails. That rule bites hardest on the four DATETIME types \u2014 none appears anywhere in cargo's 684 files, so their handling is pinned by FIXTURE rather than by the corpus, and a corpus-only lane would have classified them by assumption and called it coverage. SECTION D IS RED AND THAT IS THE HONEST STATE. The gate requires >=2 distinct `evidenceClass` values and TOML has exactly ONE: every edge it emits is `structural`. YAML, the closest config-format precedent, pins four and legitimately so \u2014 a merge key is an inference, an anchor is a reference, an `!include` is a fetch. TOML has none of those constructs: no merge, no anchor, no alias, no include, no import, no reference of any kind. Its whole graph is a nesting the document literally writes. Both routes to a second tier are dishonest and neither was taken: emitting a `uses` edge for a path-shaped string imports ecosystem knowledge about which keys are paths in which tool into a format that defines no references, and tagging an edge to an IMPLIED parent as `inferred` points at a target that is deliberately not a symbol, where an edge to a non-existent node is the unresolvable-identity defect. D stays red until the gate grows a documented single-tier allowance or TOML grows a construct that earns one. E and F are the canonical F5 ceremony, exactly as for html.",
+  "handled_verified": {
+    "types": [
+      "array",
+      "bare_key",
+      "boolean",
+      "document",
+      "dotted_key",
+      "float",
+      "inline_table",
+      "integer",
+      "local_date",
+      "local_date_time",
+      "local_time",
+      "offset_date_time",
+      "pair",
+      "quoted_key",
+      "string",
+      "table",
+      "table_array_element"
+    ],
+    "note": "Seventeen types, each read by name in src/ast/real-toml-analyzer.ts and each pinned. `document` is the walk root and supplies the module symbol's range. `table` and `table_array_element` are the two header forms \u2014 a table's node spans its WHOLE SECTION, from its `[` to the line before the next header, which is exactly the region its keys occupy, so a key's range always falls inside its table's and containment is checkable against the source. `pair` is a key/value line and its KEY is its first child, never its text. `bare_key`, `quoted_key` and `dotted_key` are the three key spellings, and the dotted form NESTS left-associatively, which is why segments are collected by walking down and unwinding. The nine value types \u2014 string, integer, float, boolean, array, inline_table and the four datetimes \u2014 are read to record `metadata.valueType`, and a value is DATA: it becomes a type label on its key, never a symbol of its own. That is the difference from the generic AST fallback this lane replaced, which published every literal as a node \u2014 28 symbols for a ten-line Cargo.toml, 11 of whose names contained whitespace."
+  },
+  "internal_silent": {
+    "types": [
+      "ERROR",
+      "MISSING",
+      "comment"
+    ],
+    "note": "Three types that correctly emit nothing. `comment` is the only one this grammar emits here, and it is a literal: a comment is not an identity, and TOML has no block-comment form, so a `#` line contributes nothing to the graph. ERROR and MISSING are the universal recovery pair this gate injects for every language, and NEITHER OCCURS for this grammar: twelve deliberately malformed documents (unterminated header, key with no value, bare word as a value, a bracket-quoted key, `<>` soup) and tree-sitter-toml either recovered or rejected the input as invalid TOML without producing either node. A malformed document that IS accepted still yields a module and whatever sections parsed, so the degradation is partial rather than total. Both are `silent` for the same reason html's MISSING is \u2014 the analyzer does not read them, and a node that never exists cannot be evidence of anything."
+  },
+  "gap": {
+    "gaps": []
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "TOML-D1",
+        "status": "RULED",
+        "node_type": "escape_sequence",
+        "question": "Should the analyzer decode a quoted key's escapes by WALKING its `escape_sequence` child nodes, or by decoding the quoted_key's own text in pure-String?",
+        "ruling": "RULED: decode the PARENT'S TEXT, in pure-String, and never walk `escape_sequence`. The two are equivalent by construction \u2014 an escape_sequence node's text is exactly the escape sequence its parent contains \u2014 so walking the children would buy nothing and cost a second pass over every quoted key. It would also put the lane's no-regex rule under pressure: the natural way to express a decode is a replacement pattern, and that rule exists because every regex literal is one more thing to audit for backtracking. The decode handles the escapes TOML defines in a key (\\n, \\t, \\r, \\\", \\\\, \\uXXXX) and passes an UNKNOWN escape through with its backslash rather than dropping it, because silently discarding half a key would invent a different identity. Measured: `\"a\\u0062c\"` resolves to the single key `abc`, and a literal-string key takes a pure slice because a literal string has no escapes at all.",
+        "consequence": "`escape_sequence` is classified HERE rather than as handled, so the type is accounted for exactly once and the reason it is not walked is on the record rather than being invisible."
+      }
+    ]
+  }
+}
