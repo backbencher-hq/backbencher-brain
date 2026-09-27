@@ -503,7 +503,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   //        mutant harnesses are being edited concurrently, so the fixtures cannot
   //        be registered without colliding, and a fixture that is written but not
   //        registered protects nothing.
-  //   CC1  `docs/analyzers/real-css-analyzer.md` exists but has no CC1 block.
+  //   CC1  NOT a css gap, and worth saying why rather than listing it as one.
+  //        CC1 checks languages that must AGREE with each other — ts/js structural
+  //        parity, the systems families, the OO families, vue/svelte builtin-tag
+  //        parity. css has no partner in any of those sets, so there is no
+  //        cross-language claim for it to make. The RISK CC1 exists to catch is a
+  //        set drifting between two places that must match, and css's version of
+  //        that is the analyzer and the F10 oracle disagreeing about what a
+  //        construct is — which is measured directly (100% coverage, MISSING=0,
+  //        unexplained=0 on both corpora) and is a stronger guard than a
+  //        cross-language tag-set diff would have been for this lane.
   //
   // `requiredKinds` is the four kinds css ACTUALLY emits — contains, uses,
   // references, imports — and not the schema's full list: the others describe OO
