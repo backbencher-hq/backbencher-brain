@@ -278,15 +278,32 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // namedChild(0)` returned the anon `local` token here, and because
     // plainVariableName rejects non-identifiers the whole declaration was
     // silently dropped: `local c = 3` published no symbol at all.
-    const assignment = node.type === "variable_declaration" ? node.namedChild(0) : node
-    const variableList = this.childOfType(assignment, "variable_list")
+    // M60 LUA-23: a variable_declaration has TWO shapes, and the LUA-00 fix
+    // handled only one:
+    //   local a, b = 1, 2  ->  variable_declaration > assignment_statement
+    //                                  > variable_list + expression_list
+    //   local solo         ->  variable_declaration > variable_list      (no
+    //                           assignment_statement at all)
+    // Reading namedChild(0) as the assignment and then looking for a
+    // variable_list INSIDE it returned nothing for the second shape, so a bare
+    // `local x` produced no symbol and no containment edge. It was already broken
+    // before LUA-00 and survived that fix, because the corpus measurement was
+    // byte-identical across the change and nothing asserted the shape. The
+    // committed fixture lane caught it on its first run.
+    const first = node.type === "variable_declaration" ? node.namedChild(0) : node
+    const assignment = first?.type === "assignment_statement" ? first : undefined
+    const variableList = assignment
+      ? this.childOfType(assignment, "variable_list")
+      : (first?.type === "variable_list" ? first : undefined)
     if (!variableList) return
     for (let i = 0; i < variableList.namedChildCount; i++) {
       const variable = variableList.namedChild(i)
       const name = this.plainVariableName(variable)
       if (!variable || !name) continue
       frame.localNames.add(name)
-      const value = this.assignmentValue(assignment!)
+      // A bare `local x` has no assignment and therefore no value; the two
+      // shapes differ here as well as at the lookup above.
+      const value = assignment ? this.assignmentValue(assignment) : undefined
       const isTable = this.isTableNode(value)
       if (isTable) ctx.declaredTables.add(name)
       ctx.symbols.push({
