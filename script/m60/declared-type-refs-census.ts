@@ -102,6 +102,15 @@ export const DECLARED_TYPE_SNIPPETS: Record<string, { ext: string; src: string }
   fsharp: { ext: ".fs", src: `type Dep() = class end\ntype Holder() =\n  let mutable f: Dep = null\n` },
   powershell: { ext: ".ps1", src: `class Dep {}\nclass Holder {\n  [Dep] $f\n}\n` },
   ruby: { ext: ".rb", src: `class Dep; end\nclass Holder\n  def m(a)\n    Dep.new\n  end\nend\n` },
+  // YAML's declared-type position is a TAG: a tag is the only place a YAML
+  // document names a type, and it is what `metadata.relationshipType ===
+  // "declared_type"` is emitted from. The snippet uses a CUSTOM tag because the
+  // census's `typeRefs` rule keys on the target ending in `Dep`, and a `!!map`
+  // would correctly emit an edge to `map` — a real capability row that this
+  // shared, language-agnostic rule cannot see. The lane's own spec and contract
+  // probe cover the `!!` local form; this row measures the CAPABILITY, and
+  // `tag-declared-type` measures the coverage.
+  yaml: { ext: ".yaml", src: `Dep: {}\nHolder:\n  f: !Dep {}\n  m: !Dep\n` },
 }
 
 async function main() {

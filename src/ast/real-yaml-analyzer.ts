@@ -225,11 +225,31 @@ const SENSITIVE_KEY_NAMES = new Set([
 /** Keys whose value names a sibling record in the same file. */
 const DEPENDS_ON_KEYS = new Set(["depends_on", "dependsOn", "needs", "requires"])
 
-/** Keys whose value names a declared Kubernetes resource. */
-const RESOURCE_REF_KEYS = new Set([
-  "configMapRef", "secretRef", "configMapKeyRef", "secretKeyRef", "configMap",
-  "secret", "persistentVolumeClaim", "serviceAccountName",
+/**
+ * Reference WRAPPERS: the whole payload is a reference, so `name` is the only value in
+ * it that names a resource (`configMapRef: { name: cm }`).
+ */
+const RESOURCE_REF_WRAPPERS = new Set(["configMapRef", "secretRef", "configMapKeyRef", "secretKeyRef"])
+
+/**
+ * Kubernetes VOLUME SOURCES: the payload is configuration, and the key that names the
+ * referenced resource differs per source (`configMap`/`secret` use `name`, a
+ * PersistentVolumeClaim volume uses `claimName`). Measured over kubernetes, a single
+ * walk that collected every nested scalar of a volume source emitted a resource
+ * reference to the `3` of `defaultMode: 3`.
+ */
+const RESOURCE_REF_SOURCES = new Map<string, string>([
+  ["configMap", "name"],
+  // A SecretVolumeSource names the secret `secretName` (upstream
+  // `SecretVolumeSource.secretName`); `name` is the EnvVarSource spelling, which is
+  // the WRAPPER above and is read there. Probed both: a `volumes[].secret: { name: x }`
+  // payload is not the API's shape and is left unreferenced rather than guessed at.
+  ["secret", "secretName"],
+  ["persistentVolumeClaim", "claimName"],
 ])
+
+/** Keys whose value IS the resource name — a plain scalar, never a mapping payload. */
+const RESOURCE_REF_SCALARS = new Set(["serviceAccountName"])
 
 /** Keys that name another file. */
 const FILE_IMPORT_KEYS = new Set([
@@ -910,10 +930,39 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Kubernetes object references: `configMapRef: { name: cm }` names a resource.
-    if (RESOURCE_REF_KEYS.has(key)) {
-      for (const name of this.scalarValues(valueNode)) {
+    // Kubernetes object references. Two SHAPES, and conflating them over-fires:
+    //   wrapper      `configMapRef: { name: cm }` — the payload IS a reference, and
+    //                the only value in it that names a resource is `name`.
+    //   volume src   `configMap: { defaultMode: 3, items: [...] }` — a VOLUME SOURCE,
+    //                whose payload is configuration, not a name.
+    // Measured over kubernetes (M60 spelling census): the conflated walk collected
+    // every nested scalar of a volume source, so
+    // `spec.template.spec.volumes[0].configMap` emitted a resource ref to `3` — the
+    // integer of `defaultMode: 3` — and to every `items[].key`/`items[].path` string
+    // in the same block. A `contains` edge was right; the NAME it invented was not,
+    // and it was invented 4 times in one file alone.
+    if (RESOURCE_REF_WRAPPERS.has(key)) {
+      for (const name of this.wrapperRefNames(valueNode)) {
         ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
+      }
+    } else if (RESOURCE_REF_SOURCES.has(key)) {
+      const nameKey = RESOURCE_REF_SOURCES.get(key)!
+      // Scalar shorthand (`secret: my-secret`) or a named field inside the payload
+      // (`configMap: { name: my-cm }`, `persistentVolumeClaim: { claimName: pvc }`).
+      // A payload with NO naming field is configuration, and contributes no reference.
+      const direct = this.scalarNode(valueNode)
+      if (direct && SCALAR_TYPES.has(direct.type)) {
+        const name = this.scalarText(direct)
+        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
+      } else {
+        const named = this.mappingEntryScalar(valueNode, nameKey)
+        if (named) ctx.pendingReferences.push({ source: path, target: named, kind: "yaml_resource_ref", line })
+      }
+    } else if (RESOURCE_REF_SCALARS.has(key)) {
+      const direct = this.scalarNode(valueNode)
+      if (direct && SCALAR_TYPES.has(direct.type)) {
+        const name = this.scalarText(direct)
+        if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
       }
     }
 
@@ -1707,6 +1756,50 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if ((first === "\"" || first === "'") && first === last) return value.slice(1, -1)
     }
     return value
+  }
+
+  /**
+   * The names a reference WRAPPER holds: the scalar shorthand (`configMapRef: cm`) or
+   * the `name` field of its payload. Never a walk — see `RESOURCE_REF_SOURCES` for the
+   * shape this deliberately does not serve.
+   */
+  private wrapperRefNames(node: Node | null): string[] {
+    if (!node) return []
+    const direct = this.scalarNode(node)
+    if (direct && SCALAR_TYPES.has(direct.type)) {
+      const text = this.scalarText(direct)
+      return text ? [text] : []
+    }
+    const named = this.mappingEntryScalar(node, "name")
+    return named ? [named] : []
+  }
+
+  /**
+   * The scalar VALUE of one named entry of a mapping payload, or null when the node is
+   * not a mapping, the entry is absent, or its value is itself a mapping or sequence.
+   * Keys are read through the grammar's own `key` field, so a quoted key
+   * (`"name": cm`) and a plain one match identically.
+   */
+  private mappingEntryScalar(node: Node | null, keyName: string): string | null {
+    if (!node) return null
+    let mapping: Node | null = this.scalarNode(node)
+    if (!MAPPING_TYPES.has(mapping.type)) {
+      mapping = this.firstNonDecorationChild(node)
+      if (!mapping || !MAPPING_TYPES.has(mapping.type)) return null
+    }
+    for (let i = 0; i < mapping.namedChildCount; i++) {
+      const pair = mapping.namedChild(i)
+      if (!pair || !MAPPING_PAIR_TYPES.has(pair.type)) continue
+      const keyNode = pair.childForFieldName("key") || this.firstNonDecorationChild(pair)
+      if (!keyNode || this.scalarText(keyNode) !== keyName) continue
+      const value = this.mappingValueNode(pair)
+      if (!value) return null
+      const scalar = this.scalarNode(value)
+      if (!SCALAR_TYPES.has(scalar.type)) return null
+      const text = this.scalarText(scalar)
+      return text || null
+    }
+    return null
   }
 
   /**
