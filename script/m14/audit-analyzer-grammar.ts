@@ -78,6 +78,7 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "vue", wasm: "tree-sitter-vue.wasm", analyzer: "real-vue-analyzer.ts" },
   { language: "xml", wasm: "tree-sitter-xml.wasm", analyzer: "real-xml-analyzer.ts" },
   { language: "yaml", wasm: "tree-sitter-yaml.wasm", analyzer: "real-yaml-analyzer.ts" },
+  { language: "toml", wasm: "tree-sitter-toml.wasm", analyzer: "real-toml-analyzer.ts" },
   { language: "zig", wasm: "tree-sitter-zig.wasm", analyzer: "real-zig-analyzer.ts" },
 ]
 
