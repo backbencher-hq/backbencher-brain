@@ -321,6 +321,7 @@ export function extractFallback(
   const relationships = filterNoiseRelationships(
     extractBasicRelationships(content, language, symbols, imports),
     language,
+    new Set(symbols.map((s: any) => String(s?.name ?? "")).filter(Boolean)),
   )
 
   return {
@@ -355,7 +356,12 @@ const NOISE_TARGETS = new Set([
   "beforeEach", "afterEach",
 ])
 
-function filterNoiseRelationships(rels: any[], language: string): any[] {
+/**
+ * @param declaredNames names of symbols THIS FILE declares. A name the file
+ *   declares cannot be a web-tree-sitter API leak, so the NOISE_TARGETS check is
+ *   skipped for it. See the note at the check itself.
+ */
+function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -451,8 +457,31 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     // silently drop legitimate relationships for those analyzers. CSS property
     // leakage is already fully handled by the language-specific branch above.
 
-    // Block tree-sitter AST internals
-    if (NOISE_TARGETS.has(leaf)) return false
+    // Block tree-sitter AST internals — BUT NOT a name this file DECLARES.
+    //
+    // Every entry in NOISE_TARGETS is the name of a web-tree-sitter Node
+    // accessor (`node.type`, `node.namedChild`, `node.parent`, …). The list
+    // defends against an analyzer passing an API member name where a symbol
+    // name belongs. It is not a list of language keywords, and it was applied as
+    // if it were — which is the same error this file already documents for the
+    // JS-globals list ("a method named `process` is a legitimate declaration in
+    // Scala/Python/Java; applying the JS global list cross-language silently
+    // dropped real symbols").
+    //
+    // `type` is the costly entry: it is a web-tree-sitter accessor AND a shell
+    // builtin AND an ordinary variable name. Measured over five bash corpora
+    // (ohmyzsh, otp, fsharp, nvm, rbenv): 18 emitted edges had `type` as their
+    // target leaf, and 17 of them named a variable THE SAME FILE DECLARES —
+    // `local type="$1"`, `type="${match[1]}"` — so they were real containment and
+    // read relationships deleted on the way to the index. The same applies to a
+    // Java field named `parent`, a Python method named `text`, a Kotlin
+    // property named `firstChild`.
+    //
+    // The discriminator is DECLARATION, and it is the right one: an analyzer that
+    // accidentally emits `node.type` emits a name the file never declares, while
+    // a variable the file declares is a real node in the graph. So the list keeps
+    // its power against the bug it was written for and stops eating the graph.
+    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) return false
 
     return true
   })
@@ -716,7 +745,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             }
           })
       }),
-      relationships: filterNoiseRelationships(parsed.relationships, language),
+      relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
     }
 
