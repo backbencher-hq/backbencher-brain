@@ -1094,11 +1094,45 @@ export default grammar({
     post_decrement_expression: ($) =>
       prec(PREC.UNARY, seq($._primary_expression, '--')),
 
+    // G5c (M60 #278): the null-conditional operators `?.` and `?[`, added in
+    // PowerShell 7.0. Like `??` and `? :`, the operators are ABSENT from the
+    // grammar rather than mishandled by it, which is why the original list of four
+    // grammar defects — built by reading the grammar — never mentioned them.
+    //
+    // MEASURED BEFORE PATCHING (script/m60/powershell-nullcond-repro.ts, 8 forms,
+    // 11 controls): all 8 forms fail, `$a?.b` giving 2 ERROR + 1 MISSING, and 10
+    // of 11 controls parse clean. The corpus target is the PowerShell repo's own
+    // test/powershell/Language/Operators/NullConditional.Tests.ps1, and the
+    // FORMS are taken from that file rather than from the language documentation,
+    // because the documentation and the corpus disagree on one of them: the
+    // element-access operator is `?[`, not `?.[`. The corpus also uses `?.`
+    // chained (`${psObj}?.name?.nonExistent`), `?.` on a parenthesised command
+    // (`(Get-Item $TestDrive)?.EnumerateFiles()?.Name`), and `?.` on a static
+    // member (`[int32]::MaxValue?.ToString()`), so the operator has to be
+    // left-associative and composable with invocation, not a one-off.
+    //
+    // PRECEDENCE, from the language's own definition: `?.` binds exactly like `.`
+    // and `?[` exactly like `[`, so each null-conditional arm is added INSIDE the
+    // rule that already defines its twin and inherits its associativity, rather
+    // than as a new level. That is also what keeps `${psObj}?.name?.nonExistent`
+    // working: `member_access` is already `prec.left` over `_primary_expression`,
+    // so the second `?.` binds to the first arm's result.
+    //
+    // The tokens are `token.immediate` for the same reason the `.` in
+    // `member_access` is: `?.` must not be recognised across whitespace, or
+    // `$c ? .5 : 1.5` would silently become a null-conditional. The one genuine
+    // ambiguity is `$c?[1,2] : $y` written with no space, which this grammar now
+    // reads as null-conditional indexing — which is what PowerShell itself does,
+    // so the ambiguity is resolved the way the language resolves it rather than
+    // invented here. `$c ?[1,2] : $y` (spaced) is unaffected, and F11's G2
+    // identity gate over the clean corpus is what confirms no real file relied on
+    // the other reading.
     member_access: ($) =>
       prec.left(
         choice(
           seq($._primary_expression, token.immediate('.'), $.member_name),
           seq($._primary_expression, '::', $.member_name),
+          seq($._primary_expression, token.immediate('?.'), $.member_name),
         ),
       ),
 
@@ -1111,9 +1145,15 @@ export default grammar({
       ),
 
     element_access: ($) =>
-      prec(
-        PREC.ELEMENT_ACCESS,
-        seq($._primary_expression, '[', $._expression, ']'),
+      choice(
+        prec(
+          PREC.ELEMENT_ACCESS,
+          seq($._primary_expression, '[', $._expression, ']'),
+        ),
+        prec(
+          PREC.ELEMENT_ACCESS,
+          seq($._primary_expression, token.immediate('?['), $._expression, ']'),
+        ),
       ),
 
     invokation_expression: ($) =>
@@ -1125,6 +1165,12 @@ export default grammar({
           $.argument_list,
         ),
         seq($._primary_expression, '::', $.member_name, $.argument_list),
+        seq(
+          $._primary_expression,
+          token.immediate('?.'),
+          $.member_name,
+          $.argument_list,
+        ),
         $.invokation_foreach_expression,
       ),
 
