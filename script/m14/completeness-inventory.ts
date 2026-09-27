@@ -616,6 +616,13 @@ function loadSpec(cfg: LangConfig) {
   const silent = new Set(spec.internal_silent.types)
   const gapTypes = new Set<string>()
   for (const g of spec.gap.gaps) {
+    // Defect-style gap rows (go GO-GAP-1, groovy G8, kotlin K8, yaml
+    // YAML-G1..G4) document a resolved defect rather than a grammar node-type
+    // ruling, so they carry no node_type. Same rule the decision loader below
+    // already applies: a record with no node_type classifies nothing. Without
+    // this guard the first such row throws a TypeError and aborts the whole
+    // gate, so no lane after it can report a result at all.
+    if (!g.node_type) continue
     for (const t of g.node_type.split(",")) gapTypes.add(t.trim())
   }
   const decisionTypes = new Set<string>()
