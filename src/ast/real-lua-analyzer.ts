@@ -784,7 +784,56 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // makes the branch unreachable. verify-lua-grasped-fields caught it, which is
     // the gate doing precisely the job it was built for, on the very defect class
     // it was built to catch, in the same lane.
-    if (functionNode.type === "bracket_index_expression") return undefined
+    // M60 LUA-30: a LITERAL string index IS a name, and LUA-22's fix above threw
+    // it away with the computed ones. `dao["rows"]()` names exactly the field
+    // `dao.rows()` names, but the measured tree builds both as
+    // `bracket_index_expression` — the literal one as {table, field=string}, the
+    // computed one as {table, field=<expr>} — so the branch cannot tell them
+    // apart by TYPE and the whole class was dropped. Measured on a probe:
+    //   dao["rows"]()  ->  NO EDGE      (should be calls:rows)
+    //   dao.rows()     ->  calls:rows
+    // The comment above this branch claimed "a literal index IS a name and is
+    // handled by the dot/method branch above". That was false: a literal index is
+    // a bracket_index_expression, never a dot or method one, so the intent was
+    // documented and never implemented. A comment asserting a behaviour is not
+    // evidence that the behaviour exists.
+    //
+    // Only a literal STRING names a field. Measured, all three forms:
+    //   dao["rows"]()  field=string      -> the name IS the unquoted content
+    //   dao[1]()       field=number      -> an array index, not a name
+    //   dao[k]()       field=identifier  -> a VARIABLE holding the key, and
+    //                                       which key is not statically knowable
+    if (functionNode.type === "bracket_index_expression") {
+      const field = functionNode.childForFieldName("field")
+      if (field?.type !== "string") return undefined
+      const literal = this.stringValue(field)
+      return literal ? { name: literal, nameNode: field } : undefined
+    }
+    // M60 LUA-29: a call ON A CALL has no name either, and this fallthrough was
+    // publishing one. `require("some.module")()` — the shape at
+    // kong/cmd/init.lua:9 and kong/init.lua:58 — has a callee that is itself a
+    // `function_call`, so `functionNode.text` produced the relationship target
+    // `require("kong.globalpatches")`, a payload rather than a name, the same
+    // defect class LUA-22 fixed two lines above for computed indexes and missed
+    // here for the adjacent case. Measured on kong: 51 edges whose target is a
+    // whole call, e.g. `require("kong.tools.dns")`,
+    // `ws_migration_teardown(operations.postgres.teardown)`,
+    // `sandbox(expression)`. Unmatchable, unreferenceable, unbounded in shape —
+    // every property M60 records for a fabricated target.
+    //
+    // It survived this long because the ORACLE shared it: script/m60/lua-truth-oracle.ts
+    // had no guard here either, so both sides emitted the payload and the
+    // differential read the agreement as confirmation. Fixing the oracle's side
+    // first is what exposed it — which is the argument the LUA-22 comment makes
+    // about an oracle that shares a defect, demonstrated rather than asserted.
+    //
+    // A WHITELIST, for the reason LUA-27 gives on the oracle side: two blacklists
+    // in a row is how `table_index_expression` stayed in the oracle as dead code.
+    // These four forms are the only callees that carry a name, and the grammar —
+    // not this file's memory of it — is the authority for that list.
+    if (functionNode.type === "function_call" || functionNode.type === "table_constructor" ||
+        functionNode.type === "binary_expression" || functionNode.type === "parenthesized_expression" ||
+        functionNode.type === "string" || functionNode.type === "number") return undefined
     if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
     return undefined
   }
