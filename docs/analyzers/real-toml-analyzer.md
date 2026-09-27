@@ -9,7 +9,7 @@
 
 | | |
 |---|---|
-| Grammar | `wasm/tree-sitter-toml.wasm`, 25,436 bytes |
+| Grammar | `wasm/tree-sitter-toml.wasm`, 25,436 bytes, sha256 `7849ac8ce9d10a46…`. Source `@tree-sitter-grammars/tree-sitter-toml`, obtained as a **redistributor collection build** (`tree-sitter-wasms`), so `versionKind: redistributor-collection` and `versionIsComparableToUpstreamGrammar: false` — the M60 survey records it that way on purpose, because a collection build states a collection version and comparing it to an upstream grammar version would yield a false "behind" |
 | Node types | 19 distinct named types (the grammar exposes 20 `nodeTypeForId` slots — `escape_sequence` is declared twice), plus the universal `ERROR`/`MISSING` pair the gate injects |
 | Completeness | `script/m14/spec/toml-completeness.json` — **21/21 classified, gap list empty**: 17 handled, 3 silent, 1 design decision (19 grammar types plus the universal `ERROR`/`MISSING` pair) |
 | Analyzer | `src/ast/real-toml-analyzer.ts` |
@@ -164,6 +164,44 @@ contains another `table`, and the only nesting is inside a value (`inline_table`
 depth-dependent blowup — the structural property that a language with an
 `O(depth)` working set is usually trying to claim and here gets for free.
 
+### Measured complexity, and the one term that is not linear
+
+Two dimensions behave differently and the difference is worth stating rather than
+averaging away, because "O(n)" over a document is ambiguous between them.
+
+| Shape | Input | Result |
+|---|---|---|
+| **width** | 2,000 → 4,000 → 8,000 root keys | 314 → 261 → **177 ms**, and microseconds *per symbol fall* (157 → 65 → 22) as the document grows, because fixed costs amortise. Linear or better |
+| **width** | one table, 8,000 keys | 227 ms |
+| **width** | 2,000 tables × 4 keys (10,001 symbols) | 175 ms |
+| **width** | 4,000 `[[b]]` elements | 57 ms |
+| **width** | 2,000 quoted keys containing dots | 65 ms |
+| **path depth** | 40 → 400 → 2,000 → 8,000 segments in ONE dotted key | 1 → **21 → 420 → 6,091 ms** — roughly **O(depth²)** |
+
+The quadratic term is the path string: the ancestor lookup appends one spelled
+segment per level, and appending to a string copies it, so a key *d* levels deep
+costs O(d²) character copies. An earlier form re-spelled the entire accumulated
+prefix at every level, which was the same term and 3.3× worse at depth 400 (95 ms
+→ 29 ms once the two were unified).
+
+**The practical envelope is nowhere near this.** Real manifests top out around path
+depth 4; cargo's deepest header in 684 files is depth 4. A single 8,000-segment key
+is not a document any tool can consume. It is measured and stated rather than left
+for someone to meet in a fuzzer.
+
+**And it fails safe.** Through the production `parseFile` path:
+
+| Path depth | Time | Heap | Result |
+|---|---|---|---|
+| 2,000 | 1.8 s | 174 MB | ok |
+| 8,000 | 8.7 s | 330 MB | ok |
+| 20,000 | 55 s | 1.3 GB | engine timeout → `2.0-basic-fallback`, **no crash** |
+
+So the honest complexity statement is: **O(nodes + attribute bytes) in width, and
+O(depth²) in the path of a single deeply-dotted key, with a graceful degradation
+above ~12,000.** Anything less precise than that would be a claim about a shape
+nobody publishes.
+
 ### Measured on cargo (684 files, 0.15 MiB)
 
 | | value |
@@ -176,6 +214,9 @@ depth-dependent blowup — the structural property that a language with an
 | relationships with `line_number <= 0` | **0** |
 | parse errors | 2 |
 | density | 9.4 symbols/file, 8.4 relationships/file |
+| **unresolvable edge targets** | **0** of 5,725 |
+| **self edges (source == target)** | **0** |
+| implied-parent records | 229 (metadata only, never nodes) |
 
 ## Differential ground truth
 

@@ -190,39 +190,42 @@ function joinPath(segments: string[]): string {
   let out = ""
   for (let i = 0; i < segments.length; i++) {
     if (i > 0) out += "."
-    const seg = segments[i]
-    // Ask the SPEC's question — may this segment be written BARE? — rather than
-    // testing it for punctuation. TOML's bare-key alphabet is exactly A-Za-z0-9-_
-    // and a bare key may not be empty, so anything else is quoted.
-    //
-    // The distinction is not pedantic. `[target."cfg(unix)".dependencies]` is real
-    // cargo syntax, and a test for `.`/`"`/`\` alone finds no punctuation in
-    // `cfg(unix)` at all — it has parentheses — so the segment was emitted UNQUOTED
-    // as `target.cfg(unix).dependencies`. The name then read back as three nested
-    // tables when the document declares two, and an unquoted path is not a
-    // spelling TOML can parse, so the name had lost the property that makes it
-    // faithful. Found by the differential oracle on cargo's own Cargo.toml, which
-    // is the argument for deriving the rule from the specification rather than from
-    // the characters that happen to matter in the sample you tested.
-    let bare = seg.length > 0
-    for (let k = 0; bare && k < seg.length; k++) {
-      const c = seg.charCodeAt(k)
-      bare =
-        (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 45
-    }
-    if (bare) {
-      out += seg
-      continue
-    }
-    out += '"'
-    for (let k = 0; k < seg.length; k++) {
-      const c = seg.charCodeAt(k)
-      if (c === 34 || c === 92) out += "\\"
-      out += seg[k]
-    }
-    out += '"'
+    out += spellSegment(segments[i])
   }
   return out
+}
+
+/** Spell ONE path segment: bare when TOML permits it, quoted otherwise.
+ *
+ *  The question is the SPEC's — may this segment be written BARE? — rather than
+ *  "does it contain punctuation". TOML's bare-key alphabet is exactly A-Za-z0-9-_
+ *  and a bare key may not be empty, so anything else is quoted.
+ *
+ *  The distinction is not pedantic. `[target."cfg(unix)".dependencies]` is real
+ *  cargo syntax, and a test for `.`/`"`/`\` alone finds no punctuation in
+ *  `cfg(unix)` at all — it has parentheses — so the segment was emitted UNQUOTED
+ *  as `target.cfg(unix).dependencies`. The name then read back as three nested
+ *  tables when the document declares two, and an unquoted path is not a spelling
+ *  TOML can parse, so the name had lost the property that makes it faithful.
+ *  Found by the differential oracle on cargo's own Cargo.toml, which is the
+ *  argument for deriving the rule from the specification rather than from the
+ *  characters that happen to matter in the sample you tested. The same rule
+ *  catches a segment containing a SPACE, which is legal quoted and illegal bare.
+ */
+function spellSegment(seg: string): string {
+  let bare = seg.length > 0
+  for (let k = 0; bare && k < seg.length; k++) {
+    const c = seg.charCodeAt(k)
+    bare = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 45
+  }
+  if (bare) return seg
+  let out = '"'
+  for (let k = 0; k < seg.length; k++) {
+    const c = seg.charCodeAt(k)
+    if (c === 34 || c === 92) out += "\\"
+    out += seg[k]
+  }
+  return out + '"'
 }
 
 /** The value node of a `pair`, or null when the pair has none. */
