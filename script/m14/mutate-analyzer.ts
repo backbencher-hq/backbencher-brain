@@ -19,6 +19,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
+import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -874,7 +875,7 @@ function haskellLocalScopeBlind() {
   }
 }
 
-interface Mutant {
+export interface Mutant {
   id: string
   language: string
   defectClass: string
@@ -2038,6 +2039,24 @@ function dropBashShellDefinedLabel(r: any) {
   }
 }
 
+/** BD-assigned-in-file: strip the label, so a read the file DOES assign looks
+ *  like one it does not. Distinct from `dropBashShellDefinedLabel`, which
+ *  targets a different label on the same relationship type — and the two are
+ *  only distinguishable if each fixture pins its own field, which is why the
+ *  `assigned-in-file` fixture asserts the ABSENT direction explicitly rather
+ *  than only the present one. */
+function dropBashAssignedInFileLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "uses") return x
+      const { isAssignedInFile, ...meta } = (x.metadata ?? {}) as any
+      void isAssignedInFile
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+
 /** BD1 / the module contract: a relationship with no resolvable source — the
  *  pre-wave `global` at the END of a chain the owner fix did not reach. */
 function orphanBashEdgeSource(r: any) {
@@ -2194,6 +2213,41 @@ function htmlCitationTierInflated() {
   })
 }
 
+/** ERROR RECOVERY: the walk STOPS at the first recovery node instead of bypassing
+ *  it. `n.type === "ERROR" || n.isMissing` is the whole contract: report the
+ *  broken region, skip it, and keep publishing everything after it. This mutant
+ *  replaces "bypass and continue" with "stop", which is the shape the defect
+ *  actually takes — a document with one unreadable region in the middle publishes
+ *  a module, the elements above the error, and NOTHING below it. Every edge and
+ *  symbol after the error silently vanishes, and because the module still
+ *  publishes, the file still looks analysed. That is a silent truncation, which
+ *  is why it is worth a mutant rather than a comment: nothing else in the lane
+ *  would notice a document that is half a document.
+ *  Caught by html/error-recovery. */
+function htmlRecoveryStopsTheWalk() {
+  return (r: any) => {
+    const cut = (r.errors ?? [])[0]?.range?.startIndex
+    if (typeof cut !== "number") return r
+    const keep = (x: any) => {
+      const at = x?.range?.startIndex ?? x?.line_number
+      return typeof at !== "number" || at < cut
+    }
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => keep(s)),
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        // A relationship's own site is inside the kept prefix, but its TARGET may
+        // live after the cut — an `<a href>` above the error pointing at an element
+        // below it. Dropping those is exactly the truncation being modelled.
+        if (!keep(x)) return false
+        const t = (r.symbols ?? []).find((s: any) => s.name === x.target)
+        return t === undefined || keep(t)
+      }),
+      imports: (r.imports ?? []).filter(keep),
+    }
+  }
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -2335,6 +2389,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "dishonest-metadata",
     description: "BD-shell-defined-vars regression: a read of a shell-defined name is no longer labelled, so 23 BASH_SOURCE edges look like reads of undeclared project variables again (shell-defined-vars)",
     transform: dropBashShellDefinedLabel,
+  },
+  {
+    id: "bash/assigned-in-file-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
+    transform: dropBashAssignedInFileLabel,
   },
   {
     id: "bash/orphan-edge-source",
@@ -10792,6 +10853,60 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "typescript/extends-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M1 regression: restores the implements-only structural override arm — a class EXTENDING an in-file base emits no overrides unless the member carries the optional `override` keyword, so the majority shape (class Sub extends Base { run(){} }) loses the edge the oracle derives as truth; class-extends-overrides pins Sub.run/SubKeyword.run/SubTransitive.run",
+    transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
+  },
+  {
+    id: "typescript/taint-sink-leaf-match",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "H1 regression: restores bare-name/bare-LEAF sink matching — RegExp.prototype.exec, a project-local execute() and the project's own spawn() are reported as command_injection / sql_injection again, and because the store multiplies sources by sinks, one req.body read beside any .exec() manufactures a persisted command-injection flow. taint-sink-receiver kills it on the notIncludesVuln pins (the exact-snippet pins cannot catch a rebuilt snippet, which is why the vulnerability_type pins are in the fixture)",
+    transform: r => ({
+      ...r,
+      symbols: ((r as any).symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.qualified_calls)) return s
+        const existing = new Set((s.taintSinks ?? []).map((t: any) => t.vulnerability_type))
+        const add: any[] = []
+        for (const path of s.qualified_calls) {
+          const leaf = String(path).split(".").pop() ?? ""
+          if (["exec", "execSync", "execFile", "spawn", "spawnSync", "fork"].includes(leaf) && !existing.has("command_injection")) {
+            add.push({ type: "shell_execution", snippet: path, vulnerability_type: "command_injection" })
+            existing.add("command_injection")
+          }
+          if (["query", "execute"].includes(leaf) && !existing.has("sql_injection")) {
+            add.push({ type: "database_write", snippet: path, vulnerability_type: "sql_injection" })
+            existing.add("sql_injection")
+          }
+        }
+        return add.length ? { ...s, taintSinks: [...(s.taintSinks ?? []), ...add] } : s
+      }),
+    }),
+  },
+  {
+    id: "typescript/arrow-contract-drop",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "M5 regression: an arrow/function-VALUED variable loses its API contract again — the dominant handler shape (Next.js/Astro/Express arrow consts) reports no path while the byte-identical function declaration still does; arrow-contracts-and-exports expectApiContractPaths pins arrowGet/arrowPost",
+    transform: r => ({ ...r, symbols: ((r as any).symbols ?? []).map((s: any) => (/^(arrowGet|arrowPost)$/.test(String(s.name)) ? { ...s, apiContractPath: undefined, metadata: { ...((s as any).metadata ?? {}), apiMethod: undefined } } : s)) }),
+  },
+  {
+    id: "typescript/export-default-dangling-edge",
+    language: "typescript",
+    defectClass: "relationship-fabrication",
+    description: "M4 regression: an anonymous default export emits an `exports` edge to `default` again — a target no symbol in this or any other file can own; arrow-contracts-and-exports forbidRelationships kills it",
+    transform: r => ({ ...r, relationships: [...((r as any).relationships ?? []), { source: "arrow-contracts-and-exports", target: "default", type: "exports", confidence: 1, metadata: {} }] }),
+  },
+  {
+    id: "typescript/lines-of-code-nonempty",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M8 regression: linesOfCode counts non-empty lines again, so the same source reports a different LOC as .ts than as .js (measured 37 vs 43 on the pinned fixture); arrow-contracts-and-exports expectMetadata.linesOfCode catches it",
+    transform: r => ({ ...r, metadata: { ...((r as any).metadata ?? {}), linesOfCode: 37 } }),
+  },
+  {
     id: "typescript/qualified-calls-no-rebind",
     language: "typescript",
     defectClass: "misattribution",
@@ -11427,6 +11542,13 @@ export const MUTANTS: Mutant[] = [
 
   // ---- the html lane's mutants, one per defect class ----
   {
+    id: "html/recovery-stops-walk",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "ERROR RECOVERY: the walk STOPS at the first recovery node instead of bypassing it. `n.type === \"ERROR\" || n.isMissing` is the contract — report the region, skip it, keep publishing. Stopping instead means a document with one unreadable region publishes its module and the elements ABOVE the error and nothing below, and because the module still publishes the file still reads as analysed. A silent truncation is the defect class here, and it is invisible to every other gate in the lane because nothing counts symbols-per-file against a floor. Caught by html/error-recovery, whose fixture places the ERROR region in the MIDDLE of the document specifically so the half-after-the-error case is the one being tested.",
+    transform: htmlRecoveryStopsTheWalk(),
+  },
+  {
     id: "html/meta-refresh-dropped",
     language: "html",
     defectClass: "payload-loss",
@@ -11832,6 +11954,12 @@ export const MUTANTS: Mutant[] = [
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
   },
+  // M60 (#278): the powershell mutant set lives in its own module so the
+  // reasoning behind each revert is readable next to the revert rather than
+  // 200 lines apart in this file. `script/` sits outside the main typecheck,
+  // which is also why a separate module is the only way to give these entries
+  // their own type surface.
+  ...POWERSHELL_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
