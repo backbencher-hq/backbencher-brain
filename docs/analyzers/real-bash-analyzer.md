@@ -95,20 +95,60 @@ nested function definitions.
 
 ## Verified limitations (named, never hidden)
 
-1. **extglob** — `*( ... @(...))` inside `[[ == ]]`, 11 of 43 ERROR nodes across
-   the 13 real-bash files the universe sweep could not parse. Concentrated in
-   bash-completion's **generated** `completions-core/*.bash`. The analyzer
-   defers rather than fabricating. The attribution is reported as a
-   **sensitivity table** (11 across every window size from ±0 to ±8) because two
-   earlier attributions of the same nodes were wrong in opposite directions.
-2. `${var:offset:len}` substring, line continuations inside `[ ]`, and process
-   substitution — grammar limits, individually measured.
-3. **zsh is not bash.** 415 files are routed into this lane because no zsh
-   analyzer exists. They parse at 35.2%; the analyzer emits 2 fabricated
-   `exports` from zsh's `add-zsh-hook` across the whole corpus, which is the
-   residual. zsh is a separate lane, not a tolerance.
-4. `[[ "$char" =~ [[:space:],:] ]]` and `${value/]/%5D}` — recorded in
-   `validation/m12/results/bash-corpus-errors.json`.
+Measured directly against the pinned grammar, one construct per case, rather than
+inferred from a corpus probe:
+
+| construct bash HAS | parses? |
+| --- | --- |
+| `${var:offset:len}`, `${arr[@]:offset:len}`, `${var:offset}` | **yes** |
+| `${var:-default}` | **yes** |
+| process substitution `<( )` / `>( )` | **yes** |
+| extglob `!( )` in a `case` arm | **yes** |
+| extglob `+( )` inside `[[ == ]]` | **yes** |
+| `printf %q`, `declare -n`, `**` globstar | **yes** |
+| **`@()` in a `case` arm** | **NO — 2 error nodes** |
+| **nested extglob `*\( \-@(...) )*` inside `[[ == ]]`** | **NO — 3 error nodes** |
+| **backslash line continuation inside `[ ]`** | **NO — 1 error node** |
+
+So the grammar gap is **two shapes**, not the four an earlier corpus attribution
+claimed: *complex/nested extglob* and *a continuation inside `test`*. The
+`${var:offset:len}` and process-substitution rows in an earlier draft of this
+section were **wrong** — they were attributed by a context-window probe, the same
+instrument that produced two false positives in the ontology gate, and both
+constructs parse cleanly in isolation. The correction is recorded here rather
+than quietly removed.
+
+Consequence in the corpus: 11 of 43 ERROR nodes across the 13 real-bash files the
+universe sweep could not parse, concentrated in bash-completion's **generated**
+`completions-core/*.bash`, which nest extglob inside `[[ == ]]` patterns. This is
+the one place the Groovy precedent transfers — the language has the syntax and the
+pinned grammar does not model it — and fixing it means regenerating the wasm, which
+is a build task for the grammar's owner. Until then the analyzer **defers rather
+than fabricating**, which is the correct response and is what the 0-unlined /
+0-non-symbol-source numbers attest.
+
+### Relationship types that cannot be fixed, and why that is not a gap
+
+`extends`, `implements` and `instantiates` are ruled on **grammar-inventory**
+evidence: the grammar yields 164 distinct node types and none expresses a type
+declaration or a constructor. This is *not* the Groovy situation. Groovy **has**
+classes, interfaces, inheritance and `new`, and the grammar failed to model them —
+so regenerating it raised fidelity. Bash has **none of them**, so extending the
+grammar to emit those nodes would manufacture edges about constructs the language
+does not contain, which is the opposite of fidelity.
+
+The one candidate was checked rather than assumed. bash's object-oriented
+*naming convention* is `Class::method`, and if it were common it would matter:
+
+- **`Class::method` functions: 3 files of 2,747 (0.1%)**, 28 methods, 3 prefixes —
+  and all three are internal **namespacing** (`codegen::*` x15, `_omz::*` x11,
+  `kube::*` x2), not classes.
+- **`new Foo` as a constructor: 0 occurrences** across all 2,747 files.
+
+Even at scale `::` would carry no *inheritance*, so `extends`/`implements` still
+would not apply; at 3 files of internal namespacing, reading OOP semantics into it
+would be over-reading. The analyzer treats `codegen::emit` as one function name,
+which is what it is.
 
 ## Evidence
 
