@@ -482,6 +482,63 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // EVIDENCE TIER, in ONE pass rather than at the ~13 push sites.
+    //
+    // Every other relationship in this codebase records WHY it exists — 78
+    // `structural`, 60 `usage_contextual`, 27 `import_based` across the analyzers —
+    // and CSS recorded none, so every edge this lane emits was unranked evidence.
+    // M14 F3 section D asks a lane's fixtures to pin at least two distinct
+    // evidenceClass values, and it could not be satisfied honestly for CSS: a
+    // fixture cannot pin a field the analyzer never sets.
+    //
+    // Done as a single keyed pass rather than 13 edits, because 13 edits is a
+    // count that can be miscounted: a new push site added later would silently
+    // skip the tier and the lane would drift back to unranked with nothing
+    // failing. A pass keyed by relationship TYPE is total by construction.
+    //
+    // The tiers are the house mapping (real-bash-analyzer.ts:225), NOT a CSS-local
+    // vocabulary. Inventing a lane's own tier names is the set-drift problem CC1
+    // exists to prevent, so the three values are the ones the rest of the codebase
+    // already means by them:
+    //
+    //   structural       both endpoints are nodes in THIS file's tree and the link
+    //                    is the grammar's own structure. Every `contains` is this:
+    //                    a scope wraps a rule, a rule declares a custom property,
+    //                    a chain joins two selectors that both resolve here.
+    //   usage_contextual the link is established by a NAME in a value position and
+    //                    resolved by matching, not by tree structure. `uses` is
+    //                    this: `animation: spin` names a @keyframes the file
+    //                    declares, and the edge exists because those two texts
+    //                    agree.
+    //   import_based     the endpoint is asserted by reference to something
+    //                    OUTSIDE this tree. `imports` obviously. `references` is
+    //                    the CSS case worth spelling out: `var(--x)` reads a
+    //                    custom property that may be declared in another
+    //                    stylesheet entirely, so the edge asserts a dependency on
+    //                    a NAME, not on a node this parse saw. That is the weaker
+    //                    claim, and `import_based` is the codebase's existing word
+    //                    for it — the property really is imported from somewhere.
+    const evidenceClassFor = (type: ASTEngine.RelationshipType): string => {
+      if (type === ASTEngine.RelationshipType.Imports || type === ASTEngine.RelationshipType.References) return "import_based"
+      if (type === ASTEngine.RelationshipType.Uses) return "usage_contextual"
+      return "structural"
+    }
+    //
+    // A relationship with no `type` is not classifiable, and it is NOT given a
+    // default tier: `structural` would be a claim about an edge whose kind nobody
+    // stated. Measured, this branch is dead on real code — 0 of 1,384 css
+    // relationships across svelte + grails-core lack a type — so the guard exists
+    // for the TYPE, not for a live case. If it ever fires the edge stays unranked
+    // and visible rather than quietly plausible, and a fixture pinning a tier on
+    // it will fail.
+    let unrankable = 0
+    for (const rel of ctx.relationships) {
+      const md = (rel.metadata ?? {}) as Record<string, unknown>
+      if (typeof md.evidenceClass === "string" && md.evidenceClass.length > 0) continue
+      if (rel.type == null) { unrankable++; continue }
+      rel.metadata = { evidenceClass: evidenceClassFor(rel.type), ...md }
+    }
+
     return {
       language: "css",
       symbols: ctx.symbols,
@@ -492,6 +549,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length,
         linesOfCode: content.split("\n").length,
+        // 0 on every real corpus file; present so a non-zero value is a number
+        // someone can go and look at rather than a branch nobody can observe.
+        cssUnrankedRelationships: unrankable,
         // M60 R6 / CC1. This was a literal 1, and because
         // `pool-worker.ts` computes `complexity: s.complexity ||
         // s.metadata?.complexity || 1`, every CSS symbol in the store claimed a
