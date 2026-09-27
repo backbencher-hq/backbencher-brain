@@ -1563,6 +1563,171 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
       const nm = t === "field_definition" ? n.childForFieldName("property") : n.childForFieldName("name")
       if (nm && nm.text && jsContainerIsNameable(n)) push("contains", nm.text)
     }
+    // ---------------------------------------------------------------------
+    // JD15 (M60, 2026-09-27): `exports` TRUTH.
+    //
+    // The javascript lane's comparison set covered extends/implements/
+    // instantiates/overrides/calls/uses/contains and NOT `exports`, so the
+    // module's public surface — the thing a consumer actually imports — was
+    // never audited, while three of the lane's fixed defects (JD5, JD7 and the
+    // CJS deep-export path) live in exactly that class.
+    //
+    // Derived from ECMAScript's and CommonJS's own rules, NOT from the
+    // analyzer's collector:
+    //   ESM   named   `export { a }` / `export { a as b }` -> the PUBLIC name
+    //         default `export default <expr>`               -> "default"
+    //         decl    `export function f` / `export class C` -> f / C
+    //         consts  `export const x = 1, y = 2`           -> x and y
+    //         re-exp  `export { a } from "m"`               -> a
+    //         star    `export * from "m"`                   -> "*"
+    //         ns      `export * as ns from "m"`             -> ns
+    //   CJS   `exports.a = v` / `module.exports.a = v`      -> a
+    //         `module.exports.a.b = v`                      -> "a.b"
+    //         `exports = {…}` / `module.exports = {…}`      -> the object keys
+    // ---------------------------------------------------------------------
+    if (t === "export_statement") {
+      let sawDefaultToken = false
+      for (let i = 0; i < n.childCount; i++) {
+        const t2 = n.child(i)
+        if (t2 && !t2.isNamed && t2.text === "default") { sawDefaultToken = true; break }
+      }
+      let sawNamed = false
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "export_clause") {
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const spec = c.namedChild(j)
+            if (spec && spec.type === "export_specifier") {
+              const alias = spec.childForFieldName("alias")
+              const nm = alias ?? spec.childForFieldName("name")
+              if (nm) {
+                sawNamed = true
+                // `export { x as default }` IS a default export and its public
+                // name is the literal "default"
+                push("exports", alias && alias.text === "default" ? "default" : nm.text)
+              }
+            }
+          }
+        } else if (c.type === "identifier") {
+          sawNamed = true
+          push("exports", c.text)
+        } else if (c.type === "namespace_export") {
+          sawNamed = true
+          const nm = c.childForFieldName("name") ?? c.namedChild(0)
+          if (nm) push("exports", nm.text)
+        } else if (c.type === "function_declaration" || c.type === "generator_function_declaration" ||
+                   c.type === "class_declaration" || c.type === "function_expression" ||
+                   c.type === "arrow_function" || c.type === "class") {
+          const nm = c.childForFieldName?.("name")
+          sawNamed = true
+          push("exports", nm?.text ?? "default")
+        } else if (c.type === "lexical_declaration" || c.type === "variable_declaration") {
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const d = c.namedChild(j)
+            if (d && d.type === "variable_declarator") {
+              const nm = d.childForFieldName("name")
+              if (nm && nm.type === "identifier") { sawNamed = true; push("exports", nm.text) }
+            }
+          }
+        }
+      }
+      if (sawDefaultToken && !sawNamed) push("exports", "default")
+    }
+    if (t === "assignment_expression") {
+      const left = n.childForFieldName("left")
+      const right = n.childForFieldName("right")
+      if (left && right) {
+        // --- whole-surface rebinds: `exports = {…}` / `module.exports = {…}` ---
+        // The right side is an object literal (take its keys) OR a bare
+        // identifier (the module publishes that binding under its own name).
+        // The identifier form was the first truth gap found by adjudication:
+        // `module.exports = browserConvert` is a real export of `browserConvert`
+        // and the collector records it, while a truth that only read object
+        // literals did not.
+        const rebindTarget = (): "exports" | "module.exports" | null => {
+          if (left?.type === "identifier" && left.text === "exports") return "exports"
+          if (left?.type !== "member_expression") return null
+          const o = left.childForFieldName("object")
+          const pr = left.childForFieldName("property")
+          if (o && pr && o.type === "identifier" && o.text === "module" && pr.text === "exports") return "module.exports"
+          return null
+        }
+        const rebind = rebindTarget()
+        if (rebind) {
+          if (right.type === "object") {
+            for (let i = 0; i < right.namedChildCount; i++) {
+              const c = right.namedChild(i)
+              if (!c) continue
+              if (c.type === "shorthand_property_identifier" || c.type === "identifier") push("exports", c.text)
+              else if (c.type === "pair") {
+                const k = c.childForFieldName("key")
+                if (k && (k.type === "property_identifier" || k.type === "identifier")) push("exports", k.text)
+              } else if (c.type === "method_definition") {
+                const mn = c.childForFieldName("name")
+                if (mn) push("exports", mn.text)
+              }
+            }
+          } else if (right.type === "identifier") {
+            push("exports", right.text)
+          } else if (
+            right.type === "function_expression" || right.type === "arrow_function" ||
+            right.type === "class_declaration" || right.type === "class" ||
+            right.type === "function_declaration" || right.type === "generator_function_declaration"
+          ) {
+            const nm = right.childForFieldName?.("name")
+            push("exports", nm?.text ?? "default")
+          }
+          // A call_expression or anything else publishes no statically knowable
+          // name (`module.exports = factory()`); the truth declines it rather
+          // than inventing one.
+        } else if (left.type === "member_expression" || left.type === "subscript_expression") {
+          // --- deep surface write: `exports.a = v`, `module.exports.a.b = v`,
+          //     and the computed spellings `exports["fp"] = v` ---
+          const prop = left.type === "subscript_expression"
+            ? left.childForFieldName("index")
+            : left.childForFieldName("property")
+          const obj = left.childForFieldName("object")
+          if (!prop || !obj) { /* nothing nameable */ }
+          else {
+            const lastSeg = prop.type === "string" ? prop.text.slice(1, -1) : prop.text
+            const segs: string[] = []
+            let cur: any = obj
+            let unnameable = false
+            while (cur && (cur.type === "member_expression" || cur.type === "subscript_expression")) {
+              if (cur.type === "subscript_expression") {
+                const idx = cur.childForFieldName("index")
+                if (!idx || (idx.type !== "string" && idx.type !== "number")) { unnameable = true; break }
+                segs.unshift(idx.type === "string" ? idx.text.slice(1, -1) : idx.text)
+              } else {
+                const pr = cur.childForFieldName("property")
+                if (!pr) { unnameable = true; break }
+                segs.unshift(pr.text)
+              }
+              cur = cur.childForFieldName("object")
+            }
+            // The chain must bottom out on the bare receiver `module` or
+            // `exports`. NOTE the empty-path case: `exports.a = v` has NO
+            // segments below the base — the name is just the written property —
+            // and requiring a non-empty path was the second truth gap
+            // adjudication found (it silently rejected every direct
+            // `exports.X = v`).
+            if (!unnameable && cur && cur.type === "identifier") {
+              let below: string[] = segs
+              if (cur.text === "module") {
+                if (segs[0] !== "exports") below = []
+                else below = segs.slice(1)
+              } else if (cur.text !== "exports") {
+                below = []
+              }
+              if (cur.text === "module" || cur.text === "exports") {
+                if (cur.text === "exports" || below.length > 0) push("exports", [...below, lastSeg].join("."))
+              }
+            }
+          }
+        }
+      }
+    }
     // JD14 adjudication follow-up: PROTOTYPE-ASSIGNMENT containment.
     // `X.prototype.m = function () {}` adds a member to X, and the analyzer
     // emits `contains X -> m` for it (ownerName = the class). The first cut of
@@ -13523,12 +13688,41 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
   //     with no standalone `.content` and no standalone `h1` there is nothing for
   //     the edge to join and the chain stays a single opaque name.
   const keyframeNames = new Set<string>()
+  /** family -> the `@font-face` that declares it. Collected in pass 1, like keyframes. */
+  const fontFaces = new Set<string>()
   const selectorNames = new Set<string>()
   {
     const walk = (n: any) => {
       if (n.type === "keyframes_name") {
         const nm = textOf(n).trim()
         if (nm) keyframeNames.add(nm)
+      }
+      if (n.type === "at_rule") {
+        // `@font-face` declares a family from INSIDE its block — the prelude is
+        // empty — so this is a descendant search, not a direct-child one.
+        const kw = children(n).find((c: any) => c.type === "at_keyword")
+        if (kw && kw.text.trim() === "@font-face") {
+          const block = children(n).find((c: any) => c.type === "block")
+          if (block) {
+            const stack2 = [block]
+            while (stack2.length) {
+              const x: any = stack2.pop()
+              if (x.type === "declaration") {
+                let pname = ""
+                for (const c of children(x)) if (c.type === "property_name") pname = textOf(c).trim().toLowerCase()
+                if (pname === "font-family") {
+                  for (const c of children(x)) {
+                    if (c.type === "string_value" || c.type === "plain_value" || c.type === "identifier") {
+                      const fam = textOf(c).trim().replace(/^["']|["']$/g, "")
+                      if (fam) fontFaces.add(fam)
+                    }
+                  }
+                }
+              }
+              stack2.push(...children(x))
+            }
+          }
+        }
       }
       if (n.type === "selectors") {
         // The WHOLE comma group is the name, not its members. Measured: `h1, h2`
@@ -13710,6 +13904,17 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
             // are not graph nodes: a custom property is a thing, `color` is a
             // keyword.
             if (prop.startsWith("--") && prop.length > 2) push("contains", sel, prop)
+            // A `font-family` naming a family this file DECLARES with `@font-face`
+            // is a USE of that declaration — the same shape as
+            // `animation: <declared keyframes>`, derived here from the tree alone.
+            // The target is the DECLARATION's published name, keyword included,
+            // because that is the name the analyzer publishes; a bare family would
+            // be an endpoint nothing resolves.
+            if (prop === "font-family") {
+              for (const tok of declText.match(/[A-Za-z_][\w-]*/g) ?? []) {
+                if (fontFaces.has(tok)) for (const sn of selNames) push("uses", sn, `@font-face ${tok}`)
+              }
+            }
             if (prop === "animation" || prop === "animation-name") {
               // Every identifier in the value that names a declared @keyframes is
               // a `uses`. A name the file does not declare is NOT an edge — an
@@ -15019,7 +15224,7 @@ async function main() {
           // class-expression member is an orphan — review JD3). The matching
           // truth is derived in deriveJavaScriptEdges from the language's own
           // containment rule, deliberately NOT from the analyzer's owner logic.
-          ...(lang === "javascript" ? ["contains"] : []),
+          ...(lang === "javascript" ? ["contains", "exports"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -15955,6 +16160,31 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
       const c = n.child(i)
       if (c) st.push({ node: c, exit: false })
     }
+  }
+  // BD8b — `overrides`. Bash has no classes and no inheritance, so this type has no
+  // superclass to point at; but redefining a function IS an override in the only
+  // sense the language has one, and BOTH this oracle and the analyzer omitted the
+  // type for the whole wave. That is the class of defect a differential cannot
+  // find: two independent implementations that both say nothing agree perfectly,
+  // and the lane reported 99.9% coverage and 0 UNEXPLAINED throughout. The
+  // ontology-coverage gate found it by measuring the LANGUAGE instead of diffing
+  // the CODE. Mirrored here so the differential can corroborate rather than
+  // contradict, and counted on the TREE — a `function_definition` node — so a
+  // string or an embedded heredoc cannot fake a redefinition.
+  {
+    const firstDecl = new Map<string, boolean>()
+    const visit = (n: any) => {
+      if (n.type === "function_definition") {
+        const named = (n.namedChildren ?? []).find((c: any) => c.type === "word")
+        const name = named?.text
+        if (name) {
+          if (firstDecl.get(name)) push("overrides", scriptName, name)
+          else firstDecl.set(name, true)
+        }
+      }
+      for (let i = 0; i < n.childCount; i++) visit(n.child(i))
+    }
+    visit(root)
   }
   return edges
 }
