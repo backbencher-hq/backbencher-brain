@@ -529,6 +529,10 @@ export namespace ASTEngine {
           "tree-sitter-hcl/tree-sitter-hcl.wasm",
         ],
         "tree-sitter-lua/tree-sitter-lua.wasm": ["tree-sitter-lua/tree-sitter-lua.wasm", "tree-sitter-wasms/out/tree-sitter-lua.wasm"],
+        // The nim grammar has no published npm tarball wasm (see
+        // grammars/tree-sitter-nim/PIN.md), so the only alternative that can
+        // resolve is a sibling checkout of the vendored source.
+        "tree-sitter-nim/tree-sitter-nim.wasm": ["tree-sitter-nim/tree-sitter-nim.wasm"],
         "tree-sitter-erlang/tree-sitter-erlang.wasm": ["tree-sitter-erlang/tree-sitter-erlang.wasm"],
         "tree-sitter-clojure/tree-sitter-clojure.wasm": ["tree-sitter-clojure/tree-sitter-clojure.wasm"],
         "tree-sitter-groovy/tree-sitter-groovy.wasm": ["tree-sitter-groovy/tree-sitter-groovy.wasm"],
@@ -797,6 +801,10 @@ export namespace ASTEngine {
         }
         case "zig": {
           languageWasmPath = resolveWasm("tree-sitter-zig/tree-sitter-zig.wasm")
+          break
+        }
+        case "nim": {
+          languageWasmPath = resolveWasm("tree-sitter-nim/tree-sitter-nim.wasm")
           break
         }
         case "fsharp": {
@@ -1141,6 +1149,27 @@ export namespace ASTEngine {
       throw new Error(`Failed to parse file: ${filePath}`)
     }
 
+    // The SQL analyzer's declaration-resync pass re-parses a badly damaged file
+    // one statement at a time (a single unterminated dollar-quote otherwise
+    // swallows the rest of the file — measured at 33% of corpus declarations
+    // unreachable). `analyze` is synchronous and `Language.load` is not, so it
+    // cannot build that parser itself on the first file; hand it the grammar
+    // this function has already loaded rather than making it load a second copy.
+    // `parser.language` is the Language the parser was set to (web-tree-sitter
+    // 0.25 exposes no getLanguage()). Harnesses that drive the analyzer directly
+    // call `setGrammar` themselves, so the pass is exercised by the fixture lane
+    // and not only in production.
+    if (language === "sql") {
+      try {
+        const mod: any = await import("./real-sql-analyzer")
+        const grammar = (parser as any).language
+        if (grammar) (mod.RealSqlAnalyzer as any).setGrammar?.(grammar, (parser as any).constructor)
+      } catch {
+        // No grammar handed over: the analyzer keeps the main pass only and
+        // records resyncSkipped in its ambiguity counters.
+      }
+    }
+
     return { parser, tree, transientLuaGrammar }
   }
 
@@ -1466,6 +1495,15 @@ export namespace ASTEngine {
         errors: [...(result.errors || []), ...treeErrors],
         rawContent: result.rawContent,
         metadata: {
+          // The analyzer's OWN metadata is spread FIRST, so a lane's own keys
+          // survive the trip to the production entry. This object used to be a
+          // fixed allowlist of thirteen fields, and every key outside that list
+          // was silently dropped — which is how the VB lane's `vbGaps` (its
+          // disclosed gaps, the thing the lane exists to report) never reached
+          // `parseFile`, and how `analysisVersion` read `m10.06-cut` for a lane
+          // whose analyzer stamps `m60-vb-1`. A disclosure that is computed and
+          // then thrown away is not a disclosure.
+          ...meta,
           complexity: meta.complexity || 0,
           linesOfCode: content.split("\n").length,
           cyclomaticComplexity: meta.cyclomaticComplexity,
@@ -1478,9 +1516,20 @@ export namespace ASTEngine {
           architecturalInsights: meta.architecturalInsights || [],
           architecturalScore: meta.architecturalScore || 0,
           codeQuality: meta.codeQuality || "unknown",
-          hasTypeInference: true,
-          hasFrameworkIntelligence: true,
-          analysisVersion: "m10.06-cut",
+          // NOT hardcoded `true`. These two are CLAIMS a lane makes about
+          // itself, and lanes make them honestly in both directions: the VB
+          // analyzer reports `false` for both, because it does no type inference
+          // and has no framework intelligence, and the hardcode overwrote that
+          // with `true` on the way out — the product asserting a capability the
+          // lane has explicitly said it lacks. The `?? true` default keeps every
+          // lane that says nothing behaving exactly as it did before, so the only
+          // behaviour that changes is a lane that made the claim and was
+          // overwritten. (kotlin's spec already records this field as real:
+          // "metadata.hasTypeInference stays — declared-type extraction IS real
+          // inference input.")
+          hasTypeInference: meta.hasTypeInference ?? true,
+          hasFrameworkIntelligence: meta.hasFrameworkIntelligence ?? true,
+          analysisVersion: meta.analysisVersion || "m10.06-cut",
         },
       }
     } finally {
@@ -1575,6 +1624,8 @@ export namespace ASTEngine {
         return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
       case "zig":
         return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
+      case "nim":
+        return new (await import("./real-nim-analyzer")).RealNimAnalyzer()
       case "fsharp":
         return new (await import("./real-fsharp-analyzer")).RealFsharpAnalyzer()
       case "powershell":
