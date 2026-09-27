@@ -216,14 +216,15 @@ only a published field can say that.
 | Gate | State |
 |---|---|
 | **F1** grammar audit | ✅ pass — 11/11 node-type literals real, 0 unknown, 0 dead field reads |
-| **F3** fixtures | ✅ **10/10** — `identity-addressable`, `attribute-case-and-srcset`, `element-forms`, `resource-carriers`, `scheme-and-navigation`, `scope-barriers-and-references`, `inline-embedded-code`, `framework-and-scores`, `error-budget`, `error-budget-broken` |
-| **F4** mutation | ✅ **54/54 caught** (the lane entered with 0 mutants out of 938) |
+| **F3** fixtures | ✅ **12/12** — `identity-addressable`, `attribute-case-and-srcset`, `element-forms`, `resource-carriers`, `scheme-and-navigation`, `scope-barriers-and-references`, `inline-embedded-code`, `undiscovered-carriers`, `error-recovery`, `framework-and-scores`, `error-budget`, `error-budget-broken` |
+| **F4** mutation | ✅ **59/59 caught** (the lane entered with 0 mutants out of 938) |
 | **F5** differential | ✅ **100% / MISSING=0 / unexplained=0** on **both** corpora — `otp` **341/341** primary, `sqlite` **351/351** second, against `deriveHtmlEdges` (written from the HTML spec's carrier list, deliberately not sharing the analyzer's table) |
 | **F9** probe battery | ✅ **42/42**, of which **5 are html's own**: `IDENTITY`, `SCHEME`, `LINE`, `CARRIERS`, `BARRIER`. The battery asserts the analyzer AND the oracle, and that the oracle derives nothing on the forbidden set |
 | **M12** differential | ✅ precision **1.000**, recall **1.000**, TP=45 FP=0 FN=0, `earliestFailingLayer=none`, against a ground truth **re-audited by hand** (45 facts, each quoting the source line it was read from) |
 | **PIPE** store seam | ✅ 7 store-level assertions through the **real CLI** (`node bin/bb index` → `brain.db`): document-root containment sourced from a `module`-kind symbol, `dup-target#2` persisted as its own node, srcset fan-out as three distinct rows, zero NULL lines, a fragment href persisted as the resolved symbol `content` rather than the text `#content`. Run with `tsx` — `better-sqlite3` cannot load under Bun |
 | **M60.R8** framework surface | ✅ **29/29**; negative control re-injecting `Targeted/ID-Styling` drops it to 27/29, which is what proves the cases are load-bearing |
-| **SPEC** #419 | ⚠️ INVENTORY-DONE — 19/19 named node types classified, **gap list empty**; sections **E/F await the canonical baseline pin** |
+| **M14.0.CENSUS** carrier census | ✅ **registered gate** — 61 distinct `(tag@attr)` pairs over 4,000 files / 313,582 reference-shaped occurrences, all ruled; 38 claimed carriers positively probed; 2 conditional carriers probed. Consults neither the analyzer's table nor the oracle's, because a differential cannot contradict a premise it shares. Negative control: removing `use@href`, `a@ping`, `body@background` or `meta@content` each exits 1 **naming the pair**; restored exits 0 |
+| **SPEC** #419 | ⚠️ sections **A–D, G, H pass**; 20/20 named node types classified, **gap list empty**. **E/F await the canonical baseline pin** and are the only red cells. Section A had been *reported* green at 19/19 and was in fact red — `ERROR` and `MISSING` were in no bucket, and the earlier count predated the grammar's node list growing. Both are now classified on measurement: `ERROR` is live and pinned by `html/error-recovery` (report at the node's own span, bypass it, keep publishing around it), `MISSING` never occurs in this grammar across twelve malformed probes and is silent with the defensive read kept — the same split `bash` already records |
 
 ### What the hand audit changed that no gate did
 
