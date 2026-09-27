@@ -14426,7 +14426,14 @@ async function main() {
         // M14 F10: the css truth. `deriveCssEdges` needs the module name for
         // `@import` — an import belongs to the FILE that declares it, and the
         // document IS the file's module.
-        const cssModule = (relPath.split("/").pop() ?? "styles").replace(/\.[^.]+$/, "") || "styles"
+        // The module name is the file's BASENAME, extension included — the
+        // analyzer's `importerName` is `path.segs[segs.length - 1]`, so
+        // `expected.css` is the source of its own `@import` edges, not `expected`.
+        // Stripping the extension here produced a `from` that never matched the
+        // analyzer's, which the site-agnostic comparison cannot see (it matches
+        // label + target only), so the error was invisible to a green row and
+        // would have surfaced the moment anything compared the source.
+        const cssModule = relPath.split("/").pop() || "stylesheet"
         for (const e of deriveCssEdges(root, cssModule)) {
           ;(truth as any[]).push(e)
         }
@@ -15687,6 +15694,13 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const push = (label: string, from: string, target: string) => {
+    // Trimmed once, here, for the same reason the analyzer trims at emission: a
+    // zsh `$ _iterm2_command` produced `uses: -> " _iterm2_command"`, and while
+    // both sides agreed on the byte they agreed on a target that can match no
+    // declaration. Normalising in the harness is what lets a MATCH mean
+    // something.
+    from = from.trim()
+    target = target.trim()
     if (!from || !target) return
     // Matching in this harness is site-agnostic (label + target, never the
     // source line), so one row per (label,target) is the right grain here; the

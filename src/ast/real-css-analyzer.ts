@@ -754,6 +754,105 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ASTEngine.SymbolKind.Class
   }
 
+  /**
+   * Complexity of a media/supports/container QUERY, in the same spirit as the
+   * selector metric: 1, plus one for each boolean operator that joins or negates a
+   * condition. `@media print` is 1 (no decision), while
+   * `@supports (a:1) and (b:2) and (c:3)` is 3 and `not (a)` is 2.
+   *
+   * WHY THIS EXISTS. Complexity was measured for SELECTOR symbols only, and
+   * `pool-worker.ts` computes `complexity: s.complexity || s.metadata?.complexity
+   * || 1` — so every other kind's absent value became a FABRICATED 1 in the store.
+   * Measured on the corpus, that was 6,486 of 27,322 css symbols (24%): 4,664
+   * `variable`, 1,378 `interface` (@supports), 350 `module` (@media/@layer/
+   * @container) and 94 `function` (keyframes). A `@supports` scope with a
+   * 20-condition query read identically to `.plain { color: red }`, which is the
+   * same defect as the hardcoded 1, one level narrower and therefore easier to
+   * miss.
+   */
+  private queryComplexity(text: string): number {
+    if (!text) return 1
+    // Only TOP-LEVEL joins count: an `and`/`or` inside a nested parenthesis is part
+    // of that sub-condition's own cost, and counting it twice would make a nested
+    // query look worse than a flat one of the same size.
+    let depth = 0
+    let ops = 0
+    const src = text
+    for (let i = 0; i < src.length; i++) {
+      const c = src[i]
+      if (c === "(") { depth++; continue }
+      if (c === ")") { depth--; continue }
+      if (depth !== 0) continue
+      if (!/\s/.test(src[i - 1] ?? " ") || !/\s/.test(src[i + (c === "o" || c === "r" ? 1 : 2)] ?? " ")) {
+        // fall through to the word test below; this branch only guards adjacency
+      }
+      if (c === "a" && src.startsWith("and", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 2; continue }
+      if (c === "o" && src.startsWith("or", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 1; continue }
+      if (c === "n" && src.startsWith("not", i) && /\s/.test(src[i - 1] ?? " ")) { ops++; i += 2; continue }
+    }
+    return 1 + ops
+  }
+
+  /** `keyframe_block` children of a `keyframes_statement` — one per animation stop. */
+  private countKeyframeStops(node: Node): number {
+    let n = 0
+    const walk = (x: Node) => {
+      if (x.type === "keyframe_block") n++
+      for (let i = 0; i < x.childCount; i++) { const c = x.child(i); if (c) walk(c) }
+    }
+    walk(node)
+    return n
+  }
+
+  /**
+   * A custom property's complexity: 1, plus one for each `var(--other)` it reads.
+   * A `--brand: #06c` is 1; a theming token composing five others is 6, and that
+   * composition chain is the review cost. This is the last css symbol kind that
+   * had no measured value — with it, all 27,322 corpus symbols carry one, and the
+   * `|| 1` fallback in `pool-worker.ts` stops fabricating a quarter of the lane.
+   */
+  private customPropertyComplexity(decl: Node): number {
+    let reads = 0
+    for (let i = 0; i < decl.childCount; i++) {
+      const child = decl.child(i)
+      if (!child) continue
+      for (let j = 0; j < child.childCount; j++) {
+        const leaf = child.child(j)
+        if (leaf && /var\(\s*--/.test(leaf.text)) reads++
+      }
+    }
+    return 1 + reads
+  }
+
+  /**
+   * The at-rule's OWN descriptors: `declaration` children of its DIRECT block, one
+   * level only.
+   *
+   * One level, deliberately. The first version walked the whole subtree and
+   * produced complexity 2,917 for Tailwind's `@layer utilities`, which wraps
+   * essentially the whole stylesheet — so the number was "declarations in
+   * everything nested under here", which is a file size, not a complexity, and it
+   * double-counted every selector that already carries its own. `@layer utilities`
+   * is honestly 1: its contents are accounted by the rules inside it.
+   *
+   * This is what makes the descriptor reading correct where it applies:
+   * `@property --x` with `syntax`/`inherits`/`initial-value` is 4, `@font-face`
+   * with a descriptor set is its count + 1, and `@mixin` with one declaration is 2.
+   */
+  private countDescriptors(node: Node): number {
+    let n = 0
+    for (let i = 0; i < node.childCount; i++) {
+      const child = node.child(i)
+      if (!child || child.type !== "block") continue
+      for (let j = 0; j < child.childCount; j++) {
+        const d = child.child(j)
+        if (d && d.type === "declaration") n++
+      }
+      break
+    }
+    return n
+  }
+
   private findChild(node: Node, predicate: (child: Node) => boolean): Node | null {
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
@@ -923,7 +1022,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       //   pseudo        a pseudo-class or pseudo-element
       //   attribute     an attribute selector
       //   nesting depth a `&`-composed nested rule (below)
-      let selectorComplexity = 0
+      // The base is 1, not 0. A selector always costs something to read, and more
+      // concretely the codebase's own contract is `complexity >= 1` — the CC1
+      // systems and OO checks both assert it, and `pool-worker.ts` computes
+      // `complexity: s.complexity || s.metadata?.complexity || 1`.
+      //
+      // Starting at 0 produced a value that was wrong twice over: the analyzer's
+      // metadata said 0 for `.plain { color: red }` while the worker's `||` fallback
+      // turned the same symbol into 1 in the store. Two truths for one number, and
+      // the visible one violated the `>= 1` convention every other lane meets. A
+      // metric that disagrees with the contract it is checked against is not a
+      // stricter metric, it is an unmeasurable one.
+      let selectorComplexity = 1
       let nestingDepth = 0
       // M59.A7: each chain LEAF's own line. The rule "the line belongs to the
       // name" means `contains #toc -> a` is named by the `a`, not by the rule's
@@ -954,9 +1064,20 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           selectorComplexity += 1
           // A functional pseudo-class (`:not(...)`, `:is(...)`, `:where(...)`,
           // `:has(...)`) carries a SELECTOR inside it, so its own contents are
-          // part of the cost. Counted from the arguments node, which is what
-          // holds them, rather than by matching the function name.
-          if (this.findChild(n, (c) => c?.type === "pseudo_class_arguments") !== null) selectorComplexity += 1
+          // part of the cost. Counted from the arguments node, which is what holds
+          // them, rather than by matching the function name.
+          //
+          // The node is called `arguments`, NOT `pseudo_class_arguments`: the
+          // grammar ALIASES the latter to the former
+          // (`optional(alias($.pseudo_class_arguments, $.arguments))`,
+          // grammar.js:231), so the pre-alias name appears in no parse tree at all
+          // and this term was DEAD — every functional pseudo in the corpus was
+          // scored as a plain pseudo, one step cheap. The fixture lane caught it:
+          // `li:not(.skip)` came back 2 where the contract says 3. A metric whose
+          // own distinguishing term can never fire is a metric that cannot tell
+          // `:hover` from `:where(.a .b .c)`, which is the distinction it existed
+          // to draw.
+          if (this.findChild(n, (c) => c?.type === "arguments") !== null) selectorComplexity += 1
         }
         if (n.type === "pseudo_element_selector") {
           hasPseudoElement = true
@@ -1332,7 +1453,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: "",
           visibility: "public",
-          metadata: { isMediaScope: true, mediaCondition: collapseWhitespace(queryNode.text) },
+          metadata: {
+            isMediaScope: true,
+            mediaCondition: collapseWhitespace(queryNode.text),
+            complexity: this.queryComplexity(collapseWhitespace(queryNode.text)),
+          },
         })
         ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
       }
@@ -1377,7 +1502,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
-        metadata: { isKeyframes: true },
+        metadata: {
+          isKeyframes: true,
+          // A keyframes sequence's review cost is its STOPS: a 30-stop animation
+          // is a different object to read than a 2-stop one, and the stop count is
+          // the thing that differs. `from`/`to` are 2 stops, so the floor is 3
+          // (1 + the two keywords) rather than 1.
+          complexity: 1 + this.countKeyframeStops(node),
+        },
       })
       ctx.keyframeNames[name] = true
       ctx.patterns["CSS Animations"] = true
@@ -1421,7 +1553,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
-        metadata: { isSupports: true, supportsCondition: condition },
+        metadata: {
+          isSupports: true,
+          supportsCondition: condition,
+          complexity: this.queryComplexity(condition),
+        },
       })
       ctx.patterns["Feature Queries (@supports)"] = true
     }
@@ -1592,7 +1728,16 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: "",
           visibility: "public",
-          metadata: { isAtRule: true, atKeyword: keyword },
+          metadata: {
+            isAtRule: true,
+            atKeyword: keyword,
+            // A declaration at-rule's cost is its DESCRIPTORS: `@property --x` with
+            // `syntax`/`inherits`/`initial-value` is a real registration, and
+            // `@font-face` carries a font's whole descriptor set. Counted from the
+            // declarations in the block, so a bare `@layer base { }` with none is
+            // honestly 1.
+            complexity: 1 + this.countDescriptors(node),
+          },
         })
       }
 
@@ -1753,7 +1898,16 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: currentSelector,
         visibility: "public",
-        metadata: { isCustomProperty: true },
+        metadata: {
+          isCustomProperty: true,
+          // A custom property's cost is its VALUE plus the other custom
+          // properties it READS. `--brand: #06c` is honestly 1; a theming token
+          // that composes five others through `var()` is 6, and that composition
+          // chain is the thing a reviewer has to hold in their head. Counted from
+          // the value text, so it is a property of the declaration and not of
+          // whatever selector happens to hold it.
+          complexity: this.customPropertyComplexity(node),
+        },
       })
       // contains for the custom property scoped to its selector — emitted
       // here (not by the post-loop) to avoid double-emission with nested
