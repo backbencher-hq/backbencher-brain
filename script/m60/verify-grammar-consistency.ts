@@ -431,6 +431,22 @@ if (!existsSync(stragglerPath)) {
         ? `stragglers ${ev.counts.upgradeStragglers}, candidate failures ${ev.counts.candidateTotalFailures}, wasms ${ev.counts.shippedGrammarWasms} — all agree`
         : "the survey's runtime counts disagree with the measurement artifact",
     })
+    // A DECLARED VERSION MUST SAY WHERE IT CAME FROM. Two lanes record their identity from
+    // the measured census because they are engine-only and have no prose to write it in
+    // (toml, tsx). That is legitimate — and it is also the shape of a silent substitution,
+    // where a generator quietly starts sourcing versions from somewhere and nobody looks.
+    // So each census-sourced row must CITE the artifact and the field it read.
+    const censusRows = (survey.rows ?? []).filter((r: any) => r.declared?.declaredFromCensus)
+    const uncited = censusRows.filter((r: any) => !r.declared.declarationSite || !r.declared.sources?.some((x: any) => x?.file === "validation/m60/results/G-PROVENANCE.json"))
+    c8.push({
+      check: "census-sourced-versions-cite-their-source",
+      status: uncited.length === 0 ? "pass" : "fail",
+      detail:
+        uncited.length === 0
+          ? `${censusRows.length} lane(s) record their version from the census and every one cites the artifact and field it read${censusRows.length ? " (" + censusRows.map((r: any) => r.lane).join(", ") + ")" : ""}`
+          : `${uncited.length} lane(s) claim a census-sourced version without citing the artifact: ${uncited.map((r: any) => r.lane).join(", ")}`,
+    })
+
     // The retraction must stay visible. Silently overwriting an unreproducible
     // claim with a new number destroys the record that it was ever wrong.
     c8.push({
