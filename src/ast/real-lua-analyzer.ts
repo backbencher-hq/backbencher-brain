@@ -216,7 +216,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processCall(node: Node, frame: LuaFrame, ctx: LuaContext): void {
-    // M60 LUA-00: there is no `function` field on a function_call in this
+    // M60 LUA-01: there is no `function` field on a function_call in this
     // grammar. The callee is the call's `name` field, and it is either a plain
     // identifier (`require(...)`) or an index expression (`M.new(...)`,
     // `obj:method(...)`). The old `childForFieldName("function") || ... ||
@@ -224,8 +224,24 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // fallback, which is exactly the arrangement that hid the other four.
     const functionNode = node.childForFieldName("name") || node.namedChild(0)
     if (!functionNode) return
-    const callName = functionNode.text
-    if (!callName) return
+    // M60 LUA-13: `node.text` on a multi-line callee is a SOURCE SNIPPET, not
+    // a name. `obj\n  .method()` yields the 4-character-per-line text
+    // "obj\n  .method", which is not a symbol, cannot be matched to a
+    // declaration, and is dropped downstream by the pool-worker's garbage-target
+    // filter (src/ast/pool-worker.ts:391 rejects any target containing a
+    // newline). Measured consequence: writing the identical call on one line
+    // produced the edge `caller2 -> obj.method` and splitting it across two
+    // lines produced NO EDGE AT ALL. So the bug is not merely an ugly name — it
+    // silently deletes a call from the graph, and line breaks are ordinary in
+    // real Lua.
+    //
+    // The fix is to read the callee's NAME from its structure: an index
+    // expression is `table <op> field`, so the symbol is the field, and the
+    // receiver is kept in metadata rather than concatenated into the name. The
+    // line still comes from the name-bearing node, which is unchanged.
+    const callee = this.callee(functionNode)
+    if (!callee) return
+    const callName = callee.name
     this.detectFrameworks(callName, ctx)
 
     const values = this.callArguments(node)
@@ -243,7 +259,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const source = frame.callable || "global"
     if (callName !== "pcall" && callName !== "xpcall") {
-      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true })
+      this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true }, callee.nameNode)
     }
 
     if (callName === "coroutine.create" || callName === "coroutine.wrap") {
@@ -254,7 +270,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const target = values[0]
       const metatable = values[1]
       if (target && metatable && !this.isTableNode(target)) {
-        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" })
+        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
       }
       if (metatable?.type === "identifier") {
         const tableName = metatable.text
@@ -264,7 +280,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const constructor = this.constructorTarget(functionNode, ctx)
     if (constructor) {
-      this.addRelationship(ctx, source, constructor, ASTEngine.RelationshipType.Instantiates, { luaSpecific: true, relationshipType: "instantiates" })
+      this.addRelationship(ctx, source, constructor, ASTEngine.RelationshipType.Instantiates, { luaSpecific: true, relationshipType: "instantiates" }, callee.nameNode)
     }
 
     if (callName === "class" || callName === "Object:extend" || callName === "Object.extend") {
@@ -292,7 +308,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       metadata: { luaSpecific: true },
     })
-    this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, { luaSpecific: true, relationshipType: "lua_require" })
+    this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, { luaSpecific: true, relationshipType: "lua_require" }, node)
     if (moduleName.startsWith("resty")) ctx.frameworks.add("OpenResty")
     if (moduleName === "socket" || moduleName === "lfs" || moduleName === "cjson" || moduleName === "ssl") ctx.frameworks.add("LuaRocks Core Modules")
     if (moduleName === "lapis") ctx.frameworks.add("Lapis")
@@ -329,17 +345,74 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const symbol of ctx.symbols) {
       const owner = symbol.ownerName || (symbol.scope && symbol.scope !== "global" ? symbol.scope : "global")
       if (owner && owner !== symbol.name) {
-        this.addRelationship(ctx, owner, symbol.name, ASTEngine.RelationshipType.Contains, {})
+        // M60 LUA-01: a Contains edge and the symbol it names must never
+        // disagree about the line — java's declarationLineNode states the rule
+        // outright ("the symbol range and its `contains` edge move together") and
+        // scala pinned it first. The edge is synthesized here rather than
+        // observed at a site, so the line is the SYMBOL's own declaration line,
+        // not an invented node. Passing no node would leave the edge lineless,
+        // which is the LUA-01 defect all over again on the one kind that CAN
+        // name its line honestly.
+        this.addRelationship(ctx, owner, symbol.name, ASTEngine.RelationshipType.Contains, {}, undefined, { dedupe: false, symbolRange: symbol.range })
       }
     }
   }
 
-  private addRelationship(ctx: LuaContext, source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>): void {
+  private addRelationship(
+    ctx: LuaContext,
+    source: string,
+    target: string,
+    type: ASTEngine.RelationshipType,
+    metadata: Record<string, any>,
+    // M60 LUA-01: the node whose START is the line this edge belongs to.
+    //
+    // The contract is M59 (#825)'s, copied from the family rather than
+    // invented here. Java states it at real-java-analyzer.ts:967-971: "the line
+    // is where the CALL IS WRITTEN — the name field of the method_invocation,
+    // not the invocation node's own start. Measured with the M59 oracle on real
+    // java: a method_invocation starts at its RECEIVER, so `a.b()\n  .c()` put
+    // c on the line a.b() opened on."
+    //
+    // tree-sitter-lua has the identical hazard — `obj\n  .method()` is a
+    // function_call whose dot_index_expression opens on the `obj` line while
+    // `method` is written on the next — so the rule transfers unchanged. Before
+    // this parameter every lua relationship carried NO line at all: 0 of 15 on
+    // a purpose-built probe, against java's line_number:2 through the identical
+    // pipeline, which is why M60's matrix reads lua `lines: n/a`.
+    //
+    // A separate `dedupe` flag exists because Contains edges are SYNTHESIZED
+    // after the walk from symbol pairs rather than observed at a site; they
+    // carry no node and must not be invented one. See addContainsRelationships.
+    nameNode?: Node | null,
+    opts?: { dedupe?: boolean; symbolRange?: { startLine: number } },
+  ): void {
     if (!source || !target) return
-    const key = `${type}\u001f${source}\u001f${target}`
-    if (ctx.seenRelationships.has(key)) return
+    const key = `${type}${source}${target}`
+    // M60 LUA-01: `dedupe: false` is for SYNTHESIZED edges only. Observed edges
+    // keep the dedup so a callee called from four places is still one edge in
+    // the store. The per-site problem that dedup causes is recorded as its own
+    // finding (LUA-01b) and is NOT silently changed here, because whether the
+    // store may hold two edges of one kind between one pair of symbols is a
+    // schema question above this analyzer.
+    if (opts?.dedupe === false) {
+      // still recorded, so a later edge of the same shape is not re-added
+      if (ctx.seenRelationships.has(key)) return
+    } else if (ctx.seenRelationships.has(key)) return
     ctx.seenRelationships.add(key)
-    ctx.relationships.push({ source, target, type, confidence: 1.0, metadata })
+    const relationship: ASTEngine.UniversalRelationship = {
+      source,
+      target,
+      type,
+      confidence: 1.0,
+      metadata,
+    }
+    // 1-based, on the name-bearing node. Absent rather than 0 or -1 when there
+    // is no node to name: a legacy "0 means no line stored" is exactly the
+    // ambiguity M62's address owner exists to remove, and inventing a line here
+    // would re-create it.
+    if (nameNode) relationship.line_number = nameNode.startPosition.row + 1
+    else if (opts?.symbolRange) relationship.line_number = opts.symbolRange.startLine
+    ctx.relationships.push(relationship)
   }
 
   private functionName(node: Node): string | undefined {
@@ -426,7 +499,37 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return result
   }
 
-  // M60 LUA-00: reach a child by node TYPE. The five field literals this
+  // M60 LUA-13 + LUA-01: the callee's NAME and the node that CARRIES ITS LINE
+  // must be the same node, returned together so they cannot drift apart.
+  //
+  // Getting this wrong took three measurements, and each wrong answer was
+  // plausible enough to nearly ship:
+  //   1. `node.text` on the callee — on a call split across lines that is a
+  //      SOURCE SNIPPET ("obj\n  .method"), which the pool-worker's
+  //      garbage-target filter deletes (pool-worker.ts:391 rejects any target
+  //      containing a newline). Consequence: `obj\n.method()` produced NO EDGE
+  //      while the identical one-line call produced one. A line break silently
+  //      removed a call from the graph.
+  //   2. the first identifier in the index expression — that is the RECEIVER
+  //      (`obj`), not the thing called.
+  //   3. the index expression itself — its start is the receiver's line, so
+  //      `obj\n  .method()` reported the `obj` line and the gate caught it.
+  //
+  // The callee of `table . field` / `table : field` is `field`, and `field` is
+  // the LAST named child, so its own start position is the line the method name
+  // is written on — which is exactly M59 (#825)'s rule and exactly what java
+  // gets from `childForFieldName("name")` on its invocation node.
+  private callee(functionNode: Node): { name: string; nameNode: Node } | undefined {
+    if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode }
+    if (functionNode.type === "dot_index_expression" || functionNode.type === "method_index_expression") {
+      const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(functionNode.namedChildCount - 1) : undefined
+      if (last?.text) return { name: last.text, nameNode: last }
+    }
+    if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
+    return undefined
+  }
+
+  // M60 LUA-01: reach a child by node TYPE. The five field literals this
   // analyzer used to ask for (`name_list`, `function`, `expression_list`, `key`)
   // do not exist in the pinned grammar, and every one of them sat behind a
   // `|| namedChild(0)` fallback that turned "this field does not exist" into
