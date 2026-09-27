@@ -38,6 +38,68 @@ const psDropRelField = (field: string) => (r: any) => ({
   }),
 })
 
+/**
+ * The two export mutants below reproduce the SHAPE of the one-token reader and of
+ * the un-deduplicated writer, generically, off the result's own fields rather than
+ * off a fixture name. Writing them as literal deletions would have been simpler and
+ * would have proved nothing: a mutant that hard-codes the fixture it was written
+ * for measures that fixture, not the behaviour.
+ */
+/** Keep only the first export row per source line — what a one-token value reader yields for a comma list. */
+const dedupeKeepFirstPerLine = (exports: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const e of exports ?? []) {
+    const key = `${e?.range?.start?.line ?? e?.line ?? "?"}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(e)
+  }
+  return out
+}
+
+/** The relationship half of the same revert: one `exports` edge per source line. */
+const dedupeKeepFirstExportsRel = (rels: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of rels ?? []) {
+    if (x?.type === "exports") {
+      const key = `exports|${x.line_number ?? "?"}`
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    out.push(x)
+  }
+  return out
+}
+
+/** A second copy of each distinct export name — the un-deduplicated writer's output. */
+const duplicateFirstOfEach = (names: string[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const n of names) {
+    const k = String(n).toLowerCase()
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ name: n })
+  }
+  return out
+}
+
+/** The relationship half of the duplicate mutant. */
+const duplicateFirstExportsRel = (rels: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of rels ?? []) {
+    if (x?.type !== "exports") continue
+    const k = `${String(x.target ?? "").toLowerCase()}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ ...x, line_number: (x.line_number ?? 0) + 1 })
+  }
+  return out
+}
+
 import type { Mutant } from "../m14/mutate-analyzer"
 
 export const POWERSHELL_MUTANTS: Mutant[] = [
@@ -295,6 +357,41 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       ...r,
       exports: [],
       relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  // NOT AN ENTRY, AND THE REASON IS THE POINT — a fourth instance of this lane's
+  // "an entry that cannot fail is decoration" rule, after `emit-from-recovery-region`.
+  //
+  // There is a third mutation available here: revert the comma-list value read to
+  // the single-token `valueAfterNode(elements, i)` it replaced, so
+  // `Export-ModuleMember -Function A, B` publishes only `A`. It was written, and it
+  // SURVIVED — 0 failures before, 0 after — because no fixture in the lane contains
+  // a comma-separated export list. The obvious fix is to add one, and adding one
+  // makes the FIXTURE UNPARSEABLE: the grammar cannot lex a comma-separated command
+  // argument at all, which is the whole of the G6 class (245 parameter-form sites
+  // across both corpora). So the construct this mutant reverts is not merely
+  // unpinned, it is currently UNREACHABLE, and a fixture cannot assert on text the
+  // parser cannot read.
+  //
+  // The comma-list read therefore stays in the analyzer — it is correct, and the
+  // duplicate mutant below proves the code path is exercised — but its own revert is
+  // not admitted as a mutant, because admitting it would put a permanently-green row
+  // in the lane's mutation evidence and a permanently-green row is worse than no row:
+  // it is read as coverage. This entry reappears the moment G6 lands and the form
+  // becomes parseable, and the fixture row to go with it is written in
+  // reviews/powershell/grammar-worklist.md under G6.
+  {
+    id: "powershell/export-allows-duplicate-name",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "REVERT: `addExport` stops deduplicating on the exported name, so a name reachable by two paths in one statement is published twice. The comma-list fix is what made this reachable — a value in `command_elements` is preceded by a `command_argument_sep` that BOTH the flag's value walk and the bare-value branch match, so `Export-ModuleMember -Function F` sees `F` twice. Found by module-surface-psb9's export invariant (`duplicate export name(s)`) rather than by a count, which is the whole reason that invariant is in the harness: the corpus emits the same edge twice without any number changing shape. PowerShell identifiers are case-insensitive, so the real invariant is one export per name per module, and a reader keying the graph on the name would otherwise see two rows for one published function.",
+    transform: (r: any) => ({
+      ...r,
+      // Append a second copy of every export whose name already appears, which is
+      // the state the analyzer was in for one statement per fixture file.
+      exports: [...(r.exports ?? []), ...duplicateFirstOfEach((r.exports ?? []).map((e: any) => e.name))],
+      relationships: [...(r.relationships ?? []), ...duplicateFirstExportsRel(r.relationships)],
     }),
   },
   {

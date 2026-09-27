@@ -250,6 +250,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
+    /** Exported names already emitted, lowercased — see `addExport` for why a module exports a name once. */
+    const exportedNames = new Set<string>()
     /** PS2 — the per-site relationship key. */
     const relKeys = new Set<string>()
 
@@ -781,6 +783,22 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      */
     const addExport = (name: string, via: string, line: number) => {
       if (!name || name.startsWith("*")) return
+      // A MODULE EXPORTS A NAME ONCE. The pre-G6 reader could only reach one value
+      // per flag, so the duplicate case never arose; the G6 comma-list reader walks
+      // the whole value list, which means a name can be reachable by two paths in
+      // the same statement — `Export-ModuleMember -Function F` is seen both by the
+      // flag's value walk and by the bare-value branch, because a value in
+      // `command_elements` is preceded by a `command_argument_sep` that both match.
+      // `module-surface-psb9` caught it as a violated export invariant on
+      // `Get-Setting`, which is exactly what an invariant is for: the fixture
+      // asserted a property of the lane's output that the change would otherwise
+      // have quietly broken, and the corpus would not have shown it.
+      //
+      // Deduplicated on the name, case-insensitively, because PowerShell's
+      // identifiers are — `Export-ModuleMember -Function Get-Setting, get-setting`
+      // is one export, and a reader keying the graph on the name would see two.
+      if (exportedNames.has(name.toLowerCase())) return
+      exportedNames.add(name.toLowerCase())
       exports.push({ name, range: this.lineRange(line), metadata: { powershellSpecific: true, via } })
       addRel(top().scope, name, ASTEngine.RelationshipType.Exports, 1.0, line, {
         powershellSpecific: true, viaExportModuleMember: true, fileLevel: atFileScope(),
@@ -1425,22 +1443,54 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
 
           // PS20 — `Export-ModuleMember -Function F`.
+          //
+          // G6 (M60 #278): a flag's value is a LIST, not one token. The reader used
+          // to take `valueAfterNode(elements, i)` — the single next named child —
+          // which is correct for `-Function F` and silently drops every name after
+          // the first in `-Function A, B`. That never showed, because the grammar
+          // could not parse a comma-separated command argument at all, so the only
+          // way this line reached the reader before the G6 grammar patch was as
+          // ERROR-recovery text and the recovery path emitted BOTH names by
+          // accident. The moment the line parses correctly the latent gap is
+          // visible: on powershell/test/perf/perf.psm1:207
+          // (`Export-ModuleMember -Function 'Start-Benchmarking', 'Compare-BenchmarkResult'`)
+          // the wired grammar reported two exports and the corrected grammar
+          // reported one. A patch that fixes 28 files and adds 243 edges should not
+          // quietly cost a real module-surface edge, so the reader now walks to the
+          // next flag instead of taking one token, and also accepts a bare
+          // `string_literal` / `generic_token` child, which is what a value after a
+          // comma is in the new tree.
           if (leaf === "Export-ModuleMember") {
             const elements = findFirstChild(node, "command_elements")
             if (elements) {
+              const isFlag = (t: string) => t === "function" || t === "cmdlet" || t === "variable" || t === "alias"
               for (let i = 0; i < elements.namedChildCount; i++) {
                 const c = elements.namedChild(i)
                 if (!c) continue
                 if (c.type === "command_parameter") {
                   const flag = stripDollar(c.text).replace(/^-/, "").toLowerCase()
-                  if (flag !== "function" && flag !== "cmdlet" && flag !== "variable" && flag !== "alias") continue
-                  const next = this.valueAfterNode(elements, i)
-                  if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
-                    addExport(this.stripQuotes(next.text), leaf, next.startPosition.row + 1)
+                  if (!isFlag(flag)) continue
+                  // Walk the whole value list, stopping at the next flag.
+                  for (let j = i + 1; j < elements.namedChildCount; j++) {
+                    const v = elements.namedChild(j)
+                    if (!v) break
+                    if (v.type === "command_parameter") break
+                    if (v.type === "command_argument_sep") continue
+                    if (v.type === "generic_token" || v.type === "string_literal" || v.type === "expandable_string_literal") {
+                      addExport(this.stripQuotes(v.text), leaf, v.startPosition.row + 1)
+                    } else {
+                      for (const t of this.literalTokens(v)) addExport(t, leaf, v.startPosition.row + 1)
+                    }
                   }
                   continue
                 }
-                if (c.type === "array_literal_expression" || c.type === "unary_expression" || c.type === "command_argument_sep") {
+                if (
+                  c.type === "array_literal_expression" ||
+                  c.type === "unary_expression" ||
+                  c.type === "command_argument_sep" ||
+                  c.type === "string_literal" ||
+                  c.type === "generic_token"
+                ) {
                   for (const t of this.literalTokens(c)) addExport(t, leaf, c.startPosition.row + 1)
                 }
               }
