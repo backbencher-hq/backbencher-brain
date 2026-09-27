@@ -203,6 +203,8 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     // current as aliases are discovered.
     const scopeOwners: Set<string> = localFunctions
     const functionStack: string[] = []
+    // First declaration line per function name, for the BD8b `overrides` edge.
+    const functionFirstDeclaration = new Map<string, number>()
     const functionParams = new Map<string, Set<string>>()
     const relKeys = new Set<string>()
     // BD1: the line is part of an edge's identity. Keyed with the line so two
@@ -316,6 +318,41 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (name) {
           functionStack.push(name)
           if (!functionParams.has(name)) functionParams.set(name, new Set())
+          // BD8b: a RE-DEFINITION replaces the prior one. Bash has no classes and
+          // no inheritance, so `overrides` has no superclass to point at — but
+          // redefining a function IS an override in the only sense the language
+          // has one, and the lane was silently omitting the type on a prose
+          // justification that did not hold. The ontology-coverage gate
+          // (`script/m14/ontology-coverage-gate.ts`) is what found it: the
+          // differential could not, because the oracle omitted `overrides` too,
+          // and two implementations that both say nothing agree perfectly.
+          // Measured on the corpus before this was added: 57 redefinitions across
+          // 38 of 2,747 admitted files, e.g. otp/make/test_target_script.sh
+          // declaring `print_msg` four times.
+          //
+          // The edge runs from the LATER definition to the EARLIER one, so both
+          // endpoints are the same name and the lines are what distinguish them —
+          // `overridesLine` carries the prior declaration's line explicitly so a
+          // consumer does not have to infer it. `contains` already emits both
+          // declarations, so the pair is resolvable.
+          const prior = functionFirstDeclaration.get(name)
+          if (prior !== undefined) {
+            addRel(
+              parentFn || scriptName,
+              name,
+              ASTEngine.RelationshipType.Overrides,
+              1.0,
+              node.startPosition.row + 1,
+              {
+                bashSpecific: true,
+                overridesLine: prior,
+                redefinition: true,
+                evidenceClass: "structural",
+              },
+            )
+          } else {
+            functionFirstDeclaration.set(name, node.startPosition.row + 1)
+          }
         }
         patterns.add("Function Definition")
       } else if (node.type === "command_substitution") {
