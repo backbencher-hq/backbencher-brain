@@ -333,7 +333,11 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // form (`package Outer { ... }`) the statement node spans every
           // method in the block, which made the package symbol cover its own
           // members and put its end line on the last one.
-          addSymbol(name, kind, nameNode ?? node, state, { isPackage: true })
+          // `packageName: name` so the symbol's SCOPE is itself. Passing the
+          // incoming state made a package declared after another package adopt
+          // the PREVIOUS one's scope (`package SelfNamed;` reported
+          // `scope: IsaArray`) — the namespace a class belongs to is the class.
+          addSymbol(name, kind, nameNode ?? node, { ...state, packageName: name }, { isPackage: true })
           patterns.add("Packages")
 
           const block = node.childForFieldName("body") || this.findChildByType(node, "block")
@@ -369,7 +373,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!name) break
           const isRole = node.type === "role_statement"
           const kind = isRole ? ASTEngine.SymbolKind.Trait : ASTEngine.SymbolKind.Class
-          addSymbol(name, kind, nameNode ?? node, state, isRole ? { isPerlRole: true } : { isPerlClass: true })
+          addSymbol(name, kind, nameNode ?? node, { ...state, packageName: name }, isRole ? { isPerlRole: true } : { isPerlClass: true })
           patterns.add(isRole ? "Roles" : "Classes")
           frameworks.add("Perl 5.38 core OO")
           const block = node.childForFieldName("body") || this.findChildByType(node, "block")
@@ -700,8 +704,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // A class that names ITSELF as its own base (`use Mojo::Base 'Mojo::Base'`
         // inside package Mojo::Base) is a real self-reference in the source but
         // a useless edge in a graph, and it would be the only edge that makes
-        // `extends` non-reflexive.
-        if (this.leafName(base) === owner) continue
+        // `extends` non-reflexive. Compared on the FULL name: a leaf comparison
+        // also fires for `package Foo::Bar; use Mojo::Base 'Other::Bar';`, which
+        // is a real inheritance edge between two different classes.
+        if (base === owner) continue
         addRelationship(
           owner,
           this.leafName(base),
@@ -720,11 +726,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const base = packageBases.get(symbol.ownerName)?.[0]
       if (!base) continue
       const baseLeaf = this.leafName(base)
-      // A class whose own name is its declared base (`use Mojo::Base 'SelfNamed'`
-      // inside `package SelfNamed`) would otherwise produce the edge
-      // `SelfNamed.run -> SelfNamed.run` — an override of a method by itself,
-      // which is true of the source and useless in a graph.
-      if (baseLeaf === this.leafName(symbol.ownerName)) continue
+      // A class whose own FULLY QUALIFIED name is its declared base
+      // (`use Mojo::Base 'SelfNamed'` inside `package SelfNamed`) would produce
+      // the edge `SelfNamed.run -> SelfNamed.run` — an override of a method by
+      // itself, true of the source and useless in a graph.
+      //
+      // The comparison is on the FULL name, never the leaf. A leaf comparison
+      // looks equivalent and is not: `package MojoliciousTest3::Baz; use Mojo::Base
+      // 'Mojolicious::Baz';` is a real subclass of a DIFFERENT class whose leaf
+      // collides with the subclass's own leaf, and a leaf guard deleted every
+      // such override (the F5 differential named 7 of them across mojo and plack:
+      // MojoliciousTest3::Baz.index -> Baz.index, Test::Controller.render ->
+      // Controller.render, Plack::Handler::HTTP::Server::PSGI.run -> PSGI.run).
+      if (base === symbol.ownerName) continue
       const method = String(symbol.metadata?.originalName || symbol.name)
       const candidateNames = [method, symbol.name]
       const localMethods = packageMethods.get(base) || packageMethods.get(baseLeaf)

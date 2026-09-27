@@ -206,9 +206,27 @@ export namespace ASTEngine {
     toml: "tree-sitter-toml",
     xml: "tree-sitter-xml",
     make: "tree-sitter-make",
+    // === SYSTEMS & COMPILING LANGUAGES (a real parser each) ===
+    nim: "tree-sitter-nim",
+
+    // M60 VB wave. `vb` was `__generic__` until 2026-09-27: `.vb` was a routed
+    // extension and `vb` a declared DetectedLanguage, but there was no VB.NET
+    // grammar on npm at all (`tree-sitter-vb` and `tree-sitter-visual-basic` are
+    // both 404, and the `tree-sitter-wasms` bundle that supplies 39 of this
+    // repo's grammars ships no VB), so the file was "analysed" by a regex generic
+    // pass that cannot see a Class, a Function, an Implements clause or a call
+    // site -- and reported as covered rather than refused.
+    //
+    // The grammar is a vendored and repaired tree-sitter-vbnet; its pin, its 18
+    // patches, its source<->wasm proof and its measured parse success are in
+    // grammars/tree-sitter-vbnet/PIN.md and validation/m14/grammar-pins.json.
+    // Measured: 90.89 % clean over 1185 files on four independent corpora with
+    // 0 crash files, up from 38.67 % on Microsoft's own VisualBasic.Core when
+    // the upstream grammar was first wired.
+    vb: "tree-sitter-vbnet",
+
     // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     nim: "__generic__",
-    vb: "__generic__",
     protobuf: "__generic__",
   } as const
 
@@ -787,6 +805,14 @@ export namespace ASTEngine {
         }
         case "powershell": {
           languageWasmPath = resolveWasm("tree-sitter-powershell/tree-sitter-powershell.wasm")
+          break
+        }
+        // M60 VB wave. The wasm name is the GRAMMAR's name, not the language's:
+        // the lane reads `tree-sitter-vbnet`, and the pin's `wired` field names
+        // the same file, so a swap of the wasm here is a swap the pin catches.
+        // See grammars/tree-sitter-vbnet/PIN.md.
+        case "vb": {
+          languageWasmPath = resolveWasm("tree-sitter-vbnet/tree-sitter-vbnet.wasm")
           break
         }
 
@@ -1559,6 +1585,8 @@ export namespace ASTEngine {
         return new (await import("./real-xml-analyzer")).RealXmlAnalyzer()
       case "markdown":
         return new (await import("./real-markdown-analyzer")).RealMarkdownAnalyzer()
+      case "vb":
+        return new (await import("./real-vb-analyzer")).RealVbAnalyzer()
       default:
         return new GenericAnalyzer()
     }

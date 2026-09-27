@@ -25,6 +25,12 @@ import { createHash } from "crypto"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
+// M14.6 perl wave: the builtin set and the reason-code vocabulary are IMPORTED
+// from the analyzer, never re-typed here — one rule for both sides, so a
+// builtin added to the analyzer cannot read as a phantom call on the truth
+// side (the #917/#919 precedent, applied to a language whose builtin gap was
+// 10 words wide and produced phantom `say`/`system` edges).
+import { PERL_BUILTINS, perlArgumentNodes, perlWordValues } from "../../src/ast/real-perl-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
@@ -284,6 +290,10 @@ export const LANG_REPOS: Record<string, string> = {
   clojure: "clojure",
   // F5 wave (CLEAN): Clyde (109 icl/dcl) is the lane's primary corpus.
   clean: "Clyde",
+  // M14.6 perl: mojo IS the M12 pinned perl corpus (validation/m12/corpus-manifest.json
+  // perl.corpusTarget = "mojo", revision 93f59174), so the differential audits the
+  // same files the pinned ground truth was audited on.
+  perl: "mojo",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -330,6 +340,10 @@ export const SECOND_CORPUS: Record<string, string> = {
   // (tooling). NOTE: 312 total Clean files on this box is short of the
   // family's 900-file standard; disclosed, not hidden.
   clean: "clean-stdlib",
+  // M14.6 perl: plack is an independent corpus with a different dialect profile —
+  // PSGI middleware, no Moose, heavy filehandles — so a defect with zero sites in
+  // mojo (a Mojo-flavoured codebase) is still exercised.
+  perl: "plack",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -445,6 +459,12 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // F5 wave (CLEAN): tree-sitter-clean v1.2.7 (pinned sha
   // 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec).
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
+  // M14.6 perl wave (2026-09-26): perl had NO lane at all — 25 gated languages,
+  // perl absent — so its F5 differential was unmeasured while the completion
+  // matrix still read `diff: n/a`. `ext` is the sampling universe and it must
+  // carry the whole production surface: production routes .pl/.pm/.t/.perl
+  // (language-detection.ts) and the corpora hold .PL (build scripts) too.
+  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t,PL" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -9288,6 +9308,344 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
 // Call-site arity (ER-D2) is metadata on the analyzer side and rides the
 // (label, target) comparison identically — f/1 and f/2 sites collapse to one
 // compared edge per side, so the lane stays apples-to-apples.
+/**
+ * M14.6 perl: the tree-truth oracle for the Perl lane.
+ *
+ * Written from the PINNED tree-sitter-perl grammar's tree shapes (probed with
+ * script/m14/tmp/perl-*.mts) and mirroring the analyzer's RULES, not its code:
+ * the traversal here is independent, the two facts it must agree with the
+ * analyzer on are the ones the differential is supposed to audit — which
+ * constructs produce an edge, and what the edge is LABELLED and NAMED.
+ *
+ * Grammar facts this oracle encodes (each measured, not assumed):
+ *  - `package`/`class`/`role` BLOCK forms do not leak the package past the
+ *    closing brace; the STATEMENT form `package N;` does. The walk therefore
+ *    keeps the lexical package in mutable state and only assigns it for the
+ *    statement form — the same rule perl itself applies (proved by executing
+ *    perl 5.34 and reading __PACKAGE__).
+ *  - `variable_declaration`'s scope (`our`/`my`/`state`/`field`) is an UNNAMED
+ *    child token, so the scope scan walks the RAW child list.
+ *  - `left`/`right`/`arguments`/`invocant` are MULTI-CHILD fields: a
+ *    parenthesised side shares the field across `(`, payload and `)`, so
+ *    `childForFieldName` returns the empty bracket marker. Both sides collect
+ *    every child carrying the field.
+ *  - `no` is an unnamed first token of the same node type as `use`; a `no`
+ *    pragma DISABLES a feature and is never a dependency.
+ *  - `use constant` declares names (fat-comma keys) and is not an import.
+ *  - a bare `sub f` signature lives in the `signature` FIELD
+ *    (mandatory/optional/slurpy_parameter), never in a `parameters` field —
+ *    the pinned grammar declares no such field.
+ */
+export function derivePerlEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const leaf = (name: string): string => {
+    const c = name.lastIndexOf("::")
+    return c >= 0 ? name.slice(c + 2) : name
+  }
+  const kids = (n: any): any[] => {
+    const r: any[] = []
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) { const c = n.namedChild(i); if (c) r.push(c) }
+    return r
+  }
+  const byType = (n: any, t: string): any => kids(n).find((c) => c.type === t)
+  /** EVERY child carrying `f` as its field (multi-child fields, see above). */
+  const fieldAll = (n: any, f: string): any[] => {
+    const r: any[] = []
+    for (let i = 0; i < (n.childCount ?? 0); i++) { const c = n.child(i); if (c && n.fieldNameForChild(i) === f) r.push(c) }
+    return r
+  }
+  const scopeOf = (n: any): string => {
+    for (let i = 0; i < (n.childCount ?? 0); i++) {
+      const c = n.child(i)
+      if (c && (c.type === "our" || c.type === "my" || c.type === "state" || c.type === "field")) return c.type
+    }
+    return "unknown"
+  }
+  const variablesOf = (n: any): any[] =>
+    [...fieldAll(n, "variable"), ...fieldAll(n, "variables")].filter((c) => c.type === "scalar" || c.type === "array" || c.type === "hash")
+  // Words and arguments are read with the ANALYZER'S OWN exported rules, not a
+  // second copy: the two copies disagreed on the non-parenthesised
+  // `use Module 'Name'` form (whose payload carries no field under 1.2.1), and
+  // that divergence - not a defect in either side - was 47 of mojo's
+  // unexplained rows. See perlArgumentNodes's own comment.
+  const words = (n: any, out: string[] = []): string[] => {
+    if (!n) return out
+    out.push(...perlWordValues(n))
+    return out
+  }
+  const argumentNodes = (n: any): any[] => perlArgumentNodes(n)
+
+  /** Fat-comma KEYS of a (possibly parenthesised) list. */
+  const fatKeys = (n: any): any[] => {
+    let list: any = n
+    if (n.type !== "list_expression") {
+      list = byType(n, "list_expression")
+      if (!list && n.type === "anonymous_hash_expression") list = byType(n, "list_expression")
+      if (!list) return []
+    }
+    const keys: any[] = []
+    let pending: any = null
+    for (let i = 0; i < (list.childCount ?? 0); i++) {
+      const c = list.child(i)
+      if (!c) continue
+      if (c.type === "=>") { if (pending) keys.push(pending); pending = null; continue }
+      if (c.isNamed) pending = c
+    }
+    return keys
+  }
+  const isOption = (v: string): boolean => v.length > 0 && v[0] === "-"
+  /** Perl's compile-time tokens; as an invocant they name no class. */
+  const MAGIC = new Set(["__PACKAGE__", "__FILE__", "__LINE__", "__SUB__", "__DATA__", "__END__"])
+
+  // Two passes: declarations first (a package's bases and methods decide the
+  // extends/implements/overrides truth), then the call/instantiation walk.
+  const bases = new Map<string, string[]>()
+  const methods = new Map<string, Set<string>>()
+  const classMethodNames: { owner: string; method: string }[] = []
+  const packageOf = (n: any): string => {
+    const nameNode = n.childForFieldName?.("name") || byType(n, "package")
+    return nameNode?.text ?? ""
+  }
+
+  // ---- pass 1: packages, classes, roles, subs, bases -------------------
+  /**
+   * Returns the lexical package in force AFTER this node, so the sibling loop
+   * can thread it forward. Without the return value the STATEMENT form
+   * (`package Mojo::Asset;`) set `cur` on a local that no later sibling ever
+   * saw, and every `use Mojo::Base 'X'` in the file was attributed to `main` —
+   * 47 unexplained inheritance rows on mojo's 60-file draw, all of them this
+   * threading bug and none of them a defect in the analyzer.
+   */
+  const scanDecls = (n: any, pkg: string, insideSub: boolean): string => {
+    let cur = pkg
+    if (!insideSub) {
+      if (n.type === "package_statement" || n.type === "class_statement" || n.type === "role_statement") {
+        const name = packageOf(n)
+        const block = byType(n, "block")
+        if (name && block) {
+          for (const c of kids(block)) scanDecls(c, name, false)
+          return cur // BLOCK form: the package does NOT leak past the brace
+        }
+        if (name) cur = name // statement form: leaks to siblings
+        if (n.type !== "package_statement") return cur
+      }
+      if (n.type === "use_statement" && n.child(0)?.type !== "no") {
+        const mod = n.childForFieldName?.("module")
+        const module = mod?.text ?? ""
+        if (module === "constant") {
+          // `use constant NAME => value` declares a package constant, so the
+          // package OWNS it — the same ownership fact the analyzer's symbol
+          // table records. The pre-fix line added the name to a `methods` set
+          // that was never created, so it was a no-op and every constant's
+          // `contains` edge surfaced as unexplained (6 on plack's 226 files).
+          for (const k of fatKeys(n)) { const nm = words(k)[0]; if (nm && cur) { push("contains", cur, nm); const set = methods.get(cur) ?? new Set(); set.add(nm); methods.set(cur, set) } }
+        } else if (module === "parent" || module === "base") {
+          const args: string[] = []
+          for (const a of argumentNodes(n)) words(a, args)
+          if (cur) {
+            const list = bases.get(cur) || []
+            for (const a of args) if (a && !isOption(a) && !list.includes(a)) list.push(a)
+            bases.set(cur, list)
+          }
+        } else if (module === "Mojo::Base" && cur) {
+          // `use Mojo::Base 'Base::Class'` names the parent; the flag-only forms
+          // (`-base`, `-strict`, `-utf8`) subclass Mojo::Base ITSELF. 53 of
+          // mojo's 118 inheritance sites are the flag-only form.
+          const args: string[] = []
+          for (const a of argumentNodes(n)) words(a, args)
+          const named = args.find((a) => a && !isOption(a)) ?? module
+          const list = bases.get(cur) || []
+          if (!list.includes(named)) list.push(named)
+          bases.set(cur, list)
+        }
+      }
+      if (n.type === "subroutine_declaration_statement" || n.type === "method_declaration_statement") {
+        const nameNode = n.childForFieldName?.("name") || byType(n, "bareword")
+        const raw = nameNode?.text ?? ""
+        if (raw && cur) {
+          let set = methods.get(cur)
+          if (!set) { set = new Set(); methods.set(cur, set) }
+          set.add(raw)
+          classMethodNames.push({ owner: cur, method: raw })
+        }
+        const body = n.childForFieldName?.("body") || byType(n, "block")
+        if (body) for (const c of kids(body)) scanDecls(c, cur, true)
+        return cur
+      }
+      if (n.type === "assignment_expression" && cur) {
+        const leftVar = fieldAll(n, "left").flatMap((l) => variablesOf(l).map((v) => byType(v, "varname"))).find(Boolean)
+        if (leftVar?.text === "ISA") {
+          const right = fieldAll(n, "right").find((r) => r.isNamed && (r.namedChildCount ?? 0) > 0)
+          if (right) {
+            const vals = words(right)
+            const list = bases.get(cur) || []
+            for (const v of vals) if (v && !list.includes(v)) list.push(v)
+            bases.set(cur, list)
+          }
+        }
+      }
+      if (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression") {
+        const fn = n.childForFieldName?.("function") || byType(n, "function")
+        const target = fn?.text ?? ""
+        if ((target === "with" || target === "extends") && cur) {
+          for (const a of fieldAll(n, "arguments")) {
+            const v = words(a)[0]
+            if (v) bases.set(cur, [...(bases.get(cur) || []), ...(target === "with" ? [] : [v])])
+          }
+        }
+      }
+    }
+    for (const c of kids(n)) cur = scanDecls(c, cur, insideSub)
+    return cur
+  }
+  scanDecls(root, "", false)
+
+  // ---- pass 2: relationships ------------------------------------------
+  type S = { pkg: string; fn?: string; inSub: boolean; inClass: boolean }
+  const walk = (n: any, st: S): string => {
+    let pkg = st.pkg
+    let fn = st.fn
+    let inSub = st.inSub
+    let inClass = st.inClass
+    const src = () => fn || "global"
+
+    if (!inSub) {
+      if (n.type === "package_statement" || n.type === "class_statement" || n.type === "role_statement") {
+        const name = packageOf(n)
+        const block = byType(n, "block")
+        if (name && block) {
+          for (const c of kids(block)) walk(c, { pkg: name, fn: undefined, inSub: false, inClass: n.type !== "package_statement" })
+          return pkg // BLOCK form: no leak past the brace
+        }
+        if (name) pkg = name // statement form: the sibling loop threads it on
+        return pkg
+      }
+      if (n.type === "use_statement" && n.child(0)?.type !== "no") {
+        const mod = n.childForFieldName?.("module")
+        const module = mod?.text ?? ""
+        if (module === "parent" || module === "base" || module === "Mojo::Base") {
+          const args: string[] = []
+          for (const a of argumentNodes(n)) words(a, args)
+          for (const a of args) {
+            if (!a || isOption(a)) continue
+            if (module === "Mojo::Base" && args.indexOf(a) !== 0) continue
+            if (pkg) push("extends", pkg, leaf(a))
+          }
+        } else if (module === "role") {
+          const args: string[] = []
+          for (const a of argumentNodes(n)) words(a, args)
+          for (const a of args) if (a && !isOption(a)) push("implements", pkg || "global", leaf(a))
+        } else if (module === "constant") {
+          // descend (see pass 1)
+        } else {
+          return pkg
+        }
+        if (module !== "constant") return pkg
+      }
+      if (n.type === "subroutine_declaration_statement" || n.type === "method_declaration_statement") {
+        const nameNode = n.childForFieldName?.("name") || byType(n, "bareword")
+        const raw = nameNode?.text ?? ""
+        const owner = pkg
+        const name = raw === "new" ? "constructor" : raw
+        if (owner && name) push("contains", owner, name)
+        const body = n.childForFieldName?.("body") || byType(n, "block")
+        if (body) for (const c of kids(body)) walk(c, { pkg: owner, fn: name, inSub: true, inClass })
+        return owner
+      }
+      if (n.type === "variable_declaration" && scopeOf(n) === "our") {
+        for (const v of variablesOf(n)) {
+          const vn = byType(v, "varname")
+          const nm = vn?.text ?? ""
+          if (nm && nm !== "_" && pkg && nm !== "ISA") push("contains", pkg, nm)
+        }
+      }
+      if (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression") {
+        const fnNode = n.childForFieldName?.("function") || byType(n, "function")
+        const target = fnNode?.text ?? ""
+        if (target === "has") {
+          const argNodes = argumentNodes(n)
+          const first = argNodes[0]
+          const prop = first ? words(first)[0] : undefined
+          if (prop && pkg) push("contains", pkg, prop)
+        } else if (target === "with" || target === "extends") {
+          for (const a of argumentNodes(n)) {
+            const v = words(a)[0]
+            if (v) push(target === "with" ? "implements" : "extends", pkg || "global", leaf(v))
+          }
+        } else if (target === "new") {
+          const argNodes = argumentNodes(n)
+          const requested = argNodes[0] ? words(argNodes[0])[0] : undefined
+          const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
+          push("instantiates", src(), inst)
+        } else if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no") {
+          push("calls", src(), leaf(target))
+        }
+      }
+    }
+    // Method and function calls are walked at BOTH scopes. Perl's dominant
+    // real-world shape is a FILE-SCOPE script — Mojo::Lite apps, `.t` files,
+    // `use Mojolicious::Lite; get '/' => ...` — where the whole DSL is
+    // `Mojo::IOLoop->start`, `$ua->get(...)->result`. Restricting the call walk
+    // to inside a sub left every one of those edges with no truth row, and they
+    // surfaced as unexplained (measured: 85 of 115 unexplained on mojo's 60-file
+    // draw before this was corrected).
+    if (n.type === "method_call_expression") {
+      const m = byType(n, "method")
+      const method = m?.text ?? ""
+      if (method === "new") {
+        const invocant = fieldAll(n, "invocant").find((c) => c.isNamed)
+        const t = invocant?.text ?? ""
+        if (MAGIC.has(t)) {
+          // `__PACKAGE__->new` constructs the CURRENT package; with a package in
+          // scope that is the honest target, and with none it is not derivable.
+          if (pkg && pkg !== "main") push("instantiates", src(), `${leaf(pkg)}.constructor`)
+        } else if (t && !t.includes("$") && !t.includes("->")) {
+          push("instantiates", src(), `${leaf(t)}.constructor`)
+        }
+      } else if (method && !PERL_BUILTINS.has(method)) {
+        push("calls", src(), leaf(method))
+      }
+    } else if (inSub && (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression")) {
+      const fnNode = n.childForFieldName?.("function") || byType(n, "function")
+      const target = fnNode?.text ?? ""
+      if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends" && target !== "new") {
+        push("calls", src(), leaf(target))
+      }
+    }
+    for (const c of kids(n)) pkg = walk(c, { pkg, fn, inSub, inClass })
+    return pkg
+  }
+  walk(root, { pkg: "", fn: undefined, inSub: false, inClass: false })
+
+  // ---- pass 3: inheritance-derived edges ------------------------------
+  // FULL-name self-reference guard, mirroring the analyzer.
+  for (const [owner, list] of bases) for (const b of list) if (b !== owner) push("extends", owner, leaf(b))
+  // Overrides: the first declared base, per method. With no companion index the
+  // analyzer emits the deterministic first-parent guess for every method of the
+  // class, so the truth side derives the same set from the same two facts.
+  for (const { owner, method } of classMethodNames) {
+    const list = bases.get(owner)
+    if (!list || !list.length) continue
+    // FULL-name self-reference guard, mirroring the analyzer: a leaf comparison
+    // would also fire for `package Foo::Bar` whose base is a different
+    // `Other::Bar`, deleting a real override edge.
+    if (list[0] === owner) continue
+    const baseLeaf = leaf(list[0])
+    const local = methods.get(list[0]) || methods.get(baseLeaf)
+    if (local?.has(method)) push("overrides", `${owner}.${method}`, `${baseLeaf}.${method}`)
+    else push("overrides", `${owner}.${method}`, `${baseLeaf}.${method}`)
+  }
+  return edges
+}
+
 export function deriveErlangEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -13224,6 +13582,16 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "perl") {
+        // M14.6 perl: dedicated perl calls/instantiates/extends/implements/
+        // contains/overrides oracle (derivePerlEdges) — the generic tree walker
+        // audits NO perl surface, because this grammar's declarations are
+        // `package_statement`/`class_statement`/`role_statement` and none of
+        // them match the harness's class/interface/trait regexes.
+        for (const e of derivePerlEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "clojure") {
         // F5-cert wave (CLJ): dedicated clojure
         // calls/references/implements/instantiates oracle written from the
@@ -13347,7 +13715,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" ? ["contains"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
