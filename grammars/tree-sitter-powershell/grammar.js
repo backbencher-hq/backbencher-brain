@@ -179,8 +179,18 @@ export default grammar({
     // Type names
     type_identifier: ($) => /[a-zA-Z0-9_]+/,
 
+    // G8 (M60 #278): `+` is .NET's NESTED-type separator, so
+    // `[System.Environment+SpecialFolder]` is one type name. The rule already
+    // recurses on `.` for the same reason and in the same shape, so this widens one
+    // `choice` to a separator set rather than adding a rule — the smallest possible
+    // edit, and one that cannot interact with anything else, because a type name's
+    // only other continuation is `.`.
+    //
+    // Measured: `[System.Environment]`, `[System.IO.FileInfo]` and `[int]` all parse
+    // clean; `[System.Environment+SpecialFolder]` is 1 ERROR. Corpus footprint: 8
+    // sites in 6 files in `powershell`, 3 in 2 in `ansible`.
     type_name: ($) =>
-      choice($.type_identifier, seq($.type_name, '.', $.type_identifier)),
+      choice($.type_identifier, seq($.type_name, choice('.', '+'), $.type_identifier)),
 
     array_type_name: ($) => seq($.type_name, '['),
     generic_type_name: ($) => seq($.type_name, '['),
@@ -339,7 +349,20 @@ export default grammar({
     _command_token: ($) => token(/[^\(\)\{\}\s;\&]+/),
 
     // Parameters
-    command_parameter: ($) => token(choice(/-+[a-zA-Z_?\-`]+/, '--')),
+    // G8 (M60 #278): `--flag=value` is ONE argv token for a native command, and the
+    // parameter class `[a-zA-Z_?\-`]` has no `=`, so the token stops at
+    // the `=` and the remainder falls to `assignement_operator`, which is not valid
+    // there. Measured: `git --git-dir x clone` parses clean, `git -c a=b clone`
+    // parses clean, `git --git-dir=x clone` is 2 ERROR. Corpus footprint: 26 sites
+    // in 7 files in `powershell`, 0 in `ansible`.
+    //
+    // `=` IS SCOPED TO THE DOUBLE-DASH FORM ON PURPOSE. PowerShell's own parameters
+    // are `-Name value` or `-Name:value`, and `-Name=value` is not valid, so
+    // widening the single-dash class would make an INVALID form parse. A native
+    // command's `--flag=value` really is one token, so this is the faithful shape
+    // rather than a permissive one.
+    command_parameter: ($) =>
+      token(choice(/--[a-zA-Z_?\-`=]+/, /-+[a-zA-Z_?\-`]+/, '--')),
 
     _verbatim_command_argument_chars: ($) =>
       repeat1(choice(/"[^"]*"/, /&[^&]*/, /[^\|\r\n]+/)),

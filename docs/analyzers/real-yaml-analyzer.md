@@ -210,6 +210,11 @@ new relationship families. The cost is the extra payload, not a worse algorithm.
 - Target spelling: `validation/m60/results/yaml-target-spelling.json` (lane-scoped; **not**
   a shared R10 gate result — see the review for why the shared census cannot yet see this
   lane)
+- M13 handoff probes: `script/m60/yaml-m13-codemask-probe.ts` (refutes the register's
+  stale codeMask claim for this lane) and `script/m60/yaml-m13-occurrence-probe.ts`
+  (finds the real one: `bb_edit refactor` is a silent no-op on every yaml symbol, because
+  a mapping key is `flow_node > plain_scalar > string_scalar` and
+  `isIdentifierNodeType` recognises none of them)
 - Review: `reviews/yaml/master-review.md`, `reviews/yaml/research-and-plan.md`
 - Docs: this file
 

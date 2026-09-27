@@ -145,7 +145,7 @@ for (const target of targets) {
  * The grammar-error files are NAMED, not hidden. tree-sitter-yaml 0.7.1 cannot lex a
  * multi-line double-quoted scalar, and when it meets one the ERROR it produces sits at
  * the document root — so a 271 KB file loses its whole containment. Proven against an
- * independent parser: `script/m12/yaml-f5-differential.ts` records that PyYAML 6.0.1
+ * independent parser: `script/m14/tmp/yaml-f5-differential.ts` records that PyYAML 6.0.1
  * parses `docker/api/docs/v1.27.yaml` cleanly. See
  * `script/m14/spec/yaml-completeness.json` and the grammar pin's `alternatives`.
  */
@@ -259,7 +259,7 @@ const result = {
   crashes,
   symbols,
   relationships,
-  knownGrammarLimitation: { reason: grammarLimitation, files: knownLimitationFiles.map((f) => f.file), provenBy: "script/m12/yaml-f5-differential.ts (PyYAML 6.0.1 parses these files cleanly)" },
+  knownGrammarLimitation: { reason: grammarLimitation, files: knownLimitationFiles.map((f) => f.file), provenBy: "script/m14/tmp/yaml-f5-differential.ts (PyYAML 6.0.1 parses these files cleanly)" },
   unexpandedTemplateFiles: {
     count: templateFiles.length,
     markers: templateFiles.reduce<Record<string, number>>((acc, f) => { for (const m of f.markers) acc[m] = (acc[m] ?? 0) + 1; return acc }, {}),
