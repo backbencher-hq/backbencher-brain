@@ -129,6 +129,20 @@ function cssNameToken(rel: any, relType?: string): string | null {
   // author wrote on the claimed line is the FAMILY. Same shape as a scope edge —
   // named by the thing that is written, not by the declaration it resolves to — so
   // the keyword is dropped and the family is what must be on the line.
+  // A namespace `references` names the DECLARATION (`@namespace svg url(…)`), but
+  // the line carries the SELECTOR. Same shape as a scope edge: named by what is
+  // written, not by the declaration it resolves to.
+  if (rel?.metadata?.isNamespaceRef === true) {
+    const sel = String(rel?.source ?? rel?.from ?? "")
+    const leaf = sel.includes("|") ? sel.slice(sel.lastIndexOf("|") + 1) : sel
+    // No length floor, and that is the SAME rule the selector path already uses: a
+    // one-character selector (`a`, `.x`) is a real check because the containment
+    // test matches on word boundaries. My first version floored this at 2 and its
+    // own self-test caught it — `svg|a` has a one-character leaf, so the floor made
+    // the commonest namespace selector uncheckable while the sibling rule accepted
+    // it. Two rules for one question is how a lane ends up with two answers.
+    return leaf.length >= 1 ? leaf : null
+  }
   if (rel?.metadata?.isFontFamilyRef === true) {
     const fam = t.replace(/^@font-face\s+/, "").trim()
     return fam.length >= 2 ? fam : null
@@ -713,6 +727,9 @@ async function main() {
     // CSS, both directions: the sigil is stripped and a comma group reduces to its
     // first part; a synthesized `&`-nested name is NOT checkable, so the
     // exemption cannot become a blind spot for a wrongly-lined edge.
+    cssNamespaceRefTakesTheSelectorLeaf: cssNameToken({ source: "svg|a", target: "@namespace svg url(http://www.w3.org/2000/svg)", metadata: { isNamespaceRef: true } }, "references") === "a",
+    cssNamespaceTokenNeedsTheMarker:
+      cssNameToken({ source: "svg|a", target: "@namespace svg url(http://www.w3.org/2000/svg)" }, "references") === null,
     cssFontFaceUsesTakesTheFamily: cssNameToken({ target: "@font-face Inter", metadata: { isFontFamilyRef: true } }, "uses") === "Inter",
     cssFontFaceTokenNeedsTheMarker:
       cssNameToken({ target: "@font-face Inter" }, "uses") === null,
