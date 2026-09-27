@@ -357,6 +357,158 @@ export const LANES: Record<string, LaneDecision> = {
     evidence: ["reviews/m60-clean-grammar-127-adjudication.md"],
     copies: [],
   },
+
+  // YAML is the first LANE in this file whose candidate set turned out to have
+  // exactly ONE admissible member, and establishing that was cheap enough to do
+  // exhaustively rather than by survey (reviews/yaml/research-and-plan.md §2.1):
+  //
+  //   @tree-sitter-grammars/tree-sitter-yaml  0.7.1  2025-05-22  ships a wasm  <- ADMISSIBLE
+  //   tree-sitter-yaml (ikatyang)              0.5.0  2021-04-18  ships NO wasm (src/parser.c only)
+  //   @lezer/yaml                              1.0.4  2026-01-29  Lezer/CodeMirror, not tree-sitter
+  //   tree-sitter-yaml-language-server / @yhirose/tree-sitter-yaml /
+  //   yaml-tree-sitter / tree-sitter-yaml-ng                        all 404 on npm
+  //
+  // So the version is not a preference: it is the newest published release of the
+  // only maintained fork, and the wired bytes are its published file exactly.
+  //
+  // THE ONE THING THIS LANE'S SOURCE PROVES THAT THE OTHERS CANNOT. yaml 0.7.1 is
+  // the only vendored grammar here whose scanner selects between ALTERNATIVE
+  // backends at build time (src/scanner.c:7-11):
+  //
+  //     #ifndef YAML_SCHEMA
+  //     #define YAML_SCHEMA core
+  //     #endif
+  //     #include _file(YAML_SCHEMA)      // -> src/schema.{core,json,legacy}.c
+  //
+  // and the three backends are not variants of one behaviour -- they are the YAML
+  // 1.2 core schema, the JSON schema, and the YAML 1.1 legacy schema, with
+  // different scalar-resolution tables (`.` resolves to STR in core and FLOAT in
+  // legacy; `0` to INT 37 vs 75; `~` to NULL only in core) and `HAS_TIMESTAMP 0`
+  // vs `1`. The published wasm is the `core` build, which is why `timestamp_scalar`
+  // is in the grammar's symbol table and in the wired wasm's 36 named types and
+  // yet is never PRODUCED by either build's scanner under `core` -- both timestamp
+  // forms parse as plain_scalar(string_scalar). So this vendored source is what
+  // turns "timestamp_scalar looks unreachable" from a mystery into a named build
+  // variant, and it is also a limitation the lane must DECLARE: a file that opens
+  // `%YAML 1.1` is resolved here with 1.2 scalar rules.
+  yaml: {
+    wired: "wasm/tree-sitter-yaml.wasm",
+    provenance: {
+      kind: "byte-identical-to-npm-tarball",
+      package: "@tree-sitter-grammars/tree-sitter-yaml",
+      version: "0.7.1",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-yaml",
+      note:
+        "grammar.js + tree-sitter.json + package.json + README.md + LICENSE + src/ (scanner.c, the three schema backends schema.core.c/schema.json.c/schema.legacy.c, the generated grammar.json and node-types.json, and the tree_sitter/ runtime headers), byte-for-byte from `npm pack @tree-sitter-grammars/tree-sitter-yaml@0.7.1`. The GENERATED src/parser.c (1.29 MB) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source<->wasm check below runs on node-types.json/grammar.json, not on parser.c. Unlike haskell and elixir, the generated JSONs ARE tracked here -- see the .gitignore entry, which explains that a clone carrying grammar.js but not node-types.json can rebuild a working parser and cannot run the proof.",
+    },
+    decision:
+      "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/real-yaml-analyzer.md) into a gated contract, and changes nothing the product loads.",
+    alternatives: [
+      {
+        option: "ikatyang tree-sitter-yaml@0.5.0 (the fork parent)",
+        measured: "publishes no wasm -- the 0.5.0 tarball contains only src/parser.c, so it cannot be a wire candidate without a local build, and its last release predates the fork by four years",
+        artifact: "reviews/yaml/research-and-plan.md §2.1",
+      },
+      {
+        option: "rebuild the wire with -DYAML_SCHEMA=legacy to reach timestamp_scalar",
+        measured: "not attempted, and recorded as declined rather than as pending: it would replace the newest published bytes with a local build whose only gain is one scalar type, at the cost of making the lane's scalar typing disagree with every YAML 1.2 consumer that reads the same file. A pin is a claim about what is shipped; changing what is shipped is a different act with its own A/B (script/m14/verify-grammar-leaves.ts).",
+        artifact: "reviews/yaml/research-and-plan.md §4 (defect Y12) and §2.1",
+      },
+    ],
+    evidence: [
+      "reviews/yaml/research-and-plan.md",
+      "script/m14/spec/yaml-completeness.json",
+      "validation/m60/grammar-survey.json",
+    ],
+    copies: [
+      { label: "mirror", path: path.join(MIRROR, "tree-sitter-yaml.wasm") },
+    ],
+    notVendored: [
+      { path: "binding.gyp, bindings/, prebuilds/", why: "native bindings and prebuilds; not parser source" },
+      { path: "queries/", why: "editor queries; the engine does not load them" },
+      { path: "src/parser.c", why: "generated from grammar.js; 1.29 MB; `tree-sitter generate` rebuilds it" },
+      { path: "tree-sitter-core_schema.wasm, tree-sitter-json_schema.wasm", why: "the other two schema builds as PREBUILDS; the backend is selected at COMPILE time by -DYAML_SCHEMA, so the choice belongs in the source tree (the three schema.*.c files), not in three wired wasms" },
+      { path: "tree-sitter-yaml.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+
+  // PowerShell is the lane where the pin's WORTH was measured rather than
+  // assumed. Every other lane here was asked "what are these bytes?"; this one
+  // was asked "can I patch this grammar at all?", and the answer turned out to
+  // be no — not because the bytes are unidentifiable, but because the source
+  // sitting in the npm cache was NOT the source of the wired bytes. Both facts
+  // had to be established before a single grammar hunk could be attributed.
+  powershell: {
+    wired: "wasm/tree-sitter-powershell.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "airbus-cert/tree-sitter-powershell", version: "0.26.4" },
+      patches: [
+        "G5a/b: PowerShell 7 null-coalescing `??` and ternary `? :`, as two HIDDEN precedence levels",
+        "G5c: PowerShell 7 null-conditional `?.` and `?[`, added inside the rules that already define `.` and `[` so they inherit their associativity and precedence",
+      ],
+      patchEvidence: "validation/m60/results/powershell-grammar-g5b-ab.json + validation/m14/results/M14.0.F11.powershell.json + validation/m60/results/powershell-g5-g3-adjudication.txt + reviews/powershell/grammar-worklist.md",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-powershell",
+      note:
+        "grammar.js (PATCHED — see provenance.patches) + src/scanner.c + src/tree_sitter/{parser,alloc,array}.h + package.json + tree-sitter.json + LICENSE + README.md. The grammar source is byte-for-byte from the npm tree-sitter-powershell@0.26.4 tarball EXCEPT grammar.js, which carries one additive hunk; `tree-sitter diff` against the tarball's own grammar.js is the record of what changed, and it is three rules and no edit to an existing one. The generated src/parser.c (4.5 MB) is NOT vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs, never on parser.c. Unlike the css/cpp vendors this lane's src/ holds only the hand-written scanner, so the .gitignore rule that drops `grammars/tree-sitter-*/src/*` — the rule that silently cost cpp its scanner and css its own (see the two negations above) — needed a THIRD negation for this lane, because tree-sitter-powershell's external scanner is also named src/scanner.c. The same trap, a third time, named by filename rather than by role.",
+    },
+    decision:
+      "Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars.",
+    alternatives: [
+      {
+        option: "G5c as a new precedence level, or `?.[` for element access",
+        measured:
+          "REJECTED on measurement, and both halves of it came from the corpus rather than from taste. The corpus target disagrees with the documentation on the element-access form: PowerShell's own test/powershell/Language/Operators/NullConditional.Tests.ps1 uses `?[` (6 × `?[0]`, plus `?[tb]`, `?['a']`, `?[-2]`, `?[0..2]`, `?[0,1]`, `?[]`, `?[1234]`) and never `?.[`, so a `?.[` implementation would have satisfied the docs and none of the corpus. And a precedence LEVEL was rejected for the same reason G5a's named levels were: `?.` binds exactly like `.` and `?[` exactly like `[`, so the correct edit is one `choice` arm inside the rule that already defines the twin, inheriting its associativity — which is also what makes the corpus's `${psObj}?.name?.nonExistent` chain and its `(Get-Item $TestDrive)?.EnumerateFiles()?.Name` compose without a new level at all.",
+        artifact: "validation/m60/results/powershell-grammar-g5c-ab.json",
+      },
+      {
+        option: "G5 with the two precedence levels left NAMED (the first attempt)",
+        measured:
+          "REJECTED on measurement, and it is the most instructive rejection in this lane. It scored a clean win on every count the repro battery reports — 2 of 12 named limits fixed, 0 regressions, all 9 controls held — and the collateral gate passed too, 0 files broken. It was still the wrong patch, and only the SHAPE delta caught it: a named level emits its node in the pass-through case as well, so adding two levels wrapped EVERY expression in the language and produced 9,046 `coalesce_expression` and 9,038 `ternary_expression` nodes across 49 corpus files, re-pointing an analyzer written against the old shapes while every other number said 'pure win'. Hiding both levels makes the rules inline, so an expression using neither operator produces exactly the tree it produced before and F11's G2 identity gate passes by construction rather than by luck.",
+        artifact: "validation/m60/results/powershell-grammar-g5b-ab.json",
+      },
+      {
+        option: "the previously wired version, tree-sitter-powershell@0.25.10 (sha 1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154, 983,236 bytes)",
+        measured:
+          "0.25.10 vs 0.26.4 unpatched, production corpora: damaged files 16/49 powershell and 15/24 ansible on BOTH; ERROR nodes 93 → 91 in ansible; named vocabulary IDENTICAL (152) so no analyzer is re-pointed; 0 files broken. The base upgrade buys the here-string fix and nothing else, which is why it is recorded as taken rather than as a repair.",
+        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      },
+      {
+        option: "patch the source while the wired bytes stay 0.25.10",
+        measured:
+          "REJECTED, and this is the reason the pin exists. The npm cache held 0.26.4 and the first draft of this lane's review called it the wired grammar's source; it is not. Rebuilding the cache's source gives 419 ids against the wired wasm's 415 and a different id-order digest, so a hunk written against that grammar.js would have been a patch on a DIFFERENT grammar and every A/B number attributed to it would have been unattributable. Found by measuring the surface gap before writing any hunk, not after.",
+        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      },
+    ],
+    evidence: [
+      "validation/m60/results/powershell-grammar-g5c-ab.json",
+      "validation/m60/results/powershell-g5c-g3-adjudication.txt",
+      "validation/m60/results/powershell-grammar-g5b-ab.json",
+      "validation/m60/results/powershell-g5-g3-adjudication.txt",
+      "validation/m14/results/M14.0.F11.powershell.json",
+      "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      "validation/m60/results/powershell-surface.json",
+      "reviews/powershell/resolution.md",
+      "reviews/powershell/grammar-worklist.md",
+    ],
+    copies: [
+      { label: "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)", path: path.join(CACHE, "tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm") },
+      { label: "the pre-patch local build, preserved for bisect (sha 796124137f05…)", path: "/tmp/opencode/ps-lane/wired-0.26.4-unpatched.wasm" },
+    ],
+    notVendored: [
+      { path: "src/parser.c", why: "generated from grammar.js; 4.5 MB; `tree-sitter generate` rebuilds it" },
+      { path: "src/grammar.json, src/node-types.json", why: "generated from grammar.js; the source↔wasm check runs on these after regenerating them" },
+      { path: "bindings/, binding.gyp, prebuilds/", why: "native bindings, not parser source" },
+      { path: "queries/highlights.scm", why: "editor queries; the engine does not load them" },
+      { path: "tree-sitter-powershell.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
 }
 
 // ---------------------------------------------------------------------------

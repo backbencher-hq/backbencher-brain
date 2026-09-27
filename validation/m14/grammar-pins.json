@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-26T19:08:15.676Z",
-  "commit": "7c7bb142befe71ce289c00415a2a529ec7a3b254",
+  "generatedAt": "2026-09-27T16:01:18.392Z",
+  "commit": "ffb16aeabe3f3a26c4a9caeb87e9370da6160106",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -183,6 +183,99 @@
         "allowedWasmExtras": [
           "error_sentinel"
         ],
+        "namedOnlyInWasm": []
+      }
+    },
+    "css": {
+      "wired": {
+        "file": "wasm/tree-sitter-css.wasm",
+        "sha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
+        "bytes": 150539
+      },
+      "surface": {
+        "ids": 151,
+        "uniqueNames": 129,
+        "namedIds": 82,
+        "namedUnique": 64,
+        "anonIds": 69,
+        "anonUnique": 66,
+        "fieldCount": 0,
+        "idOrderDigest": "7f9a72fb4ee61f67859d3e0c7f20ff0639861ed9c932abd3a57a188f17d15a5c",
+        "typeSetDigest": "08fd41751c600558aeb4ec685ecadc67237af45903ce1f56f90f0563c711c89f",
+        "fieldSetDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "copies": [
+        {
+          "label": "npm tree-sitter-css@0.25.0 (upstream prebuilt, the base — NOT these bytes)",
+          "path": "~/.bun/install/cache/tree-sitter-css@0.25.0@@@1/tree-sitter-css.wasm",
+          "sha256": "8a23977fe271357cce6f254ef88c9bebf3854602d8046605aef6a45c02135c59",
+          "byteIdentical": false
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-css",
+        "files": {
+          "grammar.js": {
+            "sha256": "f699498cf35ac104c42a06201f3b0897df42e714d89e4c302918de952c38716c",
+            "bytes": 13994
+          },
+          "LICENSE": {
+            "sha256": "c5cfb43042b6b72045f4ba997834d0a7786d2793d91680868b5815b39f14fc78",
+            "bytes": 1080
+          },
+          "package.json": {
+            "sha256": "074f92a25e9272478986165fd7673889676aaaeb9163bdcba068798c185a74ca",
+            "bytes": 1410
+          },
+          "README.md": {
+            "sha256": "bc7adb1cbb0679cb96d1b48246d1a685701cc46eba83d6f41f02ac73c3d717f7",
+            "bytes": 1086
+          },
+          "src/grammar.json": {
+            "sha256": "3cc7fab54a4fc328f4581bf284e967325c53e5f7c744f175ff4efc8c58e1c270",
+            "bytes": 56190
+          },
+          "src/node-types.json": {
+            "sha256": "867ef64e6f4aed9151c7e6cd44f3703f324e1fe8201cc131cd97fadcc573dc35",
+            "bytes": 43698
+          },
+          "src/parser.c": {
+            "sha256": "71c01264c7b9b20b44fd82cc219be1efe9a7e1e05a59c8844363a573d9a870fb",
+            "bytes": 506622
+          },
+          "src/scanner.c": {
+            "sha256": "18dae8c8c4f515f28a3dc7ffb5bda259b06013a752921dc411a2fad8ecf78988",
+            "bytes": 3469
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "c425a4125bb8c1907db2f5c4837bfdd9e14e796960e68384c962a719c94bbd16",
+            "bytes": 947
+          }
+        },
+        "digest": "d8f703745abeb3d61fdeb32c648537d75d7aee146f45af2d16c7e62b0969b299",
+        "fileCount": 12
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-css/src/node-types.json",
+        "declaredNamedTypes": 64,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 64,
+        "wasmUniqueNames": 129,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
         "namedOnlyInWasm": []
       }
     },
@@ -458,6 +551,206 @@
         "nodeTypesJson": null,
         "note": "no vendored source"
       }
+    },
+    "yaml": {
+      "wired": {
+        "file": "wasm/tree-sitter-yaml.wasm",
+        "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+        "bytes": 189255
+      },
+      "surface": {
+        "ids": 301,
+        "uniqueNames": 140,
+        "namedIds": 161,
+        "namedUnique": 36,
+        "anonIds": 140,
+        "anonUnique": 104,
+        "fieldCount": 2,
+        "idOrderDigest": "e9097c76e39b76237cddde61d40c16295a433115f0a4f34bed33015a8a37a4ca",
+        "typeSetDigest": "86384299314687364bb734328997dd627554c63733614e82abad254257cbebd1",
+        "fieldSetDigest": "402f4f3f4bc5b42eab2e60c632c8eeb791d5c9212491c479e9be04ec8f019562"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-yaml.wasm",
+          "sha256": "605329053f4065dbc254da88896fd5da26122098f25b8b40990415cd1602a635",
+          "byteIdentical": false
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-yaml",
+        "files": {
+          "grammar.js": {
+            "sha256": "390488273d970a8c78c7b9ab0cdf3cbf1b12a8833c29fe7041bd181bd851c8d7",
+            "bytes": 33838
+          },
+          "LICENSE": {
+            "sha256": "2d181298822a124f6d106118dcc69c8d4d26ac668559be29682c452e712b0947",
+            "bytes": 1105
+          },
+          "package.json": {
+            "sha256": "6abef4dd5cbc62ffc8d35a02aaab6e471224102892f180cc66f264f85c78bd4c",
+            "bytes": 1399
+          },
+          "README.md": {
+            "sha256": "2edb99c758f4aee5b38617bb3f963dd44959b8a220a956b106f2b251a2cca6c4",
+            "bytes": 1083
+          },
+          "src/grammar.json": {
+            "sha256": "a2c03fcc9bd9b7843780854f5e8264c9d465a34172b530d9511d6e89c5d2630e",
+            "bytes": 157109
+          },
+          "src/node-types.json": {
+            "sha256": "1238b6c89fc6afb9723b6463a365843aa87e478025490660e5acfc9adaaf809b",
+            "bytes": 9026
+          },
+          "src/scanner.c": {
+            "sha256": "9cd962f7c7541247cfc7ebf661abaa5d9b642d27de16575c87093496557aae59",
+            "bytes": 51495
+          },
+          "src/schema.core.c": {
+            "sha256": "91e56c3f3ae6fad1803b739ce4eb4568a782a9aec710f733db2f3e38d407a4d5",
+            "bytes": 6630
+          },
+          "src/schema.json.c": {
+            "sha256": "3a18e4406aa8cdaea2806483e11c50e1a392fd72cf8f54ab7f189b3728836949",
+            "bytes": 3065
+          },
+          "src/schema.legacy.c": {
+            "sha256": "4f7ca12361e848214beceaa95ae615048317039ea4736c6eec956e3e8da4694c",
+            "bytes": 18624
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "5bdf6ed1a78e3409fd443e085ca967a64c188a5d082aaf7f819bccd53a471c94",
+            "bytes": 10431
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "f2c265d26baa81b322f2eecde587a7cb81e7763fca31c0d6b11dce040494ed47",
+            "bytes": 862
+          }
+        },
+        "digest": "91f900b1715cc2b5d9b9e703356b47c9f9ee425a11db13db878476ffcf527a89",
+        "fileCount": 14
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-yaml/src/node-types.json",
+        "declaredNamedTypes": 36,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 36,
+        "wasmUniqueNames": 140,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "powershell": {
+      "wired": {
+        "file": "wasm/tree-sitter-powershell.wasm",
+        "sha256": "c160c2f824a43dee81cb17365a51f4d412418cb3f837e8b65de1a3ad0a3f468f",
+        "bytes": 1111614
+      },
+      "surface": {
+        "ids": 425,
+        "uniqueNames": 419,
+        "namedIds": 152,
+        "namedUnique": 152,
+        "anonIds": 273,
+        "anonUnique": 267,
+        "fieldCount": 14,
+        "idOrderDigest": "2edf2378eb2c05672645780edf4d4aa2362d1fa20a0943062f55b127553dcf1e",
+        "typeSetDigest": "6bc4e998183f1b5dd6f9dd929c731df1f26d65c1dcf4bb5cace159695ff0a7d7",
+        "fieldSetDigest": "368d0b6f774c0c0a7c719110cc885a38269b7cf629548a6375f0a00a7f16fb1e"
+      },
+      "copies": [
+        {
+          "label": "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)",
+          "path": "~/.bun/install/cache/tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm",
+          "sha256": "796124137f0500e59713fd9dccda6812ff73d25f22e33430b1c5af6e132efa5e",
+          "byteIdentical": false
+        },
+        {
+          "label": "the pre-patch local build, preserved for bisect (sha 796124137f05…)",
+          "path": "/tmp/opencode/ps-lane/wired-0.26.4-unpatched.wasm",
+          "sha256": "796124137f0500e59713fd9dccda6812ff73d25f22e33430b1c5af6e132efa5e",
+          "byteIdentical": false
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-powershell",
+        "files": {
+          "grammar.js": {
+            "sha256": "ce275bcff5fb02350d30abc287e708b3a7d64846091f8c79894e1896071d8ecd",
+            "bytes": 38294
+          },
+          "LICENSE": {
+            "sha256": "1fca8454c0d77a73f9922a52d39e1f7c339f5da5d03f2766eff66b859fa19477",
+            "bytes": 1068
+          },
+          "package.json": {
+            "sha256": "07c3f6f516961ac6b4c899ca03c26dd93df634d93507c452f86dbea63eba96ea",
+            "bytes": 1248
+          },
+          "README.md": {
+            "sha256": "c6c24649782597fa4878d8bd06fd5df612e4754508592a5fc8a4c91baedda71d",
+            "bytes": 238
+          },
+          "src/grammar.json": {
+            "sha256": "80a5f77e477fa39dfdb4200f6fa3cf2a1b87e830eaa2fc94e09fabad60a8e383",
+            "bytes": 158156
+          },
+          "src/node-types.json": {
+            "sha256": "0412132dcb127fae21e574d4dcb3634e45031c32961b373e1851cce8fd6c6b3e",
+            "bytes": 72433
+          },
+          "src/parser.c": {
+            "sha256": "7fd0bbfa955e2f3cf43da89df686c5eecedd9a9fbb1c70a27310f31c6351da7e",
+            "bytes": 4816373
+          },
+          "src/scanner.c": {
+            "sha256": "cf366b70e258a0ac1eb264ac0f4165c8f0c1b943d1a6e9db9d291c6cf178221f",
+            "bytes": 2135
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "4c0ec9a6fc5a75f78c0caf71dc954626da92fc1ba4cffcf4ca8b6ebe240fb51f",
+            "bytes": 855
+          }
+        },
+        "digest": "69bbbdbba51719e875d75c2fc9c3ef3c45e9ebbd998909f98bd70b44d86f0d7f",
+        "fileCount": 12
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-powershell/src/node-types.json",
+        "declaredNamedTypes": 152,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 152,
+        "wasmUniqueNames": 419,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
     }
   },
   "decisions": {
@@ -494,6 +787,58 @@
         {
           "path": "tree-sitter-haskell.wasm",
           "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
+    "css": {
+      "provenance": {
+        "kind": "local-rebuild-from-vendored-source",
+        "base": {
+          "repo": "tree-sitter/tree-sitter-css",
+          "version": "0.25.0"
+        },
+        "patches": [
+          "keyframe_block: add float_value to the step choice — `33.3%` is a float_value, not an integer_value, and float_value already exists in this grammar, so no node type is added (measured 151 -> 151). Repro: @keyframes f { 33.3% { color: yellow } }",
+          "plain_value: allow a LEADING `.` — an unquoted relative url() could not lex at all, because the token ended at the first `.` and the `..` became two ERROR nodes; `.` was already legal in the token's BODY, so only the leading repeat lacked it. The required /[a-zA-Z]/ is deliberately RETAINED so a value made only of punctuation still cannot match and the token cannot swallow structure. Repro: .a { background-image: url(../img/x.svg); }"
+        ],
+        "patchEvidence": "validation/m14/results/css-grammar-ab-url-float.json (A/B over 533 corpus files across 4 repos: 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change), plus reviews/m49-css-review.md. Both hunks carry their own repro in grammar.js under a `LOCAL PATCH` marker, and the file's header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-css",
+        "note": "grammar.js (upstream 0.25.0 byte-for-byte except the two marked LOCAL PATCH hunks, 36 changed lines including the patch header) + src/ (scanner.c, grammar.json, node-types.json, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, from the npm tarball tree-sitter-css@0.25.0. The external scanner is REQUIRED, not optional: its TokenType enum is exactly DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON and ERROR_RECOVERY, which back the descendant combinator, `::`, and error recovery. The GENERATED src/parser.c is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check runs on the generated JSONs, not on parser.c."
+      },
+      "decision": "Pin the local patched rebuild, and require the source↔wasm proof rather than a hash. Upstream 0.25.0 is the newest release and its prebuilt is present on this machine in 20+ copies (all sha 8a23977f, 128668 bytes) — but wiring those bytes means 19 real corpus files stay unparsed: 16 of 191 grails-core files on the relative-url class, 2 of 53 scala3, 1 of 185 svelte. The two fixes are additive by measurement, not by argument. The trade is recorded rather than hidden: the wired bytes are ours, so a future `tree-sitter generate && build` will NOT reproduce this sha, and a contributor who changes grammar.js must re-run the A/B before trusting the result.",
+      "alternatives": [
+        {
+          "option": "wire upstream tree-sitter-css@0.25.0's prebuilt wasm (sha 8a23977f, 128668 bytes)",
+          "measured": "Rejected on measurement: 19 corpus files stay unparsed across 4 repos (grails-core 16, scala3 2, svelte 1). Available in 20+ local copies, so this was the cheap option and it was still the wrong one — the defect class is the largest single parse-failure class in the CSS corpus after `progid:`.",
+          "artifact": "validation/m14/results/css-grammar-ab-url-float.json"
+        },
+        {
+          "option": "the older 98133-byte build shipped in tree-sitter-wasms@0.1.13 (sha 5fc61546), also vendored at backbencher/packages/brain-core/wasm/",
+          "measured": "Rejected: an older grammar surface, and brain-core's vendored copy is the one already wired in that package, so adopting it here would silently regress this lane behind it. Not A/B'd file-by-file because the surface is strictly older and the 0.25.0 prebuilt already fails on 19 files.",
+          "artifact": "validation/m14/results/wasm-provenance-census.json"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/css-grammar-ab-url-float.json",
+        "validation/m14/results/wasm-provenance-census.json",
+        "validation/m14/results/family-grammar-fingerprints.json",
+        "reviews/m49-css-review.md"
+      ],
+      "notVendored": [
+        {
+          "path": "prebuilds/, bindings/, binding.gyp",
+          "why": "native node bindings for 6 platforms; not parser source, and the engine loads the wasm"
+        },
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js by `tree-sitter generate`; the source↔wasm proof runs on the generated JSONs instead"
+        },
+        {
+          "path": "tree-sitter-css.wasm",
+          "why": "the base upstream prebuilt lives in the npm cache and is recorded above as the base; the WIRED bytes are our patched rebuild at wasm/ and are pinned by sha in the gate's own recomputation"
         }
       ]
     },
@@ -660,6 +1005,133 @@
         "reviews/m60-clean-grammar-127-adjudication.md"
       ],
       "notVendored": null
+    },
+    "yaml": {
+      "provenance": {
+        "kind": "byte-identical-to-npm-tarball",
+        "package": "@tree-sitter-grammars/tree-sitter-yaml",
+        "version": "0.7.1"
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-yaml",
+        "note": "grammar.js + tree-sitter.json + package.json + README.md + LICENSE + src/ (scanner.c, the three schema backends schema.core.c/schema.json.c/schema.legacy.c, the generated grammar.json and node-types.json, and the tree_sitter/ runtime headers), byte-for-byte from `npm pack @tree-sitter-grammars/tree-sitter-yaml@0.7.1`. The GENERATED src/parser.c (1.29 MB) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source<->wasm check below runs on node-types.json/grammar.json, not on parser.c. Unlike haskell and elixir, the generated JSONs ARE tracked here -- see the .gitignore entry, which explains that a clone carrying grammar.js but not node-types.json can rebuild a working parser and cannot run the proof."
+      },
+      "decision": "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/real-yaml-analyzer.md) into a gated contract, and changes nothing the product loads.",
+      "alternatives": [
+        {
+          "option": "ikatyang tree-sitter-yaml@0.5.0 (the fork parent)",
+          "measured": "publishes no wasm -- the 0.5.0 tarball contains only src/parser.c, so it cannot be a wire candidate without a local build, and its last release predates the fork by four years",
+          "artifact": "reviews/yaml/research-and-plan.md §2.1"
+        },
+        {
+          "option": "rebuild the wire with -DYAML_SCHEMA=legacy to reach timestamp_scalar",
+          "measured": "not attempted, and recorded as declined rather than as pending: it would replace the newest published bytes with a local build whose only gain is one scalar type, at the cost of making the lane's scalar typing disagree with every YAML 1.2 consumer that reads the same file. A pin is a claim about what is shipped; changing what is shipped is a different act with its own A/B (script/m14/verify-grammar-leaves.ts).",
+          "artifact": "reviews/yaml/research-and-plan.md §4 (defect Y12) and §2.1"
+        }
+      ],
+      "evidence": [
+        "reviews/yaml/research-and-plan.md",
+        "script/m14/spec/yaml-completeness.json",
+        "validation/m60/grammar-survey.json"
+      ],
+      "notVendored": [
+        {
+          "path": "binding.gyp, bindings/, prebuilds/",
+          "why": "native bindings and prebuilds; not parser source"
+        },
+        {
+          "path": "queries/",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js; 1.29 MB; `tree-sitter generate` rebuilds it"
+        },
+        {
+          "path": "tree-sitter-core_schema.wasm, tree-sitter-json_schema.wasm",
+          "why": "the other two schema builds as PREBUILDS; the backend is selected at COMPILE time by -DYAML_SCHEMA, so the choice belongs in the source tree (the three schema.*.c files), not in three wired wasms"
+        },
+        {
+          "path": "tree-sitter-yaml.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
+    "powershell": {
+      "provenance": {
+        "kind": "local-rebuild-from-vendored-source",
+        "base": {
+          "repo": "airbus-cert/tree-sitter-powershell",
+          "version": "0.26.4"
+        },
+        "patches": [
+          "G5a/b: PowerShell 7 null-coalescing `??` and ternary `? :`, as two HIDDEN precedence levels",
+          "G5c: PowerShell 7 null-conditional `?.` and `?[`, added inside the rules that already define `.` and `[` so they inherit their associativity and precedence"
+        ],
+        "patchEvidence": "validation/m60/results/powershell-grammar-g5b-ab.json + validation/m14/results/M14.0.F11.powershell.json + validation/m60/results/powershell-g5-g3-adjudication.txt + reviews/powershell/grammar-worklist.md"
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-powershell",
+        "note": "grammar.js (PATCHED — see provenance.patches) + src/scanner.c + src/tree_sitter/{parser,alloc,array}.h + package.json + tree-sitter.json + LICENSE + README.md. The grammar source is byte-for-byte from the npm tree-sitter-powershell@0.26.4 tarball EXCEPT grammar.js, which carries one additive hunk; `tree-sitter diff` against the tarball's own grammar.js is the record of what changed, and it is three rules and no edit to an existing one. The generated src/parser.c (4.5 MB) is NOT vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs, never on parser.c. Unlike the css/cpp vendors this lane's src/ holds only the hand-written scanner, so the .gitignore rule that drops `grammars/tree-sitter-*/src/*` — the rule that silently cost cpp its scanner and css its own (see the two negations above) — needed a THIRD negation for this lane, because tree-sitter-powershell's external scanner is also named src/scanner.c. The same trap, a third time, named by filename rather than by role."
+      },
+      "decision": "Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars.",
+      "alternatives": [
+        {
+          "option": "G5c as a new precedence level, or `?.[` for element access",
+          "measured": "REJECTED on measurement, and both halves of it came from the corpus rather than from taste. The corpus target disagrees with the documentation on the element-access form: PowerShell's own test/powershell/Language/Operators/NullConditional.Tests.ps1 uses `?[` (6 × `?[0]`, plus `?[tb]`, `?['a']`, `?[-2]`, `?[0..2]`, `?[0,1]`, `?[]`, `?[1234]`) and never `?.[`, so a `?.[` implementation would have satisfied the docs and none of the corpus. And a precedence LEVEL was rejected for the same reason G5a's named levels were: `?.` binds exactly like `.` and `?[` exactly like `[`, so the correct edit is one `choice` arm inside the rule that already defines the twin, inheriting its associativity — which is also what makes the corpus's `${psObj}?.name?.nonExistent` chain and its `(Get-Item $TestDrive)?.EnumerateFiles()?.Name` compose without a new level at all.",
+          "artifact": "validation/m60/results/powershell-grammar-g5c-ab.json"
+        },
+        {
+          "option": "G5 with the two precedence levels left NAMED (the first attempt)",
+          "measured": "REJECTED on measurement, and it is the most instructive rejection in this lane. It scored a clean win on every count the repro battery reports — 2 of 12 named limits fixed, 0 regressions, all 9 controls held — and the collateral gate passed too, 0 files broken. It was still the wrong patch, and only the SHAPE delta caught it: a named level emits its node in the pass-through case as well, so adding two levels wrapped EVERY expression in the language and produced 9,046 `coalesce_expression` and 9,038 `ternary_expression` nodes across 49 corpus files, re-pointing an analyzer written against the old shapes while every other number said 'pure win'. Hiding both levels makes the rules inline, so an expression using neither operator produces exactly the tree it produced before and F11's G2 identity gate passes by construction rather than by luck.",
+          "artifact": "validation/m60/results/powershell-grammar-g5b-ab.json"
+        },
+        {
+          "option": "the previously wired version, tree-sitter-powershell@0.25.10 (sha 1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154, 983,236 bytes)",
+          "measured": "0.25.10 vs 0.26.4 unpatched, production corpora: damaged files 16/49 powershell and 15/24 ansible on BOTH; ERROR nodes 93 → 91 in ansible; named vocabulary IDENTICAL (152) so no analyzer is re-pointed; 0 files broken. The base upgrade buys the here-string fix and nothing else, which is why it is recorded as taken rather than as a repair.",
+          "artifact": "validation/m60/results/powershell-grammar-upgrade-ab.json"
+        },
+        {
+          "option": "patch the source while the wired bytes stay 0.25.10",
+          "measured": "REJECTED, and this is the reason the pin exists. The npm cache held 0.26.4 and the first draft of this lane's review called it the wired grammar's source; it is not. Rebuilding the cache's source gives 419 ids against the wired wasm's 415 and a different id-order digest, so a hunk written against that grammar.js would have been a patch on a DIFFERENT grammar and every A/B number attributed to it would have been unattributable. Found by measuring the surface gap before writing any hunk, not after.",
+          "artifact": "validation/m60/results/powershell-grammar-upgrade-ab.json"
+        }
+      ],
+      "evidence": [
+        "validation/m60/results/powershell-grammar-g5c-ab.json",
+        "validation/m60/results/powershell-g5c-g3-adjudication.txt",
+        "validation/m60/results/powershell-grammar-g5b-ab.json",
+        "validation/m60/results/powershell-g5-g3-adjudication.txt",
+        "validation/m14/results/M14.0.F11.powershell.json",
+        "validation/m60/results/powershell-grammar-upgrade-ab.json",
+        "validation/m60/results/powershell-surface.json",
+        "reviews/powershell/resolution.md",
+        "reviews/powershell/grammar-worklist.md"
+      ],
+      "notVendored": [
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js; 4.5 MB; `tree-sitter generate` rebuilds it"
+        },
+        {
+          "path": "src/grammar.json, src/node-types.json",
+          "why": "generated from grammar.js; the source↔wasm check runs on these after regenerating them"
+        },
+        {
+          "path": "bindings/, binding.gyp, prebuilds/",
+          "why": "native bindings, not parser source"
+        },
+        {
+          "path": "queries/highlights.scm",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "tree-sitter-powershell.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
     }
   }
 }

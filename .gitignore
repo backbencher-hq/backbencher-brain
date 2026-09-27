@@ -76,3 +76,64 @@ validation/m60/grammar-survey.cache.json
 # carry a patch.
 !grammars/tree-sitter-html/src/scanner.c
 !grammars/tree-sitter-html/src/tag.h
+
+# FOURTH grammar, the same trap a fourth time — and this is the evidence that the
+# rule above is wrong rather than merely incomplete. The negations are written by
+# FILENAME (`src/scanner.c`, `src/tag.h`), and every one of these four grammars
+# happens to name its hand-written scanner `src/scanner.c`. A grammar whose
+# scanner were named anything else — `src/lexer.c`, `src/tokenizer.cpp` — would
+# be dropped silently, and the failure mode is the worst kind: the tracked tree
+# still LOOKS complete (grammar.js is there, so `tree-sitter generate` succeeds),
+# it rebuilds a wasm that is missing its external tokens, and the result is a
+# grammar that parses most files and silently mis-lexes the ones the scanner
+# exists for. The right fix is to negate by ROLE — track the whole hand-written
+# src/ for any grammar that has one — which is what `!grammars/tree-sitter-*/src/
+# scanner.*` below does, keeping the generated parser.c/grammar.json/node-types
+# .json ignored. Do that migration deliberately, per grammar, with the A/B to
+# back it; the four negations above stay until each one is replaced.
+!grammars/tree-sitter-powershell/src/scanner.c
+# tree-sitter-powershell's own note, recorded because it is the kind of thing
+# that looks fine and is not: the grammar's `tree-sitter.json` declares
+# file-types ["ps1", "psm1"] and does NOT declare .psd1, yet the product indexes
+# .psd1 as PowerShell and 24 of the corpus files in this lane's ansible draw are
+# .psd1 module manifests full of here-strings and DSC configuration. The grammar
+# parses them; the manifest simply never claimed them. Undeclared-by-the-grammar
+# is not unparsed-by-the-grammar, and this lane's measurements are taken over all
+# three extensions precisely because the declaration and the product disagree.
+
+# FIFTH grammar, and the first to need the role-based form the FOURTH comment above
+# asks for. tree-sitter-yaml (0.7.1) does not have ONE hand-written external
+# scanner, it has FOUR: src/scanner.c plus the three mutually exclusive scalar
+# backends src/schema.core.c, src/schema.json.c and src/schema.legacy.c, which
+# scanner.c selects between at build time --
+#
+#     #ifndef YAML_SCHEMA
+#     #define YAML_SCHEMA core
+#     #endif
+#     #include _file(YAML_SCHEMA)     // -> src/schema.<YAML_SCHEMA>.c
+#
+# So a filename-based negation would have to name all four by hand, and would still
+# miss the next grammar that splits its scanner. This entry therefore negates by
+# ROLE as the FOURTH comment prescribes: track the whole hand-written src/, and
+# re-ignore only what `tree-sitter generate` writes.
+#
+# Why the generated JSONs stay TRACKED here, unlike haskell/elixir where the
+# blanket rule leaves them untracked: the pin convention's sixth component is the
+# offline source<->wasm proof, and it runs on src/node-types.json and
+# src/grammar.json. A fresh clone that has grammar.js but not node-types.json can
+# `tree-sitter generate` a working parser and cannot run the proof -- the tracked
+# tree would LOOK complete and the provenance claim would be unverifiable, which
+# is the same failure mode the FOURTH comment describes. They are 166 KB total.
+# src/parser.c (1.29 MB) remains ignored: it is regenerated from grammar.js.
+#
+# MECHANICAL NOTE, because the first attempt at this entry was WRONG in a way that
+# looked right. `git add -n` accepted it and took five files. The pattern that
+# needed undoing was `grammars/tree-sitter-*/src/*`, which matches the CONTENTS of
+# src/, and a directory-shaped negation `!grammars/tree-sitter-yaml/src/` does not
+# undo it: gitignore(5) evaluates each path independently, so re-including the
+# directory leaves every file inside still matched by the `src/*` rule. The negation
+# has to be role-shaped at the same LEVEL as the rule it undoes -- `src/*` in, so
+# `src/*` out -- and then the one generated file re-ignored individually below.
+# Verified with `git add -n` and `git check-ignore -v`, not by reading the diff.
+!grammars/tree-sitter-yaml/src/*
+grammars/tree-sitter-yaml/src/parser.c
