@@ -452,6 +452,25 @@ if (ONLY && target.length === 0) throw new Error(`build-grammar-survey: no such 
 // Build
 // ---------------------------------------------------------------------------
 
+/**
+ * Adjudication rulings are AUTHORED, and they do not live in this generated file.
+ *
+ * The first version of this work recorded refusals by editing the survey's rows, and the
+ * next `grammar:survey:build` silently erased three of them — a generated file cannot hold
+ * a hand-written fact, and that is the same two-sources-one-truth defect this milestone
+ * exists to close, recreated one level up inside the fix for it. Rulings therefore live in
+ * validation/m60/grammar-adjudications.json, which a human owns, and this generator MERGES
+ * them in.
+ *
+ * A ruling matching no candidate here is a HARD FAILURE, not a skip: a package renamed
+ * upstream, or a lane renamed, would otherwise drop a verdict silently and the survey would
+ * then report that candidate as never adjudicated — the one state a reviewer must never
+ * meet by omission.
+ */
+const ADJUDICATIONS = path.join(ROOT, "validation", "m60", "grammar-adjudications.json")
+const rulings: any[] = existsSync(ADJUDICATIONS) ? (JSON.parse(readFileSync(ADJUDICATIONS, "utf8")).rulings ?? []) : []
+const orphanedRulings: string[] = []
+
 const rows: any[] = []
 for (const lane of target) {
   const asset = engineLanes[lane] ?? null
@@ -491,13 +510,33 @@ for (const lane of target) {
   // swap" for a lane the product does not parse with that grammar at all.
   const discovery =
     isGeneric || isAlias ? { candidates: [], rejectedSearchHits: [] as string[] } : discoverCandidates(lane, ownPkg, ownRepo)
-  const candidates = discovery.candidates.map((c) => ({
-    ...c,
-    upstream: upstreamHealth(c.package ?? null),
-    // A candidate is NEVER accepted here. Only F11 can set that, in a review
-    // document, and C6 in verify-grammar-consistency.ts checks the document exists.
-    verdict: "unmeasured",
-    verdictRuling: null as string | null,
+  const candidates = discovery.candidates.map((c) => {
+    // Upstream state FIRST: the ruling is keyed on the version upstream currently
+    // publishes, so the lookup cannot precede the fetch. The first version of this read
+    // `c.upstream` here, which is undefined at this point because `discoverCandidates`
+    // returns `{package, repo, foundVia}` and the health is attached below — so every
+    // ruling missed, and the orphan gate correctly refused to publish.
+    const up = upstreamHealth(c.package ?? null)
+    // An authored ruling wins over the default. Keyed on lane + package + version,
+    // because a package can offer several versions and only one of them was
+    // adjudicated — keying on package alone would apply a 0.3.12 refusal to a 0.4.0
+    // candidate nobody has looked at.
+    const hit = rulings.find((r) => r.lane === lane && r.package === c.package && r.version === (up?.latestVersion ?? null))
+    if (hit) hit.__applied = true
+    return {
+      ...c,
+      upstream: up,
+      // A candidate is NEVER accepted here. Only F11 can set that, in a review
+      // document, and C6 in verify-grammar-consistency.ts checks the document exists.
+      verdict: (hit?.verdict ?? "unmeasured") as string,
+      verdictRuling: (hit?.ruling ?? null) as string | null,
+      // The measured numbers travel WITH the verdict, so a reader of this row never
+      // has to open the review document to learn what the numbers were.
+      measured: hit?.measured ?? null,
+      mechanism: hit?.mechanism ?? null,
+      confound: hit?.confound ?? null,
+      knownLimit: hit?.knownLimit ?? null,
+      candidateProvenance: hit?.candidateProvenance ?? (c.upstream?.repoUrl ?? null),
     // The RECOVERY SCREEN, named but not run. Upstream health only shortlists; the
     // screen is what makes the shortlist predictive. It exists because the sql
     // adjudication found that for a grammar already failing on most of its corpus,
@@ -510,15 +549,24 @@ for (const lane of target) {
       instrument: "script/m60/measure-grammar-recovery.ts",
       command: `bun run script/m60/measure-grammar-recovery.ts --lang ${lane} --candidate <built-candidate.wasm>`,
       requires: "a candidate wasm built from the candidate's source (npm package, then `tree-sitter build --wasm`)",
-      recovery: null as null | { filesLosingMaterialStructure: number; files: number; medianFileDeltaPct: number | null; aggregateNamedNodesDeltaPct: number | null; errorsDeltaPct: number | null },
-    },
-  }))
+      // An authored ruling may carry its own screening measurement; it wins.
+      recovery: (hit?.recovery ?? null) as null | { filesLosingMaterialStructure: number; files: number; medianFileDeltaPct: number | null; aggregateNamedNodesDeltaPct: number | null; errorsDeltaPct: number | null; note?: string },
+    }
+    }
+  })
 
   const f10Rows = f10RowsFor(lane)
 
   const declaredV = declared.version
   const latestV = health.available ? (health as any).latestVersion : null
-  const behind = cmpSemver(latestV, declaredV)
+  // `cmpSemver(latest, declared)` answers "is UPSTREAM ahead of US", which is the
+  // opposite of what a field named `behind` should say. It read `behind: "ahead"` for
+  // the powershell lane — technically true about upstream, actively misleading about us.
+  // The comparison is kept (it is the one that decides the candidate filter) and the
+  // position is now stated in the only direction a reader can act on.
+  const upstreamVersusUs = cmpSemver(latestV, declaredV)
+  const ourPosition: "behind" | "current" | "ahead" | "unknown" =
+    upstreamVersusUs === "unknown" ? "unknown" : upstreamVersusUs === "ahead" ? "behind" : upstreamVersusUs === "behind" ? "ahead" : "current"
 
   // A lane is only interesting if some OTHER grammar for it is ahead of what we
   // ship. Deliberately separate from `behind`: a lane can be perfectly current
@@ -570,13 +618,14 @@ for (const lane of target) {
     candidates,
     rejectedSearchHits: discovery.rejectedSearchHits,
     staleness: {
-      behind,
+      ourPosition,
+      upstreamVersusDeclared: upstreamVersusUs,
       aheadCandidates,
       hasAheadCandidate: aheadCandidates.length > 0,
       note:
         declaredV == null
           ? "NO DECLARED VERSION — staleness cannot be computed and is not assumed to be 'current'"
-          : behind === "unknown"
+          : ourPosition === "unknown"
             ? "declared version is not comparable to upstream latest (pre-release, or upstream latest missing)"
             : "compare declared version to upstream latestVersion, and the timeline to lastPublish",
     },
@@ -623,6 +672,11 @@ const misboundClaims = rows
 const shaMismatch = rows.filter((r) => r.declared.sha256 && r.shipped.sha256 && r.declared.sha256 !== r.shipped.sha256).map((r) => r.lane)
 const noGuard = rows.filter((r) => !r.guard.f5DifferentialLane && !r.guard.f10ParseSuccessFloor).map((r) => r.lane)
 const notRebuildable = rows.filter((r) => r.shipped.present && !r.source.rebuildable).map((r) => r.lane)
+const adjudicated = rows
+  .flatMap((r) => (r.candidates ?? []).map((c: any) => ({ lane: r.lane, c })))
+  .filter(({ c }) => c.verdict !== "unmeasured")
+  .map(({ lane, c }) => `${lane}:${c.package}@${c.upstream?.latestVersion ?? "?"}=${c.verdict}`)
+for (const r of rulings) if (!r.__applied) orphanedRulings.push(`${r.lane}/${r.package}@${r.version}`)
 
 function vendoredFor(lane: string): string | null {
   const g = path.join(ROOT, "grammars")
@@ -643,6 +697,13 @@ const registry = {
   generatorMode: OFFLINE ? "offline-cache-only" : REFRESH ? "refresh" : "cached-or-fetch",
   networkCalls,
   role: "OBSERVATION, not a contract. The pin contract is validation/m14/grammar-pins.json, which owns bytes, surface and provenance; this file owns the UPSTREAM LANDSCAPE and is expected to change whenever anybody publishes a release.",
+  rulings: {
+    source: "validation/m60/grammar-adjudications.json — hand-authored; THIS file is generated and must never be hand-edited",
+    authored: rulings.length,
+    applied: adjudicated.length,
+    orphaned: orphanedRulings,
+    appliedVerdicts: adjudicated,
+  },
   ownership: {
     pinIdentity: "validation/m14/grammar-pins.json — owns the wired bytes, the grammar's enumerable surface, vendored source hashes, the source-wasm proof and the authored provenance. Gated for truth by script/m14/verify-grammar-pins.ts. This file must never restate a pin.",
     upstreamSurvey: "this file — owns which grammars are published for each lane, their release cadence and archive state, the candidate shortlist, and the damage/guard status derived from validation/m12 + validation/m14.",
@@ -677,6 +738,9 @@ const registry = {
     declaredSha256Mismatch: shaMismatch.length,
     noF5OrF10Guard: noGuard.length,
     notRebuildableFromRepo: notRebuildable.length,
+    authoredRulings: rulings.length,
+    rulingsApplied: adjudicated.length,
+    orphanedRulings: orphanedRulings.length,
   },
   findings: {
     declaredVersionUnknown: versionUnknown,
@@ -732,6 +796,15 @@ mkdirSync(path.dirname(OUT), { recursive: true })
 writeFileSync(CACHE, JSON.stringify(cache, null, 2) + "\n")
 writeFileSync(OUT, JSON.stringify(registry, null, 2) + "\n")
 
+if (orphanedRulings.length) {
+  console.error(
+    `build-grammar-survey: ${orphanedRulings.length} authored ruling(s) match no candidate — a verdict would be SILENTLY LOST:\n` +
+      orphanedRulings.map((o) => `    ${o}`).join("\n") +
+      `\n  Either the package or lane was renamed, or the ruling's version no longer matches upstream's latest.`,
+  )
+  process.exit(1)
+}
+
 console.log(`build-grammar-survey: ${rows.length} lane(s) -> ${path.relative(ROOT, OUT)}  [${registry.generatorMode}, ${networkCalls} network call(s)]`)
 console.log(`  declared version unknown        : ${versionUnknown.length}  ${versionUnknown.join(", ") || "-"}`)
 console.log(`  claim NOT bound to a grammar    : ${unboundClaims.length} of ${rows.filter((r) => r.evidence.m12.artifact).length} artifacts`)
@@ -739,6 +812,7 @@ console.log(`  bound but hash MISMATCH         : ${misboundClaims.length}  ${mis
 console.log(`  declared sha256 != shipped bytes: ${shaMismatch.length}  ${shaMismatch.join(", ") || "-"}`)
 console.log(`  no F5 differential and no F10   : ${noGuard.length}`)
 console.log(`  not rebuildable from the repo   : ${notRebuildable.length}`)
+console.log(`  authored rulings applied        : ${adjudicated.length}/${rulings.length}${orphanedRulings.length ? `   ORPHANED: ${orphanedRulings.join(", ")}` : ""}`)
 
 // The survey, split so the three different situations are never read as one.
 // A single flat list mixed "a better grammar exists", "we never wrote down what
