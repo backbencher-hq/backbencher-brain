@@ -110,6 +110,28 @@ const SHELL_DEFINED_VARS = new Set([
  * a `case` fixture carrying `apt-get install -y curl` emitted ZERO
  * relationships.
  */
+/**
+ * Is `text` a shell identifier — `[A-Za-z_][A-Za-z0-9_]*`?
+ *
+ * Written as a char loop rather than a regex for two reasons, both the lane's
+ * own: the M12 contract probe asserts the analyzer source contains NO regex
+ * literals, and a char loop is the style `isCommandNameText` already uses. It is
+ * also the cheaper of the two on the hot path, where this runs once per declared
+ * name and the strings are short.
+ */
+const isShellIdentifierName = (text: string): boolean => {
+  if (text.length === 0) return false
+  const first = text.charCodeAt(0)
+  const firstOk = (first >= 97 && first <= 122) || (first >= 65 && first <= 90) || first === 95 /* _ */
+  if (!firstOk) return false
+  for (let i = 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if ((c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95) continue
+    return false
+  }
+  return true
+}
+
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
   // A bare NUMBER is never a command name — it is an arithmetic token or an
@@ -957,6 +979,25 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const emit = (name: string, range: ASTEngine.UniversalSymbol["range"], line: number) => {
       if (!name || name.trim() === "") return
+      // A DECLARED NAME is a shell identifier: `[A-Za-z_][A-Za-z0-9_]*`. The
+      // universe sweep over 2,747 admitted files across 51 repositories found the
+      // analyzer emitting `exports` and `contains` for `PWD/collection_root_sys` —
+      // a PATH FRAGMENT, and the real declaration missing with it. The cause is a
+      // grammar truncation, not a typo: `export A=$PWD/x_user:$PWD/x_sys` parses as
+      //   declaration_command
+      //     variable_assignment "A=$PWD/x_user:$"   <- grammar stops at the colon
+      //     word "PWD/x_sys"                        <- the tail, as a bare sibling
+      // and the export handler read that `word` as a second exported name. Two
+      // ansible test files, four fabricated edges, and the shape is common
+      // (`export VAR=$HOME/a:$HOME/b` is how PATH-like variables are written).
+      //
+      // This is scoped to DECLARATIONS on purpose. The same sweep found 157 module
+      // symbols containing spaces and many containing `$`, and those are
+      // CORRECT: nvm's test fixtures are files literally named
+      // `'nvm alias' should ignore leading blank lines in the file`, and BD2 makes
+      // the script's own name its module. A rule applied to every symbol name
+      // would delete those; applied here it cannot.
+      if (!isShellIdentifierName(name)) return
       // The `exports` EDGE is a different fact from the SYMBOL, and the two have
       // separate dedupe rules. The pre-fix shape returned early on an
       // already-declared name, which silently swallowed the edge: `CFLAGS=…`
