@@ -2388,6 +2388,100 @@ function tomlInlineKeysBecomeSymbols() {
 }
 
 
+/** BARE-WRITABILITY, NOT PUNCTUATION: a segment is quoted only when it contains
+ *  `.`, `"` or `\`, so a segment that cannot be written bare is emitted bare.
+ *  `[target."cfg(unix)".dependencies]` is real cargo syntax and `cfg(unix)` contains
+ *  PARENTHESES — no punctuation the character test looks for — so the name came out
+ *  `target.cfg(unix).dependencies`. An unquoted path is not a spelling TOML can parse
+ *  back, so the name stopped round-tripping to the document it names, and the same
+ *  hole let a segment containing a SPACE through.
+ *
+ *  Found by the differential oracle on cargo's own Cargo.toml, which is the whole
+ *  argument for deriving the rule from the SPECIFICATION ("may this be written
+ *  bare?") rather than from the characters that happen to appear in the sample you
+ *  tested. Caught by toml/dotted-and-quoted-paths.
+ */
+function tomlQuotesOnlyPunctuation() {
+  return (r: any) => {
+    const bare = (n: string) => n.length > 0 && !n.includes(".") && !n.includes('"') && !n.includes("\\")
+    const relabel = (s: any) => ({ ...s, name: String(s.name ?? "").split(".").filter((p) => bare(p)).join(".") })
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x, source: m.get(x.source) ?? x.source, target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+
+/** ONE FUNCTION OWNS A PATH'S SPELLING: the ancestor lookup that decides which
+ *  DECLARED table owns a section builds its prefixes from RAW segments, while the
+ *  declared-path table is keyed by the QUOTED spelling. A lookup for
+ *  `target.cfg(unix).dependencies` therefore never matches the stored
+ *  `target."cfg(unix)".dependencies`, and a declared ancestor is recorded as IMPLIED
+ *  while the section is filed under the MODULE.
+ *
+ *  The symbol's NAME stays correct — the emit path does quote — so only the
+ *  CONTAINMENT is wrong, which is why no symbol assertion could see it and why the
+ *  fixture pins the edge's SOURCE. On cargo's own Cargo.toml,
+ *  `[target.'cfg(windows)'.dependencies.windows-sys]` was filed under the module
+ *  rather than under the parent declared three lines earlier.
+ *
+ *  Modelled from the OUTPUT, and the trigger is the defect rather than a shape: a
+ *  section is mis-filed exactly when it has implied parents AND some OTHER table's
+ *  name is a proper dotted prefix of its own AND that table is absent from its
+ *  implied list — because a correct owner would have consumed it. The first attempt
+ *  triggered on "edge from the module to a section with implied parents", which is
+ *  simply correct behaviour — a section with no DECLARED ancestor belongs to the
+ *  module — so it fired on the fixed output and changed nothing. Caught by
+ *  toml/dotted-and-quoted-paths.
+ */
+function tomlOwnerLookupUsesRawSegments() {
+  return (r: any) => {
+    const syms = r.symbols ?? []
+    const mod = syms.find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    const tableNames = new Set(syms.filter((s: any) => s?.kind === "namespace").map((s: any) => String(s.name)))
+    /** The declared ancestor the raw-segment lookup would have MISSED. */
+    const missed = (s: any): string | null => {
+      const implied = s?.metadata?.impliedParents
+      if (!Array.isArray(implied) || implied.length === 0) return null
+      const name = String(s.name)
+      const listed = new Set(implied.map((x: any) => String(x)))
+      let best: string | null = null
+      for (const t of tableNames) {
+        if (t === name) continue
+        if (!name.startsWith(`${t}.`)) continue
+        if (listed.has(t)) continue
+        if (best === null || t.length > best.length) best = t
+      }
+      return best
+    }
+    const byTarget = new Map<string, any>()
+    for (const s of syms) {
+      const m = missed(s)
+      if (m !== null) byTarget.set(String(s.name), m)
+    }
+    if (byTarget.size === 0) return r
+    // The defect RE-PARENTS: the edge that correctly runs from the declared
+    // ancestor to the section is rewritten to run from the MODULE instead, because
+    // the raw-segment lookup could not find the ancestor. The previous version
+    // rewrote in the other direction — hunting for a module-sourced edge that
+    // should not exist — which is a no-op on correct output by construction, and a
+    // mutant that cannot fire is a mutant that proves nothing.
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const owner = byTarget.get(String(x.target))
+        return owner !== undefined && x.source === owner ? { ...x, source: mod.name } : x
+      }),
+    }
+  }
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -11705,6 +11799,20 @@ export const MUTANTS: Mutant[] = [
   },
 
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "toml/quotes-only-punctuation",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "BARE-WRITABILITY, NOT PUNCTUATION: a path segment is quoted only when it contains `.`, `\"` or `\\`, so a segment that CANNOT be written bare is emitted bare. `[target.\"cfg(unix)\".dependencies]` is real cargo syntax and `cfg(unix)` contains PARENTHESES — no punctuation the character test looks for — so the name came out `target.cfg(unix).dependencies`, which is not a spelling TOML can parse back. The same hole let a segment containing a SPACE through. Found by the differential oracle on cargo's own Cargo.toml, which is the argument for deriving the rule from the specification (\"may this be written bare?\") rather than from the characters that appear in the sample you happened to test. Caught by toml/dotted-and-quoted-paths.",
+    transform: tomlQuotesOnlyPunctuation(),
+  },
+  {
+    id: "toml/owner-lookup-uses-raw-segments",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "ONE FUNCTION OWNS A PATH'S SPELLING: the ancestor lookup deciding which DECLARED table owns a section builds prefixes from RAW segments, while the declared-path table is keyed by the QUOTED spelling, so `target.cfg(unix).dependencies` never matches `target.\"cfg(unix)\".dependencies` and a declared ancestor is reported as implied. The section is then filed under the MODULE. The symbol's NAME stays correct — the emit path does quote — so only the CONTAINMENT is wrong, which is why no symbol assertion could see it and why the fixture pins the edge's SOURCE. On cargo's Cargo.toml, `[target.'cfg(windows)'.dependencies.windows-sys]` was filed under the module rather than the parent declared three lines earlier. Caught by toml/dotted-and-quoted-paths.",
+    transform: tomlOwnerLookupUsesRawSegments(),
+  },
   {
     id: "toml/name-loses-its-path",
     language: "toml",
