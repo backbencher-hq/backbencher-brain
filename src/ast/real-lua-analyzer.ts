@@ -165,12 +165,32 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const parameters = this.extractParameters(node)
     const isMethod = !!owner
+    // M60 LUA-19: `isLocal` tested for the `local` KEYWORD, which is not what
+    // "local" means. A function declared without `local` but NESTED inside
+    // another function is still lexically local to it:
+    //
+    //   local function spawn(...)        -- L72, spawn
+    //     local onExit                   -- L74
+    //     function onExit(code, signal)  -- L125  <- no `local` keyword
+    //
+    // was filed with scope "global" and a `contains global -> onExit` edge,
+    // because the keyword test said "not local". The lua truth oracle found 47
+    // such edges on luvit alone, every one of them a function nested inside
+    // another. It is a scope-attribution defect, not a cosmetic one: `scope` is
+    // what a consumer reads to decide where a symbol belongs, and a closure
+    // declared inside `spawn` does not belong to the file's global scope.
+    //
+    // Calls INSIDE the nested function were already correct, which is why this
+    // showed up only as unexplained `contains` edges and not as misattributed
+    // calls: the walk sets childFrame.callable on the way in, so only the
+    // symbol's own scope and the edge naming it used the keyword test.
+    const lexicallyLocal = isLocal || !!frame.callable
     const symbol: ASTEngine.UniversalSymbol = {
       name,
       kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
-      scope: isLocal ? (frame.callable || "global") : "global",
-      visibility: isLocal ? "private" : "public",
+      scope: lexicallyLocal ? (frame.callable || "global") : "global",
+      visibility: lexicallyLocal ? "private" : "public",
       parameters,
       ownerName: owner,
       ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
@@ -178,14 +198,14 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // field is the identity; this is the path. Before the fix the path was
       // doing the identity's job and no path was recorded at all.
       qualifiedName: label,
-      metadata: { luaSpecific: true, isLocal, isMethod, ownerTable: owner, qualifiedName: label },
+      metadata: { luaSpecific: true, isLocal: lexicallyLocal, isMethod, ownerTable: owner, qualifiedName: label },
     }
     ctx.symbols.push(symbol)
     if (owner) {
       ctx.declaredTables.add(owner)
       ctx.patterns.add("Object-Oriented Programming")
     }
-    if (isLocal) ctx.globalVariables.delete(name)
+    if (lexicallyLocal) ctx.globalVariables.delete(name)
   }
 
   // M60 LUA-15: split a declaration's name into its OWN name and its OWNER.

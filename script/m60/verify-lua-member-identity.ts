@@ -69,8 +69,25 @@ const FIXTURE: Record<string, string> = {
     "  local o = M.new({})",                                      // 23
     "  plain(1)",                                                 // 24
     "end",                                                        // 25
+    "",                                                            // 26
+    "function outer()",                                           // 27
+    "  local inner = 1",                                           // 28
+    "  function nested()",                                         // 29  <- no `local` keyword
+    "    return inner",                                            // 30
+    "  end",                                                       // 31
+    "  return nested()",                                           // 32
+    "end",                                                         // 33
   ].join("\n") + "\n",
 }
+
+// M60 LUA-19: a function nested inside another function is LEXICALLY local
+// whether or not it carries the `local` keyword. `isLocal` tested for the
+// keyword, so `function nested()` inside `outer` was filed with scope "global"
+// and a `contains global -> nested` edge. The truth oracle found 47 such edges
+// on luvit — every one a function nested inside another.
+const EXPECTED_NESTED: Array<{ name: string; scope: string; line: number }> = [
+  { name: "nested", scope: "outer", line: 29 },
+]
 
 // name -> owner, derived from the fixture TEXT, so the expectation cannot drift
 // away from the fixture by editing one of them.
@@ -156,6 +173,21 @@ async function main(): Promise<void> {
   check("each member is filed at its own declaration line", lineBad.length === 0,
     lineBad.map((m) => `${m.name}@${lineOf(m.name)}!=${m.line}`).join(", ") || "all correct")
 
+  // LUA-19 — lexical scope, not the `local` keyword
+  const nested = byName("nested")[0]
+  check("a function nested in another function is scoped to it, not to global",
+    !!nested && nested.scope === "outer", nested ? `scope=${nested.scope}` : "nested not a symbol")
+  const nestedLine = EXPECTED_NESTED.filter((n) => (byName(n.name)[0]?.startLine ?? -1) === n.line)
+  check("the nested function is filed at its own declaration line", nestedLine.length === EXPECTED_NESTED.length,
+    `nested@${byName("nested")[0]?.startLine}, expected L29`)
+  const containsNested = rels.find((e) => e.type === "contains" && e.target === "nested")
+  check("the contains edge for a nested function names its enclosing function",
+    !!containsNested && containsNested.source === "outer", containsNested ? `${containsNested.source} -> ${containsNested.target}` : "no contains edge")
+  // and the converse: a TOP-LEVEL function really is global
+  const topLevel = byName("use")[0]
+  check("a top-level function is still scoped to global", !!topLevel && topLevel.scope === "global",
+    topLevel ? `scope=${topLevel.scope}` : "use not a symbol")
+
   // ── mutants: the gate must be able to fail ─────────────────────────────────
   // Output mutation, for the reason recorded in verify-lua-edge-lines.ts: the
   // engine caches analyzer modules, so editing the source after first import has
@@ -174,6 +206,7 @@ async function main(): Promise<void> {
     for (const m of EXPECTED_MEMBERS) { const sy = named(m.name)[0]; if (sy && sy.kind !== "method") f.push(`${m.owner}:${m.name} filed as ${sy.kind}, not method`) }
     for (const p of EXPECTED_PLAIN) { const sy = named(p.name)[0]; if (sy && sy.kind !== "function") f.push(`${p.name} filed as ${sy.kind}, not function`) }
     for (const m of EXPECTED_MEMBERS) { const s = named(m.name)[0]; if (s && s.startLine !== m.line) f.push(`${m.name} at L${s.startLine}, expected L${m.line}`) }
+    for (const n of EXPECTED_NESTED) { const s = named(n.name)[0]; if (s && s.scope !== n.scope) f.push(`${n.name} scoped to ${s.scope}, expected ${n.scope}`) }
     return f
   }
   const baseFailures = verify(syms)
@@ -190,6 +223,7 @@ async function main(): Promise<void> {
     // passes is not a gate.
     { name: "a plain function is filed as a method", apply: (s) => s.map((x) => (x.name === "plain" ? { ...x, kind: "method", ownerName: "Buffer" } : x)) },
     { name: "a member is filed at the wrong line", apply: (s) => s.map((x) => (x.name === "readUInt8" ? { ...x, startLine: 1 } : x)) },
+    { name: "LUA-19 again: a nested function is scoped to global", apply: (s) => s.map((x) => (x.name === "nested" ? { ...x, scope: "global" } : x)) },
   ]
   let caught = 0
   const detail: Array<{ name: string; caught: boolean; failures: string[] }> = []
