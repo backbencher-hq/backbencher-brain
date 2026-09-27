@@ -1,19 +1,19 @@
 {
   "analyzer": "hcl",
   "corpus": "$HOME/fixtures/repositories/terraform",
-  "revision": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+  "revision": "db4eef44f5bbd39a115f939304279caee7cf9b12",
   "extensions": [
     "*.tf",
     "*.tfvars",
     "*.hcl"
   ],
-  "trackedFiles": 2299,
+  "trackedFiles": 2361,
   "errorFiles": 4,
   "errorNodes": 10,
   "crashFiles": 0,
   "intentionalInvalidFiles": 4,
   "unexpectedErrorFiles": 0,
-  "cleanFiles": 2295,
+  "cleanFiles": 2357,
   "crashes": [],
   "intentionalInvalid": [
     {
@@ -43,10 +43,5 @@
   ],
   "unexpectedErrors": [],
   "passed": true,
-  "policy": "Every tracked .tf/.tfvars/.hcl file in clean terraform@2e1710bf is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Terraform's own repository intentionally ships invalid HCL under its diagnostics testdata; those files are classified (by path pattern) as intentional-invalid rather than hidden. Clean acceptance files are those with zero parse errors.",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.884Z",
-    "contentSha256": "6777bf3bf0dcbe3372ceed237b35f73f4f01f909190dde1369b690419309b95f"
-  }
+  "policy": "Every tracked .tf/.tfvars/.hcl file in clean terraform@2e1710bf is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Terraform's own repository intentionally ships invalid HCL under its diagnostics testdata; those files are classified (by path pattern) as intentional-invalid rather than hidden. Clean acceptance files are those with zero parse errors."
 }
