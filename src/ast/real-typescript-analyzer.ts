@@ -1830,8 +1830,17 @@ class TypeScriptAnalysisRunner {
     // React file — in Vue/Svelte/Node codebases every `use*` util warned as
     // a parse error. Gate on a React signal (react import or JSX); the
     // SolidJS exclusion stays (different hook rules entirely).
+    // R2c: ONE walk for imports AND the per-file signals, run BEFORE symbol
+    // extraction. This scan used to be a second full traversal sitting next to
+    // the imports walk, and it had to sit here (before the symbol passes)
+    // because the taint sink rule reads `importsChildProcess` while building
+    // payloads. The resolution is ordering, not a provisional list: the imports
+    // walk is a pure tree read that needs no symbols, so running it first hands
+    // the signals to everything downstream and the extra traversal is gone.
+    // `imports` keeps the same content and the same order — the same walk over
+    // the same tree — and the exports pass, which does need symbols, stays put.
     this._fileSignals = { hasReact: false, importsChildProcess: false, solidJs: false }
-    this.scanFileSignals(rootNode)
+    this.scanImportsAndFileSignals(rootNode, imports)
     if (this._fileSignals.hasReact && !this._fileSignals.solidJs) {
       errors.push(...this.detectReactHookAntiPatterns(rootNode))
     }
@@ -1888,8 +1897,8 @@ class TypeScriptAnalysisRunner {
     }
     this._pendingQualifiedCalls = []
 
-    // PHASE 3: Extract imports and exports
-    this.extractImports(rootNode, imports)
+    // PHASE 3: Extract exports (imports were read before symbol extraction, so
+    // the per-file signals were available to the payload rules)
     this._pendingReExportImports = []
     this.extractExports(rootNode, exports, symbols)
     imports.push(...this._pendingReExportImports)
@@ -3511,7 +3520,43 @@ class TypeScriptAnalysisRunner {
   // IMPORT/EXPORT EXTRACTION
   // ========================================================================
 
-  private extractImports(node: Node, imports: ASTEngine.ImportInfo[]): void {
+  /**
+   * The file's imports, plus the three per-FILE facts the payload rules need —
+   * in ONE walk (R2c).
+   *
+   * The signals used to come from a separate full traversal that had to run
+   * before symbol extraction, because the taint sink rule asks whether the file
+   * imports child_process while it is still building a symbol's payload. Since
+   * the import walk needs no symbols, running it FIRST removes the second
+   * traversal outright rather than deferring the question: every consumer below
+   * reads the signals after this returns, and the `imports` array is unchanged
+   * in content and order.
+   */
+  /** The three per-file facts, keyed on an import's module path. */
+  private recordFileSignal(modulePath: string): void {
+    if (
+      modulePath === "react" || modulePath === "react-dom" || modulePath === "preact" ||
+      modulePath === "preact/compat" || modulePath.startsWith("react/") || modulePath.startsWith("preact/")
+    ) {
+      this._fileSignals.hasReact = true
+    }
+    if (modulePath === "solid-js" || modulePath.startsWith("solid-js/") || modulePath.startsWith("@solidjs/")) {
+      this._fileSignals.solidJs = true
+    }
+    if (modulePath === "child_process" || modulePath === "node:child_process") {
+      this._fileSignals.importsChildProcess = true
+    }
+  }
+
+  private scanImportsAndFileSignals(node: Node, imports: ASTEngine.ImportInfo[]): void {
+    // JSX presence is the React signal the Rules-of-Hooks gate needs.
+    if (node.type === "jsx_element" || node.type === "jsx_self_closing_element") {
+      this._fileSignals.hasReact = true
+    } else if (node.type === "import_require_clause") {
+      // `import cp = require("child_process")` — here the node IS the module
+      // string, which is why the old standalone scan read it separately.
+      this.recordFileSignal(stringContent(node))
+    }
     if (node.type === "import_statement") {
       const sourceNode = node.childForFieldName("source")
       if (!sourceNode) return
@@ -3519,6 +3564,7 @@ class TypeScriptAnalysisRunner {
       const modulePath = stringContent(sourceNode)
       const items = extractImportItems(node)
       const clause = extractImportClause(node)
+      this.recordFileSignal(modulePath)
 
       // Resolve actual module path
       const resolvedPath = this.moduleResolver?.resolveModulePath(modulePath, this.currentFile) || modulePath
@@ -3559,7 +3605,7 @@ class TypeScriptAnalysisRunner {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child) {
-        this.extractImports(child, imports)
+        this.scanImportsAndFileSignals(child, imports)
       }
     }
   }
@@ -6010,44 +6056,6 @@ class TypeScriptAnalysisRunner {
     return "critical"
   }
 
-  /**
-   * ONE walk for every per-file fact the analyzer needs: a React signal (for
-   * the Rules-of-Hooks gate), a solid-js signal (that exclusion, previously a
-   * whole-file `content.includes` text scan), and a child_process import (the
-   * taint sink rule's evidence that a bare `exec` is Node's, not the project's).
-   * All three are import-source / JSX facts read off the AST — pure AST, no
-   * regex, no text matching.
-   */
-  private scanFileSignals(rootNode: Node): void {
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
-        this._fileSignals.hasReact = true
-      } else if (n.type === "import_statement" || n.type === "import_require_clause") {
-        const src = n.type === "import_statement" ? n.childForFieldName("source") : n
-        if (src) {
-          const mod = stringContent(src)
-          if (
-            mod === "react" || mod === "react-dom" || mod === "preact" || mod === "preact/compat" ||
-            mod.startsWith("react/") || mod.startsWith("preact/")
-          ) {
-            this._fileSignals.hasReact = true
-          }
-          if (mod === "solid-js" || mod.startsWith("solid-js/") || mod.startsWith("@solidjs/")) {
-            this._fileSignals.solidJs = true
-          }
-          if (mod === "child_process" || mod === "node:child_process") {
-            this._fileSignals.importsChildProcess = true
-          }
-        }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) stack.push(child)
-      }
-    }
-  }
 
   private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {    const errors: ASTEngine.ParseError[] = []
     const seen: Record<string, boolean> = {}
