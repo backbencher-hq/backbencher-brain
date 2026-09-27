@@ -1408,8 +1408,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `@page`, `@starting-style` and `@position-try` are deliberately NOT added:
     // they scope nothing that a `contains` edge can name (a page box, a
     // transition entry condition, a fallback position), so a symbol for them
-    // would be a name with no referent. They are recorded as silent in
-    // script/m14/spec/css-completeness.json with that reason.
+    // would be a name with no referent. Nothing in CSS can NAME any of the three
+    // — no `var()`, no `@layer` that points at one, no query that resolves it — so
+    // a `contains` edge sourced from one would have to name a node that cannot
+    // exist. The rules inside them are still symbolized; what is dropped is the
+    // attribution.
+    //
+    // The ruling is CSS-D9 in script/m14/spec/css-completeness.json. It is NOT a
+    // per-type entry in that file's `internal_silent` list, and cannot be: these
+    // three are not node types in this grammar. `@starting-style` reaches the
+    // analyzer as a generic `at_keyword` under `at_rule`, so enumerating the
+    // grammar's 151 ids never produces them. An earlier version of this comment
+    // pointed at a "recorded as silent with that reason" entry that did not
+    // exist, which is the kind of citation that quietly rots.
     // D10 (2026-09-26). The whitelist below conflated two different things: an
     // at-rule that DECLARES a named entity, and an at-rule CONSUMED BY A BUILD
     // TOOL. Measured, the second kind was 71 fabricated `module` symbols in a
