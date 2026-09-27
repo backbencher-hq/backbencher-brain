@@ -121,6 +121,30 @@ type ProvVerdict = {
   buildOutput?: { shipped: string; named: string[]; isStandardName: boolean }
   source?: { rebuildable?: boolean; grammarSource?: string[]; parserC?: string[]; totalFiles?: number }
 }
+// THE REBUILD VERDICTS are a SECOND declaration surface, and the only one that can describe a
+// lane the product builds ITSELF. Most grammars in this tree are not "whatever upstream
+// published" and not "a mystery" — they are a rebuild of a named upstream source by our
+// recorded toolchain, and the model had no way to say so, so those lanes sat in R1 forever
+// looking unrecorded when they were in fact the BEST-documented lanes in the repo:
+// `svelte` reproduces byte for byte from @tree-sitter-grammars/tree-sitter-svelte@1.0.2.
+const REBUILD_ARTIFACT_REL = "validation/m60/results/M60.0.local-rebuilds.json"
+type RebuildVerdict = {
+  lane: string
+  verdict: string
+  best: null | { grade: string; package: string; version: string; bytesDiffering: number | null; sharedPrefixPercent: number | null; differingSection: string | null; command: string; origin?: string }
+  shipped?: { buildOutputName: string | null }
+}
+const REBUILD_BY_LANE = new Map<string, RebuildVerdict>()
+if (existsSync(path.join(ROOT, REBUILD_ARTIFACT_REL))) {
+  try {
+    for (const r of JSON.parse(readFileSync(path.join(ROOT, REBUILD_ARTIFACT_REL), "utf8")).results ?? []) {
+      if (r?.lane) REBUILD_BY_LANE.set(r.lane, r)
+    }
+  } catch {
+    /* declared absence: the lanes simply stay unversioned, which is the honest state */
+  }
+}
+
 const PROV_BY_LANE = new Map<string, ProvVerdict>()
 if (existsSync(PROVENANCE_ARTIFACT_REL ? path.join(ROOT, PROVENANCE_ARTIFACT_REL) : "")) {
   try {
@@ -596,9 +620,26 @@ for (const lane of target) {
   // literal's extra properties were an excess-property error — which is the typechecker
   // correctly reporting that the declared shape and the produced shape had drifted apart,
   // the same drift the file exists to catch between FILES.
+  // A REBUILD ESTABLISHES A VERSION ONLY WHEN THE REBUILD SUCCEEDED. `byte-identical` and
+  // `equivalent` mean our bytes ARE that upstream source built by our toolchain, so the base
+  // version is a real, upstream-comparable fact and the lane stops being unrecorded.
+  // `different` establishes NOTHING: it says only that this candidate is not the source, and
+  // it cannot distinguish "a patched rebuild" from "the wrong package" — `r` is exactly that
+  // case, where the analyzer doc records a one-rule patch and the rebuild differs by 342,703
+  // bytes, which is what regenerating a parser after a one-rule change looks like. So a
+  // `different` lane stays in R1 with its measured reason attached, rather than being given a
+  // version the evidence does not support.
+  const rebuild = REBUILD_BY_LANE.get(lane)
+  const rebuildProvesBase = rebuild?.best != null && (rebuild.verdict === "byte-identical" || rebuild.verdict === "equivalent")
+  const rebuildNote =
+    rebuild && !rebuildProvesBase
+      ? `rebuild attempted and graded \`${rebuild.verdict}\`: no named source reproduces these bytes.`
+      : null
+
   type Declared = Omit<ReturnType<typeof declaredVersion>, "sources"> & {
     versionKnown?: boolean
     provenanceKind?: string | null
+    rebuildFrom?: { package: string; version: string } | null
     sha256?: string | null
     sha256File?: string | null
     declarationSite?: string
@@ -607,7 +648,26 @@ for (const lane of target) {
     sources: Array<{ file: string; field: string; raw: string | null; authority?: string }>
   }
   const declared: Declared =
-    declaredFromProse.version != null || !prov || prov.status !== "identified" || !prov.version
+    declaredFromProse.version != null
+      ? declaredFromProse
+      : rebuildProvesBase
+        ? {
+            ...declaredFromProse,
+            version: (rebuild!.best as any).version,
+            versionKnown: true,
+            provenanceKind: "local-rebuild",
+            rebuildFrom: { package: (rebuild!.best as any).package, version: (rebuild!.best as any).version },
+            sources: [
+              {
+                file: REBUILD_ARTIFACT_REL,
+                field: `results[${lane}].best`,
+                raw: `${(rebuild!.best as any).package}@${(rebuild!.best as any).version} (${rebuild!.verdict})`,
+                authority: "rebuild-verification",
+              },
+            ],
+            declarationSite: `REBUILT HERE, not vendored and not published: these bytes were produced by building ${(rebuild!.best as any).package}@${(rebuild!.best as any).version} from its published source with the recorded toolchain. Proven by reproduction, not by a hash matching a published artefact — see ${REBUILD_ARTIFACT_REL}.`,
+          }
+        : !prov || prov.status !== "identified" || !prov.version
       ? declaredFromProse
       : {
           ...declaredFromProse,
@@ -785,13 +845,40 @@ for (const lane of target) {
     },
     declared: {
       version: declaredV,
-      versionKind: declaredV == null ? null : declaredIsCollectionVersion ? "redistributor-collection" : "grammar",
+      // THREE kinds, not two. `local-rebuild` is the state most of this tree is actually in:
+      // bytes WE built from a named upstream source with a recorded toolchain. Calling that
+      // "grammar" understates it — it is not the upstream's artefact, it is ours, and the
+      // difference is the whole subject of this file.
+      versionKind:
+        declaredV == null
+          ? null
+          : declaredIsCollectionVersion
+            ? "redistributor-collection"
+            : (declared as any).provenanceKind === "local-rebuild"
+              ? "local-rebuild"
+              : "grammar",
       versionIsComparableToUpstreamGrammar: !declaredIsCollectionVersion,
       versionKnown: declaredV != null,
       // WHY THIS LANE'S VERSION IS NOT IN PROSE. Absent for the ordinary case, which is
       // the point: a reader who sees it knows this lane's identity came from a measurement
       // rather than a document, and can go read the measurement.
       declarationSite: (declared as any).declarationSite ?? null,
+      // The reproduction record travels WITH the version. A rebuild whose only claim is
+      // "trust me, it is a rebuild" is the same as no claim; the grade, the byte count and
+      // the command are what make it checkable by the next person.
+      rebuild:
+        (declared as any).provenanceKind === "local-rebuild" && rebuild
+          ? {
+              grade: rebuild.verdict,
+              from: (declared as any).rebuildFrom ?? null,
+              builder: "tree-sitter 0.26.9",
+              bytesDiffering: rebuild.best?.bytesDiffering ?? null,
+              sharedPrefixPercent: rebuild.best?.sharedPrefixPercent ?? null,
+              differingSection: rebuild.best?.differingSection ?? null,
+              command: rebuild.best?.command ?? null,
+              note: "reproduced by building the named source, not matched by hash against a published artefact. A `different` grade would establish nothing, so only byte-identical and equivalent earn a version here.",
+            }
+          : null,
       declaredFromCensus: declared.sources.some((x: any) => x?.authority === "provenance-census") || false,
       sha256: sha.sha256,
       sha256File: sha.file,

@@ -235,6 +235,25 @@ const installed = sh("tree-sitter", ["--version"]).out.trim().split(/\s+/).pop()
 const cliMatches = installed === EXPECTED_CLI
 
 const survey = JSON.parse(readFileSync(SURVEY, "utf8"))
+
+// THE CENSUS'S ANSWER GOES FIRST, because it is measured rather than guessed. The survey's
+// candidate list is DISCOVERED — npm search hits and search-derived siblings — and it is
+// wrong in a way that matters: the `r` lane's own prose says `tree-sitter-r`, which on npm
+// is a 2022 `0.0.1-security` placeholder with no grammar.js at all, so every rebuild attempt
+// starts from a package that cannot be built. The provenance census, by sha256, says r's
+// bytes were `@eagleoutice/tree-sitter-r@1.1.2`. That is a MEASUREMENT, so it belongs at the
+// front of the queue rather than the back.
+const CENSUS = path.join(ROOT, "validation", "m60", "results", "G-PROVENANCE.json")
+const censusByLane = new Map<string, any>()
+if (existsSync(CENSUS)) {
+  try {
+    for (const r of JSON.parse(readFileSync(CENSUS, "utf8")).results ?? []) {
+      if (r?.lane && r.status === "identified" && r.package && r.version) censusByLane.set(r.lane, r)
+    }
+  } catch {
+    /* an unreadable census is a declared absence: the queue just stays survey-ordered */
+  }
+}
 const targets = (survey.rows ?? [])
   .filter((r: any) => r?.shipped?.present && !r.generic && !r.aliasOf)
   .filter((r: any) => (ONLY ? r.lane === ONLY : true))
@@ -285,8 +304,15 @@ const writeArtifact = (extra: Record<string, unknown> = {}) => {
 for (const row of targets as any[]) {
   const shippedPath = path.join(WASM_DIR, row.shipped.file)
   const outName = buildOutputName(shippedPath)
-  const cands = (row.candidates ?? [])
-    .filter((c: any) => c.package && c.upstream?.latestVersion)
+  const measured = censusByLane.get(row.lane)
+  const cands = [
+    ...(measured ? [{ package: measured.package, version: measured.version, origin: "provenance census (sha256-measured)" }] : []),
+    ...(row.candidates ?? [])
+      .filter((c: any) => c.package && c.upstream?.latestVersion)
+      .map((c: any) => ({ package: c.package, version: c.upstream.latestVersion, origin: "survey candidate (search-derived)" })),
+  ]
+    // de-duplicated on the exact artefact, keeping the measured entry's position
+    .filter((c: any, i: number, arr: any[]) => arr.findIndex((x) => x.package === c.package && x.version === c.version) === i)
     .slice(0, MAX_CANDIDATES)
   console.log(`  ${row.lane}  (${row.shipped.bytes} B, built as ${outName ?? "an unnamed artefact"})`)
 
@@ -307,10 +333,10 @@ for (const row of targets as any[]) {
   const attempts: any[] = []
   let best: any = null
   for (const c of cands) {
-    const r: any = attempt(row.lane, shippedPath, c.package, c.upstream.latestVersion)
+    const r: any = attempt(row.lane, shippedPath, c.package, c.version)
     if (r.error) {
-      attempts.push({ package: c.package, version: c.upstream.latestVersion, error: r.error })
-      console.log(`      ${c.package}@${c.upstream.latestVersion}  ${r.error.slice(0, 90)}`)
+      attempts.push({ package: c.package, version: c.version, origin: c.origin, error: r.error })
+      console.log(`      ${c.package}@${c.version}  ${r.error.slice(0, 86)}`)
       continue
     }
     const cmp = r.comparison as Comparison
@@ -322,8 +348,8 @@ for (const row of targets as any[]) {
     // The command goes INTO the record, not just the log. A reproducibility verdict without
     // the command that produced it is a claim; with it, anyone can re-run the build and see
     // for themselves. It is also the only part of this that stays true if the tooling moves.
-    attempts.push({ package: c.package, version: c.upstream.latestVersion, grade, command: r.command, ...cmp })
-    console.log(`      ${c.package}@${c.upstream.latestVersion}  ${grade.padEnd(14)} ${cmp.note.slice(0, 84)}`)
+    attempts.push({ package: c.package, version: c.version, origin: c.origin, grade, command: r.command, ...cmp })
+    console.log(`      ${c.package}@${c.version}  ${grade.padEnd(14)} ${cmp.note.slice(0, 74)}`)
     if (grade === "byte-identical") { best = { ...attempts[attempts.length - 1], grade }; break }
     if (grade === "equivalent" && !best) best = attempts[attempts.length - 1]
   }
@@ -345,12 +371,20 @@ for (const row of targets as any[]) {
   writeArtifact()
 }
 
-const summary = {
-  byteIdentical: results.filter((r) => r.verdict === "byte-identical").length,
-  equivalent: results.filter((r) => r.verdict === "equivalent").length,
-  different: results.filter((r) => r.verdict === "different").length,
-  noCandidate: results.filter((r) => r.verdict === "no-candidate-reproduced-it").length,
+// The final write must go through the SAME merging path as the incremental ones. It used to
+// be a bare `writeFileSync(OUT, ...)` with this run's `results` — and because it runs LAST, it
+// silently undid every merge the incremental writes had done. A per-lane run therefore left an
+// artifact holding exactly one lane, which is the failure the merge was added to prevent, and
+// it looked like the merge simply had not been run.
+let priorForSummary: any[] = []
+try {
+  priorForSummary = JSON.parse(readFileSync(OUT, "utf8")).results ?? []
+} catch {
+  /* no prior artifact */
 }
+const mergedForSummary = new Map<string, any>(priorForSummary.map((r) => [r.lane, r]))
+for (const r of results) mergedForSummary.set(r.lane, r)
+const allResults = [...mergedForSummary.values()].sort((a, b) => String(a.lane).localeCompare(String(b.lane)))
 
 const artifact = {
   measuredAt: new Date().toISOString().slice(0, 10),
@@ -368,10 +402,16 @@ const artifact = {
     neverWritesToWasm: "builds happen in a temp dir and are only compared. Bytes in wasm/ change only through F11, by hand, with a review document.",
     outputNameMatters: "the rebuild is given the SHIPPED build-output name, because that name is written into the module's name section; using a convenient filename manufactures a difference that has nothing to do with the grammar",
   },
-  summary,
-  results,
+  summary: {
+    byteIdentical: allResults.filter((r) => r.verdict === "byte-identical").length,
+    equivalent: allResults.filter((r) => r.verdict === "equivalent").length,
+    different: allResults.filter((r) => r.verdict === "different").length,
+    noCandidate: allResults.filter((r) => r.verdict === "no-candidate-reproduced-it").length,
+    notAttempted: allResults.filter((r) => r.verdict === "not-attempted").length,
+  },
+  results: allResults,
   written: path.relative(ROOT, OUT),
 }
 writeFileSync(OUT, JSON.stringify(artifact, null, 2) + "\n")
-console.log(`  byte-identical ${summary.byteIdentical} · equivalent ${summary.equivalent} · different ${summary.different} · no candidate ${summary.noCandidate}`)
+console.log(`  byte-identical ${artifact.summary.byteIdentical} · equivalent ${artifact.summary.equivalent} · different ${artifact.summary.different} · no candidate ${artifact.summary.noCandidate}`)
 console.log(`  written to ${path.relative(ROOT, OUT)}`)
