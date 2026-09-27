@@ -882,6 +882,44 @@ export default grammar({
 
     command_elements: ($) => prec.right(repeat1($._command_element)),
 
+    // G6 (M60 #278): a command argument list whose values include a BARE WORD.
+    //
+    // The class is not "comma-separated lists" in general, and measuring which is
+    // the whole content of this patch. In the pinned grammar:
+    //
+    //   Write-Output -Type 'deb', 'rpm'   ok    (string_literal)
+    //   Write-Output $a, $b              ok    (variable)
+    //   Write-Output (1), (2)            ok    (integer_literal)
+    //   Write-Output -Type 1, 2           ok    (integer_literal)
+    //   Write-Output -Type deb, rpm       BROKEN 2e   (generic_token)
+    //
+    // `array_literal_expression` is `prec.left(seq($.unary_expression, repeat(seq(',', $.unary_expression))))`
+    // — and a BARE WORD is not reachable as a `unary_expression`. So every value
+    // kind PowerShell accepts in a list works except the one that matters most in
+    // command position, where an unquoted word is a command name or a bare
+    // argument. `Export-ModuleMember -Function 'A', 'B'` already worked, which is
+    // why the module surface looked fine; `Export-ModuleMember A, B` did not.
+    //
+    // WHY THIS FORM AND NOT A COMMA ELEMENT, which is what the first attempt used.
+    // That version was a bare `seq(',', tail)` among the `_command_element`
+    // alternatives, and it stole the comma from INSIDE `array_literal_expression`:
+    // a two-element array became a one-element array plus an orphan literal. The
+    // error count did not move (0 before, 0 after) and neither did the analyzer's
+    // output, so only F11's G2 s-expression comparison saw it. `prec(-1)` on the
+    // comma element did not help, because it was never a precedence tie.
+    //
+    // THIS FORM CANNOT DO THAT, and the reason is structural rather than a matter
+    // of tuning: the deciding token is different. Every element of an
+    // `array_literal_expression` is a `unary_expression`, and every element of this
+    // rule is a `generic_token`, so on the very first token of a list element the
+    // two rules are DISJOINT — the comma that this rule consumes is one the array
+    // rule could never have used. That is what "cannot compete" means, and it is why
+    // the earlier `prec` attempt failed and this one does not need a `prec` at all.
+    //
+    // It also does not overlap the single-value form: this alternative REQUIRES a
+    // comma, so `-Type deb` still parses through the existing
+    // `seq(command_argument_sep, optional(generic_token))` and no conflict is
+    // declared. The patch is one alternative, additive, and touches no existing rule.
     _command_element: ($) =>
       prec.right(
         choice(
@@ -889,6 +927,13 @@ export default grammar({
           seq($._command_argument, optional($.argument_list)),
           $.redirection,
           $.stop_parsing,
+          seq(
+            $.command_argument_sep,
+            $.generic_token,
+            ',',
+            $.generic_token,
+            repeat(seq(',', $.generic_token)),
+          ),
         ),
       ),
 
