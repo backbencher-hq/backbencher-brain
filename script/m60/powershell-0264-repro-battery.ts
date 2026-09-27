@@ -86,7 +86,7 @@ function readPinIdentity(): { package: string; version: string; sha256: string; 
   const pkg = prov.package ?? prov.base?.repo ?? "tree-sitter-powershell"
   const patched = prov.kind !== "byte-identical-to-npm-tarball"
   const patches = Array.isArray(prov.patches) && prov.patches.length ? ` + ${prov.patches.length} local patch(es): ${prov.patches.join("; ")}` : ""
-  if (!version) return { package: pkg, version: "UNREADABLE PROVENANCE", sha256: sha, evidence: `the pin's provenance (${prov.kind}) carries neither `version` nor `base.version` — the reader is out of date with the shape` }
+  if (!version) return { package: pkg, version: "UNREADABLE PROVENANCE", sha256: sha, evidence: `the pin's provenance (${prov.kind}) carries neither 'version' nor 'base.version' — the reader is out of date with the shape` }
   return { package: pkg, version: `${version}${patched ? " (patched)" : ""}`, sha256: sha, evidence: `sha matches the gated pin record (${prov.kind})${patches}` }
 }
 const PINNED_IDENTITY = readPinIdentity()
