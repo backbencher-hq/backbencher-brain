@@ -125,6 +125,14 @@ function cssNameToken(rel: any, relType?: string): string | null {
   if (rel?.metadata?.isSynthesizedName === true) return null
   const t = String(rel?.target ?? rel?.to ?? "")
   if (!t) return null
+  // A font-face `uses` names the DECLARATION (`@font-face Inter`), but what the
+  // author wrote on the claimed line is the FAMILY. Same shape as a scope edge —
+  // named by the thing that is written, not by the declaration it resolves to — so
+  // the keyword is dropped and the family is what must be on the line.
+  if (rel?.metadata?.isFontFamilyRef === true) {
+    const fam = t.replace(/^@font-face\s+/, "").trim()
+    return fam.length >= 2 ? fam : null
+  }
   // A scope edge is named by the rule; everything else by the target.
   // A comma GROUP is written across lines and its `selectors` node starts on the
   // first line, which is what the claimed line asserts — so the checkable token is
@@ -705,6 +713,9 @@ async function main() {
     // CSS, both directions: the sigil is stripped and a comma group reduces to its
     // first part; a synthesized `&`-nested name is NOT checkable, so the
     // exemption cannot become a blind spot for a wrongly-lined edge.
+    cssFontFaceUsesTakesTheFamily: cssNameToken({ target: "@font-face Inter", metadata: { isFontFamilyRef: true } }, "uses") === "Inter",
+    cssFontFaceTokenNeedsTheMarker:
+      cssNameToken({ target: "@font-face Inter" }, "uses") === null,
     cssSelectorStripsSigil: cssNameToken({ target: ".card" }, "contains") === "card",
     cssIdSelectorStripsSigil: cssNameToken({ target: "#orders-table" }, "contains") === "orders-table",
     cssCommaGroupTakesFirstPart: cssNameToken({ target: ".alpha, .beta" }, "contains") === "alpha",
