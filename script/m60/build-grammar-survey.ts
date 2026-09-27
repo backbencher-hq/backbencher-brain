@@ -64,6 +64,38 @@ import {
 } from "./grammar-lanes-source"
 
 const OUT = path.join(ROOT, "validation", "m60", "grammar-survey.json")
+
+// The runtime-upgrade claim is OWNED by script/m60/measure-runtime-stragglers.ts,
+// which is the only thing that loads every shipped wasm on both runtimes. This
+// generator reports its artifact; it never measures the runtime itself, and it
+// never restates a remembered count when the artifact is absent.
+const STRAGGLER_ARTIFACT_REL = "validation/m60/results/M60.0.runtime-stragglers.json"
+const STRAGGLER_ARTIFACT = path.join(ROOT, STRAGGLER_ARTIFACT_REL)
+const PINNED_RUNTIME = "0.25.9"
+const CANDIDATE_RUNTIME = "0.27.0"
+type StragglerEvidence = {
+  measuredAt: string
+  counts: { shippedGrammarWasms: number; pinnedOk: number; candidateOk: number; candidateTotalFailures: number; upgradeStragglers: number; preExistingFailures: number }
+  upgradeStragglers: string[]
+  preExistingFailures: string[]
+  mechanism: { claim: string; prediction: string; holds: boolean }
+  harnessControl: { blind: boolean; mutations: string[] }
+  calibration: { agrees: boolean; question: string }
+}
+function readStragglerEvidence(): StragglerEvidence | null {
+  if (!existsSync(STRAGGLER_ARTIFACT)) return null
+  try {
+    const a = JSON.parse(readFileSync(STRAGGLER_ARTIFACT, "utf8")) as StragglerEvidence
+    // An artifact that does not carry the fields the survey restates is not evidence,
+    // it is a different file. Declared absent beats restated from a guess.
+    if (typeof a?.counts?.upgradeStragglers !== "number" || !Array.isArray(a.upgradeStragglers)) return null
+    if (a.harnessControl?.blind !== false) return null
+    return a
+  } catch {
+    return null
+  }
+}
+const stragglerEvidence = readStragglerEvidence()
 const CACHE = path.join(ROOT, "validation", "m60", "grammar-survey.cache.json")
 
 const NET_TIMEOUT_MS = 25_000
@@ -799,15 +831,61 @@ function runtimeBlock() {
     webTreeSitter: {
       pinned,
       latest: OFFLINE ? cached("npm:web-tree-sitter:dist-tags", () => null) : null,
-      note:
-        "MEASURED 2026-09-26 (phase A): moving this pin to 0.27.0 breaks 20 of 55 shipped grammar wasms — every core web language among them (javascript, typescript, tsx, java, go, html, json, ruby, swift, zig, vue). The cause is NOT an API break: 0.27.0 calls getDylinkMetadata() and refuses a grammar wasm without the newer emscripten dylink section. A wasm built by tree-sitter CLI 0.26.9 carries that section and loads on BOTH runtimes, so the migration is a REBUILD of the stragglers, not a version bump. Until that rebuild is done and measured, 0.25.9 is the correct pin.",
-      phaseA: {
-        runtime0259: { grammarsLoaded: 53, grammarsTotal: 55, failures: ["tree-sitter-elm.wasm", "tree-sitter-ql.wasm"] },
-        runtime0270: { grammarsLoaded: 35, grammarsTotal: 55, failures: 20 },
-        cli0269BuildOnRuntime0259: "pass",
-        cli0269BuildOnRuntime0270: "pass",
-        elmAndQlFailOnTheCurrentRuntime: true,
-      },
+      // The number is NOT written here. It used to be a literal `failures: 20` typed
+      // into this generator, with no list behind it — so no artifact could reproduce
+      // it, nothing ever checked it, and M63's entire scope was sized by it. It is now
+      // READ from the measuring script's artifact, and this generator refuses to emit
+      // a runtime claim it cannot point at a measurement for. One fact, one owner:
+      // script/m60/measure-runtime-stragglers.ts measures, this file reports.
+      note: stragglerEvidence
+        ? `MEASURED ${stragglerEvidence.measuredAt} by script/m60/measure-runtime-stragglers.ts (evidence: ${STRAGGLER_ARTIFACT_REL}): moving this pin to ${CANDIDATE_RUNTIME} breaks ${stragglerEvidence.counts.upgradeStragglers} of ${stragglerEvidence.counts.shippedGrammarWasms} shipped grammar wasms — every core web language among them (javascript, typescript, tsx, java, go, html, json, ruby, swift, zig, vue). The cause is NOT an API break: ${CANDIDATE_RUNTIME} calls getDylinkMetadata() and refuses a grammar wasm without the newer emscripten dylink.0 section. That correspondence is now MEASURED rather than asserted: {${CANDIDATE_RUNTIME} load failures} == {shipped wasms lacking dylink.0}, exactly, ${stragglerEvidence.mechanism.holds ? "confirmed" : "NOT confirmed"}. A wasm built by tree-sitter CLI 0.26.9 carries that section and loads on BOTH runtimes, so the migration is a REBUILD of the stragglers, not a version bump. Until that rebuild is done and measured, ${PINNED_RUNTIME} is the correct pin.`
+        : `UNVERIFIED: no measurement artifact at ${STRAGGLER_ARTIFACT_REL}. This survey does NOT restate a remembered count — run \`bun run grammar:stragglers:measure\` first. An unreproducible number is not a measurement, and this field used to be exactly that.`,
+      phaseA: stragglerEvidence
+        ? {
+            measuredAt: stragglerEvidence.measuredAt,
+            owner: `${STRAGGLER_ARTIFACT_REL} — produced by script/m60/measure-runtime-stragglers.ts; regenerate with \`bun run grammar:stragglers:measure\``,
+            // The previously recorded shape, kept verbatim so the retraction is visible
+            // rather than quietly overwritten by a new number.
+            supersededRecord: {
+              claim: "0.27.0 breaks 20 of 55 shipped grammar wasms",
+              whyRetracted:
+                "an unverifiable COUNT with no list, recorded 2026-09-26. No artifact in the repo could reproduce it, so nothing checked it. Reproduced today as a per-wasm list; the tree has since grown, so the denominators differ too.",
+              reproducible: false,
+            },
+            pinnedRuntime: {
+              version: PINNED_RUNTIME,
+              ok: stragglerEvidence.counts.pinnedOk,
+              total: stragglerEvidence.counts.shippedGrammarWasms,
+              failures: stragglerEvidence.preExistingFailures,
+            },
+            candidateRuntime: {
+              version: CANDIDATE_RUNTIME,
+              ok: stragglerEvidence.counts.candidateOk,
+              total: stragglerEvidence.counts.shippedGrammarWasms,
+              failures: stragglerEvidence.counts.candidateTotalFailures,
+              upgradeStragglers: stragglerEvidence.upgradeStragglers,
+              upgradeStragglerCount: stragglerEvidence.counts.upgradeStragglers,
+            },
+            harnessControl: {
+              sound: !stragglerEvidence.harnessControl.blind,
+              mutationsRejected: stragglerEvidence.harnessControl.mutations.length,
+              why:
+                "three deliberate corruptions of a working grammar must fail to load on every runtime, checked BEFORE any result is read. The first version of this harness stopped at the lazy Language.load() and reported 61/61 for a tree containing a truncated wasm, a clobbered magic number and a scrambled payload. A harness that cannot detect failure cannot certify success.",
+            },
+            calibration: {
+              reproducesRecordedBaseline: stragglerEvidence.calibration.agrees,
+              question: stragglerEvidence.calibration.question,
+            },
+            cause: {
+              claim: stragglerEvidence.mechanism.claim,
+              prediction: stragglerEvidence.mechanism.prediction,
+              holds: stragglerEvidence.mechanism.holds,
+            },
+            cli0269BuildOnRuntime0259: "pass",
+            cli0269BuildOnRuntime0270: "pass",
+            elmAndQlFailOnTheCurrentRuntime: stragglerEvidence.preExistingFailures.includes("tree-sitter-elm.wasm") && stragglerEvidence.preExistingFailures.includes("tree-sitter-ql.wasm"),
+          }
+        : { status: "UNVERIFIED — run `bun run grammar:stragglers:measure`" },
     },
     treeSitterCli: {
       installed: cli,
