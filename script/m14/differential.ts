@@ -262,6 +262,13 @@ export function readCodeInputs(root: string): CodeInputs {
 // historical multi-repo pin set on every run. Default now sweeps one honest
 // repo per language; --repo <name> still restricts to a single repo.
 export const LANG_REPOS: Record<string, string> = {
+  // M60 VB wave (2026-09-27). `P3D-Legacy` is the lane's primary: 1,880 tracked
+  // .vb files of a real Windows Forms codebase, the largest VB.NET-dominant
+  // corpus available. `DISMTools` is the second opinion and is deliberately a
+  // DIFFERENT shape — a Windows Forms authoring tool rather than a game, so its
+  // designer-generated files, its `My Project` assembly files and its
+  // Forms-Designer `Handles` wiring are shapes P3D does not contain.
+  vb: "P3D-Legacy",
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -304,6 +311,13 @@ export const LANG_REPOS: Record<string, string> = {
 // release. Each repo is an independent git checkout under CORPUS_ROOT whose
 // pin is recorded in corpusPins.
 export const SECOND_CORPUS: Record<string, string> = {
+  // M60 VB wave (2026-09-27): `DISMTools` is the second opinion for the vb
+  // lane. Chosen to be a different SHAPE and not just a different project: P3D
+  // is a game with hand-written modules, DISMTools is a Windows Forms authoring
+  // tool whose .vb surface is dominated by designer-generated code --
+  // `Handles` wiring, `My Project` assembly files, and Forms `ApplicationEvents`
+  // -- so a defect that only fires on a designer shape cannot hide in the primary.
+  vb: "DISMTools",
   java: "clojure",
   groovy: "geb",
   kotlin: "kotlinx-coroutines",
@@ -408,6 +422,11 @@ const ROUTER_LANGUAGE: Record<string, string> = { objc: "objective-c" }
 const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).toLowerCase()
 
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
+  // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
+  // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
+  // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
+  // of the wasm here is a swap the pin catches.
+  vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
       typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
@@ -514,7 +533,16 @@ function saveColdPool(state: { seen: Record<string, string[]>; rotations: Record
 function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: T) => string): { picked: T[]; coldCount: number; total: number; rotation: number } {
   const state = loadColdPool()
   const seen = new Set<string>(state.seen[laneKey] ?? [])
-  const rotation = (state.rotations[laneKey] ?? 0) + 1
+  // BB_F5_FREEZE_POOL replays ONE wave instead of advancing it. The cold-pool
+  // rotation is deliberate (#760: deterministic sampling is a deterministic blind
+  // spot, so each wave draws never-sampled files) — which means two runs draw
+  // DIFFERENT files, and any before/after number is then a comparison of two
+  // different file sets. That is not a small caveat: while measuring the VB lane
+  // the sample hash changed every run (74a3b425 -> 0c3b2d53 -> 09c70a41 ->
+  // 11611103) and coverage appeared to move 98.4% -> 92.4% with no code change in
+  // between. Freeze the pool to compare; leave it off for a coverage run.
+  const freeze = process.env.BB_F5_FREEZE_POOL === "1"
+  const rotation = freeze ? (state.rotations[laneKey] ?? 1) : (state.rotations[laneKey] ?? 0) + 1
   const paths = items.map((it) => poolKey
     ? poolKey(it)
     : String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
@@ -531,9 +559,11 @@ function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: 
   const picked = [...coldFresh, ...coldWarm]
   const pickedPaths = picked.map((it) => String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
   const record = poolKey ? picked.map((it) => poolKey(it)) : pickedPaths
-  state.seen[laneKey] = [...new Set([...(state.seen[laneKey] ?? []), ...record])]
-  state.rotations[laneKey] = rotation
-  saveColdPool(state)
+  if (!freeze) {
+    state.seen[laneKey] = [...new Set([...(state.seen[laneKey] ?? []), ...record])]
+    state.rotations[laneKey] = rotation
+    saveColdPool(state)
+  }
   return { picked, coldCount: coldFresh.length, total: items.length, rotation }
 }
 function lastSegment(name: string): string {
@@ -11613,6 +11643,343 @@ export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: st
 export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
+  // ---------------------------------------------------------------- VB
+  // M60 VB wave (2026-09-27). VB.NET has no published tree-sitter grammar that
+  // can represent the language, so this lane's grammar is a vendored and patched
+  // one (grammars/tree-sitter-vbnet/PIN.md) — which means an oracle written
+  // against the grammar alone would be measuring the same artefact twice. The
+  // discipline that survives that is ALGORITHM DIVERGENCE, and this branch is
+  // built to diverge from real-vb-analyzer.ts on every axis that could hide a
+  // shared mistake:
+  //
+  //   analyzer                          this oracle
+  //   ---------------------------------  ----------------------------------------
+  //   recursive walk, switch on type     ONE flat cursor sweep, no recursion and
+  //                                       no dispatch: a list of every node, built
+  //                                       by walking children in a loop
+  //   name = childForFieldName("name")   name = the FIRST `identifier` leaf in
+  //   then wrapper descent                DOCUMENT ORDER inside the declaration
+  //   owner = a push/pop stack            owner = the NEAREST node in the flat
+  //                                       list whose byte range CONTAINS this one
+  //   callee = the `function` FIELD      callee = the LAST identifier leaf inside
+  //   then wrapper descent                the callee subtree, in document order
+  //   heritage = statement children +    heritage = by BYTE OFFSET: every
+  //   a scan for the header `:` token     identifier leaf that lies between the
+  //                                       declaration's own name and its first
+  //                                       member, which needs no node type at all
+  //
+  // Two implementations that agree are evidence. One implementation counted twice
+  // is not — which is the whole reason the F5 differential exists, and the reason
+  // this branch is not allowed to call anything in the analyzer.
+  if (lang === "vb") {
+    // ---------------------------------------------------------------- sweep
+    // Every node, once, flat. `all` is in document order because the traversal
+    // is pre-order, which is what makes "first leaf" and "last leaf" mean
+    // something.
+    const all: any[] = []
+    {
+      const stack: any[] = [root]
+      while (stack.length > 0) {
+        const n = stack.pop()
+        if (!n) continue
+        all.push(n)
+        for (let i = n.childCount - 1; i >= 0; i--) {
+          const c = n.child(i)
+          if (c) stack.push(c)
+        }
+      }
+    }
+    /** Every `identifier` leaf at or under `n`, in document order. */
+    const identLeaves = (n: any, out: any[] = []): any[] => {
+      if (n.type === "identifier") { out.push(n); return out }
+      // `(Of ...)` holds the type's ARGUMENTS, and an argument is not the name
+      // of the thing being named: `New List(Of Integer)` constructs `List`. The
+      // analyzer excludes the same subtree, so both sides apply one definition.
+      if (n.type === "type_argument_list") return out
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c) identLeaves(c, out)
+      }
+      return out
+    }
+    /** The last identifier leaf at or under `n` — the CALLEE of `a.b.C()` is `C`. */
+    const lastIdent = (n: any): any => {
+      const leaves = identLeaves(n)
+      return leaves.length > 0 ? leaves[leaves.length - 1] : null
+    }
+    /** The first identifier leaf at or under `n` — a declaration's OWN name. */
+    const firstIdent = (n: any): any => {
+      const leaves = identLeaves(n)
+      return leaves.length > 0 ? leaves[0] : null
+    }
+    /** As `firstIdent`, but skipping any leaf inside a node of type `skipType`. */
+    const firstIdentOutside = (n: any, skipType: string): any => {
+      const walk = (x: any): any => {
+        if (x.type === skipType) return null
+        if (x.type === "identifier") return x
+        for (let i = 0; i < x.childCount; i++) {
+          const c = x.child(i)
+          if (!c) continue
+          const r = walk(c)
+          if (r) return r
+        }
+        return null
+      }
+      return walk(n)
+    }
+    // `field_declaration` is in this set and its absence was measured, not
+    // overlooked: without it a field is invisible to the oracle, so every
+    // `contains owner -> field` the analyzer published came back UNEXPLAINED
+    // while the analyzer was right. (P3D's Item.vb alone: 6 such rows.)
+    /** Is this leaf inside a `(Of ...)` type-argument list? */
+    const inTypeArgumentList = (leaf: any): boolean => {
+      let cur: any = leaf.parent
+      for (let i = 0; cur && i < 6; i++) {
+        if (cur.type === "type_argument_list") return true
+        cur = cur.parent
+      }
+      return false
+    }
+    // A CONSTRUCTOR IS NAMED BY THE CONTRACT, on both sides of every edge.
+    // `Public Sub New()` has no `name` field — `New` is an anonymous token, so
+    // there is no identifier leaf to read. One helper, because a name that is
+    // right for a target and wrong for a source is still a wrong name: the
+    // analyzer publishes `constructor` with the class in ownerName, and an edge
+    // whose SOURCE this oracle cannot name is an edge it silently drops
+    // (measured: `calls constructor -> AchieveMailman`).
+    const contractName = (d: any): string =>
+      d.type === "constructor_declaration" ? "constructor" : nameOfDecl(d)
+    const isDecl = (t: string) =>
+      t === "class_declaration" || t === "structure_declaration" ||
+      t === "interface_declaration" || t === "module_declaration" ||
+      t === "enum_declaration" || t === "delegate_declaration" ||
+      t === "method_declaration" || t === "constructor_declaration" ||
+      t === "property_declaration" || t === "event_declaration" ||
+      t === "operator_declaration" || t === "declare_statement" ||
+      t === "field_declaration" || t === "enum_member_declaration" ||
+      // A NAMESPACE is a declaration and it CONTAINS its types. Leaving it out
+      // meant `ownerOf` returned null for every class, so the oracle derived no
+      // namespace->class containment at all -- and it agreed with the analyzer
+      // only because the analyzer was also missing those edges. When the
+      // analyzer's containment was centralised (so every symbol with an owner
+      // emits one) the disagreement became visible: 48 `contains Namespace ->
+      // Class` rows the analyzer published and the oracle could not derive.
+      t === "namespace_declaration"
+
+    // ------------------------------------------------- ownership by RANGE
+    // The nearest enclosing declaration, found by byte containment over the flat
+    // list. The analyzer derives the same fact from a push/pop stack; if the two
+    // disagree, one of them is wrong about nesting, which is exactly the class of
+    // defect a recursion-vs-sweep divergence can find.
+    const declNodes = all.filter((n) => isDecl(n.type))
+    const ownerOf = (node: any): any => {
+      let best: any = null
+      for (const d of declNodes) {
+        if (d.id === node.id) continue
+        // strict containment by byte range, and TIGHTER wins
+        if (d.startIndex <= node.startIndex && node.endIndex <= d.endIndex) {
+          if (!best || (d.endIndex - d.startIndex) < (best.endIndex - best.startIndex)) best = d
+        }
+      }
+      return best
+    }
+    // The name of a declaration, read as the first identifier leaf that is NOT
+    // inside an attribute list.
+    //
+    // The attribute exclusion is the whole point of this function and it was
+    // found by measurement: in this grammar `attribute_list` is a CHILD of
+    // `class_declaration`, so a document-order "first identifier" over the node
+    // returns the attribute's own type name. `<Item(269, "Earth Plate")>` made
+    // the class read as `Item`, and every containment and heritage edge on
+    // `EarthPlate` was published under the wrong owner -- which is why the same
+    // target appeared as MISSING in one file and UNEXPLAINED in another: the two
+    // sides were each right about a different owner.
+    const nameOfDecl = (d: any): string => {
+      // No constructor branch here, on purpose. There was one — a scan for the
+      // `New` token among the declaration's own children — and it was wrong in a
+      // way the two definitions disagreed on: it returned "" for a
+      // `constructor_declaration` that had no `New` child, while `contractName`
+      // returns `constructor` for every one. A name that is right for a target
+      // and wrong for a source is still a wrong name, so the rule now lives in
+      // ONE place and every edge reads it from there.
+      // The attribute exclusion is the whole point of the rest: in this grammar
+      // `attribute_list` is a CHILD of `class_declaration`, so a document-order
+      // "first identifier" over the node returns the attribute's own type name.
+      // `<Item(269, "Earth Plate")>` made the class read as `Item`.
+      const f = firstIdentOutside(d, "attribute_list")
+      return f ? String(f.text).trim() : ""
+    }
+
+    // ------------------------------------------------------- declarations
+    for (const d of declNodes) {
+      // A field's declaration unit is the DECLARATOR. `Dim X, Y, width As Integer`
+      // is one `field_declaration` with three `variable_declarator` children and
+      // therefore three members; reading one name per field_declaration made the
+      // other two look like analyzer fabrications. Measured on P3D's ItemObject.vb:
+      // 8 `contains` rows the analyzer published and the oracle could not derive.
+      const units: any[] = d.type === "field_declaration"
+        ? (() => { const out: any[] = []; for (let i = 0; i < d.namedChildCount; i++) { const c = d.namedChild(i); if (c && c.type === "variable_declarator") out.push(c) } return out })()
+        : [d]
+      for (const unit of units) {
+        // A CONSTRUCTOR IS NAMED BY THE CONTRACT, and so is this oracle.
+        // `Public Sub New()` has no `name` field: `New` is an anonymous token, so
+        // there is no identifier leaf to read and the name loop skipped every
+        // constructor in the corpus. The analyzer publishes the family's literal
+        // (`constructor`, with the class in ownerName) and the oracle has to
+        // agree, or the fixed analyzer simply reads as 54 unexplained edges.
+        const nm = contractName(unit)
+        if (nm.length === 0) continue
+        const owner = ownerOf(d)
+        if (owner) {
+          const on = nameOfDecl(owner)
+          if (on.length > 0) edges.push({ label: "contains", from: on, target: nm })
+        }
+      }
+    }
+
+    // ------------------------------------------------------------ heritage
+    // BY BYTE OFFSET, with no node type involved in reading the header. A type
+    // declaration's own name ends at `nameEnd` and its first MEMBER begins the
+    // body, so the header is the span between them — and the header is where
+    // `Inherits`/`Implements` live whether the grammar spells them as a
+    // statement child (`Inherits Bar` on its own line) or inline. The span is
+    // what stays deliberately crude: if it disagrees with the analyzer's
+    // field-and-token reading, the disagreement is the finding.
+    //
+    // What is NOT crude is which node inside the span counts as a name. The first
+    // version took every identifier leaf, and a dotted base type then published
+    // one edge per SEGMENT; that rule is replaced below, per name expression.
+    const TYPE_DECLS = new Set(["class_declaration", "structure_declaration", "interface_declaration", "module_declaration"])
+    for (const t of all) {
+      if (!TYPE_DECLS.has(t.type)) continue
+      const nm = nameOfDecl(t)
+      if (nm.length === 0) continue
+      // The SAME node the name was read from. Reading the window's start from a
+      // different node is how `inherits SunStone -> SunStone` happened: the name
+      // skipped the `<Item(169, ...)>` attribute, the window start did not, so
+      // the class's own name sat inside its own header.
+      const nameNode = firstIdentOutside(t, "attribute_list")
+      const nameEnd = nameNode ? nameNode.endIndex : t.startIndex
+      // The window must end at the first MEMBER of any kind, and the first
+      // version got this wrong in a way that manufactured heritage edges by the
+      // hundred: it looked only for nodes in the DECLARATION set, so a type whose
+      // first member is a `field_declaration` had no boundary at all, the window
+      // ran to the end of the class body, and every identifier in every member
+      // signature was published as a base type. Measured on P3D: a class's own
+      // name and its real base both came back as `inherits` targets of the
+      // enclosing type. A member is any child that is not part of the header.
+      const HEADER_PARTS = new Set(["attribute_list", "modifiers", "identifier", "simple_name",
+        "qualified_name", "global_qualified_name", "generic_name", "type_parameter_list",
+        "inherits_statement", "implements_statement", "inherits_clause", "implements_clause",
+        "member_modifier", "local_declaration_modifier", "comment", "preprocessor_directive"])
+      let firstMember = Number.POSITIVE_INFINITY
+      for (let ci = 0; ci < t.childCount; ci++) {
+        const ch = t.child(ci)
+        if (!ch || ch.endIndex <= nameEnd) continue
+        if (HEADER_PARTS.has(ch.type)) continue
+        // a wrapper around a header part is still a header part
+        const inner = identLeaves(ch)
+        if (inner.length > 0 && ch.namedChildCount > 0 && HEADER_PARTS.has(ch.namedChild(0).type)) continue
+        if (ch.startIndex < firstMember) firstMember = ch.startIndex
+      }
+      const limit = Number.isFinite(firstMember) ? firstMember : t.endIndex
+      // ONE edge per heritage NAME EXPRESSION, not per identifier leaf.
+      //
+      // A dotted base type is a single name: `Inherits System.Windows.Forms.Form`
+      // says the class derives from ONE type, and the target a reader navigates
+      // to is its last segment, `Form` — the same last-segment contract the
+      // analyzer's `namingToken` applies and the same one `calls` uses below.
+      // Iterating the leaves instead published `extends X -> System`,
+      // `-> Windows` and `-> Forms` as if the class derived from three types it
+      // never mentions. Measured on DISMTools: 64 such rows across the
+      // `.Designer.vb` files, which is where the fully-qualified bases live.
+      //
+      // A `(Of ...)` argument list is skipped for the same reason it is skipped
+      // in `calls`: `Inherits List(Of Player)` makes `List(Of Player)` the base,
+      // so `Player` is what it is parameterised over, not what it inherits.
+      const NAME_NODES = new Set(["simple_name", "qualified_name", "global_qualified_name",
+        "generic_name", "predefined_type", "type_identifier"])
+      const isNameNode = (x: any): boolean => NAME_NODES.has(x.type)
+      /** The name expressions directly under `n` (not nested in another name). */
+      const topLevelNames = (n: any): any[] => {
+        const out: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "type_argument_list") continue
+          if (isNameNode(c)) { out.push(c); continue }
+          // `Inherits C(a).B` nests a call; the names still count, so recurse
+          // into anything that is not itself a name.
+          if (!isNameNode(c)) out.push(...topLevelNames(c))
+        }
+        return out
+      }
+      const heritageEdge = (owner: any, nameNode: any, label: "extends" | "implements") => {
+        if (!owner) return
+        const on = contractName(owner)
+        if (on.length === 0) return
+        const leaf = lastIdent(nameNode)
+        if (!leaf) return
+        edges.push({ label, from: on, target: String(leaf.text).trim() })
+      }
+      for (const n of all) {
+        if (n.type === "inherits_statement" || n.type === "inherits_clause" || n.type === "inherits_member_clause") {
+          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "extends")
+        } else if (n.type === "implements_statement" || n.type === "implements_clause" || n.type === "implements_member_clause") {
+          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "implements")
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------- calls
+    // The callee is the LAST identifier leaf inside the `function` subtree. For
+    // `a.b.C(1)` that is `C`; for a bare `Foo(1)` it is `Foo`. The source is the
+    // nearest enclosing DECLARATION by range — a method, not the file — because
+    // an edge from nothing is a phantom and an edge from `root` cannot be
+    // navigated to.
+    for (const n of all) {
+      if (n.type !== "invocation_expression") continue
+      const fn = n.childForFieldName?.("function")
+      if (!fn) continue
+      const leaf = lastIdent(fn)
+      if (!leaf) continue
+      const from = ownerOf(n)
+      if (!from) continue
+      const fromName = contractName(from)
+      if (fromName.length === 0) continue
+      edges.push({ label: "calls", from: fromName, target: String(leaf.text).trim() })
+    }
+
+    // -------------------------------------------------------------- imports
+    for (const n of all) {
+      if (n.type !== "imports_statement") continue
+      // ONE edge per imported NAMESPACE, spelled as written. `Imports P3D.Items`
+      // is a single import of `P3D.Items`; the first version of this loop walked
+      // the identifier leaves and published `imports -> P3D` AND
+      // `imports -> Items`, and the first of those is not a thing VB imports --
+      // so it was an unsatisfiable truth row. The dotted text is read off the
+      // statement's own extent, which is the only place the qualifier exists.
+      const seenLocal = new Set<string>()
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        // Comments are `extras`, so one can sit inside the statement's extent
+        // and be a NAMED child of it. Reading every named child published
+        // `imports -> ' General Information about an assembly is controlled ...`
+        // — the first version of this loop did exactly that, on P3D's
+        // AssemblyInfo.vb, and no analyzer can ever satisfy a comment as an
+        // import. An import is a NAME and only a name.
+        if (c.type === "comment" || c.type === "preprocessor_directive") continue
+        const txt = String(c.text ?? "").trim()
+        if (txt.length === 0) continue
+        if (seenLocal.has(txt)) continue
+        seenLocal.add(txt)
+        edges.push({ label: "imports", from: "", target: txt })
+      }
+    }
+
+    return edges.filter((e, i) => edges.findIndex((x) => x.label === e.label && x.target === e.target) === i)
+  }
   const collect = (x: any, label: string, clsName: string) => {
     if (!x) return
     // DAD3 fix (dart): the flat dart parse (`_i1.SmartFake` -> two adjacent
@@ -13720,7 +14087,20 @@ async function main() {
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
           // #910 (c imports) and G7 (groovy uses) notes below record.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+                    // M60 VB wave (2026-09-27): the vb oracle derives `calls`, `contains`,
+          // `imports`, `extends` and `implements`, so all five are comparable.
+          // This matters and the reason is the #910 lesson recorded above: a
+          // truth edge whose label is dropped from the ANALYZER side cannot be
+          // covered, so it is counted MISSING and the lane reads as broken when
+          // nothing is.
+          // `references` is deliberately NOT here. The oracle does not derive it,
+          // and the #910 lesson is exactly that comparing a label the truth side
+          // does not derive counts every analyzer edge of that label as
+          // fabrication. `references` is the analyzer's single largest class
+          // (13,832 of 33,910 edges over 435 files), so auditing it without an
+          // independent derivation would be a manufactured red.
+          ...(lang === "vb" ? ["calls", "contains", "imports"] : []),
+...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.

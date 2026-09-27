@@ -247,6 +247,49 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * The leaf that NAMES a callee — the target a reader navigates to.
+   *
+   * The rule is the LAST `identifier` leaf at or under the callee node, and it
+   * has to be that rather than the node's own text, because VB spells a callee
+   * in three shapes that all reduce to one name:
+   *
+   *   `EntityID.ToLower()`   -> `ToLower`   (a `member_access_expression`)
+   *   `New AnimatedBlock()`  -> `AnimatedBlock`
+   *   `CType(x, W).Init()`   -> `Init`
+   *
+   * The construction case was the one that was broken, and it was broken for a
+   * specific, findable reason: `New X()` parses as
+   * `(object_creation_expression type: (simple_name (identifier)))` — the type is
+   * in a `type` FIELD, and `namingToken` only ever followed a `name` field, so it
+   * fell through and returned the whole construction node. The published target
+   * was the literal string `"New AnimatedBlock"`: not a name in the file, not
+   * navigable, and unmatchable by any independent oracle. Measured on P3D's
+   * Entity.vb — 31 of them in one method.
+   *
+   * A `type_argument_list` is skipped, so `New List(Of Integer)` is `List` and not
+   * `Integer`: the argument is not what is being constructed. That is the same
+   * exclusion the heritage path and the F5 oracle both apply, so the three agree
+   * on one definition of "the name of this type expression".
+   */
+  private calleeLeaf(fn: Node): Node | null {
+    const leaves: Node[] = []
+    const walk = (n: Node, depth: number): void => {
+      if (depth > 64) return
+      if (n.type === "type_argument_list") return
+      if (n.type === "identifier") { leaves.push(n); return }
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c) walk(c, depth + 1)
+      }
+    }
+    walk(fn, 0)
+    // The LAST leaf, and the whole reason this helper exists: collecting the
+    // FIRST one made `Me._isPokemonSound.ToNumberString()` resolve to
+    // `_isPokemonSound`, which is the receiver, not the thing being called.
+    return leaves.length > 0 ? leaves[leaves.length - 1] : null
+  }
+
+  /**
    * The text of a name-bearing node, rebuilt from the tree.
    *
    * Char-scan, not regex: walk the node's named children and join the identifier
@@ -408,6 +451,28 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** The nearest enclosing namespace or type, for `ownerName`. */
+  /** The `role` recorded on a containment edge, derived from the KIND so that
+   *  every kind names itself and no visitor has to remember to say so. */
+  private containmentRole(kind: ASTEngine.SymbolKind): string {
+    switch (kind) {
+      case ASTEngine.SymbolKind.Constructor: return "constructor"
+      case ASTEngine.SymbolKind.Property: return "property"
+      case ASTEngine.SymbolKind.Event: return "event"
+      case ASTEngine.SymbolKind.Method: return "method"
+      case ASTEngine.SymbolKind.Constant: return "const"
+      case ASTEngine.SymbolKind.Variable: return "field"
+      case ASTEngine.SymbolKind.EnumMember: return "enumMember"
+      case ASTEngine.SymbolKind.Enum: return "enum"
+      case ASTEngine.SymbolKind.Class: return "class"
+      case ASTEngine.SymbolKind.Struct: return "structure"
+      case ASTEngine.SymbolKind.Interface: return "interface"
+      case ASTEngine.SymbolKind.Module: return "module"
+      case ASTEngine.SymbolKind.Namespace: return "namespace"
+      case ASTEngine.SymbolKind.Type: return "delegate"
+      default: return String(kind)
+    }
+  }
+
   private currentOwner(): ASTEngine.UniversalSymbol | null {
     return this.ownerStack.length > 0 ? this.ownerStack[this.ownerStack.length - 1] : null
   }
@@ -417,6 +482,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     kind: ASTEngine.SymbolKind,
     node: Node,
     extra: Partial<ASTEngine.UniversalSymbol> = {},
+    nameNode: Node | null = null,
   ): ASTEngine.UniversalSymbol | null {
     if (name.length === 0) {
       // A declaration with no readable name is NOT emitted with an invented one.
@@ -435,6 +501,25 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     this.symbols.push(sym)
     this.declaredNames.add(name)
+    // CONTAINMENT IS EMITTED HERE, ONCE, FOR EVERY SYMBOL.
+    //
+    // It used to be pushed by each visitor, and that is how a whole class of
+    // declaration ended up with an `ownerName` and NO edge: a nested type
+    // (`Public Enum Targets` inside `Public Class PokemonTarget`) got its owner
+    // recorded on the symbol but nothing walked to it, so containment navigation
+    // stopped at the class. Found by the F5 differential, not by a fixture. Doing
+    // it in one place is the fix that cannot recur — there is no longer a
+    // visitor that can forget.
+    if (owner) {
+      this.relationships.push({
+        source: owner.name,
+        target: name,
+        type: RelationshipType.Contains,
+        confidence: 1.0,
+        line_number: this.nodeLine(nameNode ?? node),
+        metadata: { role: this.containmentRole(kind) },
+      })
+    }
     // First declaration of a name wins the index, so a later overload does not
     // steal the id an edge already points at. Overloads are disambiguated by the
     // edge, not by the index.
@@ -757,16 +842,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
           valueLine: init ? this.nodeLine(this.namingToken(init, init.text) ?? init) : null,
         },
       })
-      if (member && sym) {
-        this.relationships.push({
-          source: sym.name,
-          target: member.name,
-          type: RelationshipType.Contains,
-          confidence: 1.0,
-          line_number: this.nodeLine(mName.node ?? child),
-          metadata: { role: "enumMember" },
-        })
-      }
     }
     for (const child of this.kids(node)) this.walk(child, content, context)
     if (sym) {
@@ -849,13 +924,40 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   // -------------------------------------------------------------------------
 
   private visitMethod(node: Node, content: string, context?: ASTEngine.AnalyzeContext): void {
+    // `isCtor` is computed FIRST, and that ordering is the fix rather than a
+    // style choice. `Public Sub New()` has no `name` field — the keyword is an
+    // anonymous token — so the "declaration without a name" guard below used to
+    // fire for every constructor in the corpus and return before the naming
+    // contract was ever reached. The contract was written and then dead: the
+    // symbol was still absent. Any check that can reject a declaration has to be
+    // evaluated against the contract, not in front of it.
+    const isCtor = node.type === "constructor_declaration"
     const { text, node: nameNode } = this.declaredName(node)
-    if (text.length === 0) { this.note("method-without-name"); return }
+    if (text.length === 0 && !isCtor) { this.note("method-without-name"); return }
     const owner = this.currentOwner()
     const mods = this.modifierNames(node)
-    const isCtor = node.type === "constructor_declaration"
     const isDeclare = node.type === "declare_statement"
     const kind = isCtor ? SymbolKind.Constructor : SymbolKind.Method
+    // A CONSTRUCTOR IS NAMED BY THE PRODUCT'S CONTRACT, not by the source.
+    //
+    // `Public Sub New()` has no `name` field at all: VB spells a constructor
+    // with the `New` KEYWORD, which the grammar lexes as an anonymous token, so
+    // the name node the other declarations carry simply does not exist here. The
+    // first version of this method therefore read an empty name, took the
+    // `declaration-without-name` path and returned — and a whole kind of
+    // declaration was silently absent from the index. Found by the F5
+    // differential, not by a fixture: 12,549 symbols across 435 files contained
+    // ZERO constructors, and the oracle's `contains Foo -> New` rows were all
+    // MISSING.
+    //
+    // The literal is the family's: csharp and typescript both publish
+    // `constructor` with the class in `ownerName`. (java publishes the class name
+    // instead, so the product has no single convention — worth a cross-language
+    // ruling, and noted here so the next lane does not have to rediscover it.)
+    // `New` itself would be wrong: it is a keyword, it collides across every
+    // class in a file, and it made the differential read `calls New -> ToList`
+    // with no way to tell which constructor.
+    const effectiveName = isCtor ? "constructor" : text
 
     // An `Overrides` member overrides a base member: the edge names the base
     // METHOD, and it is emitted at MODIFIER precedence because the base member's
@@ -863,7 +965,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // honest one.
     const overridesBase = mods.has("overrides")
 
-    const sym = this.pushSymbol(text, kind, node, {
+    const sym = this.pushSymbol(effectiveName, kind, node, {
       visibility: this.visibilityOf(node),
       isStatic: this.isStatic(node),
       isAbstract: this.isAbstract(node),
@@ -892,16 +994,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (owner) {
-      this.relationships.push({
-        source: owner.name,
-        target: sym.name,
-        type: RelationshipType.Contains,
-        confidence: 1.0,
-        line_number: this.nodeLine(nameNode ?? node),
-        metadata: { role: isCtor ? "constructor" : "method" },
-      })
-    }
     if (overridesBase && owner) {
       this.relationships.push({
         source: sym.name,
@@ -1006,16 +1098,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const owner = this.currentOwner()
-    if (owner) {
-      this.relationships.push({
-        source: owner.name,
-        target: sym.name,
-        type: RelationshipType.Contains,
-        confidence: 1.0,
-        line_number: this.nodeLine(nameNode ?? node),
-        metadata: { role: "property" },
-      })
-    }
     this.ownerStack.push(sym)
     this.collectCalls(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
@@ -1032,16 +1114,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     if (!sym) return
     const owner = this.currentOwner()
-    if (owner) {
-      this.relationships.push({
-        source: owner.name,
-        target: sym.name,
-        type: RelationshipType.Contains,
-        confidence: 1.0,
-        line_number: this.nodeLine(nameNode ?? node),
-        metadata: { role: "event" },
-      })
-    }
     // The event's declared type: `Event E As EventHandler` is the only place a
     // VB.NET file names a delegate it intends to raise.
     const asClause = this.namedChildrenOfType(node, "as_clause")[0]
@@ -1077,16 +1149,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     if (!sym) return
     const owner = this.currentOwner()
-    if (owner) {
-      this.relationships.push({
-        source: owner.name,
-        target: sym.name,
-        type: RelationshipType.Contains,
-        confidence: 1.0,
-        line_number: this.nodeLine(node),
-        metadata: { role: "operator" },
-      })
-    }
     this.ownerStack.push(sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
@@ -1141,16 +1203,6 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       if (!sym) continue
       if (declared) this.pushTypeReference(sym, declared, "fieldType")
-      if (owner) {
-        this.relationships.push({
-          source: owner.name,
-          target: sym.name,
-          type: RelationshipType.Contains,
-          confidence: 1.0,
-          line_number: this.nodeLine(nameNode ?? decl),
-          metadata: { role: isConst ? "const" : "field" },
-        })
-      }
     }
     // A field with an initializer can call a constructor: `= New Foo()`.
     this.collectCalls(node, null)
@@ -1182,8 +1234,8 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         const fn = n.childForFieldName("function")
         const args = n.childForFieldName("arguments")
         if (fn) {
-          const token = this.namingToken(fn, fn.text)
-          const target = this.nameText(token ?? fn)
+          const token = this.calleeLeaf(fn)
+          const target = this.nameText(token)
           if (target.length > 0) {
             if (source) {
               const argCount = args ? args.namedChildCount : 0
@@ -1200,6 +1252,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
                   argumentCount: argCount,
                   calleeIsQualified: fn.type === "member_access_expression",
                   callLine: this.nodeLine(token ?? fn),
+                  constructed: fn.type === "object_creation_expression",
                 },
               })
             } else {
