@@ -43,6 +43,13 @@ export interface ImportTargetRow {
   target_external: string
   /** The analyzer's source name (a module basename for import edges). */
   source_external: string | null
+  /**
+   * The name the MODULE DECLARES, when the analyzer recorded it (M60 / JD2b:
+   * `declaredName` + `declaredKind` on the relationship's metadata). Present for
+   * ESM import edges and absent for lanes that do not record it, in which case
+   * the planner falls back to the item spelled in the target.
+   */
+  metadata?: { declaredName?: string; declaredKind?: string } | null
 }
 
 export interface ImportResolutionIndex {
@@ -66,6 +73,16 @@ export interface ImportResolutionIndex {
    * When a file's export surface cannot be established, nothing in it resolves.
    */
   exportsByFile: Map<string, Set<string>>
+  /**
+   * file id -> the symbol id of its DEFAULT export, when it has one.
+   *
+   * `export default class X {}` publishes a SYMBOL named `X`, not `default`, so
+   * a default import (`import Def from "./m"`, whose edge spells the local
+   * binding `Def`) can only be resolved through the default-export FLAG on the
+   * export edge. That is the same reason the export side emits a literal
+   * "default" sentinel for the anonymous case.
+   */
+  defaultExportByFile: Map<string, string>
   /** file id -> symbol name -> symbol ids */
   symbolsByFile: Map<string, Map<string, string[]>>
   /** file relative_path basename (no extension) -> file ids */
@@ -77,7 +94,7 @@ export interface ImportResolution {
   symbolId: string
   fileId: string
   /** Why it resolved — recorded so a reader can audit the decision, not just trust it. */
-  via: "unique-file+unique-symbol" | "unique-file+qualified-leaf"
+  via: "unique-file+unique-symbol" | "unique-file+qualified-leaf" | "default-export-of-target"
 }
 
 const PROBE_SUFFIXES = [
@@ -120,7 +137,7 @@ export function buildImportResolutionIndex(
    * the `exports` relationships a module emitted; pass [] to refuse everything
    * (the safe direction).
    */
-  exports: Array<{ fileId: string; name: string }> = [],
+  exports: Array<{ fileId: string; name: string; isDefault?: boolean; symbolId?: string }> = [],
 ): ImportResolutionIndex {
   const filePath = new Map<string, string>()
   const fileByTail = new Map<string, string[]>()
@@ -163,13 +180,15 @@ export function buildImportResolutionIndex(
     }
   }
   const exportsByFile = new Map<string, Set<string>>()
+  const defaultExportByFile = new Map<string, string>()
   for (const e of exports) {
     const set = exportsByFile.get(e.fileId) ?? new Set<string>()
     set.add(e.name)
     exportsByFile.set(e.fileId, set)
+    if (e.isDefault && e.symbolId) defaultExportByFile.set(e.fileId, e.symbolId)
   }
 
-  return { pathTargets, filePath, symbolsByFile, fileByTail, exportsByFile }
+  return { pathTargets, filePath, symbolsByFile, fileByTail, exportsByFile, defaultExportByFile }
 }
 
 /**
@@ -233,9 +252,10 @@ export function planImportResolutions(
     const split = splitImportTarget(row.target_external ?? "")
     if (!split) continue
     const { path, item } = split
+    const declaredKind = row.metadata?.declaredKind
     // A namespace/star import has no single target symbol. Declining is the
     // honest answer; resolving it would invent a node.
-    if (item === "*") continue
+    if (item === "*" || declaredKind === "namespace") continue
 
     let fileIds = index.pathTargets.get(path)
     let via: ImportResolution["via"] = "unique-file+unique-symbol"
@@ -271,13 +291,29 @@ export function planImportResolutions(
     }
 
     const fileId = [...fileIds][0]
+
+    // JD2b: a DEFAULT import resolves through the target module's default
+    // export, which is the only honest route — the edge spells the local
+    // binding and the published symbol carries the declared name.
+    if (declaredKind === "default") {
+      const def = index.defaultExportByFile.get(fileId)
+      if (def) { out.push({ id: row.id, symbolId: def, fileId, via: "default-export-of-target" }); seen.add(row.id) }
+      continue
+    }
+
+    // JD2b: otherwise prefer the DECLARED name when the analyzer recorded it.
+    // `import { a as b }` spells `b` in the target; the declared name is `a`.
+    const wanted = row.metadata?.declaredName && row.metadata.declaredName !== "*"
+      ? row.metadata.declaredName
+      : item
     const byName = index.symbolsByFile.get(fileId)
     if (!byName) continue
     // THE GATE: only a name the target file actually exports may be joined.
     // See exportsByFile's note for the wrongly-resolved `render` this prevents.
+    // It tests the DECLARED name, which is the one that can be in the surface.
     const exported = index.exportsByFile.get(fileId)
-    if (!exported || !exported.has(item)) continue
-    const direct = byName.get(item)
+    if (!exported || !exported.has(wanted)) continue
+    const direct = byName.get(wanted)
     if (direct && direct.length === 1) {
       out.push({ id: row.id, symbolId: direct[0], fileId, via })
       seen.add(row.id)
@@ -286,8 +322,8 @@ export function planImportResolutions(
     // `Owner.member`: the imported name is a member of an exported owner. The
     // analyzer emits `qualified_name` for those, so try the leaf against the
     // file's symbols rather than inventing an owner.
-    if (item.includes(".")) {
-      const leaf = item.slice(item.lastIndexOf(".") + 1)
+    if (wanted.includes(".")) {
+      const leaf = wanted.slice(wanted.lastIndexOf(".") + 1)
       const leafHits = byName.get(leaf)
       if (leafHits && leafHits.length === 1) {
         out.push({ id: row.id, symbolId: leafHits[0], fileId, via: "unique-file+qualified-leaf" })
@@ -333,7 +369,7 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
   let symbols: any[] = []
   let imports: any[] = []
   let rows: ImportTargetRow[] = []
-  let exports: Array<{ fileId: string; name: string }> = []
+  let exports: Array<{ fileId: string; name: string; isDefault?: boolean; symbolId?: string }> = []
   try {
     files = db.prepare(
       `SELECT id AS fileId, relative_path AS relativePath FROM brain_file WHERE project_id = ?`,
@@ -345,11 +381,16 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
       `SELECT file_id AS fileId, import_path AS importPath FROM brain_import WHERE project_id = ?`,
     ).all(projectId) as any[]
     rows = db.prepare(
-      `SELECT id, target_external AS target_external, source_external AS source_external
+      `SELECT id, target_external AS target_external, source_external AS source_external, metadata
          FROM brain_relationship
         WHERE project_id = ? AND relationship_type = 'imports'
           AND target_symbol_id IS NULL AND target_external IS NOT NULL AND instr(target_external, ':') > 0`,
     ).all(projectId) as ImportTargetRow[]
+    for (const r of rows) {
+      if (typeof r.metadata === "string") {
+        try { r.metadata = JSON.parse(r.metadata) } catch { r.metadata = null }
+      }
+    }
 
     // The export surface, keyed by FILE. An `exports` edge carries no file on
     // its source side either (its source symbol is the module, which is not a
@@ -358,10 +399,10 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
     // ambiguous basename contributes no export surface, so its files resolve
     // nothing: the same refuse-don't-guess rule the item gate applies.
     const exportRows = db.prepare(
-      `SELECT source_external AS src, target_external AS tgt, target_symbol_id AS sym
+      `SELECT source_external AS src, target_external AS tgt, target_symbol_id AS sym, metadata
          FROM brain_relationship
         WHERE project_id = ? AND relationship_type = 'exports' AND target_external IS NOT NULL`,
-    ).all(projectId) as Array<{ src: string | null; tgt: string; sym: string | null }>
+    ).all(projectId) as Array<{ src: string | null; tgt: string; sym: string | null; metadata: string | null }>
     const byBase = new Map<string, string[]>()
     for (const f of files) {
       const tail = f.relativePath.split("/").pop() ?? f.relativePath
@@ -379,7 +420,13 @@ export function resolveImportTargets(db: MinimalDb, projectId: string): ImportRe
       if (!fileId) continue
       const stem = er.src ?? ""
       const cands = byBase.get(stem) ?? []
-      if (cands.length === 1 && cands[0] === fileId) exports.push({ fileId, name: er.tgt })
+      if (cands.length === 1 && cands[0] === fileId) {
+        let isDefault = false
+        if (er.metadata) {
+          try { isDefault = JSON.parse(er.metadata)?.isDefault === true } catch { /* unparsed: not a default */ }
+        }
+        exports.push({ fileId, name: er.tgt, isDefault, symbolId: er.sym })
+      }
     }
   } catch (e: any) {
     // A project with no import table, or a store that has not been migrated,
