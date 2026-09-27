@@ -154,8 +154,17 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractLocalDeclaration(node: Node, frame: LuaFrame, ctx: LuaContext): void {
+    // M60 LUA-00: this asked for a `name_list` field, which the pinned grammar
+    // does not have. The real shape is
+    //   variable_declaration > [anon `local`] > assignment_statement
+    //     > variable_list [name=identifier, ...] > expression_list [value=...]
+    // so the name list is a `variable_list` CHILD, reached by node TYPE, never
+    // by a field name. The old `childForFieldName("name_list") ||
+    // namedChild(0)` returned the anon `local` token here, and because
+    // plainVariableName rejects non-identifiers the whole declaration was
+    // silently dropped: `local c = 3` published no symbol at all.
     const assignment = node.type === "variable_declaration" ? node.namedChild(0) : node
-    const variableList = assignment?.childForFieldName("name_list") || assignment?.namedChild(0)
+    const variableList = this.childOfType(assignment, "variable_list")
     if (!variableList) return
     for (let i = 0; i < variableList.namedChildCount; i++) {
       const variable = variableList.namedChild(i)
@@ -180,7 +189,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractAssignment(node: Node, frame: LuaFrame, ctx: LuaContext): void {
     if (node.parent?.type === "variable_declaration" && this.isLocalVariableDeclaration(node.parent)) return
-    const variableList = node.childForFieldName("name_list") || node.namedChild(0)
+    // M60 LUA-00: `name_list` is not a field in this grammar; the name list is
+    // a `variable_list` child (see extractLocalDeclaration for the full shape).
+    const variableList = this.childOfType(node, "variable_list")
     if (!variableList) return
     const value = this.assignmentValue(node)
     for (let i = 0; i < variableList.namedChildCount; i++) {
@@ -205,7 +216,13 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private processCall(node: Node, frame: LuaFrame, ctx: LuaContext): void {
-    const functionNode = node.childForFieldName("function") || node.childForFieldName("name") || node.namedChild(0)
+    // M60 LUA-00: there is no `function` field on a function_call in this
+    // grammar. The callee is the call's `name` field, and it is either a plain
+    // identifier (`require(...)`) or an index expression (`M.new(...)`,
+    // `obj:method(...)`). The old `childForFieldName("function") || ... ||
+    // namedChild(0)` reached the right node only by accident, through the
+    // fallback, which is exactly the arrangement that hid the other four.
+    const functionNode = node.childForFieldName("name") || node.namedChild(0)
     if (!functionNode) return
     const callName = functionNode.text
     if (!callName) return
@@ -294,7 +311,13 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private extractExport(node: Node, frame: LuaFrame, ctx: LuaContext): void {
     if (frame.callable) return
-    const values = node.childForFieldName("expression_list") || node.namedChild(0)
+    // M60 LUA-00: `return_statement` has no `expression_list` FIELD in this
+    // grammar — the expression list is a child of that TYPE. The old lookup
+    // returned the anon `return` token, so `values?.namedChild(0)` was
+    // undefined and EVERY top-level `return <name>` published no export. The
+    // two-file differential never saw it because its fixture returns a name the
+    // suite did not assert on.
+    const values = this.childOfType(node, "expression_list")
     const target = values?.namedChild(0)
     if (!target) return
     if (target.type === "identifier") {
@@ -390,10 +413,33 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < (fieldList?.namedChildCount || 0); i++) {
       const field = fieldList?.namedChild(i)
       if (!field || field.type !== "field") continue
-      const key = field.childForFieldName("key") || field.childForFieldName("name") || field.namedChild(0)
+      // M60 LUA-00: a `field` node in this grammar has no `key` field. Its
+      // shape is `field > [anon name=identifier] + [anon `=`] + value`, so the
+      // key is the first NAMED child. The old chain asked for `key`, then
+      // `name`, then fell back to namedChild(0) — and the grammar resolved
+      // neither field, so every table field name came from the fallback or not
+      // at all. `name` IS a real field on `field`, so the middle term is kept
+      // and only the invented one is dropped.
+      const key = field.childForFieldName("name") || field.namedChild(0)
       if (key?.text) result.push(key.text)
     }
     return result
+  }
+
+  // M60 LUA-00: reach a child by node TYPE. The five field literals this
+  // analyzer used to ask for (`name_list`, `function`, `expression_list`, `key`)
+  // do not exist in the pinned grammar, and every one of them sat behind a
+  // `|| namedChild(0)` fallback that turned "this field does not exist" into
+  // "quietly use whatever happens to be first" — a wrong answer that could not
+  // raise, log, or fail. Type-directed lookup has no fallback to hide behind:
+  // either the child is there or the path does not run.
+  private childOfType(node: Node | null | undefined, type: string): Node | undefined {
+    if (!node) return undefined
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child?.type === type) return child
+    }
+    return undefined
   }
 
   private cleanLuaString(text: string): string {
