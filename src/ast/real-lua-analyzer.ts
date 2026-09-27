@@ -125,14 +125,33 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private extractFunction(node: Node, frame: LuaFrame, ctx: LuaContext, isLocal: boolean): void {
-    // The verified grammar exposes declarations through the `name` field;
-    // retain the named-child fallback for grammars that omit that field.
+    // M60 LUA-15: a member's identity is its container plus its own name, and
+    // the two are recorded ONCE.
+    //
+    // This used to be `nameNode?.text`, which for `function Buffer:initialize()`
+    // is the string "Buffer:initialize" — a PATH. So the symbol was filed as
+    // name "Buffer:initialize" AND ownerName "Buffer" AND ownerKind Class: the
+    // container stored twice, once inside the name. M49 W2's ruling is that a
+    // member's identity is its container, not its bare name; the old shape
+    // satisfied neither reading.
+    //
+    // The consequence was not cosmetic and is why this matters to a user: a call
+    // edge carries the callee's own NAME (`obj:method()` yields target `method`,
+    // see callee()), so it could never be joined to a declaration filed as
+    // "Buffer:initialize". Call-to-declaration resolution failed for every
+    // method in the language, silently — both sides looked well-formed.
+    //
+    // A declaration's name has three readings, and conflating them is how the
+    // first version of the lua truth oracle reported its OWN bug as an analyzer
+    // defect: the LABEL (full text — the scope a body belongs to), the NAME (the
+    // field — the symbol's identity) and the OWNER (the receiver).
     const nameNode = node.childForFieldName("name") || node.namedChild(0)
-    const name = nameNode?.text
-    if (!name) return // Anonymous function expressions are expression noise.
+    if (!nameNode) return // Anonymous function expressions are expression noise.
+    const label = nameNode.text
+    if (!label) return
+    const { name, owner } = this.splitMemberName(nameNode, label)
 
     const parameters = this.extractParameters(node)
-    const owner = this.functionOwner(nameNode)
     const isMethod = !!owner
     const symbol: ASTEngine.UniversalSymbol = {
       name,
@@ -143,7 +162,11 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters,
       ownerName: owner,
       ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
-      metadata: { luaSpecific: true, isLocal, isMethod, ownerTable: owner },
+      // qualifiedName keeps the full path, which is what it is FOR. The `name`
+      // field is the identity; this is the path. Before the fix the path was
+      // doing the identity's job and no path was recorded at all.
+      qualifiedName: label,
+      metadata: { luaSpecific: true, isLocal, isMethod, ownerTable: owner, qualifiedName: label },
     }
     ctx.symbols.push(symbol)
     if (owner) {
@@ -151,6 +174,26 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.patterns.add("Object-Oriented Programming")
     }
     if (isLocal) ctx.globalVariables.delete(name)
+  }
+
+  // M60 LUA-15: split a declaration's name into its OWN name and its OWNER.
+  //
+  // In this grammar `function Buffer:initialize()` and `function
+  // Buffer.readUInt8()` both put an index expression in the `name` field, with
+  // the RECEIVER first and the FIELD last:
+  //   method_index_expression
+  //     table: (identifier "Buffer")
+  //     :     (identifier "initialize")
+  // so the field is the LAST named child and the receiver the first. Taking the
+  // first yields "Buffer" — the table, not the method.
+  private splitMemberName(nameNode: Node, label: string): { name: string; owner?: string } {
+    if (nameNode.type !== "dot_index_expression" && nameNode.type !== "method_index_expression") {
+      return { name: label }
+    }
+    const first = nameNode.namedChild(0)
+    const last = nameNode.namedChildCount > 1 ? nameNode.namedChild(nameNode.namedChildCount - 1) : undefined
+    const owner = first?.type === "identifier" ? first.text : undefined
+    return { name: last?.text || label, owner }
   }
 
   private extractLocalDeclaration(node: Node, frame: LuaFrame, ctx: LuaContext): void {
