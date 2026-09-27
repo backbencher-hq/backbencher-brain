@@ -68,6 +68,33 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  // M14 #277: bash joins the SPEC gate. The lane had a completeness-shaped
+  // artifact that was not one — the node-type "safety" file whose referenced
+  // list was hardcoded and which never computed observed\referenced — and no
+  // spec at all, so F6 (every handled type exercised, no dead analyzer
+  // literal), F7 (hygiene) and F8 (every corpus type classified) could not be
+  // asked the question for the lane. The classification now lives in
+  // script/m14/spec/bash-completeness.json and is READ by the F8 census, which
+  // fails a gap with no written ruling and a ruling for a type that is no
+  // longer a gap.
+  bash: {
+    id: "bash",
+    wasm: "tree-sitter-bash.wasm",
+    classification: "bash-completeness.json",
+    fixturesDir: "validation/m14/fixtures/bash",
+    docs: ["docs/analyzers/real-bash-analyzer.md"],
+    differentialCheck: "differential-bash",
+    perfKey: "otp:bash",
+    // The six types bash's semantics allow. `extends`/`implements`/`overrides`
+    // (no declaration form creates a type hierarchy) and `instantiates` (no
+    // constructors) are ruled N/A in BD7 of the spec, so they are not required
+    // here — the exclusion is written down rather than left as a silence.
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "bash/payload-and-complexity" },
+    },
+    title: "bash shell wave (M14 #277, BD1-BD10)",
+  },
   cpp: {
     id: "cpp",
     wasm: "tree-sitter-cpp.wasm",
@@ -477,7 +504,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -491,6 +518,15 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
     const n = g.nodeTypeForId(i)
     if (n && !n.startsWith("_")) named.push(n)
   }
+  // ERROR and MISSING are produced by every tree-sitter parser but are NOT
+  // listed by `nodeTypeForId` in the wasm ABI. F1 handles this with an explicit
+  // universal pair (script/m14/audit-analyzer-grammar.ts:93) and the bash F8
+  // census reuses that same pair; this gate now reuses it too, because a spec
+  // that classifies ERROR — correctly, since the analyzer consults it — was
+  // being told its own row was grammar drift. Three instruments, one oracle:
+  // when they disagree, one of them is wrong, and the fix is never to delete the
+  // correct row.
+  for (const u of ["ERROR", "MISSING"]) if (!named.includes(u)) named.push(u)
   return named
 }
 
