@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-css-analyzer.ts": {
-        "sha256": "7d9231eace7ef4025f6643644bb50ed68f20051ceeee475366ccc05f41f60009",
-        "bytes": 58421
+        "sha256": "26848a9d7d7f725b77ec9ea81df4a57adb44361b6e0a70fc7dd58129819a970c",
+        "bytes": 81107
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -88,15 +88,15 @@
         "bytes": 1048
       },
       "validation/m12/ground-truth/css.json": {
-        "sha256": "e8dd9cd46425b149162b487ac469b61956dac616f64cb0f75a7393ff04945f5c",
-        "bytes": 14149
+        "sha256": "f41f0ac71f40e35296b79a76c7f443db8158d4b1cdb41d582cce91b64012a2ae",
+        "bytes": 23640
       },
       "grammars/tree-sitter-css/grammar.js": {
         "sha256": "f699498cf35ac104c42a06201f3b0897df42e714d89e4c302918de952c38716c",
         "bytes": 13994
       }
     },
-    "digest": "6a716520edc7830bad9a4ba73a2ac53e8776599bf28bd4b87e37243b89e2f21f",
+    "digest": "0fd5d1f9bfe3437c53b56a0b7fead2618fb083c5a29f543cae6e34474c4e06b6",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-css_tree-sitter-css.wasm",
       "sha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
@@ -104,8 +104,8 @@
     },
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
-        "sha256": "927b2f0fc18ac3a1de1e2b1d69a91f5d125e1bb05d9415cabf510f0caa3cbb5f",
-        "bytes": 59498
+        "sha256": "a4e6e9355e03c3f15908ec4c78550b113e6973d7cc79d17facb0457701f303b5",
+        "bytes": 63379
       },
       "src/ast/real-c-analyzer.ts": {
         "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
@@ -140,8 +140,8 @@
         "bytes": 41969
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "293692bcdab494a1c2ba5dd046ebe9fd2c7b684574cb4e64c952f7e433a6dae1",
-        "bytes": 36596
+        "sha256": "ffb794762aa3f5c0ca8bfa36b3978568607f2baeeb509c6668dd6552c208819f",
+        "bytes": 36482
       },
       "src/ast/real-go-analyzer.ts": {
         "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
@@ -164,8 +164,8 @@
         "bytes": 14474
       },
       "src/ast/real-html-analyzer.ts": {
-        "sha256": "9eca4a8a1f1c37e581d2958651ac10759ed3c799109bc39023f65668365989df",
-        "bytes": 78723
+        "sha256": "3ff9eedf70b3d236c1ea35820c277017a47ff392155912feeec0990d19e12b74",
+        "bytes": 82960
       },
       "src/ast/real-java-analyzer.ts": {
         "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
@@ -208,8 +208,8 @@
         "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
-        "bytes": 24914
+        "sha256": "b5c2eb81598455a762342203df84ec4085fe499a9312c139361903a92e472634",
+        "bytes": 63331
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -244,8 +244,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "458a8fa48cb455ec02efa835eb8e9850251ab7562e86761e9270fe9b382b5773",
-        "bytes": 235474
+        "sha256": "5a031756c3bb8015146fde5c49cb37b5b4129ca13e9ad30c9c573e506bfef315",
+        "bytes": 239741
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -266,7 +266,7 @@
     }
   },
   "truthSource": "manual_audit",
-  "truthReference": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics and the M11 CSS contract (validated 1.000/1.000 in M11.12). Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text (e.g. `.card .title`, `#orders-table th, #orders-table td`), with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@mixin` at-rules -> module/function symbols; `@supports` -> interface symbol. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), `@media` queries (structural scope only), keyframe `from`/`to` blocks. Relationships: the production pipeline (filterNoiseRelationships, M11 port d7b5015) deliberately narrows CSS to `contains` only as a hyphenated-property noise guard — verified contract here is `contains` (custom-property scope `:root contains --primary`; at-rule scope `@layer base contains body`; media scope `@media (...) contains .header`; nested-selector scope `.nav contains .nav .item`; selector-chain scoping `.card contains .title` / `#orders-table contains th` where the chain source/target are the selector parts as they appear in symbols). The analyzer additionally emits `uses` (selector -> property), `references` (var() -> --var), animation refs and `@include` mixin refs — verified via direct analyzer probe but intentionally filtered from production storage for CSS, documented in the analyzer doc.",
+  "truthReference": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics. Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text, with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@scope`/`@namespace` -> module symbols; `@font-face`/`@property` -> variable symbols; `@mixin` -> function; `@supports` -> interface; `@media` -> module carrying its condition. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), keyframe `from`/`to` blocks, and the build-tool at-rules that declare nothing (`@tailwind`, `@apply`, `@theme`, `@config`, `@include`). Relationships: `contains` for structural scope (media/layer/container/scope -> rule, parent selector -> nested selector, selector -> its custom properties); `references` for `var(--x)` -> the custom property and `animation:` -> the `@keyframes` name; `uses` for `composes` and `@include` -> a mixin; `imports` for `@import` and Sass `@use`/`@forward`, sourced by the importing stylesheet's own name. A CSS PROPERTY NAME is not a graph node, so there is no `uses` edge to one; the properties a rule declares ride its symbol payload as `declaresProperties`. Every relationship carries the 1-based line of the NAME it is about, and a synthesized name (a `&`-nested rule's resolved selector, which is written nowhere) carries NO line rather than a borrowed one.  AMENDED 2026-09-26 (CSS identity + ontology waves). This audit had stopped describing the analyzer in six ways, and every row below was resolved by reading it back against the fixture SOURCE TEXT (each added fact's reference quotes its line), never by moving the observed number. (a) `@media` was listed as structural noise that is NOT a symbol, and the analyzer emitted no symbol for it — while emitting `contains` edges FROM that non-symbol, so every media containment edge had a source that existed nowhere in the graph (5,115 relationships over 457 files). A media query is a scope exactly as `@layer` and `@container` are, and those two WERE published; a media query is now a `module` symbol carrying its condition, deduplicated by name. Two facts ADDED below. (b) `uses` and `references` were declared as emitted-but-filtered, on the stated ground that the production pipeline keeps `contains` only. The filter was discarding the lane's only semantically load-bearing edges — the `var()` and `animation:` references, 1,437 of which resolve at both ends. The CSS branch of the filter is REMOVED, and those edges are now compared: eight facts ADDED below. (c) `uses <selector> -> <css-property>` was not in this audit at all, which is why its 32,654 unjoinable edges went unseen for so long: a CSS property name is a token in a declaration, not an entity a stylesheet defines, so it is not a graph node. That relation is REMOVED and the information rides the symbol payload as `declaresProperties`. No fact is added, because there is no longer such a relationship to compare. (d) `@import` produced a `references` edge from the literal source string `global` — a placeholder naming no symbol in any stylesheet. It is now an `imports` edge from the importing stylesheet's own name; two facts ADDED. (e) Four at-rules that name something produced no symbol at all (`@font-face`, `@property`, `@namespace`, `@scope`); no fixture exercises them, so no fact is added here — they are pinned by the M14 lane's own fixtures instead, and recorded as such rather than claimed here. (f) Selector-chain `contains` edges are now emitted only where both endpoints resolve to a published symbol; the fixture's selectors are all single-part, so no chain edge is expected and none is added. Every added fact's `evidence.reference` quotes the fixture line it asserts. (g) THREE relationship facts are RETIRED by ruling, not deleted: the selector-chain containments `#orders-table contains th`, `#orders-table contains td` and `.card contains .title`. A chain edge asserts containment between two things the analyzer does not publish — the rule is ONE symbol named `#orders-table th` and neither `th` nor `td` is a symbol unless it is also its own rule elsewhere. Measured over 457 files / 13 corpora, 14,188 chain edges resolved at both ends 18.8% of the time, and only ACCIDENTALLY, when a chain leaf is also a whole selector somewhere else. No respelling fixes it, and publishing every element-type occurrence in every selector would create symbols that are not declarations. The composition is therefore carried as the rule symbol's `selectorChain` payload — and the rule's own NAME is the resolved chain, so nothing is lost — while a `contains` edge is emitted only where both ends resolve. The three facts removed here were: rel:Theme.css:contains:#orders-table:td; rel:Theme.css:contains:#orders-table:th; rel:Theme.css:contains:.card:.title. Their retirement is a ruling, and the analyzer's behaviour is pinned by the M14 lane's own fixtures, which assert both directions: a chain edge present when both leaves are published symbols, and absent when they are not.",
   "fixtureDir": "validation/m12/fixtures/css",
   "fixtures": [
     "Negative.css",
@@ -274,21 +274,21 @@
   ],
   "perFile": {
     "Negative.css": {
-      "symbols": 7,
-      "relationships": 2
+      "symbols": 8,
+      "relationships": 5
     },
     "Theme.css": {
-      "symbols": 15,
-      "relationships": 8
+      "symbols": 16,
+      "relationships": 14
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 32,
-      "observedResolved": 32,
-      "truePositive": 32,
+      "expected": 41,
+      "observedResolved": 41,
+      "truePositive": 41,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -305,14 +305,22 @@
     "truePositiveIds": [
       "rel:Negative.css:contains:.nav:.nav .item",
       "rel:Negative.css:contains:@media (min-width: 1024px):.desktop-only",
-      "rel:Theme.css:contains:#orders-table:td",
-      "rel:Theme.css:contains:#orders-table:th",
-      "rel:Theme.css:contains:.card:.title",
+      "rel:Negative.css:imports:Negative.css:base.css",
+      "rel:Negative.css:references:.callout:--primary",
       "rel:Theme.css:contains::root:--danger",
       "rel:Theme.css:contains::root:--primary",
       "rel:Theme.css:contains::root:--spacing",
       "rel:Theme.css:contains:@layer base:body",
       "rel:Theme.css:contains:@media (max-width: 768px):.header",
+      "rel:Theme.css:imports:Theme.css:print.css",
+      "rel:Theme.css:imports:Theme.css:theme-tokens.css",
+      "rel:Theme.css:references:.card .title:--primary",
+      "rel:Theme.css:references:.card:--spacing",
+      "rel:Theme.css:references:.header:--primary",
+      "rel:Theme.css:references:.header:--spacing",
+      "rel:Theme.css:references:body:--background",
+      "rel:Theme.css:uses:.card:fade-in",
+      "symbol:Negative.css:13:module:@media (min-width: 1024px)",
       "symbol:Negative.css:14:class:.desktop-only",
       "symbol:Negative.css:20:function:spin",
       "symbol:Negative.css:26:class:.nav",
@@ -322,6 +330,7 @@
       "symbol:Negative.css:45:class:.callout",
       "symbol:Theme.css:10:module:@layer base",
       "symbol:Theme.css:11:type:body",
+      "symbol:Theme.css:19:module:@media (max-width: 768px)",
       "symbol:Theme.css:20:class:.header",
       "symbol:Theme.css:28:function:fade-in",
       "symbol:Theme.css:33:class:.card",
@@ -346,11 +355,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:css",
-      "wallTimeMs": 40.803444,
-      "userCpuMs": 47.824,
-      "systemCpuMs": 7.584,
-      "peakRssBytes": 230326272,
-      "rssDeltaBytes": 5111808,
+      "wallTimeMs": 53.180828,
+      "userCpuMs": 62.861,
+      "systemCpuMs": 7.37,
+      "peakRssBytes": 226398208,
+      "rssDeltaBytes": 5505024,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

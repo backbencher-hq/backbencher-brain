@@ -35,7 +35,7 @@ interface CssContext {
    * a claim about two graph nodes, and a chain leaf is not a node — see the
    * ruling at the emission site.
    */
-  deferredChainEdges: { from: string; to: string; rule: string }[]
+  deferredChainEdges: { from: string; to: string; rule: string; line?: number }[]
   /** raw selector group -> the chain leaves it is composed of. */
   selectorChains: Record<string, string[]>
   /** emitted vs withheld selector-chain edges, for the F6/F9 pins. */
@@ -401,6 +401,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             source: e.from,
             target: e.to,
             type: ASTEngine.RelationshipType.Contains,
+            line_number: e.line,
             metadata: { cssSpecific: true, isSelectorChain: true },
           })
         } else {
@@ -509,6 +510,49 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * formed. A MISSING node is a token the parser inserted where the source had
    * none, which is equally not a declaration.
    */
+  /**
+   * The 1-based line of a node — the M59 convention, matching the symbol
+   * `line_start` base the LSP reads with `line - 1`.
+   *
+   * M59.A7 / #825. The rule this lane follows is one sentence: **the line belongs
+   * to the NAME, never to the construct that contains it.** Every call site below
+   * passes the node the NAME is written on, not the node that encloses it:
+   *
+   *   a `contains` scope edge      -> the rule's `selectors` node, not the
+   *                                   `rule_set` (which opens on the same line
+   *                                   here, but not for a nested rule under a
+   *                                   multi-line selector)
+   *   a custom-property `contains` -> the `property_name` node, not the
+   *                                   `declaration` (a declaration can carry a
+   *                                   leading comment or a newline before the
+   *                                   name)
+   *   an `animation` reference     -> the VALUE node naming the keyframes, not
+   *                                   the `animation` property (the referenced
+   *                                   name is written on the value's line, and a
+   *                                   shorthand puts several there)
+   *   a `var()` reference          -> the ARGUMENT node, not the
+   *                                   `call_expression` (whose start is the
+   *                                   receiver's position)
+   *   a `composes` edge            -> the composed name's value node
+   *   an `imports` edge            -> the module NAME node, not the `@import`
+   *                                   keyword (the target is written after it,
+   *                                   and can be on a later line)
+   *   a mixin reference            -> the `@include` at-rule's own line
+   *   a selector-chain edge        -> the `selectors` node the chain is read
+   *                                   from
+   *
+   * Where a line genuinely cannot be derived the field is ABSENT, never 0 and
+   * never the enclosing symbol's line: `absent` is the honest value and 0 is a
+   * lie a reader cannot detect. There are no such cases in this lane — every
+   * relationship CSS emits is between two names that are written in the file —
+   * and the exceptions list in docs/analyzers/real-css-analyzer.md records that
+   * as a measured fact rather than an assumption.
+   */
+  private lineOf(node: Node | null | undefined): number | undefined {
+    if (!node) return undefined
+    return node.startPosition.row + 1
+  }
+
   private isErrorNode(node: Node): boolean {
     return node.type === "ERROR" || node.isMissing === true
   }
@@ -790,6 +834,13 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       let specTag = 0
 
       const chain: string[] = []
+      // M59.A7: each chain LEAF's own line. The rule "the line belongs to the
+      // name" means `contains #toc -> a` is named by the `a`, not by the rule's
+      // `selectors` node — and in a multi-line selector group those are different
+      // lines. Measured: taking the group's line made 7 of 7 chain edges
+      // INCONSISTENT on go-tools' article.css, because `a` is written on the
+      // group's third line.
+      const chainLines: Record<string, number | undefined> = {}
 
       const selStack = [selNode]
       while (selStack.length > 0) {
@@ -827,19 +878,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           // full `[href^=x]` text, because the name is the part that identifies
           // the step — the same reason `class_name` is pushed as `.name`.
           const attrName = this.findChild(n, (c) => c?.type === "attribute_name")
-          chain.push(attrName ? attrName.text : n.text)
+          const attrKey = attrName ? attrName.text : n.text
+          chain.push(attrKey)
+          chainLines[attrKey] = this.lineOf(n) ?? chainLines[attrKey]
         }
         if (n.type === "id_selector") {
           hasIdSelector = true
           specId += 1
           isUtility = false
           chain.push(n.text)
+          chainLines[n.text] = this.lineOf(n) ?? chainLines[n.text]
         }
         if (n.type === "tag_name") {
           hasTagSelector = true
           specTag += 1
           if (n.text !== "*") isUtility = false
           chain.push(n.text)
+          chainLines[n.text] = this.lineOf(n) ?? chainLines[n.text]
         }
         if (n.type === "class_name") {
           specClass += 1
@@ -849,10 +904,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           // with its `.` prefix (`.card`). Emit the prefixed form so the
           // contains edge source/target resolve to real symbols.
           chain.push(`.${n.text}`)
+          chainLines[`.${n.text}`] = this.lineOf(n) ?? chainLines[`.${n.text}`]
         }
         if (n.type === "universal_selector") {
           specTag += 1
           chain.push(n.text)
+          chainLines[n.text] = this.lineOf(n) ?? chainLines[n.text]
         }
 
         if (n.text.indexOf(":local") !== -1 || n.text.indexOf(":global") !== -1) {
@@ -893,7 +950,13 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // The composition is not lost by ceasing to be a fabricated edge: the
         // rule's own NAME is the resolved chain.
         for (let i = 0; i < chain.length - 1; i++) {
-          ctx.deferredChainEdges.push({ from: chain[i], to: chain[i + 1], rule: rawSelectors.join(", ") })
+          // The edge `from -> to` is named by `to`, so the line is `to`'s.
+          ctx.deferredChainEdges.push({
+            from: chain[i],
+            to: chain[i + 1],
+            rule: rawSelectors.join(", "),
+            line: chainLines[chain[i + 1]] ?? this.lineOf(selectorsNode),
+          })
         }
         for (let i = 0; i < chain.length; i++) {
           if (chain[i].length === 0) continue
@@ -971,11 +1034,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.frameworks["CSS Modules"] = true
     }
 
+    // M59.A7: every one of these five edges is named by the rule's SELECTOR, so
+    // all five take the `selectors` node's line. The scope source's own line
+    // would be a different line for a nested rule, and the `rule_set`'s line
+    // would be the same as the selector's here — but the SELECTOR is the name,
+    // and taking the name is the rule that survives a formatting change.
+    const selectorLine = this.lineOf(selectorsNode)
     if (media) {
       ctx.relationships.push({
         source: media,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
+        line_number: selectorLine,
         metadata: { cssSpecific: true, isMediaScope: true },
       })
     }
@@ -984,6 +1054,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: layer,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
+        line_number: selectorLine,
         metadata: { cssSpecific: true, isLayerScope: true },
       })
     }
@@ -992,6 +1063,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: container,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
+        line_number: selectorLine,
         metadata: { cssSpecific: true, isContainerScope: true },
       })
     }
@@ -1000,15 +1072,44 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: scope,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
+        line_number: selectorLine,
         metadata: { cssSpecific: true, isScopeScope: true },
       })
     }
     if (parentSelector) {
+      // M59.A7, and the third state is the answer. A CSS-nested rule writes `&`,
+      // not its resolved name: the source says `& .item` where the symbol is
+      // `.nav .item`. The resolved name is therefore SYNTHESISED — it is written
+      // on no line of the file — and the precedent is explicit that a claim of a
+      // line for a synthesized name is "a definite defect, not an uncheckable
+      // claim". So the line is OMITTED, and the as-written selector is kept in
+      // metadata so a reader can find the site.
+      //
+      // Measured: with a line claimed here, 96 of 96 nested-selector edges were
+      // INCONSISTENT against the source text — not because the line was nearly
+      // right, but because the name it named is not in the file at all.
+      //
+      // A nested rule that does NOT use `&` (`.a { .b { … } }`) is a different
+      // case: there the resolved name IS written, and it keeps its line.
+      // The name is synthesized unless the RESOLVED text and the AS-WRITTEN text
+      // are the same string. Testing for `&` is not enough: an implicit
+      // descendant (`.a { .b { … } }`, no `&` at all) also resolves to a composed
+      // name (`.a .b`) that is written nowhere, and it accounted for the 67
+      // INCONSISTENT edges left after the `&` test. The exact test is whether the
+      // two texts coincide — cheap, and it keeps a real line in the one case
+      // where the name genuinely is written.
+      const asWritten = selectorsNode.text.trim()
+      const synthesized = collapseWhitespace(asWritten) !== selectorText
       ctx.relationships.push({
         source: parentSelector,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        metadata: { cssSpecific: true, isNestedSelector: true },
+        ...(synthesized ? {} : { line_number: selectorLine }),
+        metadata: {
+          cssSpecific: true,
+          isNestedSelector: true,
+          ...(synthesized ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}),
+        },
       })
     }
 
@@ -1041,6 +1142,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: this.importerName,
         target: moduleName,
         type: ASTEngine.RelationshipType.Imports,
+        // M59.A7: the name on this edge is the MODULE, so the line is the
+        // `string_value` / `call_expression` node — which can be on a LATER line
+        // than the `@import` keyword, and is for the multi-line form where the
+        // url() wraps its argument. Taking the statement's line would be the
+        // enclosing construct, not the name.
+        line_number: this.lineOf(stringNode),
         confidence: 1.0,
         metadata: { isCssImport: true, importSource: this.importerName },
       })
@@ -1385,6 +1492,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target: `@mixin ${namePart}`,
           type: ASTEngine.RelationshipType.Uses,
+          // M59.A7: the referenced mixin name is written in the `@include`
+          // prelude, on the at-rule's own line. (The relation stays `uses` — a
+          // mixin reference is a USE. An edit here briefly changed it to
+          // `contains` on the theory that the mixin is "contained" in the rule;
+          // that is a different claim and a wrong one, and it is reverted.)
+          line_number: this.lineOf(node),
           metadata: { cssSpecific: true, isMixinRef: true, isDeclaredLocally: ctx.mixinNames[namePart] === true },
         })
       }
@@ -1396,6 +1509,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: this.importerName,
           target: stripAllQuotes(namePart.split(/\s+/)[0] ?? namePart),
           type: ASTEngine.RelationshipType.Imports,
+          // M59.A7: the module name is the at-rule's prelude, on its own line.
+          line_number: this.lineOf(node),
           confidence: 1.0,
           metadata: { isCssImport: true, isSassModuleImport: true, importSource: this.importerName },
         })
@@ -1486,6 +1601,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target,
           type: ASTEngine.RelationshipType.Uses,
+          // M59.A7: the name is the composed class, so the line is the VALUE
+          // node it is written on — not the `composes` property, which is a
+          // different name on the same declaration.
+          line_number: this.lineOf(val),
           metadata: { cssSpecific: true, isComposition: true },
         })
       }
@@ -1518,6 +1637,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: currentSelector,
           target: propName,
           type: ASTEngine.RelationshipType.Contains,
+          // M59.A7: the name is the custom property, so the line is its
+          // `property_name` node — NOT the `declaration`, which can open on an
+          // earlier line (a leading comment inside the block, or a declaration
+          // written across lines).
+          line_number: this.lineOf(propNode),
           confidence: 1.0,
           metadata: { cssSpecific: true, isCustomPropertyScope: true },
         })
@@ -1537,6 +1661,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: currentSelector,
               target: text,
               type: ASTEngine.RelationshipType.Uses,
+              // M59.A7: the name is the KEYFRAMES name, which is written in the
+              // VALUE — not the `animation` property, which is a different name
+              // and, for the shorthand, shares its line with the duration and
+              // easing. Taking the value node is what makes the edge point at the
+              // line a reader would call the reference.
+              line_number: this.lineOf(n),
               metadata: { cssSpecific: true, isAnimationRef: true },
             })
           }
@@ -1568,6 +1698,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: currentSelector,
               target: n.text.trim(),
               type: ASTEngine.RelationshipType.References,
+              // M59.A7: the name is the custom property INSIDE `var()`, so the
+              // line is that argument node. The `call_expression` starts at its
+              // receiver's position, which for `calc(var(--x) * 2)` is the
+              // `calc` — a different line whenever the value wraps.
+              line_number: this.lineOf(n),
               metadata: { cssSpecific: true, isVariableRef: true },
             })
             ctx.patterns["CSS Custom Properties"] = true
