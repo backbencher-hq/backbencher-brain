@@ -191,15 +191,26 @@ function joinPath(segments: string[]): string {
   for (let i = 0; i < segments.length; i++) {
     if (i > 0) out += "."
     const seg = segments[i]
-    let needsQuotes = false
-    for (let k = 0; k < seg.length; k++) {
+    // Ask the SPEC's question — may this segment be written BARE? — rather than
+    // testing it for punctuation. TOML's bare-key alphabet is exactly A-Za-z0-9-_
+    // and a bare key may not be empty, so anything else is quoted.
+    //
+    // The distinction is not pedantic. `[target."cfg(unix)".dependencies]` is real
+    // cargo syntax, and a test for `.`/`"`/`\` alone finds no punctuation in
+    // `cfg(unix)` at all — it has parentheses — so the segment was emitted UNQUOTED
+    // as `target.cfg(unix).dependencies`. The name then read back as three nested
+    // tables when the document declares two, and an unquoted path is not a
+    // spelling TOML can parse, so the name had lost the property that makes it
+    // faithful. Found by the differential oracle on cargo's own Cargo.toml, which
+    // is the argument for deriving the rule from the specification rather than from
+    // the characters that happen to matter in the sample you tested.
+    let bare = seg.length > 0
+    for (let k = 0; bare && k < seg.length; k++) {
       const c = seg.charCodeAt(k)
-      if (c === 46 || c === 34 || c === 92) {
-        needsQuotes = true
-        break
-      }
+      bare =
+        (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 45
     }
-    if (!needsQuotes) {
+    if (bare) {
       out += seg
       continue
     }
@@ -359,9 +370,31 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ): { owner: string; implied: string[] } => {
       const implied: string[] = []
       let owner = moduleName
-      let prefix = ""
+      // Accumulate the SEGMENTS and let `joinPath` do the spelling, rather than
+      // concatenating strings here. An intermediate version split an already-joined
+      // path on `.` to recover the segments, which is unsound for the same reason
+      // indexing a raw string with decoded offsets was: a QUOTED segment contains
+      // dots, so `target."cfg(windows)".dependencies`.split(".") cuts inside it and
+      // returns fragments with unbalanced quotes. The segment array is the truth;
+      // the joined string is only ever produced by the one function that owns it.
+      const acc: string[] = []
+      // The prefix MUST be assembled by the SAME function that keys
+      // `declaredTables`, and it was not. `declaredTables` is keyed by `joinPath`,
+      // which re-quotes any segment that cannot be written bare, while this built
+      // its prefixes from the raw segments — so a lookup for
+      // `target.cfg(windows).dependencies` never matched the stored
+      // `target."cfg(windows)".dependencies` and the declared ancestor was
+      // reported as implied. The visible effect was on cargo's OWN Cargo.toml,
+      // where `[target.'cfg(windows)'.dependencies.windows-sys]` on line 254 was
+      // filed under the module instead of under the `[target.'cfg(windows)'.
+      // dependencies]` declared three lines earlier. The symbol's NAME was right —
+      // it came from the emit path, which does use `joinPath` — so only the
+      // CONTAINMENT was wrong, which is precisely the class of defect a
+      // hand-written fixture misses and a differential finds: two paths through
+      // the same file building the same key differently.
       for (let i = 0; i < segments.length - 1; i++) {
-        prefix = prefix.length === 0 ? segments[i] : `${prefix}.${segments[i]}`
+        acc.push(segments[i])
+        const prefix = joinPath(acc)
         const declared = declaredTables[prefix]
         if (declared !== undefined) owner = declared
         else implied.push(prefix)

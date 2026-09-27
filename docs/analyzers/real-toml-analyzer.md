@@ -179,22 +179,72 @@ depth-dependent blowup — the structural property that a language with an
 
 ## Differential ground truth
 
-**Not yet written.** The lane has fixtures and mutants but no independent oracle, so
-the F5 differential cannot run for toml today. This is the honest state, and it is
-the same gap html carried before its oracle existed: `deriveTomlEdges` must be
-written from the TOML spec's own key/table grammar and must **not** share the
-analyzer's segment logic, or the differential will agree with the analyzer by
-construction — the shared-premise failure that hid html's bare-`#` and its six
-missing carriers.
+Oracle: **`deriveTomlEdges`** in `script/m14/differential.ts`, written from the TOML
+v1.0.0 key/table grammar and **deliberately not along the analyzer's code path**. The
+two differ in every dimension that can differ while still describing the same
+document, because a second transcription of the same functions would agree with the
+analyzer by construction:
+
+- the analyzer walks with an explicit stack and accumulates a **segment array** per
+  key, joining at the end; the oracle descends **recursively carrying an already-joined
+  path string**, so the two never hold the same intermediate value;
+- the analyzer re-quoted a segment by testing it for `.`, `"` and `\`; the oracle asks
+  the **spec's** question — *may this segment be written bare?* — and quotes when it
+  may not.
+
+| Draw | Files | Truth | Covered | MISSING | Unexplained |
+|---|---|---|---|---|---|
+| `cargo:toml` (primary) | 60 | 664 | **664 (100%)** | 0 | 0 |
+| `ripgrep:toml` (second) | 13 | 344 | **344 (100%)** | 0 | 0 |
+| `cargo:toml` (depth) | **657** | 5,515 | **5,515 (100%)** | 0 | 0 |
+
+Comparable on `contains` **alone** — a label is comparable exactly when the lane's
+oracle derives it, nothing less and nothing more. `ripgrep` is declared as the
+second corpus with its weakness stated: at 13 files against cargo's 684 it is an
+order of magnitude smaller and a different dialect (a tool manifest, not a
+workspace), so the property the two-corpus gate exists to provide — a defect with
+zero occurrences in the primary corpus — is **not** provided for this lane.
+
+### The oracle found three real analyzer defects on its first corpus run
+
+Every other gate was blind to all three, which is the entire argument for having
+written it.
+
+1. **Bare-writability, not punctuation.** `[target.'cfg(unix)'.dependencies]` is real
+   cargo syntax and the segment `cfg(unix)` contains **parentheses** — no punctuation
+   a `.`/`"`/`\` test looks for — so the name was emitted unquoted, and an unquoted
+   path is not a spelling TOML can parse back. The same hole let a segment
+   containing a **space** through.
+2. **One function owns a path's spelling.** `resolveOwner` built its ancestor
+   prefixes from **raw** segments while the declared-path table was keyed by the
+   **quoted** spelling, so `target.cfg(unix).dependencies` never matched
+   `target."cfg(unix)".dependencies` and a declared ancestor was recorded as implied.
+   The symbol's **name stayed right** — the emit path does quote — so only the
+   **containment** was wrong: cargo's own `Cargo.toml` filed
+   `[target.'cfg(windows)'.dependencies.windows-sys]` under the module instead of the
+   parent declared three lines earlier. Two paths through one file building one key
+   differently is invisible to a symbol assertion and obvious to a differential.
+3. **The oracle was itself wrong first**, filing `workspace.lints.rust` under the
+   module because it tracked no declared-table map. Recorded because a differential
+   that only ever finds the analyzer at fault is not being tested symmetrically.
+
+### The honest limit of this oracle
+
+It is a **second reading of the same specification by the same author**, so it
+catches *implementation* divergence and not *shared-premise* divergence. html's six
+missing carriers were absent from the analyzer **and** from its oracle at once,
+because both were written from one reading of one carrier list, and 100% coverage on
+both lanes never noticed. Nothing in `deriveTomlEdges` prevents that class of error.
 
 ## Corpus validation
 
 | Gate | State |
 |---|---|
-| F3 fixtures | **3/3** — `identity-and-paths`, `arrays-and-values`, `module-name-collision` |
-| F4 mutation | **5/5 caught** (entered with 0) |
-| F6 fixture coverage | see the inventory run |
-| SPEC #419 | **A, B, C pass**; gap list empty. **D red** (one tier, justified in the spec); **E/F** await the canonical baseline pin; **G** this file |
+| F3 fixtures | **4/4** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths` |
+| F4 mutation | **7/7 caught** (entered with 0) |
+| F6 fixture coverage | **PASS** — 17 handled, 28 fixture types, 0 uncovered, 0 dead literals |
+| F5 differential | **100% / MISSING=0 / unexplained=0** on both corpora, and **5,515/5,515 at 657-file depth** |
+| SPEC #419 | **A, B, C, G pass**; 21/21 rows, gap list empty. **D red** (one tier, justified in the spec); **E/F** await the canonical baseline pin |
 | regex census | **0** |
 | typecheck | clean |
 
@@ -236,9 +286,8 @@ keys, bare words as values — which the grammar correctly rejects.
 
 **#289.** Open.
 
-**Not closed:** the F5 differential has no oracle, so sections E and F are red and
-there is no corpus floor — the lane has fixtures, mutants and a spec, but no
-independent second opinion. Section D is red for a different reason and will not
+**Not closed:** sections E and F await the canonical F5 ceremony, so there is no pinned
+corpus floor yet. Section D is red for a different reason and will not
 become green by writing more code: TOML's graph is entirely `structural`, and
 manufacturing a second tier would mean either emitting a `uses` edge for a
 path-shaped string or pointing an edge at a deliberately non-existent implied parent.
