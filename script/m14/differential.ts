@@ -334,14 +334,52 @@ export const LANG_REPOS: Record<string, string> = {
   // meaningless. `otp` is 66 hand-written pages: real tables, real forms, real
   // framesets, real inline script, and a throughput visualiser with canvas.
   html: "otp",
+  // M14 (#289): toml's corpus is `cargo` @ 94faf91 — 684 tracked .toml files, the
+  // LARGEST clean set that exists. That is also the whole supply: 743 .toml files
+  // exist across every corpus repository, so the standing >=1,000-file floor cannot
+  // be met by this lane and the shortfall is recorded rather than redefined. cargo
+  // is nevertheless the right corpus on the merits — its root Cargo.toml is a
+  // workspace manifest using every construct that matters: dotted table headers
+  // four segments deep, quoted segments that cannot be written bare
+  // (`[target.'cfg(unix)'.dependencies]`), array-of-tables, inline tables and
+  // multi-line arrays. All three defects the oracle found were found there.
+  toml: "cargo",
   // M14 #277: bash's second corpus is the M12 pin. See LANG_REPOS.bash for why
   // the pin is kept rather than replaced.
   bash: "fsharp",
+  // json's primary corpus is `terraform` — 415 tracked .json files, only 12 of
+  // them tsconfig/lock, and the rest HAND-WRITTEN configuration and testdata
+  // (vscode launch.json, plan-bookmark fixtures). The JSON-rich alternatives were
+  // measured before choosing: `clj-kondo` has 742 .json but 729 are
+  // `.transit.json` (a Clojure EDN-like format, not JSON at all) plus one GraalVM
+  // `reflect-config.json`, and `shadcn-svelte` has 2,369 that are overwhelmingly
+  // `package-lock.json` machine output. A lane measured on generated lockfiles
+  // learns about generated lockfiles.
+  json: "terraform",
   // M60 #278: powershell's primary corpus is the `powershell` repository. Its
   // test/ tree is deliberately excluded by the draw (parser-error TEST DATA — 166
   // of the repo's error files are its own invalid-syntax fixtures), and the lane
   // measures the production half. 553 tracked files, 49 of them production.
   powershell: "powershell",
+  // json's second corpus is `otp`, and it is chosen for the opposite reason to the
+  // primary: 322 tracked .json, none of them lockfiles, including
+  // `lib/stdlib/test/json_SUITE_data/` — Erlang's own ADVERSARIAL JSON suite
+  // (huge exponents, precision edges, deep nesting). That is a robustness corpus
+  // rather than a representative one, which is exactly what a second opinion is
+  // for: the primary says what JSON normally looks like, this says what happens
+  // when a file is trying to break the parser.
+  json: "otp",
+  // M60 (YAML lane, 2026-09-27): yaml's primary corpus is `kubernetes` — 6,608
+  // tracked .yml/.yaml files, the largest YAML holding in CORPUS_ROOT by 3x, and
+  // the most DIALECT-diverse of them: multi-document streams, `%YAML`/`%TAG`
+  // directives, merge keys, block scalars, and hand-written CI workflow files
+  // beside generated manifests. The alternatives were measured before choosing
+  // (both extensions, `find -type f`): kubernetes 6,608; ansible 2,062 files +
+  // 20 symlinks; helm 715; grails-core 274; docker 198; terraform 26;
+  // openapi-spec 25; gh-cli 25. A note on a CORRECTION this lane recorded
+  // against its own earlier pin table: ansible and helm were transposed there
+  // (2082/715); the measured values are 2,062 and 715.
+  yaml: "kubernetes",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -358,6 +396,15 @@ export const SECOND_CORPUS: Record<string, string> = {
   // occurrences in `otp` has to be exercised by a different codebase's dialect,
   // and that is what the two-corpus gate is for.
   html: "sqlite",
+  // toml has no second corpus of comparable size: the next largest tracked .toml
+  // set in the box is `ripgrep` at 14 files, an order of magnitude below cargo's
+  // 684 and a different dialect entirely (a tool manifest, not a workspace). A
+  // "second corpus" of 14 files would be recorded as a second opinion while
+  // measuring almost nothing, so the omission is declared here instead — the
+  // property the two-corpus gate exists to provide (a defect with zero occurrences
+  // in the primary corpus) is NOT provided for this lane, and saying so is the
+  // honest form of it.
+  toml: "ripgrep",
   java: "clojure",
   // M60 #278: powershell's second corpus is `ansible` — 24 production .ps1/.psd1
   // files, and a genuinely different dialect rather than a second copy of the same
@@ -412,6 +459,16 @@ export const SECOND_CORPUS: Record<string, string> = {
   // (tooling). NOTE: 312 total Clean files on this box is short of the
   // family's 900-file standard; disclosed, not hidden.
   clean: "clean-stdlib",
+  // yaml's second corpus is `ansible` — 2,062 files, chosen for the opposite
+  // reason to the primary: kubernetes manifests are DATA (a bounded set of
+  // well-known keys), while ansible's 2,062 files are executable STRUCTURE
+  // (roles, task includes, `vars_files`, handler references, deeply nested
+  // `defaults/` trees). It is also an independent organisation — Red Hat's
+  // Ansible versus the Kubernetes SIG — so a dialect reached by both is unlikely
+  // to be a shared convention rather than a YAML fact. What the primary cannot
+  // say, this says: whether a relationship the analyzer infers from kubernetes'
+  // conventions is real or corpus-specific.
+  yaml: "ansible",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -483,6 +540,15 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // endpoint as EXPECTED and two of which pinned a trap edge whose source was a
   // signal name and whose target was a whole command string. A lane whose truth
   // cannot disagree with its analyzer has no differential; it has a mirror.
+  // M14: json joins the differential lane. It shipped with a committed wasm, a doc
+  // and a walk over all 9 real grammar node types, and with NO fixtures, NO mutants,
+  // no spec, no F3 registration and no differential — while being offered on the
+  // website. The absence is why the string `line_number` never occurred in the
+  // analyzer and every JSON edge in the index carried a NULL line: nothing was
+  // positioned to notice. `ext` is `json` plus the two manifest spellings the router
+  // also accepts, because a lane that is measured on a different file set than it is
+  // routed for is measured on the wrong corpus.
+  json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
   // M60 #278: powershell joins the differential lane, and `ext` carries all THREE
   // extensions on purpose. `.psm1` is a PowerShell MODULE and `.psd1` its manifest,
@@ -12331,7 +12397,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // heritage, so the differential reported agreement on a shape neither side
     // could see. Adding the edge to the analyzer alone would have registered as
     // a FABRICATION; the oracle moves with it.
-    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t) || (lang === "scala" && t === "enum_definition") || t === "class") {
+    // R4: `abstract_class_declaration` needs its own alternative — the
+    // alternation is anchored at `^class_`, and `abstract_class_declaration`
+    // starts with `abstract_`, so a typescript ABSTRACT class was never
+    // registered as a declaration at all: it had no members, so no declParents
+    // link pointed at it, so the analyzer's genuine
+    // `Square.area -> Shape2.area` override had no truth to match. A
+    // typescript-grammar type name, so no other lane can gain a declaration
+    // from it.
+    if (/^(class|interface|record|trait|object)_declaration$|^abstract_class_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t) || (lang === "scala" && t === "enum_definition") || t === "class") {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
@@ -12807,7 +12881,9 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   const collectDecl = (n: any) => {
     const t2 = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
+    // R4: same anchor problem as the heritage walker above — an abstract class
+    // was invisible to the DECL registry too.
+    if (/^(class|interface|record|trait|object)_declaration$|^abstract_class_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t2)) {
       const nameNode = n.childForFieldName?.("name") ?? n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
       // M37.9 cpp: class names are CLEANED like the analyzer's — template
       // class declarations/partial specs carry their args in the name node
@@ -12850,7 +12926,16 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             // analyzer also emits NOTHING for class FIELDS
             // (public_field_definition), so class fields must stay out of the
             // mirror or truth would outrun the analyzer (probe-verified).
-            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|property_signature|field_declaration/.test(m?.type ?? "")) {
+            // R4: `abstract_method_signature` is the typescript spelling of an
+            // abstract member, and it was missing while `method_signature` and
+            // `property_signature` were both added (M49 W4). So for
+            // `abstract class Shape2 { abstract area(): number }` +
+            // `class Square extends Shape2 { area() {} }` the analyzer's
+            // `Square.area -> Shape2.area` — a genuine override TypeScript
+            // itself requires — had no truth to match and registered as an
+            // unexplained FABRICATION. A typescript-grammar type name, so no
+            // other lane's member set can gain anything from it.
+            if (/function_definition|function_declaration|method_declaration|method_definition|method_signature|abstract_method_signature|property_signature|field_declaration/.test(m?.type ?? "")) {
               // cpp class members are field_declaration > function_declarator;
               // other families keep the name as a direct identifier child.
               const fd = m.namedChildren.find((c: any) => c.type === "function_declarator")
@@ -14066,6 +14151,195 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
   return edges
 }
 
+/**
+ * M14 (#289): the TOML truth, `deriveTomlEdges`.
+ *
+ * Written from the TOML v1.0.0 key/table grammar, and DELIBERATELY NOT ALONG THE
+ * ANALYZER'S CODE PATH. The two differ in every dimension that can differ while
+ * still describing the same document, because a second transcription of the same
+ * functions would agree with the analyzer by construction and could only ever
+ * re-state its bugs:
+ *
+ *   - the analyzer walks with an explicit stack and accumulates a SEGMENT ARRAY
+ *     per key, joining at the end; this descends RECURSIVELY carrying an already
+ *     -joined path STRING, so the two never hold the same intermediate value;
+ *   - the analyzer re-quotes a segment by testing it for `.`, `"` and `\`; this
+ *     asks the spec's question instead — MAY this segment be written BARE? — and
+ *     quotes when it may not. The two predicates are equivalent for TOML and were
+ *     arrived at independently, which is the property worth having: a segment
+ *     containing a space, say, is quoted by the spec's rule and unquoted by a
+ *     character check that only looked for punctuation, and that disagreement is
+ *     exactly what a differential exists to surface.
+ *
+ * AND THE HONEST LIMIT, STATED HERE RATHER THAN LEFT TO BE DISCOVERED: this is a
+ * second reading of the same specification by the same author, so it catches
+ * IMPLEMENTATION divergence and not SHARED-PREMISE divergence. html's six missing
+ * carriers were absent from the analyzer AND from its oracle simultaneously,
+ * because both were written from one reading of one carrier list — and 100%
+ * coverage on both lanes never noticed. Nothing in this function prevents that
+ * class of error; only a check that consults neither side does.
+ */
+export function deriveTomlEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const emit = (from: string, to: string) => {
+    if (!from || !to) return
+    const k = `contains|${from}|${to}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "contains", from, target: to })
+  }
+
+  /** May this key segment be written WITHOUT quotes? TOML's bare-key alphabet is
+   *  exactly A-Za-z0-9_- and it may not be empty — so anything else is quoted. */
+  const isBareWritable = (seg: string): boolean => {
+    if (seg.length === 0) return false
+    for (let i = 0; i < seg.length; i++) {
+      const c = seg.charCodeAt(i)
+      const bare =
+        (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 95 || c === 45
+      if (!bare) return false
+    }
+    return true
+  }
+  const spell = (seg: string): string => {
+    if (isBareWritable(seg)) return seg
+    let out = '"'
+    for (let i = 0; i < seg.length; i++) {
+      const c = seg.charCodeAt(i)
+      if (c === 34 || c === 92) out += "\\"
+      out += seg[i]
+    }
+    return out + '"'
+  }
+  const join = (prefix: string, seg: string): string => (prefix.length === 0 ? spell(seg) : `${prefix}.${spell(seg)}`)
+
+  /** One layer of a key node's text: strip quoting and decode the escapes TOML
+   *  defines in a key. An unknown escape keeps its backslash. */
+  const layer = (raw: string): string => {
+    if (raw.length < 2) return raw
+    const q = raw.charCodeAt(0)
+    if (q !== 34 && q !== 39) return raw
+    const body = raw.slice(1, -1)
+    if (q === 39) return body
+    let out = ""
+    for (let i = 0; i < body.length; i++) {
+      if (body.charCodeAt(i) !== 92) {
+        out += body[i]
+        continue
+      }
+      const n = body.charCodeAt(i + 1)
+      i++
+      if (n === 110) out += "\n"
+      else if (n === 116) out += "\t"
+      else if (n === 114) out += "\r"
+      else if (n === 34) out += '"'
+      else if (n === 92) out += "\\"
+      else if (n === 117 || n === 85) {
+        const hex = body.slice(i + 1, i + 5)
+        const v = Number.parseInt(hex, 16)
+        if (hex.length === 4 && Number.isFinite(v)) {
+          out += String.fromCharCode(v)
+          i += 4
+        } else out += "\\u"
+      } else out += "\\" + (body[i] ?? "")
+    }
+    return out
+  }
+
+  /** The segments of a key node, by a different route than the analyzer's
+   *  walk-down-then-unwind: collect leaves left to right. */
+  const segmentsOf = (node: any): string[] => {
+    const out: string[] = []
+    const visit = (n: any) => {
+      if (n.type === "dotted_key") {
+        for (const c of n.namedChildren ?? []) visit(c)
+        return
+      }
+      if (n.type === "bare_key" || n.type === "quoted_key") out.push(layer(n.text))
+    }
+    visit(node)
+    return out
+  }
+
+  /** Allocate a unique name. The module's own name is taken FIRST, because a file's
+   *  identity comes from its path and is not negotiable — the same precedence the
+   *  analyzer uses, arrived at from the rule rather than from the code. */
+  const taken = new Set<string>([moduleName])
+  const allocate = (want: string): string => {
+    if (!taken.has(want)) {
+      taken.add(want)
+      return want
+    }
+    let n = 1
+    while (taken.has(`${want}#${n + 1}`)) n++
+    const name = `${want}#${n + 1}`
+    taken.add(name)
+    return name
+  }
+
+  /** Declared table path -> allocated name, in document order, so a section can be
+   *  owned by the nearest DECLARED ancestor rather than by the module. Without
+   *  this the oracle filed `[workspace.lints.rust]` under the module even though
+   *  `[workspace]` is declared three sections earlier — which is the oracle being
+   *  WRONG, and worth recording because a differential that only ever finds the
+   *  analyzer at fault is not being tested symmetrically. */
+  const declared = new Map<string, string>()
+
+  const kids = (n: any): any[] => (n.namedChildren ?? []).filter((c: any) => c !== null && c !== undefined)
+  const keyNodeOf = (n: any): any => {
+    for (const c of kids(n)) {
+      if (c.type === "bare_key" || c.type === "quoted_key" || c.type === "dotted_key") return c
+    }
+    return null
+  }
+
+  // A TOML document is a FLAT list of sections and root keys: a `table` never
+  // contains another `table`, so the recursion below only ever descends into a
+  // section's PAIRS, never into a nested table.
+  const visitSection = (node: any, segments: string[]) => {
+    const header = keyNodeOf(node)
+    if (!header) return
+    let path = ""
+    for (const seg of segments) path = join(path, seg)
+    // The nearest DECLARED ancestor owns this section; prefixes the file never
+    // declared are implied and are not nodes.
+    let parentName = moduleName
+    let prefix = ""
+    for (let i = 0; i < segments.length - 1; i++) {
+      prefix = join(prefix, segments[i])
+      const d = declared.get(prefix)
+      if (d !== undefined) parentName = d
+    }
+    const name = allocate(path)
+    declared.set(path, name)
+    emit(parentName, name)
+    for (const c of kids(node)) {
+      if (c.type !== "pair") continue
+      const ck = keyNodeOf(c)
+      if (!ck) continue
+      let kp = name
+      for (const seg of segmentsOf(ck)) kp = join(kp, seg)
+      emit(name, allocate(kp))
+    }
+  }
+
+  for (const node of kids(root)) {
+    if (node.type === "table" || node.type === "table_array_element") {
+      const header = keyNodeOf(node)
+      if (!header) continue
+      visitSection(node, segmentsOf(header))
+    } else if (node.type === "pair") {
+      const ck = keyNodeOf(node)
+      if (!ck) continue
+      let kp = ""
+      for (const seg of segmentsOf(ck)) kp = join(kp, seg)
+      emit(moduleName, allocate(kp))
+    }
+  }
+  return edges
+}
+
 export function deriveHtmlEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14744,6 +15018,16 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "toml") {
+        // M14 (#289): the toml truth. `deriveTomlEdges` needs the module name for
+        // the same reason html's does — the document IS the file's module, and the
+        // containment root is that name, so a top-level edge sources from a node
+        // that exists rather than from an unjoinable string.
+        const tomlModule = (relPath.split("/").pop() ?? "document").replace(/\.[^.]+$/, "") || "document"
+        for (const e of deriveTomlEdges(root, tomlModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "vue") {
         // template component-usage oracle: independent HTML-core filter
         for (const e of deriveVueComponentUsages(root)) {
@@ -15111,6 +15395,17 @@ async function main() {
         // must derive them from the same rule or every depth draw reads the new edges
         // as analyzer-only.
         for (const e of derivePhpDeclaredTypeEdges(root, result?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "json") {
+        // M14 F5: the JSON oracle. `deriveJsonEdges` is written from JSON's own
+        // semantics and shares no rule table, key set, path helper or resolver with
+        // `RealJsonAnalyzer` — see its header for why that is the only property that
+        // makes a MATCH mean something. The module name is the file's basename
+        // WITHOUT its extension, which is JSON's identity and differs from bash's.
+        const jsonModule = (relPath.split("/").pop() ?? "document.json").replace(/\.[^.]+$/, "")
+        for (const e of deriveJsonEdges(root, jsonModule)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -16570,6 +16865,103 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     if (!els) continue
     const toks = kids(els).filter((t) => t.type === "generic_token" || t.type === "simple_name").map((t) => t.text)
     if (toks.length >= 2) push("references", moduleName, toks[1])
+  }
+
+  return edges
+}
+
+/**
+ * M14 F5 — the JSON oracle.
+ *
+ * Written from JSON's own semantics and sharing no rule table, key set, path
+ * helper or classification branch with `RealJsonAnalyzer`. That is the only
+ * property that makes a MATCH mean something: an oracle derived from the analyzer
+ * cannot disagree with it, and the bash lane's first truth file was exactly that
+ * — 55 hand-authored facts, all `authority: manual_audit`, twelve of which pinned
+ * the `global` phantom endpoint as EXPECTED. A lane whose truth cannot disagree
+ * with its analyzer has no differential; it has a mirror.
+ *
+ * ## What JSON's semantics actually give
+ *
+ * A JSON document is a tree of `object` (pairs) / `array` / scalars, and the only
+ * relation the format itself defines is CONTAINMENT: the object a key is written
+ * in contains that key. There is no name resolution, no binding, no inheritance
+ * and no control flow, so `calls`, `extends`, `implements`, `overrides` and
+ * `instantiates` are not derivable from the format at all.
+ *
+ * The one non-trivial edge is JSON Schema's `$ref`, which names another location in
+ * the SAME document. Resolving it needs a path index, so the oracle builds its own
+ * from its own walk — deliberately not by calling the analyzer's `referenceTarget`,
+ * because a shared resolver would make the comparison untestable in exactly the way
+ * this lane's blind spot already was.
+ *
+ * ## Grain
+ *
+ * (label, from, target) triples, one per declaration, matching site-agnostically in
+ * the F5 harness. Module name is the file's basename WITHOUT its extension, which is
+ * what the analyzer emits and what the contract probe pins.
+ */
+export function deriveJsonEdges(root: any, scriptName: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const pathToName = new Map<string, string>()
+  const refs: { from: string; refPath: string }[] = []
+
+  const keyText = (pair: any): string | null => {
+    const k = pair.childForFieldName?.("key")
+    if (!k) return null
+    // A JSON key is a `string` node whose `string_content` child is the name; the
+    // quotes are not part of it. Reading the CONTENT node rather than stripping
+    // quotes off the parent's text is the structural form, and it is why this
+    // oracle needs no regex.
+    const c = k.namedChildren?.find((x: any) => x.type === "string_content")
+    if (c) return String(c.text ?? "")
+    const raw = String(k.text ?? "")
+    return raw.length >= 2 ? raw.slice(1, -1) : raw
+  }
+  const valueOf = (pair: any): any => pair.childForFieldName?.("value") ?? null
+  const isObject = (n: any): boolean => !!n && n.type === "object"
+  const isArray = (n: any): boolean => !!n && n.type === "array"
+  const unquote = (n: any): string => {
+    const t = String(n?.text ?? "")
+    return t.length >= 2 ? t.slice(1, -1) : t
+  }
+
+  // Pass 1 — walk, recording CONTAINMENT and every path at which a name is declared,
+  // plus every `$ref` with the path it was written at.
+  const walk = (node: any, parentPath: string, parentName: string): void => {
+    if (isArray(node)) return // an array is a LEAF: its elements are positional and unnamed
+    if (!isObject(node)) return
+    const pairs = (node.namedChildren ?? []).filter((c: any) => c.type === "pair")
+    for (const pair of pairs) {
+      const key = keyText(pair)
+      const value = valueOf(pair)
+      if (!key || !value) continue
+      const here = parentPath ? `${parentPath}.${key}` : key
+      // CONTAINMENT: the object a key is written in contains that key. The SOURCE
+      // is the parent SYMBOL's name, never its qualified path — an edge whose source
+      // is not a symbol name resolves to nothing, which is the defect the contract
+      // probe caught.
+      if (parentName) edges.push({ label: "contains", from: parentName, target: key })
+      pathToName.set(here, key)
+      if (key === "$ref" && value.type === "string") {
+        refs.push({ from: here, refPath: unquote(value) })
+      } else if (isObject(value) || isArray(value)) {
+        walk(value, here, key)
+      }
+    }
+  }
+
+  const doc = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
+  if (doc) walk(doc, scriptName, scriptName)
+
+  // Pass 2 — resolve each `$ref` against the index Pass 1 built. A local ref
+  // (`#/a/b`) is a JSON Pointer from the document root; anything else is external
+  // and has no target in this file, so it is left for the analyzer to label.
+  for (const r of refs) {
+    if (!r.refPath.startsWith("#/")) continue
+    const pointer = r.refPath.slice(2)
+    const target = pathToName.get(pointer)
+    if (target !== undefined) edges.push({ label: "references", from: r.from, target })
   }
 
   return edges
