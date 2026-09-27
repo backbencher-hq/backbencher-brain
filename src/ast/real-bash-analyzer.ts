@@ -752,6 +752,26 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   ) {
     const names: { rawName: string; line: number }[] = []
     this.collectReadNames(node, names)
+
+    // Was this read name ASSIGNED anywhere in this file? `declaredSymbols` is the
+    // one per-file store both the declaration collector and this emitter see, but
+    // its keys are `${owner}\u0000${name}` — a read inside a function cannot
+    // reach a module-level assignment by asking for its own owner, which is
+    // exactly the case that matters most. So the suffixes are indexed once and
+    // the memo is keyed on the set's size, which only ever grows as declarations
+    // are collected.
+    let assignedIndex: { size: number; names: Set<string> } | null = null
+    const assignedInFile = (n: string): boolean => {
+      if (!assignedIndex || assignedIndex.size !== declaredSymbols.size) {
+        const s = new Set<string>()
+        for (const k of declaredSymbols) {
+          const i = k.indexOf("\u0000")
+          if (i >= 0) s.add(k.slice(i + 1))
+        }
+        assignedIndex = { size: declaredSymbols.size, names: s }
+      }
+      return assignedIndex.names.has(n)
+    }
     for (const { rawName, line } of names) {
       // Read names are trimmed at the single point they are emitted. A zsh
       // `$ _iterm2_command` left the differential reporting
@@ -784,6 +804,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           // instead of seeing 23 undiagnosable edges to one shell name.
           ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
           ...(declaredSymbols.has(`global\u0000${name}`) ? { isDeclaredGlobal: true } : {}),
+          // BD11. The lane's classification previously stopped at "a symbol, a
+          // known noise leaf, or nothing", and 407 of the `uses` edges on the
+          // pinned corpus fell into the last bucket: the read is real and the
+          // name is honest, but nothing said WHETHER this file assigns it. A
+          // consumer therefore had to guess whether `$TMPDIR` was a project
+          // variable it could not see or an environment-supplied one it never
+          // will. Emitted on true only, matching `isShellDefined` and
+          // `isDeclaredGlobal` above — ABSENCE MEANS FALSE, and the contract is
+          // stated in the spec rather than left to be inferred from a pattern.
+          ...(assignedInFile(name) ? { isAssignedInFile: true } : {}),
         },
       )
     }
