@@ -5,10 +5,10 @@
  * @license MIT
  *
  * ── LOCAL PATCHES (backbencher-brain) ────────────────────────────────────────
- * Vendored from tree-sitter-css@0.25.0, byte-for-byte except the three hunks
- * marked `LOCAL PATCH` below. All three were reproduced from real corpora BEFORE
- * patching, each has a one-line minimal reproduction, and each was measured to be
- * strictly additive by the same A/B (validation/m14/results/css-grammar-ab-*.json,
+ * Vendored from tree-sitter-css@0.25.0, byte-for-byte except the four hunks
+ * marked `LOCAL PATCH` below. Each was reproduced from real CSS BEFORE patching,
+ * each has a one-line minimal reproduction, and each was measured to be strictly
+ * additive by the same A/B (validation/m14/results/css-grammar-ab-*.json,
  * instrument script/m14/tmp/css-grammar-ab.ts):
  *
  *   1/3  relative url()      19 files fixed, 0 regressed, 0 node types changed
@@ -17,6 +17,19 @@
  *                            node types 151 -> 152 (the one addition is this
  *                            rule's own generated `parenthesized_value_repeat1`),
  *                            0 field changes; grails-core 20.94% -> 1.57%
+ *   4/4  at-rule idents      0 files fixed, 0 regressed, 0 collateral,
+ *                            0 shape deltas, 0 field changes. NO corpus file
+ *                            uses these at-rules, which is WHY they were broken
+ *                            and unmeasured: `@custom-media --narrow (max-width:
+ *                            400px)` and `@font-feature-values Body Text {…}`
+ *                            ERRORED outright (4 and 6 errors) because a prelude
+ *                            had to be a comma-separated query list. Also drops
+ *                            real SCSS errors: `@mixin`/`@include` preludes.
+ *
+ * Patch 4/4 is the one with a net corpus win of ZERO, and that is stated here
+ * rather than left for a reader to discover: its justification is the minimal
+ * reproduction, and the A/B's job was to prove it does no harm. A patch measured
+ * only by a corpus win would never have been made, because there was none to make.
  *
  * Corpus-wide: 533 files in 13 repositories, 61 error files -> 24.
  * See `reviews/m49-css-review.md`.
@@ -152,9 +165,33 @@ export default grammar({
 
     at_rule: $ => seq(
       $.at_keyword,
+      // LOCAL PATCH 4/4 — an at-rule prelude may be a run of identifiers, not only a
+      // comma-separated list of queries.
+      //
+      // `@custom-media --narrow (max-width: 400px);` and
+      // `@font-feature-values Body Text { … }` both ERROR on the pinned grammar,
+      // because their preludes are idents and `sep(',', $._query)` will only accept
+      // idents that are separated by COMMAS. The grammar contains no mention of
+      // either at-rule at all (measured: 0 occurrences of `custom-media`), so this
+      // is a genuine gap rather than a mis-shaped special case.
+      //
+      // The identifiers are ALIASED to `keyword_query` — the same alias `_query`
+      // already applies — so this introduces no new node type, which is what keeps
+      // the patch free of a completeness-spec change.
+      optional($._prelude_ident_run),
       sep(',', $._query),
       choice(';', $.block),
     ),
+
+    //
+    // `prec(1)` resolves the leading-identifier ambiguity toward this run. That is
+    // safe BECAUSE both readings alias to the same node: `_query` aliases
+    // `identifier` to `keyword_query` and so does this, so preferring this branch
+    // changes which PARSE wins and not the node type any consumer sees. The extra
+    // capability is that a comma-separated query list may now FOLLOW the run, which
+    // is exactly the `@custom-media --narrow (max-width: 400px)` shape the pinned
+    // grammar could not read.
+    _prelude_ident_run: $ => repeat1(prec(1, alias($.identifier, $.keyword_query))),
 
     // Rule sets
 

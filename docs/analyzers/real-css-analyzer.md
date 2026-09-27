@@ -140,6 +140,49 @@ different claims, and only the first is true here.
   was. `parenthesized_value_repeat1` is classified `internal_silent` in the spec as
   a generated repetition wrapper.
 
+- `@custom-media`, `@counter-style` and `@font-feature-values` — **not a residual
+  either, and the corpus is why that was not known.** The census reported all three
+  as NO OCCURRENCE, which was recorded as "not a defect". A probe then found all
+  three DECLARED a named, referable thing and published **nothing**: no symbol, so
+  `list-style: thumbs` had no endpoint, `@media (--narrow)` named itself by raw
+  text, and `font-feature-settings` had nothing to point at. That is the
+  `@font-face`/`@property` defect class a second time, and it survived precisely
+  because the corpus is silent — NO OCCURRENCE means the corpus cannot speak about
+  a construct, not that the construct works. Three of three were broken.
+
+  Two of the three also could not be PARSED at all (4 and 6 errors): the grammar
+  contains no mention of `custom-media` (measured: 0 occurrences), because an
+  at-rule prelude had to be a comma-separated query list. Grammar patch 4/4 allows a
+  leading run of identifiers, aliased to `keyword_query` so **no visible node type
+  is added** — the new rule is hidden, absent from `node-types.json` and from every
+  parse tree; only the wasm symbol table grows 152 -> 153 ids while named types stay
+  at 64. It also drops real SCSS errors (`@mixin`/`@include` preludes).
+
+  This is the one patch whose corpus win is **zero**, and that is stated rather than
+  left for a reader to find:
+
+  ```
+  0 files fixed      0 REGRESSED      0 collateral
+  Q3 shape: 0 clean files changed shape, 0 field changes
+  ```
+
+  Its justification is the minimal reproduction; the A/B's job was to prove it does
+  no harm. A patch judged only by a corpus win would never have been written,
+  because there was none to write. What each at-rule now publishes:
+
+  | at-rule | publishes | resolved by |
+  | --- | --- | --- |
+  | `@counter-style thumbs` | `variable` + `isCounterStyleDeclaration` | `list-style`/`list-style-type` -> `uses` |
+  | `@custom-media --narrow (...)` | `variable` named `--narrow` + `isCustomMediaDeclaration` | `@media (--narrow)` -> `references` |
+  | `@font-feature-values Body Text` | `variable` + `isFontFeatureValuesDeclaration` | `font-feature-settings` inside a `@font-face` -> `uses` |
+
+  `@custom-media` publishes the bare `--ident` for the same reason `@property`
+  publishes `--brand`: the name is the referable part and the condition is its
+  value — so the two are the same shape, and each carries a metadata marker saying
+  which construct declared it. A rule-level `.x { font-feature-settings: "nice" }`
+  is legal CSS and deliberately emits NO edge: which family's feature it names
+  depends on the cascade, so an edge there would invent an endpoint.
+
 - `@page` rules, `@starting-style`, `[attr i]`/`[attr s]`, escaped unicode
   identifiers, HTML-style comments, `chrome://` `@import` URLs, empty custom-property
   values, range media/container queries, `& &` / `&&` / `&div`, and a NAMED
