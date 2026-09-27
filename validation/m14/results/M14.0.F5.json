@@ -2,7 +2,7 @@
   "checks": [
     {
       "description": "the analyzers, oracle and specs that produced these rows are this commit's",
-      "detail": "every measured input clean at head 957a6bf6cd",
+      "detail": "every measured input clean at head f10ea18f2e",
       "id": "differential-code-inputs",
       "status": "pass"
     },
@@ -14,9 +14,9 @@
     },
     {
       "description": "svelte: tree-truth vs analyzer diff @26786e9298",
-      "detail": "60 files, coverage 100%, unexplained 0%; regression detected",
+      "detail": "60 files, coverage 100%, unexplained 0%",
       "id": "differential-javascript",
-      "status": "fail"
+      "status": "pass"
     },
     {
       "description": "vue-core: tree-truth vs analyzer diff @f8975657d7",
@@ -26,25 +26,25 @@
     },
     {
       "description": "Exposed: tree-truth vs analyzer diff @1be664715f",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 106 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 45 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-kotlin",
       "status": "pass"
     },
     {
       "description": "scala3: tree-truth vs analyzer diff @18df09c05f",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 29 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 22 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-scala",
       "status": "pass"
     },
     {
       "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 78 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 114 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-java",
       "status": "pass"
     },
     {
       "description": "grails-core: tree-truth vs analyzer diff @a83f87480e",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 57 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 31 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-groovy",
       "status": "pass"
     },
@@ -61,8 +61,14 @@
       "status": "pass"
     },
     {
+      "description": "svelte: tree-truth vs analyzer diff @26786e9298",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
+      "id": "differential-css",
+      "status": "pass"
+    },
+    {
       "description": "fmt: tree-truth vs analyzer diff @e27cc20bd9",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
       "id": "differential-cpp",
       "status": "pass"
     },
@@ -110,25 +116,25 @@
     },
     {
       "description": "sdwebimage: tree-truth vs analyzer diff @c3ad5e1a9b",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 160 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 39 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-objc",
       "status": "pass"
     },
     {
       "description": "phpunit: tree-truth vs analyzer diff @c8d6921fb6",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 201 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 97 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-php",
       "status": "pass"
     },
     {
       "description": "rake: tree-truth vs analyzer diff @dd5e851d75",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 331 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 531 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-ruby",
       "status": "pass"
     },
     {
       "description": "cython: tree-truth vs analyzer diff @51a460b7d7",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 463 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 283 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-python",
       "status": "pass"
     },
@@ -164,7 +170,7 @@
     },
     {
       "description": "fsharp: tree-truth vs analyzer diff @22a8a5dcc7",
-      "detail": "60 files, coverage 97.8%, unexplained 0.4%",
+      "detail": "60 files, coverage 99.9%, unexplained 3.1%",
       "id": "differential-fsharp",
       "status": "pass"
     },
@@ -188,31 +194,31 @@
     },
     {
       "description": "kotlinx-coroutines: tree-truth vs analyzer diff (second corpus) @7e8b5a405c",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 66 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 69 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-kotlinx-coroutines:kotlin",
       "status": "pass"
     },
     {
       "description": "cats-effect: tree-truth vs analyzer diff (second corpus) @91c8115dbb",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 11 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 12 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-cats-effect:scala",
       "status": "pass"
     },
     {
       "description": "clojure: tree-truth vs analyzer diff (second corpus) @2cea69253b",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 53 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 26 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-clojure:java",
       "status": "pass"
     },
     {
       "description": "geb: tree-truth vs analyzer diff (second corpus) @9c73494607",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 32 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 27 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-geb:groovy",
       "status": "pass"
     },
     {
       "description": "vue-element-admin: tree-truth vs analyzer diff (second corpus) @6858a9ad67",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
       "id": "differential-vue-element-admin:vue",
       "status": "pass"
     },
@@ -220,6 +226,12 @@
       "description": "shadcn-svelte: tree-truth vs analyzer diff (second corpus) @dabbd4c00f",
       "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
       "id": "differential-shadcn-svelte:svelte",
+      "status": "pass"
+    },
+    {
+      "description": "grails-core: tree-truth vs analyzer diff (second corpus) @a83f87480e",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
+      "id": "differential-grails-core:css",
       "status": "pass"
     },
     {
@@ -248,7 +260,7 @@
     },
     {
       "description": "zls: tree-truth vs analyzer diff (second corpus) @3df0428513",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
       "id": "differential-zls:zig",
       "status": "pass"
     },
@@ -266,7 +278,7 @@
     },
     {
       "description": "alamofire: tree-truth vs analyzer diff (second corpus) @0455bfb650",
-      "detail": "60 files, coverage 100%, unexplained 0%",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared",
       "id": "differential-alamofire:swift",
       "status": "pass"
     },
@@ -278,15 +290,15 @@
     },
     {
       "description": "phpmyadmin: tree-truth vs analyzer diff (second corpus) @4061095a59",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 110 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 278 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
       "id": "differential-phpmyadmin:php",
       "status": "pass"
     },
     {
       "description": "rack: tree-truth vs analyzer diff (second corpus) @2c98a0385c",
-      "detail": "60 files, coverage 100%, unexplained 0%; drew a different file set than the baseline (resampled) - clean on the fresh sample, so parity verified but counts not compared; 59 declared-heuristic edge(s) on the fresh sample left unscored (triage)",
+      "detail": "60 files, coverage 99.9%, unexplained 0%; drew a different file set than the baseline AND carries its own missing/unexplained anomalies - the pinned allowance (from a different sample) cannot score them, so this is a new-sample finding that needs triage",
       "id": "differential-rack:ruby",
-      "status": "pass"
+      "status": "fail"
     },
     {
       "description": "requests: tree-truth vs analyzer diff (second corpus) @dae7ef63b4",
@@ -332,26 +344,23 @@
     }
   ],
   "claimLevel": "L1",
-  "commit": "957a6bf6cdafba833ace27d6a66f0585ee04198b",
-  "committedAt": "2026-09-26T22:26:05-04:00",
+  "commit": "f10ea18f2eccb53be831847d3b6cd50f886c3474",
+  "committedAt": "2026-09-27T13:38:52-04:00",
   "data": {
     "baselineComparison": {
       "medianOutliers": [
-        "vue-core:typescript: outlier vs median (388.7ms vs 37.5ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)",
-        "lodash:javascript: outlier vs median (2842.1ms vs 60.8ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)",
-        "jq:c: outlier vs median (298.5ms vs 60.8ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)"
+        "sqlite:c: outlier vs median (291.4ms vs 34.7ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)",
+        "ripgrep:rust: outlier vs median (242.2ms vs 34.7ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)",
+        "lodash:javascript: outlier vs median (3075.9ms vs 61.9ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)",
+        "jq:c: outlier vs median (352.6ms vs 61.9ms median) — unscored (median ratio cannot separate machine load from lane slowness; see #871)"
       ],
       "perfUnscoredLanes": [
         "svelte:javascript: baseline row records no load context (pin with --update-baseline)",
-        "fmt:cpp: baseline row records no load context (pin with --update-baseline)",
         "lodash:javascript: baseline row records no load context (pin with --update-baseline)",
-        "vue-element-admin:vue: baseline row records no load context (pin with --update-baseline)",
         "jq:c: baseline row records no load context (pin with --update-baseline)",
-        "zls:zig: baseline row records no load context (pin with --update-baseline)",
-        "alamofire:swift: baseline row records no load context (pin with --update-baseline)",
         "requests:python: baseline row records no load context (pin with --update-baseline)"
       ],
-      "pinnedLanes": 48,
+      "pinnedLanes": 50,
       "resampledLanes": [
         "vue-core:typescript",
         "Exposed:kotlin",
@@ -360,6 +369,8 @@
         "grails-core:groovy",
         "element-plus:vue",
         "svelte:svelte",
+        "svelte:css",
+        "fmt:cpp",
         "sqlite:c",
         "ripgrep:rust",
         "go-tools:go",
@@ -380,12 +391,16 @@
         "cats-effect:scala",
         "clojure:java",
         "geb:groovy",
+        "vue-element-admin:vue",
         "shadcn-svelte:svelte",
+        "grails-core:css",
         "nlohmann-json:cpp",
         "cargo:rust",
         "terraform:go",
+        "zls:zig",
         "fsharp:csharp",
         "dart-http:dart",
+        "alamofire:swift",
         "afnetworking:objc",
         "phpmyadmin:php",
         "rack:ruby",
@@ -395,7 +410,7 @@
         "clj-kondo:clojure"
       ],
       "samplePerLang": 60,
-      "totalBaselineLanes": 176,
+      "totalBaselineLanes": 178,
       "unpinnedLanes": [
         "svelte:javascript"
       ]
@@ -403,7 +418,7 @@
     "codeInputs": {
       "clean": true,
       "dirty": [],
-      "head": "957a6bf6cdafba833ace27d6a66f0585ee04198b"
+      "head": "f10ea18f2eccb53be831847d3b6cd50f886c3474"
     },
     "corpusPins": {
       "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
@@ -454,8 +469,8 @@
       "zls": "3df042851351abdcfcdab9e133f3e144fe37b783"
     },
     "loadContext": {
-      "loadAvgEnd": 36.69,
-      "loadAvgStart": 36.16,
+      "loadAvgEnd": 33.21,
+      "loadAvgStart": 33.49,
       "sliceCount": 7
     },
     "pinDrift": {},
@@ -470,10 +485,10 @@
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 35.7,
-          "loadAvg1": 35.95,
+          "avgMsPerFile": 26,
+          "loadAvg1": 34.33,
           "loadAvgRetried": true,
-          "maxMsPerFile": 194.5,
+          "maxMsPerFile": 235.9,
           "samplesTimed": 31
         },
         "sampleSetHash": "d18a3cf0fce926d7",
@@ -482,987 +497,887 @@
         "unexplainedInAnalyzer": 0
       },
       "c": {
-        "analyzerEdges": 5997,
+        "analyzerEdges": 6713,
         "coveragePct": 100,
-        "coveredByAnalyzer": 5997,
-        "explainableByTree": 5997,
+        "coveredByAnalyzer": 6713,
+        "explainableByTree": 6713,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 236.2,
-          "loadAvg1": 44.76,
+          "avgMsPerFile": 291.4,
+          "loadAvg1": 30.72,
           "loadAvgRetried": true,
-          "maxMsPerFile": 3011,
+          "maxMsPerFile": 2911.8,
           "samplesTimed": 60
         },
-        "sampleSetHash": "e52a5ac6f258b799",
+        "sampleSetHash": "a52b58aa994cb6db",
         "samples": [],
-        "treeTruthEdges": 5997,
+        "treeTruthEdges": 6713,
         "unexplainedInAnalyzer": 0
       },
       "clean": {
-        "analyzerEdges": 516,
+        "analyzerEdges": 1029,
         "coveragePct": 100,
-        "coveredByAnalyzer": 701,
-        "explainableByTree": 516,
+        "coveredByAnalyzer": 1738,
+        "explainableByTree": 1029,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 12.5,
-          "loadAvg1": 37.95,
+          "avgMsPerFile": 23.3,
+          "loadAvg1": 27.92,
           "loadAvgRetried": true,
-          "maxMsPerFile": 213.4,
+          "maxMsPerFile": 669.4,
           "samplesTimed": 60
         },
-        "sampleSetHash": "40687a5367419d71",
+        "sampleSetHash": "fc95c118941fce6c",
         "samples": [],
-        "treeTruthEdges": 701,
+        "treeTruthEdges": 1738,
         "unexplainedInAnalyzer": 0
       },
       "clojure": {
-        "analyzerEdges": 2035,
+        "analyzerEdges": 1570,
         "coveragePct": 100,
-        "coveredByAnalyzer": 3533,
-        "explainableByTree": 2035,
+        "coveredByAnalyzer": 2468,
+        "explainableByTree": 1570,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 109.4,
-          "loadAvg1": 38.49,
+          "avgMsPerFile": 77.5,
+          "loadAvg1": 34.45,
           "loadAvgRetried": true,
-          "maxMsPerFile": 2012.5,
+          "maxMsPerFile": 541.5,
           "samplesTimed": 60
         },
-        "sampleSetHash": "1e95fcf1650daa04",
+        "sampleSetHash": "4bf80c2df22d5495",
         "samples": [],
-        "treeTruthEdges": 3533,
+        "treeTruthEdges": 2468,
         "unexplainedInAnalyzer": 0
       },
       "cpp": {
-        "analyzerEdges": 4617,
+        "analyzerEdges": 4512,
         "coveragePct": 100,
-        "coveredByAnalyzer": 4811,
-        "explainableByTree": 4617,
+        "coveredByAnalyzer": 4707,
+        "explainableByTree": 4512,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 237.1,
-          "loadAvg1": 33.96,
+          "avgMsPerFile": 203.1,
+          "loadAvg1": 35.26,
           "loadAvgRetried": true,
-          "maxMsPerFile": 4927.7,
+          "maxMsPerFile": 3908.7,
           "samplesTimed": 60
         },
-        "sampleSetHash": "89b51095c4659906",
+        "sampleSetHash": "8797063f41dd5263",
         "samples": [],
-        "treeTruthEdges": 4811,
+        "treeTruthEdges": 4707,
         "unexplainedInAnalyzer": 0
       },
       "csharp": {
-        "analyzerEdges": 1669,
+        "analyzerEdges": 1933,
         "coveragePct": 100,
-        "coveredByAnalyzer": 2784,
-        "explainableByTree": 1669,
+        "coveredByAnalyzer": 2805,
+        "explainableByTree": 1933,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 225.4,
-          "loadAvg1": 38.92,
+          "avgMsPerFile": 227.4,
+          "loadAvg1": 36.96,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1993.9,
+          "maxMsPerFile": 5587.3,
           "samplesTimed": 60
         },
-        "sampleSetHash": "14efe1f05cdb934e",
+        "sampleSetHash": "5c081fb1061de44e",
         "samples": [],
-        "treeTruthEdges": 2784,
+        "treeTruthEdges": 2805,
         "unexplainedInAnalyzer": 0
       },
-      "dart": {
-        "analyzerEdges": 4061,
+      "css": {
+        "analyzerEdges": 9,
         "coveragePct": 100,
-        "coveredByAnalyzer": 4515,
-        "explainableByTree": 4061,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 198.2,
-          "loadAvg1": 37.39,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 886.4,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "9a332853f91e068f",
-        "samples": [],
-        "treeTruthEdges": 4515,
-        "unexplainedInAnalyzer": 0
-      },
-      "elixir": {
-        "analyzerEdges": 1549,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 2005,
-        "explainableByTree": 1549,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 41.8,
-          "loadAvg1": 34.61,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 515.9,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "bec69dcf1976d91e",
-        "samples": [],
-        "treeTruthEdges": 2005,
-        "unexplainedInAnalyzer": 0
-      },
-      "erlang": {
-        "analyzerEdges": 2292,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 4599,
-        "explainableByTree": 2292,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 27.2,
-          "loadAvg1": 34.41,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 355.7,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "be578ec1871456ae",
-        "samples": [],
-        "treeTruthEdges": 4599,
-        "unexplainedInAnalyzer": 0
-      },
-      "fsharp": {
-        "analyzerEdges": 1322,
-        "coveragePct": 97.8,
-        "coveredByAnalyzer": 2335,
-        "explainableByTree": 1317,
-        "fabricationPct": 0.4,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 53,
-        "perf": {
-          "avgMsPerFile": 26.2,
-          "loadAvg1": 36.13,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 3312.6,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "82079dfa3aa2284c",
-        "samples": [
-          {
-            "confidence": 0.95,
-            "dir": "UNEXPLAINED",
-            "file": "src/Compiler/AbstractIL/il.fs",
-            "from": "Add",
-            "label": "instantiates",
-            "line": 195,
-            "target": "LazyOrderedMultiMap<'Key, 'Data>"
-          },
-          {
-            "confidence": 0.8,
-            "dir": "UNEXPLAINED",
-            "file": "src/Compiler/AbstractIL/il.fs",
-            "from": "Add",
-            "label": "calls",
-            "line": 195,
-            "target": "lazyMap"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForReadShim",
-            "label": "instantiates",
-            "target": "FileStream"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForReadShim",
-            "label": "calls",
-            "target": "CreateFromFile"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForReadShim",
-            "label": "instantiates",
-            "target": "MemoryMappedStream"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForReadShim",
-            "label": "calls",
-            "target": "invalidOp"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForWriteShim",
-            "label": "calls",
-            "target": "FileStream"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetFullPathShim",
-            "label": "calls",
-            "target": "GetFullPath"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetFullFilePathInDirectoryShim",
-            "label": "calls",
-            "target": "IsPathRootedShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetFullFilePathInDirectoryShim",
-            "label": "calls",
-            "target": "GetFullPathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsPathRootedShim",
-            "label": "calls",
-            "target": "IsPathRooted"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "NormalizePathShim",
-            "label": "calls",
-            "target": "IsPathRootedShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "NormalizePathShim",
-            "label": "calls",
-            "target": "GetFullPathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "IsNullOrEmpty"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "IndexOfAny"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "GetInvalidPathChars"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "GetInvalidFileNameChars"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "isInvalidPath"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "isInvalidDirectory"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "isInvalidFilename"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetTempPathShim",
-            "label": "calls",
-            "target": "GetTempPath"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetDirectoryNameShim",
-            "label": "calls",
-            "target": "IsNullOrEmpty"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetDirectoryNameShim",
-            "label": "calls",
-            "target": "IsPathRootedShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetLastWriteTimeShim",
-            "label": "calls",
-            "target": "GetLastWriteTimeUtc"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetCreationTimeShim",
-            "label": "calls",
-            "target": "GetCreationTimeUtc"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "FileExistsShim",
-            "label": "calls",
-            "target": "Exists"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "FileDeleteShim",
-            "label": "calls",
-            "target": "Delete"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryCreateShim",
-            "label": "calls",
-            "target": "CreateDirectory"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryExistsShim",
-            "label": "calls",
-            "target": "Exists"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryDeleteShim",
-            "label": "calls",
-            "target": "Delete"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "EnumerateFilesShim",
-            "label": "calls",
-            "target": "EnumerateFiles"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "EnumerateDirectoriesShim",
-            "label": "calls",
-            "target": "EnumerateDirectories"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsStableFileHeuristic",
-            "label": "calls",
-            "target": "Contains"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "ChangeExtensionShim",
-            "label": "calls",
-            "target": "ChangeExtension"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForReadShim",
-            "label": "calls",
-            "target": "OpenFileForReadShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "OpenFileForWriteShim",
-            "label": "calls",
-            "target": "OpenFileForWriteShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetFullPathShim",
-            "label": "calls",
-            "target": "GetFullPathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetFullFilePathInDirectoryShim",
-            "label": "calls",
-            "target": "GetFullFilePathInDirectoryShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsPathRootedShim",
-            "label": "calls",
-            "target": "IsPathRootedShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "NormalizePathShim",
-            "label": "calls",
-            "target": "NormalizePathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsInvalidPathShim",
-            "label": "calls",
-            "target": "IsInvalidPathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetTempPathShim",
-            "label": "calls",
-            "target": "GetTempPathShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetDirectoryNameShim",
-            "label": "calls",
-            "target": "GetDirectoryNameShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetLastWriteTimeShim",
-            "label": "calls",
-            "target": "GetLastWriteTimeShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetCreationTimeShim",
-            "label": "calls",
-            "target": "GetCreationTimeShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "CopyShim",
-            "label": "calls",
-            "target": "CopyShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "FileExistsShim",
-            "label": "calls",
-            "target": "FileExistsShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "FileDeleteShim",
-            "label": "calls",
-            "target": "FileDeleteShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryCreateShim",
-            "label": "calls",
-            "target": "DirectoryCreateShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryExistsShim",
-            "label": "calls",
-            "target": "DirectoryExistsShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "DirectoryDeleteShim",
-            "label": "calls",
-            "target": "DirectoryDeleteShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "EnumerateFilesShim",
-            "label": "calls",
-            "target": "EnumerateFilesShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "EnumerateDirectoriesShim",
-            "label": "calls",
-            "target": "EnumerateDirectoriesShim"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "IsStableFileHeuristic",
-            "label": "calls",
-            "target": "IsStableFileHeuristic"
-          },
-          {
-            "dir": "MISSING",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "ChangeExtensionShim",
-            "label": "calls",
-            "target": "ChangeExtensionShim"
-          },
-          {
-            "confidence": 0.8,
-            "dir": "UNEXPLAINED",
-            "file": "src/Compiler/Utilities/FileSystem.fs",
-            "from": "GetReader",
-            "label": "calls",
-            "line": 781,
-            "target": "GetEncoding"
-          },
-          {
-            "confidence": 0.8,
-            "dir": "UNEXPLAINED",
-            "file": "src/Compiler/DependencyManager/AssemblyResolveHandler.fs",
-            "from": "constructor",
-            "label": "calls",
-            "line": 115,
-            "target": "ofObj"
-          },
-          {
-            "confidence": 0.8,
-            "dir": "UNEXPLAINED",
-            "file": "vsintegration/tests/UnitTests/LegacyProjectSystem/Tests.ProjectSystem.Configs.fs",
-            "from": "``Configs.Renaming``",
-            "label": "calls",
-            "line": 114,
-            "target": "SimpleFsprojText"
-          }
-        ],
-        "treeTruthEdges": 2388,
-        "unexplainedInAnalyzer": 5
-      },
-      "go": {
-        "analyzerEdges": 942,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 957,
-        "explainableByTree": 942,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 51.1,
-          "loadAvg1": 45.93,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 827.5,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "56296fa21a0c2ffd",
-        "samples": [],
-        "treeTruthEdges": 957,
-        "unexplainedInAnalyzer": 0
-      },
-      "groovy": {
-        "analyzerEdges": 1232,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 1204,
-        "explainableByTree": 1175,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 57,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 35,
-          "loadAvg1": 34.68,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 316,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "1c935112f7efbc24",
-        "samples": [],
-        "treeTruthEdges": 1204,
-        "unexplainedInAnalyzer": 0
-      },
-      "haskell": {
-        "analyzerEdges": 417,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 576,
-        "explainableByTree": 417,
-        "fabricationPct": 0,
-        "filesSampled": 60,
-        "heuristicUnexplained": 0,
-        "missingInAnalyzer": 0,
-        "perf": {
-          "avgMsPerFile": 25.1,
-          "loadAvg1": 37.14,
-          "loadAvgRetried": true,
-          "maxMsPerFile": 762.6,
-          "samplesTimed": 60
-        },
-        "sampleSetHash": "814c1e6adaa4019e",
-        "samples": [],
-        "treeTruthEdges": 576,
-        "unexplainedInAnalyzer": 0
-      },
-      "html": {
-        "analyzerEdges": 341,
-        "coveragePct": 100,
-        "coveredByAnalyzer": 341,
-        "explainableByTree": 341,
+        "coveredByAnalyzer": 22,
+        "explainableByTree": 9,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
           "avgMsPerFile": 3.1,
-          "loadAvg1": 32.45,
+          "loadAvg1": 28.22,
           "loadAvgRetried": true,
-          "maxMsPerFile": 244,
+          "maxMsPerFile": 45.7,
           "samplesTimed": 60
         },
-        "sampleSetHash": "7854e4bfee708e45",
+        "sampleSetHash": "5f1aa11d7465f9cb",
         "samples": [],
-        "treeTruthEdges": 341,
+        "treeTruthEdges": 22,
+        "unexplainedInAnalyzer": 0
+      },
+      "dart": {
+        "analyzerEdges": 4434,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 4913,
+        "explainableByTree": 4434,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 162.4,
+          "loadAvg1": 27.45,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 4246.7,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "d69aaf8142c00060",
+        "samples": [],
+        "treeTruthEdges": 4913,
+        "unexplainedInAnalyzer": 0
+      },
+      "elixir": {
+        "analyzerEdges": 2346,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 3526,
+        "explainableByTree": 2346,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 97.4,
+          "loadAvg1": 32.98,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 879.6,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "c3f7296cf156ac35",
+        "samples": [],
+        "treeTruthEdges": 3526,
+        "unexplainedInAnalyzer": 0
+      },
+      "erlang": {
+        "analyzerEdges": 2485,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 4617,
+        "explainableByTree": 2485,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 23.8,
+          "loadAvg1": 31.7,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1306,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "be1b57f6677e6b31",
+        "samples": [],
+        "treeTruthEdges": 4617,
+        "unexplainedInAnalyzer": 0
+      },
+      "fsharp": {
+        "analyzerEdges": 1043,
+        "coveragePct": 99.9,
+        "coveredByAnalyzer": 1820,
+        "explainableByTree": 1011,
+        "fabricationPct": 3.1,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 1,
+        "perf": {
+          "avgMsPerFile": 15.6,
+          "loadAvg1": 36.03,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 2169.8,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "1eff34aed46c7b70",
+        "samples": [
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Service/FSharpProjectSnapshot.fs",
+            "from": "ProjectSnapshotBase",
+            "label": "implements",
+            "line": 187,
+            "target": "ICacheKey"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/InlineRename/InlineRenameService.fs",
+            "from": "applyChanges",
+            "label": "calls",
+            "line": 50,
+            "target": "WithChanges"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/InlineRename/InlineRenameService.fs",
+            "from": "applyChanges",
+            "label": "calls",
+            "line": 50,
+            "target": "TextChange"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "vsintegration/src/FSharp.Editor/InlineRename/InlineRenameService.fs",
+            "from": "applyChanges",
+            "label": "calls",
+            "line": 52,
+            "target": "WithDocumentText"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/Expressions/CheckComputationExpressionsCustomOps.fs",
+            "from": "FSharp.Compiler.CheckComputationExpressionsCustomOps",
+            "label": "implements",
+            "line": 41,
+            "target": "ITypecheckResultsSink"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterItemsInSubTypesBasedOnItemsInSuperTypes",
+            "label": "calls",
+            "line": 553,
+            "target": "loop"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterItemsInSubTypesBasedOnItemsInSuperTypes",
+            "label": "calls",
+            "line": 554,
+            "target": "FilterNewItems"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterItemsInSubTypesBasedOnItemsInSuperTypes",
+            "label": "calls",
+            "line": 555,
+            "target": "AddItems"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterItemsInSuperTypesBasedOnItemsInSubTypes",
+            "label": "calls",
+            "line": 562,
+            "target": "rev"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "ExcludeItemsInSuperTypesBasedOnEquivTestWithItemsInSubTypes",
+            "label": "calls",
+            "line": 571,
+            "target": "FilterItemsInSuperTypesBasedOnItemsInSubTypes"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "ExcludeItemsInSuperTypesBasedOnEquivTestWithItemsInSubTypes",
+            "label": "calls",
+            "line": 571,
+            "target": "equivTest"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 575,
+            "target": "isVirt"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 575,
+            "target": "equivSigs"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 580,
+            "target": "ExcludeItemsInSuperTypesBasedOnEquivTestWithItemsInSubTypes"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 597,
+            "target": "isDefiniteOverride"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 597,
+            "target": "equivVirts"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 602,
+            "target": "isNewSlot"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 603,
+            "target": "FilterItemsInSubTypesBasedOnItemsInSuperTypes"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 616,
+            "target": "isFinal"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 616,
+            "target": "isAbstract"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverrides",
+            "label": "calls",
+            "line": 641,
+            "target": "equivNewSlots"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfMethInfos",
+            "label": "calls",
+            "line": 654,
+            "target": "MethInfosEquivByNameAndSig"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "PropsGetterSetterEquiv",
+            "label": "calls",
+            "line": 660,
+            "target": "innerEquality"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfPropInfos",
+            "label": "calls",
+            "line": 671,
+            "target": "PropsGetterSetterEquiv"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfPropInfos",
+            "label": "calls",
+            "line": 671,
+            "target": "PropInfosEquivByNameAndSig"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfPropInfosWithOverriddenProp",
+            "label": "calls",
+            "line": 697,
+            "target": "tryFind"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfPropInfosWithOverriddenProp",
+            "label": "calls",
+            "line": 697,
+            "target": "checkProp"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "FilterOverridesOfPropInfosWithOverriddenProp",
+            "label": "calls",
+            "line": 699,
+            "target": "findPropBefore"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "ExcludeHiddenOfMethInfosImpl",
+            "label": "calls",
+            "line": 720,
+            "target": "MethInfosEquivByNameAndPartialSig"
+          },
+          {
+            "confidence": 0.8,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "ExcludeHiddenOfPropInfosImpl",
+            "label": "calls",
+            "line": 727,
+            "target": "PropInfosEquivByNameAndPartialSig"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/Compiler/Checking/InfoReader.fs",
+            "from": "InfoReader",
+            "label": "implements",
+            "line": 748,
+            "target": "IEqualityComparer"
+          },
+          {
+            "confidence": 1,
+            "dir": "UNEXPLAINED",
+            "file": "src/FSharp.Core/tasks.fs",
+            "from": "TaskBuilder",
+            "label": "implements",
+            "line": 158,
+            "target": "TaskResumptionDynamicInfo"
+          },
+          {
+            "dir": "MISSING",
+            "file": "src/FSharp.Core/set.fs",
+            "from": "SetTree",
+            "label": "implements",
+            "target": "IDisposable"
+          }
+        ],
+        "treeTruthEdges": 1821,
+        "unexplainedInAnalyzer": 32
+      },
+      "go": {
+        "analyzerEdges": 1589,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1635,
+        "explainableByTree": 1589,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 128.5,
+          "loadAvg1": 39.11,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 1347.9,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "f2d2792c0399f014",
+        "samples": [],
+        "treeTruthEdges": 1635,
+        "unexplainedInAnalyzer": 0
+      },
+      "groovy": {
+        "analyzerEdges": 1053,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 1025,
+        "explainableByTree": 1022,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 31,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 25.1,
+          "loadAvg1": 34.73,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 415.6,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "866371c53bcb23fd",
+        "samples": [],
+        "treeTruthEdges": 1025,
+        "unexplainedInAnalyzer": 0
+      },
+      "haskell": {
+        "analyzerEdges": 403,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 605,
+        "explainableByTree": 403,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 17.4,
+          "loadAvg1": 35.28,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 432,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "f0bc0febaf91d611",
+        "samples": [],
+        "treeTruthEdges": 605,
+        "unexplainedInAnalyzer": 0
+      },
+      "html": {
+        "analyzerEdges": 326,
+        "coveragePct": 100,
+        "coveredByAnalyzer": 326,
+        "explainableByTree": 326,
+        "fabricationPct": 0,
+        "filesSampled": 60,
+        "heuristicUnexplained": 0,
+        "missingInAnalyzer": 0,
+        "perf": {
+          "avgMsPerFile": 3.3,
+          "loadAvg1": 31.2,
+          "loadAvgRetried": true,
+          "maxMsPerFile": 164.4,
+          "samplesTimed": 60
+        },
+        "sampleSetHash": "7e9c67d715a71a25",
+        "samples": [],
+        "treeTruthEdges": 326,
         "unexplainedInAnalyzer": 0
       },
       "java": {
-        "analyzerEdges": 706,
+        "analyzerEdges": 1160,
         "coveragePct": 100,
-        "coveredByAnalyzer": 629,
-        "explainableByTree": 628,
+        "coveredByAnalyzer": 1050,
+        "explainableByTree": 1046,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 78,
+        "heuristicUnexplained": 114,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 27.5,
-          "loadAvg1": 41.32,
+          "avgMsPerFile": 31.9,
+          "loadAvg1": 34.8,
           "loadAvgRetried": true,
-          "maxMsPerFile": 271,
+          "maxMsPerFile": 345.5,
           "samplesTimed": 60
         },
-        "sampleSetHash": "56c16c477bb5f1a8",
+        "sampleSetHash": "c25c334ab86246df",
         "samples": [],
-        "treeTruthEdges": 629,
+        "treeTruthEdges": 1050,
         "unexplainedInAnalyzer": 0
       },
       "javascript": {
-        "analyzerEdges": 660,
+        "analyzerEdges": 922,
         "coveragePct": 100,
-        "coveredByAnalyzer": 650,
-        "explainableByTree": 650,
+        "coveredByAnalyzer": 922,
+        "explainableByTree": 922,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 10,
+        "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 20.1,
-          "loadAvg1": 35.79,
+          "avgMsPerFile": 34.7,
+          "loadAvg1": 33.76,
           "loadAvgRetried": true,
-          "maxMsPerFile": 575.7,
+          "maxMsPerFile": 1291.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "94447afcdbe9cf70",
+        "sampleSetHash": "efa1a7c14f64d91c",
         "samples": [],
-        "treeTruthEdges": 650,
+        "treeTruthEdges": 922,
         "unexplainedInAnalyzer": 0
       },
       "kotlin": {
-        "analyzerEdges": 1573,
+        "analyzerEdges": 1374,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1624,
-        "explainableByTree": 1467,
+        "coveredByAnalyzer": 1498,
+        "explainableByTree": 1329,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 106,
+        "heuristicUnexplained": 45,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 141.6,
-          "loadAvg1": 36.39,
+          "avgMsPerFile": 161.2,
+          "loadAvg1": 36.12,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1421.7,
+          "maxMsPerFile": 2246.1,
           "samplesTimed": 60
         },
-        "sampleSetHash": "c4e5328f7fd75406",
+        "sampleSetHash": "77246e9a7d7a46e5",
         "samples": [],
-        "treeTruthEdges": 1624,
+        "treeTruthEdges": 1498,
         "unexplainedInAnalyzer": 0
       },
       "objc": {
-        "analyzerEdges": 2100,
+        "analyzerEdges": 1627,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1940,
-        "explainableByTree": 1940,
+        "coveredByAnalyzer": 1588,
+        "explainableByTree": 1588,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 160,
+        "heuristicUnexplained": 39,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 16.4,
-          "loadAvg1": 44.55,
+          "avgMsPerFile": 18.2,
+          "loadAvg1": 34.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 387.2,
+          "maxMsPerFile": 411.4,
           "samplesTimed": 60
         },
-        "sampleSetHash": "fdc09fdcd6121c32",
+        "sampleSetHash": "a7bc921a515441ce",
         "samples": [],
-        "treeTruthEdges": 1940,
+        "treeTruthEdges": 1588,
         "unexplainedInAnalyzer": 0
       },
       "php": {
-        "analyzerEdges": 1314,
+        "analyzerEdges": 1137,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1172,
-        "explainableByTree": 1113,
+        "coveredByAnalyzer": 1111,
+        "explainableByTree": 1040,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 201,
+        "heuristicUnexplained": 97,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 37.5,
-          "loadAvg1": 41.11,
+          "avgMsPerFile": 34.6,
+          "loadAvg1": 30.99,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1074.4,
+          "maxMsPerFile": 747.7,
           "samplesTimed": 60
         },
-        "sampleSetHash": "0af8f28866a8e29b",
+        "sampleSetHash": "4f813a27036d1331",
         "samples": [],
-        "treeTruthEdges": 1172,
+        "treeTruthEdges": 1111,
         "unexplainedInAnalyzer": 0
       },
       "python": {
-        "analyzerEdges": 2373,
+        "analyzerEdges": 2021,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1879,
-        "explainableByTree": 1910,
+        "coveredByAnalyzer": 1733,
+        "explainableByTree": 1738,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 463,
+        "heuristicUnexplained": 283,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 80.6,
-          "loadAvg1": 29.58,
+          "avgMsPerFile": 38.9,
+          "loadAvg1": 28.53,
           "loadAvgRetried": true,
-          "maxMsPerFile": 2078.1,
+          "maxMsPerFile": 957.1,
           "samplesTimed": 60
         },
-        "sampleSetHash": "164e658b73c4224a",
+        "sampleSetHash": "2f1c96734046b556",
         "samples": [],
-        "treeTruthEdges": 1879,
+        "treeTruthEdges": 1733,
         "unexplainedInAnalyzer": 0
       },
       "ruby": {
-        "analyzerEdges": 1463,
+        "analyzerEdges": 1725,
         "coveragePct": 100,
-        "coveredByAnalyzer": 1132,
-        "explainableByTree": 1132,
+        "coveredByAnalyzer": 1194,
+        "explainableByTree": 1194,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 331,
+        "heuristicUnexplained": 531,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 10.2,
-          "loadAvg1": 39.75,
+          "avgMsPerFile": 9.8,
+          "loadAvg1": 32.82,
           "loadAvgRetried": true,
-          "maxMsPerFile": 729.1,
+          "maxMsPerFile": 134.8,
           "samplesTimed": 60
         },
-        "sampleSetHash": "49899ba13c3f09b8",
+        "sampleSetHash": "fe07dde1e0b6ec80",
         "samples": [],
-        "treeTruthEdges": 1132,
+        "treeTruthEdges": 1194,
         "unexplainedInAnalyzer": 0
       },
       "rust": {
-        "analyzerEdges": 2896,
+        "analyzerEdges": 3842,
         "coveragePct": 100,
-        "coveredByAnalyzer": 2947,
-        "explainableByTree": 2896,
+        "coveredByAnalyzer": 3996,
+        "explainableByTree": 3842,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 109.6,
-          "loadAvg1": 37.82,
+          "avgMsPerFile": 242.2,
+          "loadAvg1": 31.05,
           "loadAvgRetried": true,
-          "maxMsPerFile": 1814.6,
+          "maxMsPerFile": 2398.7,
           "samplesTimed": 60
         },
-        "sampleSetHash": "4426eb80bf2d987d",
+        "sampleSetHash": "076f8a01febdccf4",
         "samples": [],
-        "treeTruthEdges": 2947,
+        "treeTruthEdges": 3996,
         "unexplainedInAnalyzer": 0
       },
       "scala": {
-        "analyzerEdges": 489,
+        "analyzerEdges": 672,
         "coveragePct": 100,
-        "coveredByAnalyzer": 558,
-        "explainableByTree": 460,
+        "coveredByAnalyzer": 857,
+        "explainableByTree": 650,
         "fabricationPct": 0,
         "filesSampled": 60,
-        "heuristicUnexplained": 29,
+        "heuristicUnexplained": 22,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 19.9,
-          "loadAvg1": 35.24,
+          "avgMsPerFile": 33.5,
+          "loadAvg1": 36.24,
           "loadAvgRetried": true,
-          "maxMsPerFile": 842.2,
+          "maxMsPerFile": 1024.2,
           "samplesTimed": 60
         },
-        "sampleSetHash": "63841b6a32440943",
+        "sampleSetHash": "c30a6a19c8b6f4bb",
         "samples": [],
-        "treeTruthEdges": 558,
+        "treeTruthEdges": 857,
         "unexplainedInAnalyzer": 0
       },
       "svelte": {
-        "analyzerEdges": 43,
+        "analyzerEdges": 33,
         "coveragePct": 100,
-        "coveredByAnalyzer": 46,
-        "explainableByTree": 43,
+        "coveredByAnalyzer": 33,
+        "explainableByTree": 33,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 8,
-          "loadAvg1": 35.75,
+          "avgMsPerFile": 10.4,
+          "loadAvg1": 34.84,
           "loadAvgRetried": true,
-          "maxMsPerFile": 29.3,
+          "maxMsPerFile": 45.6,
           "samplesTimed": 60
         },
-        "sampleSetHash": "54001964b260cfee",
+        "sampleSetHash": "14f9492b5b7592f4",
         "samples": [],
-        "treeTruthEdges": 46,
+        "treeTruthEdges": 33,
         "unexplainedInAnalyzer": 0
       },
       "swift": {
-        "analyzerEdges": 2097,
+        "analyzerEdges": 2152,
         "coveragePct": 100,
-        "coveredByAnalyzer": 2123,
-        "explainableByTree": 2097,
+        "coveredByAnalyzer": 2178,
+        "explainableByTree": 2152,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 140.8,
-          "loadAvg1": 37.71,
+          "avgMsPerFile": 91,
+          "loadAvg1": 29.86,
           "loadAvgRetried": true,
-          "maxMsPerFile": 5291.4,
+          "maxMsPerFile": 2060.8,
           "samplesTimed": 60
         },
-        "sampleSetHash": "5fb3e31d4db099e7",
+        "sampleSetHash": "787bd05ef81fe68c",
         "samples": [],
-        "treeTruthEdges": 2123,
+        "treeTruthEdges": 2178,
         "unexplainedInAnalyzer": 0
       },
       "typescript": {
-        "analyzerEdges": 912,
+        "analyzerEdges": 992,
         "coveragePct": 100,
-        "coveredByAnalyzer": 971,
-        "explainableByTree": 912,
+        "coveredByAnalyzer": 1001,
+        "explainableByTree": 992,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 388.7,
-          "loadAvg1": 37.44,
+          "avgMsPerFile": 174.2,
+          "loadAvg1": 28.33,
           "loadAvgRetried": true,
-          "maxMsPerFile": 5769.7,
+          "maxMsPerFile": 1006.8,
           "samplesTimed": 60
         },
-        "sampleSetHash": "f9f695bb4206470b",
+        "sampleSetHash": "b89c77ae8d58207b",
         "samples": [],
-        "treeTruthEdges": 971,
+        "treeTruthEdges": 1001,
         "unexplainedInAnalyzer": 0
       },
       "vue": {
-        "analyzerEdges": 323,
+        "analyzerEdges": 408,
         "coveragePct": 100,
-        "coveredByAnalyzer": 324,
-        "explainableByTree": 323,
+        "coveredByAnalyzer": 408,
+        "explainableByTree": 408,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 26.9,
-          "loadAvg1": 39.08,
+          "avgMsPerFile": 49,
+          "loadAvg1": 31.89,
           "loadAvgRetried": true,
-          "maxMsPerFile": 409.3,
+          "maxMsPerFile": 578,
           "samplesTimed": 60
         },
-        "sampleSetHash": "45bf37ec03f5ea4f",
+        "sampleSetHash": "bd8f28da2eef59d2",
         "samples": [],
-        "treeTruthEdges": 324,
+        "treeTruthEdges": 408,
         "unexplainedInAnalyzer": 0
       },
       "zig": {
-        "analyzerEdges": 3221,
+        "analyzerEdges": 2971,
         "coveragePct": 100,
-        "coveredByAnalyzer": 3225,
-        "explainableByTree": 3221,
+        "coveredByAnalyzer": 2982,
+        "explainableByTree": 2971,
         "fabricationPct": 0,
         "filesSampled": 60,
         "heuristicUnexplained": 0,
         "missingInAnalyzer": 0,
         "perf": {
-          "avgMsPerFile": 149.6,
-          "loadAvg1": 31.33,
+          "avgMsPerFile": 89.5,
+          "loadAvg1": 30.2,
           "loadAvgRetried": true,
-          "maxMsPerFile": 2731.8,
+          "maxMsPerFile": 2446.9,
           "samplesTimed": 60
         },
-        "sampleSetHash": "f6f0f66f37adc62e",
+        "sampleSetHash": "7971432146767b08",
         "samples": [],
-        "treeTruthEdges": 3225,
+        "treeTruthEdges": 2982,
         "unexplainedInAnalyzer": 0
       }
     },
@@ -1474,6 +1389,7 @@
         "clojure": "clj-kondo",
         "cpp": "nlohmann-json",
         "csharp": "fsharp",
+        "css": "grails-core",
         "dart": "dart-http",
         "elixir": "phoenix",
         "erlang": "otp",
@@ -1507,10 +1423,10 @@
           "heuristicUnexplained": 297,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 30.7,
-            "loadAvg1": 38.09,
+            "avgMsPerFile": 35.4,
+            "loadAvg1": 35.4,
             "loadAvgRetried": true,
-            "maxMsPerFile": 332.4,
+            "maxMsPerFile": 316.2,
             "samplesTimed": 60
           },
           "sampleSetHash": "8190561311e77983",
@@ -1519,87 +1435,87 @@
           "unexplainedInAnalyzer": 0
         },
         "alamofire:swift": {
-          "analyzerEdges": 2253,
+          "analyzerEdges": 2029,
           "coveragePct": 100,
-          "coveredByAnalyzer": 2300,
-          "explainableByTree": 2253,
+          "coveredByAnalyzer": 2058,
+          "explainableByTree": 2029,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 135.8,
-            "loadAvg1": 27.88,
+            "avgMsPerFile": 146.9,
+            "loadAvg1": 29.25,
             "loadAvgRetried": true,
-            "maxMsPerFile": 2526.8,
+            "maxMsPerFile": 2277.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "0052e892f6e0d27b",
+          "sampleSetHash": "ecdb25b00584cf23",
           "samples": [],
-          "treeTruthEdges": 2300,
+          "treeTruthEdges": 2058,
           "unexplainedInAnalyzer": 0
         },
         "cargo:rust": {
-          "analyzerEdges": 1932,
+          "analyzerEdges": 2524,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1959,
-          "explainableByTree": 1932,
+          "coveredByAnalyzer": 2552,
+          "explainableByTree": 2524,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 60.8,
-            "loadAvg1": 35.71,
+            "avgMsPerFile": 88.5,
+            "loadAvg1": 28.02,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1219.5,
+            "maxMsPerFile": 1181.4,
             "samplesTimed": 60
           },
-          "sampleSetHash": "fed27127e546ebb5",
+          "sampleSetHash": "bd30d7dbb85c464a",
           "samples": [],
-          "treeTruthEdges": 1959,
+          "treeTruthEdges": 2552,
           "unexplainedInAnalyzer": 0
         },
         "cats-effect:scala": {
-          "analyzerEdges": 744,
+          "analyzerEdges": 961,
           "coveragePct": 100,
-          "coveredByAnalyzer": 859,
-          "explainableByTree": 733,
+          "coveredByAnalyzer": 1253,
+          "explainableByTree": 949,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 11,
+          "heuristicUnexplained": 12,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 25.3,
-            "loadAvg1": 36.52,
+            "avgMsPerFile": 61.9,
+            "loadAvg1": 35.21,
             "loadAvgRetried": true,
-            "maxMsPerFile": 729.1,
+            "maxMsPerFile": 568.5,
             "samplesTimed": 60
           },
-          "sampleSetHash": "5d91a1d4cdda3587",
+          "sampleSetHash": "ddf7a481f629fa25",
           "samples": [],
-          "treeTruthEdges": 859,
+          "treeTruthEdges": 1253,
           "unexplainedInAnalyzer": 0
         },
         "clean-stdlib:clean": {
-          "analyzerEdges": 497,
+          "analyzerEdges": 500,
           "coveragePct": 100,
-          "coveredByAnalyzer": 642,
-          "explainableByTree": 497,
+          "coveredByAnalyzer": 649,
+          "explainableByTree": 500,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 4.5,
-            "loadAvg1": 35.77,
+            "avgMsPerFile": 10.7,
+            "loadAvg1": 35.85,
             "loadAvgRetried": true,
-            "maxMsPerFile": 431.1,
+            "maxMsPerFile": 395.7,
             "samplesTimed": 60
           },
-          "sampleSetHash": "e8348d8e84955a29",
+          "sampleSetHash": "5b4315f43db02f22",
           "samples": [],
-          "treeTruthEdges": 642,
+          "treeTruthEdges": 649,
           "unexplainedInAnalyzer": 0
         },
         "clj-kondo:clojure": {
@@ -1612,10 +1528,10 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 31.3,
-            "loadAvg1": 36.69,
+            "avgMsPerFile": 28.6,
+            "loadAvg1": 34.85,
             "loadAvgRetried": true,
-            "maxMsPerFile": 2272.7,
+            "maxMsPerFile": 1112.3,
             "samplesTimed": 60
           },
           "sampleSetHash": "d8f2814a78f48c19",
@@ -1624,129 +1540,150 @@
           "unexplainedInAnalyzer": 0
         },
         "clojure:java": {
-          "analyzerEdges": 1344,
+          "analyzerEdges": 849,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1456,
-          "explainableByTree": 1291,
+          "coveredByAnalyzer": 923,
+          "explainableByTree": 823,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 53,
+          "heuristicUnexplained": 26,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 72.3,
-            "loadAvg1": 36.54,
+            "avgMsPerFile": 63.3,
+            "loadAvg1": 28.56,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1586.4,
+            "maxMsPerFile": 1751.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "2b31ba5e4741e5b5",
+          "sampleSetHash": "c9d6a3b4b3fb8eb6",
           "samples": [],
-          "treeTruthEdges": 1456,
+          "treeTruthEdges": 923,
           "unexplainedInAnalyzer": 0
         },
         "dart-http:dart": {
-          "analyzerEdges": 1721,
+          "analyzerEdges": 2395,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1827,
-          "explainableByTree": 1721,
+          "coveredByAnalyzer": 2601,
+          "explainableByTree": 2395,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 100.9,
-            "loadAvg1": 42.67,
+            "avgMsPerFile": 84.1,
+            "loadAvg1": 33.02,
             "loadAvgRetried": true,
-            "maxMsPerFile": 904.5,
+            "maxMsPerFile": 1633.8,
             "samplesTimed": 60
           },
-          "sampleSetHash": "5d9794fe11ace7ee",
+          "sampleSetHash": "f5f66e68c50d0eb3",
           "samples": [],
-          "treeTruthEdges": 1827,
+          "treeTruthEdges": 2601,
           "unexplainedInAnalyzer": 0
         },
         "element-plus:typescript": {
-          "analyzerEdges": 273,
+          "analyzerEdges": 440,
           "coveragePct": 100,
-          "coveredByAnalyzer": 274,
-          "explainableByTree": 273,
+          "coveredByAnalyzer": 441,
+          "explainableByTree": 440,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 89.6,
-            "loadAvg1": 32.4,
+            "avgMsPerFile": 76.4,
+            "loadAvg1": 33.86,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1265.7,
+            "maxMsPerFile": 2185.6,
             "samplesTimed": 60
           },
-          "sampleSetHash": "d787137a49a27910",
+          "sampleSetHash": "992ce7e26be955e3",
           "samples": [],
-          "treeTruthEdges": 274,
+          "treeTruthEdges": 441,
           "unexplainedInAnalyzer": 0
         },
         "fsharp:csharp": {
-          "analyzerEdges": 2223,
+          "analyzerEdges": 2043,
           "coveragePct": 100,
-          "coveredByAnalyzer": 3285,
-          "explainableByTree": 2223,
+          "coveredByAnalyzer": 2989,
+          "explainableByTree": 2043,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 152.5,
-            "loadAvg1": 41.1,
+            "avgMsPerFile": 100.3,
+            "loadAvg1": 30.33,
             "loadAvgRetried": true,
-            "maxMsPerFile": 2930.1,
+            "maxMsPerFile": 1944.9,
             "samplesTimed": 60
           },
-          "sampleSetHash": "51fe9fdd63b9ce45",
+          "sampleSetHash": "3203ce3a828bd8aa",
           "samples": [],
-          "treeTruthEdges": 3285,
+          "treeTruthEdges": 2989,
           "unexplainedInAnalyzer": 0
         },
         "geb:groovy": {
-          "analyzerEdges": 586,
+          "analyzerEdges": 642,
           "coveragePct": 100,
-          "coveredByAnalyzer": 556,
-          "explainableByTree": 554,
+          "coveredByAnalyzer": 627,
+          "explainableByTree": 615,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 32,
+          "heuristicUnexplained": 27,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 13.1,
-            "loadAvg1": 37.87,
+            "avgMsPerFile": 11.1,
+            "loadAvg1": 38.02,
             "loadAvgRetried": true,
-            "maxMsPerFile": 135.7,
+            "maxMsPerFile": 114.7,
             "samplesTimed": 60
           },
-          "sampleSetHash": "d49029af183d6203",
+          "sampleSetHash": "ff810ce2ea28d601",
           "samples": [],
-          "treeTruthEdges": 556,
+          "treeTruthEdges": 627,
           "unexplainedInAnalyzer": 0
         },
-        "hledger:haskell": {
-          "analyzerEdges": 1108,
+        "grails-core:css": {
+          "analyzerEdges": 365,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1915,
-          "explainableByTree": 1108,
+          "coveredByAnalyzer": 421,
+          "explainableByTree": 365,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 52.8,
-            "loadAvg1": 39.82,
+            "avgMsPerFile": 15.9,
+            "loadAvg1": 33.51,
             "loadAvgRetried": true,
-            "maxMsPerFile": 547.8,
+            "maxMsPerFile": 158.8,
             "samplesTimed": 60
           },
-          "sampleSetHash": "e2f02e8f4f797a72",
+          "sampleSetHash": "4dc649da8fb47699",
           "samples": [],
-          "treeTruthEdges": 1915,
+          "treeTruthEdges": 421,
+          "unexplainedInAnalyzer": 0
+        },
+        "hledger:haskell": {
+          "analyzerEdges": 1133,
+          "coveragePct": 100,
+          "coveredByAnalyzer": 2102,
+          "explainableByTree": 1133,
+          "fabricationPct": 0,
+          "filesSampled": 60,
+          "heuristicUnexplained": 0,
+          "missingInAnalyzer": 0,
+          "perf": {
+            "avgMsPerFile": 67.4,
+            "loadAvg1": 27.62,
+            "loadAvgRetried": true,
+            "maxMsPerFile": 871.3,
+            "samplesTimed": 60
+          },
+          "sampleSetHash": "d1fbaa76b5d046c8",
+          "samples": [],
+          "treeTruthEdges": 2102,
           "unexplainedInAnalyzer": 0
         },
         "jq:c": {
@@ -1759,10 +1696,10 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 298.5,
-            "loadAvg1": 38.7,
+            "avgMsPerFile": 352.6,
+            "loadAvg1": 35.2,
             "loadAvgRetried": true,
-            "maxMsPerFile": 6212.5,
+            "maxMsPerFile": 5599.4,
             "samplesTimed": 45
           },
           "sampleSetHash": "2b743b65d0eac283",
@@ -1771,150 +1708,165 @@
           "unexplainedInAnalyzer": 0
         },
         "kotlinx-coroutines:kotlin": {
-          "analyzerEdges": 1061,
+          "analyzerEdges": 1076,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1116,
-          "explainableByTree": 995,
+          "coveredByAnalyzer": 1148,
+          "explainableByTree": 1007,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 66,
+          "heuristicUnexplained": 69,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 68.9,
-            "loadAvg1": 40.69,
+            "avgMsPerFile": 44.6,
+            "loadAvg1": 31.09,
             "loadAvgRetried": true,
-            "maxMsPerFile": 532.5,
+            "maxMsPerFile": 283.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "021dbcfdd097ff57",
+          "sampleSetHash": "2e3e5893781d2da9",
           "samples": [],
-          "treeTruthEdges": 1116,
+          "treeTruthEdges": 1148,
           "unexplainedInAnalyzer": 0
         },
         "lodash:javascript": {
-          "analyzerEdges": 12265,
+          "analyzerEdges": 12325,
           "coveragePct": 100,
-          "coveredByAnalyzer": 12265,
-          "explainableByTree": 12265,
+          "coveredByAnalyzer": 12325,
+          "explainableByTree": 12325,
           "fabricationPct": 0,
           "filesSampled": 55,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 2842.1,
-            "loadAvg1": 42.17,
+            "avgMsPerFile": 3075.9,
+            "loadAvg1": 33.12,
             "loadAvgRetried": true,
-            "maxMsPerFile": 65553.1,
+            "maxMsPerFile": 51242,
             "samplesTimed": 55
           },
           "sampleSetHash": "494e1b94766e8ade",
           "samples": [],
-          "treeTruthEdges": 12265,
+          "treeTruthEdges": 12325,
           "unexplainedInAnalyzer": 0
         },
         "nlohmann-json:cpp": {
-          "analyzerEdges": 945,
+          "analyzerEdges": 543,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1006,
-          "explainableByTree": 945,
+          "coveredByAnalyzer": 546,
+          "explainableByTree": 543,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 77.9,
-            "loadAvg1": 30.63,
+            "avgMsPerFile": 18.1,
+            "loadAvg1": 27.75,
             "loadAvgRetried": true,
-            "maxMsPerFile": 4110.6,
+            "maxMsPerFile": 284.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "73a2ecd8d49484fd",
+          "sampleSetHash": "107844702eb33a7b",
           "samples": [],
-          "treeTruthEdges": 1006,
+          "treeTruthEdges": 546,
           "unexplainedInAnalyzer": 0
         },
         "otp:erlang": {
-          "analyzerEdges": 3056,
+          "analyzerEdges": 2802,
           "coveragePct": 100,
-          "coveredByAnalyzer": 6348,
-          "explainableByTree": 3056,
+          "coveredByAnalyzer": 5949,
+          "explainableByTree": 2802,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 47,
-            "loadAvg1": 30.97,
+            "avgMsPerFile": 26,
+            "loadAvg1": 29.14,
             "loadAvgRetried": true,
-            "maxMsPerFile": 505.1,
+            "maxMsPerFile": 524.6,
             "samplesTimed": 60
           },
-          "sampleSetHash": "c3683d061a4d06b2",
+          "sampleSetHash": "4513e7bffb24fe58",
           "samples": [],
-          "treeTruthEdges": 6348,
+          "treeTruthEdges": 5949,
           "unexplainedInAnalyzer": 0
         },
         "phoenix:elixir": {
-          "analyzerEdges": 1170,
+          "analyzerEdges": 848,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1502,
-          "explainableByTree": 1170,
+          "coveredByAnalyzer": 1027,
+          "explainableByTree": 848,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 57.1,
-            "loadAvg1": 33.86,
+            "avgMsPerFile": 35.2,
+            "loadAvg1": 32.64,
             "loadAvgRetried": true,
-            "maxMsPerFile": 454.3,
+            "maxMsPerFile": 359.7,
             "samplesTimed": 60
           },
-          "sampleSetHash": "a6e2d54567244be4",
+          "sampleSetHash": "f4d266bfc5b8ced5",
           "samples": [],
-          "treeTruthEdges": 1502,
+          "treeTruthEdges": 1027,
           "unexplainedInAnalyzer": 0
         },
         "phpmyadmin:php": {
-          "analyzerEdges": 2119,
+          "analyzerEdges": 2657,
           "coveragePct": 100,
-          "coveredByAnalyzer": 2044,
-          "explainableByTree": 2009,
+          "coveredByAnalyzer": 2410,
+          "explainableByTree": 2379,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 110,
+          "heuristicUnexplained": 278,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 47.1,
-            "loadAvg1": 35.67,
+            "avgMsPerFile": 61.1,
+            "loadAvg1": 29.29,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1044.4,
+            "maxMsPerFile": 2446.6,
             "samplesTimed": 60
           },
-          "sampleSetHash": "2d8f2da02e1c1295",
+          "sampleSetHash": "a3e0e08dcfbe34f0",
           "samples": [],
-          "treeTruthEdges": 2044,
+          "treeTruthEdges": 2410,
           "unexplainedInAnalyzer": 0
         },
         "rack:ruby": {
-          "analyzerEdges": 1635,
-          "coveragePct": 100,
-          "coveredByAnalyzer": 1575,
-          "explainableByTree": 1576,
+          "analyzerEdges": 1665,
+          "coveragePct": 99.9,
+          "coveredByAnalyzer": 1587,
+          "explainableByTree": 1587,
           "fabricationPct": 0,
           "filesSampled": 60,
-          "heuristicUnexplained": 59,
-          "missingInAnalyzer": 0,
+          "heuristicUnexplained": 78,
+          "missingInAnalyzer": 2,
           "perf": {
-            "avgMsPerFile": 13.8,
-            "loadAvg1": 38.03,
+            "avgMsPerFile": 10.5,
+            "loadAvg1": 29.47,
             "loadAvgRetried": true,
-            "maxMsPerFile": 279.1,
+            "maxMsPerFile": 168.5,
             "samplesTimed": 60
           },
-          "sampleSetHash": "1dc4b61bcc155729",
-          "samples": [],
-          "treeTruthEdges": 1575,
+          "sampleSetHash": "88db9858f8f6cc79",
+          "samples": [
+            {
+              "dir": "MISSING",
+              "file": "lib/rack/directory.rb",
+              "from": "DirectoryBody",
+              "label": "extends",
+              "target": "new"
+            },
+            {
+              "dir": "MISSING",
+              "file": "lib/rack/multipart/parser.rb",
+              "from": "MimePart",
+              "label": "extends",
+              "target": "new"
+            }
+          ],
+          "treeTruthEdges": 1589,
           "unexplainedInAnalyzer": 0
         },
         "requests:python": {
@@ -1927,10 +1879,10 @@
           "heuristicUnexplained": 118,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 82.9,
-            "loadAvg1": 41.99,
+            "avgMsPerFile": 94.1,
+            "loadAvg1": 36.52,
             "loadAvgRetried": true,
-            "maxMsPerFile": 2197.9,
+            "maxMsPerFile": 1140.6,
             "samplesTimed": 37
           },
           "sampleSetHash": "e3679fa2131e9b78",
@@ -1939,24 +1891,24 @@
           "unexplainedInAnalyzer": 0
         },
         "shadcn-svelte:svelte": {
-          "analyzerEdges": 427,
+          "analyzerEdges": 535,
           "coveragePct": 100,
-          "coveredByAnalyzer": 433,
-          "explainableByTree": 427,
+          "coveredByAnalyzer": 538,
+          "explainableByTree": 535,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 50.5,
-            "loadAvg1": 45.57,
+            "avgMsPerFile": 36,
+            "loadAvg1": 37.86,
             "loadAvgRetried": true,
-            "maxMsPerFile": 218.5,
+            "maxMsPerFile": 315.9,
             "samplesTimed": 60
           },
-          "sampleSetHash": "8f078f4c44dd4f1e",
+          "sampleSetHash": "a45282e1f018bd91",
           "samples": [],
-          "treeTruthEdges": 433,
+          "treeTruthEdges": 538,
           "unexplainedInAnalyzer": 0
         },
         "sqlite:html": {
@@ -1969,10 +1921,10 @@
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 14.5,
-            "loadAvg1": 32.57,
+            "avgMsPerFile": 8.6,
+            "loadAvg1": 33.21,
             "loadAvgRetried": true,
-            "maxMsPerFile": 126.3,
+            "maxMsPerFile": 63.2,
             "samplesTimed": 21
           },
           "sampleSetHash": "3316e7bdc525d7af",
@@ -1981,66 +1933,66 @@
           "unexplainedInAnalyzer": 0
         },
         "terraform:go": {
-          "analyzerEdges": 1088,
+          "analyzerEdges": 1486,
           "coveragePct": 100,
-          "coveredByAnalyzer": 1092,
-          "explainableByTree": 1088,
+          "coveredByAnalyzer": 1499,
+          "explainableByTree": 1486,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 90.2,
-            "loadAvg1": 36.44,
+            "avgMsPerFile": 190.6,
+            "loadAvg1": 31.47,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1643.4,
+            "maxMsPerFile": 2060.1,
             "samplesTimed": 60
           },
-          "sampleSetHash": "5127f6d4a49afbae",
+          "sampleSetHash": "02a579e69b89e1b7",
           "samples": [],
-          "treeTruthEdges": 1092,
+          "treeTruthEdges": 1499,
           "unexplainedInAnalyzer": 0
         },
         "vue-element-admin:vue": {
-          "analyzerEdges": 404,
+          "analyzerEdges": 434,
           "coveragePct": 100,
-          "coveredByAnalyzer": 407,
-          "explainableByTree": 404,
+          "coveredByAnalyzer": 436,
+          "explainableByTree": 434,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 50.8,
-            "loadAvg1": 38.93,
+            "avgMsPerFile": 62.3,
+            "loadAvg1": 38.66,
             "loadAvgRetried": true,
-            "maxMsPerFile": 1025.7,
+            "maxMsPerFile": 363.7,
             "samplesTimed": 60
           },
-          "sampleSetHash": "ceda7eae9ea97e76",
+          "sampleSetHash": "f7b5dc11259725e2",
           "samples": [],
-          "treeTruthEdges": 407,
+          "treeTruthEdges": 436,
           "unexplainedInAnalyzer": 0
         },
         "zls:zig": {
-          "analyzerEdges": 4445,
+          "analyzerEdges": 4338,
           "coveragePct": 100,
-          "coveredByAnalyzer": 4476,
-          "explainableByTree": 4445,
+          "coveredByAnalyzer": 4373,
+          "explainableByTree": 4338,
           "fabricationPct": 0,
           "filesSampled": 60,
           "heuristicUnexplained": 0,
           "missingInAnalyzer": 0,
           "perf": {
-            "avgMsPerFile": 186.1,
-            "loadAvg1": 40.71,
+            "avgMsPerFile": 135.2,
+            "loadAvg1": 31.13,
             "loadAvgRetried": true,
-            "maxMsPerFile": 3191.8,
+            "maxMsPerFile": 2721,
             "samplesTimed": 60
           },
-          "sampleSetHash": "c1285552d459a43a",
+          "sampleSetHash": "371b7fba64b1ac3b",
           "samples": [],
-          "treeTruthEdges": 4476,
+          "treeTruthEdges": 4373,
           "unexplainedInAnalyzer": 0
         }
       }
@@ -2074,8 +2026,8 @@
       "description": "#871 §1-2: perf rows record per-lane loadAvg1 and the run records loadAvgStart/End + slice count; a baseline row without load context is NOT scored (perfUnscoredLanes) rather than mislabelled as a regression; the lane-vs-run-median outlier check is DISCLOSED (medianOutliers) not scored — measured firing at load 3.9/8.7/~22 across ceremonies while the run median stayed put, it cannot separate machine load from lane slowness"
     }
   ],
-  "regeneratedAt": "2026-09-27T03:36:22.741Z",
-  "regeneratedAtCommit": "957a6bf6cdafba833ace27d6a66f0585ee04198b",
+  "regeneratedAt": "2026-09-27T20:44:59.485Z",
+  "regeneratedAtCommit": "f10ea18f2eccb53be831847d3b6cd50f886c3474",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Differential corpus harness (two-corpus gate)"
