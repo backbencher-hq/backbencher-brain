@@ -68,6 +68,15 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // which is why an inert fixture is worse than a missing one: it looks like
   // evidence. A fixture lane is not a directory, it is a directory this map names.
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
+  // GraphQL joined 2026-09-27 with the M12.38/#177 wave. The lane did not exist,
+  // which is why 31 measured defects survived in an analyzer whose only pinned
+  // surface was 97 hand-audited facts over three m12 fixtures — including 3,131
+  // of 3,332 symbols on the GitHub public schema pointing at a DOCSTRING line,
+  // and every `extend type …` member dropped. `ext` carries all three of the
+  // extensions language-detection.ts routes to `graphql`, because the fixtures
+  // deliberately use `.graphqls` and `.gql` so a regression that keys on one
+  // extension cannot pass.
+  graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
 }
 
 interface Entry { [k: string]: any }
