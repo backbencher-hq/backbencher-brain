@@ -2,7 +2,8 @@
  * script/m14/verify-grammar-pins.ts
  *
  * THE GRAMMAR PIN INSTRUMENT for the functional family (clean, clojure, elixir,
- * erlang, fsharp, haskell).
+ * erlang, fsharp, haskell) plus any lane that registers itself below — hcl
+ * joined on 2026-09-26 with the M60 data/config wave.
  *
  * The lane sweep (§7c) found that for four of the six lanes the question "are we
  * on the best tree-sitter, and which build is it?" could not be answered from the
@@ -86,7 +87,7 @@ export interface LaneDecision {
     | { kind: "local-rebuild-from-vendored-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string }
     | { kind: "unnamed-build-sha-only"; chain: string }
   source:
-    | { state: "vendored"; dir: string; note: string }
+    | { state: "vendored"; dir: string; note: string; srcSubdir?: string }
     | { state: "not-obtainable-offline"; note: string }
   decision: string
   alternatives: Array<{ option: string; measured: string; artifact: string }>
@@ -288,7 +289,54 @@ export const LANES: Record<string, LaneDecision> = {
     evidence: ["reviews/m60-clean-grammar-127-adjudication.md"],
     copies: [],
   },
-}
+
+  // M60 HCL wave (2026-09-26). The survey's own hcl row is what surfaced this:
+  // `declared.versionKnown: false` with the version readable only from a prose
+  // `Parser:` line, and `upstream.available: false` for the wired chain — the
+  // "unversioned blob" shape §7c was written about. hcl is the DATA/Config lane
+  // of Terraform, and it had the largest measured correctness gap of any lane at
+  // the time (94.2% reference recall, 0/138353 lined relationships), so the one
+  // thing that must not be in doubt is which grammar the analyzer is reading.
+  hcl: {
+    wired: "wasm/tree-sitter-hcl.wasm",
+    provenance: {
+      kind: "byte-identical-to-third-party-package",
+      package: "@tree-sitter-grammars/tree-sitter-hcl",
+      version: "1.2.0",
+      upstream: {
+        repo: "tree-sitter-grammars/tree-sitter-hcl",
+        version: "1.2.0",
+        rev: "64ad62785d442eb4d45df3a1764962dafd5bc98b",
+        builtWith: "tree-sitter build --wasm (rebuildable from grammars/tree-sitter-hcl)",
+      },
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-hcl",
+      note:
+        "grammar.js + package.json + tree-sitter.json + LICENSE + README.md + CHANGELOG.md + PIN.md + src/ (grammar.json, node-types.json, scanner.c, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-hcl@64ad6278 kept at $HOME/fixtures/hcl/ts-grammars-hcl. Unlike haskell/elixir/fsharp, src/parser.c IS vendored (600 KB, small enough to keep), so the wired wasm is rebuildable from this directory alone with `tree-sitter build --wasm` and the pin is not only a hash.",
+    },
+    decision:
+      "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation — a vendored wasm that had drifted from upstream and needed manual repair — does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
+    alternatives: [
+      {
+        option: "hand-repair the wasm the way groovy's was repaired",
+        measured:
+          "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not — 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
+        artifact: "fixtures/hcl/out/grammar-conformance.json",
+      },
+    ],
+    evidence: [
+      "validation/m60/grammar-survey.json",
+      "fixtures/hcl/out/grammar-conformance.json",
+      "grammars/tree-sitter-hcl/PIN.md",
+      "reviews/hcl/master-review.md",
+    ],
+    // `copies` is the byte-identity list and every entry must be a FILE the gate
+    // can hash, so the upstream checkout the source was vendored from is named in
+    // the source note and the evidence list rather than here.
+    copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-hcl.wasm") }],
+  },
 
   // M14.6 perl wave (2026-09-26). The perl lane's own review is what put it
   // here: it read the pinned grammar's enumerable surface directly and found
@@ -829,7 +877,7 @@ export async function measureLane(file: string): Promise<MeasuredLane> {
   }
 }
 
-function measureCopies(lane: LaneDecision, wiredSha: string): MeasuredLane["copies"] {
+export function measureCopies(lane: LaneDecision, wiredSha: string): MeasuredLane["copies"] {
   return lane.copies.map((c) => {
     if (!fs.existsSync(c.path)) return { label: c.label, path: c.path.replace(HOME, "~"), sha256: null, byteIdentical: false, absent: true }
     const sha = sha256(fs.readFileSync(c.path))
@@ -837,7 +885,7 @@ function measureCopies(lane: LaneDecision, wiredSha: string): MeasuredLane["copi
   })
 }
 
-function measureVendored(root: string, lane: LaneDecision): MeasuredLane["vendored"] {
+export function measureVendored(root: string, lane: LaneDecision): MeasuredLane["vendored"] {
   if (lane.source.state !== "vendored") return { state: "not-obtainable-offline" }
   const dir = path.join(root, lane.source.dir)
   const files: Record<string, { sha256: string; bytes: number }> = {}
@@ -857,13 +905,17 @@ function measureVendored(root: string, lane: LaneDecision): MeasuredLane["vendor
 export function sourceVsWasmFor(root: string, lane: LaneDecision, namedUnique: string[], uniqueNames: string[]): MeasuredLane["sourceVsWasm"] {
   if (lane.source.state !== "vendored") return { nodeTypesJson: null, note: "no vendored source" }
   const dir = path.join(root, lane.source.dir)
-  const nt = path.join(dir, "src/node-types.json")
-  const gj = path.join(dir, "src/grammar.json")
+  // A grammar that ships more than one (upstream's XML repo holds `xml/` and
+  // `dtd/` side by side) keeps its generated src/ under its OWN subdirectory, so
+  // the lane names it rather than the probe guessing.
+  const srcDir = path.join(dir, (lane.source as any).srcSubdir ?? "src")
+  const nt = path.join(srcDir, "node-types.json")
+  const gj = path.join(srcDir, "grammar.json")
   if (!fs.existsSync(nt) || !fs.existsSync(gj)) {
     return {
       nodeTypesJson: null,
       note:
-        "the vendored tree carries no generated src/node-types.json + src/grammar.json pair, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)",
+        `the vendored tree carries no generated node-types.json + grammar.json pair under ${path.relative(root, srcDir) || "src"}, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)`,
     }
   }
   const ntEntries = JSON.parse(fs.readFileSync(nt, "utf8")) as Array<{ type: string; named?: boolean }>
@@ -1100,7 +1152,6 @@ async function main() {
   }
 
   if (write) {
-  if (write) {
     // `--lane <lang>` records ONE lane and leaves every other lane's recorded
     // block BYTE-IDENTICAL. It exists because a whole-file `--write` silently
     // launders other lanes' drift: it rewrites their recorded copies/vendored
@@ -1145,7 +1196,7 @@ async function main() {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
       commit: execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim(),
-      scope: "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
+      scope: "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
       rule:
         "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
       lanes: {},
@@ -1166,6 +1217,7 @@ async function main() {
     fs.mkdirSync(path.dirname(REGISTRY), { recursive: true })
     fs.writeFileSync(REGISTRY, JSON.stringify(record, null, 2) + "\n")
     console.log(`\nwrote ${path.relative(ROOT, REGISTRY)}`)
+    }
   }
 
   const recorded: PinRecord = JSON.parse(fs.readFileSync(REGISTRY, "utf8"))
