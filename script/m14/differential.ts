@@ -13227,7 +13227,9 @@ export function evaluateDifferential(
 /** `tag -> [attribute, isFragmentReference, isLink]` — the spec's carrier list,
  *  written independently of the analyzer's table on purpose (see above). */
 const ORACLE_HTML_FETCHERS: Record<string, string[]> = {
-  script: ["src"],
+  // SVG2 spells a script's source `href`. An HTML `<script>` has no `href`, so the
+  // extra attribute costs nothing there and rescues every inline SVG script.
+  script: ["src", "href"],
   img: ["src", "srcset", "longdesc"],
   source: ["src", "srcset"],
   video: ["src", "poster"],
@@ -13241,7 +13243,21 @@ const ORACLE_HTML_FETCHERS: Record<string, string[]> = {
   use: ["href", "xlink:href"],
   image: ["href", "xlink:href"],
   html: ["manifest"],
+  // SVG filter image reference (the walker lowercases the tag, so `feImage` -> `feimage`).
+  feimage: ["href", "xlink:href"],
+  // `<a ping>` is a whitespace-separated list of URLs FETCHED on activation — a
+  // fetch, not a navigation, so it belongs here rather than in the link table.
+  a: ["ping"],
+  // Legacy presentational background images: deprecated, still fetched.
+  body: ["background"],
+  table: ["background"],
 }
+
+/** `cite` names where a quotation or change came FROM. Nothing fetches it and
+ *  nothing navigates to it, but it IS a reference out of the document, so the
+ *  oracle derives an edge for it — a citation graded as a fetch would overstate
+ *  it on the truth side exactly as it would on the analyzer side. */
+const ORACLE_HTML_CITE_TAGS = new Set(["q", "blockquote", "del", "ins"])
 
 /** `<param value>` is a resource only for a resource-bearing `name`. */
 const ORACLE_HTML_PARAM_NAMES = new Set(["movie", "src", "url", "codebase", "archive"])
@@ -13390,6 +13406,40 @@ function oracleSrcset(value: string): string[] {
   return out
 }
 
+/** `<a ping>` is whitespace-separated with no descriptor and no comma, which is
+ *  what separates it from `srcset`. */
+function oracleSpaceSeparated(value: string): string[] {
+  const out: string[] = []
+  let start = 0
+  for (let i = 0; i <= value.length; i++) {
+    const c = i < value.length ? value.charCodeAt(i) : 32
+    const ws = c === 32 || c === 9 || c === 10 || c === 13 || c === 12
+    if (!ws) continue
+    if (i > start) out.push(value.slice(start, i))
+    start = i + 1
+  }
+  return out
+}
+
+/** `<meta http-equiv=refresh content="0; url=/next">`. The content is DECODED
+ *  before it is parsed, because the `url=` spelling and the quotes around the
+ *  destination are routinely written as character references — and a decode is
+ *  not length-preserving, so the parse can only happen on the form the target
+ *  will actually have. */
+function oracleRefreshUrl(content: string): string {
+  const semi = content.indexOf(";")
+  if (semi === -1) return ""
+  const tail = content.slice(semi + 1).trim()
+  if (oracleAsciiLower(tail).slice(0, 4) !== "url=") return ""
+  const inner = tail.slice(4).trim()
+  if (inner.length < 2) return inner
+  const first = inner.charAt(0)
+  if ((first === '"' || first === "'") && inner.charAt(inner.length - 1) === first) {
+    return inner.slice(1, -1).trim()
+  }
+  return inner
+}
+
 export function deriveHtmlEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -13450,7 +13500,34 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
             for (const c of oracleSrcset(raw)) emitOracleResource(c, next, push)
             continue
           }
+          if (attr === "ping") {
+            for (const u of oracleSpaceSeparated(oracleDecode(raw))) {
+              if (u.length > 0) emitOracleResource(u, next, push)
+            }
+            continue
+          }
           emitOracleResource(raw, next, push)
+        }
+      }
+      // The refresh PRAGMA: a NAVIGATION the browser performs, the same class as
+      // a form action. Gated on `http-equiv` because `<meta content>` is a URL only
+      // for `refresh` — for `charset` or `description` it is free text, and
+      // deriving an edge to a sentence would put prose in the truth. 40
+      // occurrences across 26 files of one corpus, and missing from BOTH tables
+      // until a carrier census looked for what the tables did not already know.
+      if (tag === "meta" && oracleAsciiLower(attrs.get("http-equiv") ?? "") === "refresh") {
+        const inner = oracleRefreshUrl(oracleDecode(attrs.get("content") ?? "").trim())
+        if (inner.length > 0) emitOracleResource(inner, next, push)
+      }
+      if (ORACLE_HTML_CITE_TAGS.has(tag)) {
+        const cite = attrs.get("cite") ?? ""
+        if (cite.length > 0) {
+          const decoded = oracleDecode(cite).trim()
+          if (decoded.charCodeAt(0) === 35) {
+            if (decoded.length > 1) deferredRefs.push({ from: next, handle: decoded.slice(1) })
+          } else {
+            push("uses", next, decoded)
+          }
         }
       }
       if (tag === "param") {
