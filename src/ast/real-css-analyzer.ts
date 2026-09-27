@@ -9,6 +9,8 @@ interface CssContext {
   errors: ASTEngine.ParseError[]
   content: string
   keyframeNames: Record<string, boolean>
+  /** family name -> declared by an `@font-face` in THIS file. Pre-collected. */
+  fontFaceNames: Record<string, boolean>
   mixinNames: Record<string, boolean>
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
@@ -216,6 +218,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: [],
       content,
       keyframeNames: {},
+      fontFaceNames: {},
       mixinNames: {},
       frameworks: {},
       patterns: {},
@@ -241,6 +244,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // So the names are collected in a PRE-PASS over the tree, which makes the
     // walk order-independent by construction rather than by a heuristic.
     this.collectKeyframeNames(rootNode, ctx)
+    this.collectFontFaceNames(rootNode, ctx)
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", scope: "", currentSelector: "" }]
 
@@ -1547,6 +1551,17 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Every `@keyframes` name in the file, collected before the main walk so that
    * an `animation:` reference resolves regardless of where the block sits.
    */
+  /**
+   * The published name of an `@font-face` declaration. Used by BOTH the symbol push
+   * and the `uses` edge, because when they were written separately the edge named
+   * the bare family while the symbol carried the keyword — a dangling endpoint, the
+   * same defect fixed for `@property` one commit earlier, in the other direction.
+   * One expression is the only way two names cannot drift apart.
+   */
+  private fontFaceSymbolName(family: string): string {
+    return `@font-face ${family}`
+  }
+
   private collectKeyframeNames(root: Node, ctx: CssContext): void {
     const stack: Node[] = [root]
     while (stack.length > 0) {
@@ -1558,6 +1573,45 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
         )
         if (nameNode) ctx.keyframeNames[stripAllQuotes(nameNode.text)] = true
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /**
+   * Families declared by an `@font-face` in this file, collected BEFORE the walk for
+   * the same reason `collectKeyframeNames` runs first: a rule may use a family
+   * before the `@font-face` that declares it, and CSS does not care about order, so
+   * an edge that resolved during the walk would depend on where the author happened
+   * to put the declaration.
+   */
+  private collectFontFaceNames(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "at_rule") {
+        const kw = this.findChild(n, (c) => c?.type === "at_keyword")
+        if (kw && kw.text.trim() === "@font-face") {
+          // The declaration lives inside the `block` child, so finding it is a
+          // DESCENDANT search. The first version looked for a `property_name`
+          // among the at-rule's DIRECT children, which finds nothing for the same
+          // reason the symbol-naming code above says it must not — `@font-face` has
+          // an empty prelude and everything it declares is inside the block.
+          const block = this.findChild(n, (c) => c?.type === "block")
+          const decl = block ? this.findDescendant(block, (d) => {
+            if (d.type !== "declaration") return false
+            const prop = this.findChild(d, (g) => g?.type === "property_name")
+            return prop !== null && prop.text.trim().toLowerCase() === "font-family"
+          }) : null
+          if (decl) {
+            const value = this.findChild(decl, (c) => c?.type === "string_value" || c?.type === "plain_value" || c?.type === "identifier")
+            if (value) ctx.fontFaceNames[stripAllQuotes(value.text.trim())] = true
+          }
+        }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -1770,6 +1824,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (family) {
           const value = this.findChild(family, (c) => c?.type === "plain_value" || c?.type === "string_value")
           if (value) namePartOverride = collapseWhitespace(stripAllQuotes(value.text))
+          // the published name comes from ONE expression, shared with the `uses`
+          // edge, so the symbol and the edge can never name different things
+          void namePartOverride
         }
       }
 
@@ -1780,15 +1837,35 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (braceAt !== -1) cut = braceAt
       if (semiAt !== -1 && semiAt < cut) cut = semiAt
       const namePart = namePartOverride || stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
-      const ruleName = `${keyword}${namePart ? " " + namePart : ""}`
+      const ruleName =
+        keyword === "@font-face" && namePart ? this.fontFaceSymbolName(namePart) : `${keyword}${namePart ? " " + namePart : ""}`
 
       // A CONSUMING at-rule gets NO symbol. `@apply flex` is an instruction to a
       // Tailwind build, not a declaration; `@theme` is a block whose custom
       // properties are already published in their own right; `@config` names a
       // file; `@include` is a USE, and the `uses` edge below is the fact.
       if (DECLARING.has(keyword)) {
+        // A REGISTERED custom property is published under the PROPERTY'S OWN NAME.
+        //
+        // The omission audit (script/m14/tmp/css-omission-audit.ts) found the
+        // defect this fixes: `var(--brand)` emits `references body -> --brand`, and
+        // the only symbol for `--brand` in the file was `@property --brand`. So the
+        // read pointed at a name nothing published — a DANGLING endpoint, in a lane
+        // whose whole chain-resolution rule is that both ends must resolve. 273
+        // registered properties in 3 corpus files, every read of them dangling.
+        //
+        // `--brand` is also the right name on its own terms: it is a namespaced CSS
+        // name that cannot collide with a class, a type or a scope, and a
+        // registration and a rule-level `--brand: …` declare the SAME thing, so
+        // publishing them under one name is the point rather than a hazard.
+        //
+        // `@font-face` KEEPS its keyword prefix (`@font-face Inter`), and the
+        // asymmetry is deliberate: a font family is a bare identifier that could
+        // collide with a class or a type of the same name, so the keyword says which
+        // KIND of thing it is. A `--x` name needs no such help.
+        const publishedName = keyword === "@property" ? namePart || ruleName : ruleName
         ctx.symbols.push({
-          name: ruleName,
+          name: publishedName,
           // A declared `@font-face` and a registered `@property` are both
           // declarations of a named thing, which is what `variable` means in this
           // ontology; `@mixin` is a callable, so `function`; the rest are
@@ -1806,6 +1883,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             isAtRule: true,
             atKeyword: keyword,
+            // the keyword is dropped from a `@property` symbol's NAME, so it is
+            // recorded here — the declaration is still identifiable as a
+            // registration rather than a rule-level declaration
+            ...(keyword === "@property" ? { isPropertyRegistration: true } : {}),
             // (the descriptor-count complexity is set on the symbol above)
           },
         })
@@ -1993,6 +2074,53 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // Reached only by `--`, so the pattern test needs no prefix guard.
       ctx.patterns["CSS Custom Properties"] = true
+    }
+
+    // A `font-family` that names a family this file DECLARES with `@font-face` is
+    // a USE of that declaration — the exact analogue of `animation: spin` naming a
+    // `@keyframes spin`, which has been emitted since the order-dependence fix.
+    //
+    // Found by the omission audit: 135 corpus files declare a `font-family` and 21
+    // declare an `@font-face`, 344 family symbols were published, and NOTHING
+    // connected a rule that uses a family to the declaration that provides it. So
+    // the graph could answer "which rules use Inter" and "where is Inter declared"
+    // but not "which rule uses the Inter this file declares" — the one question
+    // both halves exist to answer. The asymmetry was historical: the animation path
+    // was built, this one never was.
+    //
+    // Only families the file DECLARES become edges, for the same reason animations
+    // only name declared keyframes: a `font-family` may legitimately come from
+    // another stylesheet, and inventing an endpoint for it is the `global` phantom
+    // this lane removed once.
+    if (propName === "font-family" && currentSelector) {
+      const famStack = [node]
+      while (famStack.length > 0) {
+        const n = famStack.pop()!
+        if (n.type === "plain_value" || n.type === "identifier" || n.type === "string_value") {
+          const family = stripAllQuotes(n.text.trim())
+          if (family.length > 0 && ctx.fontFaceNames[family]) {
+            ctx.relationships.push({
+              source: currentSelector,
+              // The edge names the DECLARATION, which is the published symbol — not
+              // the bare family, which nothing publishes. A resolvable endpoint, and
+              // the same both-ends-must-resolve rule the chain edges follow.
+              target: this.fontFaceSymbolName(family),
+              type: ASTEngine.RelationshipType.Uses,
+              // M59.A7, the same rule as the animation edge: the name is the FAMILY
+              // as written in the value, so the line is the value's line — not the
+              // `font-family` property's, and for a fallback list
+              // (`"Inter", sans-serif`) the specific family that matched rather
+              // than the first token on the line.
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isFontFamilyRef: true },
+            })
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const child = n.namedChild(i)
+          if (child) famStack.push(child)
+        }
+      }
     }
 
     if ((propName === "animation" || propName === "animation-name") && currentSelector) {
