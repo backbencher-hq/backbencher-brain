@@ -296,6 +296,63 @@ const restoreUnknownSentinel = (r: any) => ({
   ),
 })
 
+/**
+ * The volume-source revert, found by the M60 target-spelling census rather than by a
+ * fixture: over 500 kubernetes/ansible files the lane emitted four `references` edges
+ * whose target was the bare integer `3` — the value of `defaultMode` inside a
+ * `volumes[].configMap` payload — because one walk collected every nested scalar of a
+ * volume source and read each as a resource name. Measured A/B on the fixture that
+ * pins it: 13 resource refs before, 6 after, the 7 invented ones being `3`, `a`,
+ * `b/c`, `420`, `true`, `true`, `3`.
+ *
+ * A DISCLOSED DIVERGENCE, because a faithful revert is not expressible here. The
+ * result carries no scalar VALUES (a `defaultMode` symbol records its name, kind,
+ * line, complexity and valueType, not its text), so this transform names the child
+ * KEYS of a volume-source payload where the real pre-fix walk named their VALUES. The
+ * shape reverted — a volume-source payload read as a name source, and a `contains`
+ * edge that was right carrying a `references` edge that was invented — is the same;
+ * the specific invented target is not, and k8s-volume-source-not-a-name forbids both
+ * sets so the fixture catches this mutant and the real analyzer alike.
+ */
+const volumeSourceScannedAsNames = (r: any) => {
+  const VOLUME_SOURCES = ["configMap", "secret", "persistentVolumeClaim"]
+  const childrenOf = new Map<string, string[]>()
+  // The analyzer result spells the endpoints `source`/`target`; the fixture runner
+  // normalises them to `from`/`to`. Reading only one pair made this transform VACUOUS:
+  // it reported SURVIVED while introducing no defect at all, which is a worse failure
+  // than an uncaught mutant because it accuses the suite of a gap the mutant never
+  // opened. Both spellings are read, and a transform that would invent nothing is
+  // itself the bug this comment exists to prevent.
+  const edge = (rel: any, a: string, b: string): string => String(rel[a] ?? rel[b] ?? "")
+  for (const rel of (r.relationships ?? []) as any[]) {
+    if (rel.type !== "contains") continue
+    // The `contains` edge's SOURCE is the owner, so it — not its parent — is the key.
+    // Deriving the parent instead collected the children of `volumes[0]` and read the
+    // owner as `volumes`, which matched no volume-source key and invented nothing.
+    const owner = edge(rel, "source", "from")
+    if (!owner.includes(".")) continue
+    if (!childrenOf.has(owner)) childrenOf.set(owner, [])
+    childrenOf.get(owner)!.push(edge(rel, "target", "to"))
+  }
+  const invented: any[] = []
+  for (const [owner, children] of childrenOf) {
+    const leaf = owner.slice(owner.lastIndexOf(".") + 1).replace(/\[\d+\]$/, "")
+    if (!VOLUME_SOURCES.includes(leaf)) continue
+    for (const child of children) {
+      invented.push({
+        type: "references",
+        source: owner,
+        target: child,
+        target: child.slice(child.lastIndexOf(".") + 1),
+        confidence: 0.8,
+        line_number: 0,
+        metadata: { relationshipType: "yaml_resource_ref", isExternal: true, resolved: false, evidenceClass: "inferred" },
+      })
+    }
+  }
+  return { ...r, relationships: [...(r.relationships ?? []), ...invented] }
+}
+
 export const YAML_MUTANTS = [
   {
     id: "yaml/sequence-index-collapsed",
@@ -408,5 +465,13 @@ export const YAML_MUTANTS = [
     description:
       "R7 REVERT: the closed value vocabulary puts the placeholder string `unknown` back, which is the literal script/m60/sentinel-census.ts records as a violation for this file. Caught by tag-declared-type-negative's `expectSymbols` rows and by the lane's own sentinel census.",
     transform: restoreUnknownSentinel,
+  },
+  {
+    id: "yaml/volume-source-scanned-as-names",
+    language: "yaml",
+    defectClass: "over-firing",
+    description:
+      "The volume-source revert: a `volumes[].configMap`/`secret`/`persistentVolumeClaim` PAYLOAD is read as a source of resource names, so `defaultMode: 3` yields a `references` edge to `3` — an integer that names no resource. Found by the M60 target-spelling census (4 fabricated `literal` targets over 500 files), not by a fixture, and fixed by splitting one key set into three: wrappers (`configMapRef`, whose payload IS a reference), volume sources (whose payload is configuration, named by `name`/`secretName`/`claimName` or by scalar shorthand), and plain scalars (`serviceAccountName`). Caught by k8s-volume-source-not-a-name's `forbidRelationships` rows for `3`, `420`, `a`, `b/c`, `true` and by the child-key set this transform names; the fixture also pins the six refs that MUST survive, so a fix that stopped emitting resource references outright would fail it.",
+    transform: volumeSourceScannedAsNames,
   },
 ]

@@ -1,5 +1,5 @@
 {
- "at": "2026-09-27T18:54:50.679Z",
+ "at": "2026-09-27T20:37:56.361Z",
  "note": "Re-probed emission for validation/m14/fixtures/yaml/*.yaml, from which each .expectation.json is authored. Regenerate with: bun run script/m14/tmp/yaml-fixture-dump.ts",
  "fixtures": {
   "anchor-document-scope-negative.yaml": {
@@ -1472,27 +1472,9 @@
   "error-recovery-identity.yaml": {
    "symbols": [
     {
-     "name": "error-recovery-identity",
-     "kind": "module",
-     "id": "error-recovery-identity",
-     "line": 1,
-     "complexity": 1,
-     "metadata": {
-      "yamlSpecific": true,
-      "nodeType": "document",
-      "documentIndex": 1,
-      "recovered": true,
-      "damageNodeType": "ERROR",
-      "damageLine": 1,
-      "damageWidth": 616,
-      "fullPath": "error-recovery-identity"
-     }
-    },
-    {
      "name": "steps",
      "kind": "variable",
      "id": "error-recovery-identity.steps",
-     "ownerName": "error-recovery-identity",
      "line": 7,
      "complexity": 3,
      "docstring": "explicit, named scope and the damage is DECLARED rather than silent.",
@@ -1718,14 +1700,6 @@
    "relationships": [
     {
      "type": "contains",
-     "source": "error-recovery-identity",
-     "target": "error-recovery-identity.steps",
-     "confidence": 1,
-     "line_number": 7,
-     "evidenceClass": "structural"
-    },
-    {
-     "type": "contains",
      "source": "error-recovery-identity.steps",
      "target": "error-recovery-identity.steps[0]",
      "confidence": 1,
@@ -1809,7 +1783,7 @@
     "reservedDirectives": [],
     "securityScore": 100,
     "sensitiveValueCount": 0,
-    "documentCount": 1
+    "documentCount": 0
    }
   },
   "framework-shape-negative.yaml": {
@@ -3528,6 +3502,1035 @@
     "securityScore": 100,
     "sensitiveValueCount": 0,
     "documentCount": 2
+   }
+  },
+  "k8s-volume-source-not-a-name.yaml": {
+   "symbols": [
+    {
+     "name": "k8s-volume-source-not-a-name",
+     "kind": "module",
+     "id": "k8s-volume-source-not-a-name",
+     "line": 6,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "document",
+      "documentIndex": 1,
+      "fullPath": "k8s-volume-source-not-a-name"
+     }
+    },
+    {
+     "name": "volumes",
+     "kind": "variable",
+     "id": "k8s-volume-source-not-a-name.volumes",
+     "ownerName": "k8s-volume-source-not-a-name",
+     "line": 6,
+     "complexity": 9,
+     "docstring": "`items[].path` string beneath it.",
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "array",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes",
+      "pointerPath": "/volumes",
+      "isObject": false,
+      "isArray": true,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 6,
+      "itemCount": 9
+     }
+    },
+    {
+     "name": "item_0",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[0]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 7,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0]",
+      "pointerPath": "/volumes/0",
+      "isArrayItem": true,
+      "arrayIndex": 0,
+      "line": 7
+     }
+    },
+    {
+     "name": "configMap",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0]",
+     "line": 7,
+     "complexity": 2,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap",
+      "pointerPath": "/volumes/0/configMap",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 7
+     }
+    },
+    {
+     "name": "defaultMode",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap.defaultMode",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "line": 8,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap.defaultMode",
+      "pointerPath": "/volumes/0/configMap/defaultMode",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "integer",
+      "line": 8
+     }
+    },
+    {
+     "name": "items",
+     "kind": "variable",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap.items",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "line": 9,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "array",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap.items",
+      "pointerPath": "/volumes/0/configMap/items",
+      "isObject": false,
+      "isArray": true,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 9,
+      "itemCount": 1
+     }
+    },
+    {
+     "name": "item_0",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0].configMap.items",
+     "line": 10,
+     "complexity": 2,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+      "pointerPath": "/volumes/0/configMap/items/0",
+      "isArrayItem": true,
+      "arrayIndex": 0,
+      "line": 10
+     }
+    },
+    {
+     "name": "key",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].key",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "line": 10,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].key",
+      "pointerPath": "/volumes/0/configMap/items/0/key",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 10
+     }
+    },
+    {
+     "name": "path",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].path",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "line": 11,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].path",
+      "pointerPath": "/volumes/0/configMap/items/0/path",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 11
+     }
+    },
+    {
+     "name": "item_1",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[1]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 12,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[1]",
+      "pointerPath": "/volumes/1",
+      "isArrayItem": true,
+      "arrayIndex": 1,
+      "line": 12
+     }
+    },
+    {
+     "name": "secret",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[1]",
+     "line": 12,
+     "complexity": 2,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[1].secret",
+      "pointerPath": "/volumes/1/secret",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "isSensitive": true,
+      "sensitivityReason": "key-name:secret",
+      "line": 12
+     }
+    },
+    {
+     "name": "defaultMode",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[1].secret.defaultMode",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "line": 13,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[1].secret.defaultMode",
+      "pointerPath": "/volumes/1/secret/defaultMode",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "isSensitive": true,
+      "sensitivityReason": "sensitive-subtree",
+      "scalarType": "integer",
+      "line": 13
+     }
+    },
+    {
+     "name": "optional",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[1].secret.optional",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "line": 14,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "boolean",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[1].secret.optional",
+      "pointerPath": "/volumes/1/secret/optional",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "isSensitive": true,
+      "sensitivityReason": "sensitive-subtree",
+      "scalarType": "boolean",
+      "line": 14
+     }
+    },
+    {
+     "name": "item_2",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[2]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 15,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[2]",
+      "pointerPath": "/volumes/2",
+      "isArrayItem": true,
+      "arrayIndex": 2,
+      "line": 15
+     }
+    },
+    {
+     "name": "persistentVolumeClaim",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[2]",
+     "line": 15,
+     "complexity": 2,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+      "pointerPath": "/volumes/2/persistentVolumeClaim",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 15
+     }
+    },
+    {
+     "name": "readOnly",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.readOnly",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "line": 16,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "boolean",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.readOnly",
+      "pointerPath": "/volumes/2/persistentVolumeClaim/readOnly",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "boolean",
+      "line": 16
+     }
+    },
+    {
+     "name": "defaultMode",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.defaultMode",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "line": 17,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.defaultMode",
+      "pointerPath": "/volumes/2/persistentVolumeClaim/defaultMode",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "integer",
+      "line": 17
+     }
+    },
+    {
+     "name": "item_3",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[3]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 19,
+     "complexity": 1,
+     "docstring": "The shapes that DO name a resource, so the fix is not \"stop emitting refs\".",
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[3]",
+      "pointerPath": "/volumes/3",
+      "isArrayItem": true,
+      "arrayIndex": 3,
+      "line": 19
+     }
+    },
+    {
+     "name": "configMapRef",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[3]",
+     "line": 19,
+     "complexity": 1,
+     "docstring": "The shapes that DO name a resource, so the fix is not \"stop emitting refs\".",
+     "qualified_calls": [
+      "my-cm"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+      "pointerPath": "/volumes/3/configMapRef",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 19
+     }
+    },
+    {
+     "name": "name",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[3].configMapRef.name",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+     "line": 20,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[3].configMapRef.name",
+      "pointerPath": "/volumes/3/configMapRef/name",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 20
+     }
+    },
+    {
+     "name": "item_4",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[4]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 21,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[4]",
+      "pointerPath": "/volumes/4",
+      "isArrayItem": true,
+      "arrayIndex": 4,
+      "line": 21
+     }
+    },
+    {
+     "name": "configMapRef",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[4].configMapRef",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[4]",
+     "line": 21,
+     "complexity": 1,
+     "qualified_calls": [
+      "my-cm-shorthand"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[4].configMapRef",
+      "pointerPath": "/volumes/4/configMapRef",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 21
+     }
+    },
+    {
+     "name": "item_5",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[5]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 22,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[5]",
+      "pointerPath": "/volumes/5",
+      "isArrayItem": true,
+      "arrayIndex": 5,
+      "line": 22
+     }
+    },
+    {
+     "name": "secretRef",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[5]",
+     "line": 22,
+     "complexity": 1,
+     "qualified_calls": [
+      "my-secret"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+      "pointerPath": "/volumes/5/secretRef",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 22
+     }
+    },
+    {
+     "name": "name",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[5].secretRef.name",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+     "line": 23,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[5].secretRef.name",
+      "pointerPath": "/volumes/5/secretRef/name",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 23
+     }
+    },
+    {
+     "name": "item_6",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[6]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 24,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[6]",
+      "pointerPath": "/volumes/6",
+      "isArrayItem": true,
+      "arrayIndex": 6,
+      "line": 24
+     }
+    },
+    {
+     "name": "secret",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[6].secret",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[6]",
+     "line": 24,
+     "complexity": 1,
+     "qualified_calls": [
+      "my-secret-shorthand"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[6].secret",
+      "pointerPath": "/volumes/6/secret",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "isSensitive": true,
+      "sensitivityReason": "key-name:secret",
+      "scalarType": "string",
+      "line": 24
+     }
+    },
+    {
+     "name": "item_7",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[7]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 25,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[7]",
+      "pointerPath": "/volumes/7",
+      "isArrayItem": true,
+      "arrayIndex": 7,
+      "line": 25
+     }
+    },
+    {
+     "name": "persistentVolumeClaim",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[7]",
+     "line": 25,
+     "complexity": 1,
+     "qualified_calls": [
+      "my-pvc"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+      "pointerPath": "/volumes/7/persistentVolumeClaim",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 25
+     }
+    },
+    {
+     "name": "claimName",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim.claimName",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+     "line": 26,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim.claimName",
+      "pointerPath": "/volumes/7/persistentVolumeClaim/claimName",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 26
+     }
+    },
+    {
+     "name": "item_8",
+     "kind": "class",
+     "id": "k8s-volume-source-not-a-name.volumes[8]",
+     "ownerName": "k8s-volume-source-not-a-name.volumes",
+     "line": 27,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_sequence_item",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[8]",
+      "pointerPath": "/volumes/8",
+      "isArrayItem": true,
+      "arrayIndex": 8,
+      "line": 27
+     }
+    },
+    {
+     "name": "serviceAccountName",
+     "kind": "property",
+     "id": "k8s-volume-source-not-a-name.volumes[8].serviceAccountName",
+     "ownerName": "k8s-volume-source-not-a-name.volumes[8]",
+     "line": 27,
+     "complexity": 1,
+     "qualified_calls": [
+      "my-sa"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "k8s-volume-source-not-a-name.volumes[8].serviceAccountName",
+      "pointerPath": "/volumes/8/serviceAccountName",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 27
+     }
+    }
+   ],
+   "relationships": [
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name",
+     "target": "k8s-volume-source-not-a-name.volumes",
+     "confidence": 1,
+     "line_number": 6,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[0]",
+     "confidence": 1,
+     "line_number": 7,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0]",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "confidence": 1,
+     "line_number": 7,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap.defaultMode",
+     "confidence": 1,
+     "line_number": 8,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0].configMap",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap.items",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0].configMap.items",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].key",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0]",
+     "target": "k8s-volume-source-not-a-name.volumes[0].configMap.items[0].path",
+     "confidence": 1,
+     "line_number": 11,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[1]",
+     "confidence": 1,
+     "line_number": 12,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[1]",
+     "target": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "confidence": 1,
+     "line_number": 12,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "target": "k8s-volume-source-not-a-name.volumes[1].secret.defaultMode",
+     "confidence": 1,
+     "line_number": 13,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[1].secret",
+     "target": "k8s-volume-source-not-a-name.volumes[1].secret.optional",
+     "confidence": 1,
+     "line_number": 14,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[2]",
+     "confidence": 1,
+     "line_number": 15,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[2]",
+     "target": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "confidence": 1,
+     "line_number": 15,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "target": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.readOnly",
+     "confidence": 1,
+     "line_number": 16,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim",
+     "target": "k8s-volume-source-not-a-name.volumes[2].persistentVolumeClaim.defaultMode",
+     "confidence": 1,
+     "line_number": 17,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[3]",
+     "confidence": 1,
+     "line_number": 19,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[3]",
+     "target": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+     "confidence": 1,
+     "line_number": 19,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+     "target": "k8s-volume-source-not-a-name.volumes[3].configMapRef.name",
+     "confidence": 1,
+     "line_number": 20,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[4]",
+     "confidence": 1,
+     "line_number": 21,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[4]",
+     "target": "k8s-volume-source-not-a-name.volumes[4].configMapRef",
+     "confidence": 1,
+     "line_number": 21,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[5]",
+     "confidence": 1,
+     "line_number": 22,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[5]",
+     "target": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+     "confidence": 1,
+     "line_number": 22,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+     "target": "k8s-volume-source-not-a-name.volumes[5].secretRef.name",
+     "confidence": 1,
+     "line_number": 23,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[6]",
+     "confidence": 1,
+     "line_number": 24,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[6]",
+     "target": "k8s-volume-source-not-a-name.volumes[6].secret",
+     "confidence": 1,
+     "line_number": 24,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[7]",
+     "confidence": 1,
+     "line_number": 25,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[7]",
+     "target": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+     "confidence": 1,
+     "line_number": 25,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+     "target": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim.claimName",
+     "confidence": 1,
+     "line_number": 26,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes",
+     "target": "k8s-volume-source-not-a-name.volumes[8]",
+     "confidence": 1,
+     "line_number": 27,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "k8s-volume-source-not-a-name.volumes[8]",
+     "target": "k8s-volume-source-not-a-name.volumes[8].serviceAccountName",
+     "confidence": 1,
+     "line_number": 27,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[3].configMapRef",
+     "target": "my-cm",
+     "confidence": 0.8,
+     "line_number": 19,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[4].configMapRef",
+     "target": "my-cm-shorthand",
+     "confidence": 0.8,
+     "line_number": 21,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[5].secretRef",
+     "target": "my-secret",
+     "confidence": 0.8,
+     "line_number": 22,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[6].secret",
+     "target": "my-secret-shorthand",
+     "confidence": 0.8,
+     "line_number": 24,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[7].persistentVolumeClaim",
+     "target": "my-pvc",
+     "confidence": 0.8,
+     "line_number": 25,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    },
+    {
+     "type": "references",
+     "source": "k8s-volume-source-not-a-name.volumes[8].serviceAccountName",
+     "target": "my-sa",
+     "confidence": 0.8,
+     "line_number": 27,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    }
+   ],
+   "imports": [],
+   "metadata": {
+    "detectedFrameworks": [],
+    "framework": null,
+    "frameworkPatterns": [],
+    "patterns": [
+     "Service Dependencies",
+     "Sensitive Values"
+    ],
+    "yamlVersion": null,
+    "reservedDirectives": [],
+    "securityScore": 84,
+    "sensitiveValueCount": 4,
+    "documentCount": 1
    }
   },
   "merge-sequence.yaml": {

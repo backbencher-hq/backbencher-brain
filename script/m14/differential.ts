@@ -109,6 +109,23 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
   const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
   for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
   h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
+  // The PINNED GRAMMAR is part of the sweep state, and its absence is a defect that
+  // nearly cost this lane a fabricated green.
+  //
+  // The state hashed every analyzer in src/ast and this file, which is the right
+  // instinct — the sweep is only comparable to itself if nothing that changes what
+  // the analyzer extracts has moved. But an analyzer's output depends on the PARSER
+  // too, and grammar 4/5 was rebuilt into wasm/tree-sitter-css.wasm: the CSS
+  // analyzer's behaviour changed while every hashed input stayed byte-identical. So
+  // the journal resumed and reported `cov=100% missing=0` — a CACHED verdict for a
+  // parser that no longer existed. It read as a pass.
+  //
+  // Every wasm is hashed, not just CSS's, because the same argument applies to every
+  // lane and a per-language exception would be a rule someone has to remember.
+  const wasmDir = path.join(ROOT, "wasm")
+  for (const f of fs.readdirSync(wasmDir).filter((f: string) => f.endsWith(".wasm")).sort()) {
+    h.update(createHash("sha256").update(fs.readFileSync(path.join(wasmDir, f))).digest("hex"))
+  }
   return h.digest("hex").slice(0, 16)
 }
 

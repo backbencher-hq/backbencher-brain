@@ -28,6 +28,8 @@ import { parseFile } from "../../src/ast/pool-worker"
 const ROOT = process.cwd()
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
 const REPOS = ["grails-core", "docker", "ansible", "kubernetes", "terraform", "openapi-spec", "helm", "gh-cli"]
+/** The draw the manifest names as `corpusTarget`; see `corpusRevision` below. */
+const PRIMARY_CORPUS = "kubernetes"
 
 const arg = (name: string, dflt: number) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
@@ -225,6 +227,27 @@ const result = {
   corpus: single ?? CORPUS_ROOT,
   repositories: perRepo,
   revision: perRepo.map((r) => `${r.repo}@${r.revision}`).join(" "),
+  // The M60 H7 check (script/m12/verify-corpus-claims.ts) reads the artifact's own draw
+  // and requires it to BE a draw the manifest declares. A union corpus has eight, and the
+  // space-joined `revision` string above is not a form it can resolve: it parsed the first
+  // token and reported the corpus as `?@grails-core`, which is the gate correctly refusing
+  // to guess a repo id out of a prose list. `corpusRevision` names the PRIMARY draw in the
+  // `<repo>@<sha>` form the gate expects and `revisions` carries all eight as a map, so
+  // every pin stays visible while the draw the manifest names is unambiguous.
+  // The shape H7 actually reads, established by reading the gate rather than by
+  // guessing at it twice: `corpusRevision` is a BARE sha (it prefix-matches the
+  // manifest's short sha in both directions) and `corpusRepo` names the repo id,
+  // which it then normalises (`-`/`_` stripped, lowercased) before requiring the
+  // ids to agree. Writing `repo@sha` into `corpusRevision` — which is the form the
+  // gate's own comment calls a pin — fails the prefix comparison and convicts a lane
+  // whose draw is declared, which is how this row first reported `?@grails-core@`.
+  // The primary is named by CONSTANT rather than taken as `perRepo[0]`, because
+  // element zero is grails-core and the manifest's `corpusTarget` is kubernetes.
+  corpusRevision: single
+    ? (perRepo[0]?.revision ?? null)
+    : (perRepo.find((r) => r.repo === PRIMARY_CORPUS)?.revision ?? perRepo[0]?.revision ?? null),
+  corpusRepo: single ? path.basename(single) : PRIMARY_CORPUS,
+  revisions: Object.fromEntries(perRepo.map((r) => [r.repo, r.revision])),
   extensions: [".yaml", ".yml"],
   perRepoLimit: PER_REPO,
   trackedFiles,
