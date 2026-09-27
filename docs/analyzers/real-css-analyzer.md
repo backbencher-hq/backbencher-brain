@@ -233,8 +233,8 @@ Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
 because both answered 1. It is now measured, and the corpus distribution is:
 
 ```
-27,322 of 27,322 symbols carry a value (0 absent)
-60.0% at complexity 1, 15 distinct values, max 52
+20,213 of 20,213 symbols carry a value (0 absent)
+55.4% at complexity 1, 15 distinct values, max 52
 max lands on Tailwind's
   .ltr\:group-hover\:translate-x-0\.5:where(:not(:lang(ae), :lang(ar), :lang(arc), …))
 which is genuinely the hardest selector in the corpus
@@ -250,7 +250,7 @@ Terms, each counted where it is seen rather than inferred from text:
 | `@font-face` / `@property` / `@mixin` | 1 + the count of its OWN descriptors |
 | custom property | 1 + the number of `var(--other)` reads in its value |
 
-60.0% at 1 is **correct, not a residual vacuity** — most CSS selectors are simple.
+55.4% at 1 is **correct, not a residual vacuity** — most CSS selectors are simple.
 The point is that the metric can now tell.
 
 Three defects the fixture lane found in this metric, all of which had shipped as
@@ -268,7 +268,8 @@ Three defects the fixture lane found in this metric, all of which had shipped as
   distinguishing term can never fire cannot tell `:hover` from
   `:where(.a .b .c)`;
 - complexity was measured for SELECTOR symbols only, so the other four kinds fell
-  through to the `|| 1` fallback and **24% of the lane (6,486 of 27,322) carried a
+  through to the `|| 1` fallback and **24% of the lane (6,486 symbols, measured
+  before the identity merge) carried a
   fabricated 1** — a 20-condition `@supports` scope read identically to `.plain`.
 
 ### The performance envelope
