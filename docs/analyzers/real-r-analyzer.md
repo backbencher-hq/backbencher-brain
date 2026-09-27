@@ -12,10 +12,11 @@
 
 The shipped grammar is a **patched** tree-sitter-r. The base is
 `@eagleoutice/tree-sitter-r@1.1.2` (its published `tree-sitter-r.wasm` was
-byte-identical to the one this repo shipped). One rule was changed; see
-[Grammar](#grammar-the-hex-float-rule) below.
+byte-identical to the one this repo shipped). **Two** rules were changed — the
+hex-float literal and the `..N` identifier — both because the grammar mis-parsed
+code R itself accepts. See [Grammar](#grammar-two-patches) below.
 
-## Grammar: the hex-float rule
+## Grammar: two patches
 
 ```
 _hex_literal: $ => /0[xX][0-9a-fA-F]+/          # before
@@ -42,6 +43,30 @@ The fix is `_hex_literal_exponent` (C99 form) chosen before `_hex_literal_plain`
 (integer-hex form). `1e`-style exponents were also tightened from `[eE][+-]?\d*`
 to `[eE][+-]?\d+`, because R's own scanner requires the digits and `\d*` let
 `1east` lex as the float `1e` followed by `ast`.
+
+### Patch 2 — `..N` stole a prefix of a longer identifier
+
+`dot_dot_i` matched `/[.][.]\d+/` at a **positive rank**, so the lexer took `..2`
+out of `..2dge` and left `dge` behind: two sibling nodes, and a declaration
+published under the wrong name.
+
+R accepts `..2dge` as one identifier — verified on R 4.4.3: `..2dge <- 1; ls()`
+yields `..2dge`.
+
+Rust's regex has no lookahead, so "digits NOT followed by an identifier character"
+cannot be written directly. It is expressed as the complement: an alternative
+**inside the `identifier` token** that requires at least one trailing identifier
+character and is ranked above `dot_dot_i`. It must live inside `identifier` — a
+separate rule is not in the valid-token set where an expression may start, which
+is exactly where the split happened (the first attempt put it beside `identifier`
+and changed nothing). `..1` and `..2` still lex as `dot_dot_i`; `..2dge` and
+`..foo` are single identifiers.
+
+That one occurrence — a deprecated alias in `Matrix/R/zzz.R` — was the **only
+missed binding** in the R-oracle differential, and fixing it took recall from
+0.999886 to 1.000000.
+
+### A note on the A/B
 
 **Measured, both builds from the same toolchain (tree-sitter-cli 0.24.7) so the
 delta is the patch and nothing else:** ERROR/MISSING nodes over the 1,174 corpus
@@ -84,10 +109,29 @@ parameters.
 
 ### Assignment direction
 
-`->`/`->>` are the same operation as `<-` with the operands swapped, so the bound
-name is **whichever side is a plain identifier**: `5 -> d` binds `d` from the
-right and `e -> 6` binds `e` from the left. `->>` is the superassignment form and
-is handled identically.
+`->` and `->>` bind **only their right operand**. The left side is always a
+value. This is R's own rule, measured on R 4.4.3 rather than assumed:
+
+| Form | R |
+| --- | --- |
+| `2 -> b` | OK, binds `b` |
+| `2 ->> cc` | OK, binds `cc` |
+| `identity(1) -> gg` | OK, binds `gg` |
+| `bb -> 2` | **Error: invalid (do_set) left-hand side to assignment** |
+| `cc ->> 2` | **Error** |
+
+So `e -> 6` publishes **nothing**, and that is correct: R refuses to evaluate it.
+`F13-invalid-r.R` asserts exactly that.
+
+R desugars both rightward forms to `<-`(value, name) at parse time, so a name on
+the left of `->` is not a declaration. tree-sitter-r does **not** desugar — it
+keeps `->` as an operator — which is why the two sides must be distinguished here
+and why an oracle reading R's AST must not.
+
+**This corrects an error in an earlier revision of this review**, which read
+"whichever side is an identifier" and published `variable e` for `e -> 6`. The
+fixture suite could not catch it, because the fixture asserting that behaviour had
+been written to match the same wrong belief. R 4.4.3 could, and did.
 
 ### Parameters
 
@@ -138,6 +182,32 @@ argument. Every other argument is an option (`warn.conflicts`, `quietly`,
 `character.only`, `pos`, `lib.loc`, `mask.ok`, `exclude`, `include.only`,
 `attach.required`) and is not a package.
 
+### Scope boundaries — decided by running R, not by reasoning
+
+An assignment is a file-level binding unless it is inside a scope R introduces.
+Three were measured on R 4.4.3:
+
+| Enclosing construct | Binds at file level? | Why |
+| --- | --- | --- |
+| `function(...) { }` | **no** | the body is a local frame |
+| `local({ ... })` | **no** | `local()` creates a child environment |
+| `{ ... }` block in a call | **yes** | R evaluates it in the CALLING frame |
+| assignment as a call argument | **yes** | `f(x <- 1)` binds `x` |
+| `(x <- 1)` | **yes** | parentheses are not a scope |
+| `m[x <- 1]` | **yes** | the subscript is evaluated first |
+| `for (i in 1:3) { v <- i }` | `v` yes, `i` no | the loop variable is deleted |
+
+`local()` is the one that cannot be found by looking for a `function_definition`
+node — it is a call, not a function — and it was being missed: dplyr's
+test-across.R binds `_local_var` inside `local({ ... })` and the analyzer was
+publishing it as a global. `F14-local-boundary.R` pins all seven rows above.
+
+An earlier revision of this review also treated a `subset` ancestor as a scope
+boundary, on the reasoning that a complex assignment is evaluated "in the indexing
+context". That is wrong, it silently dropped four real bindings, and the R oracle
+caught it. Both the error and the correction are recorded here rather than only
+the correction.
+
 ## Text operations (the complete inventory)
 
 There are **no regex literals** in the analyzer. Every text-level operation is
@@ -158,8 +228,23 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 
 ## Verification evidence
 
-Regenerate with `bun run script/m12/r-evidence.ts`; all three records are sealed
-and refuse a hand edit.
+Regenerate with `bun run script/m12/r-evidence.ts`; every record is sealed and
+refuses a hand edit.
+
+- **R-oracle differential (the strongest check in this lane)** —
+  `validation/m12/results/r-oracle-differential.json`: **R 4.4.3 itself decides
+  which top-level names each of the 997 comparable corpus files binds, and the
+  analyzer is asked the same question.** Result: **8,798 bindings, 8,798 agree,
+  0 phantom, 0 missed, precision 1.000000, recall 1.000000.**
+
+  The two sides share no grammar, no code and no assumptions. R's own `parse()`
+  builds the AST — so R's grammar and R's desugaring of the rightward forms are
+  already applied — and a walk over that AST collects the file-level names.
+  Nothing is executed, so there are no stubs and no unevaluated files.
+
+  This is the check that earned its place: it found **two errors a fixture suite
+  structurally could not** — a wrong belief about `->` that the fixtures had been
+  written to match, and an identifier the grammar split in half.
 
 - **Grammar conformance (L2)** — `validation/m12/results/r-grammar-conformance.json`:
   **0 unknown node types, 0 unknown fields, 0 regex literals**, against node types
@@ -176,8 +261,8 @@ and refuse a hand edit.
   every edge located and correct, 0 unknown symbol names, 0 inconsistent ranges,
   and the relationship-type coverage count.
 - **Corpus-scale line audit** (`fixtures/corpus/line-audit.mts`, re-derived from
-  the parse tree without consulting the analyzer): **36,727 edges, all carry a
-  line, 0 land on a line that does not contain their target; 8,441 symbols, all
+  the parse tree without consulting the analyzer): **36,734 edges, all carry a
+  line, 0 land on a line that does not contain their target; 8,410 symbols, all
   range/line/column/byteIndex self-consistent; 0 names that the grammar did not
   produce.**
 - **Mutation (L4)** — 23 mutants, each re-introducing one reviewed defect as a

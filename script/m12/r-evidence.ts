@@ -134,6 +134,49 @@ writeSealed(path.join(OUT, "r-differential.json"), {
 })
 console.log(`r-differential.json  expected=${totalExpected} tp=${metrics.truePositive} fp=${metrics.falsePositive} fn=${metrics.falseNegative} P=${metrics.precision} R=${metrics.recall}`)
 
+// ---------------------------------------------------------------- 1a. R-oracle differential
+// The strongest check available: R 4.4.3 ITSELF decides which top-level names each
+// file binds, and the answer is compared to the analyzer's, name by name. The two
+// share no grammar, no code and no assumptions, which is the only reason the result
+// means anything.
+//
+// This is what caught the two errors a fixture suite structurally could not: a
+// wrong belief about `->` that the fixtures had been written to match, and an
+// identifier the grammar split in half. See docs/analyzers/real-r-analyzer.md.
+const oracleRecordPath = "$HOME/fixtures/census/r-oracle-diff.json"
+let oracle: any = null
+try {
+  oracle = JSON.parse(fs.readFileSync(oracleRecordPath, "utf8"))
+} catch { /* the oracle is optional; its absence is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-oracle-differential.json"), {
+  schemaVersion: 1,
+  kind: "r_oracle_differential",
+  oracle: oracle?.oracle ?? {
+    implementation: "R 4.4.3",
+    method: "R parse() builds the AST; a walk over R's own AST collects file-level bindings",
+  },
+  present: oracle !== null,
+  totals: oracle?.totals ?? null,
+  repos: oracle?.repos ?? [],
+  disagreements: oracle?.disagreements ?? [],
+  note:
+    "R's own parser and AST decide which names a file binds; the analyzer decides the same question with " +
+    "tree-sitter-r; the answers are compared. Precision 1.0 / recall 1.0 means every binding R reports is " +
+    "published and no binding is published that R does not make. `declarationsNotBindings` counts S4/S7 " +
+    "registrations, which declare a class or generic without binding a variable of that name - a different " +
+    "fact from a variable binding, so it is reported rather than scored. " +
+    (oracle ? "" : "THE ORACLE DID NOT RUN IN THIS PROCESS; the numbers below are absent rather than carried over."),
+  currentCommit: commit,
+})
+console.log(
+  oracle
+    ? `r-oracle-differential.json  files=${oracle.totals.compared} bindings=${oracle.totals.bindings} ` +
+      `agreed=${oracle.totals.agreed} phantom=${oracle.totals.phantom} missed=${oracle.totals.missed} ` +
+      `P=${oracle.totals.precision.toFixed(6)} R=${oracle.totals.recall.toFixed(6)}`
+    : `r-oracle-differential.json  ORACLE ABSENT - run fixtures/corpus/r-oracle-diff.mts first`,
+)
+if (oracle && (oracle.totals.phantom !== 0 || oracle.totals.missed !== 0)) process.exitCode = 1
+
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not
 // "is a name this grammar produced". Both are re-derived here from the parse
