@@ -9,6 +9,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { createHash } from "crypto"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun.main), "..", "..")
@@ -143,7 +144,12 @@ console.log(`r-differential.json  expected=${totalExpected} tp=${metrics.truePos
 // This is what caught the two errors a fixture suite structurally could not: a
 // wrong belief about `->` that the fixtures had been written to match, and an
 // identifier the grammar split in half. See docs/analyzers/real-r-analyzer.md.
-const oracleRecordPath = "$HOME/fixtures/census/r-oracle-diff.json"
+const ORACLE_SCRIPT = path.join(ROOT, "validation/m12/oracle/r-globals-oracle.R")
+const ORACLE_SHA = (() => {
+  try { return createHash("sha256").update(fs.readFileSync(ORACLE_SCRIPT)).digest("hex") }
+  catch { return null }
+})()
+const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "$HOME/fixtures/census/r-oracle-diff.json"
 let oracle: any = null
 try {
   oracle = JSON.parse(fs.readFileSync(oracleRecordPath, "utf8"))
@@ -151,9 +157,23 @@ try {
 writeSealed(path.join(OUT, "r-oracle-differential.json"), {
   schemaVersion: 1,
   kind: "r_oracle_differential",
-  oracle: oracle?.oracle ?? {
-    implementation: "R 4.4.3",
-    method: "R parse() builds the AST; a walk over R's own AST collects file-level bindings",
+  oracle: {
+    // The harness records the absolute path of the script it ran. That path is stripped
+    // here rather than spread through, because a sealed record naming a path outside the
+    // repository is a claim nobody can check from the repository.
+    ...(({ entry: _dropped, ...rest }) => rest)(oracle?.oracle ?? {
+      implementation: "R 4.4.3",
+      method: "R parse() builds the AST; a walk over R's own AST collects file-level bindings",
+    } as any),
+    entry: "validation/m12/oracle/r-globals-oracle.R",
+    // The script that produced these numbers is COMMITTED, and pinned by hash. It
+    // previously lived only in an unversioned scratch directory that this record named
+    // by absolute path, which meant the strongest result in this lane could not be
+    // regenerated from the repository at all -- an evidence record nobody else can
+    // reproduce is an assertion, not evidence. Re-run it with:
+    //   BB_R_LIST=<file-list> r-run -f validation/m12/oracle/r-globals-oracle.R
+    script: "validation/m12/oracle/r-globals-oracle.R",
+    scriptSha256: ORACLE_SHA,
   },
   present: oracle !== null,
   totals: oracle?.totals ?? null,
