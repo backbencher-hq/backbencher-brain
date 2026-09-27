@@ -24,6 +24,7 @@ import { CrossLanguageIntelligencePersister } from "./cross-language-intelligenc
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
+import { resolveImportTargets } from "./import-resolution"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -3064,6 +3065,17 @@ export async function storeResults(
              AND INSTR(brain_relationship.target_external, '.') > 0
          `)
  
+         // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+         // See the standalone resolver for the full note. SAME shared
+         // implementation as site 2 — the decision logic is unit tested in
+         // src/ast/import-resolution.ts, so this is a call rather than a third
+         // copy of the rules. Before the cross-language pass on purpose, for
+         // the reason spelled out there.
+         {
+           const imp4 = resolveImportTargets(rawDb as any, projectId)
+           if (imp4.resolved > 0) log.debug("import-target resolution (M60 JD2, inline)", { scanned: imp4.scanned, resolved: imp4.resolved })
+         }
+
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
          // the strategies above recompute is_cross_file but left is_cross_language
          // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
@@ -3217,6 +3229,32 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
     const resolved = (r1?.changes || 0) + (r2?.changes || 0)
     log.debug("relationship resolution completed", { resolved, unresolved })
+
+    // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+    //
+    // Strategies 1-3 match a bare `name`, a `qualified_name` (`Owner.member`),
+    // or — for a dotted target — everything after the first `.`. None of them
+    // can match `./util.js:helper`, which is what every analyzer emitting the
+    // `module:item` convention actually writes: javascript, typescript,
+    // python, dart, and vue/svelte by delegation. Measured end to end on a
+    // 2-file project: 4 of 4 `imports` edges UNRESOLVED while `exports` edges
+    // (a bare name) and cross-file `calls`/`instantiates` all resolved — the
+    // `path:item` FORM is what failed, not the targets.
+    //
+    // The decision logic lives in src/ast/import-resolution.ts and is unit
+    // tested there (30 assertions, including every shape it must refuse), so
+    // this is a call, not a fourth copy. It runs BEFORE the cross-language
+    // normalization below on purpose: an edge resolved after that pass would
+    // store cross_file=1 with cross_lang=0 and no bridge, which is the exact
+    // silent-invisibility bug that pass exists to prevent.
+    {
+      const imp = resolveImportTargets(rawDb as any, projectId)
+      if (imp.resolved > 0) {
+        log.debug("import-target resolution (M60 JD2)", {
+          scanned: imp.scanned, resolved: imp.resolved, remaining: imp.byReason,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
