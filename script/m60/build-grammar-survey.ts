@@ -96,6 +96,38 @@ function readStragglerEvidence(): StragglerEvidence | null {
   }
 }
 const stragglerEvidence = readStragglerEvidence()
+
+// A PROVENANCE CENSUS is the declaration surface for lanes that have no prose to
+// write one in. `toml` and `tsx` are ENGINE-ONLY: they appear in SUPPORTED_LANGUAGES and
+// the resolution chain, and they have no analyzer, no doc and no spec file. Their
+// provenance was measured (both are `tree-sitter-wasms@0.1.11`) and there was literally
+// NOWHERE to record it — an artifact the product loads, owned by no file. R1 counted them
+// for exactly that reason, and it was right to.
+//
+// So for a lane with no declaration site, the survey reports the CENSUS's verdict and
+// cites it. The census still owns the fact; this file only points at it, which is the same
+// arrangement phaseA uses for the runtime claim. A lane whose bytes match nothing published
+// stays unrecorded — a census that found nothing is not a version, and manufacturing one
+// would put R1 at zero on the strength of a hash that never matched.
+const PROVENANCE_ARTIFACT_REL = "validation/m60/results/G-PROVENANCE.json"
+type ProvVerdict = {
+  lane: string
+  status: string
+  package?: string
+  version?: string
+  provenanceKind?: string
+  sha256?: string
+  source?: { rebuildable?: boolean; grammarSource?: string[]; parserC?: string[]; totalFiles?: number }
+}
+const PROV_BY_LANE = new Map<string, ProvVerdict>()
+if (existsSync(PROVENANCE_ARTIFACT_REL ? path.join(ROOT, PROVENANCE_ARTIFACT_REL) : "")) {
+  try {
+    const prov = JSON.parse(readFileSync(path.join(ROOT, PROVENANCE_ARTIFACT_REL), "utf8"))
+    for (const r of (prov.results ?? []) as ProvVerdict[]) if (r?.lane) PROV_BY_LANE.set(r.lane, r)
+  } catch {
+    /* an unreadable census is a declared absence, not a crash */
+  }
+}
 const CACHE = path.join(ROOT, "validation", "m60", "grammar-survey.cache.json")
 
 const NET_TIMEOUT_MS = 25_000
@@ -517,7 +549,46 @@ const orphanedRulings: string[] = []
 const rows: any[] = []
 for (const lane of target) {
   const asset = engineLanes[lane] ?? null
-  const declared = declaredVersion(lane)
+  const declaredFromProse = declaredVersion(lane)
+  // A LANE WITH NO PROSE gets its declaration from the measured census, cited rather
+  // than restated. The criterion is "the prose declared nothing", not a hand-kept list of
+  // engine-only lanes — that way a lane cannot fall out of the set by being renamed.
+  //
+  // What is deliberately NOT done here: giving a collection build a `grammar` version.
+  // `toml` and `tsx` are both `tree-sitter-wasms@0.1.11`, and that is a REDISTRIBUTOR
+  // version. The row records it with `versionKind: "redistributor-collection"` and
+  // `versionIsComparableToUpstreamGrammar: false`, exactly like a prose-declared collection
+  // build, so the staleness comparison yields `unknown` rather than a false `behind` against
+  // a grammar version the collection never stated.
+  const prov = PROV_BY_LANE.get(lane)
+  // The test is `version != null`, NOT `versionKnown`. `declaredVersion()` returns
+  // `{ version, sources }` and has no `versionKnown` field at all, so the first version of
+  // this read `undefined` — always falsy — and the census OVERWROTE the prose version for
+  // go, javascript, swift and typescript, replacing a real grammar version (0.25.0, 0.23.1,
+  // 0.7.1, 0.23.2) with a collection version. C4 caught it on the next run, which is the
+  // check doing precisely its job: a generator quietly sourcing versions from somewhere new
+  // is indistinguishable from a correct one until the two owners disagree.
+  const declared: ReturnType<typeof declaredVersion> =
+    declaredFromProse.version != null || !prov || prov.status !== "identified" || !prov.version
+      ? declaredFromProse
+      : {
+          ...declaredFromProse,
+          version: prov.version,
+          versionKnown: true,
+          provenanceKind: prov.provenanceKind ?? null,
+          sources: [
+            {
+              file: PROVENANCE_ARTIFACT_REL,
+              field: `results[${lane}].version`,
+              raw: `${prov.package}@${prov.version}`,
+              authority: "provenance-census",
+            },
+          ],
+          sha256: prov.sha256 ?? null,
+          sha256File: prov.shippedBytes ? `${prov.shippedBytes} bytes` : null,
+          declarationSite:
+            "ENGINE-ONLY: this lane is in SUPPORTED_LANGUAGES and the wasm resolution chain, and has no analyzer doc and no spec file, so there is no prose in which a version could be written. Its identity is measured by sha256 against a published artifact instead — see validation/m60/results/G-PROVENANCE.json.",
+        }
   const sha = declaredSha256(lane)
   const isGeneric = asset === "__generic__"
   const isAlias = lane in aliasOf
@@ -606,9 +677,16 @@ for (const lane of target) {
   // error that then drives a staleness comparison against upstream's grammar latest —
   // comparing two different things and reporting the result as staleness. So the kind is
   // recorded, and a collection-sourced version yields `unknown` rather than a false answer.
-  const declaredIsCollectionVersion = /REDISTRIBUTOR BUILD/i.test(
-    declared.sources.map((x) => x.raw ?? "").join(" "),
-  )
+  // A COLLECTION VERSION IS NOT A GRAMMAR VERSION, and the two must never be compared
+  // and reported as staleness. The prose path detects this by matching the phrase
+  // "REDISTRIBUTOR BUILD" in the doc; the census path knows it STRUCTURALLY, from
+  // `provenanceKind`. A regex over prose is the right tool when prose is all there is and
+  // the wrong tool when the field already says it — and using the regex for both would have
+  // silently typed `tree-sitter-wasms@0.1.11` as a grammar version, which is the exact
+  // category error this whole model exists to prevent.
+  const declaredIsCollectionVersion =
+    (declared as any).provenanceKind === "redistributor-collection" ||
+    /REDISTRIBUTOR BUILD/i.test(declared.sources.map((x) => x.raw ?? "").join(" "))
   const declaredV = declared.version
   const effectiveV = declaredIsCollectionVersion ? null : declaredV
   const latestV = health.available ? (health as any).latestVersion : null
@@ -664,6 +742,11 @@ for (const lane of target) {
       versionKind: declaredV == null ? null : declaredIsCollectionVersion ? "redistributor-collection" : "grammar",
       versionIsComparableToUpstreamGrammar: !declaredIsCollectionVersion,
       versionKnown: declaredV != null,
+      // WHY THIS LANE'S VERSION IS NOT IN PROSE. Absent for the ordinary case, which is
+      // the point: a reader who sees it knows this lane's identity came from a measurement
+      // rather than a document, and can go read the measurement.
+      declarationSite: (declared as any).declarationSite ?? null,
+      declaredFromCensus: declared.sources.some((x: any) => x?.authority === "provenance-census") || false,
       sha256: sha.sha256,
       sha256File: sha.file,
       sources: declared.sources,
