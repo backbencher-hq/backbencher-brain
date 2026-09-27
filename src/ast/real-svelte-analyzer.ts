@@ -169,8 +169,20 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             severity: "warning",
           })
         }
-        for (let i = n.namedChildCount - 1; i >= 0; i--) {
-          const child = n.namedChild(i)
+        // ALL children, not `namedChild`: a MISSING node carries the grammar's
+        // expected token, and for a tag terminator that token is the ANONYMOUS `>`.
+        // Walking named children only therefore made the analyzer blind to exactly
+        // the recovery case it was written to report — measured on a real corpus
+        // file (`parser-legacy/samples/loose-unclosed-tag/input.svelte`), where the
+        // engine reported `Syntax error (missing node)` at L16 and this analyzer
+        // reported nothing. Nothing was lost operationally, because the engine's own
+        // walk uses `children` and covers it — but the analyzer's three-part
+        // contract (report at the node's OWN span, bypass it, keep publishing) was
+        // honoured for ERROR and silently not for MISSING, and a contract that
+        // depends on a caller to be complete is not a contract. The engine's walk is
+        // the model, and this now matches it.
+        for (let i = n.childCount - 1; i >= 0; i--) {
+          const child = n.child(i)
           if (child) errStack.push(child)
         }
       }

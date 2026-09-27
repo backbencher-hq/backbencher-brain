@@ -336,6 +336,18 @@ async function main() {
         while (stack.length > 0) {
           const n = stack.pop()!
           occurring.add(n.type)
+          // `MISSING` is not a node TYPE name — it is `isMissing` on a node whose
+          // type is the token the parser expected, so a MISSING `>` collects as `>`
+          // and the literal `MISSING` never appears in this set. A lane that
+          // correctly classifies MISSING as HANDLED (svelte does, on corpus
+          // measurement: 5 MISSING nodes in 410 sampled files) was therefore
+          // reported uncovered no matter what its fixtures did, and could only go
+          // green by demoting the type to silent — which would be pinning the
+          // defect. Same blindness class as the svelte analyzer's `namedChild`
+          // walk missing anonymous MISSING nodes; the collector needs the marker
+          // the same way the analyzer does. Only ever ADDS to `occurring`, so a
+          // lane cannot newly fail from it.
+          if (n.isMissing) occurring.add("MISSING")
           // ALL children, not just named: specs legitimately declare
           // anonymous token types (`if`, `begin`, `case`) as handled, and
           // analyzers branch on them — they must count as coverable.
