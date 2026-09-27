@@ -80,19 +80,85 @@ not persisted for CSS. The M12 differential contract therefore covers symbols
 
 ## Unsupported / explicit-unknown constructs
 
-- The 14 corpus `grammarErrorFiles` are genuine modern CSS that the newest
-  available tree-sitter-css grammar (0.25.0) cannot parse — all valid CSS,
-  recorded honestly in the manifest (precedent: kotlin 51, fsharp 108,
-  typescript 5): range media/container queries (`@media (width >= 600px)`,
-  `(400px <= width <= 1000px)`, `@container (0 <= width < 300px)`), CSS
-  nesting forms (`& &`, `&&`, `&div`), `@page` rules (`@page :right`),
-  `[attr i]`/`[attr s]` case-sensitivity flags, escaped unicode identifiers
-  (`#\31\32\33`), float keyframe steps (`33.3%` — integer `50%` parses),
-  HTML-style comments (`<!-- ... -->`), `chrome://` `@import` URLs, empty
-  custom-property values (`--foo: ;`), `selectedcontent`/`::picker(select)`
-  selectors, braces-in-attribute-values
+Every item below was re-tested against the pinned wasm on 2026-09-26 rather than
+carried forward, and the list is now what the grammar actually does. Four entries
+the previous version of this file claimed were unparseable are not, and one of them
+was unparseable only because of a defect this lane has since patched.
+
+**The 13 corpus `grammarErrorFiles`** (`corpus-manifest.json` →
+`analyzers[13].measured.grammarErrorFiles`, of 185 non-empty files) are genuine
+modern CSS that the newest available tree-sitter-css (0.25.0) still cannot parse
+(precedent: kotlin 51, fsharp 108, typescript 5):
+
+- range media queries — `@media (width >= 600px)`,
+  `@media (400px <= width <= 1000px)`
+- range container queries — `@container (0 <= width < 300px)`
+- CSS nesting forms `& &`, `&&`, `&div`
+- `@page` rules — `@page :right`
+- attribute case-sensitivity flags — `[attr i]`, `[attr s]`
+- escaped unicode identifiers — `#\31\32\33`
+- HTML-style comments — `<!-- ... -->`
+- unquoted `chrome://` `@import` URLs
+- empty custom-property values — `--foo: ;`
+
+**Re-tested and NOW parsing, so no longer listed as unsupported:**
+
+| Construct | Why it changed |
+|---|---|
+| `@keyframes f { 33.3% { … } }` | **Fixed by this lane's patch 1/2.** `float_value` was already in the grammar and already carried `%`; only the step `choice` omitted it. The previous version of this file still listed it, which is how a doc becomes a stale claim that outlives its own fix. |
+| `::selectedcontent` | Ruled: a pseudo-element, handled by the generic path. |
+| `::picker(select)` | Ruled: a functional pseudo-element. |
+| braces inside an attribute value — `a[title="{"]` | Ruled: the attribute token already admits them. |
+
+**Recovered despite the error.** An `@import url(chrome://…)` file still produces a
+parse error, but error recovery keeps the statement, so the lane emits the
+`imports` edge for it. A construct failing to parse and a construct being lost are
+different claims, and only the first is true here.
+
 - `@supports`/`@media` query text is used verbatim as the scope name — no
   decomposition of query conditions
+- `progid:` IE filter values do not lex. This is the same family as the
+  relative-`url()` defect that WAS patched, and it is the largest remaining
+  parse-failure class in the corpus. Left unpatched deliberately and recorded as
+  `CSS-L2`: `progid:` needs the token's lead requirement relaxed and the colon
+  handled, which is materially larger than the two additive hunks already
+  measured, and it would need its own A/B across the same four corpora
+
+## The `.scss` / `.sass` / `.less` files this lane is also routed
+
+The product routes all four extensions here — `src/ast/parallel-indexer.ts` lists
+`.css`/`.scss`/`.sass` and `script/m13/corpus-map.ts` maps
+`.scss`/`.sass`/`.less` → `css` — and **all 254 real `.scss` files in the corpus
+route to this analyzer** (measured 254/254).
+
+The CSS grammar does not support SCSS, and the numbers are:
+
+```
+244 non-empty .scss files
+  42 parse CLEAN   (17.2%)
+ 202 with errors
+   0 crashes
+11,451 distinct error lines
+4,477 symbols and 2,025 relationships still emitted
+```
+
+Cause breakdown over every distinct error line: `$variable` reference **17.9%**,
+`@include` **12.8%**, `$variable` declaration **6.7%**, `//` line comment
+**2.7%**, `@use` **1.6%**, `#{…}` interpolation **1.2%**, `@each`/`@for`/`@if`
+**1.1%**, `@mixin` **0.6%**; the remaining 55.3% is the structural fallout of those
+rather than a separate cause.
+
+(`@use` looked like the dominant cause in a first pass and was not — that sample
+read only the first error rows of files in name order, and `@use` sorts early.)
+
+This is **declared, not a defect in the CSS contract**, and the reason is that
+removing the routing would take away real capability: the plain-CSS rules inside an
+SCSS file parse correctly and are worth keeping. Teaching the CSS grammar SCSS is
+a different grammar (`tree-sitter-scss`) with its own A/B, not a third hunk on a
+pinned 0.25.0 that has already been measured twice. What was missing was not the
+behaviour but the **declaration** — nothing in the repo said this lane also
+receives `.scss`, so an 82.8% parse-failure rate on 254 real files was invisible to
+every gate. Recorded as `CSS-L1` in `script/m14/spec/css-completeness.json`.
 
 ## Regex inventory
 
