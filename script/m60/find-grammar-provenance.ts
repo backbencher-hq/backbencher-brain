@@ -287,6 +287,36 @@ type SourceEvidence = {
   rebuildable?: boolean
 }
 
+// A BUILD LEAVES ITS OUTPUT FILENAME IN THE MODULE, and that is a second, independent
+// provenance channel — one that still works when the bytes match nothing published, which
+// is exactly the case a hash sweep cannot help with.
+//
+// IT IS CALIBRATED, which is the only reason it is recorded at all. Three shipped wasms
+// name a version in their bytes, and all three agree with a version independently declared
+// in an analyzer doc: `sql` -> tree-sitter-sql-0.3.11 (doc: @derekstride 0.3.11),
+// `clean` -> tree-sitter-clean-127 (1.2.7), `perl` -> tree-sitter-perl-npm-1.2.1 (1.2.1).
+// Three for three.
+//
+// IT IS A LEAD, NOT AN IDENTITY. A name says what somebody called the artefact when they
+// compiled it. For a published package that is the package's own filename; for a local
+// build it is whatever the person building it typed — `tree-sitter-bash-new.wasm` and
+// `tree-sitter-svelte-new.wasm` are somebody's rebuild of the same grammar under a
+// scratch name. So a non-standard name is evidence that the artefact is a LOCAL OR FORK
+// build, which is a real finding, and it is not evidence of which upstream it came from.
+// Reporting one as the other is the same error as reporting a size near-miss as a match.
+const BUILD_NAME_RE = /[A-Za-z0-9._-]*tree-sitter[A-Za-z0-9._-]*\.wasm/g
+function buildOutputNames(file: string): { shipped: string; named: string[]; isStandardName: boolean } {
+  const shipped = path.basename(file)
+  let text: string
+  try {
+    text = readFileSync(file).toString("latin1")
+  } catch {
+    return { shipped, named: [], isStandardName: true }
+  }
+  const named = [...new Set(text.match(BUILD_NAME_RE) ?? [])].sort()
+  return { shipped, named, isStandardName: named.length === 0 || named.includes(shipped) }
+}
+
 function wasmFromTarball(pkg: string, version: string): { file: string; bytes: number; sha256: string; source: SourceEvidence } | null {
   const dir = mkdtempSync(path.join(tmpdir(), "bb-prov-"))
   const extract = mkdtempSync(path.join(tmpdir(), "bb-prov-x-"))
@@ -345,6 +375,15 @@ const targets = LANES_ARG
   : ONLY
     ? survey.rows.filter((r: any) => r.lane === ONLY)
     : survey.rows.filter((r: any) => ALL || !r.declared.versionKnown)
+
+// The build-output name is read from the SHIPPED bytes for every target, whether or not a
+// published artifact matches — it is the only channel that still says something when nothing
+// matches, which is precisely the 7 lanes this census cannot otherwise explain.
+const BUILD_OUTPUT = new Map<string, ReturnType<typeof buildOutputNames>>()
+for (const row of targets as any[]) {
+  if (!row.shipped?.present) continue
+  BUILD_OUTPUT.set(row.lane, buildOutputNames(path.join(WASM_DIR, row.shipped.file)))
+}
 
 for (const row of targets as any[]) {
   // An ALIAS inherits its primary's provenance: `scss` and `sass` are served by
@@ -468,7 +507,7 @@ for (const row of targets as any[]) {
   progress(`  ${row.lane}: ${match ? `IDENTIFIED ${match.package}@${match.version}` : "no match"} (${examined} version(s) examined)`)
   results.push(
     match
-      ? { lane: row.lane, status: "identified", ...match, shippedBytes, versionsExamined: examined }
+      ? { lane: row.lane, status: "identified", ...match, shippedBytes, versionsExamined: examined, buildOutput: BUILD_OUTPUT.get(row.lane) }
       : {
           lane: row.lane,
           status: "no-match",
@@ -476,6 +515,12 @@ for (const row of targets as any[]) {
           shippedBytes,
           packagesTried: [...packages],
           versionsExamined: examined,
+          // The one channel that still says something when no hash matched. Calibrated
+          // 3/3 against versions independently declared in analyzer docs (sql 0.3.11,
+          // clean 1.2.7, perl 1.2.1) — and a LEAD, not an identity: a name says what
+          // somebody called the artefact, which for `tree-sitter-bash-new.wasm` is a
+          // scratch name for a rebuild of the same grammar.
+          buildOutput: BUILD_OUTPUT.get(row.lane),
           leads: leads.sort((a, b) => Math.abs(a.byteDelta as number) - Math.abs(b.byteDelta as number)).slice(0, 3),
           conclusion:
             "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes.",
