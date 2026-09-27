@@ -56,14 +56,321 @@
     {
       "name": "malformed XML creates no recovery symbols",
       "passed": true
+    },
+    {
+      "name": "PI with content is a module symbol",
+      "passed": true
+    },
+    {
+      "name": "PI with content carries no error",
+      "passed": true
+    },
+    {
+      "name": "xml-stylesheet is its own symbol",
+      "passed": true
+    },
+    {
+      "name": "xml-model is its own symbol",
+      "passed": true
+    },
+    {
+      "name": "stylesheet href is a file import",
+      "passed": true
+    },
+    {
+      "name": "stylesheet href is an import entry",
+      "passed": true
+    },
+    {
+      "name": "stylesheet non-href pseudo attribute is a property",
+      "passed": true
+    },
+    {
+      "name": "xml-model href is a file import",
+      "passed": true
+    },
+    {
+      "name": "PI nested in element content is owned by it",
+      "passed": true
+    },
+    {
+      "name": "PI in element content emits a contains edge",
+      "passed": true
+    },
+    {
+      "name": "nested PI emits a contains edge from its element",
+      "passed": true
+    },
+    {
+      "name": "no PI symbol is left unnamed",
+      "passed": true
+    },
+    {
+      "name": "conditional section parses without error",
+      "passed": true,
+      "detail": "0 errors"
+    },
+    {
+      "name": "DOCTYPE name is the document's, not INCLUDE/IGNORE",
+      "passed": true
+    },
+    {
+      "name": "no symbol is named after a conditional keyword",
+      "passed": true
+    },
+    {
+      "name": "declarations inside INCLUDE are extracted",
+      "passed": true
+    },
+    {
+      "name": "declarations inside IGNORE are extracted",
+      "passed": true
+    },
+    {
+      "name": "DTD file has no error",
+      "passed": true,
+      "detail": "0 errors"
+    },
+    {
+      "name": "general entity is declared",
+      "passed": true
+    },
+    {
+      "name": "parameter entity is declared",
+      "passed": true
+    },
+    {
+      "name": "notation is declared",
+      "passed": true
+    },
+    {
+      "name": "entity declarations are owned by the DTD",
+      "passed": true
+    },
+    {
+      "name": "parameter entity external ID is a file import",
+      "passed": true
+    },
+    {
+      "name": "general entity external ID is a file import",
+      "passed": true
+    },
+    {
+      "name": "notation external ID is a file import",
+      "passed": true
+    },
+    {
+      "name": "entity external IDs are import entries",
+      "passed": true
+    },
+    {
+      "name": "NDATA names the notation it points at",
+      "passed": true
+    },
+    {
+      "name": "NOTATION attribute type emits a notation reference",
+      "passed": true
+    },
+    {
+      "name": "the DTD content model emits contains edges",
+      "passed": true,
+      "detail": "no content model in this fixture; checked in ConditionalSection.xml"
+    },
+    {
+      "name": "DTD content model emits a contains edge",
+      "passed": true
+    },
+    {
+      "name": "content-model target is also a published symbol",
+      "passed": true
+    },
+    {
+      "name": "every contains target resolves to a symbol in the same file",
+      "passed": true
+    },
+    {
+      "name": "every member edge names the member as its owner",
+      "passed": true
+    },
+    {
+      "name": "XSD has no error",
+      "passed": true,
+      "detail": "0 errors"
+    },
+    {
+      "name": "a complexType is published under its declared name",
+      "passed": true
+    },
+    {
+      "name": "a global element is published under its declared name",
+      "passed": true
+    },
+    {
+      "name": "no symbol with a declared name is published under its tag name",
+      "passed": true
+    },
+    {
+      "name": "every vocabulary declaration names itself from the attribute it read",
+      "passed": true
+    },
+    {
+      "name": "an ANONYMOUS inline declaration is published under its tag",
+      "passed": true,
+      "detail": "an inline complexType has no name; the tag is the honest reading"
+    },
+    {
+      "name": "the declared name records the attribute it came from",
+      "passed": true
+    },
+    {
+      "name": "the tag name is retained as metadata",
+      "passed": true
+    },
+    {
+      "name": "the declaration kind is recorded",
+      "passed": true
+    },
+    {
+      "name": "schemaLocation becomes a file import",
+      "passed": true
+    },
+    {
+      "name": "a bare schemaLocation URI is imported too",
+      "passed": true
+    },
+    {
+      "name": "schemaLocation import records the namespace",
+      "passed": true
+    },
+    {
+      "name": "a local type reference is a references edge",
+      "passed": true
+    },
+    {
+      "name": "a local type reference is resolvable in-document",
+      "passed": true
+    },
+    {
+      "name": "a built-in type reference is a references edge",
+      "passed": true
+    },
+    {
+      "name": "a built-in type reference is marked builtin",
+      "passed": true
+    },
+    {
+      "name": "a reference target never carries the written prefix",
+      "passed": true
+    },
+    {
+      "name": "an unresolved reference value is refused",
+      "passed": true
+    },
+    {
+      "name": "XSL extension routes to xml",
+      "passed": true
+    },
+    {
+      "name": "XSLT has no error",
+      "passed": true,
+      "detail": "0 errors"
+    },
+    {
+      "name": "a named template is published under its name",
+      "passed": true
+    },
+    {
+      "name": "xsl:output is published under its method",
+      "passed": true
+    },
+    {
+      "name": "the xsl:output declaration records its attribute",
+      "passed": true
+    },
+    {
+      "name": "a local binding is owned by its template",
+      "passed": true
+    },
+    {
+      "name": "call-template names the template it calls",
+      "passed": true
+    },
+    {
+      "name": "a named-template reference is marked by role",
+      "passed": true
+    },
+    {
+      "name": "a named-template reference resolves in-document",
+      "passed": true
+    },
+    {
+      "name": "a call to a template the document does not declare is refused",
+      "passed": true
+    },
+    {
+      "name": "every relationship carries a line",
+      "passed": true
+    },
+    {
+      "name": "the external-ID edge points at the PATH's line, not the keyword's",
+      "passed": true
+    },
+    {
+      "name": "a contains edge points at the TARGET's line",
+      "passed": true
+    },
+    {
+      "name": "repeated identical edges collapse to one edge",
+      "passed": true
+    },
+    {
+      "name": "the collapse is counted on the edge",
+      "passed": true
+    },
+    {
+      "name": "every line of a collapsed edge is recorded",
+      "passed": true,
+      "detail": "{\"role\":\"xml_attribute\",\"value\":\"1\",\"attributeName\":\"x\",\"occurrences\":3,\"lines\":[2,3,4]}"
+    },
+    {
+      "name": "a construct never references itself",
+      "passed": true
+    },
+    {
+      "name": "a self reference invents no symbol",
+      "passed": true
+    },
+    {
+      "name": "a file with a grammar error reports it",
+      "passed": true
+    },
+    {
+      "name": "its symbols are still extracted",
+      "passed": true
+    },
+    {
+      "name": "every symbol from an erroneous file is marked",
+      "passed": true
+    },
+    {
+      "name": "every edge from an erroneous file is marked",
+      "passed": true
+    },
+    {
+      "name": "a clean file's symbols are NOT marked",
+      "passed": true
+    },
+    {
+      "name": "an empty namespace prefix publishes no symbol",
+      "passed": true
+    },
+    {
+      "name": "an empty namespace prefix publishes no edge target",
+      "passed": true
     }
   ],
   "passed": true,
-  "count": 14,
-  "passedCount": 14,
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.115Z",
-    "contentSha256": "b63d568bcae2db31d0956a9be5d90a6bbad09d39cf2e3d7dd0bcc39e450baa69"
-  }
+  "count": 90,
+  "passedCount": 90,
+  "failed": []
 }
