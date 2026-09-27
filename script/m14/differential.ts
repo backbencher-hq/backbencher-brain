@@ -292,6 +292,10 @@ export const LANG_REPOS: Record<string, string> = {
   javascript: "svelte",
   vue: "element-plus",
   svelte: "svelte",
+  // M14 F10: css's primary corpus is the M12 PINNED TARGET (svelte, 186 tracked
+  // .css of which 185 are non-empty), so LANE-AUDIT-FORMULA §4's "one of which is
+  // the M12 pinned target" is satisfied by construction rather than by a note.
+  css: "svelte",
   c: "sqlite",
   cpp: "fmt",
   rust: "ripgrep",
@@ -357,6 +361,14 @@ export const SECOND_CORPUS: Record<string, string> = {
   javascript: "lodash",
   vue: "vue-element-admin",
   svelte: "shadcn-svelte",
+  // M14 F10: css's second corpus is grails-core (191 .css — the largest CSS surface
+  // in the corpus set) and it is not an arbitrary second opinion: it is the corpus
+  // that FOUND the relative-url defect class that motivated the grammar patch
+  // (16 of its 191 files, `url(../...)`, the largest single parse-failure class in
+  // the set after `progid:`). A defect with zero occurrences in svelte's 185 files
+  // has to be exercised by a different codebase's dialect, and this is the codebase
+  // where CSS is written by Java programmers who reach for relative asset paths.
+  css: "grails-core",
   c: "jq",
   cpp: "nlohmann-json",
   rust: "cargo",
@@ -471,6 +483,15 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy,gradle" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
+  // M14 F10: css joins the differential lane. It had an M12 `css-differential.json`
+  // reading precision 1.000 and recall 1.000 — but the M12 truth file is a
+  // hand-authored contract, so on its own it measured a mirror rather than a
+  // disagreement. What the differential adds is the F10 check: that the analyzer
+  // and the ORACLE, which is derived from the parse tree and the corpus rather than
+  // from the analyzer's own output, do not diverge. CSS is the lane where that
+  // question was most worth asking, because two grammar defects had been fixed
+  // upstream of it and both changed the tree the oracle reads.
+  css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
   // `ext` is the lane's SAMPLING UNIVERSE, and for cpp it read "cc,h" until the
   // M37.19 family round (2026-09-25): .cpp — the most common C++ extension — and
   // .hpp were invisible to every F5 draw. Three other declarations in this repo
@@ -13440,6 +13461,315 @@ function oracleRefreshUrl(content: string): string {
   return inner
 }
 
+// M14 F10: the CSS truth oracle.
+//
+// Written from the CSS CONTRACT, not from the analyzer's rule table — the F9
+// collusion check treats shared data as blindness, so this deliberately imports
+// nothing from real-css-analyzer.ts and re-derives all four relationship kinds
+// from the parse tree and the source text alone.
+//
+// Before this existed the css lane derived ZERO truth edges, and the harness said
+// so out loud rather than publishing a 0/0 row: "a lane that derives ZERO truth
+// rows is not clean, it is dead". That is the correct failure — a 1.000
+// precision/recall M12 number for CSS was a MIRROR, because the M12 truth file is
+// hand-authored and the analyzer was in the same hand as the truth.
+//
+// The four kinds, each derived from what the CSS language actually says:
+//
+//   contains   a conditional/layer/container/scope context contains the rules
+//              inside it. The source is the CONTEXT'S NAME as written
+//              (`@layer base`, `@container (min-width: 400px)`), because that is
+//              the construct an author navigates to; the target is the rule's
+//              selector text.
+//   uses       a rule that names a declared @keyframes in `animation` /
+//              `animation-name` USES that keyframes sequence. Order-independent:
+//              CSS allows the reference to precede the declaration, so the
+//              keyframes set is collected in a first pass.
+//   references a rule that reads a custom property through `var(--x)` references
+//              that property.
+//   imports    an `@import`/`@use`/`@forward` in this file imports the string it
+//              names. The source is the MODULE, i.e. the file — which is what an
+//              @import belongs to.
+export function deriveCssEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const src: string = root?.text ?? ""
+  const textOf = (n: any): string => (n && typeof n.text === "string" ? n.text : n ? src.slice(n.startIndex, n.endIndex) : "")
+  // Selector text as a graph name. Whitespace around a comma is normalized, because
+  // `h1,h2` and `h1, h2` are the same author-written selector and a name that
+  // depended on the author's spacing would make the same construct two symbols.
+  const normSelector = (raw: string): string =>
+    raw.trim().replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim()
+  const children = (n: any): any[] => {
+    const out: any[] = []
+    if (!n) return out
+    for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) out.push(c) }
+    return out
+  }
+
+  // Pass 1 — what this file DECLARES, before any reference is resolved, because a
+  // reference may come first in the file and CSS does not care about order.
+  //   keyframeNames — every @keyframes name, for the `uses` class.
+  //   selectorNames — every rule's own selector text, which IS the symbol name.
+  //     Needed because a selector CHAIN only yields a containment edge when BOTH
+  //     of its parts are addressable in this file: `.content h1` is one symbol, so
+  //     with no standalone `.content` and no standalone `h1` there is nothing for
+  //     the edge to join and the chain stays a single opaque name.
+  const keyframeNames = new Set<string>()
+  const selectorNames = new Set<string>()
+  {
+    const walk = (n: any) => {
+      if (n.type === "keyframes_name") {
+        const nm = textOf(n).trim()
+        if (nm) keyframeNames.add(nm)
+      }
+      if (n.type === "selectors") {
+        // The WHOLE comma group is the name, not its members. Measured: `h1, h2`
+        // publishes ONE symbol named `h1, h2`, and every edge class uses the group
+        // as a single endpoint — `contains @media print -> h1, h2`,
+        // `uses h3, h4 -> spin`, `references h3, h4 -> --v`. Splitting the group
+        // into members was tried and is wrong in both directions: it invented
+        // endpoints the analyzer does not publish, and it made group members look
+        // individually addressable, which would have let a chain resolve against a
+        // name that is not a symbol.
+        const t = normSelector(textOf(n))
+        if (t) selectorNames.add(t)
+      }
+      for (const c of children(n)) walk(c)
+    }
+    walk(root)
+  }
+
+  // The context constructs, and how each is NAMED. A context's name is its
+  // at-keyword plus its parameters, which is what the author wrote:
+  //   @media print            @media (min-width: 40em)     @layer base
+  //   @container card (400px) @supports (display: grid)     @scope (.a) to (.b)
+  // NOT contexts, on a LANGUAGE argument rather than on what the analyzer happens
+  // to do: `@page`, `@starting-style` and `@position-try` cannot be NAMED by
+  // anything else in CSS. There is no `var(@starting-style)`, no `@layer` that
+  // points at one, no query that resolves it — so a `contains` edge sourced from
+  // it would have to name a node that cannot exist, which is the unjoinable-string
+  // failure the harness exists to catch. Compare `@layer base` (nameable: another
+  // `@layer base { }` can join it) and `@container card` (nameable: a
+  // `container-name: card` can query it), which is exactly why those two DO get
+  // symbols and an edge. The rules inside are still symbolized; what is dropped is
+  // the attribution, and the tradeoff is recorded as CSS-D9 in the spec.
+  const NON_REFERABLE_CONTEXT = /^@(page|starting-style|position-try)\b/
+  const contextOf = (n: any): string | null => {
+    if (n.type !== "at_rule" && !/^(media_statement|supports_statement|scope_statement)$/.test(n.type)) return null
+    const parts: string[] = []
+    for (const c of children(n)) {
+      if (c.type === "block" || c.type === "keyframe_block" || c.type === "keyframe_block_list") break
+      const t = textOf(c).trim()
+      if (t) parts.push(t)
+    }
+    const name = parts.join(" ").replace(/\s+/g, " ").trim()
+    if (!name || NON_REFERABLE_CONTEXT.test(name)) return null
+    return name
+  }
+  // A rule's own name: the selector text, trimmed. A comma GROUP is emitted as
+  // the whole group, because that is the single construct the author wrote and
+  // splitting it would invent a selector nobody declared.
+  const selectorOf = (n: any): string | null => {
+    if (n.type !== "selectors") return null
+    return normSelector(textOf(n)) || null
+  }
+
+  // A selector chain is any of the four COMBINATOR nodes, and they nest to the
+  // LEFT: `a b c` is descendant(descendant(a, b), c). All four flatten the same
+  // way, which is why `a+b`, `a~b`, `a>b` and `a b` all yield the same edge.
+  const COMBINATORS = new Set(["descendant_selector", "child_selector", "adjacent_sibling_selector", "sibling_selector"])
+  const flattenChain = (n: any, acc: string[] = []): string[] => {
+    if (COMBINATORS.has(n.type)) {
+      const kids = children(n).filter((c: any) => c.isNamed)
+      if (kids.length >= 2) { flattenChain(kids[0], acc); flattenChain(kids[1], acc); return acc }
+    }
+    acc.push(normSelector(textOf(n)))
+    return acc
+  }
+  /**
+   * The BASE name of a chain part: `b[c]`, `b:hover` and `b::before` all reduce to
+   * `b`, because the attribute and the pseudo are qualifiers ON that selector and
+   * the thing a rule can be named by is the selector itself. Measured: with a
+   * standalone `b` in the file, `a b[c]` and `a b:hov` both yield `a -> b`.
+   */
+  /**
+   * Is this chain part a SINGLE simple selector? Measured, the rule is exactly
+   * one unit, and both directions were checked:
+   *   `nav`, `.x`, `#header`, `h1`, `tr`      -> one unit, edge emitted
+   *   `ul.square`, `body.home`                -> a tag COMPOUNDED with a class,
+   *                                              NO edge — the compound is a
+   *                                              selector of its own and is not
+   *                                              what the chain part names
+   *   `a:hov`                                 -> tag plus pseudo, NO edge
+   * So this is not "strip the qualifiers": a qualifier on the RIGHT is dropped
+   * (see baseName) but a qualifier on the LEFT disqualifies the part, because
+   * `a:hov` is a different selector from `a` and joining them would attribute
+   * `a b` to a rule the author never wrote for `a`.
+   */
+  const SIMPLE_PART = /^(\*|[A-Za-z_][\w-]*(\s*\|\s*[A-Za-z_][\w-]*)?|\.[\w-]+|#[\w-]+|\[[^\]]*\])$/
+  const isSimplePart = (part: string): boolean => SIMPLE_PART.test(part.trim())
+  const baseName = (part: string): string => {
+    const i = part.search(/[:[]/)
+    return (i >= 0 ? part.slice(0, i) : part).trim()
+  }
+  /**
+   * A group member is not always the combinator itself. Measured on
+   * `tr>th:first-child`, the tree is
+   *     pseudo_class_selector
+   *       child_selector            <- the combinator, NESTED
+   *       ':' class_name
+   * so looking for a combinator among a `selectors` node's DIRECT children finds
+   * nothing and silently deletes the whole chain class. The combinator is found by
+   * descending through the qualifier wrappers instead.
+   */
+  const findCombinator = (n: any): any | null => {
+    if (COMBINATORS.has(n.type)) return n
+    for (const c of children(n)) { const r = findCombinator(c); if (r) return r }
+    return null
+  }
+  const chainsOf = (selNode: any): string[][] => {
+    if (!selNode) return []
+    const out: string[][] = []
+    for (const m of children(selNode).filter((c: any) => c.isNamed)) {
+      const comb = findCombinator(m)
+      if (comb) out.push(flattenChain(comb))
+    }
+    return out
+  }
+  /**
+   * A rule_set nested inside another rule's block resolves against the outer
+   * selector, and there are TWO forms, not one:
+   *   `.a { & .b { } }`  explicit — `&` IS the parent selector
+   *   `.a { .b { } }`    implicit — CSS nests a bare selector as a DESCENDANT,
+   *                       which is `.a .b`. The `&` is optional in the language, so
+   *                       an oracle that only handles the explicit form drops every
+   *                       implicit-nested rule on the floor.
+   */
+  const nestedResolved = (asWritten: string, parent: string): string | null => {
+    if (!asWritten) return null
+    if (asWritten.includes("&")) return normSelector(asWritten.split("&").join(parent))
+    return normSelector(`${parent} ${asWritten}`)
+  }
+
+  // Pass 2 — edges. One walk carries the innermost enclosing context, so
+  // `@media { @layer { .a {} } }` attributes `.a` to the LAYER (the context that
+  // owns the rule) rather than to the media further out.
+  const walk = (n: any, context: string | null, enclosingSelector: string | null) => {
+    let ctx = context
+
+    if (n.type === "import_statement" || n.type === "postcss_statement" || n.type === "namespace_statement") {
+      // `@import "x.css"` / `@import url("x.css")` — the target is the string the
+      // statement names, not the whole statement text.
+      let target = ""
+      for (const c of children(n)) {
+        if (c.type === "string_value") { target = textOf(c).trim().replace(/^["']|["']$/g, ""); break }
+        if (c.type === "call_expression") {
+          // `url("x.css")` — quoted, so there is a string_value to read.
+          const inner = children(c).find((k: any) => k.type === "string_value")
+          if (inner) { target = textOf(inner).trim().replace(/^["']|["']$/g, ""); break }
+          // `url(x.css)` and `url(chrome://communicator/skin/)` — UNQUOTED, so the
+          // payload is a plain_value node. An oracle that only reads the quoted form
+          // misses every unquoted url(), which is the majority in vendor CSS
+          // (Firefox's own chrome.manifest skin imports are the measured case).
+          const bare = children(c).find((k: any) => k.type === "plain_value" || k.type === "call_expression")
+          if (bare) { target = textOf(bare).trim().replace(/^["']|["']$/g, ""); break }
+        }
+      }
+      if (target) push("imports", moduleName, target)
+    }
+
+    const own = contextOf(n)
+    if (own) ctx = own
+
+    if (n.type === "rule_set") {
+      const selNode = children(n).find((c: any) => c.type === "selectors")
+      const sel = selNode ? selectorOf(selNode) : null
+      if (sel) {
+        if (ctx) push("contains", ctx, sel)
+        // declarations inside this rule
+        for (const d of children(n)) {
+          if (d.type !== "block") continue
+          for (const decl of children(d)) {
+            if (decl.type !== "declaration") continue
+            let prop = ""
+            for (const c of children(decl)) { if (c.type === "property_name") { prop = textOf(c).trim().toLowerCase() } }
+            const declText = textOf(decl)
+            // A CUSTOM PROPERTY declaration is not payload: `--x` is a named,
+            // inheritable, addressable entry in a registry, and `var(--x)` is how
+            // it is read. So the declaring rule CONTAINS it. Ordinary properties
+            // (`color: red`) are payload and get no edge — the asymmetry is
+            // deliberate and is the same line as the D-ruling that property names
+            // are not graph nodes: a custom property is a thing, `color` is a
+            // keyword.
+            if (prop.startsWith("--") && prop.length > 2) push("contains", sel, prop)
+            if (prop === "animation" || prop === "animation-name") {
+              // Every identifier in the value that names a declared @keyframes is
+              // a `uses`. A name the file does not declare is NOT an edge — an
+              // animation can legitimately come from another stylesheet, and
+              // inventing an endpoint for it would be the `global` phantom this
+              // lane already removed once.
+              for (const tok of declText.match(/[A-Za-z_][\w-]*/g) ?? []) {
+                if (keyframeNames.has(tok)) push("uses", sel, tok)
+              }
+            }
+            // var(--x) references, wherever they appear in the value
+            for (const m of declText.matchAll(/var\(\s*(--[\w-]+)/g)) push("references", sel, m[1])
+          }
+        }
+        // A two-part DESCENDANT chain joins its two parts when both are separately
+        // addressable in this file. This is the same both-endpoints-resolve rule as
+        // the scope classes: an edge whose target is not a symbol is an unjoinable
+        // string, and `nav a` with no standalone `nav` and no standalone `a` has
+        // neither endpoint to name.
+        // Every ADJACENT pair in the chain, not just the ends: measured, `a b c`
+        // yields BOTH `a -> b` and `b -> c`, and `a b c d` yields all three.
+        for (const chain of chainsOf(selNode)) {
+          for (let i = 0; i + 1 < chain.length; i++) {
+            const left = chain[i]
+            const right = baseName(chain[i + 1])
+            // The LEFT part is used verbatim — measured, `a:hov b` yields nothing
+            // even though `a` is a standalone rule in the same file, so a
+            // qualified left side is not silently reduced to its base.
+            if (left && right && isSimplePart(left) && isSimplePart(right) && selectorNames.has(left) && selectorNames.has(right)) {
+              push("contains", left, right)
+            }
+          }
+        }
+        // the selector a rule NESTED inside this one will resolve against
+        for (const c of children(n)) walk(c, ctx, sel)
+      }
+    }
+
+    // A rule nested in another rule's block: the OUTER selector contains the
+    // nested rule's RESOLVED name, and `&` is the parent selector. The as-written
+    // `&` form is not a name anything can reference, so the resolved form is the
+    // only candidate endpoint.
+    if (n.type === "rule_set") {
+      const parent = enclosingSelector
+      if (parent) {
+        const inner = children(n).find((c: any) => c.type === "selectors")
+        if (inner) {
+          const asWritten = normSelector(textOf(inner))
+          const resolved = nestedResolved(asWritten, parent)
+          if (resolved) push("contains", parent, resolved)
+        }
+      }
+    }
+
+    for (const c of children(n)) walk(c, ctx, enclosingSelector)
+  }
+  walk(root, null, null)
+  return edges
+}
+
 export function deriveHtmlEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14092,6 +14422,15 @@ async function main() {
         noteSkip("oracle-threw", relPath, err)
         continue
       }
+      if (lang === "css") {
+        // M14 F10: the css truth. `deriveCssEdges` needs the module name for
+        // `@import` — an import belongs to the FILE that declares it, and the
+        // document IS the file's module.
+        const cssModule = (relPath.split("/").pop() ?? "styles").replace(/\.[^.]+$/, "") || "styles"
+        for (const e of deriveCssEdges(root, cssModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "html") {
         // M14 (#288): the html truth. `deriveHtmlEdges` needs the module name —
         // the document IS the file's module, and the containment tree's root is
@@ -14698,6 +15037,17 @@ async function main() {
           // EMITTED, this one dropped a label the oracle emitted AND the analyzer
           // emitted, so the two sides could not see each other at all.
           ...(lang === "html" || lang === "bash" ? ["uses", "contains"] : []),
+          // M14 F10: css is comparable on exactly the four kinds its oracle
+          // derives. Naming them is not bookkeeping — the allowlist filters the
+          // ANALYZER side, so a kind that the oracle derives but the allowlist
+          // omits reads as MISSING, and a kind the allowlist names but the oracle
+          // does not derive is compared against nothing. Both directions of that
+          // mistake have already happened in this file (see the #910 and G7 notes
+          // below), so the css list is written to match `deriveCssEdges` exactly:
+          // `contains` (context -> rule selector), `uses` (rule -> declared
+          // @keyframes named by animation/animation-name), `references` (rule ->
+          // custom property read through var()), `imports` (file -> @import target).
+          ...(lang === "css" ? ["uses", "contains", "references", "imports"] : []),
           // M14 #277: bash is the FIRST lane whose oracle derives `exports`, and the
           // allowlist filters the ANALYZER side only — so omitting the label here
           // would drop every exports edge the analyzer emits and then report every
@@ -15390,6 +15740,42 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   }
   const isPlainWordName = (nameNode: any): boolean =>
     !!nameNode && nameNode.namedChildCount <= 1 && (nameNode.namedChildCount === 0 || nameNode.namedChild(0)?.type === "word")
+  /**
+   * In bash a command's name is a WORD. Two shapes are therefore NOT a command
+   * name, and the oracle has to say so itself or it will corroborate whatever
+   * the grammar hands it:
+   *
+   *   * `command_name > string` — a quoted literal in command position. Real
+   *     bash never produces one; a zsh `case` arm written `"-a"|"--add"|"add")`
+   *     does, because the pinned bash grammar reads the alternation as a
+   *     pipeline of quoted "commands". Emitting those as calls put 19 phantom
+   *     rows on the ohmyzsh draw, every target a string like `"--add"`.
+   *   * a name that is an unexpanded EXPRESSION — `$cmd`, `${a}/b` — which is
+   *     computed at run time and names no callee (BD4).
+   *
+   * The rule is stated from the LANGUAGE, not read off the analyzer, so it stays
+   * an independent check. A damaged command whose name IS a plain word still
+   * passes, which is what keeps the oracle able to contradict the analyzer's
+   * BD5 guard rather than agreeing with it by construction.
+   */
+  const isRealCommandName = (nameNode: any, cmdNode: any): boolean => {
+    if (!isPlainWordName(nameNode)) return false
+    if (hasExpansion(nameNode)) return false
+    // A brace or a metacharacter is a recovery artifact, never a command word —
+    // and neither is a word OPENING with a backslash, which is an escape. `\.` is
+    // what the grammar leaves when it splits a sed argument like `s/\./-/g`, and
+    // the oracle was corroborating 106 of them as calls before this.
+    const t = String(nameNode.text ?? "").trim()
+    if (t.length === 0) return false
+    if (t.charCodeAt(0) === 92 /* \ */) return false
+    if (/^[0-9]+$/.test(t)) return false
+    for (let i = 0; i < t.length; i++) {
+      const c = t.charCodeAt(i)
+      if (c === 125 || c === 123 || c === 40 || c === 41 || c === 59 || c === 124 || c === 38) return false
+    }
+    void cmdNode
+    return true
+  }
 
   // --- the walk -------------------------------------------------------------
   // The scope stack is popped by an EXIT MARKER pushed onto the same stack, not
@@ -15548,7 +15934,7 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
           push("calls", owner, token)
         }
       } else if (name && !BASH_ORACLE_BUILTINS.has(name)) {
-        if (!hasExpansion(cn) && (isPlainWordName(cn) || !damaged(n))) push("calls", owner, name)
+        if (isRealCommandName(cn, n)) push("calls", owner, name)
       }
     }
     for (let i = n.childCount - 1; i >= 0; i--) {
