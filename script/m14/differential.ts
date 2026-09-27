@@ -12271,7 +12271,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   const walk = (n: any) => {
     const t = n.type
-    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t) || (lang === "scala" && t === "enum_definition")) {
+    // M60 / JD4: `class` is the CLASS EXPRESSION node type in the
+    // tree-sitter-javascript and -typescript grammars (a bare `class` token is a
+    // keyword, not a named node, in java/cpp/python/scala, so this can only ever
+    // fire for the web grammars). It was missing here, which is the mirror image
+    // of the analyzer's own gap: BOTH sides dropped a class expression's
+    // heritage, so the differential reported agreement on a shape neither side
+    // could see. Adding the edge to the analyzer alone would have registered as
+    // a FABRICATION; the oracle moves with it.
+    if (/^(class|interface|record|trait|object)_declaration$|^enum_declaration$|^class_definition$|^trait_definition$|^object_definition$|^(class|struct|union)_specifier$/.test(t) || (lang === "scala" && t === "enum_definition") || t === "class") {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")

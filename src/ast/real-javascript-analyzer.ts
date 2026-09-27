@@ -406,6 +406,51 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        case "class": {
+          // M60 / JD4: a CLASS EXPRESSION. There was no case for it at all, so
+          // `const K = class extends Base { … }` produced no extends edge, no
+          // Class symbol, and left every member ownerless — the whole
+          // declaration form was invisible. Heritage is what this adds here; the
+          // Class symbol and the member owner are JD3's (the member owner is
+          // already handled via containerOwnerName, and the class symbol itself
+          // is deliberately still not emitted, because
+          // javascript/class-expression-member-identity expects the bound
+          // variable to remain the symbol).
+          //
+          // The differential's heritage walk (differential.ts) was missing the
+          // same shape, so both sides were blind and the lane reported
+          // agreement. The oracle moved with this change — otherwise an edge
+          // emitted here would register as a fabrication.
+          const ownName = node.childForFieldName("name")?.text ?? bindingNameAbove(node)
+          const heritage = this.findChildByType(node, "class_heritage")
+          // An anonymous class expression with NO BINDING (`runIt(class extends
+          // Base {})`) names nothing, so it gets NO edge at all. The first cut of
+          // this pushed `source: ownName ?? ""` and produced an edge from the
+          // empty string — a dangling row whose source is not a symbol, which is
+          // the same defect class as JD6. Silence is the honest answer; the
+          // base is still reachable through the class_heritage in the AST.
+          if (heritage && ownName) {
+            const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
+            if (base) {
+              relationships.push({
+                source: ownName,
+                target: base.text,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                ...this.lineField(base),
+                metadata: {},
+              })
+            }
+          }
+          // NOTE: no Class scope is pushed here. Ownership of a class
+          // expression's members already comes from containerOwnerName (JD3), and
+          // pushing a scope would additionally set `ownerKind = Class`, which
+          // re-keys `qualified_calls` to `Owner::method` — a behaviour change
+          // javascript/class-expression-member-identity deliberately pins against.
+          // This case adds the EDGE only.
+          break
+        }
+
         case "method_definition": {
           const name = node.childForFieldName("name")?.text
           if (name) {
