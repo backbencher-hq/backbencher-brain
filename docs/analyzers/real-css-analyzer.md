@@ -182,6 +182,54 @@ Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
 
 ## Complexity envelope
 
+### The metric itself
+
+`metadata.cyclomaticComplexity` was a literal `1` for every symbol in this lane
+(measured 9,338 of 9,338), so a `complexity >= 1` check was satisfied
+**vacuously** — it could not tell a one-line reset from a deeply nested selector
+because both answered 1. It is now measured, and the corpus distribution is:
+
+```
+27,322 of 27,322 symbols carry a value (0 absent)
+60.0% at complexity 1, 15 distinct values, max 52
+max lands on Tailwind's
+  .ltr\:group-hover\:translate-x-0\.5:where(:not(:lang(ae), :lang(ar), :lang(arc), …))
+which is genuinely the hardest selector in the corpus
+```
+
+Terms, each counted where it is seen rather than inferred from text:
+
+| Symbol kind | Complexity is |
+| --- | --- |
+| selector | 1, +1 per combinator, +1 per pseudo-class/element, +1 per attribute selector, +1 for a **functional** pseudo (counted from the `arguments` node), + nesting depth. A comma group aggregates as **max**, mirroring how specificity aggregates the same group. |
+| `@media` / `@supports` / `@container` scope | 1, +1 per top-level `and` / `or` / `not` in the query |
+| `@keyframes` name | 1 + the number of stops |
+| `@font-face` / `@property` / `@mixin` | 1 + the count of its OWN descriptors |
+| custom property | 1 + the number of `var(--other)` reads in its value |
+
+60.0% at 1 is **correct, not a residual vacuity** — most CSS selectors are simple.
+The point is that the metric can now tell.
+
+Three defects the fixture lane found in this metric, all of which had shipped as
+"working":
+
+- the base was **0**, so the analyzer's metadata said 0 for `.plain { color: red }`
+  while `pool-worker.ts`'s `s.complexity || s.metadata?.complexity || 1` turned the
+  same symbol into 1 in the store — two truths for one number, and the visible one
+  violated the `>= 1` convention every other lane meets;
+- the **functional-pseudo term was dead code**: it looked for a
+  `pseudo_class_arguments` node, but the grammar ALIASES that to `arguments`
+  (`optional(alias($.pseudo_class_arguments, $.arguments))`, grammar.js:231), so
+  the pre-alias name appears in no parse tree and every functional pseudo in the
+  corpus was scored as a plain pseudo, one step cheap. A metric whose own
+  distinguishing term can never fire cannot tell `:hover` from
+  `:where(.a .b .c)`;
+- complexity was measured for SELECTOR symbols only, so the other four kinds fell
+  through to the `|| 1` fallback and **24% of the lane (6,486 of 27,322) carried a
+  fabricated 1** — a 20-condition `@supports` scope read identically to `.plain`.
+
+### The performance envelope
+
 Re-cut 2026-09-26 on the current tree and grammar. The previous table was
 measured on a 181-path sample drawn by a glob that could not match
 `_*expected.css`, against a pre-patch wasm, and on a box whose load was not
