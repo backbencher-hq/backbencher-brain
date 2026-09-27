@@ -71,6 +71,12 @@ const PROBE_LUA = [
   // they are the two ways a Lua function reaches the walk.
   'local cb = function(z) return z end',
   'local t = { m = function(w) return w end }',
+  // M60 LUA-22: a computed index is a distinct node type, and the LUA-22 fix
+  // named it. Without a probe that contains one, the node-type leg correctly
+  // reported it as never emitted — the instrument catching a real coverage gap in
+  // itself, twice now, and both times about a type the fix newly referenced.
+  'local rows = t[1]',
+  'dao[method or context .. "_by_" .. key](dao)',
 ].join("\n") + "\n"
 
 // ── literal extraction: the analyzer's source is the subject under test ──────
