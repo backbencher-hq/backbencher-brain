@@ -1589,6 +1589,147 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
     if (JS_OBJECT_LEAF_METHODS.has(targetName)) return true
     return false
   }
+  // ---------------------------------------------------------------------
+  // JD16 (M60, 2026-09-27): `references` TRUTH.
+  //
+  // `references` was the last relationship class the javascript lane never
+  // audited. It is not a marginal label here: it is how this analyzer expresses
+  // BOTH ways javascript names a type it does not own — decorator metadata
+  // (M49 #868) and an `instanceof` check — and it carries pinned behaviour
+  // (the M59 #860/#868 decorator contract). Two fixtures touch decorator
+  // metadata, but a fixture compares the analyzer against its EXPECTATION and
+  // never against the oracle, so neither could have caught this class going
+  // missing, exactly as the #910 (c imports) and G7 (groovy uses) notes record.
+  //
+  // Derived from the language's own two rules, NOT from the analyzer's two
+  // collectors:
+  //   decorator  `@sealed class A {}` / `@readonly m(){}` / `@inject(DB) f(){}`
+  //            -> the decorator's NAME is a reference FROM the decorated symbol
+  //               (a decorator is metadata, not a call and not a read: the
+  //               family rules this way — typescript `inDecoratorPosition`,
+  //               the JVM analyzers attach annotations as metadata and emit no
+  //               edge, python oracle PYD1)
+  //   instanceof `x instanceof T` -> T is the type being tested, so it is a
+  //               reference from whatever encloses the test
+  //
+  // Run as a PRE-PASS, deliberately outside the main stack walk below. The main
+  // walk does `if (t === "decorator") continue` (M49 #868) to stop decorator
+  // subtrees leaking `calls`/`uses` — so any references derivation placed after
+  // it would be blind to the very nodes it is meant to audit. Deriving it here
+  // also keeps this truth structurally independent of the walk it sits above.
+  //
+  // The decorator NAME is re-derived below rather than imported from the
+  // analyzer's `jsDecoratorName`, on purpose: sharing that helper would couple
+  // truth to the implementation under test, and any change to it would move
+  // both sides at once — a differential that can never disagree is not a
+  // differential. This is the same rule that governs `contains` below
+  // ("deliberately NOT modelled on the analyzer's owner logic") and the
+  // class-expression heritage mistake at differential.ts:11700.
+  // ---------------------------------------------------------------------
+  const seenRef = new Set<string>()
+  const pushRef = (from: string, target: string) => {
+    if (!target) return
+    const k = `references|${from}|${target}`
+    if (seenRef.has(k)) return
+    seenRef.add(k)
+    edges.push({ label: "references", from, target })
+  }
+  // `@a.b.c(args)` -> "a.b.c"; `@plain` -> "plain". Mirrors the language's
+  // spelling of a decorator, written out rather than shared.
+  const jsDecoratorNameTruth = (dec: any): string => {
+    const inner = dec.namedChild(0)
+    const nameText =
+      inner && (inner.type === "call_expression" || inner.type === "member_expression" || inner.type === "identifier")
+        ? inner.type === "call_expression"
+          ? (inner.childForFieldName("function")?.text ?? inner.text.split("(")[0])
+          : inner.text.split("(")[0]
+        : dec.text
+    const strip = (s: string) => (s.startsWith("@") ? s.slice(1) : s)
+    return strip(nameText) || strip(dec.text)
+  }
+  // A decorator is a DIRECT named child of the symbol it decorates. The
+  // export_statement case (`@sealed export class A {}`) is spelled out because
+  // there the decorator is a child of the export, not of the class.
+  const DECORATABLE = new Set(["class_declaration", "method_definition", "field_definition"])
+  {
+    const st: any[] = [root]
+    while (st.length > 0) {
+      const n = st.pop()!
+      if (DECORATABLE.has(n.type)) {
+        const nm = n.type === "field_definition" ? n.childForFieldName("property") : n.childForFieldName("name")
+        const owner = nm?.text ?? ""
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "decorator") pushRef(owner || "(decorated)", jsDecoratorNameTruth(c))
+        }
+      } else if (n.type === "export_statement") {
+        let owner = ""
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "class_declaration") { owner = c.childForFieldName("name")?.text ?? ""; break }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "decorator") pushRef(owner || "(decorated)", jsDecoratorNameTruth(c))
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+  // `x instanceof T`: the right operand is the type under test. Scoped to the
+  // WHOLE tree with no decorator guard, which is the analyzer's own scope for
+  // this rule — a decorator ARGUMENT can carry an instanceof test, so skipping
+  // decorator subtrees here would invent a MISSING the analyzer legitimately
+  // emits.
+  {
+    const st: any[] = [root]
+    while (st.length > 0) {
+      const n = st.pop()!
+      if (n.type === "binary_expression") {
+        let isInstanceof = false
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c && !c.isNamed && c.text === "instanceof") { isInstanceof = true; break }
+        }
+        if (isInstanceof && n.namedChildCount >= 2) {
+          const right = n.namedChild(n.namedChildCount - 1)
+          if (right) {
+            // The enclosing DECLARATION names the site (`function g(x){ x
+            // instanceof T }` -> from g). Reported for triage only: this lane
+            // matches site-agnostically on label+target, so `from` never
+            // decides a match — it is carried so a MISSING row says which
+            // symbol asked for the reference.
+            let p = n.parent
+            let source = "global"
+            while (p) {
+              if (
+                p.type === "class_declaration" ||
+                p.type === "function_declaration" ||
+                p.type === "generator_function_declaration" ||
+                p.type === "method_definition" ||
+                p.type === "variable_declarator"
+              ) {
+                for (let i = 0; i < p.namedChildCount; i++) {
+                  const c = p.namedChild(i)
+                  if (c && (c.type === "identifier" || c.type === "property_identifier")) { source = c.text; break }
+                }
+                break
+              }
+              p = p.parent
+            }
+            pushRef(source, right.text)
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
   const stack: any[] = [root]
   while (stack.length > 0) {
     const n = stack.pop()!
@@ -15646,7 +15787,16 @@ async function main() {
           // class-expression member is an orphan — review JD3). The matching
           // truth is derived in deriveJavaScriptEdges from the language's own
           // containment rule, deliberately NOT from the analyzer's owner logic.
-          ...(lang === "javascript" ? ["contains", "exports"] : []),
+          // JD16 (M60, 2026-09-27): `references` joins too, and it is the last
+          // class the lane had left unaudited. It carries both ways javascript
+          // names a type it does not own — decorator metadata and `instanceof` —
+          // and neither was reachable from the differential before this, so a
+          // regression in either would have been invisible on the corpus exactly
+          // as it was invisible to the fixtures. The truth is derived in
+          // deriveJavaScriptEdges from the two language rules, in a pre-pass
+          // outside the decorator-skipping walk, so it audits those nodes rather
+          // than stepping around them.
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
