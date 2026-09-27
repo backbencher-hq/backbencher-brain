@@ -4,6 +4,11 @@
 
 - Analyzer: `src/ast/real-yaml-analyzer.ts`
 - Parser: vendored `wasm/tree-sitter-yaml.wasm`, loaded as `tree-sitter-yaml`
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: byte-identical to the published
+  `@tree-sitter-grammars/tree-sitter-yaml@0.7.1` wasm (sha256 `e752dc21c3591df9…`).
+  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
+  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`.
 - Detection: `.yaml` and `.yml` → `yaml` in `src/ast/language-detection.ts`
 - Wiring: `ASTEngine` → `RealYamlAnalyzer`; `pool-worker` preserves YAML data-key relationships
 

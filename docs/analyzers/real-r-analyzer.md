@@ -4,6 +4,11 @@
 
 - Analyzer: `src/ast/real-r-analyzer.ts`
 - Parser: pinned `tree-sitter-r` WASM at `wasm/tree-sitter-r.wasm`
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: byte-identical to the published
+  `@eagleoutice/tree-sitter-r@1.1.2` wasm (sha256 `b11a872a88ad8a9e…`).
+  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
+  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`.
 - Wiring: `ASTEngine.getAnalyzer("r")` → `RealRAnalyzer`
 - Corpus: clean `dplyr@d5e94e7f` tracked R sources
 
