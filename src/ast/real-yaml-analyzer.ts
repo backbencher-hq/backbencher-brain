@@ -726,30 +726,17 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addPattern(ctx, "Grammar Error Recovery")
 
     if (!current.parent) {
-      // No enclosing document: give the file its stem back, marked as recovered.
       const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
-      ctx.documentCount++
-      const scope = this.createSymbol(
-        documentName,
-        ASTEngine.SymbolKind.Module,
-        node,
-        null,
-        "",
-        ctx,
-        {
-          yamlSpecific: true,
-          nodeType: "document",
-          documentIndex: ctx.documentCount,
-          recovered: true,
-          damageNodeType: node.type,
-          damageLine: site.line,
-          damageWidth: site.width,
-          fullPath: documentName,
-        },
-        documentName,
-      )
+      // AN IDENTITY IS NOT A DECLARATION. A root-level ERROR has no `document` node, so
+      // the source contains no document declaration and the analyzer must not invent one
+      // named after the file stem. The M12 ground truth caught exactly this: for
+      // `Negative.yaml` (a destroyed document) a synthesised module is a false positive
+      // against hand-audited truth, where the only symbol that exists is the `valid`
+      // property that survived. What the surviving pairs DO need is a path to hang from,
+      // so the stem is supplied as the parent PATH and NO symbol is created for it. The
+      // damage is still declared, on every symbol reached through here.
       this.pushChildren(stack, node, {
-        parent: scope,
+        parent: null,
         parentPath: documentName,
         pointerPath: "",
         document: documentName,
@@ -1448,6 +1435,12 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       metadata,
     }
+    // Every symbol carries a complexity, not only the ones whose value node happened to
+    // be inspectable. A document or an anchor has no child mapping to count, and 1 is
+    // the honest figure for "this node declares one thing" — a payload that is present on
+    // 98.5% of rows is a payload no consumer can rely on. The contract probe asserts
+    // totality, and the corpus census reports the count that would catch a regression.
+    symbol.complexity = 1
     ctx.symbols.push(symbol)
 
     if (parent) {
