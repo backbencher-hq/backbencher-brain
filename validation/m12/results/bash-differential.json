@@ -164,8 +164,8 @@
         "bytes": 14474
       },
       "src/ast/real-html-analyzer.ts": {
-        "sha256": "0f96a899b361bf2898d790cad0d5f7277096ecc6d20d681aa104dfeb37d1b70a",
-        "bytes": 83469
+        "sha256": "af14ec082c1545e61f1d96c85e456db2c9f329ff4d878302e9e3074249f04ff7",
+        "bytes": 92952
       },
       "src/ast/real-java-analyzer.ts": {
         "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
@@ -208,8 +208,8 @@
         "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "a652b5fd1c29707e96969dbfb8f0ac3f264c9b40b716fcd67d1ae0e6e0709526",
-        "bytes": 72927
+        "sha256": "6b5ed42d87e8ac4f55abdcb876131846093554fc81fe4ca429b27ae172424c7e",
+        "bytes": 75164
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -244,8 +244,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "5a031756c3bb8015146fde5c49cb37b5b4129ca13e9ad30c9c573e506bfef315",
-        "bytes": 239741
+        "sha256": "5375214a3aa8e5a3af397ee9465129868c9b53099b5dd93575c10ca10488c76a",
+        "bytes": 241616
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -395,11 +395,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:bash",
-      "wallTimeMs": 371.730595,
-      "userCpuMs": 85.261,
-      "systemCpuMs": 13.841,
-      "peakRssBytes": 230551552,
-      "rssDeltaBytes": 1589248,
+      "wallTimeMs": 90.260427,
+      "userCpuMs": 70.053,
+      "systemCpuMs": 8.796,
+      "peakRssBytes": 236019712,
+      "rssDeltaBytes": -1282048,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
