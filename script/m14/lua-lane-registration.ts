@@ -1,0 +1,107 @@
+// Lua's registration entry for script/m14/verify-grammar-pins.ts, ready to paste.
+//
+// WHY THIS IS A FILE AND NOT AN EDIT
+// ---------------------------------
+// script/m14/verify-grammar-pins.ts was under active co-agent edit for the whole
+// of this lane (+538 uncommitted lines at the last check), and it is the family's
+// pin CONTRACT. Adding a lane to a contract another agent is mid-edit is how
+// lines get lost. So the entry is prepared here, with everything measured, and the
+// one-line paste is deferred to a quiet tree — the same decision the differential
+// wiring and the run-fixtures LANGS entry are waiting on.
+//
+// WHY REGISTRATION AND NOT A SWAP
+// ------------------------------
+// The wave-4 recommendation was to REPLACE wasm/tree-sitter-lua.wasm with the
+// @tree-sitter-grammars/tree-sitter-lua@0.4.1 npm tarball wasm. That was wrong,
+// and the correction is recorded in validation/m60/lua/wave1-findings.json
+// (LUA-G2 RETRACTED).
+//
+// validation/m12/corpus-manifest.json has recorded since 2026-08-20 that the
+// wired grammar IS 0.4.1, "WASM rebuilt from published source". Every measurement
+// agrees with exactly that:
+//   - the wired sha256 differs from the npm tarball BECAUSE the bytes were rebuilt
+//     rather than copied;
+//   - declared identity is identical (name=lua, abiVersion=15, 22 fields,
+//     262 states);
+//   - the type-set and field-set digests are identical;
+//   - per-file trees are identical on 1,510 of 1,510 files.
+// Swapping a documented local REBUILD for the published TARBALL would change
+// nothing semantically and would DISCARD the rebuild provenance the manifest
+// records. So the correct action is a registration with
+// `kind: "local-rebuild-from-vendored-source"` — the kind fsharp already uses —
+// and no change to wasm/ at all.
+//
+// THE VENDORED SOURCE
+// -------------------
+// grammars/tree-sitter-lua/ holds grammar.js + src/ (scanner.c, grammar.json,
+// node-types.json, tree_sitter/ headers) + package.json + README.md + LICENSE.md
+// from the 0.4.1 tarball. The GENERATED src/parser.c is deliberately not vendored,
+// for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds
+// it from grammar.js, and the source-to-wasm check below runs on the generated
+// JSONs, not on parser.c.
+//
+// A NEAR-MISS WORTH RECORDING. The first vendoring pass copied from a working
+// directory into which TWO tarballs had been unpacked under the same `package/`
+// prefix, so it vendored tree-sitter-lua@2.1.3 (a different grammar with a
+// different vocabulary: `prefix_expression`, `function_definition_statement`,
+// `local_variable_declaration`) instead of @tree-sitter-grammars@0.4.1. It was
+// caught by checking the vendored source's node-types against what the wired wasm
+// actually emits — 21 of the wired grammar's types were unaccounted for. The
+// corrected vendoring accounts for every one. The check that caught it is the one
+// the pin contract's source-to-wasm leg exists to perform, and running it by hand
+// before registering is cheaper than registering the wrong grammar.
+export const LUA_LANE_ENTRY = {
+  lua: {
+    wired: "wasm/tree-sitter-lua.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { package: "@tree-sitter-grammars/tree-sitter-lua", version: "0.4.1" },
+      patches: [],
+      patchEvidence:
+        "No patches. The wired bytes are a local rebuild of the published 0.4.1 source and nothing else — which is why the wired sha256 differs from the npm tarball's while every semantic measure agrees with it: declared identity identical (name=lua, abiVersion=15, 22 fields, 262 states), type-set and field-set digests identical, and per-file tree digests identical on 1,510 of 1,510 files across kong, luvit and the grammar's own tests. validation/m12/corpus-manifest.json has recorded this rebuild since 2026-08-20.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-lua",
+      note:
+        "grammar.js + src/ (scanner.c, grammar.json, node-types.json, tree_sitter/ alloc.h, array.h, parser.h) + package.json + README.md + LICENSE.md, byte-for-byte from the @tree-sitter-grammars/tree-sitter-lua@0.4.1 tarball. The GENERATED src/parser.c is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source-to-wasm check runs on the generated JSONs.",
+    },
+    decision:
+      "REGISTERED AS-IS, NOT SWAPPED. The incumbent is a local rebuild of the published 0.4.1 source and is semantically identical to that release: identical declared identity, identical type-set and field-set digests, and identical per-file trees on 1,510 of 1,510 corpus files. Replacing a documented rebuild with the published tarball would buy nothing measurable and would discard the rebuild provenance the corpus manifest records. This lane's earlier recommendation to swap is RETRACTED; the correction and the measurements behind it are in validation/m60/lua/wave1-findings.json (LUA-G2).",
+    alternatives: [
+      {
+        option: "replace the rebuild with the @tree-sitter-grammars/tree-sitter-lua@0.4.1 npm tarball wasm",
+        measured:
+          "byte-different, semantically identical: declared identity, type-set digest and field-set digest all equal, per-file trees identical on 1,510/1,510 corpus files. The only thing the swap changes is the recorded provenance, from a declared rebuild to a declared copy.",
+        artifact: "validation/m12/results/lua-grammar-ab.json (produced by script/m12/lua-wasm-compare.ts)",
+        rejected: true,
+        why:
+          "A swap with no measurable gain and a provenance loss is not an improvement. Recorded as a measured alternative rather than omitted, because 'we looked at it and it changes nothing' is a result.",
+      },
+      {
+        option: "upstream 0.5.0 (the current grammar-repo version)",
+        measured: "NOT MEASURED — and named as a gap rather than a finding. No cargo, rustc or emscripten is installed on this machine, so the wasm cannot be built from source here. 0.5.0's node-types adds implicit_variable_declaration relative to 0.4.1, so it is a real candidate and is NOT ruled out.",
+        artifact: null,
+        rejected: false,
+        why:
+          "This is the one alternative that could still improve the lane, and it is blocked on a toolchain rather than on judgement. It needs a machine that can build a tree-sitter grammar.",
+      },
+    ],
+    evidence: [
+      "validation/m12/results/lua-grammar-ab.json",
+      "validation/m60/results/lua-surface-digest.json",
+      "validation/m60/lua/wave1-findings.json",
+      "script/m12/lua-wasm-compare.ts",
+      "script/m60/lua-surface-digest.ts",
+      "script/m60/lua-wasm-identity.ts",
+      "script/m60/lua-provenance-probe.ts",
+    ],
+    copies: [{ label: "mirror", path: "~/.bb/wasm/tree-sitter-lua.wasm" }],
+    notVendored: [
+      { path: "src/parser.c", why: "generated from grammar.js by `tree-sitter generate`; the source-to-wasm check runs on the generated JSONs" },
+      { path: "binding.gyp, bindings/", why: "native bindings; not parser source" },
+      { path: "queries/", why: "editor queries; the engine does not load them" },
+      { path: "tree-sitter-lua.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+} as const
