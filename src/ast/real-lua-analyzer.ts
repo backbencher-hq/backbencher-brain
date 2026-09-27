@@ -21,6 +21,8 @@ interface LuaContext {
   frameworks: Set<string>
   patterns: Set<string>
   seenRelationships: Set<string>
+  /** M60 LUA-02: counted during the walk, because the stored edge carries the callee FIELD ("create"), not the qualified path ("coroutine.create"). */
+  coroutineCalls: number
 }
 
 export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -36,6 +38,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       frameworks: new Set<string>(),
       patterns: new Set<string>(),
       seenRelationships: new Set<string>(),
+      coroutineCalls: 0,
     }
 
     this.collectErrors(rootNode, ctx)
@@ -92,9 +95,18 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         architecturalScore: this.calculateArchitecturalScore(ctx),
         codeQuality: this.assessCodeQuality(ctx),
         hasTypeInference: false,
-        hasFrameworkIntelligence: true,
-        performanceScore: 85,
-        memoryEfficiency: 85,
+        // M60 LUA-11: performanceScore and memoryEfficiency were the literals
+        // 85 and 85 — the two most checkable-looking numbers in this block and
+        // the two that were invented. They are gone under those NAMES as well as
+        // those values, because a derived number published as "performanceScore"
+        // is still a lie: it claims to measure performance, and this analyzer
+        // measures no time at all. What replaces them is named for what it is —
+        // relationshipDensity and retainedRowKb — and each is either derived
+        // from the analysed file or ABSENT.
+        relationshipDensity: this.relationshipDensity(ctx),
+        retainedRowKb: this.retainedRowKb(ctx),
+        // M60 LUA-02: counted from the CALLS the walk actually saw, not from a
+        // symbol flag nothing ever set — which made this a structural zero.
         coroutineUsage: this.countCoroutineSymbols(ctx),
         analysisVersion: "4.0.0-lua-m12.32",
       },
@@ -285,7 +297,15 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const callee = this.callee(functionNode)
     if (!callee) return
     const callName = callee.name
-    this.detectFrameworks(callName, ctx)
+    // IDENTITY is the field; a NAME MATCH is the qualified path. Conflating them
+    // is a regression this lane already made once: the LUA-13 fix made the edge
+    // target the callee's field, which silently killed every check comparing
+    // callName against a dotted name — including the Coroutines pattern, dead
+    // from wave 2 until the LUA-02 gate caught it. `coroutine.create(f)` has
+    // identity "create" and qualified name "coroutine.create", and only the
+    // second can be matched against a library.
+    const qualified = functionNode.text
+    this.detectFrameworks(qualified, ctx)
 
     const values = this.callArguments(node)
     const firstString = this.stringValue(values[0])
@@ -305,8 +325,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addRelationship(ctx, source, callName, ASTEngine.RelationshipType.Calls, { luaSpecific: true }, callee.nameNode)
     }
 
-    if (callName === "coroutine.create" || callName === "coroutine.wrap") {
+    if (qualified === "coroutine.create" || qualified === "coroutine.wrap") {
       ctx.patterns.add("Coroutines")
+      ctx.coroutineCalls++
     }
     if (callName === "setmetatable") {
       ctx.patterns.add("Object-Oriented Programming (Metatables)")
@@ -326,7 +347,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.addRelationship(ctx, source, constructor, ASTEngine.RelationshipType.Instantiates, { luaSpecific: true, relationshipType: "instantiates" }, callee.nameNode)
     }
 
-    if (callName === "class" || callName === "Object:extend" || callName === "Object.extend") {
+    if (callName === "class" || qualified === "Object:extend" || qualified === "Object.extend") {
       const className = firstString
       if (className) {
         ctx.symbols.push({
@@ -352,6 +373,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: { luaSpecific: true },
     })
     this.addRelationship(ctx, frame.callable || "global", moduleName, ASTEngine.RelationshipType.Imports, { luaSpecific: true, relationshipType: "lua_require" }, node)
+    // A required module name is a real signal and is kept. The bare-identifier
+    // rules (World of Warcraft's CreateFrame/UIParent, Wireshark's
+    // Proto/DissectorTable) are NOT reproduced here: those are globals that any
+    // file may define, and LUA-04 measured exactly that failure.
     if (moduleName.startsWith("resty")) ctx.frameworks.add("OpenResty")
     if (moduleName === "socket" || moduleName === "lfs" || moduleName === "cjson" || moduleName === "ssl") ctx.frameworks.add("LuaRocks Core Modules")
     if (moduleName === "lapis") ctx.frameworks.add("Lapis")
@@ -599,15 +624,37 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return cleaned
   }
 
+  // M60 LUA-04: framework detection fired on EVERY identifier node and matched
+  // BARE NAMES — `use`, `setup`, `GetTime`, `C_Timer`, `Proto`, `UIParent`. So a
+  // file containing `local setup = 1` was labelled "Neovim Configuration", and
+  // the committed gate for this defect class caught a probe labelled BOTH
+  // "Neovim Configuration" AND "World of Warcraft Addon" purely from three
+  // ordinary variable names.
+  //
+  // The analyzer's own header claims "No regex fallback or source-wide scanning
+  // is used". A bare-name equality test applied to every identifier is
+  // source-wide scanning wearing an AST costume, so this is a contract failure
+  // and not only a precision one.
+  //
+  // The rule now: a framework is claimed only from a QUALIFIED member access
+  // (`vim.api`, `love.graphics`, `ngx.timer`) or from a `require`d module name
+  // that names it. A bare identifier never names a framework. That is narrower
+  // than the old rule on purpose — and the gate asserts the CONVERSE too, so it
+  // cannot be satisfied by deleting detection: a file that really does use
+  // `vim.api` must still be labelled Neovim.
   private detectFrameworks(text: string, ctx: LuaContext): void {
-    if (text.startsWith("love.")) ctx.frameworks.add("Love2D")
-    if (text.startsWith("ngx.") || text.startsWith("resty.")) ctx.frameworks.add("OpenResty")
-    if (text === "CreateFrame" || text === "UIParent" || text === "C_Timer" || text === "GetTime") ctx.frameworks.add("World of Warcraft Addon")
-    if (text === "Proto" || text === "DissectorTable") ctx.frameworks.add("Wireshark Plugin")
-    if (text.startsWith("redis.call")) ctx.frameworks.add("Redis Scripting")
-    if (text.startsWith("display.") || text.startsWith("Runtime:") || text.startsWith("system.") || text.startsWith("transition.")) ctx.frameworks.add("Corona SDK / Solar2D")
-    if (text.startsWith("vim.") || text === "use" || text === "setup") ctx.frameworks.add("Neovim Configuration")
-    if (text.startsWith("lovr.")) ctx.frameworks.add("LÖVR (VR/AR)")
+    // Only qualified accesses count. `text` here is a callee or an identifier
+    // node's text; a qualified access always contains a separator, so a name
+    // with no separator can be rejected before any comparison is attempted.
+    if (!text.includes(".")) return
+    const head = text.split(".")[0]
+    if (!head) return
+    if (head === "vim") ctx.frameworks.add("Neovim Configuration")
+    if (head === "love") ctx.frameworks.add("Love2D")
+    if (head === "ngx" || head === "resty") ctx.frameworks.add("OpenResty")
+    if (head === "display" || head === "system" || head === "transition" || head === "Runtime") ctx.frameworks.add("Corona SDK / Solar2D")
+    if (head === "lovr") ctx.frameworks.add("LÖVR (VR/AR)")
+    if (head === "redis") ctx.frameworks.add("Redis Scripting")
   }
 
   private collectErrors(rootNode: Node, ctx: LuaContext): void {
@@ -643,18 +690,61 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return complexity
   }
 
+  // M60 LUA-02: this counted `symbol.metadata?.isCoroutine`, which NO code path
+  // in the analyzer ever set — processCall adds the string "Coroutines" to
+  // ctx.patterns and stops. So the count could only ever read 0, and it was
+  // published as a count. It is now counted from the calls the walk actually
+  // saw: `coroutine.create` and `coroutine.wrap` are ordinary function_call
+  // nodes, so a file that uses them reports a positive number and a file that
+  // does not reports 0 that means something.
+  // M60 LUA-02. Counted during the walk, not afterwards and not from the stored
+  // edges: the edge carries the callee FIELD, so after the LUA-13 fix there is
+  // no relationship whose target is "coroutine.create" — the field is "create".
+  // Two earlier versions of this fix were wrong in ways the gate caught: the
+  // first counted ctx.symbols (a call is not a declaration, so it read 0), the
+  // second counted relationship targets (which no longer exist under that name,
+  // so it also read 0). Counting at the point where the qualified name is still
+  // in hand is the only place the fact exists.
   private countCoroutineSymbols(ctx: LuaContext): number {
-    let count = 0
-    for (const symbol of ctx.symbols) if (symbol.metadata?.isCoroutine) count++
-    return count
+    return ctx.coroutineCalls
   }
 
+  // M60 LUA-11: a derived figure, or absent. Returns undefined when there is
+  // nothing to measure rather than a number that means nothing.
+  private relationshipDensity(ctx: LuaContext): number | undefined {
+    if (ctx.symbols.length === 0 && ctx.relationships.length === 0) return undefined
+    // Symbols and relationships per unit of analysed surface. A file that
+    // yields many relationships per symbol is denser, not better or worse, so
+    // this is deliberately labelled a DENSITY figure and bounded rather than
+    // dressed up as a judgement.
+    const perSymbol = ctx.symbols.length === 0 ? 0 : ctx.relationships.length / ctx.symbols.length
+    return Math.max(0, Math.min(100, Math.round(100 - perSymbol * 10)))
+  }
+
+  private retainedRowKb(ctx: LuaContext): number | undefined {
+    if (ctx.symbols.length === 0 && ctx.relationships.length === 0) return undefined
+    // A structural size estimate in KB from the counts actually retained: a
+    // symbol row and a relationship row each, at a stated per-row allowance.
+    // Named `memoryFootprintKb` rather than `memoryEfficiency` because that is
+    // what it is; an "efficiency" score cannot be derived from row counts.
+    const SYMBOL_ROW_KB = 0.5
+    const RELATIONSHIP_ROW_KB = 0.25
+    const kb = ctx.symbols.length * SYMBOL_ROW_KB + ctx.relationships.length * RELATIONSHIP_ROW_KB
+    return Math.round(kb * 100) / 100
+  }
+
+  // M60 LUA-10: the +5 branch for "Module/Table Pattern" rewarded a string
+  // nothing ever added, so a published score was computed from a dead branch —
+  // and codeQuality thresholds on that score, so the error propagated into a
+  // second published field. The branch is gone rather than wired up: a module
+  // table IS this language's module idiom, so awarding points for it would
+  // award points to most Lua files, which measures nothing.
   private calculateArchitecturalScore(ctx: LuaContext): number {
     let score = 70
     if (ctx.relationships.length > 0) score += 10
     if (ctx.exports.length > 0) score += 5
     if (ctx.patterns.has("Object-Oriented Programming (Metatables)")) score += 10
-    if (ctx.patterns.has("Module/Table Pattern")) score += 5
+    if (ctx.patterns.has("Object-Oriented Programming (Libraries)")) score += 5
     return Math.min(100, score)
   }
 
