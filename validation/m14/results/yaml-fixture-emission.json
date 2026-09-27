@@ -1,5 +1,5 @@
 {
- "at": "2026-09-27T16:39:57.167Z",
+ "at": "2026-09-27T17:25:38.059Z",
  "note": "Re-probed emission for validation/m14/fixtures/yaml/*.yaml, from which each .expectation.json is authored. Regenerate with: bun run script/m14/tmp/yaml-fixture-dump.ts",
  "fixtures": {
   "anchor-document-scope-negative.yaml": {
@@ -1287,24 +1287,26 @@
   "error-recovery-identity.yaml": {
    "symbols": [
     {
-     "name": "recovered_scope",
+     "name": "error-recovery-identity",
      "kind": "module",
-     "id": "error-recovery-identity#damaged@1",
+     "id": "error-recovery-identity",
      "line": 1,
      "metadata": {
       "yamlSpecific": true,
-      "nodeType": "ERROR",
+      "nodeType": "document",
+      "documentIndex": 1,
       "recovered": true,
       "damageNodeType": "ERROR",
       "damageLine": 1,
-      "fullPath": "error-recovery-identity#damaged@1"
+      "damageWidth": 616,
+      "fullPath": "error-recovery-identity"
      }
     },
     {
      "name": "steps",
      "kind": "variable",
-     "id": "error-recovery-identity#damaged@1.steps",
-     "ownerName": "error-recovery-identity#damaged@1",
+     "id": "error-recovery-identity.steps",
+     "ownerName": "error-recovery-identity",
      "line": 7,
      "complexity": 3,
      "docstring": "explicit, named scope and the damage is DECLARED rather than silent.",
@@ -1313,13 +1315,17 @@
       "nodeType": "block_mapping_pair",
       "valueType": "array",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps",
+      "fullPath": "error-recovery-identity.steps",
       "pointerPath": "/steps",
       "isObject": false,
       "isArray": true,
       "isMergeKey": false,
       "isAlias": false,
       "recovered": true,
+      "recoveredThrough": {
+       "line": 1,
+       "width": 616
+      },
       "line": 7,
       "itemCount": 3
      }
@@ -1327,8 +1333,8 @@
     {
      "name": "item_0",
      "kind": "class",
-     "id": "error-recovery-identity#damaged@1.steps[0]",
-     "ownerName": "error-recovery-identity#damaged@1.steps",
+     "id": "error-recovery-identity.steps[0]",
+     "ownerName": "error-recovery-identity.steps",
      "line": 8,
      "complexity": 2,
      "metadata": {
@@ -1336,7 +1342,7 @@
       "nodeType": "block_sequence_item",
       "valueType": "object",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[0]",
+      "fullPath": "error-recovery-identity.steps[0]",
       "pointerPath": "/steps/0",
       "isArrayItem": true,
       "arrayIndex": 0,
@@ -1347,8 +1353,8 @@
     {
      "name": "name",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[0].name",
-     "ownerName": "error-recovery-identity#damaged@1.steps[0]",
+     "id": "error-recovery-identity.steps[0].name",
+     "ownerName": "error-recovery-identity.steps[0]",
      "line": 8,
      "complexity": 1,
      "metadata": {
@@ -1356,7 +1362,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[0].name",
+      "fullPath": "error-recovery-identity.steps[0].name",
       "pointerPath": "/steps/0/name",
       "isObject": false,
       "isArray": false,
@@ -1370,8 +1376,8 @@
     {
      "name": "image",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[0].image",
-     "ownerName": "error-recovery-identity#damaged@1.steps[0]",
+     "id": "error-recovery-identity.steps[0].image",
+     "ownerName": "error-recovery-identity.steps[0]",
      "line": 9,
      "complexity": 1,
      "metadata": {
@@ -1379,7 +1385,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[0].image",
+      "fullPath": "error-recovery-identity.steps[0].image",
       "pointerPath": "/steps/0/image",
       "isObject": false,
       "isArray": false,
@@ -1393,8 +1399,8 @@
     {
      "name": "item_1",
      "kind": "class",
-     "id": "error-recovery-identity#damaged@1.steps[1]",
-     "ownerName": "error-recovery-identity#damaged@1.steps",
+     "id": "error-recovery-identity.steps[1]",
+     "ownerName": "error-recovery-identity.steps",
      "line": 10,
      "complexity": 2,
      "metadata": {
@@ -1402,7 +1408,7 @@
       "nodeType": "block_sequence_item",
       "valueType": "object",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[1]",
+      "fullPath": "error-recovery-identity.steps[1]",
       "pointerPath": "/steps/1",
       "isArrayItem": true,
       "arrayIndex": 1,
@@ -1413,8 +1419,8 @@
     {
      "name": "name",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[1].name",
-     "ownerName": "error-recovery-identity#damaged@1.steps[1]",
+     "id": "error-recovery-identity.steps[1].name",
+     "ownerName": "error-recovery-identity.steps[1]",
      "line": 10,
      "complexity": 1,
      "metadata": {
@@ -1422,7 +1428,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[1].name",
+      "fullPath": "error-recovery-identity.steps[1].name",
       "pointerPath": "/steps/1/name",
       "isObject": false,
       "isArray": false,
@@ -1436,8 +1442,8 @@
     {
      "name": "image",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[1].image",
-     "ownerName": "error-recovery-identity#damaged@1.steps[1]",
+     "id": "error-recovery-identity.steps[1].image",
+     "ownerName": "error-recovery-identity.steps[1]",
      "line": 11,
      "complexity": 1,
      "metadata": {
@@ -1445,7 +1451,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[1].image",
+      "fullPath": "error-recovery-identity.steps[1].image",
       "pointerPath": "/steps/1/image",
       "isObject": false,
       "isArray": false,
@@ -1459,8 +1465,8 @@
     {
      "name": "item_2",
      "kind": "class",
-     "id": "error-recovery-identity#damaged@1.steps[2]",
-     "ownerName": "error-recovery-identity#damaged@1.steps",
+     "id": "error-recovery-identity.steps[2]",
+     "ownerName": "error-recovery-identity.steps",
      "line": 12,
      "complexity": 2,
      "metadata": {
@@ -1468,7 +1474,7 @@
       "nodeType": "block_sequence_item",
       "valueType": "object",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[2]",
+      "fullPath": "error-recovery-identity.steps[2]",
       "pointerPath": "/steps/2",
       "isArrayItem": true,
       "arrayIndex": 2,
@@ -1479,8 +1485,8 @@
     {
      "name": "name",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[2].name",
-     "ownerName": "error-recovery-identity#damaged@1.steps[2]",
+     "id": "error-recovery-identity.steps[2].name",
+     "ownerName": "error-recovery-identity.steps[2]",
      "line": 12,
      "complexity": 1,
      "metadata": {
@@ -1488,7 +1494,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[2].name",
+      "fullPath": "error-recovery-identity.steps[2].name",
       "pointerPath": "/steps/2/name",
       "isObject": false,
       "isArray": false,
@@ -1502,8 +1508,8 @@
     {
      "name": "image",
      "kind": "property",
-     "id": "error-recovery-identity#damaged@1.steps[2].image",
-     "ownerName": "error-recovery-identity#damaged@1.steps[2]",
+     "id": "error-recovery-identity.steps[2].image",
+     "ownerName": "error-recovery-identity.steps[2]",
      "line": 13,
      "complexity": 1,
      "metadata": {
@@ -1511,7 +1517,7 @@
       "nodeType": "block_mapping_pair",
       "valueType": "string",
       "valueTypeSource": "grammar",
-      "fullPath": "error-recovery-identity#damaged@1.steps[2].image",
+      "fullPath": "error-recovery-identity.steps[2].image",
       "pointerPath": "/steps/2/image",
       "isObject": false,
       "isArray": false,
@@ -1526,80 +1532,80 @@
    "relationships": [
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1",
-     "target": "error-recovery-identity#damaged@1.steps",
+     "source": "error-recovery-identity",
+     "target": "error-recovery-identity.steps",
      "confidence": 1,
      "line_number": 7,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps",
-     "target": "error-recovery-identity#damaged@1.steps[0]",
+     "source": "error-recovery-identity.steps",
+     "target": "error-recovery-identity.steps[0]",
      "confidence": 1,
      "line_number": 8,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[0]",
-     "target": "error-recovery-identity#damaged@1.steps[0].name",
+     "source": "error-recovery-identity.steps[0]",
+     "target": "error-recovery-identity.steps[0].name",
      "confidence": 1,
      "line_number": 8,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[0]",
-     "target": "error-recovery-identity#damaged@1.steps[0].image",
+     "source": "error-recovery-identity.steps[0]",
+     "target": "error-recovery-identity.steps[0].image",
      "confidence": 1,
      "line_number": 9,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps",
-     "target": "error-recovery-identity#damaged@1.steps[1]",
+     "source": "error-recovery-identity.steps",
+     "target": "error-recovery-identity.steps[1]",
      "confidence": 1,
      "line_number": 10,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[1]",
-     "target": "error-recovery-identity#damaged@1.steps[1].name",
+     "source": "error-recovery-identity.steps[1]",
+     "target": "error-recovery-identity.steps[1].name",
      "confidence": 1,
      "line_number": 10,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[1]",
-     "target": "error-recovery-identity#damaged@1.steps[1].image",
+     "source": "error-recovery-identity.steps[1]",
+     "target": "error-recovery-identity.steps[1].image",
      "confidence": 1,
      "line_number": 11,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps",
-     "target": "error-recovery-identity#damaged@1.steps[2]",
+     "source": "error-recovery-identity.steps",
+     "target": "error-recovery-identity.steps[2]",
      "confidence": 1,
      "line_number": 12,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[2]",
-     "target": "error-recovery-identity#damaged@1.steps[2].name",
+     "source": "error-recovery-identity.steps[2]",
+     "target": "error-recovery-identity.steps[2].name",
      "confidence": 1,
      "line_number": 12,
      "evidenceClass": "structural"
     },
     {
      "type": "contains",
-     "source": "error-recovery-identity#damaged@1.steps[2]",
-     "target": "error-recovery-identity#damaged@1.steps[2].image",
+     "source": "error-recovery-identity.steps[2]",
+     "target": "error-recovery-identity.steps[2].image",
      "confidence": 1,
      "line_number": 13,
      "evidenceClass": "structural"
@@ -1617,7 +1623,7 @@
     "reservedDirectives": [],
     "securityScore": 100,
     "sensitiveValueCount": 0,
-    "documentCount": 0
+    "documentCount": 1
    }
   },
   "framework-shape-negative.yaml": {
@@ -5784,6 +5790,362 @@
     "framework": null,
     "frameworkPatterns": [],
     "patterns": [],
+    "yamlVersion": null,
+    "reservedDirectives": [],
+    "securityScore": 100,
+    "sensitiveValueCount": 0,
+    "documentCount": 1
+   }
+  },
+  "value-vocabulary.yaml": {
+   "symbols": [
+    {
+     "name": "value-vocabulary",
+     "kind": "module",
+     "id": "value-vocabulary",
+     "line": 8,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "document",
+      "documentIndex": 1,
+      "fullPath": "value-vocabulary"
+     }
+    },
+    {
+     "name": "object",
+     "kind": "class",
+     "id": "value-vocabulary.object",
+     "ownerName": "value-vocabulary",
+     "line": 8,
+     "complexity": 1,
+     "docstring": "`danglingAnchor` is the shape that produces it: an anchor with no value.",
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "object",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.object",
+      "pointerPath": "/object",
+      "isObject": true,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 8
+     }
+    },
+    {
+     "name": "a",
+     "kind": "property",
+     "id": "value-vocabulary.object.a",
+     "ownerName": "value-vocabulary.object",
+     "line": 9,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.object.a",
+      "pointerPath": "/object/a",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "integer",
+      "line": 9
+     }
+    },
+    {
+     "name": "array",
+     "kind": "variable",
+     "id": "value-vocabulary.array",
+     "ownerName": "value-vocabulary",
+     "line": 10,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "array",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.array",
+      "pointerPath": "/array",
+      "isObject": false,
+      "isArray": true,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 10,
+      "itemCount": 1
+     }
+    },
+    {
+     "name": "string",
+     "kind": "property",
+     "id": "value-vocabulary.string",
+     "ownerName": "value-vocabulary",
+     "line": 12,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.string",
+      "pointerPath": "/string",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "string",
+      "line": 12
+     }
+    },
+    {
+     "name": "integer",
+     "kind": "property",
+     "id": "value-vocabulary.integer",
+     "ownerName": "value-vocabulary",
+     "line": 13,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.integer",
+      "pointerPath": "/integer",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "integer",
+      "line": 13
+     }
+    },
+    {
+     "name": "float",
+     "kind": "property",
+     "id": "value-vocabulary.float",
+     "ownerName": "value-vocabulary",
+     "line": 14,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "float",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.float",
+      "pointerPath": "/float",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "float",
+      "line": 14
+     }
+    },
+    {
+     "name": "boolean",
+     "kind": "property",
+     "id": "value-vocabulary.boolean",
+     "ownerName": "value-vocabulary",
+     "line": 15,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "boolean",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.boolean",
+      "pointerPath": "/boolean",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "boolean",
+      "line": 15
+     }
+    },
+    {
+     "name": "nullValue",
+     "kind": "property",
+     "id": "value-vocabulary.nullValue",
+     "ownerName": "value-vocabulary",
+     "line": 16,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "null",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.nullValue",
+      "pointerPath": "/nullValue",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "null",
+      "line": 16
+     }
+    },
+    {
+     "name": "danglingAnchor",
+     "kind": "property",
+     "id": "value-vocabulary.danglingAnchor",
+     "ownerName": "value-vocabulary",
+     "line": 17,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "untyped",
+      "valueTypeSource": "default",
+      "fullPath": "value-vocabulary.danglingAnchor",
+      "pointerPath": "/danglingAnchor",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 17
+     }
+    },
+    {
+     "name": "lonely",
+     "kind": "constant",
+     "id": "value-vocabulary.danglingAnchor#lonely",
+     "ownerName": "value-vocabulary.danglingAnchor",
+     "line": 17,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "anchor",
+      "isAnchor": true,
+      "anchorName": "lonely",
+      "anchorDocument": "value-vocabulary",
+      "anchorScope": "value-vocabulary.danglingAnchor",
+      "fullPath": "value-vocabulary.danglingAnchor#lonely",
+      "line": 17
+     }
+    },
+    {
+     "name": "stillAnInteger",
+     "kind": "property",
+     "id": "value-vocabulary.stillAnInteger",
+     "ownerName": "value-vocabulary",
+     "line": 18,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "value-vocabulary.stillAnInteger",
+      "pointerPath": "/stillAnInteger",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "scalarType": "integer",
+      "line": 18
+     }
+    }
+   ],
+   "relationships": [
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.object",
+     "confidence": 1,
+     "line_number": 8,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary.object",
+     "target": "value-vocabulary.object.a",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.array",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.string",
+     "confidence": 1,
+     "line_number": 12,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.integer",
+     "confidence": 1,
+     "line_number": 13,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.float",
+     "confidence": 1,
+     "line_number": 14,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.boolean",
+     "confidence": 1,
+     "line_number": 15,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.nullValue",
+     "confidence": 1,
+     "line_number": 16,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.danglingAnchor",
+     "confidence": 1,
+     "line_number": 17,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary.danglingAnchor",
+     "target": "value-vocabulary.danglingAnchor#lonely",
+     "confidence": 1,
+     "line_number": 17,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "contains",
+     "source": "value-vocabulary",
+     "target": "value-vocabulary.stillAnInteger",
+     "confidence": 1,
+     "line_number": 18,
+     "evidenceClass": "structural"
+    }
+   ],
+   "imports": [],
+   "metadata": {
+    "detectedFrameworks": [],
+    "framework": null,
+    "frameworkPatterns": [],
+    "patterns": [
+     "Anchors and Aliases"
+    ],
     "yamlVersion": null,
     "reservedDirectives": [],
     "securityScore": 100,

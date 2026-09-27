@@ -20,6 +20,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
+import { YAML_MUTANTS } from "../m60/yaml-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -11996,6 +11997,11 @@ export const MUTANTS: Mutant[] = [
   // which is also why a separate module is the only way to give these entries
   // their own type surface.
   ...POWERSHELL_MUTANTS,
+
+  // M14.0.F4 (#286): yaml. The lane had no fixtures and no mutants at all, so nothing
+  // in it could go red — see script/m60/yaml-mutants.ts for why that is the finding
+  // rather than a footnote, and for which pin carries each class.
+  ...YAML_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

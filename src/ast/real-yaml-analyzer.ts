@@ -125,6 +125,12 @@ interface VisitContext {
   inSecretDocument?: boolean
   /** Inside a subtree already judged sensitive (a Secret payload, a sensitive key). */
   inSensitiveSubtree?: boolean
+  /**
+   * The grammar-damage site this node was reached through, if any. Carried so a
+   * recovered symbol can say WHERE it was recovered, rather than the whole file being
+   * renamed to advertise it.
+   */
+  recoveredThrough?: { line: number; width: number }
 }
 
 const MAPPING_TYPES = new Set(["block_mapping", "flow_mapping"])
@@ -576,7 +582,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (curr.type === "ERROR" || curr.type === "MISSING") {
-        this.visitDamagedScope(curr, current, ctx, stack)
+        this.descendThroughDamage(curr, current, ctx, stack)
         continue
       }
       if (SEQUENCE_ITEM_TYPES.has(curr.type) && !current.sequenceItem) {
@@ -693,43 +699,69 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * A damaged enclosing node becomes an explicit, named scope rather than an
-   * anonymous parent. This is the fix for the measured collapse in
-   * `docker/vendor/.../cloudbuild.yaml`, where the file is one ERROR node, the
-   * `steps:` pair is destroyed, and every surviving sequence item became `[13]`:
-   * eleven distinct steps sharing one identity, with every `contains` edge into it
-   * addressing all eleven at once, and no error reported.
+   * Descend through a grammar ERROR while KEEPING the enclosing identity.
+   *
+   * WHY NOT A NEW SCOPE. The first version answered damage with damage: a damaged node
+   * became a synthetic `#damaged@<line>` scope and every symbol beneath it was renamed
+   * under that prefix. It stopped ids colliding — which was the actual defect — but it
+   * renamed the ENTIRE key tree of the file, and the F5 differential then reported
+   * 45,990 "unexplained" disagreements that were this one decision, not a disagreement
+   * between the two parsers. Measured on `docker/api/docs/v1.27.yaml`: PyYAML parses
+   * that 271 KB file cleanly, tree-sitter-yaml puts an ERROR at the root, and every
+   * `block_mapping_pair` SURVIVES as a direct child of that ERROR — a single 58-byte
+   * multi-line double-quoted scalar (a `description:` broken across a line break) is
+   * what the grammar cannot lex. Nothing is lost, so nothing should be renamed.
+   *
+   * So: the pairs keep the document's identity, the symbols carry `recovered: true` plus
+   * the line and width of the damage that was passed through, and the file keeps the
+   * pattern. The damage is still declared — on the symbols and in the pattern list —
+   * but it is declared as METADATA rather than baked into every name.
+   *
+   * A root-level ERROR has no `document` node, so the file would otherwise have no
+   * identity at all; that case synthesises the document symbol from the stem, marked
+   * recovered, which is what keeps `v1.27.swagger` instead of `[13].swagger`.
    */
-  private visitDamagedScope(node: Node, current: VisitContext, ctx: YamlContext, stack: { node: Node; context: VisitContext }[]): void {
-    const base = current.parentPath || current.document
-    const scopePath = `${base}#damaged@${node.startPosition.row + 1}`
-    const scope = this.createSymbol(
-      "recovered_scope",
-      ASTEngine.SymbolKind.Module,
-      node,
-      current.parent,
-      current.parentPath,
-      ctx,
-      {
-        yamlSpecific: true,
-        nodeType: node.type,
-        recovered: true,
-        damageNodeType: node.type,
-        damageLine: node.startPosition.row + 1,
-        fullPath: scopePath,
-      },
-      scopePath,
-    )
+  private descendThroughDamage(node: Node, current: VisitContext, ctx: YamlContext, stack: { node: Node; context: VisitContext }[]): void {
+    const site = { line: node.startPosition.row + 1, width: node.endIndex - node.startIndex }
     this.addPattern(ctx, "Grammar Error Recovery")
-    this.pushChildren(stack, node, {
-      parent: scope,
-      parentPath: scopePath,
-      pointerPath: current.pointerPath,
-      document: current.document,
-      depth: current.depth + 1,
-      siblingKeys: new Set(),
-      inSensitiveSubtree: current.inSensitiveSubtree,
-    })
+
+    if (!current.parent) {
+      // No enclosing document: give the file its stem back, marked as recovered.
+      const documentName = this.documentName(ctx.filePath, ctx.documentCount + 1)
+      ctx.documentCount++
+      const scope = this.createSymbol(
+        documentName,
+        ASTEngine.SymbolKind.Module,
+        node,
+        null,
+        "",
+        ctx,
+        {
+          yamlSpecific: true,
+          nodeType: "document",
+          documentIndex: ctx.documentCount,
+          recovered: true,
+          damageNodeType: node.type,
+          damageLine: site.line,
+          damageWidth: site.width,
+          fullPath: documentName,
+        },
+        documentName,
+      )
+      this.pushChildren(stack, node, {
+        parent: scope,
+        parentPath: documentName,
+        pointerPath: "",
+        document: documentName,
+        depth: current.depth + 1,
+        siblingKeys: new Set(),
+        inSensitiveSubtree: current.inSensitiveSubtree,
+        recoveredThrough: site,
+      })
+      return
+    }
+
+    this.pushChildren(stack, node, { ...current, depth: current.depth + 1, recoveredThrough: site })
   }
 
   /**
@@ -817,7 +849,8 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ? "secret-document-payload"
               : "sensitive-subtree"
           : undefined,
-        recovered: current.parent?.metadata?.recovered === true || undefined,
+        recovered: current.recoveredThrough !== undefined || current.parent?.metadata?.recovered === true || undefined,
+        recoveredThrough: current.recoveredThrough,
         declaredType: tag?.shortName,
         tagUri: tag?.uri,
         tagLine: tag?.line,
@@ -1002,7 +1035,8 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
           pointerPath,
           isArrayItem: true,
           arrayIndex: index,
-          recovered: current.parent?.metadata?.recovered === true || undefined,
+          recovered: current.recoveredThrough !== undefined || current.parent?.metadata?.recovered === true || undefined,
+          recoveredThrough: current.recoveredThrough,
           declaredType: tag?.shortName,
           tagUri: tag?.uri,
           tagLine: tag?.line,
