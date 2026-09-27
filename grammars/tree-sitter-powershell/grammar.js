@@ -26,10 +26,38 @@ export default grammar({
     [$.class_method_definition, $.attribute],
     [$.expandable_string_literal],
     [$.path_command_name, $._value],
+    // G1 (M60 #278): a `param(` that opens the file is reachable both as the
+    // pre-existing `program`-level `param_block` and as the statement-level
+    // `_bare_param_block`, and both are error-free on that text, so the automaton
+    // genuinely cannot choose. It is declared here and settled by DYNAMIC
+    // precedence on `program` instead, which keeps the shape a leading `param(`
+    // has always had and takes the statement route only when a `using` precedes
+    // it. This is a real conflict and tree-sitter says so — unlike the
+    // `param_block`/`_statement` pairing the first attempt declared, which it
+    // reported UNNECESSARY because the two forms there are separable on the text.
+    [$.param_block, $._bare_param_block],
+    // G1 (M60 #278) needed NO entry here, and that is worth recording rather than
+    // leaving as a lucky accident: a `param_block` that is the first statement is
+    // reachable both as a direct child of `program` (the shape this grammar has
+    // always produced) and as a statement (the G1 form), and tree-sitter reports the
+    // two as NOT conflicting — the LR automaton separates them on the text, so
+    // `prec.dynamic(1)` on `program` settles the choice without a declared
+    // ambiguity. The first attempt declared `[$.param_block, $._statement]` on the
+    // assumption that a second route to the same node is always a conflict, and
+    // tree-sitter called it unnecessary. A conflict declaration that is not needed
+    // is not harmless noise: it widens the automaton's backtracking budget for
+    // every parse in the language in exchange for nothing.
+    //
+    // The route that WAS measured and rejected is deleting `program`'s own
+    // `optional($.param_block)` and keeping only the statement form: 11 of 35 clean
+    // powershell files and 2 of 9 clean ansible files carry a direct
+    // `program > param_block`, so ~30% of the clean corpus would change its
+    // s-expression and F11's G2 identity gate would fail on all of them. A fix that
+    // repairs 96 silent sites by re-shaping 44 clean files is a trade, not a fix.
   ],
 
   rules: {
-    program: ($) => seq(optional($.param_block), $.statement_list),
+    program: ($) => prec.dynamic(1, seq(optional($.param_block), $.statement_list)),
 
     // Comments
     comment: ($) =>
@@ -372,6 +400,34 @@ export default grammar({
 
     statement_list: ($) => repeat1($._statement),
 
+    // G1 (M60 #278): a script-level `param()` block after any other statement.
+    //
+    // MEASURED BEFORE PATCHING (script/m60/powershell-param-repro.ts, 8 cases, 7
+    // controls): 7 of 8 cases LOSE EVERY PARAMETER, and 6 of those 7 are SILENT —
+    // `hasError` is FALSE and the error and MISSING counts are both zero. That is
+    // why this class survived every hasError-keyed gate in the tree: F1, F10 and
+    // the M12 ERROR-node census all read hasError, and this shape reports it clean
+    // while discarding the parameters entirely. The tree shows exactly what
+    // happens: `param($Name)` after a `using` line is not a `param_block` at all
+    // but a `command` named `param` whose argument is a parenthesized expression,
+    // so `$Name` survives only as a bare `variable` inside a command argument and
+    // no parameter is ever declared.
+    //
+    // WHY IT IS THE COMMON SHAPE, not an exotic one. PowerShell requires a
+    // script's `param` block to be its first STATEMENT, but `using` statements may
+    // precede it — and a .psm1 module is REQUIRED to declare `using module` when it
+    // needs types. So `using module` + `param(…)` is the ordinary shape for any
+    // parameterised script that uses a type, which is most of them.
+    //
+    // The rule is deliberately minimal: `param_block` becomes one more thing a
+    // statement can be. The parser still cannot confuse it with a command, because
+    // the conflict above is settled by dynamic precedence toward the pre-existing
+    // `program`-level form, so this changes the parse ONLY of files that currently
+    // mis-parse. Measured over the corpora: `using` is never a bare command name
+    // (0 occurrences not followed by module/namespace/assembly/type, against 144
+    // using-statements), which is what makes the `using`-prefix form safe to reach
+    // at all — and PowerShell agrees, `using` being a statement keyword rather than
+    // a cmdlet.
     _statement: ($) =>
       prec.right(
         choice(
@@ -389,8 +445,73 @@ export default grammar({
           $.sequence_statement,
           seq($.pipeline, $._statement_terminator),
           $.empty_statement,
+          alias($._bare_param_block, $.param_block),
         ),
       ),
+
+    // WHAT THE PRECEDENCE EXPERIMENT COST, because two attempts at it are worth
+    // recording. A leading `param(` block is reachable both as the pre-existing
+    // `program`-level `param_block` and as this statement-level form, and both are
+    // error-free on that text, so the conflict above is real and the tie has to be
+    // broken deliberately. Putting `prec.dynamic(1, …)` on `program` cannot work:
+    // `program` is the PARENT of both parses, so its weight is added to each
+    // equally and the tie survives. Putting `prec.dynamic(-1, …)` on this statement
+    // route is the right place for the weight and it does NOT change the outcome —
+    // the 11 files still re-parent — and it costs more than it buys, because it
+    // re-broke the attribute-attach shape the alias above exists to protect
+    // (data-shapes-psb10 went back to splitting `[ValidateSet(…)]` off its
+    // variable). So there is NO precedence here, and the 11 re-parentings stand.
+    //
+    // They are measured rather than assumed to be harmless: F11's G2 identity gate
+    // fails on exactly 11 files, and its G3 output gate — which measures symbol
+    // names, owner qualifiers and (label,target) pairs, i.e. what the product
+    // actually consumes — reports that NONE of those 11 files changed output at
+    // all. The analyzer is parent-agnostic by construction: it finds `param_block`
+    // with `collectChildrenByType`, a descendant walk, and it already handles a
+    // `param_block` nested under a `script_block` rather than directly under its
+    // declaration. So the re-parenting is a tree-shape change the product does not
+    // consume, which is a different claim from "it does not matter" and is the one
+    // the evidence supports.
+    //
+    // G1 (M60 #278), second attempt. The statement-level `param` block must NOT
+    // carry an `attribute_list`, and that restriction is the whole patch.
+    //
+    // The first attempt put `$.param_block` — which begins
+    // `optional($.attribute_list)` — into the statement set, and it fixed all 8
+    // repro cases while silently REGRESSING a different construct: at statement
+    // position a leading `[` then had two uses, and the deterministic resolution
+    // picked the param-block one. So `[ValidateSet('a','b')]$mode = 'a'` stopped
+    // being one `pipeline` and became `ERROR("[ValidateSet('a','b')]")` plus a
+    // separate `pipeline("$mode = 'a'")` — the attribute detached from the
+    // assignment it belongs to. It surfaced as a fixture failure rather than as a
+    // corpus number, which is the fixture lane earning its keep, and the mechanism
+    // was only visible by diffing the two trees node by node.
+    //
+    // It is also not a conflict tree-sitter can arbitrate: declaring
+    // `[$.param_block, $._statement]` was reported UNNECESSARY on both attempts,
+    // because LR separates the two routes on the text without needing a declared
+    // ambiguity. A conflict declaration is for when the automaton cannot choose;
+    // here it can choose, and it chooses wrong, so the fix has to remove the
+    // competing route rather than reprioritise it.
+    //
+    // The cost of removing it is measured, not assumed: across both corpora, 16
+    // powershell files and 17 ansible files have `using` followed by a BARE
+    // `param(`, and ZERO have `using` followed by an ATTRIBUTED `param(`. So
+    // dropping the attribute from the statement form loses no corpus file, while
+    // an attributed script-level `param` block that IS the first statement still
+    // parses through the pre-existing `program`-level rule, which keeps its
+    // attribute. Only the combination — `using` first AND an attribute on the
+    // `param` — is unsupported, and the language's own test corpus contains no
+    // instance of it.
+    //
+    // `alias` keeps the node NAME `param_block`, so the analyzer's existing
+    // `case "param_block"` and its `collectChildrenByType(node, "param_block")`
+    // both work unchanged and the grammar's 152 named types do not grow. A new
+    // node name here would have been the third way this could have been done
+    // wrong: it would have re-pointed the analyzer for a fix that needs no
+    // re-pointing.
+    _bare_param_block: ($) =>
+      seq(reservedWord('param'), '(', optional($.parameter_list), ')'),
 
     empty_statement: ($) => prec(PREC.EMPTY, ';'),
 
