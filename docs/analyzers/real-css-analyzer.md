@@ -354,6 +354,29 @@ bounded per-node stack; `detectFrameworksFromClasses`/`calculateMetrics`/
 `generateInsights` iterate the symbol list once each. No O(n²) or per-symbol
 O(n) scans.
 
+## Verification
+
+Eleven gates plus a mutant set. The mutants are 13 faithful reverts of defects
+measured during this work (`script/m60/css-mutants.ts`), and **all 13 are caught** —
+which is the only claim worth making about them. Two did not survive their first
+run, and both gaps were in the pins rather than in the mutants:
+
+- `symbol-identity-collapsed` was unpinned because no fixture repeated a selector, so
+  the lane's largest defect (36.6% of corpus files publishing an ambiguous symbol,
+  27,321 duplicates removed across the wave) had no test at all.
+  `repeated-selectors-are-one-symbol` now writes `.btn` and `.card` twice each and
+  pins ONE symbol apiece.
+- `parse-errors-swallowed` was unpinned because every fixture asserted
+  `expectErrorCount: 0`, which an empty array also satisfies — so the suite could not
+  distinguish a clean parse from a swallowed failure.
+  `error-recovery-is-reported` pins `atLeast: 1` on a named `@page :first`, and
+  deliberately not an exact count: a pin that fails when the grammar improves is a
+  pin that gets deleted.
+
+A fixture only proves what its author thought to write down. The mutants ask the
+opposite question — what can the suite NOT fail on — and that is how the largest
+defect in the lane turned out to be untested.
+
 ## Differential ground truth
 
 - Ground truth: `validation/m12/ground-truth/css.json`
