@@ -44,8 +44,24 @@
 // Writes: validation/m60/results/G-PROVENANCE.json   (a measurement, not a claim)
 
 import { execFileSync } from "node:child_process"
+
+// PROGRESS MUST BE UNBUFFERED, or a sweep cannot be monitored. `process.stderr.write`
+// is block-buffered when stderr is a FILE rather than a TTY, so a 30-minute run
+// redirected to a log emits almost nothing for most of its life and looks wedged.
+// It was not wedged: it was silent, and I killed a healthy sweep because of it. A
+// long instrument that cannot report progress cannot be supervised, and "is it
+// stuck?" becomes a question nobody can answer. `fs.writeSync` on the fd is the
+// only write here that is not buffered by the runtime.
+const t0 = Date.now()
+function progress(msg: string): void {
+  try {
+    writeSync(2, `[${String(Math.round((Date.now() - t0) / 1000)).padStart(5)}s] ${msg}\n`)
+  } catch {
+    /* progress is never worth failing a measurement over */
+  }
+}
 import { createHash } from "node:crypto"
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync, writeSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 
@@ -170,8 +186,15 @@ function ghReleaseWasms(repoSlug: string, assetNameFilter?: RegExp, maxReleases 
  * sha256 -> "package@version/file" map. Fetched once for the whole run and matched
  * against every lane, because the collection is the same bytes for all of them.
  */
-const collectionIndex = (): Map<string, string> => {
-  const idx = new Map<string, string>()
+// Returns the sha256 -> `pkg@version/file.wasm` index AND, per collection version, the
+// source evidence gathered in the same walk. The second return value is what turns
+// "this collection publishes no source" from a remembered assertion into a count
+// observed while hashing, so a future release that starts shipping `parser.c` shows up
+// as a change rather than being assumed.
+type CollIndex = { bySha: Map<string, string>; source: Map<string, SourceEvidence> }
+const collectionIndex = (): CollIndex => {
+  const bySha = new Map<string, string>()
+  const source = new Map<string, SourceEvidence>()
   for (const col of COLLECTIONS) {
     for (const v of col.versions) {
       const dir = mkdtempSync(path.join(tmpdir(), "bb-coll-"))
@@ -184,23 +207,29 @@ const collectionIndex = (): Map<string, string> => {
         // extracting them perfectly, and gating on its exit code is how the first
         // version reported "no match" for a lane whose bytes match exactly.
         sh("tar", ["xzf", path.join(dir, tgz[0]), "-C", ex])
+        const ev: SourceEvidence = { grammarSource: [], parserC: [], totalFiles: 0 }
         const walk = (d: string): void => {
           for (const e of readdirSync(d, { withFileTypes: true })) {
             const p = path.join(d, e.name)
-            if (e.isDirectory()) walk(p)
+            if (e.isDirectory()) { walk(p); continue }
+            ev.totalFiles++
+            if (/^grammar\.(js|json|ts|mjs|cjs)$/.test(e.name)) ev.grammarSource.push(e.name)
+            else if (e.name === "parser.c") ev.parserC.push(e.name)
             else if (e.name.endsWith(".wasm")) {
-              idx.set(createHash("sha256").update(readFileSync(p)).digest("hex"), `${col.package}@${v}/${e.name}`)
+              bySha.set(createHash("sha256").update(readFileSync(p)).digest("hex"), `${col.package}@${v}/${e.name}`)
             }
           }
         }
         walk(ex)
+        ev.rebuildable = ev.grammarSource.length > 0 && ev.parserC.length > 0
+        source.set(`${col.package}@${v}`, ev)
       } finally {
         rmSync(dir, { recursive: true, force: true })
         rmSync(ex, { recursive: true, force: true })
       }
     }
   }
-  return idx
+  return { bySha, source }
 }
 
 function sh(cmd: string, args: string[], cwd?: string): string | null {
@@ -236,7 +265,29 @@ const npmVersions = (pkg: string): string[] => {
  * like a finding. So the tarball is extracted unconditionally and the RESULT is inspected
  * for the artifact, and only its absence counts as failure.
  */
-function wasmFromTarball(pkg: string, version: string): { file: string; bytes: number; sha256: string } | null {
+// A provenance match answers "which published bytes are these?". It does NOT answer
+// "can this grammar be REBUILT if the bytes must change?" — and for the migration that
+// second question is the one that decides whether a lane is tractable. So the same
+// tarball walk also COUNTS the two files a rebuild needs: `grammar.js` (or
+// grammar.json / grammar.ts) and `parser.c`. A redistributor collection carries
+// neither — measured on tree-sitter-wasms@0.1.11: 0 grammar.js, 0 parser.c, 34
+// prebuilt wasms and a build script with nothing to run it on — so it is identifiable
+// as sourceless in one pass, by evidence, rather than by assertion.
+//
+// `tar`'s exit code is still ignored, and the lesson from the first version stands:
+// it exits non-zero on these archives while extracting them perfectly. The evidence
+// is the extracted tree, not the tool's opinion.
+type SourceEvidence = {
+  /** A grammar definition a build could start from. */
+  grammarSource: string[]
+  /** A generated parser — present in a normal published grammar, absent from a pure binary redistribution. */
+  parserC: string[]
+  totalFiles: number
+  /** A rebuild is possible from this tarball alone. */
+  rebuildable?: boolean
+}
+
+function wasmFromTarball(pkg: string, version: string): { file: string; bytes: number; sha256: string; source: SourceEvidence } | null {
   const dir = mkdtempSync(path.join(tmpdir(), "bb-prov-"))
   const extract = mkdtempSync(path.join(tmpdir(), "bb-prov-x-"))
   try {
@@ -245,10 +296,14 @@ function wasmFromTarball(pkg: string, version: string): { file: string; bytes: n
     if (!tgz.length) return null
     sh("tar", ["xzf", path.join(dir, tgz[0]), "-C", extract]) // exit code deliberately ignored
     let found: { file: string; bytes: number; sha256: string } | null = null
+    const source: SourceEvidence = { grammarSource: [], parserC: [], totalFiles: 0 }
     const walk = (d: string): void => {
       for (const e of readdirSync(d, { withFileTypes: true })) {
         const p = path.join(d, e.name)
-        if (e.isDirectory()) walk(p)
+        if (e.isDirectory()) { walk(p); continue }
+        source.totalFiles++
+        if (/^grammar\.(js|json|ts|mjs|cjs)$/.test(e.name)) source.grammarSource.push(e.name)
+        else if (e.name === "parser.c") source.parserC.push(e.name)
         else if (e.name.endsWith(".wasm") && !found) {
           const b = readFileSync(p)
           found = { file: e.name, bytes: b.length, sha256: createHash("sha256").update(b).digest("hex") }
@@ -256,7 +311,9 @@ function wasmFromTarball(pkg: string, version: string): { file: string; bytes: n
       }
     }
     walk(extract)
-    return found
+    if (!found) return null
+    source.rebuildable = source.grammarSource.length > 0 && source.parserC.length > 0
+    return { ...found, source }
   } finally {
     rmSync(dir, { recursive: true, force: true })
     rmSync(extract, { recursive: true, force: true })
@@ -266,12 +323,28 @@ function wasmFromTarball(pkg: string, version: string): { file: string; bytes: n
 type LaneResult = Record<string, any>
 const results: LaneResult[] = []
 process.stderr.write("  indexing redistributor collections (one download each)...\n")
-const COLL_INDEX = collectionIndex()
-process.stderr.write(`  collection index: ${COLL_INDEX.size} distinct wasm sha256\n`)
+const COLL = collectionIndex()
+process.stderr.write(`  collection index: ${COLL.bySha.size} distinct wasm sha256\n`)
+for (const [k, v] of [...COLL.source].sort()) {
+  process.stderr.write(`    ${k}: ${v.grammarSource.length} grammar source file(s), ${v.parserC.length} parser.c, ${v.totalFiles} file(s) total -> ${v.rebuildable ? "REBUILDABLE from this tarball" : "NO REBUILDABLE SOURCE"}\n`)
+}
 
-const targets = ONLY
-  ? survey.rows.filter((r: any) => r.lane === ONLY)
-  : survey.rows.filter((r: any) => ALL || !r.declared.versionKnown)
+// `--lanes a,b,c` scopes the census to a named set. The full sweep is ~30 minutes of
+// npm traffic, and most callers want a subset: the migration pre-flight needs the 12
+// real lanes, not the 7 orphaned wasms that no lane declares. Scoping here — rather
+// than by filtering the artifact afterwards — keeps the artifact a record of what was
+// actually searched, so "no match" still means "searched, and found nothing".
+const LANES_ARG = (() => {
+  const i = process.argv.indexOf("--lanes")
+  return i >= 0 ? new Set((process.argv[i + 1] ?? "").split(",").map((x) => x.trim()).filter(Boolean)) : null
+})()
+if (LANES_ARG) progress(`scoped to ${LANES_ARG.size} named lane(s): ${[...LANES_ARG].join(", ")}`)
+
+const targets = LANES_ARG
+  ? survey.rows.filter((r: any) => LANES_ARG.has(r.lane))
+  : ONLY
+    ? survey.rows.filter((r: any) => r.lane === ONLY)
+    : survey.rows.filter((r: any) => ALL || !r.declared.versionKnown)
 
 for (const row of targets as any[]) {
   // An ALIAS inherits its primary's provenance: `scss` and `sass` are served by
@@ -319,7 +392,7 @@ for (const row of targets as any[]) {
   // nothing here and reports "no match", which reads as a finding rather than as the
   // blind spot it is. Provenance for a vendored grammar is TWO-dimensional: which
   // collection built these bytes, and which grammar version it was built against.
-  // the collection is consulted through COLL_INDEX below, not packed per lane
+  // the collection is consulted through COLL.bySha below, not packed per lane
 
   process.stderr.write(`  ${row.lane.padEnd(13)} `)
   let match: LaneResult | null = null
@@ -330,7 +403,7 @@ for (const row of targets as any[]) {
   // first version re-packed the 36-wasm collection for every lane, and the run was
   // still going after nine minutes; the collection is the same bytes for every lane, so
   // it is fetched once and matched against all of them.
-  const coll = COLL_INDEX.get(shippedSha)
+  const coll = COLL.bySha.get(shippedSha)
   if (coll) {
     const slash = coll.lastIndexOf("/")
     const pkgAndV = coll.slice(0, slash)
@@ -339,6 +412,7 @@ for (const row of targets as any[]) {
       package: pkgAndV.slice(0, at),
       version: pkgAndV.slice(at + 1),
       provenanceKind: "redistributor-collection",
+      source: COLL.source.get(`${pkgAndV.slice(0, at)}@${pkgAndV.slice(at + 1)}`) ?? { grammarSource: [], parserC: [], totalFiles: 0, rebuildable: false },
       wasmFile: coll.slice(slash + 1),
       bytes: shippedBytes,
       sha256: shippedSha,
@@ -380,7 +454,7 @@ for (const row of targets as any[]) {
       const w = wasmFromTarball(pkg, v)
       if (!w) continue
       if (w.sha256 === shippedSha) {
-        match = { package: pkg, version: v, provenanceKind: "language-package", wasmFile: w.file, bytes: w.bytes, sha256: w.sha256 }
+        match = { package: pkg, version: v, provenanceKind: "language-package", wasmFile: w.file, bytes: w.bytes, sha256: w.sha256, source: w.source }
         break
       }
       // A near-miss on size is a LEAD, never a match. Reporting it as a match is the one
@@ -391,6 +465,7 @@ for (const row of targets as any[]) {
     }
   }
 
+  progress(`  ${row.lane}: ${match ? `IDENTIFIED ${match.package}@${match.version}` : "no match"} (${examined} version(s) examined)`)
   results.push(
     match
       ? { lane: row.lane, status: "identified", ...match, shippedBytes, versionsExamined: examined }
