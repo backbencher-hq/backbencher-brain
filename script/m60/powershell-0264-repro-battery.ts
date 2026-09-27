@@ -26,23 +26,60 @@
 //
 // Writes: nothing.
 
-import { readFileSync } from "node:fs"
+import { readFileSync, existsSync } from "node:fs"
 import path from "node:path"
+import { createHash } from "node:crypto"
 import * as WTS from "web-tree-sitter"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
+const sha256 = (b: Uint8Array) => createHash("sha256").update(b).digest("hex")
 const argv = process.argv.slice(2)
 const argValue = (a: string, d?: string) => (argv.includes(a) ? argv[argv.indexOf(a) + 1] : d)
 const AS_JSON = argv.includes("--json")
 
-// The pinned artifact, established BY BYTE-IDENTITY rather than by a doc claim:
-// wasm/tree-sitter-powershell.wasm has sha256
-// 1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154 and is
-// byte-for-byte the `tree-sitter-powershell.wasm` inside tree-sitter-powershell@0.25.10.
-// That is the whole provenance of a lane which had NO version recorded anywhere.
+// The pinned artifact is whatever wasm/tree-sitter-powershell.wasm IS, and its
+// identity is READ FROM THE PIN REGISTRY rather than written here.
+//
+// This was a hardcoded `{ version: "0.25.10" }` next to a `path.join(ROOT,
+// "wasm", ...)` read, and that combination is a trap with a long fuse: the moment
+// the wired wasm was upgraded to 0.26.4 the label kept saying 0.25.10 while the
+// bytes it loaded were 0.26.4, and `--candidate` still defaulted to a scratch copy
+// of 0.26.4. The run then compared 0.26.4 against 0.26.4 and printed "0.26.4
+// closes NONE of the named limits" — a vacuous verdict about a comparison that
+// never happened, from an instrument whose entire job is to decide that question.
+// A hardcoded version next to a live path is a claim that cannot fail loudly.
+//
+// So: the identity comes from validation/m14/grammar-pins.json, which is gated, and
+// the candidate is REQUIRED. There is no default, because a default is how the two
+// paths silently became the same file.
 const PINNED = path.join(ROOT, "wasm", "tree-sitter-powershell.wasm")
-const PINNED_IDENTITY = { package: "tree-sitter-powershell", version: "0.25.10", published: "2025-12-08", evidence: "byte-identical to the npm tarball wasm" }
-const CANDIDATE = argValue("--candidate", "/tmp/opencode/grammars/ps/x/package/tree-sitter-powershell.wasm")!
+
+interface PinRecord { wired?: { file: string; sha256: string; bytes: number }; provenance?: { kind: string; package?: string; version?: string }; lanes?: Record<string, any> }
+// The record has two halves and it matters which one answers this: `lanes` is the
+// MEASURED half (wired bytes, surface, copies, vendored files, source↔wasm) and
+// `decisions` is the AUTHORED half (provenance kind, package, version, the
+// decision text). The version lives in `decisions`; the sha lives in `lanes`. A
+// first attempt at this read both from `lanes` and printed "?" for the version
+// while still reporting a confident-looking header — the sha check passed, so
+// nothing looked wrong.
+function readPinIdentity(): { package: string; version: string; sha256: string; evidence: string } {
+  const regPath = path.join(ROOT, "validation/m14/grammar-pins.json")
+  if (!existsSync(regPath)) return { package: "tree-sitter-powershell", version: "UNKNOWN (no pin record)", sha256: sha256(readFileSync(PINNED)), evidence: "no validation/m14/grammar-pins.json — the identity is UNVERIFIED" }
+  const reg = JSON.parse(readFileSync(regPath, "utf8")) as any
+  const prov = reg?.decisions?.powershell?.provenance
+  const measured = reg?.lanes?.powershell?.wired
+  const sha = sha256(readFileSync(PINNED))
+  if (!prov) return { package: "tree-sitter-powershell", version: "UNPINNED", sha256: sha, evidence: "the pin record's decisions carry no powershell provenance" }
+  if (measured?.sha256 !== sha) return { package: prov.package, version: prov.version, sha256: sha, evidence: `MISMATCH: the pin records ${measured?.sha256} and the wired file is ${sha} — re-run verify-grammar-pins.ts --write` }
+  return { package: prov.package, version: prov.version, sha256: sha, evidence: `sha matches the gated pin record (${prov.kind})` }
+}
+const PINNED_IDENTITY = readPinIdentity()
+
+const CANDIDATE = argValue("--candidate")
+if (!CANDIDATE || !existsSync(CANDIDATE)) {
+  console.error("usage: powershell-0264-repro-battery.ts --candidate <wasm> [--json]\n  --candidate is REQUIRED: a default here is how the pinned and candidate paths became the same file and the battery printed a vacuous verdict.")
+  process.exit(2)
+}
 
 type Case = { id: string; construct: string; control: boolean; source: string; from?: string }
 // Whether a case derived from a NAMED LIMIT actually reproduces in isolation. Measured
@@ -203,9 +240,9 @@ if (AS_JSON) {
   if (v.namedLimitsThatDoNotReproduce) console.log(`  MIS-ATTRIBUTED in the M12 artifact: ${v.namedLimitsThatDoNotReproduce} case(s) parse standalone, so the construct named for that file is not what breaks it`)
   console.log(
     `  ${v.fixed === v.namedLimits && v.regressed === 0
-      ? "0.26.4 closes EVERY named limit and holds every control — the powershell lane owes an UPGRADE, not a patch."
+      ? `the candidate (${path.basename(CANDIDATE)}) closes EVERY named limit and holds every control — the lane owes an UPGRADE, not a patch.`
       : v.fixed > 0
-        ? `0.26.4 closes ${v.fixed} of ${v.namedLimits} named limits. The remaining ${v.stillBroken} owe a patch.`
-        : "0.26.4 closes NONE of the named limits — the lane owes a patch regardless."}`,
+        ? `the candidate (${path.basename(CANDIDATE)}) closes ${v.fixed} of ${v.namedLimits} named limits. The remaining ${v.stillBroken} owe a patch.`
+        : `the candidate (${path.basename(CANDIDATE)}) closes NONE of the named limits — the lane owes a patch regardless.`}`,
   )
 }
