@@ -63,6 +63,14 @@ const PROBE_LUA = [
   'while a do break end',         // while_statement
   'repeat c = 1 until a',         // repeat_statement
   'local q = a or b',             // binary_expression(or)
+  // M60 LUA-20: an ANONYMOUS function is a different node type from a
+  // declaration. It was missing from this probe, so the LUA-20 fix introduced a
+  // `function_definition` reference that the node-type leg correctly reported as
+  // never emitted — the instrument catching a real coverage gap in itself rather
+  // than the analyzer inventing a type. Both spellings are exercised because
+  // they are the two ways a Lua function reaches the walk.
+  'local cb = function(z) return z end',
+  'local t = { m = function(w) return w end }',
 ].join("\n") + "\n"
 
 // ── literal extraction: the analyzer's source is the subject under test ──────
