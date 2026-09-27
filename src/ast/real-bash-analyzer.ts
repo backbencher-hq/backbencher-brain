@@ -491,13 +491,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** BD2: the file's own basename, extension included. */
   private scriptNameOf(filePath: string): string {
-    const normalized = filePath.replace(/\\/g, "/")
+    const normalized = filePath.split("\\").join("/")
     const base = normalized.slice(normalized.lastIndexOf("/") + 1)
     return base.length > 0 ? base : "script.sh"
   }
 
   private dirnameOf(filePath: string): string {
-    const normalized = filePath.replace(/\\/g, "/")
+    const normalized = filePath.split("\\").join("/")
     const cut = normalized.lastIndexOf("/")
     return cut > 0 ? normalized.slice(0, cut) : "."
   }
