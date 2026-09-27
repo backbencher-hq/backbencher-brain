@@ -38,7 +38,14 @@ interface JsonContext {
   hasArrays: boolean
 }
 
-type PathFrame = { node: Node; parentPath: string; emitObject?: boolean }
+// `parentPath` is the QUALIFIED path used for identity in metadata; `parentName` is
+// the parent SYMBOL's own name, which is what an edge source must be. They were the
+// same value by accident at the top level — `parentPath` is the module name there —
+// so the divergence only appeared one level down, where `inner`'s owner came out as
+// the unresolvable `Basic.nested` while the symbol is named `nested`. One edge in the
+// probe battery failed on it and the rest passed, which is the worst possible shape
+// for a bug: invisible unless you nest.
+type PathFrame = { node: Node; parentPath: string; parentName: string; emitObject?: boolean }
 
 const VALIDATION_KEYS = new Set([
   "minLength", "maxLength", "minimum", "maximum", "exclusiveMinimum",
@@ -177,7 +184,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * visited once, so this pass is O(number of AST nodes).
    */
   private collectSchemaFacts(rootNode: Node, ctx: JsonContext): void {
-    const stack: PathFrame[] = [{ node: rootNode, parentPath: ctx.rootName }]
+    const stack: PathFrame[] = [{ node: rootNode, parentPath: ctx.rootName, parentName: ctx.rootName }]
     while (stack.length > 0) {
       const { node, parentPath } = stack.pop()!
       if (node.type === "document") {
@@ -202,8 +209,8 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             if (required.size > 0) requiredNames = required
           }
-          if (value?.type === "object") stack.push({ node: value, parentPath: this.childPath(parentPath, key) })
-          else if (value?.type === "array") stack.push({ node: value, parentPath: this.childPath(parentPath, key) })
+          if (value?.type === "object") stack.push({ node: value, parentPath: this.childPath(parentPath, key), parentName: key })
+          else if (value?.type === "array") stack.push({ node: value, parentPath: this.childPath(parentPath, key), parentName: key })
         }
         let schemaMatches = 0
         for (const key of schemaKeys) {
@@ -216,15 +223,15 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (schemaMatches >= 2) ctx.schemaObjects.add(parentPath)
         continue
       }
-      if (node.type === "array") this.pushArrayChildren(stack, node, parentPath)
+      if (node.type === "array") this.pushArrayChildren(stack, node, parentPath, ctx.rootName)
     }
   }
 
   private extractSymbols(rootNode: Node, ctx: JsonContext): void {
-    const stack: PathFrame[] = [{ node: rootNode, parentPath: ctx.rootName }]
+    const stack: PathFrame[] = [{ node: rootNode, parentPath: ctx.rootName, parentName: ctx.rootName }]
     while (stack.length > 0) {
       const frame = stack.pop()!
-      const { node, parentPath } = frame
+      const { node, parentPath, parentName } = frame
       if (node.type === "document") {
         this.pushNamedChildren(stack, node, parentPath)
         continue
@@ -232,13 +239,20 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "object") {
         this.updateDepth(ctx, parentPath)
         if (frame.emitObject) this.addArrayObjectSymbol(ctx, node, parentPath)
-        this.pushNamedChildren(stack, node, parentPath)
+        // `parentName` MUST be threaded here. Omitting it made pushNamedChildren
+        // default it to `parentPath`, so every key inside a nested object got the
+        // QUALIFIED path as its owner: `inner`'s owner came out as `Basic.nested`
+        // while the symbol is named `nested`, and the `contains` edge it sources
+        // resolved to nothing. It was invisible at the top level — where
+        // `parentPath` happens to equal the module name — so the entire top-level
+        // corpus agreed with itself and only a nested key exposed it.
+        this.pushNamedChildren(stack, node, parentPath, parentName)
         continue
       }
       if (node.type === "array") {
         ctx.arrayCount++
         ctx.hasArrays = true
-        this.pushArrayChildren(stack, node, parentPath)
+        this.pushArrayChildren(stack, node, parentPath, parentName)
         continue
       }
       if (node.type !== "pair") continue
@@ -248,17 +262,20 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!key || !value) continue
       const path = this.childPath(parentPath, key)
       const valueType = this.valueType(value)
-      const kind = valueType === "object"
-        ? ASTEngine.SymbolKind.Class
-        : valueType === "array"
-          ? ASTEngine.SymbolKind.Variable
-          : ASTEngine.SymbolKind.Property
+      // An object is a CONTAINER: it has named children, and `contains` edges are
+      // emitted from it, so `class` is the kind that means what it does here.
+      // An array is a LEAF: its elements are positional and unnamed, and the
+      // analyzer emits no `contains` edge for any of them. The previous mapping
+      // gave arrays `variable`, which imports a shell-shaped mutable-binding
+      // distinction JSON does not have — a JSON array cannot be rebound, and
+      // nothing in the output treated it as one.
+      const kind = valueType === "object" ? ASTEngine.SymbolKind.Class : ASTEngine.SymbolKind.Property
       const symbol: ASTEngine.UniversalSymbol = {
         name: key,
         kind,
         qualifiedName: path,
         range: this.nodeToRange(node),
-        ownerName: parentPath,
+        ownerName: parentName,
         ownerKind: parentPath === ctx.rootName ? ASTEngine.SymbolKind.Module : ASTEngine.SymbolKind.Class,
         scope: parentPath,
         visibility: "public",
@@ -287,7 +304,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (symbol.metadata.isApiEndpoint) ctx.apiEndpointSymbols.push(symbol)
       if (isDependencyContainerPath(parentPath)) ctx.dependencySymbols.push(symbol)
 
-      if (value.type === "object" || value.type === "array") stack.push({ node: value, parentPath: path })
+      if (value.type === "object" || value.type === "array") stack.push({ node: value, parentPath: path, parentName: key })
     }
   }
 
@@ -308,6 +325,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           target: symbol.name,
           type: ASTEngine.RelationshipType.Contains,
           confidence: 1,
+          line_number: this.declLine(symbol),
           metadata: { fullPath: symbol.metadata?.fullPath || "" },
         })
       }
@@ -322,6 +340,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         target,
         type: ASTEngine.RelationshipType.References,
         confidence: target === refPath ? 0.8 : 1,
+        line_number: this.declLine(ref),
         metadata: {
           relationshipType: "json_reference",
           refPath,
@@ -336,6 +355,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: endpoint.name,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 0.8,
+        line_number: this.declLine(endpoint),
         metadata: { relationshipType: "json_api_endpoint" },
       })
     }
@@ -356,6 +376,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: dependency.name,
         type: ASTEngine.RelationshipType.Uses,
         confidence: 1,
+        line_number: dependency.range?.startLine ?? 0,
         metadata: { relationshipType: "package_dependency", version: this.dependencyVersion(ctx, dependency) },
       })
     }
@@ -515,7 +536,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     return parentPath ? `${parentPath}.${key}` : key
   }
 
-  private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string): void {
+  private pushArrayChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string): void {
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
       if (!child) continue
@@ -523,6 +544,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       stack.push({
         node: child,
         parentPath: itemPath,
+        parentName,
         emitObject: child.type === "object",
       })
     }
@@ -538,10 +560,10 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (depth > ctx.maxDepth) ctx.maxDepth = depth
   }
 
-  private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string): void {
+  private pushNamedChildren(stack: PathFrame[], node: Node, parentPath: string, parentName: string = parentPath): void {
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
-      if (child) stack.push({ node: child, parentPath })
+      if (child) stack.push({ node: child, parentPath, parentName })
     }
   }
 
@@ -568,6 +590,18 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private isApiSpec(ctx: JsonContext): boolean {
     return (ctx.symbolMap.has("openapi") || ctx.symbolMap.has("swagger")) && ctx.symbolMap.has("paths")
+  }
+
+  /**
+   * The 1-based line a symbol was DECLARED on, for the `line_number` every
+   * relationship must carry. M60 requires a site line on every edge, and this
+   * analyzer emitted NONE: the string `line_number` did not occur in the file, so
+   * every JSON edge in the index was stored with a NULL line and no consumer —
+   * the graph panel included — could point at where an edge came from. Symbols
+   * carried `range` all along, so the position was known and simply not published.
+   */
+  private declLine(symbol: ASTEngine.UniversalSymbol | undefined): number {
+    return symbol?.range?.startLine ?? 0
   }
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
