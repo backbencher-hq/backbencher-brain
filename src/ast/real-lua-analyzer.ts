@@ -86,7 +86,17 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // fabricate a symbol — but it gets its own localNames, so a local inside
         // a callback is not confused with one in the enclosing body.
         const functionName = node.type === "function_declaration" ? this.functionName(node) : undefined
-        const locals = new Set<string>()
+        // M60 LUA-21: a closure SEES the enclosing scope's locals — that is what
+        // a closure is. Starting from an empty set meant an assignment to an
+        // UPVALUE looked like a new declaration. Measured at
+        // luvit/deps/utils.lua:99, inside `function (e, ...) ... end` nested in
+        // `local function adapt(c, fn, ...)`, the statement `c = nil` emitted
+        // `contains adapt -> c` — an edge naming `c`, which has no symbol,
+        // because `c` is a PARAMETER of adapt and parameters are not emitted as
+        // symbols. The result was a containment edge pointing at nothing.
+        // Inheriting the enclosing locals is also simply what the language says:
+        // the assignment mutates adapt's parameter, it does not declare anything.
+        const locals = new Set<string>(frame.localNames)
         for (const parameter of this.extractParameters(node)) locals.add(parameter.name)
         if (functionName || node.type === "function_definition") {
           childFrame = { callable: functionName ?? frame.callable, localNames: locals, inFunction: true }

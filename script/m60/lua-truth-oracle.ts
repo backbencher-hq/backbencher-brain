@@ -92,6 +92,8 @@ interface Walk {
   localsIn: Map<string, Set<string>>
   /** every table name bound to a table_constructor anywhere in the file */
   declaredTables: Set<string>
+  /** ORA-4: scope -> its enclosing scope, so a name can be resolved up the chain */
+  scopeParent: Map<string, string | undefined>
 }
 
 function calleeOf(call: any): { name: string; nameNode: any } | null {
@@ -205,6 +207,29 @@ function collectTables(root: any, out: Set<string>): void {
   }
 }
 
+// ORA-4, found by the analyzer being RIGHT and the oracle wrong: a name
+// assigned in a NESTED function is a declaration only if it is not visible in
+// any ENCLOSING scope. The oracle checked the innermost scope alone, so every
+// upvalue assignment read as a new declaration and recall fell while the
+// analyzer's behaviour was correct.
+//
+// Measured: luvit/deps/codec.lua declares `local paused = false` at L40 inside a
+// `do ... end` block and assigns `paused = true` at L44 inside
+// `function emitter:pause()`. That is an UPVALUE assignment, not a
+// declaration — the analyzer skips it and is right. So the oracle resolves a
+// name against the whole enclosing SCOPE CHAIN, which is what lexical scope
+// means.
+function visibleInChain(w: Walk, scope: string, name: string): boolean {
+  let s: string | undefined = scope
+  const seen = new Set<string>()
+  while (s !== undefined && !seen.has(s)) {
+    seen.add(s)
+    if (w.localsIn.get(s)?.has(name)) return true
+    s = w.scopeParent.get(s)
+  }
+  return false
+}
+
 function walk(node: any, scope: string, w: Walk, rel: string): void {
   if (node.isMissing) return
 
@@ -234,12 +259,32 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       for (let i = 0; i < vl.namedChildCount; i++) {
         const id = vl.namedChild(i)
         if (id?.type !== "identifier") continue
-        // A re-assignment of a local in scope is not a new declaration and the
-        // analyzer does not emit a symbol for it. Mirrored because it is a
-        // statement about scope, and getting it wrong in EITHER direction is a
-        // finding worth having.
-        if (scope !== "global" && w.localsIn.get(scope)?.has(id.text)) continue
+        // ORA-4: a re-assignment of a name VISIBLE in this scope chain is not a
+        // new declaration. Checked up the whole chain, because a closure assigns
+        // its enclosing block's locals as UPVALUES and the analyzer is right to
+        // skip those. The analyzer answers the same question with an inherited
+        // frame, which is the same rule expressed structurally.
+        if (visibleInChain(w, scope, id.text)) continue
         w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+      }
+    }
+  }
+
+  // M60 LUA-21: an ANONYMOUS function's parameters are bound in the ENCLOSING
+  // scope — a nameless closure has no scope of its own to bind them in, and it
+  // can see the enclosing one. The oracle did not do this, so `srv = server()`
+  // inside a closure looked like a declaration and one genuine skip was reported
+  // as a missing edge.
+  if (node.type === "function_definition") {
+    const ps = node.namedChild(0)
+    if (ps?.type === "parameters") {
+      for (let j = 0; j < ps.namedChildCount; j++) {
+        const prm = ps.namedChild(j)
+        if (prm?.type !== "identifier") continue
+        if (scope !== "global") {
+          if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
+          w.localsIn.get(scope)!.add(prm.text)
+        }
       }
     }
   }
@@ -326,7 +371,13 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
   // field alone collapses them and then dedups calls from two unrelated
   // functions into one edge — which is how 6 real call sites became 2 edges
   // with one wrong line each.
-  const childScope = node.type === "function_declaration" ? (functionNameOf(node)?.label ?? scope) : scope
+  // A function opens a scope; a `do ... end` block does NOT (Lua has no block
+  // scope for locals), so a `local` inside `do ... end` belongs to the enclosing
+  // function — which is exactly why `paused` is visible inside emitter:pause.
+  const childScope = node.type === "function_declaration" || node.type === "function_definition"
+    ? (functionNameOf(node)?.label ?? scope)
+    : scope
+  if (childScope !== scope) w.scopeParent.set(childScope, scope)
   for (let i = 0; i < node.namedChildCount; i++) {
     const c = node.namedChild(i)
     if (c) walk(c, childScope, w, rel)
@@ -334,7 +385,7 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
 }
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
-  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set() }
+  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set(), scopeParent: new Map([["global", undefined]]) }
   collectTables(root, w.declaredTables)
   walk(root, "global", w, rel)
   // A set, because the analyzer's edge identity is (label, from, target): N call
@@ -343,14 +394,14 @@ export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
   // (LUA-01b) and is measured by count, not by this set.
   const seen = new Set<string>()
   return w.edges.filter((e) => {
-    const k = `${e.label}${e.from}${e.target}`
+    const k = `${e.label}\u001f${e.from}\u001f${e.target}`
     if (seen.has(k)) return false
     seen.add(k)
     return true
   })
 }
 
-const key = (e: { label: string; from: string; target: string }) => `${e.label}${e.from}${e.target}`
+const key = (e: { label: string; from: string; target: string }) => `${e.label}\u001f${e.from}\u001f${e.target}`
 
 async function main(): Promise<void> {
   const repo = arg("--repo", "kong")
@@ -400,7 +451,7 @@ async function main(): Promise<void> {
     const r: any = await parseFile(abs, repoRoot)
     if (r.errors?.length) parseErrors++
     for (const e of r.relationships ?? []) {
-      const k = `${rel}|${e.type}${e.source}${e.target}`
+      const k = `${rel}|${e.type}\u001f${e.source}\u001f${e.target}`
       if (!observed.has(k)) observed.set(k, { ...e, rel })
       perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
     }
