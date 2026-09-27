@@ -2103,6 +2103,28 @@ function htmlEmbeddedSyntheticModule() {
   }
 }
 
+/** SCHEME CONTRACT: a BARE `#` href becomes an edge to the literal text `#`
+ *  again. `href="#"` is the HTML idiom for "no destination" — a valid URL that
+ *  refers to the top of this very document — so the reference is satisfied by the
+ *  document module that owns it and there is nothing to name. Emitting the edge
+ *  produces a node that is neither a symbol nor a file, which is the
+ *  unresolvable-identity class; the M12 Negative fixture's documented contract
+ *  says "empty `#` anchors emit nothing" and this mutant is how that sentence
+ *  stopped being true. Caught by html/scheme-and-navigation. */
+function htmlBareHashEmitted() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: mod.name, target: "#", type: "uses", confidence: 0.9, metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true, evidenceClass: "usage_contextual" } },
+      ],
+    }
+  }
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -10701,6 +10723,13 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "typescript/builtin-subpath-revert",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M7 regression: restores the bare-name-only builtin table — node:fs/promises, node:test, stream/promises and every other subpath Node ships resolve to external:<specifier> again, so the index claims npm packages named 'fs/promises' and 'test' (node-builtin-subpaths meta.resolvedPath pins catch it; lodash/merge stays external in both, so the pin set cannot be satisfied by classifying everything external)",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (typeof i?.metadata?.resolvedPath === "string" && i.metadata.resolvedPath.startsWith("node:")) ? { ...i, metadata: { ...(i.metadata ?? {}), resolvedPath: "external:" + i.module } } : i) }),
+  },
+  {
     id: "typescript/subscript-callee-nested-call-drop",
     language: "typescript",
     defectClass: "relationship-loss",
@@ -11301,6 +11330,13 @@ export const MUTANTS: Mutant[] = [
     transform: cleanEdgeLinePerSet(),
   },
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "html/bare-hash-emitted",
+    language: "html",
+    defectClass: "unresolvable-identity",
+    description: "SCHEME CONTRACT/M14 #288: a bare `#` href emits an edge to the literal text `#` again. `href=\"#\"` is the HTML idiom for \"no destination\" — the top of this document — so nothing needs naming and the document module already satisfies it. The #288 rewrite reintroduced this and it was caught only by HAND-AUDITING the M12 Negative fixture's documented contract against live output, because the M12 ground truth still described the pre-rewrite contract and no automated gate covered the sentence. Caught by html/scheme-and-navigation's forbid on target `#`.",
+    transform: htmlBareHashEmitted(),
+  },
   {
     id: "html/embedded-line-shift-dropped",
     language: "html",

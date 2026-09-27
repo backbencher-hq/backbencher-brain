@@ -1481,6 +1481,25 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
       const nm = t === "field_definition" ? n.childForFieldName("property") : n.childForFieldName("name")
       if (nm && nm.text) push("contains", nm.text)
     }
+    // JD14 adjudication follow-up: PROTOTYPE-ASSIGNMENT containment.
+    // `X.prototype.m = function () {}` adds a member to X, and the analyzer
+    // emits `contains X -> m` for it (ownerName = the class). The first cut of
+    // the contains truth derived only method_definition/field_definition, so
+    // every prototype method surfaced as UNEXPLAINED — measured 16 rows across
+    // the lodash corpus, 100% of them this shape. That was a TRUTH defect, not
+    // an analyzer fabrication; the truth now derives the shape structurally.
+    if (t === "assignment_expression") {
+      const left = n.childForFieldName("left")
+      const right = n.childForFieldName("right")
+      if (left && right && (right.type === "function_expression" || right.type === "arrow_function") && left.type === "member_expression") {
+        const obj = left.childForFieldName("object")
+        const prop = left.childForFieldName("property")
+        if (obj && obj.type === "member_expression" && prop) {
+          const protoProp = obj.childForFieldName("property")
+          if (protoProp && protoProp.text === "prototype") push("contains", prop.text)
+        }
+      }
+    }
     if (t === "call_expression") {
       const fn = n.childForFieldName("function")
       const isImportCallee = !!fn && (fn.type === "import" || (fn.type === "identifier" && fn.text === "import"))
@@ -13399,8 +13418,19 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
           // 139 rows across otp's RFC archive alone) compares a resolved symbol
           // name against an unresolved piece of source text and reports every
           // anchor in the corpus as MISSING.
-          if (decoded.length > 1 && decoded.charCodeAt(0) === 35) {
-            deferredRefs.push({ from: next, handle: decoded.slice(1) })
+          // A BARE `#` is `length === 1`, so a `length > 1` guard misses it and it
+          // falls through to the navigation branch below and is pushed as
+          // `uses <a> -> #` — a target that is neither a symbol nor a file, on a real
+          // corpus row (`sqlite`'s `ext/wasm/speedtest1-worker.html`, three times over).
+          // `#` is the HTML idiom for "no destination": a valid URL naming the top of
+          // this document, which the document module already is. Both sites in this
+          // oracle had this hole — the resource path and the reference path — and the
+          // analyzer had the matching one. This is what a hand audit is for: the
+          // differential was reporting 100% coverage WITH the defect in the truth.
+          if (decoded.charCodeAt(0) === 35) {
+            // A real fragment names an element; a bare `#` names the document, which
+            // is its own owner, so there is no handle to defer.
+            if (decoded.length > 1) deferredRefs.push({ from: next, handle: decoded.slice(1) })
           } else {
             const scheme = oracleScheme(decoded)
             const external = scheme === "http" || scheme === "https" || scheme === "ftp" || scheme === "ftps"
@@ -13452,7 +13482,15 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
   function emitOracleResource(raw: string, from: string, emit: (l: string, f: string, t: string) => void): void {
     const value = oracleDecode(raw).trim()
     if (value.length === 0) return
-    if (value.length > 1 && value.charCodeAt(0) === 35) return // a fragment is a reference, not a fetch
+    // A BARE `#` is `length === 1` and is NOT a fragment reference — it is the HTML
+    // idiom for "no destination", a valid URL naming the top of this very document.
+    // The document module already IS that node, so the reference needs no edge, and
+    // emitting one produces a target that is neither a symbol nor a file. This oracle
+    // had the analyzer's original bug (guarding with `length > 1`, which excluded only
+    // `#foo` and let `#` through to `emit`), so the corpus agreed with the defect: the
+    // differential reported 354/354 with an unresolvable node in the truth. Both sides
+    // now carry the same ruling, and the ruling is the fixture's, not the analyzer's.
+    if (value.charCodeAt(0) === 35) return // a fragment is a reference, not a fetch
     const scheme = oracleScheme(value)
     if (scheme === "javascript") { emit("uses", from, "javascript:"); return }
     if (ORACLE_HTML_SCHEME_SKIP.has(scheme) || scheme === "data" || scheme === "blob" || scheme === "about" || scheme === "file") return
