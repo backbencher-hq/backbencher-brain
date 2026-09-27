@@ -11,6 +11,10 @@ interface CssContext {
   keyframeNames: Record<string, boolean>
   /** family name -> declared by an `@font-face` in THIS file. Pre-collected. */
   fontFaceNames: Record<string, boolean>
+  /** `@layer` names already published, so the ORDERING form cannot duplicate them. */
+  layerNames: Record<string, boolean>
+  /** the order an `@layer a, b, c;` statement declares. A fact about the file. */
+  layerOrder: string[]
   mixinNames: Record<string, boolean>
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
@@ -219,6 +223,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       content,
       keyframeNames: {},
       fontFaceNames: {},
+      layerNames: {},
+      layerOrder: [],
       mixinNames: {},
       frameworks: {},
       patterns: {},
@@ -589,6 +595,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length,
         linesOfCode: content.split("\n").length,
+        // NB: the cascade order is NOT recorded here. `parseFile` rebuilds file
+        // metadata as a fresh literal of specific keys (engine.ts:1572 — its own
+        // comment says an omitted key is "computed and DISCARDED — silently"), so a
+        // key added at the analyzer would never reach a consumer, and a key that
+        // looks present but is always dropped is worse than an absent one. The order
+        // rides each layer SYMBOL as `layerIndex`, which is passed through.
         // 0 on every real corpus file; present so a non-zero value is a number
         // someone can go and look at rather than a branch nobody can observe.
         cssUnrankedRelationships: unrankable,
@@ -1844,6 +1856,54 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Tailwind build, not a declaration; `@theme` is a block whose custom
       // properties are already published in their own right; `@config` names a
       // file; `@include` is a USE, and the `uses` edge below is the fact.
+      // The ORDERING form of `@layer` — `@layer reset, base, components;`, no block.
+      //
+      // It used to publish ONE symbol named after the whole statement text
+      // (`@layer reset, base, components`), which is the placeholder-literal name
+      // M60 R7 exists to forbid: nothing can reference that string, so it is a name
+      // with no referent — and it DUPLICATED the individually declared layers, so a
+      // file carried both `@layer base` and `@layer base, special` for the same
+      // layer. Found by the omission audit, and the corpus has the form for real
+      // (`@layer theme, base, components, utilities;`).
+      //
+      // The layers are the symbols — named exactly as the block form names them, so
+      // the statement and the declaration agree — and the ORDER is a fact about the
+      // file rather than an edge, because it has no container to source from. It
+      // rides file metadata instead, which is where a whole-file fact belongs.
+      if (keyword === "@layer" && !this.findChild(node, (c) => c?.type === "block")) {
+        const names = namePart
+          .split(",")
+          .map((x) => x.trim())
+          .filter((x) => x.length > 0)
+        for (const nm of names) {
+          ctx.layerOrder.push(nm)
+          if (ctx.layerNames[nm]) continue
+          ctx.layerNames[nm] = true
+          ctx.symbols.push({
+            name: `${keyword} ${nm}`,
+            kind: ASTEngine.SymbolKind.Module,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            complexity: 1,
+            metadata: {
+              isAtRule: true,
+              atKeyword: keyword,
+              isLayerOrdering: true,
+              // The cascade position this statement gives the layer. Per-SYMBOL
+              // rather than per-file, and that is not a style choice: `parseFile`
+              // rebuilds the file metadata as a fresh literal listing specific keys
+              // (engine.ts:1572, whose own comment records that anything it omits is
+              // "computed and DISCARDED — silently"), so a file-level key added here
+              // would never reach a consumer. Symbol metadata is passed through, and
+              // the position is a property of the LAYER anyway.
+              layerIndex: ctx.layerOrder.length - 1,
+            },
+          })
+        }
+        return {}
+      }
+
       if (DECLARING.has(keyword)) {
         // A REGISTERED custom property is published under the PROPERTY'S OWN NAME.
         //
@@ -1864,6 +1924,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // collide with a class or a type of the same name, so the keyword says which
         // KIND of thing it is. A `--x` name needs no such help.
         const publishedName = keyword === "@property" ? namePart || ruleName : ruleName
+        if (keyword === "@layer" && namePart) {
+          if (ctx.layerNames[namePart]) {
+            // The ORDERING statement got here first (`@layer a, b;` precedes the
+            // blocks, which is the normal order), so the existing symbol's range
+            // points at the statement. The BLOCK is where the layer's content is, so
+            // the range is corrected to it and the symbol marked as having one — one
+            // symbol per layer, located where its rules are.
+            const existing = ctx.symbols.find((sy) => sy.name === `${keyword} ${namePart}`)
+            if (existing) {
+              existing.range = this.nodeToRange(node)
+              const em = (existing.metadata ?? {}) as Record<string, unknown>
+              existing.metadata = { ...em, hasLayerBlock: true }
+            }
+            // The SYMBOL is a duplicate — but the SCOPE is not. Returning `{}` here
+            // (the first version) silently dropped the layer from the returned
+            // scope, so the rules inside the block were attributed to no layer and
+            // every `contains` edge for them disappeared: 5 symbols and ZERO
+            // relationships. The dedup is about publishing a name once, not about
+            // pretending the layer does not exist.
+            return { layer: `${keyword} ${namePart}` }
+          }
+          ctx.layerNames[namePart] = true
+        }
         ctx.symbols.push({
           name: publishedName,
           // A declared `@font-face` and a registered `@property` are both
