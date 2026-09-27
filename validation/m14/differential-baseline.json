@@ -1448,6 +1448,36 @@
         "avgMsPerFile": 4.4
       },
       "sampleSetHash": "93bd5239a044ad6d"
+    },
+    "svelte:css": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "truthRows": 68,
+      "covered": 68,
+      "coveragePct": 100,
+      "filesSampled": 60,
+      "perf": {
+        "avgMsPerFile": null,
+        "loadAvg1AtPin": 41.17,
+        "note": "NOT MEASURED COMPARABLY. This host is at load ~40; the file's shared loadContext records loadAvg 4.85 -> 5.19 for the other rows, so a per-file cost measured here would be several times its peers for reasons that have nothing to do with the analyzer. Pinned as null rather than filled in. M14 F3 section F stays open until this is measured at a load comparable to loadContext -- do not 'fix' it by pasting a number measured on a busy box."
+      },
+      "sampleSetHash": "def94838c364b04e"
+    },
+    "grails-core:css": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "truthRows": 475,
+      "covered": 475,
+      "coveragePct": 100,
+      "filesSampled": 60,
+      "perf": {
+        "avgMsPerFile": null,
+        "loadAvg1AtPin": 41.17,
+        "note": "NOT MEASURED COMPARABLY. This host is at load ~40; the file's shared loadContext records loadAvg 4.85 -> 5.19 for the other rows, so a per-file cost measured here would be several times its peers for reasons that have nothing to do with the analyzer. Pinned as null rather than filled in. M14 F3 section F stays open until this is measured at a load comparable to loadContext -- do not 'fix' it by pasting a number measured on a busy box."
+      },
+      "sampleSetHash": "13f8825d05114cf8"
     }
   },
   "hashes": {
@@ -1498,6 +1528,8 @@
     "clj-kondo:clojure": "93bd5239a044ad6d",
     "svelte:svelte": "05b3e3087abed566",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
-    "jq:c": "2b743b65d0eac283"
+    "jq:c": "2b743b65d0eac283",
+    "svelte:css": "def94838c364b04e",
+    "grails-core:css": "13f8825d05114cf8"
   }
 }
