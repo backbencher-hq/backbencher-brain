@@ -682,23 +682,29 @@
     },
     {
       "analyzer": "lua",
-      "corpusTarget": "luarocks",
+      "corpusTarget": "luvit + kong",
       "status": "measured",
       "candidates": [
-        "luarocks@665f160b(clean)"
+        "luvit@a63febc(clean)",
+        "kong@94b6c29(clean)"
       ],
       "measured": {
-        "revision": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
-        "sample": "162 tracked *.lua/*.luau files (full LuaRocks corpus, deterministic git ls-files)",
+        "revision": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
+        "sample": "199 tracked *.lua/*.luau files (full luvit corpus, deterministic git ls-files); kong's 1,309 files are the depth draw",
         "fixtures": 2,
         "fixtureFacts": 41,
         "precision": 1,
         "recall": 1,
-        "corpusSymbols": 6746,
-        "corpusRelationships": 12032,
+        "corpusSymbols": 3724,
+        "corpusRelationships": 7025,
         "grammarErrorFiles": 0,
-        "note": "grammar upgraded to @tree-sitter-grammars/tree-sitter-lua 0.4.1 (WASM rebuilt from published source): the pinned grammar produced 136/162 error files and 771 error nodes on the clean LuaRocks corpus; 0/162 after upgrade with no crashes. Analyzer rewritten against the upgraded AST vocabulary (variable_declaration/assignment_statement/function_declaration/function_call/table_constructor); local/parameter/field-mutation noise filtered, require/calls/coroutines/metatables/declared-table instantiation covered, and Lua uses an isolated fresh parser+grammar lifecycle per file because the web-tree-sitter Lua scanner retains state across parses. Differential 41/41 (1.000/1.000); analyzer fully regex-free.",
-        "measuredAt": "2026-08-20T00:50:13.000Z"
+        "note": "RE-PINNED 2026-09-27. The previous entry pinned luarocks@665f160b, a directory that no longer exists, so the claim could not be reproduced by anyone — including the lane that made it. It is now luvit@a63febc (199 files) with kong@94b6c29 (1,309 files) as the depth corpus, and the volumes match what script/m12/lua-corpus-errors.ts MEASURES, which is the point: that instrument previously wrote no artifact at all, so script/m12/verify-corpus-claims.ts compared the manifest against null and reported `agreement: true` — a vacuous pass. With the artifact written, the same gate correctly hard-fails (H5) on a stale manifest, which is the behaviour a claim-checker is for. PROVENANCE, also corrected here: this manifest already recorded that the wired grammar is '@tree-sitter-grammars/tree-sitter-lua 0.4.1, WASM rebuilt from published source'. The lane's LUA-G2 finding declared the wired binary UNATTRIBUTABLE because its sha256 matches neither the npm tarball nor tree-sitter-wasms@0.1.13 — and it was looking only at registries. The bytes differ from the tarball BECAUSE IT IS A REBUILD of the published source, which is consistent with everything measured: declared identity identical to 0.4.1 (name=lua, abi 15, 22 fields, 262 states), surface digests identical, and per-file trees identical on 1,510 of 1,510 files. The pin contract already has the kind for this — `local-rebuild-from-vendored-source`, which fsharp uses. CONSEQUENCE: the grammar SWAP the lane recommended is UNNECESSARY and would be harmful. Swapping to the 0.4.1 tarball would replace a documented local rebuild with the published bytes — no semantic change, and it would discard the rebuild provenance this very entry records. The 136/162-error-files history recorded below is the ABI-13 to ABI-15 transition the lane measured independently as the removal of the `function` and `key` fields (LUA-00).",
+        "measuredAt": "2026-09-27T00:00:00.000Z",
+        "secondCorpus": {
+          "name": "kong",
+          "revision": "94b6c29509f6",
+          "trackedLuaFiles": 1309
+        }
       }
     },
     {
