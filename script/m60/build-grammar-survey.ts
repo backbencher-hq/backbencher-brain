@@ -117,6 +117,7 @@ type ProvVerdict = {
   version?: string
   provenanceKind?: string
   sha256?: string
+  buildOutput?: { shipped: string; named: string[]; isStandardName: boolean }
   source?: { rebuildable?: boolean; grammarSource?: string[]; parserC?: string[]; totalFiles?: number }
 }
 const PROV_BY_LANE = new Map<string, ProvVerdict>()
@@ -603,7 +604,15 @@ for (const lane of target) {
   // `tree-sitter-cpp.wasm`, which is not an npm package — that mistake alone
   // left 22 lanes "unresolved" in the first run.
   const joined = declared.sources.map((s) => s.raw ?? "").join(" ")
-  const pkgMatch = /(@?[a-z0-9][a-z0-9._-]*\/)?tree-sitter-[a-z0-9._+-]+/i.exec(joined)
+  // The optional prefix must be a REAL npm scope, i.e. `@`-prefixed. It used to be
+  // `@?[a-z0-9][a-z0-9._-]*\/`, which also matched a bare path segment — so a doc reading
+  // "vendored `wasm/tree-sitter-graphql.wasm`" yielded the package `wasm/tree-sitter-graphql`,
+  // a name that does not exist and 404s. That is not a cosmetic slip: the survey then
+  // PROPOSED it as a swap candidate, `npm view` returned nothing for it, and the census spent
+  // real network time 404ing on it on every sweep. Three lanes carried the phantom
+  // (graphql, hcl, xml). Requiring the `@` makes the regex fall through to
+  // `tree-sitter-graphql`, which is the package that actually exists.
+  const pkgMatch = /(@[a-z0-9][a-z0-9._-]*\/)?tree-sitter-[a-z0-9._+-]+/i.exec(joined)
   const ownPkg = pkgMatch ? pkgMatch[0].replace(/`/g, "").replace(/\.(wasm|js|mjs|cjs|json|so|dylib|txt|md)$/i, "") : null
   const ownRepo = /github\.com[:/]+([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+)/.exec(joined)?.[1] ?? null
 
