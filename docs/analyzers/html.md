@@ -161,12 +161,37 @@ URLs**.
 
 ## Relationship contract
 
-| Label | Emitted | Confidence | Tier |
-|---|---|---|---|
-| `contains` | DOM containment between addressable nodes, module → top-level included | 1.0 | `structural` |
-| `uses` | fetched resources, in-project navigation, form endpoints, resolved in-document references | 1.0 fetch / 1.0 reference / 0.9 navigation | `import_based` / `structural` / `usage_contextual` |
-| `calls` | **never** | — | — |
-| every edge | carries `line_number` — **1-based, the call site, never a fabricated `0`** (M59.O2 / R6) | | |
+Every applicable label is emitted, and the labels that have no HTML construct
+(`extends`, `implements`, `instantiates`, `overrides`, `exports`) are correctly
+**absent** — measured at 0 exports across 1,200 corpus files, because markup has
+no module surface to export.
+
+| Label | Emitted | By | Confidence | Tier |
+|---|---|---|---|---|
+| `contains` | DOM containment between addressable nodes, module → top-level included | html | 1.0 | `structural` |
+| `uses` | fetched resources, in-project navigation, form endpoints, resolved in-document references | html | 1.0 fetch / 1.0 reference / 0.9 navigation | `import_based` / `structural` / `usage_contextual` |
+| `uses` | a bare identifier read inside an inline `<script>`/`<style>` | **delegate** | **0.60 — unclaimed** | `usage_contextual` |
+| `calls` | invocations found inside an inline `<script>`/`<style>` | **delegate** | 0.9 | `usage_contextual` |
+| every edge | carries `line_number` — **1-based, the call site, never a fabricated `0`** (M59.O2 / R6). Measured **0 of 45,768** edges without a line and **0** with a line ≤ 0 | | | |
+
+`calls` is emitted **only** by the embedded-block seam: on 400 corpus files,
+3,016 `calls` edges, of which **3,016 came from the JS/TS delegate and 0 from
+html**. Markup has no invocation semantics of its own — a `<form action>` is a
+navigation the *browser* performs, which is exactly why it is `uses` and never
+`calls`. An earlier version of this table said `calls` was never emitted; that
+was written before the inline-block seam landed and was wrong from the moment
+that seam existed.
+
+**The 0.60 tier, disclosed rather than averaged away.** 8.24% of emitted edges
+are sub-threshold — a `bareRead` field access inside an inline script, which the
+JS analyzer emits as a *guess* and marks as such. All 3,770 are `uses` from the
+`js` delegate; **html's own edges are 0.9 or 1.0, without exception**. A
+sub-threshold edge is not a defect: the store records it as an unclaimed
+observation, the M12 differential scores it as `unknown` rather than as a false
+positive, and the reason a bare read is a guess is that `obj.field` is a
+declaration in one file and a property of something else in another. What matters
+for a consumer is that the number is *known* and attributable, not that it is
+zero — and it is attributable to exactly one origin.
 
 `imports` mirrors every fetched project-relative module, and an import's `range`
 is the **attribute's**, not the element's — the pre-fix element range made a
@@ -270,6 +295,36 @@ O(1) map. Deferred in-document references resolve in O(L) after the walk, so a
 **forward** reference (a label naming a control declared later) resolves exactly
 as a backward one does. `srcset` is one index pass. Subtree complexity is one
 reverse walk over the emitted symbols, not an O(depth) walk per node.
+
+### Measured
+
+Asymptotic argument is not evidence, and this lane had none published — the only
+number it carried was measured on the analyzer called *directly*, which skips the
+inline-block seam and so omitted the JavaScript sub-parse that is the single
+largest cost on a real page. Both are given, because quoting only the flattering
+one is how a 3× figure becomes a documented 3× lie.
+
+Through the production `ASTEngine.parseFile` path, parsers pre-warmed, Exposed
+(9.32 MiB over 400 files):
+
+| | value |
+|---|---|
+| throughput | **4.7–5.3 ms/KiB** (~0.2 MiB/s) |
+| per file | 112–182 ms, tracking file size |
+| in-family comparison | **javascript 31.9 ms/KiB** on the same method and corpus — html is ~6× cheaper per KiB |
+| flatness | 4.7 ms/KiB on the 400-file draw, 5.3 on a 120-file draw of larger documents: no super-linear growth with size, which is the property the O(nodes + attribute bytes) claim predicts |
+
+The honest reading: html is not a performance outlier, and the cost is dominated
+by the delegate sub-parse rather than by the document walk. A page with no inline
+code is materially cheaper than these figures, and one with a large inline script
+is materially more expensive — so `ms/KiB` is the portable unit and `ms/file` is
+not.
+
+What is still missing is a *scored* per-lane floor. `avgMsPerFile` for html lives
+in `differential-baseline.json`, which only the canonical 28-language sweep
+writes, so section F of the completeness spec has no number to check. The figures
+above are therefore **published as a measurement, not as a budget** — no gate
+enforces them, and the doc says so rather than implying otherwise.
 
 ## See also
 
