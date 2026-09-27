@@ -479,6 +479,27 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "html pass (#419, #288)",
   },
+  // toml enters with a grammar and NOTHING else: no analyzer in `getAnalyzer`, so a
+  // `.toml` file was walked by the generic AST fallback and a ten-line Cargo.toml
+  // published 28 symbols and 0 relationships, 11 of those names containing
+  // whitespace. `requiredKinds` is `contains` ALONE, and that is the finding rather
+  // than an omission — TOML defines no include, import or reference mechanism, so
+  // there is no second relationship type any construct could produce, and inventing
+  // one (treating a path-shaped string as a dependency) would import ecosystem
+  // knowledge into a format that has none.
+  toml: {
+    id: "toml",
+    wasm: "tree-sitter-toml.wasm",
+    classification: "toml-completeness.json",
+    fixturesDir: "validation/m14/fixtures/toml",
+    docs: ["docs/analyzers/real-toml-analyzer.md"],
+    perfKey: "cargo:toml",
+    requiredKinds: ["contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "toml/arrays-and-values (structural depth = the deepest key path, not a node count)" },
+    },
+    title: "toml pass (#419, #289)",
+  },
   // M14 F3: css enters the inventory as INVENTORY-DONE, deliberately NOT in
   // GATED_LANGS yet, on the same reasoning as html above — but for a different set
   // of sections, and the difference is the point.
