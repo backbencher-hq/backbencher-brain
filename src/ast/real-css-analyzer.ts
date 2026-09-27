@@ -13,6 +13,8 @@ interface CssContext {
   fontFaceNames: Record<string, boolean>
   /** `@layer` names already published, so the ORDERING form cannot duplicate them. */
   layerNames: Record<string, boolean>
+  /** namespace prefix -> the published `@namespace` symbol that declares it. */
+  namespacePrefixes: Record<string, string>
   /** the order an `@layer a, b, c;` statement declares. A fact about the file. */
   layerOrder: string[]
   mixinNames: Record<string, boolean>
@@ -55,6 +57,13 @@ interface CssContext {
 interface StackFrame {
   node: Node
   media: string
+  /**
+   * An `@supports` condition. Its own frame field, for the same reason `scope` has
+   * one: folding it into `media` would MISNAME the edge (`@supports (display:grid)`
+   * is a feature query, not a media condition), and dropping it is what happened —
+   * 16 `@supports` scopes published, 0 `contains` edges.
+   */
+  supports: string
   layer: string
   container: string
   /**
@@ -130,6 +139,26 @@ function collapseWhitespace(text: string): string {
     out += c
   }
   return out
+}
+
+/**
+ * Does this selector text contain a NESTING `&`?
+ *
+ * Escape-aware, and it has to be: the corpora carry Tailwind arbitrary values whose
+ * class names contain an escaped ampersand — `.\[\&_p\]\:leading-relaxed` — and
+ * `\&` is a legitimate CSS escape that belongs in the name. A plain `indexOf("&")`
+ * would call 101 real Tailwind class names unresolvable and suppress every one of
+ * them, which is the same class of over-correction as the dead `\s` floor.
+ */
+function hasNestingAmp(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "&") continue
+    // count the backslashes immediately before it: an ODD run escapes the `&`
+    let bs = 0
+    for (let k = i - 1; k >= 0 && text[k] === "\\"; k--) bs++
+    if (bs % 2 === 0) return true
+  }
+  return false
 }
 
 // Universal reset selector: `*` or `*::before`/`*::after`/`*::selection`.
@@ -224,6 +253,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       keyframeNames: {},
       fontFaceNames: {},
       layerNames: {},
+      namespacePrefixes: {},
       layerOrder: [],
       mixinNames: {},
       frameworks: {},
@@ -251,11 +281,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // walk order-independent by construction rather than by a heuristic.
     this.collectKeyframeNames(rootNode, ctx)
     this.collectFontFaceNames(rootNode, ctx)
+    this.collectNamespacePrefixes(rootNode, ctx)
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", scope: "", currentSelector: "" }]
+    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
 
     while (stack.length > 0) {
-      const { node, media, layer, container, scope, currentSelector } = stack.pop()!
+      const { node, media, supports, layer, container, scope, currentSelector } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -297,6 +328,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       let nextMedia = media
+      // `@supports` is a CONDITIONAL SCOPE exactly like `@media`, and the walk
+      // already carries one variable per scope kind. It was missing here, so
+      // `processSupports` published the scope symbol and nothing ever attributed a
+      // rule to it: measured 16 `@supports` scope symbols published across the
+      // corpora and **0** `contains` edges, while `@media` emits 2,921, `@layer`
+      // 7,601 and `@container` 11. The corpus rotation is what exposed it — this
+      // construct had not been in a previous 60-file draw.
+      let nextSupports = supports
       let nextLayer = layer
       let nextContainer = container
       let nextScope = scope
@@ -304,7 +343,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       switch (node.type) {
         case "rule_set":
-          nextSelector = this.processRuleSet(node, media, layer, container, scope, currentSelector, ctx) || nextSelector
+          nextSelector = this.processRuleSet(node, media, supports, layer, container, scope, currentSelector, ctx) || nextSelector
           break
         case "import_statement":
           this.processImport(node, ctx)
@@ -319,9 +358,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "keyframes_statement":
           this.processKeyframes(node, ctx)
           break
-        case "supports_statement":
-          this.processSupports(node, ctx)
+        case "supports_statement": {
+          const newSupports = this.processSupports(node, ctx)
+          if (newSupports) nextSupports = newSupports
           break
+        }
         case "at_rule":
         case "postcss_statement":
         case "namespace_statement":
@@ -362,6 +403,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           stack.push({
             node: child,
             media: nextMedia,
+            supports: nextSupports,
             layer: nextLayer,
             container: nextContainer,
             scope: nextScope,
@@ -1054,6 +1096,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processRuleSet(
     node: Node,
     media: string,
+    supports: string,
     layer: string,
     container: string,
     scope: string,
@@ -1139,7 +1182,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < rawSelectors.length; i++) {
       if (!isResetSelector(rawSelectors[i])) keptSelectors.push(rawSelectors[i])
     }
-    if (keptSelectors.length === 0) return null
+    if (keptSelectors.length === 0) {
+      return null
+    }
     if (keptSelectors.length !== rawSelectors.length) {
       rawSelectors.length = 0
       for (let i = 0; i < keptSelectors.length; i++) rawSelectors.push(keptSelectors[i])
@@ -1154,13 +1199,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // A `&` WITH NO PARENT cannot be resolved. That happens when the enclosing rule
+    // published nothing — measured case: `* { &:hover .class { … } }`, where `*` is
+    // a universal reset and is suppressed by CSS-D5, so the nested rule had no parent
+    // and kept its raw text. The lane then published a symbol literally named
+    // `&:hover .class.svelte-xyz`: a name containing `&`, which is not a selector
+    // anything can reference. M60 R7's placeholder-literal class, reached from the
+    // other direction.
+    //
+    // A rule whose name cannot be resolved is not addressable, so it publishes
+    // nothing — the same suppression as its parent, applied one level down. That
+    // makes "no published name in this lane contains a nesting `&`" a structural
+    // property rather than a hope.
+    for (const r of rawSelectors) {
+      if (!parentSelector && hasNestingAmp(r)) return null
+    }
+
     const resolvedSelectors: string[] = []
     for (let i = 0; i < parentSelectors.length; i++) {
       const p = parentSelectors[i]
       for (let j = 0; j < rawSelectors.length; j++) {
         const r = rawSelectors[j]
         if (p) {
-          if (r.indexOf("&") !== -1) {
+          if (hasNestingAmp(r)) {
             resolvedSelectors.push(replaceAll(r, "&", p))
           } else {
             resolvedSelectors.push(`${p} ${r}`)
@@ -1339,6 +1400,34 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (specId === maxSpecificity[0] && specClass === maxSpecificity[1] && specTag > maxSpecificity[2])
         maxSpecificity = [specId, specClass, specTag]
 
+      // A SELECTOR THAT USES A DECLARED NAMESPACE PREFIX references that
+      // declaration. `svg|a` can only be resolved given `@namespace svg url(…)`, so
+      // the dependency is real and the graph was silent about it: the prefix was
+      // published as a `module` symbol, the selector as a `type` symbol, and nothing
+      // connected them.
+      //
+      // The omission audit marked this PARTIAL rather than missing, because the
+      // corpus carries it once (svelte's supports-namespace sample) — which is
+      // exactly the shape of defect a small count hides.
+      if (selectorText) {
+        const bar = selectorText.indexOf("|")
+        if (bar > 0) {
+          const prefix = selectorText.slice(0, bar).trim()
+          const declared = ctx.namespacePrefixes[prefix]
+          if (declared) {
+            ctx.relationships.push({
+              source: selectorText,
+              target: declared,
+              type: ASTEngine.RelationshipType.References,
+              // the name on this edge is the DECLARATION, which is written on the
+              // `@namespace` line — not the selector's own line
+              line_number: this.lineOf(selectorsNode),
+              metadata: { cssSpecific: true, isNamespaceRef: true },
+            })
+          }
+        }
+      }
+
       if (isComplex && chain.length >= 2) {
         // RULING (2026-09-26). A selector chain is DEFERRED, not emitted blind.
         //
@@ -1468,6 +1557,19 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Contains,
         line_number: selectorLine,
         metadata: { cssSpecific: true, isMediaScope: true },
+      })
+    }
+    // `@supports` is a conditional scope: the same shape as `@media`, so the same
+    // `contains` edge, named by the rule's selector. Emitted with its own metadata
+    // class so a consumer can tell a feature-query scope from a media condition
+    // without re-parsing the name.
+    if (supports) {
+      ctx.relationships.push({
+        source: supports,
+        target: selectorText,
+        type: ASTEngine.RelationshipType.Contains,
+        line_number: selectorLine,
+        metadata: { cssSpecific: true, isSupportsScope: true },
       })
     }
     if (layer) {
@@ -1666,6 +1768,36 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     return `@font-face ${family}`
   }
 
+  /**
+   * Namespace prefixes declared by `@namespace`, collected before the walk for the
+   * same order-independence reason as keyframes and font faces: a selector may use a
+   * prefix before the `@namespace` that declares it, and CSS does not care.
+   *
+   * The value is the PUBLISHED symbol name, so the edge and the symbol cannot name
+   * different things — the same single-expression discipline as `@font-face`.
+   */
+  private collectNamespacePrefixes(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "namespace_statement") {
+        const nameNode = this.findChild(n, (c) => c?.type === "namespace_name")
+        if (nameNode) {
+          const prefix = nameNode.text.trim()
+          // the published name is the keyword plus the whole prelude, which is what
+          // the symbol push below builds
+          const prelude = collapseWhitespace(n.text.replace(/^@namespace\s*/, "").replace(/;\s*$/, "").trim())
+          if (prefix && prelude) ctx.namespacePrefixes[prefix] = `@namespace ${prelude}`
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private collectKeyframeNames(root: Node, ctx: CssContext): void {
     const stack: Node[] = [root]
     while (stack.length > 0) {
@@ -1748,7 +1880,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processSupports(node: Node, ctx: CssContext) {
+  private processSupports(node: Node, ctx: CssContext): string | null {
     // The predicate used to be `c.type !== "at_keyword" && c.type !== "block"`,
     // on the belief that `supports_statement` carries an `at_keyword` child. It
     // does NOT: the pinned grammar's shape is
@@ -1792,7 +1924,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       ctx.patterns["Feature Queries (@supports)"] = true
+      // RETURNED so the walk can attribute the rules inside to this scope. It used
+      // to return nothing, which is the whole defect: the scope symbol was
+      // published and nothing could ever point at it.
+      return `@supports ${condition}`
     }
+    return null
   }
 
   private processAtRule(node: Node, currentSelector: string, ctx: CssContext): { layer?: string; container?: string; scope?: string } {
