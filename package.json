@@ -46,6 +46,8 @@
     "grammar:survey:refresh": "bun run script/m60/build-grammar-survey.ts --refresh",
     "grammar:stragglers:measure": "bun run script/m60/measure-runtime-stragglers.ts",
     "audit:grammar-preflight": "bun run script/m60/verify-runtime-migration-preflight.ts",
+    "audit:grammar-rebuilds": "bun run script/m60/verify-local-rebuilds.ts",
+    "audit:grammar-scripts": "bun run script/m60/verify-script-typecheck.ts",
     "audit:attr-line-base": "bun run script/m14/verify-attr-line-base-920.ts",
     "audit:include-names": "bun run script/m14/verify-include-names-924.ts",
     "audit:name-surface": "bun run script/m14/verify-name-surface-924.ts",
