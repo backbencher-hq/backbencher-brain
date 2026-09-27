@@ -112,6 +112,24 @@ const SHELL_DEFINED_VARS = new Set([
  */
 const isCommandNameText = (text: string): boolean => {
   if (text.length === 0) return false
+  // A bare NUMBER is never a command name — it is an arithmetic token or an
+  // argument fragment. This predicate is the single gate for BOTH command paths
+  // (the `command_name` walk and the trap-handler splitter), and it was admitting
+  // digits, so a trap handler whose text ran `... ; 129 ...` emitted
+  // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143`: 12 rows on the 385 extensionless
+  // files the shebang rule had just opened, none of which any symbol can be.
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (c >= 48 && c <= 57 /* 0-9 */) {
+      let allDigits = true
+      for (let j = 0; j < text.length; j++) {
+        const d = text.charCodeAt(j)
+        if (d < 48 || d > 57) { allDigits = false; break }
+      }
+      if (allDigits) return false
+      break
+    }
+  }
   for (let i = 0; i < text.length; i++) {
     const c = text.charCodeAt(i)
     if (c === 36 /* $ */ || c === 96 /* ` */ || c === 34 /* " */ || c === 39 /* ' */) return false
@@ -585,31 +603,37 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!nameNode) return true
     if (nameNode.isMissing) return true
 
-    // A command's name is a WORD. A `concatenation` under `command_name` is the
-    // grammar gluing fragments together, and the two real-world shapes that
-    // produce one are both fabrications: a zsh `case` arm's alternation, and a
-    // quoted string the grammar could not classify. Measured on ohmyzsh's
-    // `tools/changelog.sh`, the analyzer emitted `calls: -> ]+` and
-    // `calls: -> \e[2m\1\e[0m` from exactly this shape — a sed argument and an
-    // escape sequence promoted to callees, neither of which any symbol can ever
-    // be. A plain `word` name is required.
+    // A command's name is a WORD, and a plain `word` name is trusted outright.
+    // The two real-world shapes that put something else in `command_name` are
+    // both fabrications: a zsh `case` arm's alternation, and a quoted string or
+    // number the grammar could not classify. Measured on ohmyzsh's
+    // `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
+    // `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
+    // shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
+    // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
+    // promoted to callees, 18 rows the independent oracle refused.
+    const name: Node = nameNode
     const nameIsPlainWord =
-      nameNode.namedChildCount === 0 ||
-      (nameNode.namedChildCount === 1 && nameNode.namedChild(0)?.type === "word")
-    if (nameIsPlainWord) return false
-
-    // Damage is looked for in the name's ANCESTORS as well as the command's own
-    // subtree. Both real shapes put the ERROR one or two levels UP:
-    // `command <- command_substitution <- command <- ERROR`. The first version
-    // of this guard walked UP from the name (and so missed the case where the
-    // damage is a SIBLING, `${value/]/%5D}`) and the second walked DOWN into the
-    // command's subtree (and so missed the case where the damage is an
-    // ANCESTOR). Both are real; the check has to be both directions. The walk
-    // stops at the enclosing statement so a damaged region does not disqualify
-    // the whole file — that would be the `#907` swallow class wearing a
-    // different hat.
-    if (this.enclosingStatementIsDamaged(nameNode)) return true
-    return this.subtreeIsDamaged(command)
+      name.namedChildCount === 0 ||
+      (name.namedChildCount === 1 && name.namedChild(0)?.type === "word")
+    if (!nameIsPlainWord) {
+      // Not a word, and therefore not a name — no callee exists to point at.
+      // The bidirectional damage check below used to be the ONLY thing standing
+      // between this shape and an edge, which meant an UNDAMAGED `number` fell
+      // straight through it and became a callee.
+      return true
+    }
+    // A word that OPENS with a backslash is an escape, not a name. `\.` is what
+    // the grammar leaves behind when it splits a sed argument such as
+    // `s/\./-/g`, and a command named `\.` is a name no symbol can ever have.
+    if (name.text.charCodeAt(0) === 92 /* \ */) return true
+    // A plain word is trusted for its shape. BD5's damage check deliberately
+    // stays scoped to the shapes above: running it for a plain word too costs
+    // 31 calls the independent oracle DOES corroborate, because that oracle is
+    // structure-only and cannot see damage at all. Those rows are the oracle's
+    // blind spot rather than an analyzer error, and "fixing" them would trade a
+    // real call for a phantom one.
+    return false
   }
 
   /** Is there an ERROR/MISSING node between `node` and its enclosing statement? */
@@ -726,9 +750,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     functionStack: string[],
     functionParams: Map<string, Set<string>>,
   ) {
-    const names: { name: string; line: number }[] = []
+    const names: { rawName: string; line: number }[] = []
     this.collectReadNames(node, names)
-    for (const { name, line } of names) {
+    for (const { rawName, line } of names) {
+      // Read names are trimmed at the single point they are emitted. A zsh
+      // `$ _iterm2_command` left the differential reporting
+      // `uses: -> " _iterm2_command"` — a target with a LEADING SPACE that
+      // cannot match any declaration, so the edge could never be resolved. The
+      // walk that collects names has several sources and only this loop is
+      // common to all of them.
+      const name = rawName.trim()
       if (name.length === 0) continue
       if (isAllDigits(name)) {
         // Positional parameter reference ($1..$9) — feeds the enclosing
@@ -760,11 +791,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Variable names read anywhere under `node`, each with the line it is on. */
-  private collectReadNames(node: Node, out: { name: string; line: number }[]): void {
+  private collectReadNames(node: Node, out: { rawName: string; line: number }[]): void {
     const visit = (n: Node) => {
       if (n.type === "variable_name" || n.type === "special_variable_name") {
         const text = n.text
-        if (text.length > 0) out.push({ name: text, line: n.startPosition.row + 1 })
+        if (text.length > 0) out.push({ rawName: text, line: n.startPosition.row + 1 })
         return
       }
       // `${arr[i]}` — the READ is the base name; the index is a separate
