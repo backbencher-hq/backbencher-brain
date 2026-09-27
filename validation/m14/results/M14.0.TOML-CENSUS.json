@@ -1,0 +1,148 @@
+{
+  "checks": [
+    {
+      "description": "every declared node type (21) is either claimed by the analyzer or ruled silent with a stated reason",
+      "id": "census-types-accounted",
+      "status": "pass"
+    },
+    {
+      "description": "all 6 non-carrier shapes carry a ruling rather than an assumption",
+      "id": "census-shapes-ruled",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L1",
+  "commit": "b6b7ec8a252cb98a02fb50190cdecbe0abc0d2ae",
+  "committedAt": "2026-09-27T17:18:59-04:00",
+  "data": {
+    "claimedTypes": [
+      {
+        "n": 9965,
+        "type": "bare_key"
+      },
+      {
+        "n": 835,
+        "type": "document"
+      },
+      {
+        "n": 1025,
+        "type": "dotted_key"
+      },
+      {
+        "n": 6807,
+        "type": "pair"
+      },
+      {
+        "n": 249,
+        "type": "quoted_key"
+      },
+      {
+        "n": 2269,
+        "type": "table"
+      },
+      {
+        "n": 109,
+        "type": "table_array_element"
+      }
+    ],
+    "declaredTypes": 21,
+    "files": 835,
+    "filesWithParseErrors": 2,
+    "observedTypes": 20,
+    "repos": 68,
+    "ruledSilentTypes": [
+      {
+        "n": 2,
+        "type": "ERROR",
+        "why": "reported as a ParseError; the structure is not modelled — a fabricated tree for a mis-nested document is a guess dressed as a fact"
+      },
+      {
+        "n": 904,
+        "type": "array",
+        "why": "a value is DATA — its elements are data, not symbols"
+      },
+      {
+        "n": 692,
+        "type": "boolean",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 763,
+        "type": "comment",
+        "why": "not an identity; TOML has no block-comment form"
+      },
+      {
+        "n": 14,
+        "type": "escape_sequence",
+        "why": "TOML-D1: decoded from the PARENT'S text in pure-String, never walked — equivalent by construction"
+      },
+      {
+        "n": 15,
+        "type": "float",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 562,
+        "type": "inline_table",
+        "why": "a value is DATA — its keys ride on the enclosing key's metadata.inlineKeys"
+      },
+      {
+        "n": 77,
+        "type": "integer",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 1,
+        "type": "local_date",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 1,
+        "type": "local_date_time",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 1,
+        "type": "local_time",
+        "why": "a value is DATA"
+      },
+      {
+        "n": 9,
+        "type": "offset_date_time",
+        "why": "a value is DATA — one of TOML's four date/time forms"
+      },
+      {
+        "n": 6330,
+        "type": "string",
+        "why": "a value is DATA — recorded as metadata.valueType on its key, never a symbol"
+      }
+    ],
+    "shapesRuled": 6,
+    "skippedEntries": 2,
+    "unaccountedTypes": [],
+    "unseenTypes": [
+      "MISSING"
+    ]
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.TOML-CENSUS",
+  "layers": [
+    "carrier-census"
+  ],
+  "limitations": [
+    {
+      "description": "this gate consults NEITHER the analyzer nor the differential oracle, which is the only reason it exists: the two are two implementations of one reading of the specification by the same author, so they catch each other's implementation mistakes (three, on the oracle's first corpus run) and cannot catch a mistake in the READING — where the two would agree, the differential would report agreement, and nothing in it would notice that both were wrong. The evidence harness refused this file's first draft for saying so with a percentage in it, which is the same rule applied to prose"
+    },
+    {
+      "description": "it inventories CONSTRUCTS, not semantics: a construct can be accounted for and still be handled wrongly, which is what the differential and the hand-audited M12 truth are for. It answers 'does anybody account for this', not 'is this handled correctly'"
+    },
+    {
+      "description": "the corpus is the pinned fixtures repositories and rotates as a pool, so a construct no corpus exercises is reported as NOT SEEN rather than unaccounted — `MISSING` is in that state today, handled and pinned by fixture instead"
+    }
+  ],
+  "regeneratedAt": "2026-09-27T21:25:28.548Z",
+  "regeneratedAtCommit": "b6b7ec8a252cb98a02fb50190cdecbe0abc0d2ae",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "toml construct census"
+}

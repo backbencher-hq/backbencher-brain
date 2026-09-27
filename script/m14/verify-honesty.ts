@@ -134,7 +134,7 @@ for (const gate of STRENGTHENED_GATES) {
 // artifact is never read by the honesty gate is a gate whose failure nobody is
 // told about, and a carrier census nobody reads is exactly the gate that would
 // have caught the six carriers that were missing from BOTH tables at once.
-for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1", "M14.0.CENSUS"]) {
+for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1", "M14.0.CENSUS", "M14.0.TOML-CENSUS"]) {
   const p = path.join(M14, "results", `${id}.json`)
   if (!fs.existsSync(p)) { fail(`missing evidence file for ${id}`); continue }
   const ev = JSON.parse(fs.readFileSync(p, "utf8"))
@@ -247,6 +247,11 @@ const EVIDENCE_INPUTS: Record<string, string[]> = {
   // The census reads the corpora and the analyzer, not the fixture files, so the
   // lineage prefixes name what can actually move its verdict.
   "M14.0.CENSUS": ["src/ast/real-html-analyzer.ts", "script/m14/verify-carrier-census.ts"],
+  // The toml census reads the corpora and the grammar, and consults neither the
+  // analyzer nor the oracle — that is the whole point of it — so naming the
+  // analyzer here would be a false lineage claim. The census script and the wasm
+  // are what can move its verdict.
+  "M14.0.TOML-CENSUS": ["script/m14/verify-toml-census.ts", "wasm/tree-sitter-toml.wasm"],
 }
 
 function commitOk(rev: string): boolean {
