@@ -1,23 +1,23 @@
 {
   "name": "hcl-corpus-production",
-  "wallTimeMs": 6137.387918,
-  "userCpuMs": 6732.199,
-  "systemCpuMs": 1006.406,
-  "peakRssBytes": 372076544,
-  "rssDeltaBytes": 206987264,
+  "wallTimeMs": 37752.333471,
+  "userCpuMs": 15032.551,
+  "systemCpuMs": 2531.013,
+  "peakRssBytes": 308699136,
+  "rssDeltaBytes": 188841984,
   "databaseBytes": null,
-  "files": 2295,
-  "symbols": 14226,
-  "relationships": 10667,
-  "filesPerSecond": 373.9375823498338,
-  "symbolsPerSecond": 2317.9242032717802,
-  "relationshipsPerSecond": 1738.0358130395107,
-  "trackedFiles": 2299,
+  "files": 2357,
+  "symbols": 17019,
+  "relationships": 23252,
+  "filesPerSecond": 62.4332268576342,
+  "symbolsPerSecond": 450.80657101827603,
+  "relationshipsPerSecond": 615.908948194192,
+  "trackedFiles": 2361,
   "errors": 0,
   "errorFiles": 0,
   "crashFiles": 0,
   "crashSamples": [],
-  "acceptanceFiles": 2295,
+  "acceptanceFiles": 2357,
   "excludedFiles": [
     "internal/command/testdata/init-syntax-invalid-backend-attribute-invalid/main.tf",
     "internal/configs/testdata/invalid-files/provider-syntax.tf",
@@ -26,10 +26,5 @@
   ],
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the HCL analyzer uses one iterative DFS over the tree plus a single recursive expression walk, with Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol relationship scan",
-  "corpusPolicy": "tracked .tf/.tfvars/.hcl files from clean terraform@2e1710bf; four named diagnostic fixtures (deliberate typo / invalid-fixture testdata) are excluded and measured separately by hcl-corpus-errors.ts",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.884Z",
-    "contentSha256": "7ddc605a52c52453822aa5974be7ce4b8584aad149ad5460685bdc715be1aeeb"
-  }
+  "corpusPolicy": "tracked .tf/.tfvars/.hcl files from clean terraform@2e1710bf; four named diagnostic fixtures (deliberate typo / invalid-fixture testdata) are excluded and measured separately by hcl-corpus-errors.ts"
 }

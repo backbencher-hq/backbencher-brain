@@ -106,7 +106,7 @@ export function perlWordValues(node: Node): string[] {
   }
   if (node.type === "string_literal") {
     const content = node.childForFieldName("content") || perlFindChildByType(node, "string_content")
-    return [content ? content.text : node.text.replace(/^['"]|['"]$/g, "")]
+    return [content ? content.text : unquote(node.text)]
   }
   const values: string[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
@@ -114,6 +114,18 @@ export function perlWordValues(node: Node): string[] {
     if (child) values.push(...perlWordValues(child))
   }
   return values
+}
+
+/** Strip one layer of matching quotes by INDEX, not by pattern: the lane's
+ *  documented contract is zero regexes, and the grammar already exposes the
+ *  unquoted text under `content` on every shape that needs this. */
+function unquote(text: string): string {
+  if (text.length >= 2) {
+    const first = text[0]
+    const last = text[text.length - 1]
+    if ((first === "'" && last === "'") || (first === '"' && last === '"')) return text.slice(1, -1)
+  }
+  return text
 }
 
 function splitWords(text: string): string[] {
@@ -1046,15 +1058,6 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name) return name
     const first = name[0]
     return first === "$" || first === "@" || first === "%" || first === "#" ? name.slice(1) : name
-  }
-
-  private unquote(text: string): string {
-    if (text.length >= 2) {
-      const first = text[0]
-      const last = text[text.length - 1]
-      if ((first === "'" && last === "'") || (first === '"' && last === '"')) return text.slice(1, -1)
-    }
-    return text
   }
 
   private leafName(name: string): string {

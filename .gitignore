@@ -110,3 +110,19 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 # ...and `xml/src/scanner.c`, which `#include`s the shared header above and is
 # therefore equally required for a rebuild.
 !grammars/tree-sitter-xml/xml/src/scanner.c
+# tree-sitter-hcl (tree-sitter-grammars 1.2.0 @ 64ad6278, vendored for the M60
+# HCL lane): the grammar-pin instrument's offline source↔wasm proof needs the
+# two GENERATED files (`script/m14/verify-grammar-pins.ts` `sourceVsWasmFor`),
+# and without them the pin would record a sha with no proof that the wired bytes
+# are a build of the committed source — which is the whole property the pin buys
+# over an unversioned blob.
+!grammars/tree-sitter-hcl/src/node-types.json
+!grammars/tree-sitter-hcl/src/grammar.json
+# ...and the two files the wasm is REBUILT from. Unlike haskell (20 MB) and
+# elixir (13 MB) this parser is 600 KB, so it is kept: the pin then rebuilds
+# offline rather than resting on a hash alone.
+!grammars/tree-sitter-hcl/src/parser.c
+!grammars/tree-sitter-hcl/src/scanner.c
+# ...and the tree-sitter headers `parser.c` includes, without which a rebuild
+# fails at the preprocessor rather than at the grammar.
+!grammars/tree-sitter-hcl/src/tree_sitter/
