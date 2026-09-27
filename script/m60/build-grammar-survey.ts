@@ -102,23 +102,34 @@ function declaredVersion(lane: string): { version: string | null; sources: Array
     const i = lines.findIndex((l) => /^\s*-\s*Parser:/i.test(l))
     if (i >= 0) {
       // The Parser: bullet is a multi-line paragraph; take it to the next bullet.
+      // The cap bounds what is RECORDED, and hitting it is disclosed rather than
+      // silent. At 400 chars the vue lane's long `Parser:` bullet was cut off BEFORE the
+      // provenance line that states the version, and the lane read as unversioned — a
+      // truncation that looked exactly like an absence. A partial raw is still useful; a
+      // partial raw that does not say it is partial is a trap.
       const para: string[] = []
+      let truncated = false
       for (let k = i; k < lines.length; k++) {
         if (k > i && /^\s*-\s+\S/.test(lines[k])) break
         para.push(lines[k].trim())
-        if (para.join(" ").length > 400) break
+        if (para.join(" ").length > 1600) { truncated = true; break }
       }
-      sources.push({ file: path.relative(ROOT, docPath), field: "Parser:", raw: para.join(" ").replace(/\s+/g, " ") })
+      const raw = para.join(" ").replace(/\s+/g, " ")
+      sources.push({ file: path.relative(ROOT, docPath), field: "Parser:", raw: truncated ? raw + " …[truncated]" : raw })
     } else {
       sources.push({ file: path.relative(ROOT, docPath), field: "Parser:", raw: null })
     }
   }
 
-  // First non-null wins, in the order the sources were pushed (spec before prose).
+  // First source that ACTUALLY YIELDS A VERSION wins, in trust order (spec before
+  // prose). It used to be "first non-null raw wins", which let a spec entry carrying
+  // only a FILENAME — `grammar: "tree-sitter-vue.wasm"` — shadow the analyzer doc that
+  // states a provenance and a version, and the lane read as unversioned. A more trusted
+  // source silencing a less trusted one by being EMPTY is the wrong precedence:
+  // "most trusted" has to mean "trusted when it speaks", not "authoritative when silent".
+  // Every source is still recorded, so a reader can see which one answered and which did not.
   for (const s of sources) {
     if (!s.raw) continue
-    // A sha256 in the raw text is a stronger identity claim than a version; if
-    // both are present the sha is what the artifact gate will use.
     const v = VERSION_RE.exec(s.raw)
     if (v) return { version: v[1], sources }
   }
@@ -557,14 +568,24 @@ for (const lane of target) {
 
   const f10Rows = f10RowsFor(lane)
 
+  // IS THIS A GRAMMAR VERSION? A lane whose bytes came from a redistributor collection
+  // has a COLLECTION version, not a grammar version, and the collection does not state
+  // which grammar it built. Storing 0.1.12 as "the grammar is 0.1.12" would be a category
+  // error that then drives a staleness comparison against upstream's grammar latest —
+  // comparing two different things and reporting the result as staleness. So the kind is
+  // recorded, and a collection-sourced version yields `unknown` rather than a false answer.
+  const declaredIsCollectionVersion = /REDISTRIBUTOR BUILD/i.test(
+    declared.sources.map((x) => x.raw ?? "").join(" "),
+  )
   const declaredV = declared.version
+  const effectiveV = declaredIsCollectionVersion ? null : declaredV
   const latestV = health.available ? (health as any).latestVersion : null
   // `cmpSemver(latest, declared)` answers "is UPSTREAM ahead of US", which is the
   // opposite of what a field named `behind` should say. It read `behind: "ahead"` for
   // the powershell lane — technically true about upstream, actively misleading about us.
   // The comparison is kept (it is the one that decides the candidate filter) and the
   // position is now stated in the only direction a reader can act on.
-  const upstreamVersusUs = cmpSemver(latestV, declaredV)
+  const upstreamVersusUs = cmpSemver(latestV, effectiveV)
   const ourPosition: "behind" | "current" | "ahead" | "unknown" =
     upstreamVersusUs === "unknown" ? "unknown" : upstreamVersusUs === "ahead" ? "behind" : upstreamVersusUs === "behind" ? "ahead" : "current"
 
@@ -578,10 +599,10 @@ for (const lane of target) {
   // "ahead": "ahead of what?" is unanswerable without a baseline, and counting it
   // put every unrecorded lane in the swap shortlist and buried the real one.
   const aheadCandidates =
-    declaredV == null
+    effectiveV == null
       ? []
       : candidates
-          .filter((c) => cmpSemver(c.upstream?.latestVersion ?? null, declaredV) === "ahead")
+          .filter((c) => cmpSemver(c.upstream?.latestVersion ?? null, effectiveV) === "ahead")
           .map((c) => ({
             package: c.package,
             version: c.upstream.latestVersion,
@@ -608,6 +629,8 @@ for (const lane of target) {
     },
     declared: {
       version: declaredV,
+      versionKind: declaredV == null ? null : declaredIsCollectionVersion ? "redistributor-collection" : "grammar",
+      versionIsComparableToUpstreamGrammar: !declaredIsCollectionVersion,
       versionKnown: declaredV != null,
       sha256: sha.sha256,
       sha256File: sha.file,
@@ -622,12 +645,14 @@ for (const lane of target) {
       upstreamVersusDeclared: upstreamVersusUs,
       aheadCandidates,
       hasAheadCandidate: aheadCandidates.length > 0,
-      note:
-        declaredV == null
-          ? "NO DECLARED VERSION — staleness cannot be computed and is not assumed to be 'current'"
-          : ourPosition === "unknown"
-            ? "declared version is not comparable to upstream latest (pre-release, or upstream latest missing)"
-            : "compare declared version to upstream latestVersion, and the timeline to lastPublish",
+        note:
+          effectiveV == null
+            ? declaredIsCollectionVersion
+              ? "the recorded version is a REDISTRIBUTOR COLLECTION's, not the grammar's, and the collection does not state which grammar it built — staleness is UNKNOWN and is deliberately not inferred from it"
+              : "NO DECLARED VERSION — staleness cannot be computed and is not assumed to be 'current'"
+            : ourPosition === "unknown"
+              ? "declared version is not comparable to upstream latest (pre-release, or upstream latest missing)"
+              : "compare declared version to upstream latestVersion, and the timeline to lastPublish",
     },
     evidence: {
       m12,
