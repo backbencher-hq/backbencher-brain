@@ -117,21 +117,36 @@ different claims, and only the first is true here.
 
 - `@supports`/`@media` query text is used verbatim as the scope name — no
   decomposition of query conditions
-- `progid:` IE filter values do not parse — the **largest** remaining class:
-  37 of the 62 corpus `.css` files that still fail (60%), with the error sitting
-  on the progid line in all 37. The other 13 are the genuine modern CSS listed
-  above, so `progid:` and modern CSS are the only two classes left.
-  Recorded as `CSS-L2`, and the diagnosis is the opposite of the obvious one: the
-  `progid:` **token already lexes** (`plain_value`'s trailing repeat has always
-  admitted `:`), and the failure is **inside the parentheses**. Adding `=` to the
-  `arguments` rule's separator choice was built and A/B'd and is **provably
-  inert** — 61 error files before, 61 after, 0 fixed, 0 regressed, 151 → 151 node
-  types — because the value parses as `parenthesized_value`, whose rule is
-  `seq('(', $._value, ')')`, exactly ONE value. A real fix has to widen that
-  rule's **arity**, and it participates in every parenthesized value in CSS
-  (`calc((1px + 2px) * 3)`, nested parens, `var()` fallbacks), so it is a
-  different kind of change from the two additive hunks adopted here and needs its
-  own A/B. Recorded so the inert patch is not written a second time
+- `progid:` IE filter values — **no longer a residual.** This was the largest
+  remaining class (37 of the 62 corpus `.css` files that still failed, 60% of the
+  mass) and the doc previously carried a long explanation of why it was NOT fixed,
+  including that the obvious patch was provably inert. It is now fixed, by widening
+  the ARITY of `parenthesized_value` from one value to a separated list, because an
+  IE filter argument is a `name = value` pair. Measured A/B over 533 files in 13
+  repositories:
+
+  ```
+  61 error files -> 24      37 fixed      0 REGRESSED
+  Q2 collateral: 0 files that parsed clean before now error
+  Q3 shape:      node types 151 -> 152, added ['parenthesized_value_repeat1']
+                 (this rule's own generated wrapper), 0 removed, 0 field changes
+  grails-core:   20.94% -> 1.57%
+  ```
+
+  The first attempt is why the second one is written down: adding `=` to the
+  separator choice of `arguments` was built, A/B'd, and **provably inert** (61 → 61,
+  0 fixed). The value never parses as a `call_expression`, so `arguments` is never
+  reached and the token's character set was never the problem — the rule's arity
+  was. `parenthesized_value_repeat1` is classified `internal_silent` in the spec as
+  a generated repetition wrapper.
+
+- `@page` rules, `@starting-style`, `[attr i]`/`[attr s]`, escaped unicode
+  identifiers, HTML-style comments, `chrome://` `@import` URLs, empty custom-property
+  values, range media/container queries, `& &` / `&&` / `&div`, and a NAMED
+  `@container` (`@container card (min-width: 400px)` — only the anonymous form
+  parses) all remain. Together they are the whole of the 25 corpus files that still
+  error, and every one is re-tested against the pinned wasm rather than carried
+  forward.
 
 ## The `.scss` / `.sass` / `.less` files this lane is also routed
 
