@@ -290,6 +290,75 @@ export const LANES: Record<string, LaneDecision> = {
   },
 }
 
+  // M14.6 perl wave (2026-09-26). The perl lane's own review is what put it
+  // here: it read the pinned grammar's enumerable surface directly and found
+  // that the wired build gives ONE field name to SEVERAL children of a
+  // parenthesised construct, so `childForFieldName("right"/"arguments"/
+  // "invocant")` returns an empty `(` marker and the payload is unreachable —
+  // 39,897 such sites across 41 field pairs on 5,875 corpus files. That is
+  // precisely the "unversioned blob" hazard §7c describes: nobody could
+  // answer "which build is this, and is a newer one better?" from the repo.
+  //
+  // Both answers are measured here:
+  //   PROVENANCE — a fresh build of tree-sitter-perl@1.2.1 from the vendored
+  //     source reproduces the wired idOrderDigest, typeSetDigest and
+  //     fieldSetDigest exactly, and produces IDENTICAL trees on 275/275 mojo
+  //     files. The wired bytes are a build of 1.2.1's source, established
+  //     offline by the source↔wasm check and confirmed at tree level.
+  //   UPGRADE — 2.0.0 is published and declares exactly one new type,
+  //     `parenthesized_expression`, which is the wrapper that removes the
+  //     multi-child field. It cuts the unreachable-payload sites from 39,897 to
+  //     1,419 (3,049 -> 564 affected files of 5,875), leaves parse damage
+  //     unchanged (4/275), and changes 123 of 275 mojo trees. The analyzer is
+  //     already correct under both builds — 5,847 of 5,875 files emit
+  //     identical symbols/relationships/imports/exports — so the bump needs no
+  //     analyzer work; it is NOT taken here because it would re-baseline the
+  //     M12 corpus claims and every other lane's pinned row for a gain that is
+  //     already fully captured by the analyzer's fieldNodes() read.
+  perl: {
+    wired: "wasm/tree-sitter-perl.wasm",
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
+        "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files — the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-perl",
+      note:
+        "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c.",
+    },
+    decision:
+      "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 — the newest release at the time this lane was first measured — proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
+    alternatives: [
+      {
+        option: "keep the wired 1.2.1 build (sha ac0248ed)",
+        measured:
+          "identical trees on 275/275 mojo files vs a fresh 1.2.1 build; parse damage 4/275 files, 5 error nodes; the analyzer's fieldNodes() read recovers every payload the multi-child field hides, and 5,847 of 5,875 corpus files emit identically under 1.2.1 and 2.0.0",
+        artifact: "fixtures/perl/out/grammar-ab.json",
+      },
+      {
+        option: "upstream 2.0.0 (npm source, freshly built)",
+        measured:
+          "unreachable payload sites 39,897 -> 1,419 and affected files 3,049 -> 564 of 5,875; 36 of the 41 affected field pairs eliminated; parse damage unchanged at 4/275; but 123 of 275 mojo trees differ, and a parenthesised `use Module (...)` argument list carries no field at all in 2.0.0, so a field-driven import read sees nothing until the analyzer descends through the wrapper",
+        artifact: "fixtures/perl/out/grammar-ab.json",
+      },
+    ],
+    evidence: [
+      "fixtures/perl/out/grammar-ab.json",
+      "fixtures/perl/out/grammar-pin-survey.json",
+      "fixtures/perl/out/forward-compat-detail.json",
+      "reviews/perl/master-review.md",
+    ],
+    copies: [],
+    notVendored: [
+      { path: "binding.gyp, bindings/", why: "native node bindings; not parser source" },
+      { path: "queries/", why: "editor queries; the engine does not load them" },
+      { path: "src/parser.c", why: "generated from grammar.js; 29 MB; `tree-sitter generate` rebuilds it" },
+      { path: "tree-sitter-perl.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+
 // ---------------------------------------------------------------------------
 // Measurement
 // ---------------------------------------------------------------------------
@@ -661,6 +730,47 @@ async function main() {
   }
 
   if (write) {
+  if (write) {
+    // `--lane <lang>` records ONE lane and leaves every other lane's recorded
+    // block BYTE-IDENTICAL. It exists because a whole-file `--write` silently
+    // launders other lanes' drift: it rewrites their recorded copies/vendored
+    // hashes from whatever is on disk right now, so a lane that is red for a
+    // real reason (a vanished copy, a vendored tree the repo never carried)
+    // gets its failure written into the record and the gate turns green over
+    // it. A scoped write is the honest way to add a lane while a sibling is red
+    // — and the sibling stays red, which is the point.
+    const laneArgIdx = process.argv.indexOf("--lane")
+    const onlyLane = laneArgIdx >= 0 ? process.argv[laneArgIdx + 1] : undefined
+    if (onlyLane && !LANES[onlyLane]) {
+      console.error(`--lane ${onlyLane}: no such lane in this file (have: ${Object.keys(LANES).join(", ")})`)
+      process.exit(2)
+    }
+    if (onlyLane) {
+      const lane = LANES[onlyLane]
+      const m = measured[onlyLane]
+      const existing: PinRecord = JSON.parse(fs.readFileSync(REGISTRY, "utf8"))
+      const record: any = { ...existing }
+      record.lanes = { ...existing.lanes, [onlyLane]: { wired: m.wired, surface: m.surface, copies: m.copies, vendored: m.vendored, sourceVsWasm: m.sourceVsWasm } }
+      record.decisions = {
+        ...existing.decisions,
+        [onlyLane]: {
+          provenance: lane.provenance,
+          source: lane.source,
+          decision: lane.decision,
+          alternatives: lane.alternatives,
+          evidence: lane.evidence,
+          notVendored: lane.notVendored ?? null,
+        },
+      }
+      record.generatedAt = new Date().toISOString()
+      record.commit = execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim()
+      if (typeof record.scope === "string") {
+        record.scope = record.scope.replace(/^the six functional-family lanes \([^)]*\)/, (m0) => m0)
+      }
+      fs.mkdirSync(path.dirname(REGISTRY), { recursive: true })
+      fs.writeFileSync(REGISTRY, JSON.stringify(record, null, 2) + "\n")
+      console.log(`\nwrote ${path.relative(ROOT, REGISTRY)} (lane ${onlyLane} only; every other lane's recorded block is byte-identical)`)
+    } else {
     const record: any = {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
