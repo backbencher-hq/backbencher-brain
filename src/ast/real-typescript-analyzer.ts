@@ -1732,6 +1732,15 @@ class TypeScriptAnalysisRunner {
    *  one to tell an imported `exec` from a project's own `exec`, and the solid
    *  flag replaces a whole-file `content.includes("solid-js")` text scan with
    *  an AST fact. */
+  /** name -> every symbol declared with that name, in declaration order.
+   *  R2b: the relationship passes resolve the enclosing symbol for every
+   *  DECLARATION node, and each resolution used to be a linear scan of the
+   *  whole symbol array (`findItem`) — O(declarations x symbols) per pass, run
+   *  by two passes and by the qualified-calls post-pass. Bucketing by name
+   *  keeps the scan inside one bucket, and iterating a bucket in declaration
+   *  order preserves `findItem`'s first-match contract exactly, including the
+   *  repeated-name case (two classes each declaring `save`). */
+  private _symbolIndex: Map<string, ASTEngine.UniversalSymbol[]> | null = null
   private _fileSignals: { hasReact: boolean; importsChildProcess: boolean; solidJs: boolean } = {
     hasReact: false,
     importsChildProcess: false,
@@ -1766,6 +1775,7 @@ class TypeScriptAnalysisRunner {
     this.currentFile = filePath
     this.content = content
     this.scopeManager.reset()
+    this._symbolIndex = null
 
     // Initialize module resolver with project root
     const projectRoot = this.findProjectRoot(filePath)
@@ -1834,6 +1844,17 @@ class TypeScriptAnalysisRunner {
     // symbols the first call had already spliced.
     this._dupKeyDeadSpans =
       this.collapseDuplicateObjectMembers(rootNode, symbols)
+
+    // R2b: the name index every later resolution reads. Built HERE because it
+    // must describe the post-collapse symbol set, and before the first reader
+    // (the qualified-calls post-pass below).
+    const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
+    for (const sym of symbols) {
+      const bucket = byName.get(sym.name)
+      if (bucket) bucket.push(sym)
+      else byName.set(sym.name, [sym])
+    }
+    this._symbolIndex = byName
 
     // M3: fill `qualified_calls` now, with the complete symbol table in hand
     // (see the _pendingQualifiedCalls note). ONE map shared by every symbol's
@@ -4464,6 +4485,31 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  /**
+   * The first symbol with this name satisfying `pred`, in DECLARATION order —
+   * `findItem`'s exact contract, answered from the name index when one exists
+   * (R2b). One helper for all three call sites that used to be independent
+   * linear scans over the whole symbol array: the enclosing-symbol resolver
+   * (twice per declaration node, in two passes) and the override-keyword arm
+   * (once per `override` member). Repeated names keep first-wins, which is the
+   * contract rather than an accident: two classes each declaring `save()`
+   * resolve to the same owner the array scan always chose.
+   */
+  private firstSymbolNamed(
+    name: string,
+    pred: (s: ASTEngine.UniversalSymbol) => boolean,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): ASTEngine.UniversalSymbol | undefined {
+    const bucket = this._symbolIndex?.get(name)
+    if (bucket) {
+      for (const s of bucket) if (pred(s)) return s
+      return undefined
+    }
+    // No index (a caller outside the normal phase order): fall back to the
+    // array, so resolution can never be WORSE than it was.
+    return findItem(symbols, (s) => s.name === name && pred(s))
+  }
+
   private extractOverrideRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -4471,9 +4517,10 @@ class TypeScriptAnalysisRunner {
     for (const symbol of symbols) {
       if (symbol.metadata?.isOverride && symbol.ownerName) {
         // Find the parent class
-        const parentClass = findItem(
+        const parentClass = this.firstSymbolNamed(
+          symbol.ownerName,
+          (s) => s.kind === ASTEngine.SymbolKind.Class,
           symbols,
-          (s) => s.name === symbol.ownerName && s.kind === ASTEngine.SymbolKind.Class,
         )
         if (parentClass && parentClass.metadata?.extends) {
           const baseClasses = parentClass.metadata.extends as string[]
@@ -4910,9 +4957,20 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
+    // R2a: one name -> FIRST-declared-symbol index, built in a single pass.
+    // This loop was O(n^2): a linear `findItem` per member that has an owner,
+    // which is the one surviving half of the "no O(n^2] scans" claim the
+    // analyzer doc used to make. `findItem` returned the FIRST name match, so
+    // the index keeps the first occurrence per name and the resolution is
+    // behaviour-identical — including for the repeated-name case (two classes
+    // each with a `save()`), where first-wins is the contract, not an accident.
+    const firstByName = new Map<string, ASTEngine.UniversalSymbol>()
+    for (const s of symbols) {
+      if (!firstByName.has(s.name)) firstByName.set(s.name, s)
+    }
     for (const symbol of symbols) {
       if (symbol.ownerName) {
-        const owner = findItem(symbols, (s) => s.name === symbol.ownerName)
+        const owner = firstByName.get(symbol.ownerName)
         if (owner) {
           // Leaf identity: container is the namespace full name (Example.Domain)
           // or class/interface/enum leaf (UserService); member is the leaf name.
@@ -4940,11 +4998,14 @@ class TypeScriptAnalysisRunner {
     // lookup passed raw 0-based rows/columns, so positional resolution never
     // matched and everything fell back to first-name-match. Overloads and
     // same-named nested/top-level functions resolved positionally blind.
+    // R2b: the shared indexed lookup (see firstSymbolNamed) — the scan is
+    // shorter, the answer is identical.
+    const firstMatchIn = (name: string, pred: (s: ASTEngine.UniversalSymbol) => boolean) =>
+      this.firstSymbolNamed(name, pred, symbols)
     const byPos = (name: string, kind: ASTEngine.SymbolKind, line: number, col: number, owner?: string) =>
-      findItem(
-        symbols,
+      firstMatchIn(
+        name,
         (s) =>
-          s.name === name &&
           s.kind === kind &&
           s.range.startLine === line + 1 &&
           s.range.startColumn === col + 1 &&
@@ -4956,7 +5017,7 @@ class TypeScriptAnalysisRunner {
       if (!name) return current
       return (
         byPos(name, ASTEngine.SymbolKind.Function, node.startPosition.row, node.startPosition.column) ||
-        findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
+        firstMatchIn(name, (s) => s.kind === ASTEngine.SymbolKind.Function) ||
         current
       )
     }
@@ -4971,7 +5032,7 @@ class TypeScriptAnalysisRunner {
       // misattributes method calls (same reasoning as the JS analyzer).
       const nm = node.childForFieldName("name")?.text
       if (nm) {
-        const ownerSym = findItem(symbols, (s) => s.name === nm && s.kind === ASTEngine.SymbolKind.Class)
+        const ownerSym = firstMatchIn(nm, (s) => s.kind === ASTEngine.SymbolKind.Class)
         if (ownerSym) return ownerSym
       }
       return current
@@ -4994,9 +5055,9 @@ class TypeScriptAnalysisRunner {
       const owner = containerOwnerName(node)
       return (
         byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
-        findItem(
-          symbols,
-          (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Method && (!owner || s.ownerName === owner),
+        firstMatchIn(
+          name,
+          (s) => s.kind === ASTEngine.SymbolKind.Method && (!owner || s.ownerName === owner),
         ) ||
         current
       )
@@ -5009,7 +5070,7 @@ class TypeScriptAnalysisRunner {
         if (!name) return current
         return (
           byPos(name, ASTEngine.SymbolKind.Function, parent.startPosition.row, parent.startPosition.column) ||
-          findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
+          firstMatchIn(name, (s) => s.kind === ASTEngine.SymbolKind.Function) ||
           current
         )
       }
