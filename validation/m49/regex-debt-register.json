@@ -21,22 +21,6 @@
       "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [re-anchor 2026-09-25 (M49.R2 merge-residue wave): 797 -> 1220 and 819 -> 1242, the two positions this source occupies at HEAD, last touched by the systems-line cpp rounds (#602 93792b51 for 1220, the cpp review round 32cc9f9a for 1242); regex retained]"
     },
     {
-      "file": "real-javascript-analyzer.ts",
-      "line": 646,
-      "source": "/^module\\.exports\\./",
-      "operation": "replace",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
-    },
-    {
-      "file": "real-javascript-analyzer.ts",
-      "line": 646,
-      "source": "/^exports\\./",
-      "operation": "replace",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
-    },
-    {
       "file": "real-svelte-analyzer.ts",
       "line": 50,
       "source": "/line/i",
@@ -154,6 +138,20 @@
       "baselineTotalBefore": 15,
       "baselineTotalAfter": 13,
       "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP \u2014 which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
+    },
+    {
+      "date": "2026-09-26",
+      "wave": "M60.js-lane deep review (JD7)",
+      "from": 13,
+      "to": 11,
+      "sources_removed": [
+        "/^module\\.exports\\./",
+        "/^exports\\./"
+      ],
+      "analyzer": "real-javascript-analyzer.ts",
+      "rationale": "Both literals micro-parsed `obj.text` to recover the CJS public-surface path under a deep write. The register justified them as 'no AST path'; the AST path existed in the same file 1,300 lines below (collectFieldAccessUses flattens the identical member_expression structurally). Replaced by cjsSurfacePath(), which walks member_expression/subscript_expression child fields. The text form was not merely redundant: it FABRICATED export names on minified input (lodash.min.js -> '(ie.exports=we)._', lodash.core.min.js -> '(Tt.exports=c)._', lodash.core.js -> '(freeModule.exports = lodash)._') and on a computed base (module[\"exports\"].a.b -> 'module[\"exports\"].a.b'). The structural form declines an unnameable receiver instead of string-matching it.",
+      "equivalence_proof": "script/m14/tmp/js-jd7-verify.ts \u2014 19 shape assertions: 9 no-regression shapes the regex handled correctly (module.exports.tag / .sub / .a / .a.b / .a.b.c / four levels, exports.tag / .direct / .a / .group.item) all unchanged; 4 non-CJS shapes still declined (svc.limit, this.exports.x, module.exportsFoo.x, a.b.c); 3 measured fabrications now declined; 2 computed shapes now correct. Corpus: lodash CJS export names 19 -> 60, vue-core 0 -> 4, svelte/grails-core/element-plus unchanged at 0. F3 all 25 lanes green (javascript 62/62, vue 32/32, svelte 32/32 \u2014 the two lanes that delegate to this analyzer).",
+      "gates": "M49.R2 census 23 -> 21; verify-regex-census PASSED (2 rows ABSENT-IN-WORKTREE, drift disclosed)"
     }
   ]
 }

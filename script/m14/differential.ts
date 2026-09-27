@@ -1383,6 +1383,56 @@ export function deriveTypeScriptEdges(root: any): { label: string; from: string;
 // same call_expression contract with JS naming: require()/import() excluded
 // on the ANALYZER side as imports; subscript callees skipped; the two builtin
 // sets are identical to TS's — verified by diff).
+/**
+ * Is this member's container something the language NAMES — a named class, a
+ * class expression bound to a name, or an object literal bound to a variable?
+ * A member of a call argument, a return value, or an array element has no
+ * nameable owner, so no `contains` edge can name it on either end.
+ */
+function jsContainerIsNameable(member: any): boolean {
+  let p: any = member.parent
+  while (p) {
+    if (p.type === "class_declaration") return !!p.childForFieldName("name")
+    if (p.type === "class") {
+      if (p.childForFieldName("name")) return true
+      // bound to a name? `const K = class {…}` / `K = class {…}`
+      let q: any = p.parent
+      while (q) {
+        if (q.type === "variable_declarator") {
+          const nm = q.childForFieldName("name")
+          return !!nm && nm.type === "identifier"
+        }
+        if (q.type === "assignment_expression") {
+          const l = q.childForFieldName("left")
+          return !!l && l.type === "identifier"
+        }
+        if (q.type === "pair" || q.type === "object" || q.type === "export_statement" ||
+            q.type === "expression_statement") { q = q.parent; continue }
+        return false
+      }
+      return false
+    }
+    if (p.type === "object") {
+      let q: any = p.parent
+      while (q) {
+        if (q.type === "variable_declarator") {
+          const nm = q.childForFieldName("name")
+          return !!nm && nm.type === "identifier"
+        }
+        if (q.type === "pair" || q.type === "object" || q.type === "return_statement" ||
+            q.type === "expression_statement" || q.type === "assignment_expression") { q = q.parent; continue }
+        return false
+      }
+      return false
+    }
+    if (p.type === "function_declaration" || p.type === "function_expression" ||
+        p.type === "arrow_function" || p.type === "generator_function_declaration" ||
+        p.type === "method_definition" || p.type === "function") return false
+    p = p.parent
+  }
+  return false
+}
+
 export function deriveJavaScriptEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -1477,9 +1527,20 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
     // analyzer emits the declared spelling (M49 #813) and the comparison is
     // site-agnostic on label+target.
     // ---------------------------------------------------------------------
+    // JD14 adjudication follow-up: a member is contained by whatever encloses
+    // it — a class body or an object literal. But CONTAINMENT IS EDGED BY
+    // NAME on both ends, so a member of an object literal that has no nameable
+    // binding is not derivable as a `contains` edge at all. Measured: with the
+    // first cut of this truth, 40-68 rows per 60-file draw on svelte were
+    // `contains -> test` / `-> props` / `-> component` for literals that are CALL
+    // ARGUMENTS (`export default test({ test({…}) {…} })`,
+    // `await config.test({ get component() {…} })`) or array/return elements. The
+    // analyzer emits no edge there and that is CORRECT — there is nothing to
+    // name. Those were truth defects, not analyzer gaps, and the gate below is
+    // the language's nameability rule, not the analyzer's owner logic.
     if (t === "method_definition" || t === "field_definition") {
       const nm = t === "field_definition" ? n.childForFieldName("property") : n.childForFieldName("name")
-      if (nm && nm.text) push("contains", nm.text)
+      if (nm && nm.text && jsContainerIsNameable(n)) push("contains", nm.text)
     }
     // JD14 adjudication follow-up: PROTOTYPE-ASSIGNMENT containment.
     // `X.prototype.m = function () {}` adds a member to X, and the analyzer
