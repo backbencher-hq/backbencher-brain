@@ -7,6 +7,8 @@
  *
  * Expectation matching semantics:
  *   expectSymbols / expectRelationships : each entry must match >=1 actual item.
+ *   expectTaintSources / expectTaintSinks : taint payload snippets (the sink side
+ *     was added with H1; before it only the source side was checkable).
  *       An entry matches when EVERY specified constraint field matches
  *       (unspecified fields are wildcards). Extra actual items are fine.
  *   expectErrorCount { equals | atLeast | atMost } : the TOTAL number of parse
@@ -332,6 +334,37 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       for (const tNot of want.notIncludes ?? []) {
         if (ts.some((t: any) => (t.snippet ?? t) === tNot)) {
           problems.push(`expected ${want.symbol}.taintSources NOT to include "${tNot}"; got: ${JSON.stringify(ts)}`)
+        }
+      }
+    }
+    for (const want of exp.expectTaintSinks ?? []) {
+      // Mirror of expectTaintSources, for the SINK payload. The source side got
+      // this gate with the TS T9 wave; the sink side had NONE, which is how
+      // `re.exec(input)` (RegExp.prototype.exec) and any project-local
+      // `execute(q)` stayed reported as command_injection / sql_injection for
+      // the whole life of the analyzer — the false positive was simply not
+      // checkable. { symbol, includes?, notIncludes?, includesVuln? } over
+      // taintSinks snippets (and optionally the vulnerability_type).
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const tk: any[] = (sym as any)?.taintSinks ?? []
+      for (const tInc of want.includes ?? []) {
+        if (!tk.some((t: any) => (t.snippet ?? t) === tInc)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include "${tInc}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const tNot of want.notIncludes ?? []) {
+        if (tk.some((t: any) => (t.snippet ?? t) === tNot)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include "${tNot}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.includesVuln ?? []) {
+        if (!tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.notIncludesVuln ?? []) {
+        if (tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
         }
       }
     }
