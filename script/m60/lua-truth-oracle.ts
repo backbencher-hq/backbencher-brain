@@ -90,6 +90,8 @@ interface Walk {
   edges: TruthEdge[]
   /** local variable names declared directly in each function scope */
   localsIn: Map<string, Set<string>>
+  /** LUA-28: self-containment edges deliberately NOT derived. Reported, not hidden. */
+  selfContainmentSkipped: number
   /** every table name bound to a table_constructor anywhere in the file */
   declaredTables: Set<string>
   /** ORA-4: scope -> its enclosing scope, so a name can be resolved up the chain */
@@ -112,7 +114,55 @@ function calleeOf(call: any): { name: string; nameNode: any } | null {
   // analyzer had — so the two agreed on a wrong answer and the differential
   // could not see it. Both sides now skip it, which is the point: an oracle that
   // shares a defect is worse than no oracle, because it launders the defect.
-  if (n.type === "table_index_expression") return null
+  //
+  // LUA-27: this guard was DEAD CODE for the whole life of LUA-22, because it
+  // tested for `table_index_expression` — a node type this grammar never emits.
+  // The wired grammar builds `dao[method or context](x)` as
+  // function_call > bracket_index_expression, and the ANALYZER's own LUA-22 fix
+  // already corrected the name to `bracket_index_expression` with a comment
+  // recording the mistake. The oracle's copy kept the wrong one, so every
+  // computed-index call fell through to `return { name: n.text }` and the truth
+  // side carried targets like `dao[method or context .. "_by_" .. endpoint_key]`
+  // — a PROGRAM, not a name. 46 such edges on kong, all of them filed as analyzer
+  // misses. A guard copied from another file and never re-measured against the
+  // grammar is how a fixed defect stays fixed on one side and live on the other.
+  // LUA-30: a LITERAL string index is a NAME, and it is the same name
+  // `dao.rows()` gives — `dao["rows"]()` and `dao.rows()` call the same field.
+  // LUA-27 stopped the whole `bracket_index_expression` class, which also stopped
+  // the literal half of it. The two are indistinguishable BY TYPE (both are
+  // bracket_index_expression) and distinguishable by the `field` child, measured:
+  //   dao["rows"]()  field=string      -> the name is the unquoted content
+  //   dao[1]()       field=number      -> an array index, not a name
+  //   dao[k]()       field=identifier  -> a VARIABLE holding the key; which key
+  //                                       is not statically knowable
+  // Stated from the grammar rather than copied from the analyzer: the analyzer
+  // independently reached the same rule in the same pass, and two sides reaching
+  // one rule from one measurement is the only kind of agreement worth having.
+  if (n.type === "bracket_index_expression") {
+    const field = n.childForFieldName("field")
+    if (field?.type !== "string") return null
+    let content: any = null
+    for (let j = 0; j < field.namedChildCount; j++) {
+      const c = field.namedChild(j)
+      if (c && c.type === "string_content") { content = c; break }
+    }
+    const name = content ? content.text : field.text.replace(/^["']|["']$/g, "")
+    return name ? { name, nameNode: field } : null
+  }
+  // LUA-28: the same category error, one step further out. A call ON A CALL —
+  // `json_array_iterator('{1, 2, 3}')()`, `sandbox.sandbox(...)()` — has a callee
+  // that is itself a `function_call`, so the fallthrough named the inner call and
+  // the truth side carried `json_array_iterator('{1, 2, 3}')` as a target. There
+  // is no name there: what is called is the RESULT of a call, and nothing about
+  // that is statically knowable. The analyzer drops these and is right.
+  //
+  // Stated as a WHITELIST rather than another blacklist entry, because two
+  // blacklists in a row is how the dead guard above happened: each named a type
+  // that had to be measured, and a type nobody re-measures stays wrong forever.
+  // These four are the only callee forms that carry a name, and the grammar is
+  // the authority for that list.
+  if (n.type === "function_call" || n.type === "table_constructor" || n.type === "binary_expression" ||
+      n.type === "parenthesized_expression" || n.type === "string" || n.type === "number") return null
   return { name: n.text, nameNode: n }
 }
 
@@ -236,7 +286,7 @@ function visibleInChain(w: Walk, scope: string, name: string): boolean {
   return false
 }
 
-function walk(node: any, scope: string, w: Walk, rel: string): void {
+function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void {
   if (node.isMissing) return
 
   if (node.type === "variable_declaration") {
@@ -270,11 +320,35 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       for (let i = 0; i < list.namedChildCount; i++) {
         const id = list.namedChild(i)
         if (id?.type !== "identifier") continue
-        if (scope !== "global") {
-          if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
-          w.localsIn.get(scope)!.add(id.text)
-        }
-        w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        // M60 LUA-25: file-scope locals MUST be registered here too, and were
+        // not. The `if (scope !== "global")` guard skipped the bookkeeping while
+        // still pushing the `contains` edge below, so `local prev_min_at` at
+        // kong/cluster_events/init.lua:272 produced an edge but left
+        // `localsIn.get("global")` empty. `visibleInChain` then walked
+        // `poll` -> `global`, found nothing, and returned false — so the
+        // upvalue WRITE at :286 was read as a fresh declaration and the oracle
+        // demanded `contains poll -> prev_min_at`. The analyzer does not emit it
+        // and is right: `prev_min_at` is a file-scope local that `poll` closes
+        // over, not a local of `poll`.
+        //
+        // This is LUA-21's shape again, in the instrument. LUA-21 was an
+        // upvalue assignment emitting a containment edge naming a symbol that
+        // does not exist; it was fixed in the analyzer, and the oracle's
+        // ORA-4 guard for the same case was blind to file scope the whole time.
+        // 242 of kong's 290 analyzer-attributable missing edges are this one
+        // missing line.
+        if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
+        w.localsIn.get(scope)!.add(id.text)
+        // LUA-28: a scope cannot be a member of itself. `contains new_router ->
+        // new_router` is incoherent on any reading — the scope IS the name — and
+        // the analyzer's member-identity gate has a standing check that no
+        // symbol duplicates its own owner. The oracle derived 5 such edges on
+        // kong (`new_router` L426, `initialize` L36, `sleep_once_for_balancer_init`
+        // L802 and two more), all filed as analyzer misses, and the analyzer was
+        // right to omit every one. Skipped rather than emitted, and not silently:
+        // the count is reported.
+        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        else w.selfContainmentSkipped++
         // A bare `local x` carries no value, so there is nothing to test for a
         // table. A declaration WITH a value can bind a table, and the
         // `instantiates` rule depends on knowing which names those are.
@@ -283,6 +357,44 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       }
     }
   }
+
+  // M60 LUA-26 — DELIBERATELY NOT DERIVED, and the reason is a decision that has
+  // not been made rather than a rule that was overlooked.
+  //
+  // A for-loop's control variables are bindings in Lua, and an earlier version
+  // of this oracle DID derive `contains scope -> <loop var>` for both clause
+  // forms (for_numeric_clause's `name` field, for_generic_clause's
+  // variable_list). That produced 2,921 additional missing edges on kong and
+  // read as 2,921 analyzer defects. It is not 2,921 defects, and the evidence
+  // is a two-function probe:
+  //
+  //   local function sel(a)  for _, listener in ipairs(a) do print(listener) end end
+  //   local function sel2(a) for _, listener in ipairs(a) do listener = a end end
+  //
+  // emits `sel2 -> listener` and NOT `sel -> listener`. The analyzer has no
+  // for-clause declaration rule at all — for_statement appears in it once, as a
+  // cyclomatic-complexity counter — so the sel2 symbol is manufactured by the
+  // ASSIGNMENT, not by the loop. Which means the analyzer is not "missing" loop
+  // variables by accident; it does not model them, consistently, and a file that
+  // only READS a loop variable gets no symbol while one that ASSIGNS it does.
+  //
+  // So the question is not which side is wrong, it is whether loop variables
+  // belong in the symbol graph at all. FOR: they are locals, and
+  // `contains sel -> listener` is a true statement. AGAINST: the variable's
+  // scope is the LOOP, not the function, so filing it under the function is
+  // imprecise, and a binding that lives one iteration is rarely a navigation
+  // target. That is a product decision about the symbol table's meaning, and the
+  // oracle is not entitled to make it by deriving edges the analyzer never
+  // claimed. Recorded as LUA-26, open, for the owner.
+  //
+  // It also explains this run's single UNEXPLAINED edge, which is the shape of a
+  // real defect and was nearly recorded as one: the analyzer emits
+  // `contains Schema:errors_to_string -> err` for `for _, err in pairs(...)`
+  // in kong/db/schema/init.lua, where `err` is bound by no `local` — but it is
+  // ASSIGNED at :2320 (`err = self:errors_to_string(err)`), and that assignment
+  // is what creates the symbol. Two different routes to the same true edge. The
+  // oracle is silent on the loop, so the agreement is a coincidence rather than
+  // a derivation, which is why the edge showed up unexplained.
 
   if (node.type === "assignment_statement" && node.parent?.type !== "variable_declaration") {
     const vl = node.namedChild(0)
@@ -296,7 +408,8 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
         // skip those. The analyzer answers the same question with an inherited
         // frame, which is the same rule expressed structurally.
         if (visibleInChain(w, scope, id.text)) continue
-        w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        else w.selfContainmentSkipped++
       }
     }
   }
@@ -385,7 +498,13 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     }
   }
 
-  if (node.type === "return_statement" && scope === "global") {
+  // LUA-24: `fnDepth === 0` is the real test for "is this a module export", and
+  // it is a different test from `scope === "global"`. The scope NAME can be
+  // `global` inside an anonymous function, because an unnamed function
+  // contributes no name; the depth cannot. Both are required: depth keeps an
+  // in-function return out, and the scope check keeps the oracle from deriving
+  // an export edge attributed to some other callable.
+  if (node.type === "return_statement" && scope === "global" && fnDepth === 0) {
     const list = node.namedChild(0)
     const first = list?.namedChild(0)
     // Only `return <identifier>`: the oracle asserts what the analyzer's own
@@ -445,14 +564,30 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     ? (functionNameOf(node)?.label ?? scope)
     : scope
   if (childScope !== scope) w.scopeParent.set(childScope, scope)
+  // M60 LUA-24: an ANONYMOUS function must still count as a function for
+  // anything that asks "is this lexically inside a function?", even though it
+  // contributes no scope NAME. `functionNameOf` returns null when there is no
+  // `name` field, so `childScope` above stays the enclosing scope and the body
+  // was walked as if it were file scope — which made the oracle derive
+  // `exports global -> v` for `return v` inside `for n, v in pairs(h) do`, and
+  // 218 such edges across kong. The analyzer does not publish them, and it is
+  // right: that is LUA-20, the same defect this lane fixed in the analyzer, here
+  // in the instrument, and invisible until LUA-09 made exports measurable at all.
+  //
+  // Tracked as a depth rather than as a scope name on purpose. Giving the
+  // anonymous function a synthetic scope name (`<anon@L113>`) would fix exports
+  // AND silently change every `contains`/`calls` edge inside it, because those
+  // carry the scope as their source. Depth answers only the question the export
+  // rule actually asks, and leaves the other labels byte-identical.
+  const childDepth = node.type === "function_declaration" || node.type === "function_definition" ? fnDepth + 1 : fnDepth
   for (let i = 0; i < node.namedChildCount; i++) {
     const c = node.namedChild(i)
-    if (c) walk(c, childScope, w, rel)
+    if (c) walk(c, childScope, w, rel, childDepth)
   }
 }
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
-  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set(), scopeParent: new Map([["global", undefined]]) }
+  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set(), scopeParent: new Map([["global", undefined]]), selfContainmentSkipped: 0 }
   collectTables(root, w.declaredTables)
   walk(root, "global", w, rel)
   // A set, because the analyzer's edge identity is (label, from, target): N call
@@ -528,10 +663,30 @@ async function main(): Promise<void> {
   // ── the two directions ─────────────────────────────────────────────────────
   const missing: any[] = []
   const unexplained: any[] = []
-  // Split the missing set: an edge the pipeline STRUCTURALLY CANNOT deliver is
-  // not the same fact as an edge the analyzer forgot. Conflating them would
-  // send the next reader hunting an analyzer bug that is not there.
+  // Split the missing set THREE ways, not two. An edge the pipeline STRUCTURALLY
+  // CANNOT deliver is not the same fact as an edge the analyzer forgot, and
+  // conflating them sends the next reader hunting an analyzer bug that is not
+  // there. The previous classifier knew only about the noise denylist
+  // (LUA-16), so EVERY export edge — 1,579 of them on kong — was filed as
+  // "analyzer-attributable" when the analyzer publishes all 1,579 and the worker
+  // drops the field. Measured, not assumed: `parseFile` on a file with two
+  // exports returns no `exports` KEY AT ALL, while the direct path returns both.
+  //
+  // "Structurally absent" is derived from the run, never hardcoded: a label the
+  // pipeline emitted zero times across the whole corpus cannot be judged on
+  // recall, because there is no observed side to compare. That also means the
+  // split heals itself when LUA-14 is fixed and the label starts appearing.
+  const labelsSeenInPipeline = new Set<string>()
+  // The observed edge is the analyzer's relationship object, so the field is
+  // `type`. The truth edge calls the same thing `label`. Reading `o.label` here
+  // yields undefined for EVERY observed edge, the set stays empty, and the whole
+  // corpus is misfiled as "pipeline discarded" — which is what the first run of
+  // this leg did: analyzer=0, PASS, on 1,867 edges it never actually examined.
+  // A gate that reports zero defects because it classified everything as
+  // unjudgeable is worse than no gate, and it looked exactly like a clean lane.
+  for (const o of observed.values()) if (o.type) labelsSeenInPipeline.add(o.type)
   const missingByNoiseFilter: any[] = []
+  const missingByPipelineDiscard: any[] = []
   const missingFromAnalyzer: any[] = []
   const lineWrong: any[] = []
   for (const [k, t] of truth) {
@@ -539,6 +694,7 @@ async function main(): Promise<void> {
     if (!o) {
       missing.push(t)
       if (NOISE_TARGETS.has(leafOf(t.target))) missingByNoiseFilter.push(t)
+      else if (!labelsSeenInPipeline.has(t.label)) missingByPipelineDiscard.push(t)
       else missingFromAnalyzer.push(t)
       continue
     }
@@ -646,6 +802,14 @@ async function main(): Promise<void> {
       observedEdges: observed.size,
       missing: missing.length,
       missingFromAnalyzer,
+      // LUA-14, measured per run: labels the pipeline never emitted at all. Their
+      // edges are the pipeline's, not the analyzer's, and calling them the
+      // analyzer's is what produced a "1,797 vs 1,579" phantom disagreement.
+      missingByPipelineDiscard: {
+        total: missingByPipelineDiscard.length,
+        byLabel: shapes(missingByPipelineDiscard),
+        labelsAbsentFromPipeline: [...new Set(missingByPipelineDiscard.map((e) => e.label))].sort(),
+      },
       missingByPipelineNoiseFilter: missingByNoiseFilter.length,
       noiseTargetsHit: [...new Set(missingByNoiseFilter.map((e) => e.target))].sort(),
       unexplained: unexplained.length,
@@ -675,7 +839,8 @@ async function main(): Promise<void> {
 
   console.log(`repo=${repo} files=${files.length} parseErrorFiles=${parseErrors}`)
   console.log(`truth=${truth.size} observed=${observed.size}`)
-  console.log(`MISSING=${missing.length} (analyzer=${missingFromAnalyzer.length}, pipelineNoiseFilter=${missingByNoiseFilter.length}) UNEXPLAINED=${unexplained.length}`)
+  console.log(`MISSING=${missing.length} (analyzer=${missingFromAnalyzer.length}, pipelineNoiseFilter=${missingByNoiseFilter.length}, pipelineDiscardedLabel=${missingByPipelineDiscard.length}) UNEXPLAINED=${unexplained.length}`)
+  if (missingByPipelineDiscard.length) console.log(`  labels the pipeline emitted ZERO times, so their recall is unjudgeable: ${[...new Set(missingByPipelineDiscard.map((e) => e.label))].sort().join(", ")}`)
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
   console.log("\nper label:")
