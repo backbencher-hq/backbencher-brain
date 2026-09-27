@@ -442,6 +442,18 @@ class TypeScriptModuleResolver {
 
 // Node.js built-in modules — module-level so every resolution doesn't
 // reallocate the set (the old per-call construction ran per import).
+//
+// A PINNED contract, deliberately NOT `builtinModules` from node:module. That
+// import would be shorter and self-maintaining, and it would also make
+// classification depend on the Node version running the index: `node:sqlite`
+// exists in the runtime's list and not in an older one's, so the same source
+// would resolve differently on two machines — the exact machine-dependence the
+// module resolver was rewritten to remove (no statSync, no node_modules
+// sniffing, `external:` for bare packages). A fixed table plus the subpath-head
+// rule below is the same answer on every machine and every Node version, which
+// is worth more here than the maintenance saving. The table tracks Node >= 22
+// (the `test` runner landed in 18; `sqlite`, `sea` and `diagnostics_channel`
+// are the later additions).
 const NODE_BUILTINS = new Set([
   "assert",
   "buffer",
