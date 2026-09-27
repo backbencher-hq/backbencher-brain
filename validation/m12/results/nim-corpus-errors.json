@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 1,
+  "kind": "nim_corpus_parse_errors",
+  "analyzer": "src/ast/real-nim-analyzer.ts",
+  "grammar": {
+    "file": "wasm/tree-sitter-nim.wasm",
+    "sha256": "421369fe6a8814dd28d0548f56dbab8877576da877b0b98ca1b905c024b5d1ad",
+    "upstream": "alaviss/tree-sitter-nim 0.6.2 @ ac72ba30d16edf0be021588a9301ede4accd6cf4",
+    "note": "the pin, its provenance and the rejected alternatives are recorded in grammars/tree-sitter-nim/PIN.md and validation/m14/grammar-pins.json"
+  },
+  "method": "production pool-worker parseFile per tracked file (the indexer's own route), ERROR and MISSING nodes counted as parse errors",
+  "totals": {
+    "corpora": 12,
+    "files": 5227,
+    "errorFiles": 50,
+    "errorNodes": 250,
+    "crashFiles": 0,
+    "errorRatePct": 0.957
+  },
+  "corpora": [
+    {
+      "corpus": "nim",
+      "primary": true,
+      "why": "the Nim compiler and the whole standard library: every construct the analyzer must know appears under compiler/ or lib/, and it is the language's own reference implementation rather than a user of it",
+      "revision": "bb85d2dda5441d4871e44ffe1ebab7c36dc02ecb",
+      "files": 3965,
+      "errorFiles": 48,
+      "errorNodes": 186,
+      "crashFiles": 0,
+      "symbols": 73948,
+      "relationships": 155551,
+      "errorRate": 1.211,
+      "damaged": [
+        {
+          "file": "compiler/semobjconstr.nim",
+          "errors": 2
+        },
+        {
+          "file": "compiler/vtables.nim",
+          "errors": 7
+        },
+        {
+          "file": "lib/std/private/osappdirs.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/t20265_1.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/t20265_2.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tcase.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tchk1.nim",
+          "errors": 3
+        },
+        {
+          "file": "nimsuggest/tests/tcon1.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tconcept2.nim",
+          "errors": 3
+        },
+        {
+          "file": "nimsuggest/tests/tdef1.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tdef_let.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tdot1.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tdot2.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tdot3.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tic.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tsug_regression.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/ttype_decl.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tv3_con.nim",
+          "errors": 2
+        },
+        {
+          "file": "nimsuggest/tests/tv3_forward_definition.nim",
+          "errors": 4
+        },
+        {
+          "file": "nimsuggest/tests/tv3_typeDefinition.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/closure/tclosure.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/cpp/tcovariancerules.nim",
+          "errors": 6
+        },
+        {
+          "file": "tests/errmsgs/t10734.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/errmsgs/tinvalidinout.nim",
+          "errors": 8
+        },
+        {
+          "file": "tests/lexer/titerwrongexport.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/lexer/tmissingnl.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/lexer/trawstr.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/macros/mparsefile.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/misc/m15316.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/niminaction/Chapter7/Tweeter/src/views/general.nim",
+          "errors": 35
+        },
+        {
+          "file": "tests/niminaction/Chapter7/Tweeter/src/views/user.nim",
+          "errors": 14
+        },
+        {
+          "file": "tests/package_level_objects/tusefoo.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/package_level_objects/tusefoo2.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/parser/t15667.nim",
+          "errors": 8
+        },
+        {
+          "file": "tests/parser/t20922.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/parser/tinvcolonlocation1.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/parser/tinvcolonlocation3.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/parser/tinvifstmt.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/parser/tinvwhen.nim",
+          "errors": 3
+        },
+        {
+          "file": "tests/parser/tparsenewcaseobject.nim",
+          "errors": 10
+        },
+        {
+          "file": "tests/parser/ttypecommandcomma.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/parser/twhen_in_enum.nim",
+          "errors": 6
+        },
+        {
+          "file": "tests/proc/tfunc_type.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/proc/tproc.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/system/tfields.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/template/tdefaultparam.nim",
+          "errors": 4
+        },
+        {
+          "file": "tests/template/tmodulealias.nim",
+          "errors": 2
+        },
+        {
+          "file": "tests/types/told_pragma_syntax2.nim",
+          "errors": 1
+        }
+      ]
+    },
+    {
+      "corpus": "nimble",
+      "primary": false,
+      "why": "the package manager: a real application of Nim, heavy on import statements, nimble task definitions and shell-out statements",
+      "revision": "33a6bc8e50a33222fce075143800fe5a715e8bfe",
+      "files": 435,
+      "errorFiles": 1,
+      "errorNodes": 48,
+      "crashFiles": 0,
+      "symbols": 3987,
+      "relationships": 11779,
+      "errorRate": 0.23,
+      "damaged": [
+        {
+          "file": "tests/filepathrequires/nim-results/tests/test_results.nim",
+          "errors": 48
+        }
+      ]
+    },
+    {
+      "corpus": "arraymancer",
+      "primary": false,
+      "why": "the most GENERIC-heavy real codebase reachable — multi-parameter type classes, concept dispatch, and a `when` per element type",
+      "revision": "d3b67712a3334ab4ded2809cc793e9cd7fed5fae",
+      "files": 318,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 3430,
+      "relationships": 9583,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "prologue",
+      "primary": false,
+      "why": "a web framework: import/re-export discipline, templates, async procs",
+      "revision": "2956ef2b2d03900c85770ec6a2a23c321c7e4acc",
+      "files": 195,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 1488,
+      "relationships": 4178,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "pixie",
+      "primary": false,
+      "why": "a 2D graphics library: operator overloads, value objects, variant objects, generic containers",
+      "revision": "30bb510877f02cbf9643e4f904e33d1c90f7910f",
+      "files": 112,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 2876,
+      "relationships": 7996,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "nitter",
+      "primary": false,
+      "why": "the largest real-world Nim application by stars; async, template-heavy, an actual service",
+      "revision": "376f14908e27e095049bbbeb648e742501144010",
+      "files": 74,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 1345,
+      "relationships": 4484,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "nimterop",
+      "primary": false,
+      "why": "C++ interop: the most pragma- and emit-heavy real codebase in the ecosystem",
+      "revision": "2532ce0d3c4b7e5a2be94ebde22d63ec9f0eb6d3",
+      "files": 45,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 781,
+      "relationships": 2580,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "nigui",
+      "primary": false,
+      "why": "a cross-platform desktop GUI toolkit: JS-backend emit, FFI pragmas, destructors",
+      "revision": "8a1bb04bfbebec5828fc46dd3394abc3c69418ac",
+      "files": 32,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 2553,
+      "relationships": 3706,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "jester",
+      "primary": false,
+      "why": "a sinatra-like web framework: async procs, template DSL, JS backend",
+      "revision": "8a491a8e28965ee9291f058963ff65571a315e84",
+      "files": 19,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 235,
+      "relationships": 1004,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "nimtest",
+      "primary": false,
+      "why": "a test framework: templates, macros, a unittest DSL, the {.raises.} pragma",
+      "revision": "ce88334735c2406951152ccfc5573cac70d9c03c",
+      "files": 13,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 209,
+      "relationships": 720,
+      "errorRate": 0,
+      "damaged": []
+    },
+    {
+      "corpus": "torrentinim",
+      "primary": false,
+      "why": "a real self-hosted service (jester + jesterpkg + SQL-ish state)",
+      "revision": "8a0f2294c7e11f71540d6e2bbbc48fa25748494e",
+      "files": 13,
+      "errorFiles": 1,
+      "errorNodes": 16,
+      "crashFiles": 0,
+      "symbols": 45,
+      "relationships": 295,
+      "errorRate": 7.692,
+      "damaged": [
+        {
+          "file": "src/crawlers/leetx.nim",
+          "errors": 16
+        }
+      ]
+    },
+    {
+      "corpus": "mosdepth",
+      "primary": false,
+      "why": "a real bioinformatics CLI: a let/var-heavy application with a JS-target conditional tree",
+      "revision": "3211a79388ca3316b91df8b6cb5fb6ab2c7e2461",
+      "files": 6,
+      "errorFiles": 0,
+      "errorNodes": 0,
+      "crashFiles": 0,
+      "symbols": 114,
+      "relationships": 380,
+      "errorRate": 0,
+      "damaged": []
+    }
+  ]
+}
