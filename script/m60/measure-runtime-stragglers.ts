@@ -494,8 +494,13 @@ if (preExisting.length !== 2 || !preExisting.includes("tree-sitter-elm.wasm") ||
 
 // A5 — an unparsable module cannot support any claim about it. The scan could not
 // read it, so A3 is unproven for it and it must not be counted as agreeing.
-if (unparsed.length) {
-  problems.push(`A5 SCAN COVERAGE — ${unparsed.length} module(s) would not parse, so A3 is unproven for them: ${unparsed.join(", ")}`)
+// `unparsable` (the ARRAY), not `unparsed` (the COUNT). It was `unparsed.length`, which is
+// `undefined` on a number, so the condition was permanently false and A5 NEVER FIRED — an
+// assertion that reads as present in the file and is dead at runtime. Found by typechecking
+// this file for the first time; the instrument's own control had been checked and this had
+// not. An assertion that cannot fail is worse than no assertion, because it is counted.
+if (unparsable.length) {
+  problems.push(`A5 SCAN COVERAGE — ${unparsable.length} module(s) would not parse, so A3 is unproven for them: ${unparsable.join(", ")}`)
 }
 
 if (problems.length) {

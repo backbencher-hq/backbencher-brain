@@ -117,6 +117,7 @@ type ProvVerdict = {
   version?: string
   provenanceKind?: string
   sha256?: string
+  shippedBytes?: number
   buildOutput?: { shipped: string; named: string[]; isStandardName: boolean }
   source?: { rebuildable?: boolean; grammarSource?: string[]; parserC?: string[]; totalFiles?: number }
 }
@@ -590,7 +591,22 @@ for (const lane of target) {
   // 0.7.1, 0.23.2) with a collection version. C4 caught it on the next run, which is the
   // check doing precisely its job: a generator quietly sourcing versions from somewhere new
   // is indistinguishable from a correct one until the two owners disagree.
-  const declared: ReturnType<typeof declaredVersion> =
+  // The census arm of this ternary sets fields the prose arm never has, so the type has to
+  // name all of them. It used to be `ReturnType<typeof declaredVersion>` and the object
+  // literal's extra properties were an excess-property error — which is the typechecker
+  // correctly reporting that the declared shape and the produced shape had drifted apart,
+  // the same drift the file exists to catch between FILES.
+  type Declared = Omit<ReturnType<typeof declaredVersion>, "sources"> & {
+    versionKnown?: boolean
+    provenanceKind?: string | null
+    sha256?: string | null
+    sha256File?: string | null
+    declarationSite?: string
+    // A census-sourced row also records WHICH authority answered, so a reader can tell a
+    // version read out of a document from one measured against a published artifact.
+    sources: Array<{ file: string; field: string; raw: string | null; authority?: string }>
+  }
+  const declared: Declared =
     declaredFromProse.version != null || !prov || prov.status !== "identified" || !prov.version
       ? declaredFromProse
       : {

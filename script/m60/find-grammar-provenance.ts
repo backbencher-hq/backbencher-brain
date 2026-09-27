@@ -407,7 +407,12 @@ for (const row of targets as any[]) {
   // accept it only if it actually looks like a grammar name.
   const raw = asset.includes("/") ? asset.slice(asset.lastIndexOf("/") + 1) : asset
   const candidate = raw.replace(/\.wasm$/, "")
-  const assetBase = /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/i.test(candidate) ? candidate : `tree-sitter-${lane}`
+  // `row.lane`, not `lane`: the loop variable is `row` and there is no `lane` in scope. The
+// typechecker found this, and it is a LIVE crash rather than a cosmetic slip — the fallback
+// only evaluates when a chain asset is a bare single word (`dart.wasm` -> `dart`, which
+// fails the pattern), so every such lane died with a ReferenceError while every
+// hyphenated lane sailed past. Nothing in the runtime tests covered that branch.
+const assetBase = /^[a-z0-9]+(?:[-_][a-z0-9]+)+$/i.test(candidate) ? candidate : `tree-sitter-${row.lane}`
 
   const packages = new Set<string>()
   if (PACKAGE_ALIASES[assetBase]) for (const p of PACKAGE_ALIASES[assetBase]) packages.add(p)
