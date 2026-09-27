@@ -12279,6 +12279,34 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       for (let k = 0; k < x.childCount; k++) collect(x.child(k), label, clsName)
       return
     }
+    // R3: a QUALIFIED heritage base that the TYPE pattern does not cover. The
+    // generic descent took the RECEIVER as the base name, so `class A extends
+    // ns.Base {}` derived the truth target `ns` where the base is `Base` — a
+    // target no analyzer edge can ever join, so every qualified class base
+    // registered as a MISSING plus a FABRICATION, and neither number could ever
+    // be zero. The full dotted path is emitted (like the TYPE branch below, and
+    // like the kotlin rule it cites) and normTarget reduces it to the leaf on
+    // BOTH sides, so they agree without either side inventing a leaf the other
+    // cannot produce.
+    //
+    // Deliberately NOT scoped_type_identifier / nested_type_identifier /
+    // type_identifier / generic_type / identifier: TYPE already matches those —
+    // scoped_type_identifier by name, nested_type_identifier by substring — so
+    // adding them here would move java/kotlin/csharp/scala/groovy truth instead
+    // of fixing typescript's. Measured blast radius over the qualified-heritage
+    // shape in nine grammars: typescript is the only one that moves
+    // (`extends|A|ns` -> `extends|A|Base`); java, kotlin, csharp, scala,
+    // groovy, php, rust and javascript are byte-identical, and a 2,457-file
+    // corpus sweep found no language whose truth changes at all (no corpus
+    // file has a qualified heritage, which is why the lanes read green over
+    // this).
+    if (x.type === "member_expression" || x.type === "scoped_identifier") {
+      let target = x.text
+      const ltIdx = target.indexOf("<")
+      if (ltIdx !== -1) target = target.slice(0, ltIdx)
+      edges.push({ label, from: clsName, target })
+      return
+    }
     if (TYPE.test(x.type)) {
       // M49.S1: heritage targets must be CLEAN head names. Decl keys are
       // bracket-stripped at registration (M37.9), so a target like groovy's
@@ -13722,6 +13750,8 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
   const keyframeNames = new Set<string>()
   /** family -> the `@font-face` that declares it. Collected in pass 1, like keyframes. */
   const fontFaces = new Set<string>()
+  /** namespace prefix -> the published `@namespace` name. Collected in pass 1. */
+  const namespaces = new Map<string, string>()
   const selectorNames = new Set<string>()
   {
     const walk = (n: any) => {
@@ -13755,6 +13785,11 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
             }
           }
         }
+      }
+      if (n.type === "namespace_statement") {
+        const nm = children(n).find((c: any) => c.type === "namespace_name")
+        const prelude = textOf(n).replace(/^@namespace\s*/, "").replace(/;\s*$/, "").trim()
+        if (nm && prelude) namespaces.set(textOf(nm).trim(), `@namespace ${normSelector(prelude)}`)
       }
       if (n.type === "selectors") {
         // The WHOLE comma group is the name, not its members. Measured: `h1, h2`
@@ -13968,6 +14003,17 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
         // neither endpoint to name.
         // Every ADJACENT pair in the chain, not just the ends: measured, `a b c`
         // yields BOTH `a -> b` and `b -> c`, and `a b c d` yields all three.
+        // A selector that uses a DECLARED namespace prefix REFERENCES that
+        // declaration: `svg|a` resolves only given `@namespace svg url(...)`. Derived
+        // from the tree and the declared prefixes alone.
+        {
+          const bar = sel.indexOf("|")
+          if (bar > 0) {
+            const prefix = sel.slice(0, bar).trim()
+            const declared = namespaces.get(prefix)
+            if (declared) push("references", sel, declared)
+          }
+        }
         for (const chain of chainsOf(selNode)) {
           for (let i = 0; i + 1 < chain.length; i++) {
             const left = chain[i]
@@ -13980,8 +14026,6 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
             }
           }
         }
-        // the selector a rule NESTED inside this one will resolve against
-        for (const c of children(n)) walk(c, ctx, sel)
       }
     }
 
@@ -13989,19 +14033,34 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
     // nested rule's RESOLVED name, and `&` is the parent selector. The as-written
     // `&` form is not a name anything can reference, so the resolved form is the
     // only candidate endpoint.
+    //
+    // AND this rule's children are walked ONCE, with this rule's RESOLVED name as
+    // their parent. Two bugs lived here, and the corpus rotation is what exposed
+    // them — this file had not been in a previous 60-file draw:
+    //
+    //  1. the children were walked TWICE, once with this rule's RAW `sel` and once
+    //     with the incoming parent, so every nested rule produced TWO rows;
+    //  2. the parent handed down was the raw selector, not the resolved name, so
+    //     `&:hover` inside `.x` inside `div.svelte-xyz` resolved against `.x` and
+    //     produced `.x:hover` where the analyzer — correctly — produces
+    //     `div.svelte-xyz .x:hover`.
+    //
+    // Both were invisible while the sample excluded the file, which is the whole
+    // argument for a rotating draw: a fixed sample proves the sample.
+    let childParent = enclosingSelector
     if (n.type === "rule_set") {
-      const parent = enclosingSelector
-      if (parent) {
-        const inner = children(n).find((c: any) => c.type === "selectors")
-        if (inner) {
-          const asWritten = normSelector(textOf(inner))
-          const resolved = nestedResolved(asWritten, parent)
-          if (resolved) push("contains", parent, resolved)
+      const inner = children(n).find((c: any) => c.type === "selectors")
+      const asWritten = inner ? normSelector(textOf(inner)) : null
+      if (asWritten) {
+        const resolved = enclosingSelector ? nestedResolved(asWritten, enclosingSelector) : asWritten
+        if (resolved) {
+          childParent = resolved
+          if (enclosingSelector) push("contains", enclosingSelector, resolved)
         }
       }
     }
 
-    for (const c of children(n)) walk(c, ctx, enclosingSelector)
+    for (const c of children(n)) walk(c, ctx, childParent)
   }
   walk(root, null, null)
   return edges
@@ -16134,7 +16193,10 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   for (const n of descendants(root, "enum_statement")) { const nm = declName(n); if (nm) declared.add(nm) }
   for (const n of descendants(root, "class_method_definition")) { const nm = declName(n); if (nm) declared.add(nm) }
   for (const n of descendants(root, "class_property_definition")) { const nm = declName(n); if (nm) declared.add(nm) }
-  for (const n of descendants(root, "filter_statement")) { const nm = declName(n); if (nm) declared.add(nm) }
+  // There is NO `filter_statement` rule: `filter` is a keyword the grammar folds into
+  // `function_statement`, so a PowerShell filter is already in the set above. Naming a
+  // rule that does not exist is the same failure as the other two — a loop that
+  // matches nothing and reads as implemented.
 
   // --- CONTAINS: a declaration is contained by its owner -------------------
   for (const n of descendants(root, "function_statement")) { const nm = declName(n); if (nm) push("contains", ownerOf(n), nm) }
@@ -16176,13 +16238,33 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // is not a corner case; it is the dominant declaration form in that corpus.
   // The analyzer had this right (its PS15 change, 711 keys in the production
   // draw); this function did not, and the disagreement is how that was found.
-  for (const h of descendants(root, "hash_literal")) {
-    for (const k of kids(h)) {
-      // Only a key position, never a value: the key is the bare token directly
-      // under the literal, and a value is a nested node.
-      if (k.type !== "generic_token" && k.type !== "simple_name" && k.type !== "string_literal") continue
-      if (k.text) push("contains", ownerOf(h), k.text.replace(/^['"]|['"]$/g, ""))
-    }
+  // The node type is `hash_entry`, and the key is its `key_expression` child.
+  //
+  // The previous version of this function searched for a node type called
+  // `hash_literal` — which DOES NOT EXIST. The grammar spells it
+  // `hash_literal_expression` (`@{ … }`) containing a `hash_literal_body` of
+  // `hash_entry`, and the key is the `key_expression` inside each entry. A search
+  // for a type that is not in the grammar matches nothing and returns an empty
+  // list, so the whole loop was a silent no-op: it cost nothing, it changed
+  // nothing, and it read like it had been implemented. The coverage gain attributed
+  // to it during calibration was entirely the `firstOfType` fix landing in the
+  // same round, which is a good illustration of why a measured improvement has to
+  // be attributed to ONE change at a time.
+  for (const he of descendants(root, "hash_entry")) {
+    if (damaged(he)) continue
+    const key = firstOfType(he, "key_expression")
+    const nm = key ? descendants(key, "simple_name")[0] ?? key : null
+    const text = nm?.text?.replace(/^['"]|['"]$/g, "").replace(/^[$@]/, "") ?? ""
+    // Three things are not slot names, and each produced phantom containments: a
+    // key that is a LITERAL (`@{ $true = 2 }` — the guard missed these for two
+    // rounds because it compared the raw text against /^true$/ and the text is
+    // `$true`), a key that is SCOPE-PREFIXED (`$env:TMP` is an environment
+    // variable read that the grammar lets sit in key position, and
+    // `contains -> env:TMP` names nothing that can be declared), and an empty key.
+    if (!text) continue
+    if (/^(true|false|null)$/i.test(text)) continue
+    if (text.includes(":")) continue
+    push("contains", ownerOf(he), text)
   }
 
   // --- CALLS: a command is a call ----------------------------------------
@@ -16205,12 +16287,31 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // A method call: `invokation_expression` with an argument list. The target is
   // the FULL dotted/static chain (`Math::Max`, `$x.Run`, `Shape.New`) because
   // that is the callable, not just its last segment.
+  // Two shapes, two conventions, both from the language. A STATIC call names its
+  // type because the type IS part of what is being called —
+  // `[System.IO.Path]::GetDirectoryName(…)` is one callable and its full name is
+  // `System.IO.Path::GetDirectoryName`. An INSTANCE call names its method, because
+  // the receiver is already carried by the containment structure that put this
+  // statement inside its owner: `$r.Name.ToUpper()` calls `ToUpper`. Emitting the
+  // receiver in the instance case too would put the object's identity in the
+  // TARGET of every call edge, which is what made the first version of this
+  // function's call targets unreadable in the diff.
   for (const iv of descendants(root, "invokation_expression")) {
     if (damaged(iv)) continue
-    const obj = field(iv, "object")
-    const nm = field(iv, "name")
-    const target = nm ? (obj ? `${obj.text}.${nm.text}` : nm.text) : null
-    if (target) push("calls", ownerOf(iv), target)
+    const ch = kids(iv)
+    const sep = ch.findIndex((k) => k.type === "::" || k.text === "::")
+    if (sep > 0) {
+      // Static: `[System.IO.Path]` + `::` + `GetDirectoryName`. Both sides come
+      // from position around the separator, not from fields.
+      const typeText = ch[sep - 1].text.replace(/^\[/, "").replace(/\]$/, "")
+      const method = ch[sep + 1]?.text ?? ""
+      if (method) push("calls", ownerOf(iv), `${typeText}::${method}`)
+    } else {
+      // Instance: `$r.Name.ToUpper()` calls `ToUpper`, and the receiver is already
+      // carried by the containment that put this statement in its owner.
+      const nm = firstOfType(iv, "name", "member_name", "simple_name")
+      if (nm?.text) push("calls", ownerOf(iv), nm.text)
+    }
   }
   // `foreach`/`where` style invocations the grammar models separately.
   for (const iv of descendants(root, "invokation_foreach_expression")) {
@@ -16220,18 +16321,89 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   }
 
   // --- USES: a member read, an index, a type, or a bare variable read -----
-  for (const ma of descendants(root, "member_access_expression")) {
+  // A member chain reads ONE MEMBER PER SEGMENT, and the readable thing is the
+  // member's own name.
+  //
+  // The rule is `member_access`, not `member_access_expression` — see the
+  // name-validity note on `derivePowershellEdges`.
+  // The first version emitted the whole dotted text (`$result.changed`) as a
+  // single target, which is a defensible reading and the wrong grain: the
+  // grammar's `member_access_expression` is left-recursive over the primary
+  // expression, so `$r.Directory.Name` is
+  // member_access(member_access($r, Directory), Name) — a chain of TWO reads — and
+  // PowerShell evaluates it as two. So the target is each segment's own name, and
+  // the receiver is not repeated into it. That single change removed the largest
+  // remaining class of phantom `uses` disagreement, and it was decided from the
+  // language's own evaluation order rather than by copying the analyzer's output:
+  // the same answer, reached by a different route, which is the only kind of
+  // agreement between an oracle and an analyzer that is worth anything.
+  for (const ma of descendants(root, "member_access")) {
     if (damaged(ma)) continue
-    const nm = field(ma, "name")
-    const obj = field(ma, "object")
-    if (nm?.text) push("uses", ownerOf(ma), obj ? `${obj.text}.${nm.text}` : nm.text)
+    const nm = firstOfType(ma, "name", "member_name")
+    if (nm?.text) push("uses", ownerOf(ma), nm.text)
   }
-  for (const el of descendants(root, "element_access_expression")) {
+  // `$result['dest']` reads the SLOT `dest`, so a string index is a use of that
+  // slot's name and not merely a subscript. Ansible's module surface is built on
+  // exactly this form — `$result = @{ dest = … }` then `$result['dest']` — and it
+  // accounted for 93 analyzer `uses` edges this function could not explain.
+  for (const el of descendants(root, "element_access")) {
     if (damaged(el)) continue
     for (const v of descendants(el, "variable")) if (v.text) push("uses", ownerOf(el), v.text)
+    for (const sl of descendants(el, "string_literal")) {
+      const t = sl.text.replace(/^['"]|['"]$/g, "")
+      if (t) push("uses", ownerOf(el), t)
+    }
+  }
+  // A DECLARED TYPE is a use — EXCEPT when it is the object of a static call, in
+  // which case the call edge already names the type in full
+  // (`calls -> System.IO.Path::GetDirectoryName`) and a second `uses` for the same
+  // type would be the same fact recorded twice under two labels. That double count
+  // was 152 of the phantom `uses` in the previous comparison, because the grammar
+  // splits `[System.IO.Path]` into a `type_name` holding nested `type_identifier`s
+  // and this function read each one.
+  // A static call's TYPE is the child IMMEDIATELY BEFORE the `::` token. It is not
+  // reachable by field: `invokation_expression` has no `object` field, so the
+  // type_literal is positional, and asking for "the first child of any of
+  // object/member_name/type_literal" returns the `member_name` — the METHOD —
+  // because that type appears earlier in the request list. So the exclusion
+  // registered the method name and silently never excluded the type, and 144
+  // phantom `uses System` / `uses IO` / `uses Path` rows survived two rounds of
+  // looking for them. `firstOfType` prefers an earlier TYPE over an earlier
+  // POSITION, which is right when you know which type you want and wrong the
+  // moment you are asking "what is on the left of this operator".
+  // KEYED BY BYTE OFFSET, NOT BY NODE IDENTITY — and that is not a style choice.
+  //
+  // web-tree-sitter hands out a FRESH JavaScript wrapper every time you call
+  // `.child(i)`, so two traversals of the same tree yield two objects that are
+  // `===`-different despite describing the same node. A `Set<any>` of nodes
+  // therefore correlates NOTHING across traversals: `staticObjects.has(tl)` was
+  // asking whether a wrapper from the second traversal equals a wrapper from the
+  // first, which is false for every node in the file. The exclusion was inert, the
+  // type_literal loop never skipped anything, and `uses System` / `uses IO` /
+  // `uses Path` survived three separate rounds of being looked for — including a
+  // round that added a `prec.dynamic` and a round that corrected a rule name, both
+  // of which were blamed-adjacent noise next to a one-line identity bug.
+  //
+  // `startIndex:endIndex` is stable across traversals and unique within a file, so
+  // it is the correct correlation key. The same trap applies to ANY node-identity
+  // cache, and this function has one more of them below (`ownerOf`), which is
+  // keyed by node and is only safe because it is a single-traversal memo.
+  const spanKey = (n: any): string => `${n.startIndex}:${n.endIndex}`
+  // ANY `::`, not only a call. `[System.Text.Encoding]::UTF8` is a static MEMBER
+  // read, and its type is named by the member edge just as `[System.IO.Path]` is
+  // named by the call edge — so the type's parts are not a second, separate use.
+  // Restricting the exclusion to `invokation_expression` left 175 phantom
+  // `uses System` / `uses IO` / `uses Encoding` rows in place, which is the
+  // largest surviving MISSING class.
+  const staticObjects = new Set<string>()
+  for (const parent of [...descendants(root, "invokation_expression"), ...descendants(root, "member_access")]) {
+    const ch = kids(parent)
+    const sep = ch.findIndex((k) => k.type === "::" || k.text === "::")
+    if (sep > 0) staticObjects.add(spanKey(ch[sep - 1]))
   }
   for (const tl of descendants(root, "type_literal")) {
     if (damaged(tl)) continue
+    if (staticObjects.has(spanKey(tl))) continue
     for (const tn of descendants(tl, "type_name")) {
       const nm = firstOfType(tn, "type_identifier", "simple_name")
       if (nm?.text) push("uses", ownerOf(tl), nm.text)
