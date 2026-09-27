@@ -104,12 +104,34 @@ inside a grid cell is not a rarity.
 
 ### SCHEME CONTRACT — a hyperlink is not a code dependency
 
-Absolute URLs, protocol-relative URLs and the `mailto:`/`tel:`/`javascript:`/
-`data:` schemes produce **no edge** and are counted as `documentMetrics`. The
-pre-fix analyzer emitted a `uses` edge for every one it did not filter, so a
-page linking to fifty external sites published fifty graph edges that the
-enrichment pass then scored for architectural criticality — measured at **237**
-such edges across 51 real documents.
+External schemes — `http:`/`https:`/`ftp:`/`mailto:`/`tel:`/`sms:` and the rest
+of `ORACLE_HTML_SCHEME_SKIP` — produce **no edge** and are counted as
+`documentMetrics`. The pre-fix analyzer emitted a `uses` edge for every one it
+did not filter, so a page linking to fifty external sites published fifty graph
+edges that the enrichment pass then scored for architectural criticality —
+measured at **237** such edges across 51 real documents.
+
+**`javascript:` is the one exception, and it is deliberately an edge.** A
+`javascript:` URL is a real hazard the document contains, and the analyzer
+records it as one (`resourceType: "javascript-url"`, `isScriptUrl`). Filtering
+it out was the *other* failure: a lane that refuses to emit a hazard is how the
+hazard goes unreported. All five spellings — `javascript:`, `JavaScript:`, a
+leading space, `&#106;avascript:` and `&#0000106;avascript:` — collapse to the
+single row `uses <owner> -> javascript:`, because the value is **decoded before
+the scheme test**. The first cut of this rewrite had it backwards (no edge), and
+only the F9 probe battery caught it: `otp` and `sqlite` carry no `javascript:`
+URL at all, so `unexplained=0` never had to confront the disagreement between the
+analyzer and the oracle.
+
+**A bare `#` names no target.** `href="#"` is the HTML idiom for "no
+destination" — a valid URL referring to the top of *this* document, which the
+document module already is — so it emits **nothing**. An edge to the literal
+text `#` is a target that is neither a symbol nor a file, which is the
+unresolvable-identity defect class in its most literal form. Both the analyzer
+and the differential oracle had this hole in **two places each** (a
+`length > 1` guard excludes `#frag` and lets `#` through), and `sqlite` alone
+carried three live rows of it before it was fixed; the differential was
+reporting 100% coverage *with the defect in its own truth*.
 
 Its filter was a bare `startsWith("javascript:")`, so it was case-sensitive,
 whitespace-sensitive, and present **only in the `<a>` branch**. Decoding now
@@ -161,36 +183,83 @@ identity function on every string containing a capital survived because every
 input the lane had ever been measured against was already lowercase, where
 identity and lowercase agree.
 
+## The embedded-block seam is fault-isolated
+
+Inline `<script>` and `<style>` bodies are handed to the JavaScript, TypeScript
+and CSS analyzers as sub-parses, and their symbols and relationships are merged
+with **file-coordinate** line numbers (the applied offset is recorded on every
+row as `metadata.embeddedLineOffset`, so the shift is auditable rather than
+merely correct).
+
+The three delegates are resolved **lazily and independently**, and deliberately
+not as static imports. A static import makes a broken delegate a *load-time*
+failure of this module: while the CSS analyzer was mid-rewrite with 5 build
+errors, every HTML file in the project fell back to `2.0-basic-fallback` and
+yielded zero symbols, zero relationships and zero imports. A template language
+held hostage by a script language, and invisible until a neighbour's work was
+half-done.
+
+Now a delegate that fails to load costs exactly the blocks it would have served.
+The document's own elements, containment, resources, references and lines are
+untouched and the surviving languages still merge — verified against the real
+failure, not a simulated one: with CSS broken, the JS symbols, the `imports`
+edge and all four `calls` rows still arrived with correct file-coordinate lines.
+
+The skip is **disclosed** as `metadata.unavailableEmbeddedLangs`, because a
+silently missing block set reads as *a document with no code in it* — which is
+the HTML-G1 defect returning through a different door. A consumer asking "does
+this file contain code?" has to be able to tell "no" from "not measured", and
+only a published field can say that.
+
 ## Evidence
 
 | Gate | State |
 |---|---|
 | **F1** grammar audit | ✅ pass — 11/11 node-type literals real, 0 unknown, 0 dead field reads |
-| **F3** fixtures | ✅ **8/8** — `identity-addressable`, `attribute-case-and-srcset`, `resource-carriers`, `scheme-and-navigation`, `scope-barriers-and-references`, `framework-and-scores`, `error-budget`, `error-budget-broken` |
-| **F4** mutation | ✅ **50/50 caught** (the lane entered with 0 mutants out of 938) |
-| **F5** differential | ✅ **100% / MISSING=0 / unexplained=0** on **both** corpora — `otp` (66 hand-written pages) primary, `sqlite` (21/21 full documents) second |
-| **F9** probe battery | ✅ contract carried by F3 + the F5 lockstep oracle |
-| **SPEC** #419 | ⚠️ INVENTORY-DONE — A/B/C/D pass; E/F await the canonical baseline pin; G awaits this file's sibling; H awaits a CC1 block; **`HTML-G1` open** |
+| **F3** fixtures | ✅ **10/10** — `identity-addressable`, `attribute-case-and-srcset`, `element-forms`, `resource-carriers`, `scheme-and-navigation`, `scope-barriers-and-references`, `inline-embedded-code`, `framework-and-scores`, `error-budget`, `error-budget-broken` |
+| **F4** mutation | ✅ **54/54 caught** (the lane entered with 0 mutants out of 938) |
+| **F5** differential | ✅ **100% / MISSING=0 / unexplained=0** on **both** corpora — `otp` **341/341** primary, `sqlite` **351/351** second, against `deriveHtmlEdges` (written from the HTML spec's carrier list, deliberately not sharing the analyzer's table) |
+| **F9** probe battery | ✅ **42/42**, of which **5 are html's own**: `IDENTITY`, `SCHEME`, `LINE`, `CARRIERS`, `BARRIER`. The battery asserts the analyzer AND the oracle, and that the oracle derives nothing on the forbidden set |
+| **M12** differential | ✅ precision **1.000**, recall **1.000**, TP=45 FP=0 FN=0, `earliestFailingLayer=none`, against a ground truth **re-audited by hand** (45 facts, each quoting the source line it was read from) |
+| **PIPE** store seam | ✅ 7 store-level assertions through the **real CLI** (`node bin/bb index` → `brain.db`): document-root containment sourced from a `module`-kind symbol, `dup-target#2` persisted as its own node, srcset fan-out as three distinct rows, zero NULL lines, a fragment href persisted as the resolved symbol `content` rather than the text `#content`. Run with `tsx` — `better-sqlite3` cannot load under Bun |
+| **M60.R8** framework surface | ✅ **29/29**; negative control re-injecting `Targeted/ID-Styling` drops it to 27/29, which is what proves the cases are load-bearing |
+| **SPEC** #419 | ⚠️ INVENTORY-DONE — 19/19 named node types classified, **gap list empty**; sections **E/F await the canonical baseline pin** |
 
-## The one open gap
+### What the hand audit changed that no gate did
 
-**`HTML-G1` — `raw_text`.** The body of an inline `<script>` or `<style>` is a
-single opaque leaf and **nothing descends into it**. Across the 11 html-bearing
-corpus repos, **5,389 of 6,094 files (88.4%)** carry an inline block; on the
-51 hand-written-document sample those blocks are 74,637 characters of JavaScript
-and 17,266 of CSS producing **zero** symbols, calls and imports.
+Four defects were found in session 2, and **two of them by hand** — reading the
+M12 ground truth against live output rather than running a script. The
+differential was reporting 100% coverage with a known-bad node in its own truth,
+and a fixture asserting another lane's internal edge set made this file fail on a
+redesign it had no stake in. Both are recorded in place with their reasons.
 
-The cause is a **seam**, not a missing branch: the engine's polyglot path keys on
-`metadata.embeddedScriptContent`, which **no analyzer in `src/ast/` has ever set**
-(repo-wide: three references, all readers, zero producers), and the SFC sub-parse
-seam that does exist is gated `language === "vue" || language === "svelte"`. The
-fix is to extend that seam to html with **reused cached parsers** — a fresh
-`Parser` per file exhausted the fixed-size wasm heap on the svelte lane at
-`--sample 400` (M49 W12) — and to merge the delegate's payload with byte-accurate
-line and index offsets, recording the applied offset on every row the way the
-`sfcDelegated` / `sfcLineOffset` pair does.
+The M12 re-audit also **retracted one assertion the old truth made**: a
+`javascript:` URL emits nothing. That was the more dangerous of the two errors,
+because suppressing a hazard is worse than over-reporting one.
 
-It is deliberately **not** classified as `internal_silent`. Silence is guilt.
+## `HTML-G1` is closed; the one open gap is the ceremony
+
+**`HTML-G1` — `raw_text` — is FIXED.** The body of an inline `<script>` or
+`<style>` is a single opaque leaf, and the polyglot path keyed on
+`metadata.embeddedScriptContent`, which no analyzer had ever set, so **5,389 of
+6,094 corpus files (88.4%)** carried an inline block producing zero symbols. The
+cause was a seam, not a missing branch.
+
+The seam now extends to html with **reused cached parsers** (a fresh `Parser` per
+file exhausted the fixed-size wasm heap on the svelte lane at `--sample 400`),
+merging the delegate's payload with byte-accurate line and index offsets and
+recording the applied offset on every row. Pinned by
+`html/inline-embedded-code`, whose expectations are authored in **file** lines
+precisely so a regression in the shift cannot hide behind matching block-relative
+numbers.
+
+**What remains open is the canonical F5 ceremony**, and it is open for one reason
+only: `differential-baseline.json` carries **no html row** because the sweep has
+not run at a stable tree, so SPEC sections **E and F** stay red. The scoped
+`--lang html` run deliberately refuses to write the artifact — it would replace a
+28-language, 60-file claim with a smaller one and call it the same thing.
+
+That is the honest state, not a green one.
 
 ## Complexity and performance
 
