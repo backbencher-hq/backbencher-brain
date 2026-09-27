@@ -350,7 +350,41 @@ stronger claim than it is.
 ## Not closed
 
 **Sections E and F** await the canonical F5 ceremony, so there is no pinned corpus
-floor yet. **Section D** is red for a different reason and will not become green by
-writing more code: TOML's graph is entirely `structural`, and manufacturing a second
-tier would mean either emitting a `uses` edge for a path-shaped string or pointing an
-edge at a deliberately non-existent implied parent.
+floor yet.
+
+**Section D** is red, and the reason is measured rather than asserted. The gate
+(`verifySectionD` in `completeness-inventory.ts`) counts distinct `meta.evidenceClass`
+values across the lane's fixture expectations and wants two or more; TOML pins one,
+`structural`, and that is every edge it emits.
+
+Two checks were run rather than assumed, because the first answer was wrong. There is
+**no `json` lane** in this project — it has no registry key and no fixture directory —
+so a "json does the same thing" comparison has nothing behind it. The real precedent
+is **yaml**, and it is not in the same position at all: it pins **four** tiers
+(`structural`, `inferred`, `import_based`, `reference_qualified`) and passes D, because
+TOML's absent constructs are precisely yaml's present ones — a merge key is an
+inference, an anchor is a reference, an `!include` is a fetch. TOML has no merge, no
+anchor, no alias, no include, no import and no reference of any kind.
+
+The taxonomy itself rules out the tempting fix. `inferred` does not mean "the
+analyzer chose this name" — it means a **resolution step that could be wrong**, and
+every `inferred` edge in the corpus carries a `confidenceReason` beside it (yaml's are
+`cross-document-alias` and `unresolved-sibling-name`). TOML performs no resolution
+step: containment is asserted lexically by text the document literally writes. The
+synthetic module is an *identity* decision, already recorded in symbol metadata, and
+does not make the edges through it inferences. So relabelling the module edges to reach
+two tiers would be a category error, not a correction.
+
+`go` is the lane that faced this same wall and shows what a legitimate remedy looks
+like: its D was impossible only because it was not *tagging* edges, and once
+`classifyEvidenceTier` ran across them the tiers fell out on their own — precisely
+because go emits seven relationship types with genuinely different provenances. That
+remedy is unavailable here for the same reason the fix is dishonest: there is only
+`contains`, so there is nothing else to tag.
+
+Both available routes to a second tier were declined: emitting `uses` for a
+path-shaped string imports ecosystem knowledge about which keys are paths in which
+tool into a format that defines no references, and tagging an edge to an implied parent
+`inferred` points at a target that is deliberately not a symbol, which is the
+unresolvable-identity defect. D stays red until the gate grows a documented
+single-tier allowance or TOML grows a construct that earns one.
