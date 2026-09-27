@@ -325,6 +325,30 @@
       "~=": "punctuation or keyword token — the construct is its parent"
     }
   },
+  "limitations": [
+    {
+      "id": "CSS-L1",
+      "scope": "the .scss / .sass / .less files this lane is also ROUTED",
+      "severity": "declared, not a defect in the CSS contract",
+      "measured": "The product routes all four extensions to this analyzer (src/ast/parallel-indexer.ts lists .css/.scss/.sass, and script/m13/corpus-map.ts maps .scss/.sass/.less -> css), and every one of the 254 real .scss files in the corpus routes here — measured, 254/254. The CSS grammar does not support SCSS: 42 of 244 non-empty .scss files parse CLEAN (17.2%), 202 produce errors, 0 crash, for 11,451 distinct error lines. The lane still emits 4,477 symbols and 2,025 relationships from them, so a caller indexing an SCSS file gets a partial graph.",
+      "cause_breakdown": "SCSS variables and @include dominate: $variable reference 17.9%, @include 12.8%, $variable declaration 6.7%, `//` line comment 2.7%, @use 1.6%, #{...} interpolation 1.2%, @each/@for/@if/@else 1.1%, @mixin 0.6%; 55.3% is the structural fallout of those rather than a separate cause. (@use looked like the dominant cause in a first pass and was not — that sample read only the first error rows of files in name order, and @use sorts early. The number above is every distinct error line.)",
+      "decision": "DECLARED, and deliberately not fixed here. The plain-CSS rules inside an SCSS file parse correctly and are worth keeping, so removing the routing would take away real capability; and teaching the CSS grammar SCSS is a different grammar (tree-sitter-scss) with its own A/B, not a third hunk on a pinned 0.25.0 that has already been measured twice. What was missing was not the behaviour but the DECLARATION: nothing in the repo said this lane also receives .scss, so an 82.8% parse-failure rate on 254 real files was invisible to every gate. It is now stated here, in docs/analyzers/real-css-analyzer.md, and in reviews/m49-css-review.md."
+    },
+    {
+      "id": "CSS-L2",
+      "scope": "the `progid:` value class",
+      "severity": "residual floor, not fixed",
+      "measured": "An IE filter value (`filter: progid:DXImageTransform.Microsoft.gradient(...)`) does not lex. This is the same family as the relative-url defect that WAS patched, and it is the largest remaining parse-failure class in the corpus.",
+      "decision": "Left unpatched on purpose, and the reason is size rather than principle: `progid:` needs the token's lead requirement relaxed and the colon handled, which is a materially larger grammar change than the two additive hunks already measured, and it would need its own A/B across the same 4 corpora. Naming it here is the point — a residual floor that is not written down reads as a clean lane."
+    },
+    {
+      "id": "CSS-L3",
+      "scope": "the complexity performance row",
+      "severity": "measured, unscorable on this host",
+      "measured": "Both budgets are met (1.45 s over 2 files, 6.04 s over 185) but the run was measured at loadAvg1 31-37, and a row measured on a loaded box is not scored. The load-stable comparison is userCpuMsPerFile: 149.0 ms fixtures, 15.9 ms corpus.",
+      "decision": "Left `unscorable` rather than re-run until the number happened to land. The gate's own rule is that a load-stable measurement is the only scorable one, and re-rolling until a host cooperates is how a red row becomes a green one without the code changing."
+    }
+  ],
   "gap": {
     "_description": "EMPTY, and that is a claim with a method rather than a default. Searched for: a node type that parses with hasError=false and still yields no symbol, edge, or pattern. Two types parse clean and emit nothing by DESIGN and are recorded as rulings instead — charset_statement (an encoding declaration, not a construct) and universal_selector (* matches every element; publishing a symbol named * would be the same noise the HTML lane already ruled out for anonymous structural tags). Everything else that is silent is silent for a reason in internal_silent.reasons, and the earlier waves carry the behavioral half of this: the 41/41 M12 differential, the ontology class-resolution census, and the M59 line oracle over 7,647 edges.",
     "gaps": []
