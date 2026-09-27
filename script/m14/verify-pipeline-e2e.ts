@@ -95,6 +95,34 @@ end
   // + extend-protocol implements + def-initializer top-level call — every row
   // the CLJ1 wave revived must survive emit → worker → store through the
   // REAL CLI (same contract the EX2/EX3 seam holds for elixir).
+  // toml (M14 #289): the lane with the THINNEST graph of any language — one
+  // relationship type, `contains` — and that is exactly why it needed asserting
+  // here. A thin payload is easy to emit correctly and easy to lose between emit,
+  // worker and store with nothing noticing, and the pool-worker once DROPPED every
+  // analyzer's whole `metadata` object on this path, so a lane's rich payload
+  // could be invisible in the index while every fixture still passed against the
+  // analyzer's return value. Written to exercise: the module named from the file
+  // STEM, a table, a QUOTED segment that cannot be written bare, an array-of-tables
+  // element (so the `#2` allocation is visible in the store), a dotted key, and a
+  // value — which must not be a node at all.
+  fs.writeFileSync(path.join(TMP, "src", "seam.toml"), `[package]
+name = "seam"
+version = "0.1.0"
+
+[target."cfg(unix)".dependencies]
+libc = "0.2"
+
+[[bin]]
+name = "first"
+
+[[bin]]
+name = "second"
+
+[dotted]
+a.b = 1
+root_level_key = 2
+inline = { x = 1, y = "two" }
+`)
   fs.writeFileSync(path.join(TMP, "src", "seam.clj"), `(ns seam.core)
 
 ;; Seam function docs.
@@ -317,6 +345,45 @@ async function main() {
            WHERE f.path LIKE '%.html' AND r.relationship_type = 'uses'
              AND r.target_external = 'content'`)
   expect(htmlFragment >= 1, `html fragment href persisted as the resolved symbol (got ${htmlFragment}, want >=1: #content -> content, not the text "#content")`)
+
+  // M14 (#289) toml store seam. The lane publishes a `module` named from the file
+  // STEM and nothing else named after the filename, so the stem assertion is a
+  // store-level check that the naming survived indexing rather than a fixture
+  // restatement. The `#2` row is the one that matters most: two `[[bin]]` elements
+  // must be TWO nodes, because a store that overwrote the first would silently lose
+  // half the manifest and no count would notice — the row counts DISTINCT names.
+  const tomlSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml'`)
+  expect(tomlSymbols >= 9, `toml symbols persisted (got ${tomlSymbols}, want >=9: module + package + 2 package keys + target + libc + 2 bin elements + 1 bin name each + dotted + dotted.a.b)`)
+  const tomlStem = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'seam' AND symbol_type = 'module'`)
+  expect(tomlStem === 1, `toml module named from the file STEM (got ${tomlStem}, want 1: 'seam', not 'seam.toml')`)
+  const tomlNoFileName = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'seam.toml'`)
+  expect(tomlNoFileName === 0, `toml module is NOT named after the filename (got ${tomlNoFileName}, want 0)`)
+  const tomlQuoted = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'target."cfg(unix)".dependencies'`)
+  expect(tomlQuoted === 1, `toml QUOTED segment survived into the store (got ${tomlQuoted}, want 1: the segment cannot be written bare, so the name must keep its quotes or it stops round-tripping to the document)`)
+  const tomlAoT = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name IN ('bin','bin#2')`)
+  expect(tomlAoT === 2, `toml array-of-tables elements are DISTINCT nodes (got ${tomlAoT}, want 2: 'bin' and 'bin#2' — an overwrite would lose half the manifest with every count still plausible)`)
+  const tomlContains = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.toml' AND r.relationship_type = 'contains'`)
+  expect(tomlContains >= 8, `toml contains persisted (got ${tomlContains}, want >=8)`)
+  const tomlLined = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.toml' AND r.line_number IS NOT NULL AND r.line_number > 0`)
+  expect(tomlLined === tomlContains, `every toml edge kept its line through the store (got ${tomlLined}/${tomlContains})`)
+  const tomlNoLine = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.toml' AND r.line_number IS NULL`)
+  expect(tomlNoLine === 0, `no toml edge lost its line in the store (got ${tomlNoLine} NULL)`)
+  // A VALUE is data: `name = "seam"` must not put the string "seam" in the graph as
+  // a node, and an inline table's keys must ride on the key's metadata rather than
+  // becoming symbols of the file.
+  const tomlValueNode = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'name = "seam"'`)
+  expect(tomlValueNode === 0, `toml never publishes a pair's SOURCE TEXT as a name (got ${tomlValueNode}, want 0)`)
+  const tomlInlineKey = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name IN ('x','y')`)
+  expect(tomlInlineKey === 0, `an inline table's keys are not file symbols (got ${tomlInlineKey}, want 0: they ride on metadata.inlineKeys)`)
 
   // cross-language edge flagged with bridge
   const xlang = db.prepare(`
