@@ -128,8 +128,8 @@ grammar, which is correct — TOML v1.0.0 restricts bare keys to `A-Za-z0-9_-`.
 | a value as a symbol | ruled out — data, not identity |
 | an inline table's keys as symbols | ruled out — one value expression; recorded on the key instead |
 | implied parent tables as symbols | ruled out — never written, so inventing one is a guess |
-| `ERROR` / `MISSING` recovery nodes | **never occur** for this grammar. Twelve deliberately malformed documents and tree-sitter-toml either recovered or rejected the input as invalid TOML without producing either node. A malformed document that *is* accepted still yields a module and whatever sections parsed, so degradation is partial |
-| `"" = 1` (empty key) | parses, produces no symbol — an identity needs a name |
+| `ERROR` / `MISSING` recovery nodes | **never occur** for this grammar. Twelve deliberately malformed documents and tree-sitter-toml either recovered or rejected the input as invalid TOML without producing either node. A malformed document that *is* accepted still yields a module and whatever sections parsed, so degradation is partial. Pinned by `toml/malformed-and-rejected`, which places the error **between** two keys so a walk that stopped at the recovery node would lose everything after it |
+| `"" = 1` (empty key) | parses, produces no symbol — an identity needs a name. Pinned by the same fixture |
 | external references of any kind | no TOML construct produces one |
 
 ## Regex inventory
@@ -214,7 +214,7 @@ nobody publishes.
 | relationships with `line_number <= 0` | **0** |
 | parse errors | 2 |
 | density | 9.4 symbols/file, 8.4 relationships/file |
-| **unresolvable edge targets** | **0** of 5,725 |
+| **unresolvable edge targets** | **0** of 5,725 (and **0** across the whole 835-file pool) |
 | **self edges (source == target)** | **0** |
 | implied-parent records | 229 (metadata only, never nodes) |
 
@@ -281,12 +281,12 @@ both lanes never noticed. Nothing in `deriveTomlEdges` prevents that class of er
 
 | Gate | State |
 |---|---|
-| F3 fixtures | **5/5** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths`, `store-seam-probe` |
-| F4 mutation | **7/7 caught** (entered with 0) |
+| F3 fixtures | **6/6** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths`, `store-seam-probe`, `malformed-and-rejected` |
+| F4 mutation | **8/8 caught** (entered with 0) |
 | M12 differential | **precision 1.000, recall 1.000** — TP=41, FP=0, FN=0, `earliestFailingLayer=none`, against a **hand-audited** 41-fact truth |
 | M14.0.TOML-CENSUS | **PASS** — 21 declared node types all accounted for (7 claimed, 13 ruled silent with a reason, 1 not-seen) over 835 files / 68 repos, plus 6 ruled non-carrier shapes. Consults **neither** the analyzer nor the oracle |
 | M14.0.PIPE | **9 store assertions** green through the real CLI against `brain.db` |
-| F6 fixture coverage | **PASS** — 17 handled, 28 fixture types, 0 uncovered, 0 dead literals |
+| F6 fixture coverage | **PASS** — 17 handled, 29 fixture types, 0 uncovered, 0 dead literals |
 | F5 differential | **100% / MISSING=0 / unexplained=0** on both corpora, and **5,515/5,515 at 657-file depth** |
 | SPEC #419 | **A, B, C, G pass**; 21/21 rows, gap list empty. **D red** (one tier, justified in the spec); **E/F** await the canonical baseline pin |
 | regex census | **0** |
