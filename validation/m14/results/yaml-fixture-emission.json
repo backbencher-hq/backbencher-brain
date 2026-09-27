@@ -1,5 +1,5 @@
 {
- "at": "2026-09-27T17:25:38.059Z",
+ "at": "2026-09-27T18:54:50.679Z",
  "note": "Re-probed emission for validation/m14/fixtures/yaml/*.yaml, from which each .expectation.json is authored. Regenerate with: bun run script/m14/tmp/yaml-fixture-dump.ts",
  "fixtures": {
   "anchor-document-scope-negative.yaml": {
@@ -9,6 +9,7 @@
      "kind": "module",
      "id": "anchor-document-scope-negative",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -44,6 +45,7 @@
      "id": "anchor-document-scope-negative.base#base",
      "ownerName": "anchor-document-scope-negative.base",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
@@ -299,6 +301,7 @@
      "kind": "module",
      "id": "anchor-document-scope",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -312,6 +315,7 @@
      "id": "anchor-document-scope#shared",
      "ownerName": "anchor-document-scope",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
@@ -350,6 +354,7 @@
      "kind": "module",
      "id": "anchor-document-scope#2",
      "line": 6,
+     "complexity": 1,
      "qualified_calls": [
       "shared"
      ],
@@ -366,6 +371,7 @@
      "id": "anchor-document-scope#2#other",
      "ownerName": "anchor-document-scope#2",
      "line": 6,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
@@ -499,6 +505,7 @@
      "kind": "module",
      "id": "comment-attribution-negative",
      "line": 6,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -589,6 +596,7 @@
      "kind": "module",
      "id": "comment-attribution",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -742,6 +750,7 @@
      "kind": "module",
      "id": "compose-depends-on",
      "line": 5,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1013,6 +1022,7 @@
      "kind": "module",
      "id": "directive-reserved",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1071,6 +1081,179 @@
     "documentCount": 1
    }
   },
+  "directive-tag-handle.yaml": {
+   "symbols": [
+    {
+     "name": "directive-tag-handle",
+     "kind": "module",
+     "id": "directive-tag-handle",
+     "line": 6,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "document",
+      "documentIndex": 1,
+      "fullPath": "directive-tag-handle"
+     }
+    },
+    {
+     "name": "local",
+     "kind": "property",
+     "id": "directive-tag-handle.local",
+     "ownerName": "directive-tag-handle",
+     "line": 8,
+     "complexity": 1,
+     "qualified_calls": [
+      "str"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "rawValueType": "integer",
+      "valueTypeSource": "tag",
+      "fullPath": "directive-tag-handle.local",
+      "pointerPath": "/local",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "str",
+      "tagUri": "tag:yaml.org,2002:str",
+      "tagLine": 8,
+      "scalarType": "string",
+      "line": 8
+     }
+    },
+    {
+     "name": "global",
+     "kind": "property",
+     "id": "directive-tag-handle.global",
+     "ownerName": "directive-tag-handle",
+     "line": 9,
+     "complexity": 1,
+     "qualified_calls": [
+      "thing"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "integer",
+      "valueTypeSource": "grammar",
+      "fullPath": "directive-tag-handle.global",
+      "pointerPath": "/global",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "thing",
+      "tagUri": "tag:example.com,2000:thing",
+      "tagLine": 9,
+      "scalarType": "integer",
+      "line": 9
+     }
+    },
+    {
+     "name": "verbatim",
+     "kind": "property",
+     "id": "directive-tag-handle.verbatim",
+     "ownerName": "directive-tag-handle",
+     "line": 10,
+     "complexity": 1,
+     "qualified_calls": [
+      "str"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "rawValueType": "integer",
+      "valueTypeSource": "tag",
+      "fullPath": "directive-tag-handle.verbatim",
+      "pointerPath": "/verbatim",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "str",
+      "tagUri": "tag:example.com,2000:str",
+      "tagLine": 10,
+      "scalarType": "string",
+      "line": 10
+     }
+    }
+   ],
+   "relationships": [
+    {
+     "type": "contains",
+     "source": "directive-tag-handle",
+     "target": "directive-tag-handle.local",
+     "confidence": 1,
+     "line_number": 8,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "directive-tag-handle.local",
+     "target": "str",
+     "confidence": 1,
+     "line_number": 8,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "tag:yaml.org,2002:str"
+    },
+    {
+     "type": "contains",
+     "source": "directive-tag-handle",
+     "target": "directive-tag-handle.global",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "directive-tag-handle.global",
+     "target": "thing",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "tag:example.com,2000:thing"
+    },
+    {
+     "type": "contains",
+     "source": "directive-tag-handle",
+     "target": "directive-tag-handle.verbatim",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "directive-tag-handle.verbatim",
+     "target": "str",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "tag:example.com,2000:str"
+    }
+   ],
+   "imports": [],
+   "metadata": {
+    "detectedFrameworks": [],
+    "framework": null,
+    "frameworkPatterns": [],
+    "patterns": [
+     "YAML Tag Directive"
+    ],
+    "yamlVersion": null,
+    "reservedDirectives": [],
+    "securityScore": 100,
+    "sensitiveValueCount": 0,
+    "documentCount": 1
+   }
+  },
   "directive-version.yaml": {
    "symbols": [
     {
@@ -1078,6 +1261,7 @@
      "kind": "module",
      "id": "directive-version",
      "line": 5,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1140,6 +1324,7 @@
      "kind": "module",
      "id": "duplicate-key-identity",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1291,6 +1476,7 @@
      "kind": "module",
      "id": "error-recovery-identity",
      "line": 1,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1633,6 +1819,7 @@
      "kind": "module",
      "id": "framework-shape-negative",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -1886,6 +2073,7 @@
      "kind": "module",
      "id": "framework-shape",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -2309,6 +2497,7 @@
      "kind": "module",
      "id": "json-pointer-resolve-negative",
      "line": 3,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -2445,6 +2634,7 @@
      "kind": "module",
      "id": "json-pointer-resolve",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -2769,6 +2959,7 @@
      "kind": "module",
      "id": "k8s-resource-ref",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -2869,6 +3060,7 @@
      "kind": "module",
      "id": "k8s-resource-ref#2",
      "line": 8,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -3345,6 +3537,7 @@
      "kind": "module",
      "id": "merge-sequence",
      "line": 3,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -3380,6 +3573,7 @@
      "id": "merge-sequence.alpha#alpha",
      "ownerName": "merge-sequence.alpha",
      "line": 3,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
@@ -3440,6 +3634,7 @@
      "id": "merge-sequence.beta#beta",
      "ownerName": "merge-sequence.beta",
      "line": 5,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
@@ -3660,6 +3855,7 @@
      "kind": "module",
      "id": "openapi-contract",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -4167,6 +4363,7 @@
      "kind": "module",
      "id": "payload-complexity",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -4495,6 +4692,7 @@
      "kind": "module",
      "id": "payload-lines-evidence",
      "line": 5,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -4807,6 +5005,7 @@
      "kind": "module",
      "id": "secret-document",
      "line": 2,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5060,6 +5259,7 @@
      "kind": "module",
      "id": "secret-structural",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5214,6 +5414,7 @@
      "kind": "module",
      "id": "tag-declared-type-negative",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5335,6 +5536,7 @@
      "kind": "module",
      "id": "tag-declared-type",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5536,6 +5738,7 @@
      "kind": "module",
      "id": "tag-file-include-negative",
      "line": 3,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5621,6 +5824,7 @@
      "kind": "module",
      "id": "tag-file-include",
      "line": 4,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -5804,6 +6008,7 @@
      "kind": "module",
      "id": "value-vocabulary",
      "line": 8,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "document",
@@ -6014,6 +6219,7 @@
      "id": "value-vocabulary.danglingAnchor#lonely",
      "ownerName": "value-vocabulary.danglingAnchor",
      "line": 17,
+     "complexity": 1,
      "metadata": {
       "yamlSpecific": true,
       "nodeType": "anchor",
