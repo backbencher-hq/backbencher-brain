@@ -1234,6 +1234,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       scope: parentSelector,
       visibility: "public",
+      // `complexity` is a REQUIRED field of the Symbol contract (engine.ts:389) and
+      // the store reads it directly (`complexity: meta.complexity || 0`, engine.ts
+      // :1573). CSS carried the number in `metadata` only, so the contract field was
+      // never populated and both the store and pool-worker's `||` fallbacks invented
+      // a value. One number, one field.
+      complexity: groupComplexity + (parentSelector ? ctx.fileNestingDepth ?? 0 : 0),
       metadata: {
         isSelector: true,
         isUtility,
@@ -1244,12 +1250,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         classNames,
         specificity: maxSpecificity,
         cssSpecific: true,
-        // The selector's own complexity, so the store's `complexity` column
-        // carries a real number for this symbol rather than the default 1.
-        // Nesting depth is added here rather than inside the walk, because
-        // `nestingDepth` is a property of the RULE, and the walk above counts
-        // complexity per selector within the group.
-        complexity: groupComplexity + (parentSelector ? ctx.fileNestingDepth ?? 0 : 0),
+        // Nesting depth is added to the selector's own complexity (set on the
+        // symbol above) rather than inside the walk, because `nestingDepth` is a
+        // property of the RULE, and the walk counts complexity per selector within
+        // the group.
         selectorComposition: {
           hasId: hasIdSelector,
           hasClass: classNames.length > 0,
@@ -1453,10 +1457,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: "",
           visibility: "public",
+          complexity: this.queryComplexity(collapseWhitespace(queryNode.text)),
           metadata: {
             isMediaScope: true,
             mediaCondition: collapseWhitespace(queryNode.text),
-            complexity: this.queryComplexity(collapseWhitespace(queryNode.text)),
           },
         })
         ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
@@ -1502,13 +1506,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
+        complexity: 1 + this.countKeyframeStops(node),
         metadata: {
           isKeyframes: true,
-          // A keyframes sequence's review cost is its STOPS: a 30-stop animation
-          // is a different object to read than a 2-stop one, and the stop count is
-          // the thing that differs. `from`/`to` are 2 stops, so the floor is 3
-          // (1 + the two keywords) rather than 1.
-          complexity: 1 + this.countKeyframeStops(node),
+          // (the stop-count complexity is set on the symbol above)
         },
       })
       ctx.keyframeNames[name] = true
@@ -1553,10 +1554,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: "",
         visibility: "public",
+        complexity: this.queryComplexity(condition),
         metadata: {
           isSupports: true,
           supportsCondition: condition,
-          complexity: this.queryComplexity(condition),
         },
       })
       ctx.patterns["Feature Queries (@supports)"] = true
@@ -1728,15 +1729,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           range: this.nodeToRange(node),
           scope: "",
           visibility: "public",
+          complexity: 1 + this.countDescriptors(node),
           metadata: {
             isAtRule: true,
             atKeyword: keyword,
-            // A declaration at-rule's cost is its DESCRIPTORS: `@property --x` with
-            // `syntax`/`inherits`/`initial-value` is a real registration, and
-            // `@font-face` carries a font's whole descriptor set. Counted from the
-            // declarations in the block, so a bare `@layer base { }` with none is
-            // honestly 1.
-            complexity: 1 + this.countDescriptors(node),
+            // (the descriptor-count complexity is set on the symbol above)
           },
         })
       }
@@ -1898,15 +1895,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         scope: currentSelector,
         visibility: "public",
+        complexity: this.customPropertyComplexity(node),
         metadata: {
           isCustomProperty: true,
-          // A custom property's cost is its VALUE plus the other custom
-          // properties it READS. `--brand: #06c` is honestly 1; a theming token
-          // that composes five others through `var()` is 6, and that composition
-          // chain is the thing a reviewer has to hold in their head. Counted from
-          // the value text, so it is a property of the declaration and not of
-          // whatever selector happens to hold it.
-          complexity: this.customPropertyComplexity(node),
+          // (the var()-read complexity is set on the symbol above)
         },
       })
       // contains for the custom property scoped to its selector — emitted
