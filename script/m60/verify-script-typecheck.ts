@@ -54,6 +54,7 @@ const INSTRUMENTS = [
   "script/m60/measure-runtime-stragglers.ts",
   "script/m60/verify-runtime-migration-preflight.ts",
   "script/m60/verify-local-rebuilds.ts",
+  "script/m60/compare-grammar-surface.ts",
 ]
 
 // Flags chosen to match how Bun actually loads these: no emit, no lib checks (the tree has
