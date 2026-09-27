@@ -47,6 +47,11 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
+  // M14.6 perl wave: the lane had no fixture directory at all, so none of its
+  // defects were pinned. `ext` carries the whole production surface: the
+  // fixtures are .pm because the language is, and `t` is in the universe because
+  // perl5's own test suite is 2,000+ of the corpus files a differential draws.
+  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex" },
   // M59 (#825): xml had NO fixture lane at all, while being one of only two
@@ -68,6 +73,22 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // which is why an inert fixture is worse than a missing one: it looks like
   // evidence. A fixture lane is not a directory, it is a directory this map names.
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
+  // M60 XML lane, 2026-09-27: FOUR lanes had fixture DIRECTORIES with authored
+  // expectations and no entry in this map, so `getParser(lang)` read
+  // `LANGS[lang].wasm` off `undefined` and the mutation harness CRASHED before
+  // it verified a single mutant — for every lane, not just these four. A gate
+  // that cannot run is not a green gate, and the cost was invisible because the
+  // crash looked like an unrelated TypeError rather than a missing entry.
+  //
+  // A fixture lane is not a directory, it is a directory THIS MAP NAMES; the
+  // clean round recorded that for `clean` and the same shape recurred four times
+  // over. Each entry below is mechanical (wasm, analyzer module, class, and the
+  // extension the fixtures actually use — measured from the directories, not
+  // assumed), and each is verified by running the lane.
+  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
+  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
+  java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
+  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   // GraphQL joined 2026-09-27 with the M12.38/#177 wave. The lane did not exist,
   // which is why 31 measured defects survived in an analyzer whose only pinned
   // surface was 97 hand-audited facts over three m12 fixtures — including 3,131
