@@ -86,6 +86,16 @@ const LANES: Record<string, Lane> = {
   //     grammar decision gets read against a corpus nobody here wrote.
   // Both are reported; a candidate that only wins on one is not a win.
   sql: { wasm: "wasm/tree-sitter-sql.wasm", repos: ["proxicall", "postgrest"], sample: 400 },
+  // M60 fsharp lane. The corpus is the F# compiler itself — 6,627 tracked
+  // .fs/.fsi/.fsx at 22a8a5dc, the heaviest draw any of these lanes has, and the
+  // lane the repo's own triage (commit 344f176b) reduced from a 26.8% parse rate
+  // to six named grammar gaps.
+  //
+  // TWO corpora, because the first is not representative: the compiler's `src/` is
+  // where procedural and inline-IL code lives, and `tests/` plus the tooling repos
+  // are ordinary library F#. A candidate that wins on one and not the other has not
+  // won. `fsharp` is the compiler; `FSharp.Core` is a separate checkout if present.
+  fsharp: { wasm: "wasm/tree-sitter-fsharp.wasm", repos: ["fsharp"], sample: 400 },
 }
 const CORPUS = "$HOME/fixtures/repositories"
 
@@ -565,6 +575,7 @@ if (hasArg("--emit")) {
   if (ownsCanonical) out = emitEvidence({ ...base, issueId: "M14.0.F11" })
   else if (LANG === "clean") out = emitEvidence({ ...base, issueId: "M14.0.F11.clean" })
   else if (LANG === "sql") out = emitEvidence({ ...base, issueId: "M14.0.F11.sql" })
+  else if (LANG === "fsharp") out = emitEvidence({ ...base, issueId: "M14.0.F11.fsharp" })
   else throw new Error(
     `verify-grammar-leaves: --emit has no declared artifact id for lane "${LANG}" — add one literal emit call `
     + '(`{ ...base, issueId: "M14.0.F11.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
