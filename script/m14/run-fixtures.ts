@@ -97,6 +97,7 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // `.htm` to the same analyzer and a lane that only claimed `.html` would
   // silently skip half its own routing.
   html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
   // M14 (#419 / F3-F6 / M59): css joins the fixture lane. It was the one lane
   // with a differential reading 100% and a census reading blind=0, and NO fixture
   // at all — so nothing could have convicted a regression in any of it, and a lane
