@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:yaml",
+  "fixtureDir": "validation/m12/fixtures/yaml",
+  "corpusDir": "$HOME/fixtures/repositories/grails-core",
+  "corpusManifest": {
+    "corpusDir": "$HOME/fixtures/repositories/grails-core",
+    "fileCount": 254,
+    "extensions": [
+      ".yaml",
+      ".yml"
+    ],
+    "extensionFiltered": true,
+    "minBytes": 1,
+    "maxBytes": 1048576,
+    "limit": 400,
+    "totalBytes": 617319,
+    "avgBytes": 2430,
+    "maxFileBytes": 54381,
+    "setDigest": "4abda2aa43836a64"
+  },
+  "nproc": 8,
+  "loadRule": "#909: a complexity row is only scorable with its load context and its file set. Each run records loadAvg1 after a bounded wait for load <= quietLoadTarget; loadQuiet=false means the box was busy and the throughput numbers are advisory. corpusManifest records the set digest, size distribution and extension filter, so a number can be re-derived instead of trusted. A row whose manifest.extensionFiltered is false measures EVERY file in the directory under this language's name.",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:yaml",
+        "wallTimeMs": 564.353717,
+        "userCpuMs": 269.806,
+        "systemCpuMs": 170.46,
+        "peakRssBytes": 218742784,
+        "rssDeltaBytes": 178266112,
+        "databaseBytes": null,
+        "files": 4,
+        "symbols": 46,
+        "relationships": 43,
+        "filesPerSecond": 7.087753441694796,
+        "symbolsPerSecond": 81.50916457949015,
+        "relationshipsPerSecond": 76.19334949821905,
+        "loadAvg1": 28.07,
+        "loadAvgRetried": true,
+        "loadWaitedMs": 120060,
+        "quietLoadTarget": 4,
+        "loadQuiet": false,
+        "userCpuMsPerFile": 67.4515
+      },
+      "symbols": 46,
+      "relationships": 43
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:yaml",
+        "wallTimeMs": 10165.030928,
+        "userCpuMs": 7224.576,
+        "systemCpuMs": 702.047,
+        "peakRssBytes": 288407552,
+        "rssDeltaBytes": 37109760,
+        "databaseBytes": null,
+        "files": 254,
+        "symbols": 12217,
+        "relationships": 12134,
+        "filesPerSecond": 24.98762687483286,
+        "symbolsPerSecond": 1201.865502085957,
+        "relationshipsPerSecond": 1193.7002539339446,
+        "loadAvg1": 28.97,
+        "loadAvgRetried": true,
+        "loadWaitedMs": 120106,
+        "quietLoadTarget": 4,
+        "loadQuiet": false,
+        "userCpuMsPerFile": 28.443212598425198
+      },
+      "symbols": 12217,
+      "relationships": 12134
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/."
+}
