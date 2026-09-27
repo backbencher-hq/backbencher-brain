@@ -11,6 +11,12 @@ interface CssContext {
   keyframeNames: Record<string, boolean>
   /** family name -> declared by an `@font-face` in THIS file. Pre-collected. */
   fontFaceNames: Record<string, boolean>
+  /** counter-style name -> declared by a `@counter-style` in THIS file. Pre-collected. */
+  counterStyleNames: Record<string, boolean>
+  /** custom-media name (`--x`) -> the `@custom-media` in THIS file that declares it. */
+  customMediaNames: Record<string, boolean>
+  /** font family -> declared by a `@font-feature-values` in THIS file. */
+  fontFeatureValuesNames: Record<string, boolean>
   /** `@layer` names already published, so the ORDERING form cannot duplicate them. */
   layerNames: Record<string, boolean>
   /** namespace prefix -> the published `@namespace` symbol that declares it. */
@@ -122,6 +128,20 @@ function replaceAll(text: string, needle: string, replacement: string): string {
 // must be single-line and deterministic: an at-rule prelude can wrap across
 // lines in real stylesheets, and two spellings of the same name would be two
 // graph nodes. Pure-String.
+/**
+ * The leading `--ident` of a `@custom-media` prelude, or `""`.
+ *
+ * `--narrow (max-width: 400px)` -> `--narrow`. The condition is the declaration's
+ * VALUE; the name is the referable part, and it is the name `@media (--narrow)`
+ * resolves against. Deliberately not a node-type match: the grammar has no
+ * `custom_media` node, so a type-shaped rule would have nothing to match and would
+ * silently keep returning `""`.
+ */
+function leadingCustomIdent(prelude: string): string {
+  const m = /^(--[A-Za-z0-9_-]+)/.exec(prelude.trim())
+  return m ? m[1] : ""
+}
+
 function collapseWhitespace(text: string): string {
   let out = ""
   let pendingSpace = false
@@ -252,6 +272,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       content,
       keyframeNames: {},
       fontFaceNames: {},
+    counterStyleNames: {},
+    customMediaNames: {},
+    fontFeatureValuesNames: {},
       layerNames: {},
       namespacePrefixes: {},
       layerOrder: [],
@@ -281,6 +304,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // walk order-independent by construction rather than by a heuristic.
     this.collectKeyframeNames(rootNode, ctx)
     this.collectFontFaceNames(rootNode, ctx)
+    this.collectCustomDefinitionNames(rootNode, ctx)
     this.collectNamespacePrefixes(rootNode, ctx)
 
     const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
@@ -1747,6 +1771,30 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
+
+        // `@media (--narrow)` is a REFERENCE to the `@custom-media --narrow`
+        // declaration, exactly as `var(--brand)` is a reference to a
+        // registration or an `animation:` to a `@keyframes`. Without this the
+        // scope existed and the declaration existed and nothing joined them, so
+        // the graph could not answer "which media scopes depend on this custom
+        // media query" — the question both halves exist to answer.
+        //
+        // Only idents THIS FILE declares become edges, for the reason the
+        // animation and font-family edges give: a `@media (--x)` may legitimately
+        // come from another stylesheet, and inventing an endpoint for it is the
+        // `global` phantom this lane removed once.
+        const declared = leadingCustomIdent(collapseWhitespace(queryNode.text).replace(/^\(/, "").replace(/\)$/, ""))
+        if (declared && ctx.customMediaNames[declared]) {
+          ctx.relationships.push({
+            source: mediaName,
+            target: declared,
+            type: ASTEngine.RelationshipType.References,
+            // the NAME is the condition's own line, the same rule as the
+            // font-family edge: the reference is the condition, not the statement
+            line_number: this.lineOf(queryNode),
+            metadata: { cssSpecific: true, isCustomMediaRef: true },
+          })
+        }
       }
       return mediaName
     }
@@ -1764,6 +1812,57 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * same defect fixed for `@property` one commit earlier, in the other direction.
    * One expression is the only way two names cannot drift apart.
    */
+  /**
+   * The leading `--ident` of an at-rule prelude, or `""`.
+   *
+   * Written against the DECLARED name rather than a node type on purpose: the
+   * grammar has no `custom_media` node at all (all three of these at-rules are a
+   * bare `at_rule`), so there is nothing type-shaped to key on, and CSS itself says
+   * a custom media query name is a `<custom-ident>` followed by a condition.
+   */
+  private atRulePrelude(node: Node, keyword: string): string {
+    const block = this.findChild(node, (c) => c?.type === "block")
+    const raw = block
+      ? node.text.slice(node.text.indexOf(keyword) + keyword.length, node.text.indexOf(block.text))
+      : node.text.replace(/^@\S+/, "").replace(/;\s*$/, "").trim()
+    return collapseWhitespace(raw)
+  }
+
+  /**
+   * The family of the `@font-face` block a declaration sits in, or `undefined`.
+   *
+   * Walks UP from the declaration to its enclosing `@font-face` and reads that
+   * block's own `font-family` declaration — the same two-step the symbol push does,
+   * and deliberately so: CSS binds a `font-feature-settings` value to the family of
+   * the `@font-face` it appears in, so the edge target cannot be derived from the
+   * value alone.
+   */
+  private fontFamilyOf(decl: Node): string | undefined {
+    let n: Node | null = decl
+    while (n) {
+      if (n.type === "at_rule") {
+        const kw = this.findChild(n, (c) => c?.type === "at_keyword")
+        if (kw && kw.text.trim().toLowerCase() === "@font-face") {
+          const block = this.findChild(n, (c) => c?.type === "block")
+          const family = block
+            ? this.findDescendant(block, (d) => {
+                if (d.type !== "declaration") return false
+                const prop = this.findChild(d, (g) => g?.type === "property_name")
+                return prop !== null && prop.text === "font-family"
+              })
+            : null
+          if (family) {
+            const value = this.findChild(family, (c) => c?.type === "plain_value" || c?.type === "string_value")
+            if (value) return stripAllQuotes(value.text)
+          }
+          return undefined
+        }
+      }
+      n = n.parent
+    }
+    return undefined
+  }
+
   private fontFaceSymbolName(family: string): string {
     return `@font-face ${family}`
   }
@@ -1824,6 +1923,48 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * an edge that resolved during the walk would depend on where the author happened
    * to put the declaration.
    */
+  /**
+   * `@counter-style`, `@custom-media` and `@font-feature-values` are the last three
+   * at-rules that DECLARE a named, referable thing, and until now all three were
+   * dropped on the floor: the analyzer published no symbol for them, so a
+   * `list-style: thumbs` had nothing to point at and a `@media (--narrow)` named
+   * itself by raw text. That is the `@font-face` / `@property` defect class a
+   * second time — and it survived because NO CORPUS FILE USES ANY OF THE THREE, so
+   * they were classified NO OCCURRENCE and recorded as "not a defect". That is the
+   * cost of that label: it means the corpus cannot speak about them, not that they
+   * work. Three of three turned out to be broken.
+   *
+   * Pre-collected for the same order-independence reason as keyframes and font
+   * faces: CSS does not care whether a use precedes its declaration.
+   */
+  private collectCustomDefinitionNames(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "at_rule") {
+        const kwNode = this.findChild(n, (c) => c?.type === "at_keyword")
+        const keyword = kwNode ? kwNode.text.trim().toLowerCase() : ""
+        const prelude = this.atRulePrelude(n, keyword)
+        if (keyword === "@counter-style" && prelude) ctx.counterStyleNames[prelude] = true
+        // `@custom-media --narrow (max-width: 400px)` declares `--narrow`; the
+        // condition is the VALUE of the declaration, not part of its name, so the
+        // prelude is sliced to its leading custom-ident. The published symbol uses
+        // the same slice, so the two cannot name different things.
+        else if (keyword === "@custom-media") {
+          const name = leadingCustomIdent(prelude)
+          if (name) ctx.customMediaNames[name] = true
+        } else if (keyword === "@font-feature-values" && prelude) {
+          ctx.fontFeatureValuesNames[prelude] = true
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private collectFontFaceNames(root: Node, ctx: CssContext): void {
     const stack: Node[] = [root]
     while (stack.length > 0) {
@@ -2013,6 +2154,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   @use/@forward  Sass module imports, emitted as `imports` like @import
     const DECLARING = new Set([
       "@layer", "@container", "@scope", "@font-face", "@property", "@namespace", "@mixin",
+      // the three that were silently dropped: each DECLARES a named, referable
+      // thing, so each belongs here. Measured, not assumed — a probe of all three
+      // returned zero symbols before this line and the fixtures pin them now.
+      "@counter-style", "@custom-media", "@font-feature-values",
     ])
     const CONSUMING = new Set(["@tailwind", "@apply", "@theme", "@config", "@include", "@use", "@forward"])
 
@@ -2152,7 +2297,23 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         // asymmetry is deliberate: a font family is a bare identifier that could
         // collide with a class or a type of the same name, so the keyword says which
         // KIND of thing it is. A `--x` name needs no such help.
-        const publishedName = keyword === "@property" ? namePart || ruleName : ruleName
+        //
+        // `@custom-media` is the same shape as `@property`: a namespaced `--x` name
+        // plus a value, where only the name is referable. `@property --brand
+        // { syntax: … }` drops the keyword and the block; `@custom-media --narrow
+        // (max-width: 400px)` drops the keyword and the CONDITION. Both publish the
+        // bare ident, so the declaration and the `@media (--narrow)` that uses it
+        // meet on one name.
+        const publishedName =
+          keyword === "@property"
+            ? namePart || ruleName
+            : keyword === "@custom-media"
+              ? // `namePart` is the PRELUDE; `ruleName` is the keyword plus the
+                // prelude, so slicing the latter matches nothing and the first
+                // version published `@custom-media --narrow (max-width: 400px)` —
+                // a name the `@media (--narrow)` can never resolve against.
+                leadingCustomIdent(namePart) || ruleName
+              : ruleName
         if (keyword === "@layer" && namePart) {
           if (ctx.layerNames[namePart]) {
             // The ORDERING statement got here first (`@layer a, b;` precedes the
@@ -2185,7 +2346,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind:
             keyword === "@mixin"
               ? ASTEngine.SymbolKind.Function
-              : keyword === "@font-face" || keyword === "@property"
+              : keyword === "@font-face" || keyword === "@property" ||
+                  keyword === "@counter-style" || keyword === "@custom-media" ||
+                  keyword === "@font-feature-values"
                 ? ASTEngine.SymbolKind.Variable
                 : ASTEngine.SymbolKind.Module,
           range: this.nodeToRange(node),
@@ -2199,6 +2362,18 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
             // recorded here — the declaration is still identifiable as a
             // registration rather than a rule-level declaration
             ...(keyword === "@property" ? { isPropertyRegistration: true } : {}),
+            // the three late additions carry which construct declared them, because
+            // a `@custom-media` symbol is a BARE `--x` name — identical in shape to
+            // a registered `@property` symbol and to a rule-level custom property,
+            // so without this the three declarations are indistinguishable in the
+            // graph
+            ...(keyword === "@counter-style"
+              ? { isCounterStyleDeclaration: true }
+              : {}),
+            ...(keyword === "@custom-media" ? { isCustomMediaDeclaration: true } : {}),
+            ...(keyword === "@font-feature-values"
+              ? { isFontFeatureValuesDeclaration: true }
+              : {}),
             // (the descriptor-count complexity is set on the symbol above)
           },
         })
@@ -2404,6 +2579,79 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // only name declared keyframes: a `font-family` may legitimately come from
     // another stylesheet, and inventing an endpoint for it is the `global` phantom
     // this lane removed once.
+    // `list-style: thumbs` / `list-style-type: thumbs` is a USE of the
+    // `@counter-style thumbs` this file declares — the same shape as
+    // `animation: spin` naming a `@keyframes spin`, and for the same reason it
+    // was missing: the construct had no corpus file, so it was never measured.
+    //
+    // `list-style` is a SHORTHAND, so the name can appear under either the
+    // shorthand or the longhand; both are checked because a file that spells it
+    // one way and another the other way is the normal case, not the exotic one.
+    if ((propName === "list-style" || propName === "list-style-type") && currentSelector) {
+      const nameStack = [node]
+      while (nameStack.length > 0) {
+        const n = nameStack.pop()!
+        if (n.type === "plain_value" || n.type === "identifier" || n.type === "string_value") {
+          const style = n.text.trim()
+          if (style.length > 0 && ctx.counterStyleNames[style]) {
+            ctx.relationships.push({
+              source: currentSelector,
+              target: `@counter-style ${style}`,
+              type: ASTEngine.RelationshipType.Uses,
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isCounterStyleRef: true },
+            })
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) nameStack.push(c)
+        }
+      }
+    }
+
+    // `font-feature-settings: "nice"` inside a `@font-face` for `Font One` is a
+    // USE of the `@font-feature-values Font One` block that defines the feature.
+    // It is the last of the three dropped at-rules to get its use edge.
+    //
+    // The family comes from the ENCLOSING `@font-face`, because that is where CSS
+    // binds the feature name: a feature setting only means anything against the
+    // family it is declared for. Without the family the edge would have to target
+    // the bare feature name, which nothing publishes.
+    if (propName === "font-feature-settings") {
+      const enclosing = this.fontFamilyOf(node)
+      // Deliberately NOT `&& currentSelector`: a `@font-face` block has no
+      // selector, so the first version guarded on one and never fired — the same
+      // guard that is right for `list-style` and wrong here, because the entity
+      // that uses a feature is the FACE DECLARATION, not a rule.
+      //
+      // Also deliberately NOT extended to a rule-level
+      // `.x { font-feature-settings: "nice" }`, which is legal CSS. Which family's
+      // feature that names depends on the cascade — the family `font-family`
+      // resolves to for that element — and guessing it would invent an endpoint
+      // for a relationship this lane cannot actually see. A missing edge that is
+      // declared beats a wrong edge that is not.
+      if (enclosing && ctx.fontFeatureValuesNames[enclosing]) {
+        const valueStack = [node]
+        while (valueStack.length > 0) {
+          const n = valueStack.pop()!
+          if (n.type === "string_value" || n.type === "plain_value") {
+            ctx.relationships.push({
+              source: this.fontFaceSymbolName(enclosing),
+              target: `@font-feature-values ${enclosing}`,
+              type: ASTEngine.RelationshipType.Uses,
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isFontFeatureValuesRef: true },
+            })
+          }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) valueStack.push(c)
+          }
+        }
+      }
+    }
+
     if (propName === "font-family" && currentSelector) {
       const famStack = [node]
       while (famStack.length > 0) {
