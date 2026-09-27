@@ -1,8 +1,8 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-27T22:04:05.833Z",
-  "commit": "54c0f6849cddbc9cef907064234e4e68cae8218d",
+  "at": "2026-09-27T23:17:11.297Z",
+  "commit": "aafa5654800f7e7f42e4e9843c48b7439eca1dbc",
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -14,17 +14,17 @@
       "files": 49,
       "digest": "ef448ff5",
       "damage": {
-        "damaged": 10,
-        "errNodes": 71,
-        "missing": 14
+        "damaged": 9,
+        "errNodes": 56,
+        "missing": 12
       },
       "symbols": 2588,
-      "relationships": 9597,
+      "relationships": 10111,
       "kinds": {
         "contains": 2532,
         "references": 24,
-        "calls": 3164,
-        "uses": 3780,
+        "calls": 3676,
+        "uses": 3782,
         "instantiates": 60,
         "exports": 37
       },
@@ -35,8 +35,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 9597,
-        "total": 9597
+        "withLine": 10111,
+        "total": 10111
       },
       "unknownTargets": {
         "count": 0,
@@ -51,9 +51,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 9475,
-        "perFileMs": 193.36,
-        "factsPerMs": 1.286
+        "wallMs": 11909,
+        "perFileMs": 243.037,
+        "factsPerMs": 1.066
       }
     },
     {
@@ -61,8 +61,8 @@
       "files": 24,
       "digest": "4fb726b4",
       "damage": {
-        "damaged": 11,
-        "errNodes": 27,
+        "damaged": 10,
+        "errNodes": 26,
         "missing": 1
       },
       "symbols": 573,
@@ -98,17 +98,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 1349,
-        "perFileMs": 56.21,
-        "factsPerMs": 2.027
+        "wallMs": 2337,
+        "perFileMs": 97.386,
+        "factsPerMs": 1.17
       }
     }
   ],
   "summary": {
     "files": 73,
     "symbols": 3161,
-    "relationships": 11759,
-    "withLine": 11759,
+    "relationships": 12273,
+    "withLine": 12273,
     "absentKinds": [
       "extends",
       "implements",
