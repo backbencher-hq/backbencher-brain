@@ -117,12 +117,21 @@ different claims, and only the first is true here.
 
 - `@supports`/`@media` query text is used verbatim as the scope name — no
   decomposition of query conditions
-- `progid:` IE filter values do not lex. This is the same family as the
-  relative-`url()` defect that WAS patched, and it is the largest remaining
-  parse-failure class in the corpus. Left unpatched deliberately and recorded as
-  `CSS-L2`: `progid:` needs the token's lead requirement relaxed and the colon
-  handled, which is materially larger than the two additive hunks already
-  measured, and it would need its own A/B across the same four corpora
+- `progid:` IE filter values do not parse — the **largest** remaining class:
+  37 of the 62 corpus `.css` files that still fail (60%), with the error sitting
+  on the progid line in all 37. The other 13 are the genuine modern CSS listed
+  above, so `progid:` and modern CSS are the only two classes left.
+  Recorded as `CSS-L2`, and the diagnosis is the opposite of the obvious one: the
+  `progid:` **token already lexes** (`plain_value`'s trailing repeat has always
+  admitted `:`), and the failure is **inside the parentheses**. Adding `=` to the
+  `arguments` rule's separator choice was built and A/B'd and is **provably
+  inert** — 61 error files before, 61 after, 0 fixed, 0 regressed, 151 → 151 node
+  types — because the value parses as `parenthesized_value`, whose rule is
+  `seq('(', $._value, ')')`, exactly ONE value. A real fix has to widen that
+  rule's **arity**, and it participates in every parenthesized value in CSS
+  (`calc((1px + 2px) * 3)`, nested parens, `var()` fallbacks), so it is a
+  different kind of change from the two additive hunks adopted here and needs its
+  own A/B. Recorded so the inert patch is not written a second time
 
 ## The `.scss` / `.sass` / `.less` files this lane is also routed
 
