@@ -391,6 +391,88 @@ export const LANES: Record<string, LaneDecision> = {
   // turns "timestamp_scalar looks unreachable" from a mystery into a named build
   // variant, and it is also a limitation the lane must DECLARE: a file that opens
   // `%YAML 1.1` is resolved here with 1.2 scalar rules.
+  json: {
+    wired: "wasm/tree-sitter-json.wasm",
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
+        "NOT provenanced to a published version, and the lane says so rather than guessing. Two builds of " +
+        "`tree-sitter-json` are in circulation on this machine and they are NOT the same artifact: the " +
+        "wired bytes are sha256 fdb5219abe058369… / 5,961 B and the ~/.bb registry copy is " +
+        "d2119fb98d591271… / 5,596 B. Hash-matching against published tarballs is what the haskell and " +
+        "powershell lanes did to identify their bases, and it was NOT possible here: no vendored grammar " +
+        "source exists (grammars/ has no tree-sitter-json), and no local distribution copy of a published " +
+        "tarball was reachable, so the version numbers are unknown rather than unrecorded. " +
+        "WHAT WAS ESTABLISHED INSTEAD, which is the part that decides whether the analyzer is safe: the two " +
+        "builds agree on the NAMED vocabulary (12 types, identical sets) and on the field set (2), and they " +
+        "differ ONLY in anonymous tokens — the wired build exposes internal helpers " +
+        "`string_content_token1` (id 8) and `string_content_repeat1` (id 25) where the registry build has " +
+        "`_string_content` (id 21). Because that shifts every named type's ID by exactly one, the id-order " +
+        "and type-set digests DIFFER (da249143… vs bcf795b6…, a0c126ed… vs 284c3145…) while the named SET " +
+        "matches. A pin comparing named types alone would pass these two builds as one; the id-order digest " +
+        "is the only thing that separates them and it is recorded for that reason. " +
+        "CONSEQUENCE FOR THIS LANE, measured rather than assumed: the analyzer matches on node type NAMES " +
+        "(`pair`, `object`, `array`, `string`, `number`, `document`, `true`, `false`, `null`) and never on a " +
+        "numeric node-type id, so it is IMMUNE to the divergence — a dev run and a compiled run see the same " +
+        "shapes. An analyzer that cached or compared numeric ids, or that compared an id-order digest as if " +
+        "it described the grammar's semantics, would break between the two builds. That property is why the " +
+        "pin records both digests and why the named set is the claim the analyzer may rely on. " +
+        "`wasm/tree-sitter-json_schema.wasm` is NOT this lane's grammar and is deliberately unwired: it is a " +
+        "YAML-family schema backend selected at compile time by -DYAML_SCHEMA (6 node types, no fields), and " +
+        "it is listed under notVendored for that reason.",
+    },
+    source: {
+      state: "not-obtainable-offline",
+      note:
+        "grammars/ has no tree-sitter-json directory, so there is no vendored grammar.js, no node-types.json " +
+        "and no scanner to diff against the wired bytes. The source<->wasm check that haskell, elixir and " +
+        "yaml run cannot run for this lane, and the pin therefore rests on byte identity plus the enumerable " +
+        "surface rather than on a source diff.",
+    },
+    decision:
+      "Pin the wired bytes by sha256 + the full enumerable surface, record the registry copy as DIVERGENT " +
+      "rather than as a byte-identical copy, and treat the id-order digest as the discriminator. The " +
+      "divergence is not resolved here because it cannot be resolved offline: two versions are in " +
+      "circulation and identifying either one needs a published artifact to hash against. Listing the " +
+      "registry copy as a matching `copies` entry would make this lane read as fully provenanced when the " +
+      "product's own bytes are not the ones a compiled build resolves, which is the opposite of what a pin " +
+      "is for. It is listed so the gate can fail on it.",
+    alternatives: [
+      {
+        option: "assert byte-identity against ~/.bb/wasm/tree-sitter-json.wasm",
+        measured:
+          "REFUSED, and measurably so: fdb5219abe058369… (5,961 B) vs d2119fb98d591271… (5,596 B) are " +
+          "different artifacts, not two copies of one.",
+        artifact: "sha256 of both files; measureSurface on both",
+      },
+      {
+        option: "pin on the named-type set alone, since that is what the analyzer matches",
+        measured:
+          "REFUSED as insufficient: the two builds have identical named SETS (12) and would pass as one, " +
+          "while differing in anonymous tokens and in every named type's numeric id. A pin that cannot tell " +
+          "two builds apart cannot detect a re-point.",
+        artifact: "named-set and id-order digests of both builds",
+      },
+      {
+        option: "wire the newer build (the one with fewer leaked helper tokens) to make dev and compiled agree",
+        measured:
+          "NOT TAKEN, and out of scope for a lane: choosing which published version the product loads is a " +
+          "product decision with a blast radius across every consumer of the wasm registry, and this lane's " +
+          "correctness does not depend on it because the analyzer is name-matched.",
+        artifact: "resolveWasm in src/ast/engine.ts prefers the registry in compiled mode",
+      },
+    ],
+    evidence: [
+      "wired sha256 fdb5219abe058369e16897aaa11eecf47ef4f546…" + " (5,961 B)",
+      "registry copy sha256 d2119fb98d5912719b13f9458574f8608d2d29df… (5,596 B)",
+      "surface (wired): 26 ids, 26 unique names, 12 named, 14 anon, 2 fields",
+      "surface (registry): 25 ids, 25 unique names, 12 named, 13 anon, 2 fields",
+      "named vocabulary, both builds: array comment document escape_sequence false null number object pair string string_content true",
+      "idOrderDigest wired da24914332a93410f5c13ca48f5163ccc3173d2bfe17eccf051be64ac701bc74 vs registry bcf795b62c53db5b5f6873edb4b67b51fcbc4fbcb3703a819efe3eb7b50aad49",
+      "named ids are offset by exactly one between builds (wired escape_sequence=9, registry escape_sequence=8)",
+    ],
+    copies: [{ label: "registry (DIVERGENT — not byte-identical, see decision)", path: "~/.bb/wasm/tree-sitter-json.wasm" }],
+  },
   yaml: {
     wired: "wasm/tree-sitter-yaml.wasm",
     provenance: {
@@ -449,6 +531,7 @@ export const LANES: Record<string, LaneDecision> = {
       patches: [
         "G5a/b: PowerShell 7 null-coalescing `??` and ternary `? :`, as two HIDDEN precedence levels",
         "G5c: PowerShell 7 null-conditional `?.` and `?[`, added inside the rules that already define `.` and `[` so they inherit their associativity and precedence",
+        "G1: a script-level `param()` block after any other statement, reached through a statement-level form that deliberately omits the `attribute_list` and is ALIASED back to the `param_block` node name",
       ],
       patchEvidence: "validation/m60/results/powershell-grammar-g5b-ab.json + validation/m14/results/M14.0.F11.powershell.json + validation/m60/results/powershell-g5-g3-adjudication.txt + reviews/powershell/grammar-worklist.md",
     },
@@ -459,7 +542,7 @@ export const LANES: Record<string, LaneDecision> = {
         "grammar.js (PATCHED — see provenance.patches) + src/scanner.c + src/tree_sitter/{parser,alloc,array}.h + package.json + tree-sitter.json + LICENSE + README.md. The grammar source is byte-for-byte from the npm tree-sitter-powershell@0.26.4 tarball EXCEPT grammar.js, which carries one additive hunk; `tree-sitter diff` against the tarball's own grammar.js is the record of what changed, and it is three rules and no edit to an existing one. The generated src/parser.c (4.5 MB) is NOT vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs, never on parser.c. Unlike the css/cpp vendors this lane's src/ holds only the hand-written scanner, so the .gitignore rule that drops `grammars/tree-sitter-*/src/*` — the rule that silently cost cpp its scanner and css its own (see the two negations above) — needed a THIRD negation for this lane, because tree-sitter-powershell's external scanner is also named src/scanner.c. The same trap, a third time, named by filename rather than by role.",
     },
     decision:
-      "Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars.",
+      "Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. (5) G1 is the largest of the lane's grammar classes and the only one whose fix NECESSARILY changes a clean file's tree. A script's `param` block must be its first STATEMENT, but `using` statements may precede it, and a .psm1 module is REQUIRED to declare `using module` when it needs types — so `using` + `param(…)` is the ordinary shape for any parameterised script that uses a type. Under the pinned grammar `param($Name)` after a `using` line is not a `param_block` at all but a `command` named `param` whose argument is a parenthesized expression, so the parameter is never declared. The dangerous part is that this class is INVISIBLE to hasError-keyed gates: measured over the repro battery, 7 of 8 cases lose every parameter and 6 of those 7 report hasError=FALSE with zero ERROR and zero MISSING nodes, so F1, F10 and the M12 ERROR-node census all read them clean. 33 corpus files carry the shape (16 powershell, 17 ansible), and the ansible side went from 98 ERROR / 23 MISSING to 35 / 2 with 17 more symbols declared. The patch is one statement alternative, and two alternatives were measured and rejected first. (a) Deleting `program`'s own `optional($.param_block)` and keeping only the statement form would have re-shaped 11 of 35 clean powershell files and 2 of 9 clean ansible files — ~30% of the clean corpus — which F11's G2 gate fails on. (b) Putting `param_block` itself into the statement set fixed all 8 cases and silently REGRESSED a different construct: at statement position a leading `[` then had two uses, and the deterministic resolution took the param-block one, so `[ValidateSet('a','b')]$mode = 'a'` stopped being one pipeline and became an ERROR holding the attribute plus a detached pipeline holding the assignment. It surfaced as a fixture failure, not a corpus number. tree-sitter reported a `[param_block, _statement]` conflict declaration UNNECESSARY on both attempts — the automaton separates those routes on the text, so it can choose, and it chooses wrong; the fix had to remove the competing route rather than reprioritise it, hence the attribute-less `_bare_param_block` ALIASED back to `param_block` so the analyzer's existing `case \"param_block\"` and its descendant-walk lookup both work and the grammar's 152 named types do not grow. The cost of dropping the attribute from the statement form was measured, not assumed: 16 powershell and 17 ansible files have `using` followed by a BARE `param(`, and ZERO have `using` followed by an ATTRIBUTED one, while an attributed `param` block that IS the first statement still parses through the pre-existing program-level rule. What F11 says, and what was done about it: G1 damage passes (135 → 135 files, sites 891 → 882, 0 newly damaged) and G3 output is PERFECT (+1 pair, 0 lost, 0 symbols vanished, 0 re-attributed). G2 identity FAILS on exactly 11 files, and that failure is the cost of the fix rather than damage from it — those 11 are the files whose leading `param` block re-parents from `program` into `statement_list`, and G3 reports that NOT ONE of the 11 changed analyzer output at all. The analyzer is parent-agnostic by construction: it finds `param_block` with `collectChildrenByType`, a descendant walk, and already handles a `param_block` nested under a `script_block`. A tree-shape change the product does not consume is a different claim from one that does not matter, and it is the claim the evidence supports. Two attempts to suppress the 11 with dynamic precedence are recorded in the grammar and both failed — `prec.dynamic(1)` on `program` is inert because `program` is the parent of both parses, and `prec.dynamic(-1)` on the statement route does not change the outcome while re-breaking the attribute-attach shape. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars.",
     alternatives: [
       {
         option: "G5c as a new precedence level, or `?.[` for element access",
@@ -487,6 +570,7 @@ export const LANES: Record<string, LaneDecision> = {
       },
     ],
     evidence: [
+      "validation/m60/results/powershell-grammar-g1-ab.json",
       "validation/m60/results/powershell-grammar-g5c-ab.json",
       "validation/m60/results/powershell-g5c-g3-adjudication.txt",
       "validation/m60/results/powershell-grammar-g5b-ab.json",
