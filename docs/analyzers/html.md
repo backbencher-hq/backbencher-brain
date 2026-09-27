@@ -1,12 +1,22 @@
 # html
 
-> **Status: INVENTORY-DONE** on the M14 #419 ladder
-> (`NOT-STARTED` → `INVENTORY-DONE` → `GAPS-CLOSED` → `CONFORMANT`).
-> Section A is complete (19/19 named node types classified), B and D are carried
-> by eight fixtures, E and F are measured but **unpinned**, and H has no html
-> block in CC1 yet. `script/m14/completeness-inventory.ts --lang html` prints
-> the live per-section verdict. **One open gap: `HTML-G1` (inline `<script>` /
-> `<style>` bodies).** See "The one open gap" below.
+> **This file is the RULINGS narrative** — why each decision was taken, and the defect
+> each one closed. The **canonical contract reference** is
+> [`real-html-analyzer.md`](./real-html-analyzer.md): what the analyzer emits, what it
+> refuses to emit, and the measurements behind both. The two are kept distinct on
+> purpose — an earlier state of this lane had two overlapping copies of the same
+> contract, and the stale one still claimed `calls` was `form action` two releases
+> after the analyzer stopped emitting it.
+>
+> **Status: INVENTORY-DONE** on the M14 #419 ladder (`NOT-STARTED` →
+> `INVENTORY-DONE` → `GAPS-CLOSED` → `CONFORMANT`). Section A is complete — **21/21
+> rows classified, gap list empty** (19 grammar node types plus the universal
+> `ERROR`/`MISSING` recovery pair). B and D are carried by **twelve** fixtures, C and
+> G by the registered carrier census, and H by CC1's html block (12 truth rows == 12
+> analyzer edges). E and F are measured but **unpinned** — that is the canonical F5
+> ceremony, and it is the only thing keeping the M49 ledger row at `known-gap`.
+> `script/m14/completeness-inventory.ts --lang html` prints the live per-section
+> verdict. **`HTML-G1` is closed** (see the inline-block seam below).
 
 ## Language
 
@@ -249,7 +259,7 @@ only a published field can say that.
 | **PIPE** store seam | ✅ 7 store-level assertions through the **real CLI** (`node bin/bb index` → `brain.db`): document-root containment sourced from a `module`-kind symbol, `dup-target#2` persisted as its own node, srcset fan-out as three distinct rows, zero NULL lines, a fragment href persisted as the resolved symbol `content` rather than the text `#content`. Run with `tsx` — `better-sqlite3` cannot load under Bun |
 | **M60.R8** framework surface | ✅ **29/29**; negative control re-injecting `Targeted/ID-Styling` drops it to 27/29, which is what proves the cases are load-bearing |
 | **M14.0.CENSUS** carrier census | ✅ **registered gate** — 61 distinct `(tag@attr)` pairs over 4,000 files / 313,582 reference-shaped occurrences, all ruled; 38 claimed carriers positively probed; 2 conditional carriers probed. Consults neither the analyzer's table nor the oracle's, because a differential cannot contradict a premise it shares. Negative control: removing `use@href`, `a@ping`, `body@background` or `meta@content` each exits 1 **naming the pair**; restored exits 0 |
-| **SPEC** #419 | ⚠️ sections **A–D, G, H pass**; 20/20 named node types classified, **gap list empty**. **E/F await the canonical baseline pin** and are the only red cells. Section A had been *reported* green at 19/19 and was in fact red — `ERROR` and `MISSING` were in no bucket, and the earlier count predated the grammar's node list growing. Both are now classified on measurement: `ERROR` is live and pinned by `html/error-recovery` (report at the node's own span, bypass it, keep publishing around it), `MISSING` never occurs in this grammar across twelve malformed probes and is silent with the defensive read kept — the same split `bash` already records |
+| **SPEC** #419 | ⚠️ sections **A–D, G, H pass**; **21/21 rows classified** (19 grammar node types plus the universal `ERROR`/`MISSING` pair), **gap list empty**. **E/F await the canonical baseline pin** and are the only red cells. Section A had been *reported* green at 19/19 and was in fact red — `ERROR` and `MISSING` were in no bucket, and the earlier count predated the grammar's node list growing. Both are now classified on measurement: `ERROR` is live and pinned by `html/error-recovery` (report at the node's own span, bypass it, keep publishing around it), `MISSING` never occurs in this grammar across twelve malformed probes and is silent with the defensive read kept — the same split `bash` already records |
 
 ### What the hand audit changed that no gate did
 
