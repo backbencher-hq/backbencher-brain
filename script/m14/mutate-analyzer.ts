@@ -2057,6 +2057,17 @@ function dropBashAssignedInFileLabel(r: any) {
   }
 }
 
+/** BD8b: drop the `overrides` edge a redefinition earns, restoring the state the
+ *  ontology gate falsified. A redeclared function goes back to being two
+ *  unconnected `contains` rows, which is exactly what the lane shipped for the
+ *  whole wave while the differential reported 0 UNEXPLAINED. */
+function dropBashOverridesEdge(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "overrides"),
+  }
+}
+
 /** BD1 / the module contract: a relationship with no resolvable source — the
  *  pre-wave `global` at the END of a chain the owner fix did not reach. */
 function orphanBashEdgeSource(r: any) {
@@ -2248,6 +2259,7 @@ function htmlRecoveryStopsTheWalk() {
   }
 }
 
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -2396,6 +2408,13 @@ export const MUTANTS: Mutant[] = [
     defectClass: "dishonest-metadata",
     description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
     transform: dropBashAssignedInFileLabel,
+  },
+  {
+    id: "bash/overrides-edge-dropped",
+    language: "bash",
+    defectClass: "missing-relationship-type",
+    description: "BD8b regression: a function redefinition no longer emits `overrides`, restoring the omission the ontology-coverage gate falsified — two unconnected `contains` rows for one name, and `overrides` back to zero across the ontology (redefinition-overrides)",
+    transform: dropBashOverridesEdge,
   },
   {
     id: "bash/orphan-edge-source",
@@ -10850,6 +10869,23 @@ export const MUTANTS: Mutant[] = [
     transform: r => {
       const props = new Set((r.symbols ?? []).filter((s: any) => s.metadata?.isInterfaceMember && s.kind === "property").map((s: any) => `${s.ownerName}.${s.name}`))
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "overrides" && props.has(x.target))) }
+    },
+  },
+  {
+    id: "typescript/class-expression-members-drop",
+    language: "typescript",
+    defectClass: "symbol-loss",
+    description: "R1 regression, the half that is computable from the analyzer RESULT: a member whose container names no DECLARATION is not extracted again — `const Named = class Inner { usesHelper() {} }` loses both the member symbol and its payload. class-expression-members kills it on the usesHelper/Inner ownerName pins. The other half of the defect (the variable path not descending into a class VALUE, which also lost the members of an ANONYMOUS class expression and of a class expression assigned by assignment) is NOT reproducible here: the container's kind is not recoverable from a ParseResult, so those members are indistinguishable from object-literal members after the fact — the FIXTURE carries them via expectSymbols on m@Anon and m@Assigned instead.",
+    transform: r => {
+      const contained = new Set(((r as any).relationships ?? [])
+        .filter((x: any) => String(x.type) === "contains")
+        .map((x: any) => `${x.source}\u0000${x.target}`))
+      return { ...r, symbols: ((r as any).symbols ?? []).filter((s: any) => {
+        if (String(s.kind) !== "method") return true
+        if (!s.ownerName) return true // ownerless members are a separate, pre-existing shape
+        if (contained.has(`${s.ownerName}\u0000${s.name}`)) return true
+        return ((r as any).symbols ?? []).some((o: any) => ["class", "interface", "enum"].includes(String(o.kind)) && o.name === s.ownerName)
+      }) }
     },
   },
   {

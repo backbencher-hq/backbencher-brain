@@ -313,6 +313,40 @@ Through the production `ASTEngine.parseFile` path, parsers pre-warmed, Exposed
 | per file | 112–182 ms, tracking file size |
 | in-family comparison | **javascript 31.9 ms/KiB** on the same method and corpus — html is ~6× cheaper per KiB |
 | flatness | 4.7 ms/KiB on the 400-file draw, 5.3 on a 120-file draw of larger documents: no super-linear growth with size, which is the property the O(nodes + attribute bytes) claim predicts |
+| **duplicate-id page** | **596 ms** for 4,000 elements sharing one id, against 396 ms for 4,000 unique ids — 1.5×, where it was **17×** (15,516 ms) before the suffix watermark fix below |
+
+### The one super-linear path, found by attacking it
+
+The flatness above is measured on real corpora, which are not adversarial. Probing
+the shape the data structure is *least* happy with — a page that reuses one `id`
+across thousands of elements — exposed a genuine O(n²): suffix allocation re-probed
+from 2 for every duplicate, so the k-th duplicate cost k probes. A generated page
+that stamps one id across its elements hits it, and it made the whole-document
+figure quadratic rather than linear.
+
+The fix advances a per-handle watermark, and its only acceptable property is that
+naming is **byte-identical** — the watermark is a lower bound, not a guarantee,
+because a document may declare `id="dup#2"` literally. `html/identity-addressable`
+declares such a literal *before* the duplicate that would claim it, which is the
+ordering that makes correct and naive allocation necessarily disagree; the naive
+version emits `dup#2` twice and the fixture fails. The proof is a negative control
+rather than a mutant, and the fixture says why: a mutation harness transforms
+output, where the collision does not exist, and from that output a literal `dup#2`
+and an allocated `dup#2` are the same string — telling them apart *is* the defect.
+
+### Nesting depth, and where the ceiling is
+
+A 20,000-deep document overflows the stack somewhere above the analyzer — the
+analyzer itself handles 20,001 symbols in 2 s, and tree-sitter parses the tree in
+67 s — and the engine degrades to `2.0-basic-fallback` rather than crashing. The
+measured ceiling is between 12,000 (ok) and 16,000 (degrades).
+
+For context on whether that matters: across **1,599 real HTML files the deepest
+nesting is 32**, none exceeds 100, and browsers cap HTML nesting far lower. The
+backstop is therefore correct behaviour on input no real corpus produces, not a
+launch risk — but it is a property of the engine and tree-sitter rather than of
+this analyzer, and it is recorded here rather than left for someone to rediscover
+with a fuzzer.
 
 The honest reading: html is not a performance outlier, and the cost is dominated
 by the delegate sub-parse rather than by the document walk. A page with no inline
