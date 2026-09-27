@@ -2261,6 +2261,133 @@ function htmlRecoveryStopsTheWalk() {
 }
 
 
+/** TOML-IDENTITY: a symbol's name becomes its LAST SEGMENT instead of its full
+ *  dotted path. `[workspace.lints.rust]` becomes `rust` and `package.name` becomes
+ *  `name`. The first manifest anyone writes collides: cargo's own contains a key
+ *  literally named `name` under `[package]` AND under every `[[bin]]`, so the
+ *  flattened names are not unique and a `contains` edge naming `name` resolves to
+ *  two nodes. The full path is the property that makes a file's names unique
+ *  without a synthetic suffix on every collision.
+ *  Caught by toml/identity-and-paths. */
+function tomlNameLosesItsPath() {
+  return (r: any) => {
+    const relabel = (s: any) => {
+      const n = String(s.name ?? "")
+      const dot = n.lastIndexOf(".")
+      return dot > 0 ? { ...s, name: n.slice(dot + 1) } : s
+    }
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x,
+        source: m.get(x.source) ?? x.source,
+        target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+
+/** TOML-IDENTITY: a quoted key segment is joined like a bare one, so a segment
+ *  containing a dot loses its quotes. Inside `[t]`, `a.b.c` and `"a.b".c` are
+ *  DIFFERENT TOML keys — three nested tables versus a table literally named
+ *  `a.b` — and both assemble to `t.a.b.c`. The dedupe then invents
+ *  `t.a.b.c#2`, asserting the document declared one key twice when it declared two
+ *  distinct ones: the unresolvable-identity class arriving through the NAMING
+ *  SCHEME rather than through a missing edge. Re-quoting is what makes the name
+ *  round-trip, and it is TOML's own disambiguation rather than an invented escape.
+ *  Caught by toml/identity-and-paths, which writes all three spellings side by side. */
+function tomlQuotedSegmentLosesQuotes() {
+  return (r: any) => {
+    const relabel = (s: any) => ({ ...s, name: String(s.name ?? "").split('"').join("") })
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x, source: m.get(x.source) ?? x.source, target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+
+/** IDENTITY: the module does NOT own its name in its own file's name space, so a
+ *  table that wants the file's stem takes it. `doc/book/book.toml` declares
+ *  `[book]`, and relationships address nodes by NAME, so every `contains` edge
+ *  naming `book` then resolves to two nodes. The module's identity comes from its
+ *  PATH and is not negotiable; a document node is competing for a name already
+ *  taken. This is html's precedence exactly — its `usedNames` starts
+ *  `{ [moduleName]: 1 }` — and the rule was found by the CORPUS, not by a fixture:
+ *  2 collisions in 684 cargo files, both `<stem>.toml` containing `[<stem>]`.
+ *  Caught by toml/module-name-collision. */
+function tomlModuleYieldsItsName() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "namespace" && String(s.name ?? "").startsWith(`${mod.name}#`)
+          ? { ...s, name: String(s.name).replace(`#2`, "") }
+          : s),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x,
+        source: String(x.source ?? "").replace(`${mod.name}#2`, mod.name),
+        target: String(x.target ?? "").replace(`${mod.name}#2`, mod.name),
+      })),
+    }
+  }
+}
+
+/** IMPLIED PARENTS: they are MATERIALISED — `[workspace.lints.rust]` invents
+ *  symbols for `workspace` and `workspace.lints`, which the file never declares.
+ *  The ruling is that they are RECORDED in metadata precisely because fabricating
+ *  a table is a guess dressed as a fact: the graph would claim the document
+ *  contains headers it does not contain, and a consumer diffing a config against
+ *  its graph would see phantom entries.
+ *  Caught by toml/identity-and-paths's forbidSymbols. */
+function tomlImpliedParentsMaterialised() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const implied = s?.metadata?.impliedParents
+      if (!Array.isArray(implied)) continue
+      for (const p of implied) {
+        extra.push({ name: String(p), kind: "namespace", range: s.range, scope: "", visibility: "public", ownerName: s.ownerName, metadata: { tomlSpecific: true, isFabricatedImpliedParent: true } })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+
+/** INLINE-TABLE SCOPING: an inline table's keys become symbols of the file. The
+ *  ruling is that they are part of ONE value expression — `x = { a = 1, b = 2 }`
+ *  makes `x` the symbol — and a manifest with 200 dependencies written as
+ *  `{ version = "...", features = [...] }` would otherwise publish 600+ symbols
+ *  naming nothing a consumer can navigate to alone. Their NAMES are still recorded
+ *  on the key in `metadata.inlineKeys`, so this mutant loses information as well as
+ *  adding noise, which is what makes it worth catching.
+ *  Caught by toml/arrays-and-values. */
+function tomlInlineKeysBecomeSymbols() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const keys = s?.metadata?.inlineKeys
+      if (!Array.isArray(keys)) continue
+      for (const k of keys) {
+        extra.push({ name: `${s.name}.${k}`, kind: "property", range: s.range, scope: "", visibility: "public", ownerName: s.name, metadata: { tomlSpecific: true, isInlineTableKey: true } })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -11578,6 +11705,41 @@ export const MUTANTS: Mutant[] = [
   },
 
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "toml/name-loses-its-path",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "TOML-IDENTITY: a symbol's name becomes its LAST SEGMENT instead of its full dotted path, so `[workspace.lints.rust]` is `rust` and `package.name` is `name`. The first manifest anyone writes collides — cargo's own has a key named `name` under `[package]` AND under every `[[bin]]` — so the flattened names are not unique and a `contains` edge naming `name` resolves to two nodes. The full path is what makes a file's names unique without a synthetic suffix on every collision. Caught by toml/identity-and-paths.",
+    transform: tomlNameLosesItsPath(),
+  },
+  {
+    id: "toml/quoted-segment-loses-quotes",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "TOML-IDENTITY: a quoted key segment is joined like a bare one, so a segment containing a dot loses its quotes. Inside `[t]`, `a.b.c` and `\"a.b\".c` are DIFFERENT TOML keys — three nested tables versus a table literally named `a.b` — and both assemble to `t.a.b.c`, after which the dedupe invents `t.a.b.c#2` and asserts the document declared one key twice when it declared two distinct ones. That is the unresolvable-identity class arriving through the NAMING SCHEME rather than through a missing edge, and re-quoting is TOML's own disambiguation, not an invented escape. Caught by toml/identity-and-paths, which writes all three spellings side by side.",
+    transform: tomlQuotedSegmentLosesQuotes(),
+  },
+  {
+    id: "toml/module-yields-its-name",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "IDENTITY: the module does not own its name in its own file, so a table may take the file's stem. `doc/book/book.toml` declares `[book]`, and relationships address nodes by NAME, so every `contains` edge naming `book` resolves to two nodes. The module's identity comes from its PATH and is not negotiable. This is html's precedence exactly (its `usedNames` starts `{ [moduleName]: 1 }`), and the rule was found by the CORPUS rather than by a fixture: 2 collisions in 684 cargo files, both `<stem>.toml` containing `[<stem>]`. Caught by toml/module-name-collision.",
+    transform: tomlModuleYieldsItsName(),
+  },
+  {
+    id: "toml/implied-parents-materialised",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "IMPLIED PARENTS: `[workspace.lints.rust]` invents symbols for `workspace` and `workspace.lints`, which the file never declares. The ruling is that they are RECORDED in `metadata.impliedParents` precisely because fabricating a table is a guess dressed as a fact — the graph would claim the document contains headers it does not, and a consumer diffing a config against its graph would see phantom entries. Caught by toml/identity-and-paths's forbidSymbols.",
+    transform: tomlImpliedParentsMaterialised(),
+  },
+  {
+    id: "toml/inline-keys-become-symbols",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "INLINE-TABLE SCOPING: an inline table's keys become symbols of the file. The ruling is that they are part of ONE value expression — `x = { a = 1 }` makes `x` the symbol — and a manifest with 200 dependencies written as `{ version = \"...\", features = [...] }` would publish 600+ symbols naming nothing a consumer can navigate to alone. Their names are recorded on the key in `metadata.inlineKeys`, so this mutant loses information as well as adding noise. Caught by toml/arrays-and-values.",
+    transform: tomlInlineKeysBecomeSymbols(),
+  },
   {
     id: "html/recovery-stops-walk",
     language: "html",
