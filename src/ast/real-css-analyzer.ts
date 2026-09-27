@@ -503,6 +503,98 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!sym.metadata) sym.metadata = {}
       sym.metadata.selectorChain = merged
     }
+    // ONE SYMBOL PER IDENTITY, and a repeated selector is ONE identity.
+    //
+    // The fixture harness caught this as `export invariant violated: duplicate
+    // export name(s) [".btn"]` — my own fixture, which used the same selector twice
+    // because that is what real stylesheets do. Measured across the corpora it is not
+    // an edge case: **166 of 454 files (36.6%) publish a duplicate symbol name**,
+    // 2,654 distinct duplicated names, and the worst file publishes the same selector
+    // TWELVE times. Every `contains` / `uses` / `references` edge naming one of those
+    // is therefore AMBIGUOUS — a consumer asking "what applies to `div.svelte-xyz`"
+    // gets twelve indistinguishable nodes, and no edge says which.
+    //
+    // Merging is the semantically correct fix rather than a dedupe of convenience,
+    // because in CSS a selector is a MATCH PATTERN, not a declaration. Two rules
+    // written `.a { … }` are not two declarations of a thing named `.a`; they are
+    // two rules that the same selector matches, and the selector is the identity.
+    // So the graph node is the selector, and the rules are occurrences of it.
+    //
+    // Identity is (kind, name, scope) — not name alone — because a nested rule's
+    // scope is part of what it resolves to. Two nested rules with the same resolved
+    // name under the same parent ARE the same node and do merge.
+    //
+    // Metadata is MERGED rather than dropped: the union of the properties declared
+    // across the occurrences, the union of class names, the max specificity, and the
+    // OR of the boolean shape flags. Taking the first occurrence's metadata instead
+    // would silently drop what the other rules declare, which is the same class of
+    // loss as discarding an edge.
+    {
+      const byIdentity = new Map<string, ASTEngine.UniversalSymbol>()
+      const merged: ASTEngine.UniversalSymbol[] = []
+      for (const sym of ctx.symbols) {
+        // IDENTITY IS (kind, RESOLVED NAME). The scope is provenance, not identity.
+        //
+        // Two cases forced this, both measured:
+        //
+        //  - a custom property: `--bg-1` under `:root` and again under `.dark` is the
+        //    SAME property and the cascade picks a winner. It is a registry entry —
+        //    the same line as the ruling that a custom property is a THING while
+        //    `color` is a keyword.
+        //
+        //  - a nested selector: `div.svelte-xyz { &.x { … } }` resolves to
+        //    `div.svelte-xyz.x`, which is the SAME selector as a top-level
+        //    `div.svelte-xyz.x` a few lines away. They match the same elements, so
+        //    they are one node. This is already the lane's own chain rule — "the
+        //    rule's own NAME is the resolved chain" — applied to identity.
+        //
+        // Keeping scope in the key left 9 corpus files (2.0%) still publishing a
+        // duplicate name, 281 duplicated names, worst 2x, every one of them this
+        // case. An edge naming one of those is ambiguous, and an ambiguous endpoint is
+        // the failure the export invariant exists to convict.
+        const key = `${sym.kind}\u0000${sym.name}`
+        const first = byIdentity.get(key)
+        if (!first) {
+          byIdentity.set(key, sym)
+          merged.push(sym)
+          continue
+        }
+        const a = (first.metadata ?? {}) as Record<string, any>
+        const b = (sym.metadata ?? {}) as Record<string, any>
+        const out: Record<string, any> = { ...a }
+        for (const [k, v] of Object.entries(b)) {
+          const cur = out[k]
+          if (Array.isArray(v) && Array.isArray(cur)) {
+            // union, order-preserving
+            for (const item of v) if (!cur.includes(item)) cur.push(item)
+          } else if (typeof v === "boolean" && typeof cur === "boolean") {
+            out[k] = cur || v
+          } else if (typeof v === "number" && typeof cur === "number" && /specificity|omplexity/.test(k)) {
+            out[k] = Math.max(cur, v)
+          } else if (cur === undefined) {
+            out[k] = v
+          }
+        }
+        first.metadata = out
+        // the merged node spans every occurrence, and says how many there were
+        const firstLine = first.range?.startLine ?? 0
+        const lastLine = sym.range?.endLine ?? firstLine
+        if (lastLine > (first.range?.endLine ?? 0)) {
+          first.range = { ...(first.range as any), endLine: lastLine }
+        }
+        const occ = (first.metadata.occurrences as number | undefined) ?? 1
+        first.metadata.occurrences = occ + 1
+        // the scopes it was written under, so the provenance of a merged node is not
+        // lost — `scope` keeps the first, `scopes` keeps them all
+        const prevScopes = (first.metadata.scopes as string[] | undefined)
+          ?? (first.scope ? [first.scope] : [])
+        if (sym.scope && !prevScopes.includes(sym.scope)) prevScopes.push(sym.scope)
+        if (prevScopes.length > 1) first.metadata.scopes = prevScopes
+        if (firstLine > 0) first.metadata.firstLine = Math.min(first.metadata.firstLine ?? firstLine, firstLine)
+      }
+      ctx.symbols = merged
+    }
+
     for (const s2 of ctx.symbols) attachChain(s2)
     for (const s of ctx.symbols) attachDeclared(s)
 

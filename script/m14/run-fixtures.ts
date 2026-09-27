@@ -97,6 +97,31 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // `.htm` to the same analyzer and a lane that only claimed `.html` would
   // silently skip half its own routing.
   html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  // M14 (#419 / F3-F6 / M59): css joins the fixture lane. It was the one lane
+  // with a differential reading 100% and a census reading blind=0, and NO fixture
+  // at all — so nothing could have convicted a regression in any of it, and a lane
+  // whose only evidence is self-consistent is the M14 #288 html finding repeated.
+  //
+  // The six fixtures are authored from the CONTRACT (script/m14/spec/
+  // css-completeness.json and reviews/m49-css-review.md), not transcribed from
+  // analyzer output, which is the whole difference between a fixture and a mirror
+  // — and it is why they were able to DISAGREE with the analyzer. They found, in
+  // this order: a `complexity` that was a literal 1; a functional-pseudo term that
+  // was dead code (it matched `pseudo_class_arguments`, which the grammar ALIASES
+  // to `arguments`, so it could never fire); a base of 0 that the worker's `||`
+  // turned into a second value; 24% of the lane carrying a fabricated 1 because
+  // complexity was measured for selectors only; a `@property` whose `var()` read
+  // pointed at a name nothing published; a `font-family` that emitted nothing for a
+  // declared `@font-face`; and an `@layer a, b, c;` that published a name with no
+  // referent. Every one of those was a green lane.
+  //
+  // `ext` carries ONLY `css`. The ROUTER also sends `.scss`, `.sass` and `.less`
+  // here (script/m13/corpus-map.ts and src/ast/parallel-indexer.ts), but the CSS
+  // grammar does not support those dialects — 42 of 244 real `.scss` files parse
+  // clean, 17.2% — so a fixture written in them would pin a broken state as
+  // expected. That gap is DECLARED as CSS-L1 rather than papered over with a
+  // fixture that cannot fail.
+  css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
   // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
   // runner entry, so nothing could have caught a regression in any of them —
   // and the four are a differential whose truth was authored by the same hand
