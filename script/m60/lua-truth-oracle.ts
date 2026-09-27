@@ -107,6 +107,12 @@ function calleeOf(call: any): { name: string; nameNode: any } | null {
     const last = n.namedChildCount > 0 ? n.namedChild(n.namedChildCount - 1) : null
     if (last?.text) return { name: last.text, nameNode: last }
   }
+  // M60 LUA-22: a computed index has no name. The oracle emitted the whole
+  // expression as a truth edge, which is the same payload-as-a-name defect the
+  // analyzer had — so the two agreed on a wrong answer and the differential
+  // could not see it. Both sides now skip it, which is the point: an oracle that
+  // shares a defect is worse than no oracle, because it launders the defect.
+  if (n.type === "table_index_expression") return null
   return { name: n.text, nameNode: n }
 }
 
@@ -590,6 +596,12 @@ async function main(): Promise<void> {
     byLabel,
     missingByShape: shapes(missingFromAnalyzer),
     unexplainedByShape: shapes(unexplained),
+    // The 22-edge residue is the question this artifact exists to answer, and it
+    // was unreachable: `missingSample` is drawn from the FULL missing set, which
+    // is dominated by the pipeline noise filter (type/text/parent) and by exports,
+    // so the analyzer-attributable edges never appeared in a sample at all.
+    analyzerAttributableSample: missingFromAnalyzer.slice(0, 40),
+    analyzerAttributableUnexplainedSample: unexplained.slice(0, 40),
     missingSample: missing.slice(0, 25),
     unexplainedSample: unexplained.slice(0, 25),
     lineWrongSample: lineWrong.slice(0, 25),
