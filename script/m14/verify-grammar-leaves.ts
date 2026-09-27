@@ -96,6 +96,16 @@ const LANES: Record<string, Lane> = {
   // are ordinary library F#. A candidate that wins on one and not the other has not
   // won. `fsharp` is the compiler; `FSharp.Core` is a separate checkout if present.
   fsharp: { wasm: "wasm/tree-sitter-fsharp.wasm", repos: ["fsharp"], sample: 400 },
+  // M60 powershell lane. THE CORPUS IS MOSTLY DELIBERATE GARBAGE and that has to
+  // be stated wherever this lane is measured: of the PowerShell repository's 553
+  // tracked .ps1, 182 carry grammar errors and 166 of those are the repo's OWN
+  // intentionally-invalid parser-error test fixtures (`unexpectedErrorFiles: 0`).
+  // A whole-corpus A/B therefore measures the fixtures, not the grammar — G1's
+  // "newly damaged" fires on a file designed to fail, for either grammar. The
+  // discriminating population is the 16 named limits, which
+  // `script/m60/powershell-0264-repro-battery.ts` reduces to minimal sources with
+  // controls. Use the battery to screen; use this lane for a gated verdict.
+  powershell: { wasm: "wasm/tree-sitter-powershell.wasm", repos: ["powershell"], sample: 400 },
 }
 const CORPUS = "$HOME/fixtures/repositories"
 
@@ -576,6 +586,7 @@ if (hasArg("--emit")) {
   else if (LANG === "clean") out = emitEvidence({ ...base, issueId: "M14.0.F11.clean" })
   else if (LANG === "sql") out = emitEvidence({ ...base, issueId: "M14.0.F11.sql" })
   else if (LANG === "fsharp") out = emitEvidence({ ...base, issueId: "M14.0.F11.fsharp" })
+  else if (LANG === "powershell") out = emitEvidence({ ...base, issueId: "M14.0.F11.powershell" })
   else throw new Error(
     `verify-grammar-leaves: --emit has no declared artifact id for lane "${LANG}" — add one literal emit call `
     + '(`{ ...base, issueId: "M14.0.F11.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '

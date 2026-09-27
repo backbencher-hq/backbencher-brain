@@ -3,6 +3,30 @@
 Pure Tree-sitter PowerShell extraction for `*.ps1`, `*.psm1`, and `*.psd1`
 sources, verified under milestone **M12.40** (issue #179).
 
+- Parser: `tree-sitter-powershell` **0.25.10** (npm, published 2025-12-08; WASM at
+  `wasm/tree-sitter-powershell.wasm`, loaded by `engine.ts` via `resolveWasm`).
+  **This version was established by BYTE-IDENTITY, not by a prior record** — see
+  "Provenance" below. The lane shipped for its whole life with **no parser version
+  stated anywhere**, which is what the grammar registry's R1 remainder counts; the
+  16 files in R1's list that are powershell are this line's doing, not the grammar's.
+
+## Provenance
+
+`wasm/tree-sitter-powershell.wasm` is `sha256
+1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154`, 983,236 B, and it is
+**byte-for-byte** the `tree-sitter-powershell.wasm` inside the `tree-sitter-powershell@0.25.10`
+npm tarball. Neighbouring versions do not match: `0.25.9` is `2a46fff0…` / 944,125 B and
+`0.26.3` is `192fc7a4…` / 1,080,493 B. So the identity is 0.25.10 and the check is
+re-runnable with `npm pack tree-sitter-powershell@<v>` and a `sha256sum` of the extracted
+wasm — no build required, because upstream publishes the artifact we ship.
+
+Upstream latest is **0.26.4** (2026-05-04, `airbus-cert/tree-sitter-powershell`). It was
+fetched, **rebuilt from source with tree-sitter CLI 0.26.9, and the rebuild reproduced the
+published prebuilt byte-for-byte** (`796124137f0500e5…`, 1,088,467 B) — so the artifact
+adjudicated below is provably upstream's. It closes **0 of the 12 reproducible named
+grammar limits** on this lane; see `reviews/m60-powershell-grammar-0264-refused.md`.
+**The pin therefore stays at 0.25.10** and the lane owes a patch.
+
 ## Contract
 
 | Concern | Contract |
