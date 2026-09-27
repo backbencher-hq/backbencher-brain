@@ -479,6 +479,56 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "html pass (#419, #288)",
   },
+  // M14 F3: css enters the inventory as INVENTORY-DONE, deliberately NOT in
+  // GATED_LANGS yet, on the same reasoning as html above — but for a different set
+  // of sections, and the difference is the point.
+  //
+  // What is DONE for css, all measured:
+  //   A  129 unique node types across 151 wasm ids classified, 0 gap, every entry
+  //      carrying its reason (script/m14/spec/css-completeness.json), with nine
+  //      rulings CSS-D1..D9 covering the four that looked like dead grammar.
+  //   E  the differential reads 100% truth coverage, MISSING=0 and unexplained=0
+  //      on BOTH corpora (svelte:css 67/67, grails-core:css 480/480) — the first
+  //      lane to reach 0/0 in both directions.
+  //   F  the F8 corpus census passes with 0 blind spots over 46 corpus types.
+  //   G  the grammar lane is pinned with a source↔wasm proof (all 64 declared
+  //      names present, 64 wasm-named types declared, 0 built-in extras).
+  //   H  the M59 line oracle runs in the SHARED instrument as a first-class lane
+  //      (84/84 consistent, 0 INCONSISTENT, 0 notCheckable) and independently in
+  //      the lane's own (7,647 edges, 0 inconsistent, 96 honest synthesized
+  //      names).
+  //
+  // What is NOT done, and why GATED_LANGS stays closed:
+  //   B/D  there is no `validation/m14/fixtures/css` directory. The fixture and
+  //        mutant harnesses are being edited concurrently, so the fixtures cannot
+  //        be registered without colliding, and a fixture that is written but not
+  //        registered protects nothing.
+  //   CC1  `docs/analyzers/real-css-analyzer.md` exists but has no CC1 block.
+  //
+  // `requiredKinds` is the four kinds css ACTUALLY emits — contains, uses,
+  // references, imports — and not the schema's full list: the others describe OO
+  // heritage and call surfaces, and css has neither. Claiming `calls` for a
+  // language with no call expression would be a fabrication dressed as coverage.
+  //
+  // `payloads` carries ONLY complexity, which is the one Matrix 1b row css can
+  // honestly fill: a selector chain, a functional pseudo-class and a nesting level
+  // are all real review cost. `parameters` is absent because a css rule is not a
+  // callable, and `visibility` is absent because css has no private/package axis
+  // at all — an element selector is not an access level.
+  css: {
+    id: "css",
+    wasm: "tree-sitter-css.wasm",
+    classification: "css-completeness.json",
+    fixturesDir: "validation/m14/fixtures/css",
+    docs: ["docs/analyzers/real-css-analyzer.md"],
+    differentialCheck: "differential-css",
+    perfKey: "svelte:css",
+    requiredKinds: ["uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "css (selector combinators, functional pseudos, attributes, nesting depth)" },
+    },
+    title: "css pass (#419)",
+  },
   svelte: {
     id: "svelte",
     wasm: "tree-sitter-svelte.wasm",
