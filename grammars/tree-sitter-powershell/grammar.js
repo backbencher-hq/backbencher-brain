@@ -870,7 +870,59 @@ export default grammar({
       seq($.simple_name, optional(seq('=', $.integer_literal))),
 
     // Expressions
-    _expression: ($) => $.logical_expression,
+    _expression: ($) => $._ternary_expression,
+
+    // G5a (M60 #278): the null-coalescing operator `??`, added in PowerShell 7.0.
+    //
+    // MEASURED BEFORE PATCHING (script/m60/powershell-0264-repro-battery.ts, the
+    // construct reduced to a minimal source with a control): `$a ?? $b` produces 3
+    // ERROR nodes and does not parse, while the control `$a = $b ?? 'fallback'`
+    // without the operator parses clean. Named limit `null-coalescing`, 1 corpus
+    // file, from .github/actions/infrastructure/markdownlinks/Parse-MarkdownLink.ps1.
+    //
+    // PLACEMENT, from about_Operator_Precedence rather than from taste: `??` binds
+    // LOOSER than -and/-or/-xor and TIGHTER than the ternary `? :`. So it sits
+    // between the existing top level (logical_expression) and the new ternary
+    // level, and it is its own level rather than another choice inside
+    // logical_expression — putting it there would make it bind as tightly as
+    // -and, and `$a -or $b ?? $c` would then parse as `($a -or $b) ?? $c` only by
+    // accident of the left-associative fold.
+    //
+    // `??` is a single token and appears nowhere in the language otherwise, so this
+    // is purely additive: no existing rule is edited and no existing token widens.
+    // That is the property F11's G2 gate (every already-clean file must produce a
+    // byte-identical s-expression) exists to confirm rather than assume.
+    //
+    // BOTH LEVELS ARE HIDDEN, and the first attempt at this patch got that wrong in
+    // the most instructive way available. Named `ternary_expression` /
+    // `coalesce_expression` scored a clean win on every count the battery reports —
+    // 2 of 12 named limits fixed, 0 regressions, all 9 controls held — and the A/B's
+    // collateral gate passed too, 0 files broken. It was still the wrong patch, and
+    // only the SHAPE delta caught it: a named level emits its node in the
+    // pass-through case as well, so adding two levels wrapped EVERY expression in
+    // the language and produced 9,046 `coalesce_expression` and 9,038
+    // `ternary_expression` nodes across 49 corpus files, silently re-pointing an
+    // analyzer written against the old shapes. Hiding the levels makes the rule
+    // inline, so an expression that uses neither operator produces exactly the tree
+    // it produced before, and F11's G2 gate passes by construction rather than by
+    // luck. The operators appear as anonymous tokens, which is the majority
+    // convention in this grammar anyway: `+ - * / %` and `..` are all anonymous,
+    // and only `comparison_operator` / `format_operator` are named.
+    _ternary_expression: ($) =>
+      prec.right(
+        choice(
+          $._coalesce_expression,
+          seq($._coalesce_expression, '?', $._ternary_expression, ':', $._ternary_expression),
+        ),
+      ),
+
+    _coalesce_expression: ($) =>
+      prec.left(
+        choice(
+          $.logical_expression,
+          seq($._coalesce_expression, '??', $.logical_expression),
+        ),
+      ),
 
     logical_expression: ($) =>
       prec.left(
