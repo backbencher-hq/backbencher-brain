@@ -52,6 +52,16 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", ext: [".js"], repo: "grails-core" },
   vue: { wasm: "tree-sitter-vue.wasm", ext: [".vue"], repo: "element-plus" },
   svelte: { wasm: "tree-sitter-svelte.wasm", ext: [".svelte"], repo: "svelte" },
+  // CSS is measured against the svelte repo for the same reason svelte is: the
+  // .css files are tracked, non-empty except for one named file, and — unlike a
+  // synthetic sample — they are the corpus the M12 lane and the M59 line oracle
+  // already run on, so a census finding can be checked against those artifacts
+  // instead of needing a new corpus. This is the gate that finds a node type the
+  // CORPUS produces which the analyzer AND the oracle both skip: a fixture is
+  // written from what its author already knew to write, so only the corpus can see
+  // that shape. For CSS it confirms all 94 distinct types the corpus produces are
+  // covered by script/m14/spec/css-completeness.json.
+  css: { wasm: "tree-sitter-css.wasm", ext: [".css"], repo: "svelte" },
   c: { wasm: "tree-sitter-c.wasm", ext: [".c", ".h"], repo: "sqlite" },
   cpp: { wasm: "tree-sitter-cpp.wasm", ext: [".cc", ".cpp", ".h", ".hpp"], repo: "fmt" },
   rust: { wasm: "tree-sitter-rust.wasm", ext: [".rs"], repo: "ripgrep" },
