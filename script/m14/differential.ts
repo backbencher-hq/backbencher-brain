@@ -635,6 +635,10 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // list and deliberately does NOT import the analyzer's rule table — the F9
   // collusion check treats shared data as blindness.
   html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  // M14 (#289): toml joins the differential lane with `deriveTomlEdges` as its
+  // truth. The oracle found three real analyzer defects on cargo's first run — see
+  // the fixture `dotted-and-quoted-paths`, which exists only because of them.
+  toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -13932,6 +13936,9 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
   // LEFT: `a b c` is descendant(descendant(a, b), c). All four flatten the same
   // way, which is why `a+b`, `a~b`, `a>b` and `a b` all yield the same edge.
   const COMBINATORS = new Set(["descendant_selector", "child_selector", "adjacent_sibling_selector", "sibling_selector"])
+  /** Is this selector (or group) nothing but the universal selector? CSS-D5. */
+  const isUniversalSelector = (sel: string): boolean =>
+    sel.split(",").every((part) => part.trim() === "*")
   const flattenChain = (n: any, acc: string[] = []): string[] => {
     if (COMBINATORS.has(n.type)) {
       const kids = children(n).filter((c: any) => c.isNamed)
@@ -15673,6 +15680,15 @@ async function main() {
           // is comparable exactly when the lane's oracle derives it, nothing less
           // and nothing more.
           ...(lang === "html" || lang === "bash" || lang === "powershell" ? ["uses", "contains"] : []),
+          // M14 (#289): toml is comparable on `contains` ALONE, and that is the
+          // rule this file states rather than a bookkeeping entry — a label is
+          // comparable exactly when the lane's oracle derives it, nothing less and
+          // nothing more. `deriveTomlEdges` derives `contains` and nothing else,
+          // because TOML defines no include, import, alias or reference, so no
+          // second relationship type has a construct that could produce it. Naming
+          // `uses` here would compare the analyzer against an oracle that never
+          // emits it, which reads as a lane full of unexplained edges.
+          ...(lang === "toml" ? ["contains"] : []),
           ...(lang === "powershell" ? ["exports"] : []),
           ...(lang === "powershell" ? ["references"] : []),
           // M14 F10: css is comparable on exactly the four kinds its oracle
