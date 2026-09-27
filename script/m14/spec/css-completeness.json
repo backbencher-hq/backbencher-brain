@@ -364,6 +364,13 @@
         "resolution": "It is tree-sitter's end-of-input symbol, not a rule of this grammar — the language's reserved id 0, which is why enumerating node types reports it and why no source can ever produce it. internal_silent, with the absence from both grammars recorded as the evidence rather than a guess."
       },
       {
+        "id": "CSS-D10",
+        "node_type": "nested rule_set (contains, isNestedSelector)",
+        "status": "RULED",
+        "question": "a `&`-composed nested rule's `contains` edge carries NO line, because the edge's TARGET is the RESOLVED selector (`.a { & .b {} }` -> `.a .b`) and that string is written nowhere in the file. 52 of the lane's 28,432 relationships are in this state. Should the line be omitted, or should it be the nested rule's own line?",
+        "resolution": "OMITTED, on a measurement rather than a preference. Claiming the nested rule's line made 96 of 96 nested-selector edges INCONSISTENT against the source text — not because the line was nearly right, but because the name the line is supposed to carry is not in the file at all. The governing rule is M59's: a relationship's line belongs to the NAME node, not to the enclosing construct, and `.a .b` has no line because it is not written on one. The test for which case applies is not `does the selector contain &` — an IMPLICIT descendant (`.a { .b {} }`, no `&` at all) also resolves to a composed name that is written nowhere, and it accounted for the 67 INCONSISTENT edges left after the `&` test. The exact test is whether the resolved text and the as-written text are the same string, so the one case where the name genuinely IS written keeps its line. LOCATABILITY IS NOT LOST: the edge carries `asWrittenSelector` (`& .title`) in its metadata, so a consumer can find the site by text even though it cannot be given a line that would imply the name is there. The alternative — stamping the construct's line and weakening the oracle to check the as-written form instead — is defensible and was considered; it is not adopted because it would trade a guarantee the rest of the lane holds (the line carries the name) for one it does not (the line carries the construct), and that trade should be made once for the whole codebase rather than lane by lane."
+      },
+      {
         "id": "CSS-D2",
         "node_type": "postcss_statement",
         "status": "RULED",
