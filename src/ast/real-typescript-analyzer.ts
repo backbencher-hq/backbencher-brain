@@ -174,6 +174,81 @@ function extractTypeParametersOf(node: Node): string[] {
   return typeParams
 }
 
+/**
+ * The NAME a value expression is bound to, looking upward through the wrappers
+ * that can sit between a value and its binding. PORTED from the javascript twin
+ * (`bindingNameAbove`, real-javascript-analyzer.ts:211) so the two analyzers
+ * answer one question the same way: `const K = class {…}` binds through a
+ * `variable_declarator`, `K = class {…}` through an `assignment_expression`,
+ * and anything else — a call argument, a `return`, an array element — names
+ * nothing, so the answer is `undefined` rather than a guess. That "rather than a
+ * guess" is load-bearing: the twin measured 183 of 204 remaining ownerless
+ * members on the svelte corpus as exactly this correct-silence case, and 20 as
+ * the assignment form, which was a real gap.
+ */
+function bindingNameAbove(value: Node): string | undefined {
+  let q: Node | null = value.parent
+  while (q) {
+    if (q.type === "variable_declarator") {
+      const nm = q.childForFieldName("name")
+      return nm && nm.type === "identifier" ? nm.text : undefined
+    }
+    if (q.type === "assignment_expression") {
+      const l = q.childForFieldName("left")
+      return l && l.type === "identifier" ? l.text : undefined
+    }
+    if (
+      q.type === "pair" || q.type === "object" || q.type === "class" || q.type === "class_body" ||
+      q.type === "return_statement" || q.type === "expression_statement" || q.type === "export_statement"
+    ) {
+      q = q.parent
+      continue
+    }
+    return undefined
+  }
+  return undefined
+}
+
+/**
+ * The owner a member's container names, PORTED from the javascript twin
+ * (`containerOwnerName`, real-javascript-analyzer.ts:232).
+ *
+ * The class-EXPRESSION arm is what this analyzer was missing: `const A = class
+ * Inner { m() {} }` produced NO member at all, because the variable path
+ * suppressed descent for every non-`object` initializer, and the javascript
+ * twin — which descends — emitted `method:m`. The oracle derives nothing for
+ * the shape either, so no differential could ever have flagged it; the twin was
+ * the only reference that could. A class expression's own declared name wins
+ * (`class Inner`), else the binding it is initialised or assigned to; a
+ * function boundary ends the search, because nothing inside a function body is
+ * a module-level member of anything.
+ */
+function containerOwnerName(n: Node): string | undefined {
+  let p: Node | null = n.parent
+  while (p) {
+    if (p.type === "class_declaration" || p.type === "abstract_class_declaration") {
+      return p.childForFieldName("name")?.text
+    }
+    if (p.type === "class") {
+      const own = p.childForFieldName("name")?.text
+      if (own) return own
+      return bindingNameAbove(p)
+    }
+    if (p.type === "object") {
+      return bindingNameAbove(p)
+    }
+    if (
+      p.type === "function_declaration" || p.type === "function_expression" ||
+      p.type === "arrow_function" || p.type === "generator_function_declaration" ||
+      p.type === "method_definition" || p.type === "function"
+    ) {
+      return undefined
+    }
+    p = p.parent
+  }
+  return undefined
+}
+
 // Contract route paths always start with "/": join a controller base with a
 // method route collapsing duplicate slashes (pure string ops, no regex —
 // java composes basePath+methodRoute the same way).
@@ -2623,7 +2698,15 @@ class TypeScriptAnalysisRunner {
       // false lets the walk descend naturally into the declarator's object
       // value, where the method_definition case extracts each member at ANY
       // depth (JS parity — nested object methods are their own scope).
-      if (valueNode?.type === "object") {
+      // R1: a CLASS EXPRESSION value carries members too, and the javascript
+      // twin has always descended into it — `const A = class Inner { m() {} }`
+      // emitted `method:m` there and NOTHING here, because the `object` test
+      // below was the only descent trigger. The whole body was lost with it: no
+      // member symbol, no `contains` edge, and the calls inside `m` attributed
+      // to the enclosing function instead. The oracle derives nothing for the
+      // shape, so no differential could have flagged it; the twin was the only
+      // available reference.
+      if (valueNode?.type === "object" || valueNode?.type === "class") {
         return false
       }
     }
@@ -3284,23 +3367,11 @@ class TypeScriptAnalysisRunner {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
-    let ownerName: string | undefined
-    let cur: Node | null = node.parent
-    while (cur) {
-      if (cur.type === "variable_declarator") {
-        ownerName = cur.childForFieldName("name")?.text
-        break
-      }
-      if (cur.type === "pair") {
-        cur = cur.parent
-        continue
-      }
-      if (cur.type === "object") {
-        cur = cur.parent
-        continue
-      }
-      break
-    }
+    // R1: the ownership rule is the twin's, ported verbatim
+    // (`containerOwnerName`), so an object-literal member, a class-expression
+    // member and a class-declaration member are resolved by ONE contract
+    // instead of two hand-rolled walks that disagreed.
+    const ownerName = containerOwnerName(node)
     const ownerInfo = ownerName
       ? { ownerName, ownerKind: ASTEngine.SymbolKind.Constant as unknown as ASTEngine.SymbolKind }
       : this.scopeManager.getOwnerInfo()
@@ -4910,41 +4981,17 @@ class TypeScriptAnalysisRunner {
       const raw = node.childForFieldName("name")?.text
       if (!raw) return current
       const name = stripPrivatePrefix(raw)
-      // W1 (JD18-class): the enclosing-class walk must stop at the nearest
-      // FUNCTION/CLASS boundary, not skip through it. An object-literal
-      // method nested in a method body (`const local = { deep() {...} }`
-      // inside Outer.run) walked all the way out to Outer — owner=Outer vs
-      // the symbol's real owner=local never matched, so every call inside
-      // the nested object misattributed to the enclosing method (deep ->
-      // inside emitted as run -> inside). If a method_definition or a
-      // function-like node sits between, the object member belongs to the
-      // nearest declarator instead.
-      let owner = this.findEnclosingClassName(node)
-      if (owner) {
-        let anc: Node | null = node.parent
-        while (anc) {
-          if (
-            anc.type === "method_definition" ||
-            anc.type === "function_declaration" ||
-            anc.type === "function_expression" ||
-            anc.type === "arrow_function"
-          ) {
-            // Reached a function boundary before any class: the object
-            // member's owner is the enclosing variable, not the class.
-            let v: Node | null = node.parent
-            while (v && v.type !== "variable_declarator") v = v.parent
-            owner = v?.childForFieldName("name")?.text
-            break
-          }
-          if (anc.type === "class_declaration" || anc.type === "abstract_class_declaration") break
-          anc = anc.parent
-        }
-      } else {
-        // No enclosing class at all: object member -> nearest declarator.
-        let v: Node | null = node.parent
-        while (v && v.type !== "variable_declarator") v = v.parent
-        owner = v?.childForFieldName("name")?.text
-      }
+      // R1: ONE owner rule for every member kind, the twin's
+      // `containerOwnerName` — the same helper that named the SYMBOL now names
+      // the EDGE's source, so the two can never disagree. That disagreement was
+      // live and cost a whole class of edges: the old walk only recognised
+      // `class_declaration`, so for `const A = class Inner { m() { helper() } }`
+      // it fell through to the nearest `variable_declarator` and computed owner
+      // `A` while the symbol's ownerName was `Inner`; the owner-scoped lookup
+      // then matched nothing and every call inside `m` was emitted against the
+      // MODULE leaf (`x -> helper`). The hand-rolled walk also had to
+      // re-implement the function-boundary rule that W1 needed, in two places.
+      const owner = containerOwnerName(node)
       return (
         byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
         findItem(
@@ -4971,16 +5018,6 @@ class TypeScriptAnalysisRunner {
     return current
   }
 
-  private findEnclosingClassName(node: Node): string | undefined {
-    let cur: Node | null = node.parent
-    while (cur) {
-      if (cur.type === "class_declaration") {
-        return cur.childForFieldName("name")?.text
-      }
-      cur = cur.parent
-    }
-    return undefined
-  }
 
   // ========================================================================
   // HELPER METHODS
