@@ -2125,6 +2125,75 @@ function htmlBareHashEmitted() {
   }
 }
 
+/** CARRIER COMPLETENESS: the `<meta http-equiv=refresh>` navigation rule is
+ *  dropped. `content` is a URL only under `http-equiv=refresh`, and the pragma
+ *  makes the browser navigate — the same class as a form action, so `uses` and
+ *  never `calls`. It was absent from the table entirely, and a census of 4,035
+ *  real files found 40 occurrences across 26 files of one corpus. No gate could
+ *  see it: the differential's oracle SHARED the carrier list, and `otp`/`sqlite`
+ *  contain no refresh pragma, so 100% coverage never had to confront it.
+ *  Caught by html/undiscovered-carriers. */
+function htmlMetaRefreshDropped() {
+  return (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.resourceType !== "meta-refresh") })
+}
+
+/** CARRIER COMPLETENESS: `<a ping>` stops being treated as a LIST. The
+ *  `valueList` split is removed and the whole attribute is read as one URL, so
+ *  `ping="/a /b"` publishes a SINGLE edge whose target is the string
+ *  `"/a /b"` — a path that resolves to no file, which is the
+ *  unresolvable-identity class reached through a list that was never split. The
+ *  list shape IS the contract: `ping` is whitespace-separated with no descriptor
+ *  and no comma, which is exactly what separates it from `srcset`.
+ *
+ *  The first attempt at this mutant rewrote the target by REMOVING its spaces,
+ *  which is a no-op: by the time the mutation runs the list has already been
+ *  split, so no target contains a space and the mutant could never fire. It
+ *  "survived" for the wrong reason — not because the gate is weak but because
+ *  the defect it described was not the defect. Rewritten to join the rows, which
+ *  is what the missing split actually produces.
+ *  Caught by html/undiscovered-carriers. */
+function htmlPingListCollapsed() {
+  return (r: any) => {
+    const rels = r.relationships ?? []
+    const pings: any[] = []
+    const rest: any[] = []
+    for (const x of rels) (x.metadata?.resourceType === "ping" ? pings : rest).push(x)
+    if (pings.length < 2) return r
+    // Rejoin the split rows into the single un-split edge the defect produces.
+    rest.push({ ...pings[0], target: pings.map((p: any) => p.target).join(" ") })
+    return { ...r, relationships: rest }
+  }
+}
+
+/** CARRIER COMPLETENESS: the SVG spellings go away — `script@href` and
+ *  `feImage@href`/`xlink:href`. SVG2 writes a script's source as `href`, not
+ *  `src`, so a table carrying only `src` drops every inline SVG script's
+ *  dependency, and a filter's image reference with it.
+ *  Caught by html/undiscovered-carriers. */
+function htmlSvgCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      const t = x.metadata?.resourceType
+      return t !== "svg-script" && t !== "svg-filter-image"
+    }),
+  })
+}
+
+/** EVIDENCE TIER: a `cite` inherits `import_based` instead of being graded
+ *  `usage_contextual`. A citation names where a quotation came FROM; nothing
+ *  fetches it and nothing navigates to it, so grading it as a structural import
+ *  overstates it — and the tier classifier in every gated lane reads exactly this
+ *  field, so the overstatement is machine-readable rather than a nuance.
+ *  Caught by html/undiscovered-carriers. */
+function htmlCitationTierInflated() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.metadata?.resourceType === "citation" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "import_based" } } : x),
+  })
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -10723,6 +10792,32 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "typescript/qualified-calls-no-rebind",
+    language: "typescript",
+    defectClass: "misattribution",
+    description: "M3 regression, the dangerous half: removes the per-function REBINDING while keeping the boundary removal — the payload walk started at a symbol and charged every call below it to that symbol, so a nested function's or object-literal method's calls were ALSO listed on the enclosing symbol (enclosing lists helper besides inner; mixed lists persist besides save). qualified-calls-nested-scope kills it on the notIncludes pins, which is the only shape that can tell 'omitted' from 'double-counted'",
+    transform: r => {
+      const byName = new Map<string, string[]>()
+      for (const s of (r as any).symbols ?? []) if (Array.isArray(s.qualified_calls)) byName.set(s.name, s.qualified_calls)
+      const extra = new Map<any, string[]>()
+      for (const rel of (r as any).relationships ?? []) {
+        if (String(rel.type) !== "calls") continue
+        const callee = byName.get(String(rel.target))
+        if (!callee) continue
+        const list = extra.get(rel.source) ?? []
+        for (const c of callee) if (!list.includes(c)) list.push(c)
+        extra.set(rel.source, list)
+      }
+      return { ...r, symbols: ((r as any).symbols ?? []).map((s: any) => {
+        const add = extra.get(s.name)
+        if (!add || !add.length || !Array.isArray(s.qualified_calls)) return s
+        const merged = [...s.qualified_calls]
+        for (const c of add) if (!merged.includes(c)) merged.push(c)
+        return { ...s, qualified_calls: merged }
+      }) }
+    },
+  },
+  {
     id: "typescript/builtin-subpath-revert",
     language: "typescript",
     defectClass: "payload-corruption",
@@ -11329,7 +11424,36 @@ export const MUTANTS: Mutant[] = [
     description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
     transform: cleanEdgeLinePerSet(),
   },
+
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "html/meta-refresh-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "CARRIER COMPLETENESS: the `<meta http-equiv=refresh>` navigation is dropped. The pragma makes the browser navigate — a form-action-class dependency, `uses` not `calls` — and it was absent from the table entirely: 40 occurrences across 26 files of one real corpus, found by a census of 4,035 files for URL-bearing (tag, attr) pairs. Invisible to the differential because the oracle SHARED the carrier list, and to `otp`/`sqlite` because neither corpus contains one. Caught by html/undiscovered-carriers.",
+    transform: htmlMetaRefreshDropped(),
+  },
+  {
+    id: "html/ping-list-collapsed",
+    language: "html",
+    defectClass: "relationship-identity",
+    description: "CARRIER COMPLETENESS: `<a ping>` is read as ONE url instead of a whitespace-separated list, so `ping=\"/a /b\"` publishes a single edge whose target is the whole string `\"/a /b\"` — a path that resolves to no file, which is the unresolvable-identity class reached through a list that was never split. The list shape IS the contract: `ping` has no descriptor and no comma, which is what separates it from `srcset`. Caught by html/undiscovered-carriers.",
+    transform: htmlPingListCollapsed(),
+  },
+  {
+    id: "html/svg-carriers-dropped",
+    language: "html",
+    defectClass: "payload-loss",
+    description: "CARRIER COMPLETENESS: the SVG spellings go away — `script@href` and `feImage@href`/`xlink:href`. SVG2 writes a script's source as `href`, not `src`, so a table with `src` alone drops every inline SVG script's dependency and every filter image reference with it. Caught by html/undiscovered-carriers.",
+    transform: htmlSvgCarriersDropped(),
+  },
+  {
+    id: "html/citation-tier-inflated",
+    language: "html",
+    defectClass: "overclaim",
+    description: "EVIDENCE TIER: a `cite` inherits `import_based` rather than `usage_contextual`. A citation names where a quotation or a change came FROM — nothing fetches it, nothing navigates to it — so grading it as a structural import overstates the fact, and the tier classifier in every gated lane reads this field, which makes the overstatement machine-readable. Caught by html/undiscovered-carriers.",
+    transform: htmlCitationTierInflated(),
+  },
   {
     id: "html/bare-hash-emitted",
     language: "html",

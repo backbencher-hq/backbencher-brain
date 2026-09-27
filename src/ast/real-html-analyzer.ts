@@ -459,11 +459,99 @@ interface ResourceRule {
   relFilter?: Record<string, boolean>
   /** `param name` decides whether the param's value is a resource at all. */
   paramNameFilter?: Record<string, boolean>
+  /** The rule applies only when the element's OWN `http-equiv` equals this,
+   *  case-folded. `<meta content>` is a URL only for `http-equiv=refresh`; for
+   *  every other pragma the content is free text (`charset`, `description`, a
+   *  viewport string) and treating it as a URL would manufacture an edge to a
+   *  sentence. The gate runs before any emission, exactly like `relFilter`. */
+  httpEquiv?: string
+  /** The attribute holds a CONTENT string with a URL inside it rather than a
+   *  bare URL, as `<meta http-equiv=refresh content="0; url=/next">` does. */
+  contentUrl?: boolean
+  /** The attribute holds a whitespace-separated list of URLs (`<a ping>`), as
+   *  opposed to one URL or a `srcset` candidate list. */
+  valueList?: "space"
+  /** Overrides the evidence tier for a rule whose default would misdescribe it.
+   *  A `cite` is a written reference, not a written-down fetch, so it must not
+   *  inherit `import_based` — the tier classifier in every gated lane reads that
+   *  field, and a citation graded as a structural import overstates it. */
+  evidenceClass?: string
+}
+
+/**
+ * `<a ping>` is a SPACE-separated list of URLs the browser fetches when the
+ * hyperlink is activated — several per attribute, with no descriptor and no
+ * comma, which is what separates it from `srcset` (comma-separated, each with a
+ * descriptor). The pre-fix analyzer had no rule for it, so a page that pings an
+ * analytics endpoint published no edge at all: the fetch is real, it happens on
+ * click, and it is invisible. Handled in the same table-driven path as every
+ * other carrier rather than as a special case, so it inherits the scheme
+ * contract, the owner attribution and the `import` mirror for free.
+ */
+function spaceSeparatedUrls(value: string): string[] {
+  const out: string[] = []
+  let start = 0
+  for (let i = 0; i <= value.length; i++) {
+    if (i !== value.length && !isHtmlSpace(value.charCodeAt(i))) continue
+    if (i > start) out.push(value.slice(start, i))
+    start = i + 1
+  }
+  return out
+}
+
+/**
+ * `<meta http-equiv="refresh" content="0; url=/next">` — the refresh PRAGMA,
+ * which makes the browser navigate. Per the HTML standard the content is a
+ * time interval, an optional `;`, and then `url=` followed by the destination;
+ * a bare interval with no `url=` reloads the SAME document, which names nothing
+ * new and so yields "".
+ *
+ * This is a NAVIGATION, not a fetch, and it is the same class as a form action:
+ * the browser performs it, the code under analysis does not, so it is a
+ * dependency and never a `calls` edge. It was entirely absent from the carrier
+ * table, and a census of one corpus found 26 real files and 40 occurrences of
+ * it — the single largest unhandled carrier by live weight, and invisible to the
+ * differential because the oracle shares the table.
+ *
+ * Parsed in pure String, with no regex: find the first `;`, require the
+ * remainder to begin `url=` after a case-fold, and strip one layer of quotes
+ * because the whole value is a quoted attribute and authors write the inner URL
+ * quoted as well as the attribute.
+ */
+function refreshContentUrl(content: string): string {
+  // The caller passes the DECODED content, so everything here operates on the
+  // form the target will actually have. An earlier version parsed the raw text
+  // and stripped quotes from the raw slice using the decoded form's quote
+  // POSITIONS, which is unsound: `&quot;` is six characters of source and one of
+  // value, so slicing the raw string by the decoded offsets cut `&quot;` down to
+  // `quot;` and published that as a path. The decode is not a length-preserving
+  // transform and must never be used to index another representation.
+  const semi = content.indexOf(";")
+  if (semi === -1) return "" // a bare interval reloads this document: nothing to name
+  if (!asciiLower(content.slice(semi + 1).trim()).startsWith("url=")) return ""
+  const inner = content.slice(semi + 1).trim().slice(4).trim()
+  if (inner.length < 2) return inner
+  const first = inner[0]
+  const last = inner[inner.length - 1]
+  // Authors write the inner URL quoted inside the attribute, and the quotes are
+  // frequently entities — `content="0; url=&quot;/next&quot;"`, which arrives here
+  // already decoded. Leaving them on published an edge to `"/next"`: a path that
+  // resolves to no file, which is the unresolvable-identity class wearing a URL's
+  // clothes.
+  if ((first === '"' || first === "'") && first === last) return inner.slice(1, -1).trim()
+  return inner
 }
 
 const RESOURCE_RULES: Record<string, ResourceRule[]> = {
   script: [
     { attr: "src", resourceType: "script", import: true },
+    // SVG2 spells a script's source `href`, not `src`. Inside `<svg>` that is the
+    // ONLY spelling there is, so a table with `src` alone dropped every inline SVG
+    // script's dependency. The row is keyed on the tag, not the namespace, which
+    // is safe because an HTML `<script>` has no `href` to read — the lookup finds
+    // no attribute and emits nothing, rather than needing a namespace test the
+    // table has no way to express.
+    { attr: "href", resourceType: "svg-script", import: true },
   ],
   link: [
     // `rel` decides both WHETHER the href is a document the page fetches and
@@ -513,11 +601,49 @@ const RESOURCE_RULES: Record<string, ResourceRule[]> = {
     { attr: "xlink:href", resourceType: "svg-image", import: true, fragmentRef: true },
   ],
   param: [{ attr: "value", resourceType: "param", import: true, paramNameFilter: PARAM_RESOURCE_NAMES }],
-  a: [{ attr: "href", resourceType: "navigation", link: true, navigation: true, fragmentRef: true }],
+  a: [
+    { attr: "href", resourceType: "navigation", link: true, navigation: true, fragmentRef: true },
+    // `ping` is a whitespace-separated list of URLs FETCHED when the link is
+    // activated. It is a fetch, not a navigation — the browser requests it; the
+    // user never goes there — so it takes the resource path and the `import`
+    // mirror, and the scheme contract filters an external endpoint.
+    { attr: "ping", resourceType: "ping", import: true, valueList: "space" },
+  ],
   area: [{ attr: "href", resourceType: "navigation", link: true, navigation: true, fragmentRef: true }],
   form: [{ attr: "action", resourceType: "form-action", link: true }],
   button: [{ attr: "formaction", resourceType: "form-action", link: true }],
   html: [{ attr: "manifest", resourceType: "manifest", import: true }],
+  meta: [
+    // The refresh PRAGMA. `content` is a URL only under `http-equiv=refresh`,
+    // and the gate is what keeps `charset`/`description`/viewport text from
+    // becoming an edge to a sentence. 40 occurrences across 26 files in one
+    // corpus, and entirely absent from the table until a carrier census looked
+    // for it rather than for what the table already knew.
+    { attr: "content", resourceType: "meta-refresh", link: true, navigation: true, httpEquiv: "refresh", contentUrl: true },
+  ],
+  // SVG filter reference. `feImage` pulls an image to paint INTO the filter
+  // result, which is a fetch like any other; the tag is lowercased by the
+  // walker, so the key is `feimage`.
+  feimage: [
+    { attr: "href", resourceType: "svg-filter-image", import: true },
+    { attr: "xlink:href", resourceType: "svg-filter-image", import: true },
+  ],
+  // `cite` names where a quotation or a change came FROM. Nothing fetches it and
+  // nothing navigates to it, but it IS a written reference out of the document,
+  // so it is an edge — recorded as a usage-contextual reference rather than as
+  // an import, because grading a citation as a structural fetch overstates it.
+  // Four elements carry it, and all four are in the table rather than one, since
+  // the ruling is about the attribute's meaning and not about any single tag.
+  q: [{ attr: "cite", resourceType: "citation", fragmentRef: true, evidenceClass: "usage_contextual" }],
+  blockquote: [{ attr: "cite", resourceType: "citation", fragmentRef: true, evidenceClass: "usage_contextual" }],
+  del: [{ attr: "cite", resourceType: "citation", fragmentRef: true, evidenceClass: "usage_contextual" }],
+  ins: [{ attr: "cite", resourceType: "citation", fragmentRef: true, evidenceClass: "usage_contextual" }],
+  // Legacy presentational background images. Deprecated in HTML5 and still
+  // fetched by every shipping browser, so the dependency is real; the
+  // `legacy-` resourceType says so at the edge, which is the difference between
+  // a recorded fact and an implied one.
+  body: [{ attr: "background", resourceType: "legacy-background", import: true }],
+  table: [{ attr: "background", resourceType: "legacy-background", import: true }],
 }
 
 /** `<input type=submit|image formaction=…>` is a form endpoint, and `type` decides
@@ -797,6 +923,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
                 effectiveType = LINK_RESOURCE_TYPES[rel] ?? rule.resourceType
               }
               if (rule.paramNameFilter && !rule.paramNameFilter[asciiLower(attrs["name"] ?? "")]) continue
+              if (rule.httpEquiv !== undefined && asciiLower(attrs["http-equiv"] ?? "") !== rule.httpEquiv) continue
               const line = lineOf(rule.attr)
               // A resource declared ON an addressable element belongs to THAT
               // element, not to its nearest ancestor: `<img id="gallery" src=…>`
@@ -804,6 +931,29 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // (a bare `<script>` in the head) attributes to the ancestor.
               const owner = currentId
               const attrRange = this.attributeRange(startTag, rule.attr, node, line)
+              if (rule.contentUrl) {
+                // The URL is INSIDE the attribute (`0; url=/next`), so the raw
+                // value is not a URL and the length check above has already
+                // confirmed there is content to parse. An interval with no
+                // `url=` reloads this document and names nothing.
+                const inner = refreshContentUrl(decodeCharacterReferences(raw).trim())
+                if (inner.length === 0) continue
+                this.countOutcome(
+                  this.emitResource(inner, owner, rule, line, attrRange, relationships, imports, deferred, true),
+                  counters,
+                )
+                continue
+              }
+              if (rule.valueList === "space") {
+                const urls = spaceSeparatedUrls(decodeCharacterReferences(raw))
+                for (let u = 0; u < urls.length; u++) {
+                  this.countOutcome(
+                    this.emitResource(urls[u], owner, rule, line, attrRange, relationships, imports, deferred),
+                    counters,
+                  )
+                }
+                continue
+              }
               if (rule.candidates === "srcset") {
                 const candidates = srcsetCandidates(raw)
                 for (let c = 0; c < candidates.length; c++) {
@@ -1168,8 +1318,17 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     imports: ASTEngine.ImportInfo[],
     deferred: DeferredReference[],
+    /**
+     * Set when the caller already performed the character-reference decode,
+     * because it had to decode in order to FIND the URL (`<meta http-equiv=refresh
+     * content>`). Character references are not length-preserving, so a second
+     * decode is not idempotent — `&amp;amp;` would collapse two levels — and the
+     * flag keeps the decode single and owned by one caller instead of being
+     * re-applied on the assumption that it is.
+     */
+    alreadyDecoded = false,
   ): ResourceOutcome {
-    const value = decodeCharacterReferences(rawValue).trim()
+    const value = (alreadyDecoded ? rawValue : decodeCharacterReferences(rawValue)).trim()
     if (value.length === 0) return "none"
 
     const fragment = fragmentTarget(value)
@@ -1264,7 +1423,7 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         htmlSpecific: true,
         resourceType: rule.resourceType,
         isExternalResource: network,
-        evidenceClass: network ? "usage_contextual" : "import_based",
+        evidenceClass: rule.evidenceClass ?? (network ? "usage_contextual" : "import_based"),
       },
     })
     if (rule.import && !network) {
