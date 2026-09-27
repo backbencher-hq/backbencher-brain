@@ -8,6 +8,15 @@ import { ASTEngine } from "./engine"
 interface LuaFrame {
   callable?: string
   localNames: Set<string>
+  /**
+   * M60 LUA-20: true inside ANY function body, including a nameless closure.
+   * `callable` cannot serve this purpose: a nameless closure at file scope has
+   * no callable, so a guard written as `if (frame.callable)` never fires there
+   * — which is exactly where a closure's `return` leaked out as a file export.
+   * Keying the guard on a synthetic callable would fix the symptom by
+   * fabricating a symbol; this records the fact that already exists.
+   */
+  inFunction: boolean
 }
 
 interface LuaContext {
@@ -42,7 +51,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.collectErrors(rootNode, ctx)
-    const rootFrame: LuaFrame = { localNames: new Set<string>() }
+    // M60 LUA-06: BEFORE the walk, so a constructor call does not depend on
+    // where its table was declared.
+    this.collectDeclaredTables(rootNode, ctx)
+    const rootFrame: LuaFrame = { localNames: new Set<string>(), inFunction: false }
     const stack: { node: Node; frame: LuaFrame }[] = [{ node: rootNode, frame: rootFrame }]
 
     while (stack.length > 0) {
@@ -54,12 +66,30 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       this.processNode(node, frame, ctx)
 
       let childFrame = frame
-      if (node.type === "function_declaration") {
-        const functionName = this.functionName(node)
-        if (functionName) {
-          const locals = new Set<string>()
-          for (const parameter of this.extractParameters(node)) locals.add(parameter.name)
-          childFrame = { callable: functionName, localNames: locals }
+      if (node.type === "function_declaration" || node.type === "function_definition") {
+        // M60 LUA-20: an ANONYMOUS function establishes a scope too. Only
+        // `function_declaration` used to, so a closure shared its enclosing
+        // frame entirely, with two measured symptoms:
+        //
+        //  1. `extractExport`'s guard is `if (frame.callable) return`, so a
+        //     closure at FILE scope had no callable and its internal
+        //     `return x` was published as the FILE's export. Reproduced:
+        //     `local t = { cb = function(x) return x end }` + `return { a = 1 }`
+        //     published an export named "x" from inside the closure, while the
+        //     file's real `return { a = 1 }` published nothing.
+        //  2. A closure's own locals were attributed to the enclosing function:
+        //     `local captured` inside `function() return captured end` nested in
+        //     `outer` came out with ownerName "outer".
+        //
+        // A nameless closure has no identity of its own, so it keeps the
+        // ENCLOSING callable as its label — inventing a synthetic one would
+        // fabricate a symbol — but it gets its own localNames, so a local inside
+        // a callback is not confused with one in the enclosing body.
+        const functionName = node.type === "function_declaration" ? this.functionName(node) : undefined
+        const locals = new Set<string>()
+        for (const parameter of this.extractParameters(node)) locals.add(parameter.name)
+        if (functionName || node.type === "function_definition") {
+          childFrame = { callable: functionName ?? frame.callable, localNames: locals, inFunction: true }
         }
       }
 
@@ -405,6 +435,23 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (moduleName.startsWith("lovr")) ctx.frameworks.add("LÖVR (VR/AR)")
   }
 
+  // M60 LUA-06: this was ORDER-DEPENDENT, and therefore wrong. `declaredTables`
+  // was filled during the same single traversal that read it, so whether a
+  // constructor call produced an edge depended on whether the table's
+  // declaration happened to appear EARLIER IN THE FILE. Proven by probe, with
+  // the two files differing only in statement order:
+  //
+  //   local A = {}            A.new()
+  //   function A.new() end    local A = {}
+  //   A.new()                 function A.new() end
+  //
+  //   first  -> instantiates global->A   (edge present)
+  //   second -> NO EDGE                  (same semantics, no edge)
+  //
+  // A relationship that depends on where its declaration sits is not a fact
+  // about the program, it is a fact about the traversal. The fix is a PRE-PASS:
+  // collect every name this file binds to a table, before any call is examined.
+  // One traversal, order-independent.
   private constructorTarget(functionNode: Node, ctx: LuaContext): string | undefined {
     if (!["dot_index_expression", "method_index_expression"].includes(functionNode.type)) return undefined
     const method = functionNode.childForFieldName("method") || functionNode.childForFieldName("field")
@@ -413,8 +460,40 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
+  // M60 LUA-06: collect the file's table-valued names BEFORE the walk, so a
+  // constructor call does not depend on the order of the declaration.
+  private collectDeclaredTables(root: Node, ctx: LuaContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const node = stack.pop()!
+      if (node.type === "variable_declaration" || node.type === "assignment_statement") {
+        const inner = node.type === "variable_declaration" ? node.namedChild(0) : node
+        const list = inner?.type === "assignment_statement" ? inner.namedChild(0) : undefined
+        const values = inner?.type === "assignment_statement" ? inner.namedChild(1) : undefined
+        const first = values?.namedChild(0)
+        if (list?.type === "variable_list" && first?.type === "table_constructor") {
+          for (let i = 0; i < list.namedChildCount; i++) {
+            const id = list.namedChild(i)
+            if (id?.type === "identifier") ctx.declaredTables.add(id.text)
+          }
+        }
+      }
+      if (node.type === "function_declaration") {
+        const nm = node.childForFieldName("name")
+        if (nm && (nm.type === "dot_index_expression" || nm.type === "method_index_expression")) {
+          const recv = nm.namedChild(0)
+          if (recv?.type === "identifier") ctx.declaredTables.add(recv.text)
+        }
+      }
+      for (let i = 0; i < node.namedChildCount; i++) { const c = node.namedChild(i); if (c) stack.push(c) }
+    }
+  }
+
   private extractExport(node: Node, frame: LuaFrame, ctx: LuaContext): void {
-    if (frame.callable) return
+    // M60 LUA-20: the guard is "inside any function", not "has a callable" — a
+    // nameless closure at file scope has no callable and its `return` was
+    // published as the FILE's export.
+    if (frame.inFunction) return
     // M60 LUA-00: `return_statement` has no `expression_list` FIELD in this
     // grammar — the expression list is a child of that TYPE. The old lookup
     // returned the anon `return` token, so `values?.namedChild(0)` was
@@ -475,7 +554,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     opts?: { dedupe?: boolean; symbolRange?: { startLine: number } },
   ): void {
     if (!source || !target) return
-    const key = `${type}${source}${target}`
+    const key = `${type}\u001f${source}\u001f${target}`
     // M60 LUA-01: `dedupe: false` is for SYNTHESIZED edges only. Observed edges
     // keep the dedup so a callee called from four places is still one edge in
     // the store. The per-site problem that dedup causes is recorded as its own

@@ -77,6 +77,13 @@ const FIXTURE: Record<string, string> = {
     "  end",                                                       // 31
     "  return nested()",                                           // 32
     "end",                                                         // 33
+    "",                                                            // 34
+    "local handler = function(payload)",                            // 35
+    "  local payloadCopy = payload",                               // 36
+    "  return payloadCopy",                                        // 37  <- a CLOSURE's return
+    "end",                                                         // 38
+    "",                                                            // 39
+    "return use",                                                  // 40  <- the file's REAL export
   ].join("\n") + "\n",
 }
 
@@ -100,6 +107,15 @@ const EXPECTED_PLAIN: Array<{ name: string; line: number }> = [{ name: "plain", 
 
 const checks: Array<{ name: string; pass: boolean; detail: string }> = []
 const check = (n: string, p: boolean, d = ""): void => { checks.push({ name: n, pass: p, detail: d }) }
+
+// The analyzer's exports, read through the DIRECT path — the pipeline drops
+// them entirely (LUA-14), so reading them via parseFile would see nothing and the
+// LUA-20 export leg would pass vacuously.
+async function exportsOf(file: string): Promise<string[]> {
+  const { parseWithAnalyzer } = await import("./lua-analyzer-direct")
+  const d: any = await parseWithAnalyzer(file)
+  return (d.exports ?? []).map((e: any) => e.name)
+}
 
 async function main(): Promise<void> {
   mkdirSync(PROBE_DIR, { recursive: true })
@@ -188,6 +204,19 @@ async function main(): Promise<void> {
   check("a top-level function is still scoped to global", !!topLevel && topLevel.scope === "global",
     topLevel ? `scope=${topLevel.scope}` : "use not a symbol")
 
+  // LUA-20 — an anonymous function establishes a scope. Two symptoms, and the
+  // second only reproduces at FILE scope, which is why the fixture's closure is
+  // top-level: extractExport's guard is `if (frame.callable) return`, so a
+  // closure with no enclosing callable published its internal `return inner` as
+  // the FILE's export. A closure nested in a function was already guarded, which
+  // is why only the file-scope case was ever visible.
+  const fileExports = await exportsOf(join(PROBE_DIR, "members.lua"))
+  check("a top-level closure's internal return is NOT published as a file export",
+    !fileExports.includes("payloadCopy"), fileExports.length ? `published: ${fileExports.join(", ")}` : "none published")
+  check("a closure's own local is not attributed to an enclosing NAMED function",
+    !syms.some((s) => s.name === "payloadCopy" && s.ownerName && s.ownerName !== "global"),
+    syms.filter((s) => s.name === "payloadCopy").map((s) => `owner=${s.ownerName}`).join(", ") || "no symbol")
+
   // ── mutants: the gate must be able to fail ─────────────────────────────────
   // Output mutation, for the reason recorded in verify-lua-edge-lines.ts: the
   // engine caches analyzer modules, so editing the source after first import has
@@ -224,6 +253,7 @@ async function main(): Promise<void> {
     { name: "a plain function is filed as a method", apply: (s) => s.map((x) => (x.name === "plain" ? { ...x, kind: "method", ownerName: "Buffer" } : x)) },
     { name: "a member is filed at the wrong line", apply: (s) => s.map((x) => (x.name === "readUInt8" ? { ...x, startLine: 1 } : x)) },
     { name: "LUA-19 again: a nested function is scoped to global", apply: (s) => s.map((x) => (x.name === "nested" ? { ...x, scope: "global" } : x)) },
+    { name: "LUA-20 again: a closure's return is published as a file export", apply: () => ["payloadCopy"] },
   ]
   let caught = 0
   const detail: Array<{ name: string; caught: boolean; failures: string[] }> = []
@@ -235,6 +265,17 @@ async function main(): Promise<void> {
     console.log(`  ${hit ? "CAUGHT " : "LEAK   "}  ${m.name}`)
   }
   check("every planted regression is caught", caught === MUTANTS.length, `${caught}/${MUTANTS.length}`)
+
+  // The export leg needs the mutant's claim checked against the REAL analyzer
+  // output, so it is verified separately from the symbol-level mutants.
+  const realFileExports = await exportsOf(join(PROBE_DIR, "members.lua"))
+  // The anti-vacuity leg. Without a genuine file-scope export in the fixture,
+  // "no closure return leaked" would be true for the trivial reason that nothing
+  // is ever exported — the leg would pass on an empty set and prove nothing. The
+  // fixture therefore ends with a real `return use`, and this asserts it arrives.
+  check("the export leg is not vacuous: the fixture's real export IS published",
+    realFileExports.includes("use") && !realFileExports.includes("payloadCopy"),
+    realFileExports.length ? realFileExports.join(", ") : "NO EXPORTS — the leg would pass on an empty set")
 
   const passed = checks.every((c) => c.pass)
   const result = {
