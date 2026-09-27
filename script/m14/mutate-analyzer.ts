@@ -2482,6 +2482,48 @@ function tomlOwnerLookupUsesRawSegments() {
   }
 }
 
+/** ERROR RECOVERY: the recovery region is turned into a SYMBOL. `ERROR` and
+ *  `MISSING` are DIAGNOSTICS, not document constructs — they exist only where the
+ *  parser could not read the source, and a node named after one joins to nothing a
+ *  consumer can navigate to. That is the unresolvable-identity class reached through
+ *  a malformed file rather than through a missing edge.
+ *
+ *  The companion half of the contract is in the same fixture and is not modellable
+ *  here: "the broken region is REPORTED" is the ENGINE's job — the toml analyzer
+ *  pushes no errors of its own, so a mutation of analyzer output cannot remove a
+ *  diagnostic. The fixture pins both, and the mutant covers the half a mutant can
+ *  reach.
+ *
+ *  The fixture also pins the half that matters most and is easiest to get wrong: a
+ *  walk that STOPPED at the recovery node would publish `t` and `t.before` and
+ *  nothing after, and the document would still look analysed because its module is
+ *  present. Caught by toml/malformed-and-rejected.
+ */
+function tomlErrorNodeBecomesSymbol() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    const errs = (r.errors ?? []).filter((e: any) => typeof e?.range?.startLine === "number")
+    if (errs.length === 0) return r
+    return {
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...errs.map((e: any) => ({
+          name: "ERROR",
+          kind: "class",
+          range: { startLine: e.range.startLine, startColumn: e.range.startColumn, endLine: e.range.endLine, endColumn: e.range.endColumn, startIndex: 0, endIndex: 0 },
+          scope: "",
+          visibility: "public",
+          ownerName: mod.name,
+          ownerKind: "module",
+          metadata: { tomlSpecific: true, isRecoveryNode: true },
+        })),
+      ],
+    }
+  }
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -11799,6 +11841,13 @@ export const MUTANTS: Mutant[] = [
   },
 
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "toml/error-node-becomes-symbol",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "ERROR RECOVERY: the recovery region is turned into a SYMBOL. `ERROR` and `MISSING` are DIAGNOSTICS, not document constructs — they exist only where the parser could not read the source, and a node named after one joins to nothing a consumer can navigate to, which is the unresolvable-identity class reached through a malformed file rather than a missing edge. The companion half of the contract (\"the region is REPORTED\") is the engine's job — the toml analyzer pushes no errors of its own, so a mutation of analyzer output cannot remove a diagnostic; the fixture pins both and the mutant covers the half a mutant can reach. The fixture also pins what matters most and is easiest to get wrong: a walk that STOPPED at the recovery node would publish `t` and `t.before` and nothing after, and the document would still look analysed because its module is present. Caught by toml/malformed-and-rejected.",
+    transform: tomlErrorNodeBecomesSymbol(),
+  },
   {
     id: "toml/quotes-only-punctuation",
     language: "toml",

@@ -320,7 +320,16 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // vacuous — and html/inline-embedded-code failed on exactly that when it was
     // first run, which is the correct behaviour of a gate and not a flake.
     let result: any
-    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html") {
+    // toml joins the production-parity set for the same reason html does, and for a
+    // sharper one. Parse errors are the ENGINE's to report: the html analyzer walks
+    // for ERROR/MISSING itself and pushes its own, but the toml analyzer reports
+    // nothing, so a fixture running it directly sees a malformed document as
+    // CLEAN — zero errors for a file the parser could not read. The lane's
+    // error-recovery contract was therefore written into the spec and the doc with
+    // nothing able to see it, which is how a documented guarantee becomes a stale
+    // sentence. Going through `parseFile` exercises the path real indexing takes
+    // AND the diagnostics a consumer would actually receive.
+    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
       // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
