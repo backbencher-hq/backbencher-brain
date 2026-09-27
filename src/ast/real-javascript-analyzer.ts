@@ -897,7 +897,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `import {\n  a,\n  b,\n} from "m"` writes a and b on their own lines,
           // and the statement's first line would be a claim about a line they are
           // not on. A string-only list cannot say which line that is.
-          const items: Array<{ text: string; node: Node }> = []
+          // M60 / JD2b: each item also carries the name AS THE MODULE DECLARES
+          // IT, beside the local binding. The edge `target` keeps spelling the
+          // LOCAL binding, because `javascript/import-edges` pins
+          // `./m2:c` and `javascript/import-alias-binding` pins items `["beta"]`
+          // — both deliberate, with the rationale "the alias is the local
+          // binding". The resolver, however, needs the DECLARED name: given
+          // `./m2:c` it cannot know that `c` came from `a`, so every aliased
+          // and every default import stayed unresolvable. Recording the declared
+          // name as metadata is purely ADDITIVE — no pinned string changes — and
+          // it is a fact the analyzer already has in hand. For a default import
+          // the declared name is the literal `default`, which is what lets the
+          // resolver find the module's default export by its isDefault flag.
+          const items: Array<{ text: string; node: Node; declared: string; kind: "default" | "named" | "namespace" }> = []
           const clause = this.findChildByType(node, "import_clause")
           // J4 (review wave): isDefault follows the clause shape — a direct
           // identifier child IS the default import. The old items-count
@@ -908,7 +920,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               const c = clause.namedChild(i)
               if (!c) continue
               if (c.type === "identifier") {
-                items.push({ text: c.text, node: c }) // default import
+                // default import: the local binding is `c`, the module declares `default`
+                items.push({ text: c.text, node: c, declared: "default", kind: "default" })
                 hasDefaultImport = true
               } else if (c.type === "named_imports") {
                 for (let j = 0; j < c.namedChildCount; j++) {
@@ -918,7 +931,9 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                     const n = this.findChildByType(spec, "identifier")
                     const alias = spec.childForFieldName("alias")
                     const item = alias ?? n
-                    if (item) items.push({ text: item.text, node: item })
+                    if (item) {
+                      items.push({ text: item.text, node: item, declared: (n?.text ?? item.text), kind: "named" })
+                    }
                     }
                 }
               } else if (c.type === "namespace_import") {
@@ -926,7 +941,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // is what the caller writes, so it is the line-bearing node; a
                 // bare `import *` (side-effect-free star, no binding) has none.
                 const nsName = c.childForFieldName("name") ?? c.namedChild(0)
-                items.push({ text: "*", node: nsName ?? c })
+                // A namespace has no single declared name to point at — the whole
+                // module is the target — so `declared` stays "*" and the resolver
+                // declines it, exactly as before.
+                items.push({ text: "*", node: nsName ?? c, declared: "*", kind: "namespace" })
               }
             }
           }
@@ -941,11 +959,16 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const item of items) {
               relationships.push({
                 source: moduleName,
+                // UNCHANGED, and deliberately so: the local binding, which is
+                // what the two importing fixtures pin.
                 target: `${srcPath}:${item.text === "*" ? "*" : item.text.split(" as ")[0]}`,
                 type: ASTEngine.RelationshipType.Imports,
                 confidence: 1.0,
                 ...this.lineField(item.node),
-                metadata: {},
+                // JD2b, additive: what the MODULE declares, so the resolver can
+                // reach the right symbol for an aliased or default import. The
+                // edge target above is untouched.
+                metadata: { declaredName: item.declared, declaredKind: item.kind },
               })
             }
           }

@@ -18,9 +18,13 @@
 //   1. A named, unaliased import of an internal module to a unique target file,
 //      where the item names one exported symbol, DOES resolve.
 //   2. A namespace import (`import * as ns`) does NOT — it has no single target.
-//   3. An ALIASED import (`import { draw as render }`) does NOT — the edge spells
-//      the local binding, so no resolver can find the declared name. The fix is
-//      the analyzer's naming convention (JD2b), not the resolver.
+//   3. An ALIASED import (`import { draw as render }`) resolves to the DECLARED
+//      name `draw` — reached without changing either pinned string, because the
+//      analyzer records the declared name as additive relationship metadata
+//      (JD2b). Before that it could not resolve at all, and a name-only match
+//      attached it to an unrelated method that shared the local binding.
+//   3b. A DEFAULT import resolves through the target module's default export, and
+//      is REFUSED when the module has none.
 //   4. AMBIGUITY refuses. A specifier naming two files resolves to neither.
 //   5. The gate that makes 1 safe: a target must be in the importing module's
 //      EXPORT SURFACE. Without it the first end-to-end run produced a
@@ -53,11 +57,16 @@ const proj = mkdtempSync(path.join(tmpdir(), "m40-importres-proj-"))
 mkdirSync(path.join(proj, "src"), { recursive: true })
 writeFileSync(path.join(proj, "bb.json"), JSON.stringify({ project: { name: "importres", embedding: { provider: "none" } } }))
 
-// lib.js publishes `draw`; the decoy `render` is a METHOD on the class and is
-// NOT exported. app.js imports `draw` under the local name `render` — the exact
-// shape that made the first implementation attach the edge to the decoy.
+// lib.js publishes `draw` and a real default export; the decoy `render` is a
+// METHOD on the class and is NOT exported. app.js imports `draw` under the local
+// name `render` — the exact shape that made the first implementation attach the
+// edge to the decoy. nodefault.js has NO default export, so a default import of
+// it must still be refused.
 writeFileSync(path.join(proj, "src/lib.js"), `export function draw() { return 1 }
 export class Widget { render() { return 2 } }
+export default class Main { go() { return 3 } }
+`)
+writeFileSync(path.join(proj, "src/nodefault.js"), `export function only() { return 4 }
 `)
 writeFileSync(path.join(proj, "src/extra.js"), `export function helper() { return 3 }
 `)
@@ -65,10 +74,12 @@ writeFileSync(path.join(proj, "src/app.js"), `import { draw as render } from "./
 import { helper } from "./extra.js"
 import * as everything from "./extra.js"
 import Def from "./lib.js"
+import NoDefault from "./nodefault.js"
 render()
 helper()
 everything.helper()
 Def()
+NoDefault()
 `)
 
 const cli: any = await import(path.join(ROOT, "src/cli/index"))
@@ -118,17 +129,26 @@ const ns = byTarget.get("./extra.js:*")
 check("JD2.2 a namespace import does NOT resolve (no single target symbol)",
   !ns?.name, `got ${ns?.name ?? "unresolved"}`)
 
-// 3. aliased — and 5. the decoy, which is the same row
+// 3. ALIASED (JD2b): the edge spells the LOCAL binding `render`, but the module
+//    declares `draw`. The analyzer records the declared name as additive
+//    metadata, so the edge resolves to `draw` — neither the local binding nor
+//    the decoy method that shares it.
 const aliased = byTarget.get("./lib.js:render")
-check("JD2.3 an ALIASED import does NOT resolve (the edge spells the local binding)",
-  !aliased?.name, `got ${aliased?.name ?? "unresolved"}`)
-check("JD2.5 NEGATIVE: it is never attached to the same-named non-exported METHOD",
+check("JD2.3 an ALIASED import resolves to the DECLARED name, not the local binding",
+  aliased?.name === "draw" && aliased?.inFile === "src/lib.js", `got ${aliased?.name ?? "unresolved"}`)
+check("JD2.5 NEGATIVE: never attached to the same-named non-exported METHOD",
   aliased?.name !== "render", `attached to ${aliased?.name}`)
 
-// 4. default import of a module that has no `default`-named symbol
+// 4. DEFAULT (JD2b): `import Def from "./lib.js"` where lib.js does
+//    `export default class Main`. The edge spells the local binding `Def` and
+//    the published symbol is `Main`, so the only honest route is the default
+//    export's own flag. And a module with NO default export must still refuse.
 const def = byTarget.get("./lib.js:Def")
-check("JD2.4 a default import under a local name does NOT resolve to a guess",
-  !def?.name || def?.inFile === "src/lib.js", `got ${def?.name ?? "unresolved"}`)
+check("JD2.4 a DEFAULT import resolves through the module's default export",
+  def?.name === "Main" && def?.inFile === "src/lib.js", `got ${def?.name ?? "unresolved"}`)
+const noDefault = byTarget.get("./nodefault.js:NoDefault")
+check("JD2.7 NEGATIVE: a default import of a module with no default export is REFUSED",
+  !noDefault?.name, `attached to ${noDefault?.name}`)
 
 // 6. no import edge may point at a symbol its target file does not export
 {
