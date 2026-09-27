@@ -46,7 +46,25 @@ const LIST = arg("--list", "")
 
 const sha = (p: string): string => createHash("sha256").update(readFileSync(p)).digest("hex")
 
-interface FileOutcome { rel: string; oldVerdict: string; newVerdict: string; oldPhantoms: number; newPhantoms: number }
+// A verdict is a BOOLEAN, and that was the instrument's real flaw: two grammars
+// can build different trees and agree on hasError, so a structural regression
+// is invisible to a verdict-only comparison. Proven on this very lane — wired
+// (ABI 15) and tree-sitter-wasms@0.1.13 (ABI 13) were declared different by
+// their own field sets, yet the verdict-only A/B reported 0 fixed / 0 regressed
+// / 3 cleanBoth on a subset chosen to contain failures, i.e. it "confirmed"
+// equivalence between two builds that are not equivalent. So each file now also
+// carries a canonical digest of its TREE, and a file whose verdict matches but
+// whose tree differs is reported in its own category instead of being counted as
+// agreement.
+interface FileOutcome {
+  rel: string
+  oldVerdict: string
+  newVerdict: string
+  oldPhantoms: number
+  newPhantoms: number
+  oldStruct: string
+  newStruct: string
+}
 
 async function main(): Promise<void> {
   const revision = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim()
@@ -80,6 +98,36 @@ async function main(): Promise<void> {
   const oldSide = await buildParser(OLD_WASM)
   const newSide = await buildParser(NEW_WASM)
 
+  // Refuse to compare a build with itself. A run that silently compared one
+  // parser to itself would report perfect agreement and be indistinguishable
+  // from a real equivalence result — which is precisely the failure this
+  // instrument already had once.
+  if (sha(OLD_WASM) === sha(NEW_WASM)) {
+    console.error(`refusing to compare a build with itself: ${OLD_WASM} == ${NEW_WASM}`)
+    process.exit(2)
+  }
+  const oldLang: any = oldSide.lang
+  const newLang: any = newSide.lang
+
+  // Canonical tree serialization: node type plus field name, in pre-order,
+  // hashed. Two builds agree on a file only if they build the SAME tree — not
+  // merely if both fail to report a parse error.
+  const structDigest = (root: any): string => {
+    const parts: string[] = []
+    const stack: Array<{ n: any; field: string | null }> = [{ n: root, field: null }]
+    while (stack.length) {
+      const { n, field } = stack.pop()!
+      parts.push(`${field ? field + ":" : ""}${n.type}${n.isNamed ? "" : "(anon)"}`)
+      for (let i = n.childCount - 1; i >= 0; i--) {
+        const c = n.child(i)
+        if (!c) continue
+        const fn = typeof n.fieldNameForChild === "function" ? n.fieldNameForChild(i) : null
+        stack.push({ n: c, field: fn })
+      }
+    }
+    return createHash("sha256").update(parts.join("|")).digest("hex").slice(0, 16)
+  }
+
   const outcome = (parser: any, src: string) => {
     const tree = parser.parse(src)
     let phantoms = 0
@@ -90,8 +138,9 @@ async function main(): Promise<void> {
       for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push(c) }
     }
     const verdict = tree.rootNode.hasError ? "ERROR" : "CLEAN"
+    const struct = structDigest(tree.rootNode)
     try { tree.delete() } catch {}
-    return { verdict, phantoms }
+    return { verdict, phantoms, struct }
   }
 
   const perFile: FileOutcome[] = []
@@ -101,19 +150,32 @@ async function main(): Promise<void> {
     if (!src.trim()) continue
     const a = outcome(oldSide.parser, src)
     const b = outcome(newSide.parser, src)
-    perFile.push({ rel, oldVerdict: a.verdict, newVerdict: b.verdict, oldPhantoms: a.phantoms, newPhantoms: b.phantoms })
+    perFile.push({ rel, oldVerdict: a.verdict, newVerdict: b.verdict, oldPhantoms: a.phantoms, newPhantoms: b.phantoms, oldStruct: a.struct, newStruct: b.struct })
   }
 
   const fixed = perFile.filter((f) => f.oldVerdict === "ERROR" && f.newVerdict === "CLEAN")
   const regressed = perFile.filter((f) => f.oldVerdict === "CLEAN" && f.newVerdict === "ERROR")
   const stillFailing = perFile.filter((f) => f.oldVerdict === "ERROR" && f.newVerdict === "ERROR")
   const cleanBoth = perFile.filter((f) => f.oldVerdict === "CLEAN" && f.newVerdict === "CLEAN")
+  // The category the verdict-only version could not express.
+  const structDiffers = perFile.filter((f) => f.oldVerdict === f.newVerdict && f.oldStruct !== f.newStruct)
+  // structDiffers spans BOTH cleanBoth and stillFailing (it is defined on
+  // matching verdicts, not on clean ones), so the identical-tree count must
+  // subtract only the clean subset. The first version subtracted all of it and
+  // printed cleanBothIdenticalTree=-1, which is how a category can be negative
+  // and nobody notices if the summary is not read closely.
+  const structDiffersClean = structDiffers.filter((f) => f.oldVerdict === "CLEAN")
+  const cleanBothIdenticalTree = cleanBoth.length - structDiffersClean.length
 
   // A headline count alone could hide a fix and a break that cancel, so the
   // verdict that matters is the PAIR, and an all-CLEAN run proves nothing
   // because it cannot tell "both builds agree" from "instrument is blind".
-  const canSeeADifference = fixed.length + regressed.length > 0
-  const verdict = regressed.length === 0 && fixed.length >= 0 ? "NEW_IS_NOT_WORSE" : "NEW_REGRESSES"
+  // A difference the instrument can see at all. Previously this only counted
+  // verdict flips, so a pair that agreed on every verdict read as "no
+  // difference" even when the trees differed — which is how the falsification
+  // run below was able to "confirm" equivalence between an ABI-15 and an ABI-13
+  // build.
+  const canSeeADifference = fixed.length + regressed.length + structDiffers.length > 0
 
   const report = {
     schemaVersion: 1,
@@ -129,7 +191,13 @@ async function main(): Promise<void> {
       fixed: fixed.map((f) => f.rel),
       regressed: regressed.map((f) => f.rel),
       stillFailing: stillFailing.map((f) => f.rel),
-      cleanBoth: cleanBoth.length,
+      cleanBothIdenticalTree,
+      // same verdict, different tree — the class a verdict-only A/B is blind to
+      structDiffers: structDiffers.map((f) => ({ rel: f.rel, oldStruct: f.oldStruct, newStruct: f.newStruct })),
+    },
+    declaredIdentity: {
+      old: { fieldCount: oldLang?.fieldCount ?? null, abiVersion: oldLang?.abiVersion ?? null, name: oldLang?.name ?? null },
+      new: { fieldCount: newLang?.fieldCount ?? null, abiVersion: newLang?.abiVersion ?? null, name: newLang?.name ?? null },
     },
     headline: {
       oldErrorFiles: fixed.length + stillFailing.length,
@@ -143,14 +211,20 @@ async function main(): Promise<void> {
       newTotal: perFile.reduce((a, f) => a + f.newPhantoms, 0),
     },
     instrumentCanSeeADifference: canSeeADifference,
-    verdict,
+    // NEW_REGRESSES only on a verdict flip. A structural difference alone is
+    // reported and left for judgement: two grammars can build different trees
+    // and both be correct, so "the new build's tree differs" is a fact, not a
+    // verdict. What it forbids is claiming the two are interchangeable.
+    verdict: regressed.length > 0 ? "NEW_REGRESSES" : (structDiffers.length > 0 ? "NEW_DIFFERS_STRUCTURALLY" : "NEW_IS_NOT_WORSE"),
     note: "Set-wise by FILE, not by total. A total can hide a fix and a regression that cancel. An all-CLEAN corpus proves nothing on its own, so instrumentCanSeeADifference is reported separately and must be established on a subset that actually contains failing files before any 'no difference' claim is believed.",
     perFile,
   }
   writeFileSync(OUT, JSON.stringify(report, null, 2) + "\n")
   console.log(`repo=${REPO} files=${perFile.length}`)
-  console.log(`fixed=${fixed.length} regressed=${regressed.length} stillFailing=${stillFailing.length} cleanBoth=${cleanBoth.length}`)
-  console.log(`instrumentCanSeeADifference=${canSeeADifference} verdict=${verdict}`)
+  console.log(`fixed=${fixed.length} regressed=${regressed.length} stillFailing=${stillFailing.length} cleanBothIdenticalTree=${cleanBothIdenticalTree} structDiffers=${structDiffers.length}`)
+  console.log(`declared: old(fieldCount=${oldLang?.fieldCount}, abi=${oldLang?.abiVersion}) new(fieldCount=${newLang?.fieldCount}, abi=${newLang?.abiVersion})`)
+  for (const f of structDiffers.slice(0, 20)) console.log(`  TREE-DIFF ${f.rel}  ${f.oldStruct} -> ${f.newStruct}`)
+  console.log(`instrumentCanSeeADifference=${canSeeADifference} verdict=${regressed.length > 0 ? "NEW_REGRESSES" : (structDiffers.length > 0 ? "NEW_DIFFERS_STRUCTURALLY" : "NEW_IS_NOT_WORSE")}`)
   for (const f of regressed) console.log(`  REGRESSED ${f.rel}`)
   for (const f of fixed) console.log(`  FIXED     ${f.rel}`)
   for (const f of stillFailing) console.log(`  STILL     ${f.rel}`)
