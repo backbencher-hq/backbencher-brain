@@ -13912,7 +13912,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
             // be an endpoint nothing resolves.
             if (prop === "font-family") {
               for (const tok of declText.match(/[A-Za-z_][\w-]*/g) ?? []) {
-                if (fontFaces.has(tok)) for (const sn of selNames) push("uses", sn, `@font-face ${tok}`)
+                if (fontFaces.has(tok)) push("uses", sel, `@font-face ${tok}`)
               }
             }
             if (prop === "animation" || prop === "animation-name") {
