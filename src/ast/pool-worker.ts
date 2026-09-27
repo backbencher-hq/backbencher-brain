@@ -321,6 +321,7 @@ export function extractFallback(
   const relationships = filterNoiseRelationships(
     extractBasicRelationships(content, language, symbols, imports),
     language,
+    new Set(symbols.map((s: any) => String(s?.name ?? "")).filter(Boolean)),
   )
 
   return {
@@ -355,7 +356,12 @@ const NOISE_TARGETS = new Set([
   "beforeEach", "afterEach",
 ])
 
-function filterNoiseRelationships(rels: any[], language: string): any[] {
+/**
+ * @param declaredNames names of symbols THIS FILE declares. A name the file
+ *   declares cannot be a web-tree-sitter API leak, so the NOISE_TARGETS check is
+ *   skipped for it. See the note at the check itself.
+ */
+function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -387,6 +393,29 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     // valid data and must bypass the universal identifier sanitizer.
     if (language === "json" || language === "yaml" || language === "hcl" || language === "terraform" || language === "graphql") return true
 
+    // M14 #277 (bash): a `source`/`.` target is a FILESYSTEM PATH, which is the
+    // same category as the data paths above and not a code identifier — so the
+    // universal identifier sanitizer does not apply to it. It applied, and the
+    // cost was silent and total: the brace ban below matched the `{}` of
+    // `${rootfsDir}/etc/os-release`, so EVERY dynamic source path was deleted on
+    // the way to the index. Measured on the pinned corpus, the analyzer emitted
+    // 23 import edges and the production path delivered 2; the 21 that vanished
+    // were exactly the ones whose path is built from a variable, which is the
+    // form most real install scripts use. The pre-fix artifacts did not show it
+    // because the m12 corpus measurement read `analyze()` directly, not
+    // `parseFile` — the same known-zeros gap the groovy lane recorded.
+    //
+    // The exemption is deliberately SCOPED to the two path-shaped labels. A
+    // `calls` or `uses` target containing braces is still garbage and is still
+    // dropped, which is what keeps a fabricated `calls -> ${dotnetPath}` — the
+    // defect class BD4 exists to prevent — from being laundered through this
+    // exemption. The differential is what proves both halves: its oracle
+    // corroborates the path rows and expects no braced call rows.
+    if (language === "bash" && (r.type === "imports" || r.type === "references" || r.relationshipType === "imports" || r.relationshipType === "references")) {
+      if (target.length > 200 || target.includes("\n")) return false
+      return true
+    }
+
     // Block garbage targets: source code snippets, malformed names
     if (target.length > 200 || target.includes("\n")) return false
 
@@ -402,11 +431,25 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     if (/[{}`<>\n\r\t]/.test(leaf)) return false
     if (leaf.startsWith(" ") || leaf.includes("  ")) return false
 
-    // CSS files: only keep "contains" relationships (no "calls" for properties)
-    if (language === "css" || language === "scss" || language === "sass") {
-      const rt = r.type || r.relationshipType || ""
-      return rt === "contains"
-    }
+    // CSS/SCSS/SASS: no type-based filter. The rule this replaces was "keep
+    // `contains` only", on the stated grounds that a `uses` edge to a CSS
+    // property name is not valid. That was true of the ANALYZER'S OUTPUT and is
+    // no longer: `real-css-analyzer.ts` now emits no relationship to a property
+    // name at all (a property is a token in a declaration, not a graph node — the
+    // information rides `declaresProperties` on the symbol payload instead), and
+    // it emits a `contains` edge only where both ends resolve to a symbol it
+    // publishes.
+    //
+    // Measured over 457 files / 13 corpora, this filter was discarding the CSS
+    // lane's most valuable edges — `var(--x)` references to custom properties and
+    // `animation:` references to `@keyframes` — 2,170 of them, 1,437 of which
+    // resolve at both ends. Keeping `contains` only meant the production graph
+    // was made of structural containment and nothing else.
+    //
+    // The universal rules above still apply to CSS unchanged (block garbage
+    // targets, over-long or empty leaves, brace/angle-bracket leaves), and the
+    // store still records an edge whose target is in another file as an external
+    // reference — which is what a `references` edge between stylesheets IS.
 
     // NOTE: no blanket hyphen block here. Hyphens are valid identifier
     // characters in Clojure/Lisp-family and shell languages (create-service,
@@ -414,8 +457,31 @@ function filterNoiseRelationships(rels: any[], language: string): any[] {
     // silently drop legitimate relationships for those analyzers. CSS property
     // leakage is already fully handled by the language-specific branch above.
 
-    // Block tree-sitter AST internals
-    if (NOISE_TARGETS.has(leaf)) return false
+    // Block tree-sitter AST internals — BUT NOT a name this file DECLARES.
+    //
+    // Every entry in NOISE_TARGETS is the name of a web-tree-sitter Node
+    // accessor (`node.type`, `node.namedChild`, `node.parent`, …). The list
+    // defends against an analyzer passing an API member name where a symbol
+    // name belongs. It is not a list of language keywords, and it was applied as
+    // if it were — which is the same error this file already documents for the
+    // JS-globals list ("a method named `process` is a legitimate declaration in
+    // Scala/Python/Java; applying the JS global list cross-language silently
+    // dropped real symbols").
+    //
+    // `type` is the costly entry: it is a web-tree-sitter accessor AND a shell
+    // builtin AND an ordinary variable name. Measured over five bash corpora
+    // (ohmyzsh, otp, fsharp, nvm, rbenv): 18 emitted edges had `type` as their
+    // target leaf, and 17 of them named a variable THE SAME FILE DECLARES —
+    // `local type="$1"`, `type="${match[1]}"` — so they were real containment and
+    // read relationships deleted on the way to the index. The same applies to a
+    // Java field named `parent`, a Python method named `text`, a Kotlin
+    // property named `firstChild`.
+    //
+    // The discriminator is DECLARATION, and it is the right one: an analyzer that
+    // accidentally emits `node.type` emits a name the file never declares, while
+    // a variable the file declares is a real node in the graph. So the list keeps
+    // its power against the bug it was written for and stops eating the graph.
+    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) return false
 
     return true
   })
@@ -585,6 +651,49 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // every language is a separate, larger change that would need its own
           // measurement round.
           isDeclaration: s.metadata?.isDeclaration === true || undefined,
+          // CSS lane (2026-09-26). The same seam as `isDeclaration` above, met
+          // from the other side: the store DOES read `symbol.metadata` and
+          // serialise it into `brain_symbol.annotations`, but the whole
+          // `metadata` object is dropped HERE, so nothing an analyzer puts in it
+          // survives the worker boundary. For CSS that silently deleted a
+          // payload the lane's own ruling depends on — `declaresProperties`,
+          // which replaced 32,654 relationships to CSS property names that are
+          // not graph nodes (measured: `uses` resolved at both ends 6.0% of the
+          // time, and the production filter then discarded the class outright).
+          // Trading a wrong edge for a dead field is not a fix, so the payload is
+          // carried.
+          //
+          // Deliberately NARROW, and deliberately CSS-only, for the reason the
+          // comment above gives: widening `annotations` for every symbol in every
+          // language is a separate, larger change that needs its own measurement
+          // round. The keys below are the ones the CSS lane's F6/F8/CC1 checks
+          // read, so the channel carries facts that are consumed rather than
+          // facts that are merely produced.
+          // Emitted under the name the indexer already reads, so the existing
+          // `symbol.metadata -> annotations` INSERT path carries it with no
+          // change on the store side.
+          metadata: (() => {
+            const m = s.metadata as Record<string, any> | undefined
+            if (!m) return undefined
+            const out: Record<string, any> = {}
+            if (Array.isArray(m.declaresProperties)) out.declaresProperties = m.declaresProperties
+            if (typeof m.declaredPropertyCount === "number") out.declaredPropertyCount = m.declaredPropertyCount
+            if (typeof m.isSelector === "boolean") out.isSelector = m.isSelector
+            if (typeof m.isComplex === "boolean") out.isComplex = m.isComplex
+            if (typeof m.isUtility === "boolean") out.isUtility = m.isUtility
+            if (typeof m.isCustomProperty === "boolean") out.isCustomProperty = m.isCustomProperty
+            if (typeof m.isKeyframes === "boolean") out.isKeyframes = m.isKeyframes
+            if (typeof m.isSupports === "boolean") out.isSupports = m.isSupports
+            if (typeof m.isAtRule === "boolean") out.isAtRule = m.isAtRule
+            if (typeof m.isCssModule === "boolean") out.isCssModule = m.isCssModule
+            if (Array.isArray(m.specificity)) out.specificity = m.specificity
+            if (Array.isArray(m.classNames)) out.classNames = m.classNames
+            if (m.selectorComposition) out.selectorComposition = m.selectorComposition
+            if (typeof m.supportsCondition === "string") out.supportsCondition = m.supportsCondition
+            if (typeof m.atKeyword === "string") out.atKeyword = m.atKeyword
+            if (Array.isArray(m.selectorChain)) out.selectorChain = m.selectorChain
+            return Object.keys(out).length > 0 ? out : undefined
+          })(),
           snippet,
         }
       }),
@@ -636,7 +745,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             }
           })
       }),
-      relationships: filterNoiseRelationships(parsed.relationships, language),
+      relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
     }
 

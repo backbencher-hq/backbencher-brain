@@ -349,6 +349,127 @@ checks.push({
 })
 
 // ---------------------------------------------------------------------------
+// C8 — the runtime-upgrade claim is MEASURED, and the survey restates the
+//      measurement rather than a remembered number
+// ---------------------------------------------------------------------------
+
+// This gate exists because the survey used to carry a literal `failures: 20` —
+// a count with no list, which no artifact could reproduce and which therefore
+// nothing ever checked, while sizing the entire M63 migration. The number now
+// lives in one place, produced by a script that loads every shipped wasm on both
+// runtimes, and C8 proves three things about it:
+//
+//   1. THE CLAIM EXISTS. An absent artifact must not leave a remembered number
+//      standing, and must not be papered over with a plausible one.
+//   2. THE SURVEY RESTATES THE ARTIFACT, not itself. If the survey's copy of the
+//      straggler list or the counts disagrees with the measurement, the survey is
+//      wrong — a generator that edits a measurement into agreement is a laundromat.
+//   3. THE HARNESS THAT PRODUCED IT WAS ABLE TO FAIL. A load test that reports
+//      success on a corrupt module certifies nothing, and this one did exactly
+//      that until the load was forced through setLanguage + parse. The artifact
+//      records the control; C8 refuses a claim whose control is blind or uncalibrated.
+
+const STRAGGLER_ARTIFACT_REL = "validation/m60/results/M60.0.runtime-stragglers.json"
+const stragglerPath = path.join(ROOT, STRAGGLER_ARTIFACT_REL)
+const phaseA = (survey as any)?.runtime?.webTreeSitter?.phaseA
+const c8: Array<{ check: string; status: "pass" | "fail"; detail: string }> = []
+
+if (!existsSync(stragglerPath)) {
+  c8.push({
+    check: "artifact-exists",
+    status: "fail",
+    detail: `no measurement artifact at ${STRAGGLER_ARTIFACT_REL}. The survey must not carry a remembered count in its place — run \`bun run grammar:stragglers:measure\`.`,
+  })
+} else {
+  let ev: any = null
+  try {
+    ev = JSON.parse(readFileSync(stragglerPath, "utf8"))
+  } catch (e: any) {
+    c8.push({ check: "artifact-exists", status: "fail", detail: `unparseable: ${e?.message ?? e}` })
+  }
+  if (ev) {
+    c8.push({
+      check: "harness-control",
+      status: ev.harnessControl?.blind === false ? "pass" : "fail",
+      detail:
+        ev.harnessControl?.blind === false
+          ? `sound: ${ev.harnessControl.mutations?.length ?? 0} deliberate corruption(s) rejected on every runtime before any result was read`
+          : "BLIND: the load harness reported success on a deliberately corrupt module, so no result in it is evidence",
+    })
+    c8.push({
+      check: "calibration",
+      status: ev.calibration?.agrees ? "pass" : "fail",
+      detail: ev.calibration?.agrees
+        ? `reproduces the previously recorded pinned-runtime baseline (${(ev.preExistingFailures ?? []).join(", ") || "none"})`
+        : `does NOT reproduce the recorded baseline — measured ${(ev.preExistingFailures ?? []).join(", ") || "none"}. A harness that cannot reproduce a recorded answer cannot be trusted with a new one.`,
+    })
+    c8.push({
+      check: "cause",
+      status: typeof ev.mechanism?.holds === "boolean" ? "pass" : "fail",
+      detail: `dylink.0 correspondence ${ev.mechanism?.holds ? "CONFIRMED exactly" : "NOT confirmed"} — ${ev.mechanism?.prediction ?? "no prediction recorded"}`,
+    })
+    const list = ev.upgradeStragglers ?? []
+    const sameList =
+      Array.isArray(phaseA?.candidateRuntime?.upgradeStragglers) &&
+      phaseA.candidateRuntime.upgradeStragglers.length === list.length &&
+      phaseA.candidateRuntime.upgradeStragglers.every((x: string, i: number) => x === list[i])
+    c8.push({
+      check: "survey-restates-artifact",
+      status: sameList ? "pass" : "fail",
+      detail: sameList
+        ? `the survey's ${list.length}-entry straggler list matches the artifact name for name, in order`
+        : `the survey's straggler list does NOT match the artifact (survey ${phaseA?.candidateRuntime?.upgradeStragglers?.length ?? "none"} vs artifact ${list.length}). A generator must not edit a measurement into agreement.`,
+    })
+    const sameCounts =
+      phaseA?.candidateRuntime?.upgradeStragglerCount === ev.counts?.upgradeStragglers &&
+      phaseA?.candidateRuntime?.failures === ev.counts?.candidateTotalFailures &&
+      phaseA?.pinnedRuntime?.total === ev.counts?.shippedGrammarWasms
+    c8.push({
+      check: "survey-counts-match",
+      status: sameCounts ? "pass" : "fail",
+      detail: sameCounts
+        ? `stragglers ${ev.counts.upgradeStragglers}, candidate failures ${ev.counts.candidateTotalFailures}, wasms ${ev.counts.shippedGrammarWasms} — all agree`
+        : "the survey's runtime counts disagree with the measurement artifact",
+    })
+    // A DECLARED VERSION MUST SAY WHERE IT CAME FROM. Two lanes record their identity from
+    // the measured census because they are engine-only and have no prose to write it in
+    // (toml, tsx). That is legitimate — and it is also the shape of a silent substitution,
+    // where a generator quietly starts sourcing versions from somewhere and nobody looks.
+    // So each census-sourced row must CITE the artifact and the field it read.
+    const censusRows = (survey.rows ?? []).filter((r: any) => r.declared?.declaredFromCensus)
+    const uncited = censusRows.filter((r: any) => !r.declared.declarationSite || !r.declared.sources?.some((x: any) => x?.file === "validation/m60/results/G-PROVENANCE.json"))
+    c8.push({
+      check: "census-sourced-versions-cite-their-source",
+      status: uncited.length === 0 ? "pass" : "fail",
+      detail:
+        uncited.length === 0
+          ? `${censusRows.length} lane(s) record their version from the census and every one cites the artifact and field it read${censusRows.length ? " (" + censusRows.map((r: any) => r.lane).join(", ") + ")" : ""}`
+          : `${uncited.length} lane(s) claim a census-sourced version without citing the artifact: ${uncited.map((r: any) => r.lane).join(", ")}`,
+    })
+
+    // The retraction must stay visible. Silently overwriting an unreproducible
+    // claim with a new number destroys the record that it was ever wrong.
+    c8.push({
+      check: "retraction-visible",
+      status: phaseA?.supersededRecord?.reproducible === false ? "pass" : "fail",
+      detail:
+        phaseA?.supersededRecord?.reproducible === false
+          ? `the superseded "20 of 55" is retained in place with reproducible:false — ${phaseA.supersededRecord.claim}`
+          : "the superseded unreproducible count is not disclosed in the survey",
+    })
+  }
+}
+const c8Hard = c8.filter((x) => x.status === "fail")
+if (c8Hard.length) {
+  for (const f of c8Hard) hard.push(`C8 ${f.check}: ${f.detail}`)
+}
+checks.push({
+  id: "C8",
+  status: c8Hard.length ? "fail" : "pass",
+  detail: `${c8.filter((x) => x.status === "pass").length}/${c8.length} — the runtime-upgrade claim is measured, its harness was proven able to fail, and the survey restates the measurement`,
+})
+
+// ---------------------------------------------------------------------------
 // Remainders — visible, never smoothed
 // ---------------------------------------------------------------------------
 
@@ -385,7 +506,7 @@ const result = {
     R4_notRebuildableFromRepo: R4_notRebuildable,
     surveyedButNotPinned: surveyedNotPinned,
   },
-  detail: { C1: { pinnedNotSurveyed, surveyedNotPinned }, C2: c2, C3: c3, C4: c4, C6: c6 },
+  detail: { C1: { pinnedNotSurveyed, surveyedNotPinned }, C2: c2, C3: c3, C4: c4, C6: c6, C8: c8 },
   passed: hard.length === 0,
   policy:
     "Offline: never downloads, never fetches upstream, never mutates a grammar or a registry. Reads validation/m14/grammar-pins.json (the pin contract) and validation/m60/grammar-survey.json (the upstream observation) and proves they agree with each other and with the prose sites that quote versions. It deliberately restates no pin, so it can never become a second version record.",

@@ -34,26 +34,31 @@ check("local level owned by log", byName(common, "level")[0]?.ownerName === "log
 check("local message owned by log", byName(common, "message")[0]?.ownerName === "log")
 check("local env owned by get_backend", byName(common, "env")[0]?.ownerName === "get_backend")
 check("array backends declared", byName(common, "backends")[0]?.kind === "variable" && byName(common, "backends")[0]?.ownerName === "get_backend")
-check("global APP_DIR unowned", byName(deploy, "APP_DIR")[0]?.ownerName === undefined || byName(deploy, "APP_DIR")[0]?.ownerName === "")
+check("module-level APP_DIR owned by the script", byName(deploy, "APP_DIR")[0]?.ownerName === "Deploy.sh", "BD1/BD2: the script IS the module, so a top-level variable has a real owner — the unowned `global` this replaced was an endpoint no symbol could ever be")
 check("reassignment deduped", byName(deploy, "count").length === 1, "count reassigned in loop but declared once")
 
 // --- conditionals / loops / substitution / traps / export / alias / source ---
-check("trap INT edge", hasRel(common, "calls", "INT", 'log "WARN" "interrupted"'))
-check("trap TERM edge", hasRel(common, "calls", "TERM", 'log "WARN" "interrupted"'))
-check("command substitution call", hasRel(common, "calls", "global", "get_backend"), "$(get_backend prod)")
+check("trap signal is not a caller (BD3)", !hasRel(common, "calls", "INT", "log") && !hasRel(common, "calls", "TERM", "log"), "a signal name is not a function; the pre-BD2 edges `calls: EXIT -> cleanup` attributed the edge to the signal instead of the code that installed the handler")
+check("trap handler command is a call (BD3)", hasRel(common, "calls", "install_trap", "log"), "the handler body is a real call site, attributed to the function that installed it and tagged viaTrap")
+check("command substitution call", hasRel(common, "calls", "Common.sh", "get_backend"), "$(get_backend prod) — from the module, since BD1 replaced the unresolvable `global`")
 check("command substitution date call", hasRel(common, "calls", "log", "date"), "$(date -u ...)")
 check("export constant", byName(common, "LOG_LEVEL")[0]?.kind === "constant")
 check("readonly constant", byName(common, "SCRIPT_NAME")[0]?.kind === "constant")
 check("alias symbol", byName(common, "ls")[0]?.kind === "function")
-check("source import", hasRel(common, "imports", "global", "./env.sh"))
-check("source reference", hasRel(common, "references", "global", "./env.sh"))
+check("source import", hasRel(common, "imports", "Common.sh", "./env.sh"), "BD9: the path is kept AS WRITTEN — bash resolves a relative `source` against $PWD at run time, not against the script's own directory")
+check("source reference", hasRel(common, "references", "Common.sh", "./env.sh"), "BD9")
 
 // --- calls / uses / noise suppression ----------------------------------------
-check("external call docker", hasRel(deploy, "calls", "global", "docker"))
+check("external call docker", hasRel(deploy, "calls", "Deploy.sh", "docker"), "an external binary is still a call, just from the module rather than from `global`")
 check("external call ssh", hasRel(deploy, "calls", "deploy", "ssh"))
-check("pipeline curl+bash", hasRel(deploy, "calls", "global", "curl") && hasRel(deploy, "calls", "global", "bash"))
-check("builtin echo not called", !hasRel(common, "calls", "global", "echo") && !hasRel(common, "calls", "log", "printf"))
-check("sudo not called", !hasRel(deploy, "calls", "global", "sudo"))
+check("pipeline curl+bash", hasRel(deploy, "calls", "Deploy.sh", "curl") && hasRel(deploy, "calls", "Deploy.sh", "bash"), "BD8: every stage of a pipeline is its own call site")
+check("builtin echo not called", !hasRel(common, "calls", "Common.sh", "echo") && !hasRel(common, "calls", "log", "printf"), "re-anchored to the module: as `global` this was true for the wrong reason")
+// This check asserted the OPPOSITE of the truth, and passed anyway: anchored to
+// `global`, `!hasRel(...)` was true because no edge has that source, not because
+// sudo was never called. Re-anchored to the module it failed immediately, which is
+// how the vacuous pass was found. `Deploy.sh:16` really is `sudo systemctl
+// restart app`, so the correct contract is that sudo IS a call and IS flagged.
+check("sudo is a call, and is flagged", hasRel(deploy, "calls", "Deploy.sh", "sudo") && ((deploy.metadata?.patterns ?? []) as string[]).includes("Privilege Escalation"), "a privilege-escalating external command is a real call site and says so")
 check("uses var expansion", hasRel(common, "uses", "check_all", "name"))
 check("uses array expansion", hasRel(common, "uses", "check_all", "names"))
 check("uses subscript base", hasRel(common, "uses", "check_all", "names"), "${names[@]}")
@@ -67,7 +72,7 @@ check("no ENV_ phantom symbols", !syms(deploy).some((s: any) => s.name?.startsWi
 // --- negative fixture ----------------------------------------------------------
 check("negative reports syntax error", (negative.errors?.length ?? 0) >= 1, "unterminated string must surface")
 check("negative keeps valid symbol", byName(negative, "valid_fn").length === 1)
-check("negative recovery edge documented", hasRel(negative, "calls", "global", "broken_fn"), "recovery artifact is explicit, not hidden")
+check("negative recovery edge documented", hasRel(negative, "calls", "Negative.sh", "broken_fn"), "recovery artifact is explicit, not hidden — attributed to the module, not to `global`")
 
 // --- regex-free source ----------------------------------------------------------
 // Precise scan: RegExp constructors, regex literals fed to string methods, or
@@ -77,7 +82,16 @@ check("negative recovery edge documented", hasRel(negative, "calls", "global", "
 const source = readText("src/ast/real-bash-analyzer.ts", "utf8")
 const regexCtor = (source.match(/new\s+RegExp\s*\(/g) ?? []).length + (source.match(/[^\w.]RegExp\s*\(/g) ?? []).length
 const regexMethodUses = (source.match(/\.(?:test|match|replace|exec|search|split|matchAll)\s*\(\s*\//g) ?? []).length
-const hasRegexDelimiterUsage = /(?:^|[^\w])\/(?:[^\/\n]*)\/[dgimsuy]*(?:\.|\s*[);,])/m.test(source)
+// The delimiter scan runs on SOURCE WITH COMMENTS AND STRINGS REMOVED, because
+// the instrument promises comment text is not a regex usage and then matched its
+// own `/* 0-9 */` as one. Stripping before scanning is what makes the stated
+// contract and the implemented contract the same thing.
+const codeOnly = source
+  .replace(/\/\*[\s\S]*?\*\//g, " ")
+  .replace(/(^|[^:])\/\/[^\n]*/g, "$1 ")
+  .replace(/"(?:[^"\\\n]|\\.)*"/g, '""')
+  .replace(/'(?:[^'\\\n]|\\.)*'/g, "''")
+const hasRegexDelimiterUsage = /(?:^|[^\w])\/(?:[^\/\n]*)\/[dgimsuy]*(?:\.|\s*[);,])/m.test(codeOnly)
 check("analyzer source has no regex literals", regexCtor === 0 && regexMethodUses === 0 && !hasRegexDelimiterUsage, `ctor=${regexCtor} methodUses=${regexMethodUses}`)
 
 const passed = checks.filter((c) => c.pass).length

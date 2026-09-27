@@ -107,6 +107,73 @@ function stripWhitespace(text: string): string {
   return out
 }
 
+
+/** Strip a literal prefix. NO trimming — the exact `^prefix` behaviour, so it
+ *  replaces `/^\.\.\./` on a rest-parameter pattern (`...args` -> `args`) with
+ *  the leading space of a hypothetical `"... args"` preserved, exactly as the
+ *  regex preserved it. */
+function stripPrefix(text: string, prefix: string): string {
+  return text.startsWith(prefix) ? text.slice(prefix.length) : text
+}
+
+/** Every character JS `\s` matches, spelled out. Carrying the set keeps
+ *  `stripLeadingKeyword` provably identical to the `/^keyword\s+/` replace it
+ *  replaces: an ASCII-only test would diverge on the Unicode spaces (`\s`
+ *  matches U+00A0 and friends; `" " !== "\s"`). */
+const WHITESPACE_CHARS =
+  "\f\n\r\t\v                  　﻿"
+
+/** Strip a leading keyword plus the whitespace after it.
+ *  Pure string code, the exact `/^keyword\s+/` behaviour: the keyword must be
+ *  followed by AT LEAST ONE whitespace character (so a bare `extends`, which
+ *  the regex leaves alone, is left alone too), and a word that merely starts
+ *  with the keyword (`extendsFoo`) is never cut. */
+function stripLeadingKeyword(text: string, keyword: string): string {
+  if (!text.startsWith(keyword)) return text
+  let i = keyword.length
+  if (i >= text.length || WHITESPACE_CHARS.indexOf(text[i]) === -1) return text
+  while (i < text.length && WHITESPACE_CHARS.indexOf(text[i]) !== -1) i++
+  return text.slice(i)
+}
+
+/** Generic type parameters of a declaration, as strings.
+ *  `T`, `T extends object`, `T = string`, `T extends A = B`.
+ *
+ *  ONE implementation for the whole file: it existed three times (the
+ *  TypeInferenceEngine copy and the RealTypeScriptAnalyzer copy had ZERO call
+ *  sites — only the runner's was live), and the two dead copies were why the
+ *  same `/^extends\s+/` regex appeared three times in the regex register.
+ *
+ *  Field names verified against the pinned tsx/typescript wasm (2026-09-16): a
+ *  type_parameter carries name, constraint and value — NOT `extends`/`default`,
+ *  which the pre-fix code read while the F1 field oracle was blind. `constraint`
+ *  text includes the keyword ("extends object"), hence the strip. */
+function extractTypeParametersOf(node: Node): string[] {
+  const typeParams: string[] = []
+  const typeArgs = node.childForFieldName("type_parameters") || node.childForFieldName("type_arguments")
+  if (!typeArgs) return typeParams
+  for (let i = 0; i < typeArgs.namedChildCount; i++) {
+    const param = typeArgs.namedChild(i)
+    if (!param) continue
+    const nameNode = param.childForFieldName("name")
+    if (!nameNode) {
+      typeParams.push(param.text)
+      continue
+    }
+    let paramStr = nameNode.text
+    const constraintNode = param.childForFieldName("constraint")
+    const defaultValueNode = param.childForFieldName("value")
+    if (constraintNode) {
+      paramStr += ` extends ${stripLeadingColon(stripLeadingKeyword(constraintNode.text, "extends"))}`
+    }
+    if (defaultValueNode) {
+      paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
+    }
+    typeParams.push(paramStr)
+  }
+  return typeParams
+}
+
 // Contract route paths always start with "/": join a controller base with a
 // method route collapsing duplicate slashes (pure string ops, no regex —
 // java composes basePath+methodRoute the same way).
@@ -285,20 +352,17 @@ class TypeScriptModuleResolver {
     }
 
     // Bare package imports are recorded by logical identity
-    // (`external:specifier`). A previous revision walked up to node_modules
-    // and sniffed package.json main/types entry points — every answer it
-    // gave depended on the local machine, so the same repo indexed
-    // differently per machine, at the cost of sync statSync I/O per import
-    // per file. Nothing reads past the specifier (verified: no
+    // (`external:specifier`) — reached only when `isBuiltinModule` says the
+    // specifier is not a Node runtime module. A previous revision walked up
+    // to node_modules and sniffed package.json main/types entry points —
+    // every answer it gave depended on the local machine, so the same repo
+    // indexed differently per machine, at the cost of sync statSync I/O per
+    // import per file. Nothing reads past the specifier (verified: no
     // metadata.resolvedPath consumers repo-wide; fixtures pin module/items
-    // only), and the codebase's own isExternalModule already classifies
-    // exactly these specifiers as external. Deterministic on every machine.
+    // only). Deterministic on every machine.
     return `external:${specifier}`
   }
 
-  isExternalModule(specifier: string): boolean {
-    return !specifier.startsWith(".") && !specifier.startsWith("/") && !specifier.startsWith("node:")
-  }
 }
 
 // Node.js built-in modules — module-level so every resolution doesn't
@@ -344,10 +408,29 @@ const NODE_BUILTINS = new Set([
   "trace_events",
   "worker_threads",
   "wasi",
+  // Node >= 18: the test runner and the other late additions. A stale list is
+  // the same defect as a missing subpath branch — the module is real, the
+  // table just predates it.
+  "test",
+  "sqlite",
+  "sea",
+  "diagnostics_channel",
 ])
 
 function isBuiltinModule(specifier: string): boolean {
-  return NODE_BUILTINS.has(stripLeading(specifier, "node:"))
+  const bare = stripLeading(specifier, "node:")
+  if (NODE_BUILTINS.has(bare)) return true
+  // Node's own spec exposes most builtins under SUBPATH names: `node:fs/promises`,
+  // `stream/promises`, `readline/promises`, `timers/promises`, `dns/promises`,
+  // `util/types`, `assert/strict`, `path/posix`, `node:test/reporters`. A head
+  // that is a builtin makes the whole specifier a RUNTIME module, never a
+  // package. Without this branch every one of them fell through to
+  // `external:…`, so the index reported a dependency on an npm package called
+  // `fs/promises` (and `node:test`, `stream/promises`, …) in every modern
+  // Node codebase — the exact misclassification the bare-name set could not see.
+  const slash = bare.indexOf("/")
+  if (slash <= 0) return false
+  return NODE_BUILTINS.has(bare.slice(0, slash))
 }
 
 // ============================================================================
@@ -1045,39 +1128,6 @@ class TypeInferenceEngine {
     }
   }
 
-  private extractTypeParameters(node: Node): string[] {
-    const typeParams: string[] = []
-    const typeArgs = node.childForFieldName("type_parameters") || node.childForFieldName("type_arguments")
-    if (typeArgs) {
-      for (let i = 0; i < typeArgs.namedChildCount; i++) {
-        const param = typeArgs.namedChild(i)
-        if (param) {
-          const nameNode = param.childForFieldName("name")
-          if (nameNode) {
-            let paramStr = nameNode.text
-            // Field names verified against the pinned tsx/typescript wasm
-            // (2026-09-16): a type_parameter carries name, constraint and value —
-            // NOT `extends`/`default`, which this code read while the F1 field
-            // oracle was blind (it captured no field literals at all until that
-            // same fix). `constraint` text includes the keyword ("extends object"),
-            // hence the strip before appending.
-            const constraintNode = param.childForFieldName("constraint")
-            const defaultValueNode = param.childForFieldName("value")
-            if (constraintNode) {
-              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
-            }
-            if (defaultValueNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
-            }
-            typeParams.push(paramStr)
-          } else {
-            typeParams.push(param.text)
-          }
-        }
-      }
-    }
-    return typeParams
-  }
 
   private inferArrayElementType(arrayNode: Node): string {
     if (arrayNode.namedChildCount === 0) return "unknown"
@@ -1593,7 +1643,6 @@ class TypeScriptAnalysisRunner {
   private scopeManager: ScopeManager
   private moduleResolver: TypeScriptModuleResolver | null = null
   private typeInference: TypeInferenceEngine
-  private symbolsById = new Map<string, ASTEngine.UniversalSymbol>()
   private _pendingReExportImports: ASTEngine.ImportInfo[] = []
   // M49 dup-key ruling (#746): dead spans returned by the Phase-2.5
   // collapse, consumed by the post-walk phantom-edge filter.
@@ -1602,44 +1651,35 @@ class TypeScriptAnalysisRunner {
   // Locals/params/lambda-params inside a function body are NOT symbols
   // (C#-family contract); only module/namespace/class-level declarations are.
   private insideFunctionDepth = 0
+  /** Per-FILE facts every payload rule needs, gathered in ONE walk (the walk
+   *  the React gate already paid for): JSX presence, a react/preact import, a
+   *  solid-js import, and a child_process import. The sink rules need the last
+   *  one to tell an imported `exec` from a project's own `exec`, and the solid
+   *  flag replaces a whole-file `content.includes("solid-js")` text scan with
+   *  an AST fact. */
+  private _fileSignals: { hasReact: boolean; importsChildProcess: boolean; solidJs: boolean } = {
+    hasReact: false,
+    importsChildProcess: false,
+    solidJs: false,
+  }
+  // M3: `qualified_calls` is computed AFTER extraction, not during it. The
+  // payload's owner resolution has to see the WHOLE symbol set: a nested
+  // `function inner(){}` is pushed to `symbols` only after its enclosing
+  // function finishes, so resolving mid-walk could not find it and the
+  // callback's calls were charged to the outer symbol. The relationship passes
+  // have always run after extraction for the same reason; this payload now
+  // does too (the javascript twin likewise computes it in a later phase).
+  private _pendingQualifiedCalls: Array<{ symbol: ASTEngine.UniversalSymbol; node: Node }> = []
 
   constructor() {
     this.scopeManager = new ScopeManager()
     this.typeInference = new TypeInferenceEngine()
   }
 
+  /** Delegates to the module-level `extractTypeParametersOf` (one
+   *  implementation, one place the generic-parameter contract can change). */
   private extractTypeParameters(node: Node): string[] {
-    const typeParams: string[] = []
-    const typeArgs = node.childForFieldName("type_parameters") || node.childForFieldName("type_arguments")
-    if (typeArgs) {
-      for (let i = 0; i < typeArgs.namedChildCount; i++) {
-        const param = typeArgs.namedChild(i)
-        if (param) {
-          const nameNode = param.childForFieldName("name")
-          if (nameNode) {
-            let paramStr = nameNode.text
-            // Field names verified against the pinned tsx/typescript wasm
-            // (2026-09-16): a type_parameter carries name, constraint and value —
-            // NOT `extends`/`default`, which this code read while the F1 field
-            // oracle was blind (it captured no field literals at all until that
-            // same fix). `constraint` text includes the keyword ("extends object"),
-            // hence the strip before appending.
-            const constraintNode = param.childForFieldName("constraint")
-            const defaultValueNode = param.childForFieldName("value")
-            if (constraintNode) {
-              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
-            }
-            if (defaultValueNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
-            }
-            typeParams.push(paramStr)
-          } else {
-            typeParams.push(param.text)
-          }
-        }
-      }
-    }
-    return typeParams
+    return extractTypeParametersOf(node)
   }
 
   analyze(
@@ -1651,7 +1691,6 @@ class TypeScriptAnalysisRunner {
     this.currentFile = filePath
     this.content = content
     this.scopeManager.reset()
-    this.symbolsById.clear()
 
     // Initialize module resolver with project root
     const projectRoot = this.findProjectRoot(filePath)
@@ -1694,7 +1733,9 @@ class TypeScriptAnalysisRunner {
     // React file — in Vue/Svelte/Node codebases every `use*` util warned as
     // a parse error. Gate on a React signal (react import or JSX); the
     // SolidJS exclusion stays (different hook rules entirely).
-    if (this.hasReactSignal(rootNode) && !this.content.includes("solid-js") && !this.content.includes("@solidjs")) {
+    this._fileSignals = { hasReact: false, importsChildProcess: false, solidJs: false }
+    this.scanFileSignals(rootNode)
+    if (this._fileSignals.hasReact && !this._fileSignals.solidJs) {
       errors.push(...this.detectReactHookAntiPatterns(rootNode))
     }
 
@@ -1711,19 +1752,33 @@ class TypeScriptAnalysisRunner {
     // members collapse last-wins (family contract with the JS analyzer).
     // Runs before the symbol-map build and every relationship phase so
     // exports/calls/contains all derive from the collapsed array.
-    this.collapseDuplicateObjectMembers(rootNode, symbols)
+    // ONE call: this ran the full-tree collapse TWICE per file and threw the
+    // first result away — a whole redundant walk, and two equally authoritative
+    // looking answers to "which one is the dead-span list?". The pass is
+    // tree-derived, so the second call also re-derived the same spans to splice
+    // symbols the first call had already spliced.
     this._dupKeyDeadSpans =
       this.collapseDuplicateObjectMembers(rootNode, symbols)
 
-    // Build symbol lookup map
-    for (const symbol of symbols) {
-      const id = this.generateSymbolId(symbol)
-      this.symbolsById.set(id, symbol)
-      this.symbolsById.set(symbol.name, symbol)
-      if (symbol.scope) {
-        this.symbolsById.set(`${symbol.scope}.${symbol.name}`, symbol)
-      }
+    // M3: fill `qualified_calls` now, with the complete symbol table in hand
+    // (see the _pendingQualifiedCalls note). ONE map shared by every symbol's
+    // walk, keyed by the SYMBOL (never by name — two classes may each declare
+    // `save`), because a call inside a nested function or a callback is
+    // charged to the symbol that owns it, not to the symbol whose body the
+    // walk started from. That is the javascript twin's `bySource` contract
+    // (real-javascript-analyzer.ts:1005 reads the payload out of the map).
+    // A symbol the dup-key collapse removed is skipped — its payload died
+    // with it.
+    const qcByOwner = new Map<ASTEngine.UniversalSymbol, string[]>()
+    for (const pending of this._pendingQualifiedCalls) {
+      if (symbols.indexOf(pending.symbol) === -1) continue
+      this.extractQualifiedCalls(pending.node, pending.symbol, symbols, qcByOwner)
     }
+    for (const pending of this._pendingQualifiedCalls) {
+      const list = qcByOwner.get(pending.symbol)
+      if (list && list.length > 0) pending.symbol.qualified_calls = [...new Set(list)]
+    }
+    this._pendingQualifiedCalls = []
 
     // PHASE 3: Extract imports and exports
     this.extractImports(rootNode, imports)
@@ -1743,9 +1798,20 @@ class TypeScriptAnalysisRunner {
     const frameworkPatterns = extractFrameworkPatterns(symbols, content)
 
     // PHASE 7: Calculate metrics
+    // ONE complexity walk feeds BOTH file-level metadata fields: they are the
+    // same number by contract (1 + decision points — the M14 family rule), and
+    // they used to be produced by two byte-identical implementations, i.e. two
+    // full-tree walks per file whose answers could silently drift apart.
     const complexity = this.calculateComplexity(rootNode)
-    const linesOfCode = filterItems(content.split("\n"), (line) => line.trim().length > 0).length
-    const cyclomaticComplexity = this.calculateCyclomaticComplexity(rootNode)
+    // ALL lines, not the non-empty ones: `linesOfCode` is a cross-language
+    // metric and the same source analyzed as .ts and as .js must not disagree.
+    // This analyzer counted non-empty lines while the javascript twin counts
+    // every line (`content.split("\n").length`), so one file reported two
+    // different LOC values depending on its extension (measured: 6 vs 9 for the
+    // same 7-line source with 2 blank lines). Both forms over-count a trailing
+    // newline by one — a family-level nit, left alone here on purpose.
+    const linesOfCode = content.split("\n").length
+    const cyclomaticComplexity = complexity
 
     // PHASE 8: Code quality assessment
     const codeQuality = this.assessCodeQuality(symbols, relationships, complexity, cyclomaticComplexity)
@@ -1953,6 +2019,10 @@ class TypeScriptAnalysisRunner {
     const returnType = this.extractReturnType(node)
     const typeParams = this.extractTypeParameters(node)
     const apiContract = this.extractApiContract(node)
+    // ONE complexity walk per symbol: the top-level field and the metadata
+    // mirror are the same number by contract, and each call re-walked the whole
+    // function subtree.
+    const ownComplexity = this.calculateComplexity(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       name,
@@ -1966,11 +2036,11 @@ class TypeScriptAnalysisRunner {
       returnType,
       // Top-level per family contract: DB ingester reads symbol.complexity
       // (|| 1) for gravity scoring.
-      complexity: this.calculateComplexity(node),
+      complexity: ownComplexity,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
-      qualified_calls: this.extractQualifiedCalls(node),
+      qualified_calls: undefined, // M3: filled in the post-extraction pass
       apiContractPath: apiContract.path,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
@@ -1981,13 +2051,14 @@ class TypeScriptAnalysisRunner {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
         isDeclare: modifiers.isDeclare,
-        complexity: this.calculateComplexity(node),
+        complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
     symbols.push(symbol)
     this.scopeManager.registerSymbol(symbol)
+    this._pendingQualifiedCalls.push({ symbol, node })
 
     // Process function body for nested symbols
     this.scopeManager.pushScope(ScopeKind.Function, name, node)
@@ -2487,6 +2558,17 @@ class TypeScriptAnalysisRunner {
       }
 
       const modifiers = extractModifiersFromNode(node)
+      // M5: an arrow/function-valued variable is a Function symbol, so it gets
+      // the same API-contract extraction a `function` declaration gets. Without
+      // it the dominant handler shape carried no contract at all: the analyzer
+      // reported `/api/fn` for `function fnHandler(){ return fetch("/api/fn") }`
+      // and nothing for the identical `const arrowHandler = () => fetch(...)` —
+      // while `extractApiContract` already had an `arrow_function` branch, so
+      // the intent was there and the caller was missing.
+      const apiContract =
+        valueNode?.type === "arrow_function" || valueNode?.type === "function"
+          ? this.extractApiContract(valueNode)
+          : { path: undefined, method: undefined }
 
       const symbol: ASTEngine.UniversalSymbol = {
         name,
@@ -2500,12 +2582,15 @@ class TypeScriptAnalysisRunner {
         returnType,
         decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
         comments: this.extractComments(node),
-        qualified_calls:
-          kind === ASTEngine.SymbolKind.Function && valueNode ? this.extractQualifiedCalls(valueNode) : undefined,
+        // M3: qualified_calls is filled by the post-extraction pass (see
+        // _pendingQualifiedCalls) — only arrow/function-valued declarators are
+        // enqueued, and a plain variable has no call paths of its own.
+        apiContractPath: apiContract.path,
         taintSources: valueNode ? this.extractTaintSources(valueNode) : undefined,
         taintSinks: valueNode ? this.extractTaintSinks(valueNode) : undefined,
         ...this.scopeManager.getOwnerInfo(),
         metadata: {
+          apiMethod: apiContract.method,
           isExported: exportStatus.isExported,
           isDefault: exportStatus.isDefault,
           isConst,
@@ -2518,6 +2603,9 @@ class TypeScriptAnalysisRunner {
 
       symbols.push(symbol)
       this.scopeManager.registerSymbol(symbol)
+      if (valueNode?.type === "arrow_function" || valueNode?.type === "function") {
+        this._pendingQualifiedCalls.push({ symbol, node: valueNode })
+      }
 
       // If arrow function, process body for nested symbols (locals suppressed)
       if (valueNode?.type === "arrow_function" || valueNode?.type === "function") {
@@ -2669,6 +2757,9 @@ class TypeScriptAnalysisRunner {
     }
 
     const ownerInfo = this.scopeManager.getOwnerInfo()
+    // ONE complexity walk per method: the top-level field and the metadata
+    // mirror are the same number by contract.
+    const ownComplexity = this.calculateComplexity(node)
     const apiContract = this.extractApiContract(
       node,
       decoratorNodes && decoratorNodes.length > 0 ? decoratorNodes : undefined,
@@ -2706,9 +2797,9 @@ class TypeScriptAnalysisRunner {
       returnType,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
-      complexity: this.calculateComplexity(node),
+      complexity: ownComplexity,
       comments: this.extractComments(node),
-      qualified_calls: this.extractQualifiedCalls(node),
+      qualified_calls: undefined, // M3: filled in the post-extraction pass
       apiContractPath,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
@@ -2725,12 +2816,13 @@ class TypeScriptAnalysisRunner {
           return false
         })(),
         isAccessor,
-        complexity: this.calculateComplexity(node),
+        complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
     }
 
     symbols.push(symbol)
+    this._pendingQualifiedCalls.push({ symbol, node })
 
     // Process method body for nested symbols (function depth suppresses locals)
     this.scopeManager.pushScope(ScopeKind.Method, name, node)
@@ -2766,13 +2858,14 @@ class TypeScriptAnalysisRunner {
       visibility: "public",
       parameters: params,
       comments: this.extractComments(node),
-      qualified_calls: this.extractQualifiedCalls(node),
+      qualified_calls: undefined, // M3: filled in the post-extraction pass
       apiContractPath: apiContract.path,
       ...ownerInfo,
       metadata: { apiMethod: apiContract.method },
     }
 
     symbols.push(symbol)
+    this._pendingQualifiedCalls.push({ symbol, node })
 
     // Extract parameter properties (public/private/protected/readonly constructor params).
     // Modifier words must come from the parameter's actual keywords — substring
@@ -2791,7 +2884,7 @@ class TypeScriptAnalysisRunner {
         const p = formalParams.namedChild(i)
         if (!p) continue
         const pat = p.childForFieldName("pattern") ?? p.childForFieldName("name")
-        if (pat) paramNameNodes.set(pat.text.replace(/^\.\.\./, ""), pat)
+        if (pat) paramNameNodes.set(stripPrefix(pat.text, "..."), pat)
       }
     }
     for (const param of params) {
@@ -3117,7 +3210,11 @@ class TypeScriptAnalysisRunner {
       // Pre-fix this kind fell through to usage_contextual.
       if (t === "imports") { md.evidenceClass = "import_based"; continue }
       if (t === "references") {
-        md.evidenceClass = md.isImport ? "import_based" : "reference_qualified"
+        // `reference_qualified` unconditionally: the JVM family's
+        // `isImport` discriminator is never set on a relationship this
+        // analyzer emits (its import edges are the dedicated `imports` kind,
+        // classified above), so the true branch was unreachable.
+        md.evidenceClass = "reference_qualified"
         continue
       }
       if (t === "extends" || t === "implements") {
@@ -3156,7 +3253,7 @@ class TypeScriptAnalysisRunner {
       if (child.type === "identifier") {
         indexParam = child.text
       } else if (child.type === "type_annotation") {
-        valueType = child.text.replace(/^:\s*/, "")
+        valueType = stripLeadingColon(child.text)
       }
     }
 
@@ -3521,14 +3618,11 @@ class TypeScriptAnalysisRunner {
     // 2. Extract implementation relationships
     this.extractImplementsRelationships(symbols, relationships)
 
-    // 3. Extract call relationships from function bodies
+    // 3. Extract call relationships (and, in the same walk, instantiations)
     this.extractCallRelationships(node, relationships, symbols)
 
     // 4. Extract usage/reference relationships
     this.extractUsageRelationships(node, relationships, symbols)
-
-    // 5. Extract instantiation relationships (new X())
-    this.extractInstantiationRelationships(node, relationships, symbols)
 
     // 6. Extract decorator relationships
     this.extractDecoratorRelationships(symbols, relationships)
@@ -3666,6 +3760,15 @@ class TypeScriptAnalysisRunner {
     return false
   }
 
+  /**
+   * ONE walk for BOTH edge kinds that need only the enclosing symbol: `calls`
+   * and `instantiates`. They were two full-tree traversals that each re-resolved
+   * the enclosing symbol at every node (the same `resolveRelationshipSymbol`
+   * call, the same module-leaf fallback) and differed only in what they emitted
+   * — measured at 25-29% and 5-10% of analyze time respectively. The usage pass
+   * stays separate: it carries a per-function `locals` scope, so folding it in
+   * would mean carrying that state through a pass that does not want it.
+   */
   private extractCallRelationships(
     node: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -3679,13 +3782,13 @@ class TypeScriptAnalysisRunner {
       // which is exactly what the oracle now skips.
       if (this.inDecoratorPosition(n)) return
 
-      // Extract call expressions and JSX component usages
+      // Extract call expressions, instantiations and JSX component usages
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
       // name — the same source imports/exports use — never a "(script)"
       // placeholder no consumer can resolve (JS parity: moduleName).
       const callSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
       if (
-        (n.type === "call_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
+        (n.type === "call_expression" || n.type === "new_expression" || n.type === "jsx_self_closing_element" || n.type === "jsx_element")
       ) {
         if (n.type === "call_expression") {
           const callee = n.namedChild(0)
@@ -3780,6 +3883,15 @@ class TypeScriptAnalysisRunner {
             })
           }
           } // closes if(callee)
+        } else if (n.type === "new_expression") {
+          // Fused in from the former extractInstantiationRelationships: the
+          // instantiation edge for a constructor the parser DID build. A `new`
+          // whose constructor sits on the next line never reaches this branch
+          // (the grammar does not build a new_expression for it — #858); it is
+          // emitted above through the same helper, so both spellings produce
+          // identical edges rather than merely similar ones.
+          const constructor = n.namedChild(0)
+          if (constructor) this.pushInstantiation(constructor, n, callSource, relationships)
         } else {
           // JSX element
           const opening = n.type === "jsx_self_closing_element" ? n : n.namedChild(0)
@@ -4171,37 +4283,6 @@ class TypeScriptAnalysisRunner {
     processNode(node, null, new Set())
   }
 
-  private extractInstantiationRelationships(
-    node: Node,
-    relationships: ASTEngine.UniversalRelationship[],
-    symbols: ASTEngine.UniversalSymbol[],
-  ): void {
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
-      currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
-
-      // Extract new expressions — TSD4: top-level fallback is the module LEAF
-      // name (same source as imports/exports), never the "(script)" placeholder.
-      const instSource = currentSymbol || { name: this.moduleLeafName(), scope: undefined, kind: "module" as any, range: { startLine: 0, startColumn: 0, endLine: 0, endColumn: 0 }, metadata: {} as any }
-      if (n.type === "new_expression") {
-        const constructor = n.namedChild(0)
-        if (constructor) this.pushInstantiation(constructor, n, instSource, relationships)
-      }
-      // A `new` whose constructor is written on the NEXT line never reaches this
-      // branch (the grammar does not build a new_expression for it — #858); it is
-      // emitted from the call pass below through the same helper, so both forms
-      // produce identical edges rather than merely similar ones.
-
-      // Recurse
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) {
-          processNode(child, currentSymbol)
-        }
-      }
-    }
-
-    processNode(node, null)
-  }
 
   /**
    * M14 #858: emit the instantiation edge for a constructor node. Extracted from
@@ -4445,10 +4526,41 @@ class TypeScriptAnalysisRunner {
         .filter((r) => r.type === ASTEngine.RelationshipType.Overrides)
         .map((r) => `${r.source}\u0000${r.target}`),
     )
+    // M1: the same structural arm now walks a class's EXTENDS bases too, not
+    // only its `implements`. `override` is OPTIONAL in TypeScript (it is only
+    // required under `noImplicitOverride`), so the keyword arm above fires for
+    // a minority of real overrides: `class Sub extends Base { run() {} }`
+    // emitted nothing, while the identical member under `implements` paired.
+    // The oracle already derives these as truth — `declParents` takes `extends`
+    // AND `implements` edges whose target resolves in-file
+    // (script/m14/differential.ts:12469) — so this was a live MISSING, proven
+    // by running the oracle on the shape: truth `Sub.run -> Base.run`,
+    // analyzer nothing.
+    //
+    // Lockstep rules, unchanged from the implements arm:
+    //   - the CLASS side is METHODS only (a class field is
+    //     `public_field_definition`, which the oracle excludes by name so truth
+    //     cannot outrun the analyzer);
+    //   - the BASE side is an interface's methods+properties, or a base CLASS's
+    //     methods — the same member sets the oracle pools per declaration;
+    //   - abstention: an overloaded name on either side cannot be paired
+    //     name-only (no textual signature truth here; the oracle's
+    //     `sigCompatible` gate would decide);
+    //   - a base that resolves to no in-file declaration abstains, which is
+    //     also how a QUALIFIED base (`extends ns.Base`) abstains — the oracle
+    //     skips dotted declParents for the same reason;
+    //   - a keyword-emitted edge is never duplicated (seenOverride is seeded
+    //     from the edges already pushed).
+    const classByName = new Map<string, ASTEngine.UniversalSymbol>()
+    for (const s of symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class) classByName.set(s.name, s)
+    }
     for (const cls of symbols) {
       if (cls.kind !== ASTEngine.SymbolKind.Class) continue
-      const bases = cls.metadata?.implements as string[] | undefined
-      if (!bases || bases.length === 0) continue
+      const implemented = (cls.metadata?.implements as string[] | undefined) ?? []
+      const extended = (cls.metadata?.extends as string[] | undefined) ?? []
+      const bases = [...implemented, ...extended]
+      if (bases.length === 0) continue
       const members = classMethods.get(cls.name) ?? []
       if (members.length === 0) continue
       const memberCounts = new Map<string, number>()
@@ -4461,14 +4573,17 @@ class TypeScriptAnalysisRunner {
         const base = queue.shift()!
         if (seenBase.has(base) || base === cls.name) continue
         seenBase.add(base)
-        const baseDecl = ifaceByName.get(base)
+        const ifaceDecl = ifaceByName.get(base)
+        const classDecl = classByName.get(base)
+        const baseDecl = ifaceDecl ?? classDecl
         if (!baseDecl) continue // external/unresolved base: not in-file truth
-        const baseMembers = ifaceMembers.get(base) ?? []
+        const isInterfaceBase = ifaceDecl !== undefined && classDecl === undefined
+        const baseMembers = isInterfaceBase ? (ifaceMembers.get(base) ?? []) : (classMethods.get(base) ?? [])
         for (const m of members) {
           if ((memberCounts.get(m.name) ?? 0) > 1) continue
           const matching = baseMembers.filter((bm) => bm.name === m.name)
           // Overload abstention on the base side too: two declarations of the
-          // name in the interface cannot be paired name-only.
+          // name in the base cannot be paired name-only.
           if (matching.length !== 1) continue
           const key = `${cls.name}.${m.name}\u0000${base}.${m.name}`
           if (seenOverride.has(key)) continue
@@ -4481,13 +4596,16 @@ class TypeScriptAnalysisRunner {
             // The IMPLEMENTING member's own line (M59 #825): the edge names the
             // member, so it takes the member's line, not the class's.
             ...(m.range?.startLine ? { line_number: m.range.startLine } : {}),
-            metadata: {
-              implementedInterface: base,
-            },
+            metadata: isInterfaceBase ? { implementedInterface: base } : { extendedClass: base },
           })
         }
-        const baseBases = baseDecl.metadata?.extends as string[] | undefined
-        if (baseBases) queue.push(...baseBases)
+        // transitive: an interface base continues along `extends`; a class base
+        // along ITS extends/implements — the same links the oracle's declParents
+        // pools for that declaration.
+        const baseExtends = baseDecl.metadata?.extends as string[] | undefined
+        if (baseExtends) queue.push(...baseExtends)
+        const baseImplements = baseDecl.metadata?.implements as string[] | undefined
+        if (baseImplements) queue.push(...baseImplements)
       }
     }
   }
@@ -4685,6 +4803,13 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
     for (const item of exports) {
+      // M4: an ANONYMOUS default export (`export default function(){}`,
+      // `export default 42`) has no binding name, so `default` names no symbol
+      // in this or any other file. The ExportInfo row stays — "this module has
+      // a default export" is true and worth storing — but the graph edge did
+      // not: every `module -> default` edge was a target no index could join,
+      // one per statement in a file that default-exports twice.
+      if (item.name === "default" && item.type === "default_export_expression") continue
       relationships.push({
         source: this.moduleLeafName(),
         target: item.name,
@@ -5306,10 +5431,37 @@ class TypeScriptAnalysisRunner {
     return contractPath || contractMethod ? { path: contractPath, method: contractMethod } : {}
   }
 
-  private extractQualifiedCalls(node: Node): string[] | undefined {
-    const calls: string[] = []
+  /** Dotted call paths made by `ownerName`'s body — the java convention
+   *  (no argument text: `db.list(user).map` is stored as `db.list.map`).
+   *
+   *  M3: the walk now crosses nested-function boundaries and REBINDS on every
+   *  function-like node through the SAME resolver the relationship pass uses
+   *  (`resolveRelationshipSymbol`), which is what the javascript twin's
+   *  `qcWalk` does. The old walk stopped at every nested function, so:
+   *    - a callback's calls were missing from the payload while the graph
+   *      carried the edge (`items.map(i => helper())` emitted `outer->helper`
+   *      and listed only `items.map`) — payload and graph disagreed about the
+   *      same call, and the two analyzers disagreed with each other
+   *      (javascript listed `["items.map","helper"]` for the same source);
+   *    - deleting the boundary alone would have been wrong the other way: a
+   *      nested function that IS a symbol (a nested `function inner(){}` is
+   *      extracted) would list its calls on BOTH symbols.
+   *  Rebinding is what makes both correct. Decorator position needs no guard
+   *  here: a decorator is a sibling of the definition it decorates, so it
+   *  never appears inside the body subtree this walk starts from. */
+  private extractQualifiedCalls(
+    node: Node,
+    owner: ASTEngine.UniversalSymbol,
+    symbols: ASTEngine.UniversalSymbol[],
+    out: Map<ASTEngine.UniversalSymbol, string[]>,
+  ): void {
+    const walk = (n: Node, currentOwner: ASTEngine.UniversalSymbol) => {
+      // Same rebinding contract as extractCallRelationships: a function-like
+      // node that resolves to a symbol owns the calls inside it; anything else
+      // (a callback, a local arrow) keeps the enclosing symbol.
+      const rebound = this.resolveRelationshipSymbol(n, symbols, null)
+      const ownerSym = rebound ?? currentOwner
 
-    const extractCalls = (n: Node) => {
       if (n.type === "call_expression") {
         const callee = n.namedChild(0)
         if (callee) {
@@ -5319,45 +5471,41 @@ class TypeScriptAnalysisRunner {
           // into symbol call lists.
           const calleeIsImport = callee.type === "import" || (callee.type === "identifier" && callee.text === "import")
           if (!calleeIsImport) {
-          // Dotted path WITHOUT argument text (family contract with java).
-          // Raw callee.text embedded inner-call arguments on chains:
-          // `db.list(user).map` was stored as "db.list(user).map".
-          const parts: string[] = []
-          let cur: Node | null = callee
-          while (cur) {
-            if (cur.type === "member_expression") {
-              const prop = cur.childForFieldName("property")
-              parts.unshift(prop ? prop.text : cur.namedChild(cur.namedChildCount - 1)?.text ?? "")
-              cur = cur.childForFieldName("object")
-            } else if (cur.type === "call_expression") {
-              cur = cur.namedChild(0)
-            } else {
-              parts.unshift(cur.text)
-              break
+            // Dotted path WITHOUT argument text (family contract with java).
+            // Raw callee.text embedded inner-call arguments on chains:
+            // `db.list(user).map` was stored as "db.list(user).map".
+            const parts: string[] = []
+            let cur: Node | null = callee
+            while (cur) {
+              if (cur.type === "member_expression") {
+                const prop = cur.childForFieldName("property")
+                parts.unshift(prop ? prop.text : cur.namedChild(cur.namedChildCount - 1)?.text ?? "")
+                cur = cur.childForFieldName("object")
+              } else if (cur.type === "call_expression") {
+                cur = cur.namedChild(0)
+              } else {
+                parts.unshift(cur.text)
+                break
+              }
             }
-          }
-          calls.push(parts.filter(Boolean).join("."))
+            const path = parts.filter(Boolean).join(".")
+            if (path) {
+              const list = out.get(ownerSym) ?? []
+              list.push(path)
+              out.set(ownerSym, list)
+            }
           }
         }
       }
 
-      // Don't recurse into nested functions
-      if (n.type !== "arrow_function" && n.type !== "function_declaration" && n.type !== "function_expression") {
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const child = n.namedChild(i)
-          if (child) {
-            extractCalls(child)
-          }
-        }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const child = n.namedChild(i)
+        if (child) walk(child, ownerSym)
       }
     }
 
     const body = node.childForFieldName("body")
-    if (body) {
-      extractCalls(body)
-    }
-
-    return calls.length > 0 ? calls : undefined
+    if (body) walk(body, owner)
   }
 
   private extractTaintSources(node: Node): { type: string; snippet: string }[] | undefined {
@@ -5430,29 +5578,58 @@ class TypeScriptAnalysisRunner {
   private extractTaintSinks(node: Node): { type: string; snippet: string; vulnerability_type: string }[] | undefined {
     const sinks: { type: string; snippet: string; vulnerability_type: string }[] = []
 
+    // The sink rules are RECEIVER-based, matching the family contract: java
+    // flags `stmt.executeQuery`, python flags `cursor.execute` — never a bare
+    // `execute()`. The pre-fix rules matched a bare name or a bare LEAF, so
+    // `re.exec(input)` (RegExp.prototype.exec — not a shell at all) and any
+    // project-local `execute(q)` were reported as command_injection /
+    // sql_injection. That is not a payload-only defect: parallel-indexer
+    // multiplies every source by every sink in a symbol into
+    // `brain_taint_flow`, and `bb_security` reports that table — so one
+    // `req.body` read in a function that also called `.exec()` manufactured a
+    // persisted command-injection finding. The source-side rules were already
+    // receiver-leaf (TSD17); this aligns the sink side with them.
+    const segmentsOf = (text: string): string[] => {
+      const out: string[] = []
+      for (const part of text.split(".")) {
+        const t = part.trim()
+        if (t) out.push(t)
+      }
+      return out
+    }
+
     const traverse = (n: Node) => {
       if (n.type === "call_expression") {
-        const callee = n.childForFieldName("function")?.text || ""
-        const calleeParts = callee.split(".")
+        const calleeText = n.childForFieldName("function")?.text || ""
+        const segs = segmentsOf(calleeText)
+        const leaf = segs.length > 0 ? segs[segs.length - 1] : ""
+        const hasReceiver = segs.length >= 2
+        const receiver = hasReceiver ? segs[0] : ""
 
+        // shell execution: a child_process-shaped RECEIVER plus an exec-family
+        // LEAF, or a BARE exec-family name in a file that imports
+        // child_process (that import is the evidence the name is Node's).
         if (
-          callee.endsWith(".query") ||
-          callee === "execute" ||
-          callee.endsWith(".execute")
+          (hasReceiver && TS_SHELL_RECEIVERS.has(receiver) && TS_SHELL_LEAVES.has(leaf)) ||
+          (!hasReceiver && this._fileSignals.importsChildProcess && TS_SHELL_LEAVES.has(leaf))
         ) {
-          sinks.push({ type: "database_write", snippet: n.text, vulnerability_type: "sql_injection" })
-        }
-        if (callee === "exec" || callee === "spawn" || callee === "execSync" || calleeParts[calleeParts.length - 1] === "exec" || calleeParts[calleeParts.length - 1] === "spawn") {
           sinks.push({ type: "shell_execution", snippet: n.text, vulnerability_type: "command_injection" })
         }
-        if (callee === "res.send" || callee === "res.html" || callee.endsWith(".innerHTML")) {
+        // database write: a member call on a query/execute leaf — receiver-based,
+        // exactly like the java/python family rules.
+        if (hasReceiver && (leaf === "query" || leaf === "execute")) {
+          sinks.push({ type: "database_write", snippet: n.text, vulnerability_type: "sql_injection" })
+        }
+        // http response: unchanged, already receiver-shaped.
+        if (calleeText === "res.send" || calleeText === "res.html" || calleeText.endsWith(".innerHTML")) {
           sinks.push({ type: "http_response", snippet: n.text, vulnerability_type: "xss" })
         }
+        // filesystem: unchanged, already receiver-shaped.
         if (
-          callee === "fs.readFile" ||
-          callee === "fs.writeFile" ||
-          callee === "fs.readFileSync" ||
-          callee === "fs.writeFileSync"
+          calleeText === "fs.readFile" ||
+          calleeText === "fs.writeFile" ||
+          calleeText === "fs.readFileSync" ||
+          calleeText === "fs.writeFileSync"
         ) {
           sinks.push({ type: "file_system", snippet: n.text, vulnerability_type: "path_traversal" })
         }
@@ -5542,13 +5719,6 @@ class TypeScriptAnalysisRunner {
       startIndex: startSource.startIndex,
       endIndex: targetNode.endIndex,
     }
-  }
-
-  private generateSymbolId(symbol: ASTEngine.UniversalSymbol): string {
-    const parts = [this.currentFile]
-    if (symbol.scope) parts.push(symbol.scope)
-    parts.push(symbol.name)
-    return parts.join(":")
   }
 
   private isTypeScriptBuiltinCall(targetName: string, fullCallee?: string): boolean {
@@ -5654,42 +5824,6 @@ class TypeScriptAnalysisRunner {
     return decisions + 1
   }
 
-  private calculateCyclomaticComplexity(node: Node): number {
-    // Cyclomatic complexity = E - N + 2P
-    // For a single function: decision points + 1
-    let decisions = 0
-
-    const countDecisions = (n: Node) => {
-      switch (n.type) {
-        case "if_statement":
-        case "for_statement":
-        case "for_in_statement":
-        case "while_statement":
-        case "do_statement":
-        case "switch_case":
-        case "catch_clause":
-        case "ternary_expression":
-        case "conditional_expression":
-          decisions++
-          break
-        case "binary_expression":
-          const op = n.childForFieldName("operator")?.text
-          if (op === "&&" || op === "||" || op === "??") {
-            decisions++
-          }
-          break
-      }
-
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) countDecisions(child)
-      }
-    }
-
-    countDecisions(node)
-    return decisions + 1
-  }
-
   private calculateArchitecturalScore(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -5767,31 +5901,34 @@ class TypeScriptAnalysisRunner {
   }
 
   /**
-   * React signal for the hooks check: a react (or preact-compat) import, a
-   * require("react") call, or any JSX element. Pure-string matching on
-   * module sources, no regex.
+   * ONE walk for every per-file fact the analyzer needs: a React signal (for
+   * the Rules-of-Hooks gate), a solid-js signal (that exclusion, previously a
+   * whole-file `content.includes` text scan), and a child_process import (the
+   * taint sink rule's evidence that a bare `exec` is Node's, not the project's).
+   * All three are import-source / JSX facts read off the AST — pure AST, no
+   * regex, no text matching.
    */
-  private hasReactSignal(rootNode: Node): boolean {
+  private scanFileSignals(rootNode: Node): void {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") return true
-      if (n.type === "import_statement") {
-        const src = n.childForFieldName("source")
+      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
+        this._fileSignals.hasReact = true
+      } else if (n.type === "import_statement" || n.type === "import_require_clause") {
+        const src = n.type === "import_statement" ? n.childForFieldName("source") : n
         if (src) {
           const mod = stringContent(src)
-          if (mod === "react" || mod === "react-dom" || mod === "preact" || mod === "preact/compat" ||
-              mod.startsWith("react/") || mod.startsWith("preact/")) return true
-        }
-      }
-      if (n.type === "call_expression") {
-        const callee = n.namedChild(0)
-        if (callee && callee.text === "require") {
-          const args = n.childForFieldName("arguments")
-          const first = args?.namedChild(0)
-          if (first && (first.type === "string" || first.type === "template_string")) {
-            const mod = stringContent(first)
-            if (mod === "react" || mod.startsWith("react/")) return true
+          if (
+            mod === "react" || mod === "react-dom" || mod === "preact" || mod === "preact/compat" ||
+            mod.startsWith("react/") || mod.startsWith("preact/")
+          ) {
+            this._fileSignals.hasReact = true
+          }
+          if (mod === "solid-js" || mod.startsWith("solid-js/") || mod.startsWith("@solidjs/")) {
+            this._fileSignals.solidJs = true
+          }
+          if (mod === "child_process" || mod === "node:child_process") {
+            this._fileSignals.importsChildProcess = true
           }
         }
       }
@@ -5800,7 +5937,6 @@ class TypeScriptAnalysisRunner {
         if (child) stack.push(child)
       }
     }
-    return false
   }
 
   private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {    const errors: ASTEngine.ParseError[] = []
@@ -5944,6 +6080,17 @@ function getObjectKeys(obj: any): string[] {
   return keys
 }
 
+// Taint sink vocabulary (H1). Receivers and leaves are listed SEPARATELY so the
+// rule can demand both: a shell sink needs a child_process-shaped RECEIVER and
+// an exec-family LEAF, which is exactly what `RegExp.prototype.exec` and a
+// project's own `spawn()` fail. Pure string sets — no regex, no text search.
+const TS_SHELL_RECEIVERS = new Set([
+  "child_process", "childProcess", "cp", "proc", "shell", "sh", "bash", "zsh", "execa",
+])
+const TS_SHELL_LEAVES = new Set([
+  "exec", "execSync", "execFile", "execFileSync", "spawn", "spawnSync", "fork",
+])
+
 // Global constructor intrinsics/DOM APIs: `new Promise()` is construction
 // of the RUNTIME, not of a project type — instantiates edges to these are
 // noise (same rationale as the JVM stdlib filters).
@@ -5965,39 +6112,6 @@ const JS_GLOBAL_CONSTRUCTORS = new Set([
 ])
 
 export class RealTypeScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
-  private extractTypeParameters(node: Node): string[] {
-    const typeParams: string[] = []
-    const typeArgs = node.childForFieldName("type_parameters") || node.childForFieldName("type_arguments")
-    if (typeArgs) {
-      for (let i = 0; i < typeArgs.namedChildCount; i++) {
-        const param = typeArgs.namedChild(i)
-        if (param) {
-          const nameNode = param.childForFieldName("name")
-          if (nameNode) {
-            let paramStr = nameNode.text
-            // Field names verified against the pinned tsx/typescript wasm
-            // (2026-09-16): a type_parameter carries name, constraint and value —
-            // NOT `extends`/`default`, which this code read while the F1 field
-            // oracle was blind (it captured no field literals at all until that
-            // same fix). `constraint` text includes the keyword ("extends object"),
-            // hence the strip before appending.
-            const constraintNode = param.childForFieldName("constraint")
-            const defaultValueNode = param.childForFieldName("value")
-            if (constraintNode) {
-              paramStr += ` extends ${stripLeadingColon(constraintNode.text.replace(/^extends\s+/, ""))}`
-            }
-            if (defaultValueNode) {
-              paramStr += ` = ${stripLeadingEquals(defaultValueNode.text)}`
-            }
-            typeParams.push(paramStr)
-          } else {
-            typeParams.push(param.text)
-          }
-        }
-      }
-    }
-    return typeParams
-  }
 
   analyze(
     rootNode: Node,

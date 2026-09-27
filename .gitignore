@@ -55,3 +55,29 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 # Found while vendoring tree-sitter-cpp for #743: the ignore list named the
 # scanner by its C++-in-fsharp-style filename instead of by its role.
 !grammars/tree-sitter-cpp/src/scanner.c
+# Same trap, second grammar: tree-sitter-css ships a hand-written external scanner
+# (src/scanner.c — DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON, ERROR_RECOVERY).
+# Without it the tracked tree cannot rebuild the wasm, and the wired wasm is a
+# LOCAL build of grammars/tree-sitter-css/grammar.js (two patched hunks), so the
+# scanner is now load-bearing for CSS exactly as it is for cpp. Found while
+# vendoring tree-sitter-css for the CSS lane's url(../..) parse class.
+!grammars/tree-sitter-css/src/scanner.c
+
+# Grammar registry network cache (M60). Raw npm/GitHub answers, ~3.6 MB,
+# regenerable with `bun run grammar:registry:refresh`, and deliberately NOT
+# committed: the registry it produces IS committed and IS gated. Committing the
+# cache would make a stale upstream answer look like a pinned fact.
+validation/m60/grammar-survey.cache.json
+# Third grammar, same trap: tree-sitter-html's tag vocabulary and its external
+# scanner are BOTH hand-written source (`src/tag.h` is the 126-entry tag table the
+# scanner looks names up in, and `src/scanner.c` is what tokenises tag names at
+# all) — without them the tracked tree cannot rebuild the wasm, and the tag table
+# is exactly the file that decides whether `<LINK>` is recognised as a void
+# element. Found while vendoring tree-sitter-html for #288: the html lane's whole
+# case/void behaviour is a property of these two files, so a vendored copy that
+# omitted them would be provenance theatre. NEITHER is modified from upstream —
+# the committed wasm was measured to behave identically to a fresh build of this
+# exact source — so this vendoring exists to make the provenance checkable, not to
+# carry a patch.
+!grammars/tree-sitter-html/src/scanner.c
+!grammars/tree-sitter-html/src/tag.h

@@ -4,6 +4,24 @@ Real, grammar-grounded Zig code intelligence for the Backbencher Brain universal
 code-intel engine. Mirrors the declaration-site-only, evidence-tiered, corpus-
 verified family contract shared by the go / rust / c / cpp systems analyzers.
 
+## Language
+
+- Analyzer file: `src/ast/real-zig-analyzer.ts`
+- Parser: `tree-sitter-zig` (WASM at `wasm/tree-sitter-zig.wasm`, loaded by `engine.ts` via `resolveWasm`)
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: a **REDISTRIBUTOR BUILD**, not a build of this lane's own npm
+  package. `wasm/tree-sitter-zig.wasm` is byte-identical to `tree-sitter-wasms@0.1.13`'s `out/` wasm
+  (sha256 `59cc4531aa661e2d…`).
+
+  **That collection publishes no source** — 0 `grammar.js`, 0 `parser.c`, only prebuilt wasms — so
+  these bytes cannot be regenerated from it, and the underlying GRAMMAR version is recorded
+  nowhere in this repository and must not be inferred from the collection's version.
+
+  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
+  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`. This matters for the
+  web-tree-sitter 0.27.0 migration: this is one of the lanes whose wasm cannot simply be rebuilt
+  from what we have, only re-sourced and re-admitted.
+
 ## Declaration surface (grounded in tree-sitter-zig, probe-verified 2026-08-29)
 
 - `const X = struct{...}` / `enum{...}` / `union(enum){...}` /

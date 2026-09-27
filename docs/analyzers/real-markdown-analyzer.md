@@ -6,6 +6,17 @@
 - Parser: vendored `wasm/tree-sitter-markdown.wasm` (block grammar) +
   `wasm/tree-sitter-markdown_inline.wasm` (companion inline grammar),
   loaded as `tree-sitter-markdown`
+    <!-- provenance: find-grammar-provenance -->
+    Provenance of the shipped bytes: byte-identical to the published
+    `@tree-sitter-grammars/tree-sitter-markdown@0.5.1` wasm (sha256 `3e13182f21373634…`).
+
+    Note the SOURCE CLASS: this was found among GitHub RELEASE ASSETS, not in an npm
+    tarball — the package's repository publishes a prebuilt wasm per release, and walking
+    npm alone reports "no match" for a lane whose bytes are published. Repos are resolved
+    through each npm package's own `repository` field, never guessed from the grammar name.
+
+    Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference
+    from size or date); evidence in `validation/m60/results/G-PROVENANCE.json`.
 - Detection: `.md`, `.markdown` → `markdown` in `src/ast/language-detection.ts`
 - Wiring: `ASTEngine` → `RealMarkdownAnalyzer`
 

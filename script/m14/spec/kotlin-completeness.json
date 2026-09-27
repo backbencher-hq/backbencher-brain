@@ -185,6 +185,14 @@
         "missing": "import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass",
         "status": "CLOSED",
         "closure": "CLOSED \u2014 fixture-gated fix (kotlin/import-edges) + mutant kotlin/reclassify-import-tier CAUGHT (2026-08-27). isImportDep now recognized by the tier classifier -> import_based."
+      },
+      {
+        "id": "K9",
+        "node_type": "parameter signature (override verification / declSigs)",
+        "severity": "high",
+        "missing": "the generic-substitution mirror diverged from the judge on the NULLABLE spelling of a type variable: hasTypeVar split the signature on `,` and required the whole token to be one capital letter, so `(T?)` \u2014 how Kotlin writes every generic parameter \u2014 read as a CONCRETE type. The exact-signature test then failed AND the documented name-only fallback never fired, so an override whose DECLARING ancestor is a GRANDPARENT interface fell through to the first-supertype guess. Measured on exposed-core ColumnType.kt (`ColumnWithTransform : ColumnType`, `ColumnType : IColumnType`, `IColumnType.valueToDB sig=(T?)`): the analyzer published `ColumnType.valueToDB` at 0.5 \u2014 a type that declares no such member \u2014 where the truth says `IColumnType.valueToDB`. Four such rows, and they were the oracle-sharpness sweep's first HARD masks on a lane other than groovy (#949).",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 the mirror is now boundary-for-boundary the judge's `hasTypeVar` (kotlinSigHasTypeVar, char-scan), so `(T?)` is a type variable while `(Byte?)`/`(Wrapped?)` stay concrete and the exact-signature overload guard is intact. Evidence: (1) fixture kotlin/override-declaring-ancestor-949, whose in-place revert of the mirror fails exactly 4 of its assertions (2 expects at 0.9 naming IRenderer + 2 forbid entries naming the dangling `Base.render`@0.5) while the boundary row still passes \u2014 the fixture is falsified in the pre-fix state, not merely green in the fixed one; (2) mutant kotlin/override-grandparent-ancestor-revert CAUGHT by that fixture ALONE, derived from the result (the source owner's own first extends/implements target) rather than a hardcoded string; (3) the full-extent lane re-measured (Exposed 19,958 truth rows, kotlinx-coroutines 18,327 truth rows): strict-missing 0, hidden 0, hard 0, soft 0 \u2014 the four masks gone at the same 38,285 truth rows the pre-fix run reported, so the truth set did not move."
       }
     ]
   },
@@ -301,6 +309,13 @@
         "status": "FIXED",
         "question": "Review K15: the typeIndex loop declared `let i` but never used it, and the override loop re-scanned symbols per iteration.",
         "decision": "Cleanup: dead loop variable removed; declSigs hoisted (KD21) so the override pass is O(M) after O(M) index build. Verified: typecheck clean, corpus perf unchanged (3285 edges @200 files, comparable runtimes)."
+      },
+      {
+        "id": "KD29",
+        "node_type": "override member signature (K9 / #949)",
+        "status": "FIXED",
+        "question": "Which spellings of a parameter type count as a TYPE VARIABLE for the generic-substitution fallback, given that the judge's rule (differential hasTypeVar, sigCompatible) and the analyzer's mirror must agree or the differential stops measuring one question?",
+        "decision": "MIRROR THE JUDGE, BOUNDARY FOR BOUNDARY (the java #904 and scala S1.17 convention): a type variable is a SINGLE capital at `(`, `,`, `:`, `|`, `[`, `<`, `&` or string start — so `(T?)` is generic, and `(Byte?)`/`(Wrapped?)` are concrete. The nullable marker is stripped by the SCAN (the identifier ends at `?`), never by a per-token rule that would also make a nullable concrete type generic; the judge cannot derive an edge it reads as concrete, so widening past it fabricates UNEXPLAINED rows instead of fixing them. `kotlinSigHasTypeVar` is the third module-local copy of this scan (java javaSigHasTypeVar, scala sigHasTypeVar); consolidation into one shared mirror is a candidate, deliberately NOT taken in this round because two of the three lanes' rows are certified against their current bytes."
       }
     ]
   }

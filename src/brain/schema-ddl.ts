@@ -28,6 +28,14 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         has_syntax_errors INTEGER NOT NULL DEFAULT 0,
         error_report TEXT,
         framework_type TEXT,
+        -- The analyzer's FileMetadata as JSON: patterns, detectedFrameworks,
+        -- frameworkPatterns, architecturalInsights, complexity, cyclomaticComplexity,
+        -- codeQuality. The framework_type column above is the ONE field promoted
+        -- to its own column;
+        -- everything else the analyzer computed had nowhere to go, so a correct
+        -- analyzer's pattern evidence was discarded on the way into the index.
+        -- This is the same shape brain_relationship.metadata already uses.
+        metadata TEXT,
         time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
         time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
       );
@@ -391,6 +399,29 @@ export function ensureSymbolDeclarationColumn(raw: any): void {
     if (cols.length === 0) return // table absent (fresh DB handled by DDL)
     if (cols.includes("is_declaration")) return
     raw.exec("ALTER TABLE brain_symbol ADD COLUMN is_declaration INTEGER")
+  } catch {}
+}
+
+/**
+ * M14 #277 follow-on: `brain_file.metadata`.
+ *
+ * Found from the bash lane, but it is not a bash problem: EVERY analyzer returns
+ * its FileMetadata and `storeResults` had no column for it, so `patterns`,
+ * `detectedFrameworks`, `architecturalInsights`, `complexity`,
+ * `cyclomaticComplexity` and `codeQuality` were computed for all 29 languages
+ * and thrown away. The worker was ALSO dropping the object before the store, so
+ * the data was lost at two independent points; this fixes the second one.
+ *
+ * SQLite cannot add a column inside CREATE TABLE IF NOT EXISTS, so existing
+ * databases need the explicit ALTER. Idempotent, and a no-op on a fresh DB where
+ * the DDL above already created the column.
+ */
+export function ensureFileMetadataColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_file)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return // table absent (fresh DB handled by DDL)
+    if (cols.includes("metadata")) return
+    raw.exec("ALTER TABLE brain_file ADD COLUMN metadata TEXT")
   } catch {}
 }
 

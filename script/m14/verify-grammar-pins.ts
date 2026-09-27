@@ -84,6 +84,7 @@ export interface LaneDecision {
     | { kind: "byte-identical-to-npm-tarball"; package: string; version: string }
     | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
     | { kind: "local-rebuild-from-vendored-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string }
+    | { kind: "local-rebuild-from-upstream-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string; chain: string }
     | { kind: "unnamed-build-sha-only"; chain: string }
   source:
     | { state: "vendored"; dir: string; note: string }
@@ -121,6 +122,69 @@ export const LANES: Record<string, LaneDecision> = {
       { path: "queries/", why: "editor queries; the engine does not load them" },
       { path: "src/parser.c", why: "generated from grammar.js; 20 MB; `tree-sitter generate` rebuilds it" },
       { path: "tree-sitter-haskell.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+
+  // CSS is the one lane in this file whose wired bytes are NOT a published
+  // prebuilt, and the reason is measured rather than preferred: two grammar
+  // defects each broke real files in the corpus, each has a one-line
+  // reproduction, and the A/B on 533 files showed the fixes are strictly
+  // additive (19 fixed, 0 regressed, 0 node-type and 0 field delta). The record
+  // below therefore pins a LOCAL REBUILD and says why, rather than pinning
+  // upstream's bytes and leaving 19 files unparsed.
+  //
+  // A rebuild's sha256 is not a function of its source — the UNMODIFIED upstream
+  // source rebuilds to a different sha than upstream's own prebuilt, with
+  // identical behaviour on all 533 corpus files (script/m14/tmp/css-grammar-ab.ts).
+  // So this lane's proof is the source↔wasm check (every name the vendored source
+  // declares exists in the wired wasm and vice versa), NOT a hash comparison.
+  css: {
+    wired: "wasm/tree-sitter-css.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "tree-sitter/tree-sitter-css", version: "0.25.0" },
+      patches: [
+        "keyframe_block: add float_value to the step choice — `33.3%` is a float_value, not an integer_value, and float_value already exists in this grammar, so no node type is added (measured 151 -> 151). Repro: @keyframes f { 33.3% { color: yellow } }",
+        "plain_value: allow a LEADING `.` — an unquoted relative url() could not lex at all, because the token ended at the first `.` and the `..` became two ERROR nodes; `.` was already legal in the token's BODY, so only the leading repeat lacked it. The required /[a-zA-Z]/ is deliberately RETAINED so a value made only of punctuation still cannot match and the token cannot swallow structure. Repro: .a { background-image: url(../img/x.svg); }",
+      ],
+      patchEvidence:
+        "validation/m14/results/css-grammar-ab-url-float.json (A/B over 533 corpus files across 4 repos: 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change), plus reviews/m49-css-review.md. Both hunks carry their own repro in grammar.js under a `LOCAL PATCH` marker, and the file's header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-css",
+      note:
+        "grammar.js (upstream 0.25.0 byte-for-byte except the two marked LOCAL PATCH hunks, 36 changed lines including the patch header) + src/ (scanner.c, grammar.json, node-types.json, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, from the npm tarball tree-sitter-css@0.25.0. The external scanner is REQUIRED, not optional: its TokenType enum is exactly DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON and ERROR_RECOVERY, which back the descendant combinator, `::`, and error recovery. The GENERATED src/parser.c is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check runs on the generated JSONs, not on parser.c.",
+    },
+    decision:
+      "Pin the local patched rebuild, and require the source↔wasm proof rather than a hash. Upstream 0.25.0 is the newest release and its prebuilt is present on this machine in 20+ copies (all sha 8a23977f, 128668 bytes) — but wiring those bytes means 19 real corpus files stay unparsed: 16 of 191 grails-core files on the relative-url class, 2 of 53 scala3, 1 of 185 svelte. The two fixes are additive by measurement, not by argument. The trade is recorded rather than hidden: the wired bytes are ours, so a future `tree-sitter generate && build` will NOT reproduce this sha, and a contributor who changes grammar.js must re-run the A/B before trusting the result.",
+    alternatives: [
+      {
+        option: "wire upstream tree-sitter-css@0.25.0's prebuilt wasm (sha 8a23977f, 128668 bytes)",
+        measured:
+          "Rejected on measurement: 19 corpus files stay unparsed across 4 repos (grails-core 16, scala3 2, svelte 1). Available in 20+ local copies, so this was the cheap option and it was still the wrong one — the defect class is the largest single parse-failure class in the CSS corpus after `progid:`.",
+        artifact: "validation/m14/results/css-grammar-ab-url-float.json",
+      },
+      {
+        option: "the older 98133-byte build shipped in tree-sitter-wasms@0.1.13 (sha 5fc61546), also vendored at backbencher/packages/brain-core/wasm/",
+        measured:
+          "Rejected: an older grammar surface, and brain-core's vendored copy is the one already wired in that package, so adopting it here would silently regress this lane behind it. Not A/B'd file-by-file because the surface is strictly older and the 0.25.0 prebuilt already fails on 19 files.",
+        artifact: "validation/m14/results/wasm-provenance-census.json",
+      },
+    ],
+    evidence: [
+      "validation/m14/results/css-grammar-ab-url-float.json",
+      "validation/m14/results/wasm-provenance-census.json",
+      "validation/m14/results/family-grammar-fingerprints.json",
+      "reviews/m49-css-review.md",
+    ],
+    copies: [
+      { label: "npm tree-sitter-css@0.25.0 (upstream prebuilt, the base — NOT these bytes)", path: path.join(CACHE, "tree-sitter-css@0.25.0@@@1/tree-sitter-css.wasm") },
+    ],
+    notVendored: [
+      { path: "prebuilds/, bindings/, binding.gyp", why: "native node bindings for 6 platforms; not parser source, and the engine loads the wasm" },
+      { path: "src/parser.c", why: "generated from grammar.js by `tree-sitter generate`; the source↔wasm proof runs on the generated JSONs instead" },
+      { path: "tree-sitter-css.wasm", why: "the base upstream prebuilt lives in the npm cache and is recorded above as the base; the WIRED bytes are our patched rebuild at wasm/ and are pinned by sha in the gate's own recomputation" },
     ],
   },
 
@@ -239,9 +303,11 @@ export const LANES: Record<string, LaneDecision> = {
   clojure: {
     wired: "wasm/tree-sitter-clojure.wasm",
     provenance: {
-      kind: "unnamed-build-sha-only",
+      kind: "byte-identical-to-npm-tarball",
+      package: "@yogthos/tree-sitter-clojure",
+      version: "0.0.14",
       chain:
-        "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local package or source for the yogthos fork exists, so the spoken provenance cannot be re-derived here; the surface fingerprint below is the identity that CAN be checked.",
+        "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local copy of the package exists, so the bytes were matched against the package's PUBLISHED file hash instead: jsDelivr's listing for @yogthos/tree-sitter-clojure@0.0.14 reports tree-sitter-clojure.wasm, 91,957 bytes, sha256 (base64) kPiGa3TQThZD7XPM4lcgxzLfKqo4tF2p3MdzuugYHCc= — which decodes to 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, the wired sha exactly, and the size matches too. External corroboration, not a local re-derivation: the pin records that distinction.",
     },
     source: {
       state: "not-obtainable-offline",
@@ -249,7 +315,7 @@ export const LANES: Record<string, LaneDecision> = {
         "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes — worse than no source. No yogthos source exists locally.",
     },
     decision:
-      "Pin bytes + surface fingerprint + the commit that swapped them, and record the alternative that was measured and rejected: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88), while the wired fork leaves 2 of 585 files damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
+      "Pin the bytes to their named release: the wired wasm matches @yogthos/tree-sitter-clojure@0.0.14's published file hash and byte length, so the fork and its version are no longer only a commit message's claim. The alternative that was measured and rejected stays recorded: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88) while the wired fork leaves 2 of 585 damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
     alternatives: [
       {
         option: "canonical sogaiu tree-sitter-clojure 0.4.0",
@@ -267,9 +333,12 @@ export const LANES: Record<string, LaneDecision> = {
   clean: {
     wired: "wasm/tree-sitter-clean.wasm",
     provenance: {
-      kind: "unnamed-build-sha-only",
+      kind: "local-rebuild-from-upstream-source",
+      base: { repo: "tclem/tree-sitter-clean", version: "1.2.7" },
+      patches: [],
+      patchEvidence: "reviews/m60-clean-grammar-127-adjudication.md",
       chain:
-        "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The SOURCE was not vendored then, and these bytes exist in no local copy, so this pin records the sha + surface + the adjudication that adopted it.",
+        "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The source tree itself is NOT in this repo and these wasm bytes exist in no local copy, so the pin is sha + surface + that adjudication. External corroboration recorded this round: npm's tree-sitter-clean@1.2.7 does exist, and its published file listing (jsDelivr) carries per-file sha256 for grammar.js, src/scanner.c, src/grammar.json and src/node-types.json — but the package ships NO wasm, so the wired bytes cannot be hash-matched to a published artifact and are not claimed to be.",
     },
     source: {
       state: "not-obtainable-offline",
@@ -277,7 +346,7 @@ export const LANES: Record<string, LaneDecision> = {
         "the bun cache holds only tree-sitter-clean@1.2.0 (an older release whose tarball ships no wasm); nothing on this machine carries v1.2.7's source or bytes. The version claim rests on 2bc64693's own instruments (the differential table's sha, the adjudication doc, spec/clean-completeness.json).",
     },
     decision:
-      "Keep v1.2.7 (already pin-verified by the clean round) and fold it into this registry so the family has one place that answers the question; for clean the answer is a sha + surface + a named adjudication rather than a vendored source.",
+      "Keep v1.2.7 (already pin-verified by the clean round) and fold it into this registry so the family has one place that answers the question. For clean the answer is a sha + surface + a named adjudication: v1.2.7's npm package publishes source but no wasm, and no v1.2.7 source or bytes exist on this machine, so the version identity rests on 2bc64693's instruments (both now externally corroborated as existing) rather than on a vendored tree. Vendoring v1.2.7's source from npm is the natural next act for this lane and is unobtainable offline.",
     alternatives: [
       {
         option: "stay on v1.2.4 (sha 2b805890)",

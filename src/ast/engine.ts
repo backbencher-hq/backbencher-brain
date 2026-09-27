@@ -867,6 +867,94 @@ export namespace ASTEngine {
    * offsets) plus each block's language (`js`/`ts`) and body start position.
    * Pure AST — no source-text scanning of the file.
    */
+  /**
+   * M14 (#288 / HTML-G1): the inline `<script>` / `<style>` bodies of a plain
+   * HTML document, with exact byte offsets.
+   *
+   * A SEPARATE function rather than a flag on `extractSfcScriptBlocks`, because
+   * that one feeds vue/svelte and they must not suddenly receive CSS blocks they
+   * have no contract for. The grammar shape is the same for both languages — a
+   * `script_element` / `style_element` whose body is a single `raw_text` leaf —
+   * so this is the same walk with the style arm added and the lang dispatch
+   * widened.
+   *
+   * Why it exists at all: the polyglot path below (the `embeddedScriptContent`
+   * branch) keys on a metadata field NO analyzer in `src/ast/` has ever set, so it
+   * has never fired for anything; and the SFC sub-parse seam is gated
+   * `vue || svelte`. Measured across the html-bearing corpus repos, 5,389 of
+   * 6,094 files (88.4%) carry an inline block that produces zero symbols today.
+   */
+  export function extractHtmlEmbeddedBlocks(
+    rootNode: Node,
+    content: string
+  ): { body: string; lang: "js" | "ts" | "tsx" | "css"; startLine: number; startColumn: number; startIndex: number }[] {
+    const out: { body: string; lang: "js" | "ts" | "tsx" | "css"; startLine: number; startColumn: number; startIndex: number }[] = []
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "script_element" || n.type === "style_element") {
+        const isStyle = n.type === "style_element"
+        let rawText: Node | null = null
+        let lang: "js" | "ts" | "tsx" | "css" = isStyle ? "css" : "js"
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "raw_text") rawText = c
+          if (c.type === "start_tag") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const a = c.namedChild(j)
+              if (a && a.type === "attribute") {
+                // `type="module"`/`type="text/typescript"`/`lang="ts"` are the
+                // three ways a document says which grammar its script is; an
+                // UNRECOGNISED type stays `js`, because the javascript grammar
+                // recovers from a type annotation and the typescript grammar
+                // rejects plain JS in ways that lose more than it gains.
+                const attrName = findAttributeName(a)
+                if (isStyle) {
+                  if (attrName === "lang") {
+                    const v = findAttributeValue(a)
+                    if (v === "css" || v === "text/css") lang = "css"
+                    else lang = "js" // a <style lang=…> that is not CSS is script
+                  }
+                } else if (attrName === "lang") {
+                  const v = findAttributeValue(a)
+                  if (v === "ts" || v === "typescript") lang = "ts"
+                  else if (v === "tsx") lang = "tsx"
+                } else if (attrName === "type") {
+                  const v = findAttributeValue(a)
+                  const lowered = v.toLowerCase()
+                  if (lowered === "module" || lowered === "text/javascript" || lowered === "application/javascript" || lowered === "text/ecmascript" || lowered === "module/javascript") lang = "js"
+                  else if (lowered === "text/typescript" || lowered === "application/typescript" || lowered === "ts") lang = "ts"
+                  else if (lowered === "text/tsx" || lowered === "tsx") lang = "tsx"
+                }
+              }
+            }
+          }
+        }
+        if (rawText) {
+          const body = content.substring(rawText.startIndex, rawText.endIndex)
+          // A body that is only whitespace carries no program, and handing it to
+          // a sub-parser would manufacture an empty symbol set and a per-file
+          // parse cost for nothing.
+          if (body.trim().length > 0) {
+            out.push({
+              body,
+              lang,
+              startLine: rawText.startPosition.row + 1,
+              startColumn: rawText.startPosition.column,
+              startIndex: rawText.startIndex,
+            })
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
   export function extractSfcScriptBlocks(
     rootNode: Node,
     content: string
@@ -1261,6 +1349,37 @@ export namespace ASTEngine {
         }
       }
 
+      // M14 (#288 / HTML-G1): pre-parse each inline <script>/<style> body of a
+      // plain HTML document and hand the trees to the analyzer via context. Same
+      // shape as the SFC seam above, and the same REASON it uses `getParser`
+      // rather than constructing one: a fresh Parser per file exhausted the
+      // fixed-size wasm heap mid-sweep at --sample 400 (M49 W12), so the parsers
+      // are the cached ones and this is a lookup, not an allocation.
+      if (language === "html" && tree?.rootNode) {
+        try {
+          const blocks = extractHtmlEmbeddedBlocks(tree.rootNode, content)
+          if (blocks.length > 0) {
+            const trees: Tree[] = []
+            for (const block of blocks) {
+              const subParser = await getParser(block.lang === "ts" ? "typescript" : block.lang === "tsx" ? "tsx" : block.lang === "css" ? "css" : "javascript")
+              trees.push(subParser.parse(block.body))
+            }
+            context = {
+              ...context,
+              htmlEmbeddedTrees: trees,
+              htmlEmbeddedLangs: blocks.map((b) => b.lang),
+              htmlEmbeddedStartLines: blocks.map((b) => b.startLine),
+              htmlEmbeddedStartColumns: blocks.map((b) => b.startColumn),
+              htmlEmbeddedStartIndices: blocks.map((b) => b.startIndex),
+            }
+          }
+        } catch (e) {
+          // A sub-parse failure must not lose the document: the html analyzer
+          // still runs, and HTML-G1's own accounting sees the shorter block list.
+          log.debug("html embedded sub-parse failed", { error: (e as Error)?.message })
+        }
+      }
+
       // MARKDOWN: pre-parse each inline node with the companion
       // tree-sitter-markdown-inline grammar and hand the trees to the
       // analyzer via context (the block grammar leaves `inline` opaque; the
@@ -1454,7 +1573,27 @@ export namespace ASTEngine {
           codeQuality: meta.codeQuality || "unknown",
           hasTypeInference: true,
           hasFrameworkIntelligence: true,
-          analysisVersion: "m10.06-cut",
+          // M14 (#888): FORWARD the analyzer's own scored metrics. This object is
+          // a fresh literal listing fifteen keys, so anything an analyzer computes
+          // and this list omits is computed and DISCARDED — silently, because
+          // `FileMetadata` carries an index signature and the extra key
+          // typechecks. The html analyzer measured exactly that: it computed
+          // accessibility / semantic / performance scores, a `score` breakdown and
+          // a `documentMetrics` census, none of which appeared in the parse result
+          // (verified `"accessibilityScore" in metadata === false`), and the three
+          // scores have no consumer anywhere in `src/` or `script/` besides this
+          // line. Each key below reads `undefined` for every other language, which
+          // is identical to the key being absent — so this is additive by
+          // construction, not a change to any other lane's payload.
+          accessibilityScore: (meta as any).accessibilityScore,
+          semanticScore: (meta as any).semanticScore,
+          performanceScore: (meta as any).performanceScore,
+          score: (meta as any).score,
+          documentMetrics: (meta as any).documentMetrics,
+          elementCount: (meta as any).elementCount,
+          addressableNodeCount: (meta as any).addressableNodeCount,
+          maxElementDepth: (meta as any).maxElementDepth,
+          analysisVersion: meta.analysisVersion || "m10.06-cut",
         },
       }
     } finally {
