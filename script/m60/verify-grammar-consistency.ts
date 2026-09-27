@@ -447,6 +447,31 @@ if (!existsSync(stragglerPath)) {
           : `${uncited.length} lane(s) claim a census-sourced version without citing the artifact: ${uncited.map((r: any) => r.lane).join(", ")}`,
     })
 
+    // A LOCAL-REBUILD VERSION MUST CARRY ITS REPRODUCTION. `versionKind: "local-rebuild"`
+    // is the strongest provenance claim this repo makes about a grammar — "we built these
+    // bytes ourselves, from this named source, with this toolchain" — and it is also the
+    // easiest to assert for free. So every such row must carry the grade, the byte count
+    // and the command, and the grade must be one that actually establishes something.
+    // `different` and `not-attempted` do NOT: they say only that this candidate is not the
+    // source, and a row carrying one as its version would be a lane marked "known" on the
+    // strength of a failed attempt.
+    const rebuildRows = (survey.rows ?? []).filter((r: any) => r.declared?.versionKind === "local-rebuild")
+    const badRebuild = rebuildRows.filter(
+      (r: any) =>
+        !r.declared.rebuild ||
+        !["byte-identical", "equivalent"].includes(r.declared.rebuild.grade) ||
+        !r.declared.rebuild.from?.package ||
+        !r.declared.sources?.some((x: any) => x?.file === "validation/m60/results/M60.0.local-rebuilds.json"),
+    )
+    c8.push({
+      check: "local-rebuild-versions-carry-reproduction",
+      status: badRebuild.length === 0 ? "pass" : "fail",
+      detail:
+        badRebuild.length === 0
+          ? `${rebuildRows.length} lane(s) recorded as a local rebuild, each with a grade of byte-identical/equivalent, a named source and a reproduction command${rebuildRows.length ? " (" + rebuildRows.map((r: any) => `${r.lane}: ${r.declared.rebuild.grade}`).join(", ") + ")" : ""}`
+          : `${badRebuild.length} lane(s) claim a local-rebuild version without a qualifying reproduction: ${badRebuild.map((r: any) => r.lane).join(", ")}`,
+    })
+
     // The retraction must stay visible. Silently overwriting an unreproducible
     // claim with a new number destroys the record that it was ever wrong.
     c8.push({

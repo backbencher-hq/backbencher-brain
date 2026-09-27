@@ -555,7 +555,43 @@ const report = {
 }
 
 mkdirSync(path.dirname(OUT), { recursive: true })
-writeFileSync(OUT, JSON.stringify(report, null, 2) + "\n")
+
+// PER-LANE RUNS ACCUMULATE, THEY DO NOT REPLACE. Re-running one lane used to overwrite the
+// whole artifact with that lane alone, which is how `r` ended up with no census row at all —
+// and the rebuild instrument, which takes its FIRST candidate from this census, then started
+// from the survey's search-derived guess (`tree-sitter-r`, a 2022 security placeholder with no
+// grammar.js) instead of the sha256-measured base. A measurement that silently loses earlier
+// measurements is worse than no measurement, because the gap is invisible: the file is there,
+// it parses, and the lane is simply absent.
+let priorResults: any[] = []
+if (existsSync(OUT)) {
+  try {
+    priorResults = JSON.parse(readFileSync(OUT, "utf8")).results ?? []
+  } catch {
+    priorResults = []
+  }
+}
+const byLane = new Map<string, any>(priorResults.map((r) => [r.lane, r]))
+for (const r of results) byLane.set(r.lane, r)
+const merged = [...byLane.values()].sort((a, b) => String(a.lane).localeCompare(String(b.lane)))
+const identified2 = merged.filter((r) => r.status === "identified")
+const unmatched2 = merged.filter((r) => r.status !== "identified")
+writeFileSync(
+  OUT,
+  JSON.stringify(
+    {
+      ...report,
+      results: merged,
+      counts: { examined: merged.length, identified: identified2.length, noMatch: unmatched2.length },
+      identified: identified2.map((r) => ({ lane: r.lane, package: r.package, version: r.version, provenanceKind: r.provenanceKind })),
+      noMatch: unmatched2.map((r) => ({ lane: r.lane, packagesTried: r.packagesTried, leads: r.leads, buildOutput: r.buildOutput })),
+      mergedWithPriorRun: priorResults.length > 0,
+      mergedLaneCount: merged.length,
+    },
+    null,
+    2,
+  ) + "\n",
+)
 
 if (AS_JSON) {
   console.log(JSON.stringify(report, null, 2))
