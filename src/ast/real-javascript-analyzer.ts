@@ -333,6 +333,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // replacement are removed AFTER the walk — a mid-walk splice would
     // shift every later seenMethodIdx index and corrupt J3 last-wins.
     const b5Zombies: number[] = []
+    // JD6: which relationship row came from which node, for the edges pushed
+    // DURING the walk. The two post-walk relationship passes already re-check
+    // `isNodeInDeadSpans`, but the edges pushed inline during the walk — the
+    // heritage, CJS-export, import and decorator rows — never did, so a symbol
+    // removed as dead kept its edges and the graph gained rows whose source or
+    // target is not in the index. Recorded by position rather than matched by
+    // name, because two symbols can share a name and only one of them be dead.
+    const relSpans: Array<{ idx: number; s: number; e: number }> = []
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, inClassBody, functionDepth } = stack.pop()!
@@ -359,6 +367,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (op === "&&" || op === "||" || op === "??") cyclomaticComplexity++
       }
 
+      const relMark = relationships.length
       switch (node.type) {
         case "class_declaration": {
           const name = node.childForFieldName("name")?.text
@@ -1067,6 +1076,12 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // JD6: tag every row this node pushed, so the dead-span filter below can
+      // drop the ones that came from a superseded body.
+      for (let i = relMark; i < relationships.length; i++) {
+        relSpans.push({ idx: i, s: node.startIndex, e: node.endIndex })
+      }
+
       // Recurse children
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
@@ -1116,6 +1131,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = symbols.length - 1; i >= 0; i--) if (deadIdx.has(i)) symbols.splice(i, 1)
       }
     }
+    // JD6: drop the walk-time edges whose node sat inside a dead span. Applied
+    // AFTER the symbol removals above, and only where a dead span actually
+    // exists — measured prevalence on 400 production files is 0, so this is an
+    // integrity guard rather than a common path, and it must stay inert when
+    // nothing was superseded.
+    if (deadSpans.length > 0 && relSpans.length > 0) {
+      const drop = new Set<number>()
+      for (const r of relSpans) {
+        for (const d of deadSpans) {
+          if (d.s <= r.s && r.e <= d.e) { drop.add(r.idx); break }
+        }
+      }
+      if (drop.size > 0) {
+        for (let i = relationships.length - 1; i >= 0; i--) if (drop.has(i)) relationships.splice(i, 1)
+      }
+    }
+
     {
       const bySource = new Map<string, string[]>()
       const qcOwnerOf = (n: Node): string | undefined => {
@@ -1223,6 +1255,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     this.extractCallRelationships(rootNode, symbols, relationships, moduleName, deadSpans)
+    // JD6: an export written inside a superseded duplicate body is not part of
+    // the module's surface. `extractExportRelationships` runs after the walk and
+    // turns the `exports` array into rows, so the filter belongs here — on the
+    // entries — rather than on relSpans, which only covers rows pushed DURING
+    // the walk. The entry's own range is the name-bearing node, so an entry
+    // inside a dead span is a dead export.
+    if (deadSpans.length > 0 && exports.length > 0) {
+      for (let i = exports.length - 1; i >= 0; i--) {
+        const r = exports[i].range
+        if (r && r.startIndex !== undefined && r.endIndex !== undefined) {
+          for (const d of deadSpans) {
+            if (d.s <= r.startIndex && r.endIndex <= d.e) { exports.splice(i, 1); break }
+          }
+        }
+      }
+    }
     this.extractExportRelationships(exports, relationships, moduleName)
     // M49 #868: decorators are metadata on the symbol they decorate, so their
     // only edge is a reference FROM that symbol, at the decorator's own line.
@@ -1242,7 +1290,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }))
 
     // Field-access uses (parity with java/groovy/kotlin collectors).
-    this.collectFieldAccessUses(rootNode, relationships, moduleName)
+    this.collectFieldAccessUses(rootNode, relationships, moduleName, deadSpans)
 
     // Declared/checked type references (M14): JavaScript has no type
     // annotations, but instanceof checks reference a type by name — the one
@@ -2149,6 +2197,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    // JD6: this pass had no dead-span guard, so reads inside a superseded
+    // duplicate body still emitted `uses` rows after the symbol they belonged to
+    // was removed. Its sibling extractCallRelationships has had the guard all
+    // along; this closes the asymmetry.
+    deadSpans: { s: number; e: number }[] = [],
   ) {
     // Walk with an enclosing-class scope (this/super receivers) and an
     // enclosing-FUNCTION scope for member-read attribution. M37 JSD2 (JAD2
@@ -2175,6 +2228,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declaration, which the typescript twin does not emit. Subtree skipped
       // whole (arguments included), matching the calls walk above.
       if (this.inDecoratorPosition(node)) continue
+      // JD6: no reads from inside a superseded duplicate body.
+      if (deadSpans.length > 0 && isNodeInDeadSpans(deadSpans, node)) continue
 
       if (
         node.type === "class_declaration" ||
