@@ -82,6 +82,7 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   // analyzer's F1 union includes tree-sitter-javascript, so a literal that is
   // real in one but not the other must not be reported as unknown.
   html:       { wasm: "tree-sitter-html.wasm",     ext: [".html", ".htm"], analyzer: "real-html-analyzer.ts", extraWasm: ["tree-sitter-javascript.wasm"] },
+  toml:       { wasm: "tree-sitter-toml.wasm",     ext: [".toml"], analyzer: "real-toml-analyzer.ts" },
   // M60 functional family (ER2 restoration, 2026-09-25): erlang was absent
   // from this gate entirely — which is one reason its fixture lane could read
   // 0/9 committed while nothing measured what the analyzer referenced versus
