@@ -487,6 +487,37 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // there is no second relationship type any construct could produce, and inventing
   // one (treating a path-shaped string as a dependency) would import ecosystem
   // knowledge into a format that has none.
+  // yaml enters the ladder with a full spec and 27 fixtures, and `requiredKinds` names
+  // the FOUR types the lane can produce rather than the ones a schema would suggest.
+  // YAML has no heritage clause, so there is no `implements` to require; what it has
+  // instead is a set of *named conventions*, and each one is measured rather than
+  // assumed: `contains` (the key tree), `extends` (merge keys and aliases, which is
+  // YAML's inheritance and is emitted with an evidence class and a confidence), `imports`
+  // (file includes: Ansible, Helm and Kubernetes), and `references` (the largest
+  // surface — tags as declared_type, JSON pointers, `depends_on` siblings, k8s resource
+  // refs and action `uses`).
+  //
+  // `apiContractPath` is DELIBERATELY ABSENT from `payloads`. The analyzer emits 3,341 of
+  // them at its own boundary and the corpus census measures 0 through the production
+  // entry, because pool-worker.ts reshapes every symbol into the store's row shape with no
+  // such key. Pinning it as a required payload would make the lane claim a Matrix 1b row
+  // it does not satisfy, and omitting it silently would hide the seam; the corpus census
+  // carries both numbers instead, at both boundaries.
+  yaml: {
+    id: "yaml",
+    wasm: "tree-sitter-yaml.wasm",
+    classification: "yaml-completeness.json",
+    fixturesDir: "validation/m14/fixtures/yaml",
+    docs: ["docs/analyzers/real-yaml-analyzer.md"],
+    perfKey: "kubernetes:yaml",
+    requiredKinds: ["contains", "extends", "imports", "references"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "yaml/payload-complexity (addressable-subtree size per symbol, the family's complexity definition)" },
+      docstring: { key: "expectDocstring", pin: "yaml/comment-attribution (a comment is documentation; attribution is positional — same or shallower column, immediately preceding)" },
+      qualifiedCalls: { key: "expectQualifiedCalls", pin: "yaml/merge-sequence, yaml/json-pointer-resolve, yaml/tag-declared-type" },
+    },
+    title: "yaml pass (#286)",
+  },
   toml: {
     id: "toml",
     wasm: "tree-sitter-toml.wasm",
@@ -584,7 +615,44 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell",
+  // yaml joins the gated set on 2026-09-27 at 8/8 sections. What earns it is the ORACLE, not the
+  // count: its corpus floor comes from PyYAML 6.0.1 compose_all, which shares no code, algorithm or
+  // data model with the tree-sitter side, whereas the differential sweep this gate also runs treats a
+  // hand-authored truth file as a mirror of the analyzer rather than a check on it. The floor is 0
+  // missing / 0 unexplained over a 1,004-file, 357,304-oracle-path draw across eight pinned corpora —
+  // wider than this file's declared 60-per-lane draw, so the 0/0 is the stronger claim. The 15
+  // grammar-error files in that draw are a DECLARED tree-sitter-yaml defect (it cannot lex a
+  // multi-line double-quoted scalar; the 58-byte root ERROR costs the whole file its containment),
+  // attributed by the oracle parsing those same files cleanly and filed against the grammar.
+  "yaml",
+  // css reaches CONFORMANT and joins GATED_LANGS: sections A-H are 8/8 green, which
+  // is the ladder's own stated criterion ("a language joins GATED_LANGS when it
+  // reaches CONFORMANT — which means all eight sections are green").
+  //
+  //   A structural completeness  130 unique types, 0 gap, 10 rulings, 3 limitations
+  //   B relationship kinds       contains, uses, references, imports — all pinned
+  //   C payload matrix           complexity (it was a literal 1; 20,214 symbols measured)
+  //   D evidence tiers           structural / usage_contextual / import_based
+  //   E differential baseline    svelte 100% MISSING=0, grails-core 100% MISSING=0
+  //   F perf budget              1.408 ms/file, load-stable and measured per corpus
+  //   G docs                     docs/analyzers/real-css-analyzer.md
+  //   H CC1                      n/a and DECLARED as such — CC1 checks languages that
+  //                              must AGREE with each other and css is in none of its
+  //                              sets. The risk CC1 guards (a set drifting between two
+  //                              places that must match) is covered for this lane by the
+  //                              F10 differential against an oracle that imports nothing
+  //                              from the analyzer, which is a stronger guard here than
+  //                              a cross-language tag-set diff would have been.
+  //
+  // Joining turns `npm run verify` red if any of that regresses, which is the point of
+  // the gate. The lane earned it by being convicted seven times by something
+  // independent: an ambiguous symbol in 36.6% of corpus files, a `font-family` that
+  // emitted nothing for a declared `@font-face`, a `@property` whose `var()` read
+  // dangled, `@supports` scopes that attributed no rules, a dead complexity term, a
+  // 31x super-linear path, and a `@layer` ordering form that published a name with
+  // no referent. Every one of those was GREEN until something independent looked.
+  "css"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
