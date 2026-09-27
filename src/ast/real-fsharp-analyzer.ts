@@ -33,6 +33,39 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
 
+    // M59.A7 dim 8 (the haskell precedent): every relationship carries the line
+    // of the node that BEARS it, dedup-keyed WITH that line so two same-shape
+    // sites on different lines are two facts. `line_number` is payload, never
+    // identity (M12 identity is file:type:sourceId:targetId).
+    const seenRels = new Set<string>()
+    const pushRel = (
+      source: string,
+      target: string,
+      type: ASTEngine.RelationshipType,
+      confidence: number,
+      metadata: Record<string, any> = {},
+      line?: number,
+    ) => {
+      const hasLine = typeof line === "number" && Number.isInteger(line) && line > 0
+      const key = `${source}|${type}|${target}|${hasLine ? line : ""}`
+      if (seenRels.has(key)) return
+      seenRels.add(key)
+      relationships.push({
+        source,
+        target,
+        type,
+        confidence,
+        metadata,
+        ...(hasLine ? { line_number: line as number } : {}),
+      })
+    }
+    /** 1-based line of a node, or undefined — never 0 (M59.O2). */
+    const lineOf = (node: Node | null | undefined): number | undefined => {
+      if (!node) return undefined
+      const line = node.startPosition.row + 1
+      return line > 0 ? line : undefined
+    }
+
     // Per-type abstract member names — used to dedup abstract+default pairs
     // (F# `abstract member X` + `default _.X()` is ONE logical member).
     const abstractMemberNames = new Set<string>()
@@ -198,12 +231,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const ifaceType = this.findDescendant(impl, (n) => n.type === "long_identifier" || n.type === "identifier")
             const targetName = ifaceType ? ifaceType.text : null
             if (targetName) {
-              relationships.push({
-                source: name,
-                target: targetName,
-                type: ASTEngine.RelationshipType.Implements,
-                metadata: { nodeType: "interface_implementation" },
-              })
+              pushRel(
+                name,
+                targetName,
+                ASTEngine.RelationshipType.Implements,
+                1.0,
+                { nodeType: "interface_implementation" },
+                lineOf(ifaceType),
+              )
             }
           }
 
@@ -212,14 +247,19 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const baseType = this.findDescendant(inh, (n) => n.type === "long_identifier" || n.type === "identifier")
             const targetName = baseType ? baseType.text : null
             if (targetName) {
-              const isIfaceImpl =
-                targetName.startsWith("I") && targetName.length > 1 && targetName[1] === targetName[1].toUpperCase()
-              relationships.push({
-                source: name,
-                target: targetName,
-                type: isIfaceImpl ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
-                metadata: { nodeType: "class_inherits_decl" },
-              })
+              // FSD3: `inherit` is ALWAYS an extends edge. The retired rule here
+              // was "the name starts with I and its second character is
+              // uppercase, therefore implements" — a guess that mislabels a base
+              // class named `IThing` and labels an interface by luck. F#
+              // implements interfaces with `interface ... with` (handled above).
+              pushRel(
+                name,
+                targetName,
+                ASTEngine.RelationshipType.Extends,
+                1.0,
+                { nodeType: "class_inherits_decl" },
+                lineOf(baseType),
+              )
             }
           }
         }
@@ -281,30 +321,47 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               let isProperty = false
               if (isMember && hasMethodOrProp) {
                 const mopNode = this.findChild(node, (n) => n.type === "method_or_prop_defn")
-                // Pure AST classification: a method has an argument list after
-                // the property_or_ident (paren_pattern / argument_patterns /
-                // const "()" unit); a computed property has none.
+                // Pure AST classification (FSD7, measured on a 120-file census
+                // draw): the grammar's own `args:` FIELD decides. The retired
+                // rule read named children and recognised two of the four arg
+                // shapes the corpus actually uses — a single curried arg
+                // (`member _.TryRangeOf pos = ...`) parses as
+                // `args:identifier_pattern`, was classified a PROPERTY, and
+                // dropped not just its kind but every call in its body
+                // (measured: 73 of 604 members; the F5 row's MISSING class).
                 if (mopNode) {
-                  let afterIdent = false
-                  for (let i = 0; i < mopNode.namedChildCount; i++) {
-                    const c = mopNode.namedChild(i)
-                    if (!c) continue
-                    if (c.type === "property_or_ident") {
-                      afterIdent = true
-                      continue
-                    }
-                    if (afterIdent) {
-                      if (c.type === "paren_pattern" || c.type === "argument_patterns") {
-                        isProperty = false
+                  const argsNode = (mopNode as any).childForFieldName?.("args") ?? null
+                  if (argsNode) {
+                    isProperty = false
+                  } else {
+                    // Fallback for arg shapes the field lookup cannot see: any
+                    // pattern-ish node between the name and the body.
+                    let afterIdent = false
+                    for (let i = 0; i < mopNode.namedChildCount; i++) {
+                      const c = mopNode.namedChild(i)
+                      if (!c) continue
+                      if (c.type === "property_or_ident") {
+                        afterIdent = true
+                        continue
+                      }
+                      if (afterIdent) {
+                        if (
+                          c.type === "paren_pattern" ||
+                          c.type === "argument_patterns" ||
+                          c.type === "identifier_pattern" ||
+                          c.type === "typed_pattern" ||
+                          c.type === "wildcard_pattern" ||
+                          c.type === "list_pattern" ||
+                          c.type === "optional_pattern" ||
+                          (c.type === "const" && c.text === "()")
+                        ) {
+                          isProperty = false
+                          break
+                        }
+                        // A computed property: value expression (no args).
+                        isProperty = true
                         break
                       }
-                      if (c.type === "const" && c.text === "()") {
-                        isProperty = false
-                        break
-                      }
-                      // A computed property: value expression (no args).
-                      isProperty = true
-                      break
                     }
                   }
                 }
@@ -333,13 +390,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Qualified override: source = Owner.method, target = Base.method.
               if (isMember && this.firstTokenIs(node, "override")) {
                 const baseName = owner ? baseTypes.get(owner) : undefined
-                relationships.push({
-                  source: owner ? `${owner}.${name}` : name,
-                  target: baseName ? `${baseName}.${name}` : name,
-                  type: ASTEngine.RelationshipType.Overrides,
-                  confidence: 1.0,
-                  metadata: { nodeType: type, isOverride: true },
-                })
+                pushRel(
+                  owner ? `${owner}.${name}` : name,
+                  baseName ? `${baseName}.${name}` : name,
+                  ASTEngine.RelationshipType.Overrides,
+                  1.0,
+                  { nodeType: type, isOverride: true },
+                  lineOf(node),
+                )
               }
 
               // Calls inside this member/function attribute to it; computed
@@ -370,6 +428,9 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerName: owner,
             metadata: { nodeType: "additional_constr_defn" },
           })
+          // `new(...) = ...` also declares the type's constructor — the symbol is
+          // named "constructor" by contract (C# family); the node's line is kept
+          // in its range, so no relationship is owed here.
           childCallOwner = "constructor"
           childBodyDepth = bodyDepth + 1
         }
@@ -409,12 +470,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { nodeType: "object_expression" },
           })
           if (ownerName) {
-            relationships.push({
-              source: ownerName,
-              target: ifaceName.text,
-              type: ASTEngine.RelationshipType.Implements,
-              metadata: { nodeType: "object_expression" },
-            })
+            pushRel(
+              ownerName,
+              ifaceName.text,
+              ASTEngine.RelationshipType.Implements,
+              1.0,
+              { nodeType: "object_expression" },
+              lineOf(node),
+            )
           }
         }
       } else if (type === "active_pattern") {
@@ -436,6 +499,23 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: "exception_definition" },
+          })
+        }
+      } else if (type === "module_val_declaration") {
+        // FSD9: a .fsi `val X : T` declares the surface — 203 of them in the
+        // lane's 120-file census draw, every one publishing NOTHING until now
+        // (the node exists because this lane's own grammar patch added the
+        // rule). One Function symbol, owned by the enclosing module/type, marked
+        // isDeclaration: a later .fs definition is the SAME entity (the Clean
+        // .dcl/.icl merge precedent).
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        if (nameNode?.text) {
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.Function,
+            range: this.nodeToRange(node),
+            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            metadata: { nodeType: "module_val_declaration", isDeclaration: true },
           })
         }
       } else if (type === "type_extension") {
@@ -464,22 +544,11 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
-      } else if (type === "open_statement" || type === "open_decl") {
-        var openTarget = this.findDescendant(node, function (n) {
-          return n.type === "long_identifier" || n.type === "identifier"
-        })
-        if (openTarget && openTarget.text) {
-          imports.push({ module: openTarget.text, items: ["*"], isDefault: false, range: this.nodeToRange(node) })
-          const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          relationships.push({
-            source: owner || openTarget.text,
-            target: openTarget.text,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 0.9,
-            metadata: { nodeType: type, isOpen: true },
-          })
-        }
       } else if (type === "import_decl") {
+        // FS-A1 (measured dead branches retired): `open_statement`/`open_decl`
+        // never occur — 0 of 363,609 nodes in the shape census — `open X` IS
+        // this node (558 in the same draw). The branch that read them was a
+        // second, unreachable copy of this rule.
         const targetNode = this.findChild(node, (n) => n.type === "long_identifier" || n.type === "identifier")
         if (targetNode && targetNode.text) {
           imports.push({
@@ -489,32 +558,19 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(node),
           })
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          relationships.push({
-            source: owner || targetNode.text,
-            target: targetNode.text,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 0.9,
-            metadata: { nodeType: type, isImport: true },
-          })
+          // FSD10: a module-less file sources its file-level edges from
+          // `Global`, never from the opened name itself (self-sourcing makes an
+          // import unfalsifiable: any target would "reference" itself).
+          pushRel(
+            owner || "Global",
+            targetNode.text,
+            ASTEngine.RelationshipType.References,
+            0.9,
+            { nodeType: type, isImport: true },
+            lineOf(node),
+          )
         }
-      } else if (type === "module_abbrev") {
-        const children = this.filterChildren(node, (n) => n.type === "identifier" || n.type === "long_identifier")
-        if (children.length >= 2) {
-          symbols.push({
-            name: children[0].text,
-            kind: ASTEngine.SymbolKind.Module,
-            range: this.nodeToRange(node),
-            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
-            metadata: { nodeType: "module_abbrev" },
-          })
-          relationships.push({
-            source: children[0].text,
-            target: children[1].text,
-            type: ASTEngine.RelationshipType.References,
-            metadata: { nodeType: "module_abbrev" },
-          })
-        }
-      } else if (type === "app_expression" || type === "application_expression") {
+      } else if (type === "application_expression") {
         // Call/instantiation: source = enclosing function/method/constructor,
         // target = leaf name of the callee (C# family contract).
         let fnName = ""
@@ -543,25 +599,46 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             // enclosing type from the constructor body.
             const enclosingType = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
             if (callOwner === "constructor" && leaf === enclosingType) {
-              relationships.push({
-                source: callOwner,
-                target: leaf,
-                type: ASTEngine.RelationshipType.Instantiates,
-                confidence: 0.95,
-                metadata: { nodeType: type, isConstructorChain: true },
-              })
+              pushRel(
+                callOwner,
+                leaf,
+                ASTEngine.RelationshipType.Instantiates,
+                0.95,
+                { nodeType: type, isConstructorChain: true },
+                lineOf(node),
+              )
             } else {
-              relationships.push({
-                source: callOwner,
-                target: leaf,
-                type: ASTEngine.RelationshipType.Calls,
-                confidence: 0.8,
-                metadata: { nodeType: type },
-              })
+              pushRel(callOwner, leaf, ASTEngine.RelationshipType.Calls, 0.8, { nodeType: type }, lineOf(node))
             }
           }
         }
-      } else if (type === "compiler_directive_decl" || type === "fsi_directive_decl") {
+      } else if (type === "prefixed_expression") {
+        // FSD8(b): an explicit `new Foo(...)` is a CONSTRUCTION. `new` is the
+        // only thing that distinguishes one in F# — a bare `Foo(...)` stays a
+        // call (a capitalised name is not evidence), which is why this reads the
+        // prefix token instead of the callee's spelling. The inner application
+        // must not ALSO emit a call: the operand's children go on the stack, the
+        // operand node itself does not, so its call branch never runs while
+        // calls inside its ARGUMENTS still do.
+        if (this.firstTokenIs(node, "new") && callOwner) {
+          const operand = node.namedChild(0)
+          if (operand && operand.type === "application_expression") {
+            const calleeNode = operand.namedChild(0)
+            const calleeText = calleeNode ? calleeNode.text : ""
+            const leaf = calleeText.split(".").pop() || calleeText
+            if (calleeText && calleeText.length > 1 && !this.isFSharpBuiltin(calleeText, leaf)) {
+              pushRel(callOwner, leaf, ASTEngine.RelationshipType.Instantiates, 0.95, { nodeType: type, isNewConstruction: true }, lineOf(node))
+              for (let i = operand.namedChildCount - 1; i >= 0; i--) {
+                const argChild = operand.namedChild(i)
+                if (argChild) {
+                  walkStack.push({ node: argChild, scopePath: currentScope, callOwner: childCallOwner, bodyDepth: childBodyDepth })
+                }
+              }
+              continue
+            }
+          }
+        }
+      } else if (type === "compiler_directive_decl") {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
           symbols.push({
@@ -582,17 +659,19 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // Add Contains relationships: scope owner → owned symbols
+    // Add Contains relationships: scope owner → owned symbols (the line is the
+    // symbol's own line — the containment fact is ABOUT that declaration).
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
-        relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          metadata: { nodeType: s.metadata?.nodeType || "symbol", isContained: true },
-        })
+        pushRel(
+          _owner,
+          s.name,
+          ASTEngine.RelationshipType.Contains,
+          1.0,
+          { nodeType: s.metadata?.nodeType || "symbol", isContained: true },
+          s.range?.startLine,
+        )
       }
     }
 
