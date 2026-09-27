@@ -161,6 +161,50 @@ function functionNameOf(decl: any): { label: string; name: string; owner?: strin
   return null
 }
 
+// PRE-PASS: what names are tables in this file, independent of where they are
+// declared relative to a call.
+//
+// The first version of this oracle collected `declaredTables` during the same
+// walk that reads it, which made it order-dependent in exactly the way the
+// ANALYZER is — so it could not see the analyzer's order dependence (LUA-06), it
+// shared it. It also under-counted tables: it required a binding to a
+// `table_constructor`, so `local Process = core.Emitter:extend()`
+// (luvit/deps/childprocess.lua:42) was not a table, and 26 genuine
+// `instantiates` edges on luvit were recorded as analyzer FABRICATIONS.
+//
+// A Lua class is a table by idiom, not by literal: a name is a table if it is
+// bound to a table constructor, OR it is the receiver of a method declaration,
+// OR it is the first argument of a setmetatable call. That is a property of the
+// FILE, so it is computed in a pass that does not depend on traversal order.
+function collectTables(root: any, out: Set<string>): void {
+  const stack = [root]
+  while (stack.length) {
+    const n = stack.pop()
+    if (n.type === "variable_declaration" || n.type === "assignment_statement") {
+      const vl = n.type === "variable_declaration" ? n.namedChild(0)?.namedChild(0) : n.namedChild(0)
+      const val = n.type === "variable_declaration" ? n.namedChild(0)?.namedChild(1)?.namedChild(0) : n.namedChild(1)?.namedChild(0)
+      if (vl?.type === "variable_list" && val?.type === "table_constructor") {
+        for (let i = 0; i < vl.namedChildCount; i++) { const id = vl.namedChild(i); if (id?.type === "identifier") out.add(id.text) }
+      }
+    }
+    if (n.type === "function_declaration") {
+      const nm = n.childForFieldName("name")
+      if (nm && (nm.type === "dot_index_expression" || nm.type === "method_index_expression")) {
+        const recv = nm.namedChild(0)
+        if (recv?.type === "identifier") out.add(recv.text)
+      }
+    }
+    if (n.type === "function_call") {
+      const c = calleeOf(n)
+      if (c && (c.name === "setmetatable" || c.name === "extend")) {
+        const a0 = argAt(n, 0)
+        if (a0?.type === "identifier") out.add(a0.text)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+}
+
 function walk(node: any, scope: string, w: Walk, rel: string): void {
   if (node.isMissing) return
 
@@ -179,9 +223,6 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
             w.localsIn.get(scope)!.add(id.text)
           }
           w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
-          const val = asg.namedChild(1)
-          const v0 = val?.namedChild(0)
-          if (v0?.type === "table_constructor") w.declaredTables.add(id.text)
         }
       }
     }
@@ -199,9 +240,6 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
         // finding worth having.
         if (scope !== "global" && w.localsIn.get(scope)?.has(id.text)) continue
         w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
-        const val = node.namedChild(1)
-        const v0 = val?.namedChild(0)
-        if (v0?.type === "table_constructor") w.declaredTables.add(id.text)
       }
     }
   }
@@ -243,7 +281,15 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       if (callee.name === "setmetatable") {
         const target = argAt(node, 0)
         const meta = argAt(node, 1)
-        if (target && meta && target.type !== "table_constructor" && meta.type === "identifier") {
+        // The metatable may be ANY expression, not only a bare identifier.
+        // `setmetatable(e, Emitter.meta)` — luvit/deps/hooks.lua:37 — is a real
+        // inheritance edge, and the first version of this oracle required
+        // `meta.type === "identifier"`, so it called 3 genuine edges on luvit
+        // FABRICATIONS and recorded the analyzer's precision as 0.7. The defect
+        // was the oracle's. Requiring an identifier was never justified: the
+        // second argument of setmetatable is a table-valued expression by
+        // definition, and a member expression names one perfectly well.
+        if (target && meta && target.type !== "table_constructor" && meta.type !== "table_constructor") {
           w.edges.push({ label: "extends", from: target.text, target: meta.text, line: meta.startPosition.row + 1, rule: "setmetatable", rel })
         }
       }
@@ -252,10 +298,10 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
         const recv = node.childForFieldName("name")
         const table = recv && (recv.type === "dot_index_expression" || recv.type === "method_index_expression")
           ? recv.namedChild(0)?.text : undefined
-        // STRUCTURAL, NOT MIRRORED: the receiver must be a table bound in this
-        // file. The analyzer gates this on traversal order (it had already seen
-        // the declaration); the oracle gates it on the file as a whole, which
-        // is the correct reading. A disagreement here is a real finding.
+        // STRUCTURAL, NOT MIRRORED: the receiver must be a table in this FILE,
+        // computed in an order-independent pre-pass. The analyzer gates the same
+        // thing on traversal order (it had already walked past the declaration),
+        // so any disagreement here is LUA-06 made visible rather than shared.
         if (table && w.declaredTables.has(table)) {
           w.edges.push({ label: "instantiates", from: scope, target: table, line, rule: "ctor", rel })
         }
@@ -289,6 +335,7 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
   const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set() }
+  collectTables(root, w.declaredTables)
   walk(root, "global", w, rel)
   // A set, because the analyzer's edge identity is (label, from, target): N call
   // sites of one callee are ONE stored edge. Collapsing here keeps the
@@ -388,6 +435,34 @@ async function main(): Promise<void> {
     if (!truth.has(k)) unexplained.push({ label: o.type, from: o.source, target: o.target, rel: o.rel })
   }
 
+  // ── shape attribution: a recall NUMBER is not actionable, a recall broken
+  // into SHAPES is. Each missing/unexplained edge is reduced to a small
+  // signature so the residue can be read as a list of causes.
+  const shapeOf = (e: any): string => {
+    const t = String(e.target ?? "")
+    if (e.label === "calls") {
+      if (NOISE_TARGETS.has(leafOf(t))) return `noise-filter target "${leafOf(t)}"`
+      if (/^[A-Z]/.test(t)) return "capitalised target (a constructor-looking name)"
+      if (t.length <= 2) return "very short target"
+      return "ordinary call target"
+    }
+    if (e.label === "contains") {
+      if (/^__/.test(t)) return "dunder/metamethod name"
+      if (NOISE_TARGETS.has(leafOf(t))) return `noise-filter target "${leafOf(t)}"`
+      if (/^[A-Z]/.test(t)) return "capitalised name (a type-like table)"
+      return "ordinary name"
+    }
+    if (e.label === "exports") return "return <identifier> at file scope"
+    return `${e.label} other`
+  }
+  const shapes = (rows: any[]): any[] => {
+    const m = new Map<string, number>()
+    for (const r of rows) { const k = shapeOf(r); m.set(k, (m.get(k) ?? 0) + 1) }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([shape, n]) => ({ shape, n }))
+  }
+
+  const report_missing_shapes = shapes(missingFromAnalyzer)
+  const report_unexplained_shapes = shapes(unexplained)
   const byLabel: any = {}
   for (const L of LABELS) {
     const t = [...truth.values()].filter((e) => e.label === L)
@@ -462,6 +537,8 @@ async function main(): Promise<void> {
       lineAccuracy: lineChecked === 0 ? null : Number((lineExact / lineChecked).toFixed(6)),
     },
     byLabel,
+    missingByShape: shapes(missingFromAnalyzer),
+    unexplainedByShape: shapes(unexplained),
     missingSample: missing.slice(0, 25),
     unexplainedSample: unexplained.slice(0, 25),
     lineWrongSample: lineWrong.slice(0, 25),
@@ -483,6 +560,10 @@ async function main(): Promise<void> {
     if (!b || b.truth + b.observed === 0) continue
     console.log(`  ${L.padEnd(13)} truth=${String(b.truth).padEnd(6)} obs=${String(b.observed).padEnd(6)} missing=${String(b.missing).padEnd(5)} unexplained=${String(b.unexplained).padEnd(5)} recall=${b.recall} precision=${b.precision}`)
   }
+  console.log("\nmissing by shape (analyzer-attributable only):")
+  for (const s of report_missing_shapes) console.log(`  ${String(s.n).padEnd(5)} ${s.shape}`)
+  console.log("\nunexplained by shape:")
+  for (const s of report_unexplained_shapes) console.log(`  ${String(s.n).padEnd(5)} ${s.shape}`)
   if (missing.length) { console.log("\nMISSING samples:"); for (const m of missing.slice(0, 12)) console.log(`  ${m.label} ${m.from} -> ${m.target} (rule ${m.rule}, L${m.line})`) }
   if (unexplained.length) { console.log("\nUNEXPLAINED samples:"); for (const m of unexplained.slice(0, 12)) console.log(`  ${m.label} ${m.from} -> ${m.target}  [${m.rel}]`) }
   if (lineWrong.length) { console.log("\nLINE MISMATCH samples:"); for (const m of lineWrong.slice(0, 12)) console.log(`  ${m.label} ${m.from} -> ${m.target}: expected L${m.line}, got ${m.observedLine}  [${m.rel}]`) }
