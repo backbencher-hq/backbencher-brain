@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "instrument": "m60-find-grammar-provenance",
+  "question": "which published artifact are the bytes we ship?",
+  "method": "For each lane with no declared version, derive candidate npm packages from the engine's own grammar asset plus a declared alias table, walk that package's versions newest-first, and compare the sha256 of the extracted .wasm against the bytes the product loads. A version is reported ONLY on an exact sha256 match. A same-size artifact is recorded as a lead and never as a match.",
+  "limits": [
+    "Identifies against the PUBLISHED artifact only. A wasm that is a local build of a published version will not match, and is reported as `no-match` — correctly, because its bytes are not upstream's.",
+    "A version window of --max-versions (default 6) is walked per package. A lane pinned to something older than that reports no-match rather than a false negative being read as an absence.",
+    "Reads no declaration site and writes none. Recording an answer is a separate, human act in the analyzer's `Parser:` line, so a measurement can never quietly become a claim."
+  ],
+  "counts": {
+    "examined": 24,
+    "identified": 10,
+    "noMatch": 11
+  },
+  "identified": [
+    {
+      "lane": "html",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.12",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "11b3405c1543fb012f5ed7f8ee73125076dce8b168301e1e787e4c717da6b456"
+    },
+    {
+      "lane": "java",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f"
+    },
+    {
+      "lane": "json",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667"
+    },
+    {
+      "lane": "r",
+      "package": "@eagleoutice/tree-sitter-r",
+      "version": "1.1.2",
+      "provenanceKind": "language-package",
+      "sha256": "b11a872a88ad8a9ebc85607ef3fd4cabdf6cbead51421ec1492b4591b6854553"
+    },
+    {
+      "lane": "ruby",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39"
+    },
+    {
+      "lane": "toml",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "7849ac8ce9d10a4684ca189ea8ad3654c20c38acb2d674a014a164398cbd37a2"
+    },
+    {
+      "lane": "tsx",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6"
+    },
+    {
+      "lane": "vue",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.12",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250"
+    },
+    {
+      "lane": "yaml",
+      "package": "@tree-sitter-grammars/tree-sitter-yaml",
+      "version": "0.7.1",
+      "provenanceKind": "language-package",
+      "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91"
+    },
+    {
+      "lane": "zig",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.13",
+      "provenanceKind": "redistributor-collection",
+      "sha256": "59cc4531aa661e2de4c5bc04e4045b6bdd5d2bfa75045cbda5f673102d140eef"
+    }
+  ],
+  "noMatch": [
+    {
+      "lane": "bash",
+      "packagesTried": [
+        "tree-sitter-bash",
+        "@curlconverter/tree-sitter-bash",
+        "@willbooster/tree-sitter-bash",
+        "@ohos-ports/tree-sitter-bash",
+        "@sengac/tree-sitter-bash"
+      ],
+      "leads": [
+        {
+          "package": "tree-sitter-bash",
+          "version": "0.25.0",
+          "bytes": 1380769,
+          "byteDelta": -24366,
+          "sha256": "364f0a2cd385c792239423026ef442dbd073d34c396b7bc9e5932426b8e4aa5d"
+        },
+        {
+          "package": "@sengac/tree-sitter-bash",
+          "version": "0.25.10",
+          "bytes": 1380769,
+          "byteDelta": -24366,
+          "sha256": "364f0a2cd385c792239423026ef442dbd073d34c396b7bc9e5932426b8e4aa5d"
+        }
+      ]
+    },
+    {
+      "lane": "graphql",
+      "packagesTried": [
+        "tree-sitter-graphql",
+        "wasm/tree-sitter-graphql"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "hcl",
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-hcl",
+        "tree-sitter-hcl",
+        "wasm/tree-sitter-hcl"
+      ],
+      "leads": [
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-hcl",
+          "version": "1.2.0",
+          "bytes": 92484,
+          "byteDelta": 6,
+          "sha256": "0d9ef3ae926acc0411bfecba9b34df4ea659061917b96455570a45a70824e890"
+        }
+      ]
+    },
+    {
+      "lane": "kotlin",
+      "packagesTried": [
+        "tree-sitter-kotlin",
+        "@tree-sitter-grammars/tree-sitter-kotlin",
+        "@ohos-ports/tree-sitter-kotlin",
+        "@sengac/tree-sitter-kotlin"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "lua",
+      "packagesTried": [
+        "tree-sitter-lua",
+        "@tree-sitter-grammars/tree-sitter-lua"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "markdown",
+      "packagesTried": [
+        "tree-sitter-markdown",
+        "@tree-sitter-grammars/tree-sitter-markdown",
+        "wasm/tree-sitter-markdown"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "sass",
+      "packagesTried": [
+        "tree-sitter-css"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "scss",
+      "packagesTried": [
+        "tree-sitter-css"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "svelte",
+      "packagesTried": [
+        "tree-sitter-svelte",
+        "@tree-sitter-grammars/tree-sitter-svelte"
+      ],
+      "leads": []
+    },
+    {
+      "lane": "terraform",
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-hcl",
+        "tree-sitter-hcl"
+      ],
+      "leads": [
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-hcl",
+          "version": "1.2.0",
+          "bytes": 92484,
+          "byteDelta": 6,
+          "sha256": "0d9ef3ae926acc0411bfecba9b34df4ea659061917b96455570a45a70824e890"
+        }
+      ]
+    },
+    {
+      "lane": "xml",
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-xml",
+        "tree-sitter-xml",
+        "wasm/tree-sitter-xml"
+      ],
+      "leads": []
+    }
+  ],
+  "results": [
+    {
+      "lane": "bash",
+      "status": "no-match",
+      "shippedSha256": "f55f3f6c780e79fadd929af5ec254b3ef92d8cc455044cca62c7585edb821604",
+      "shippedBytes": 1405135,
+      "packagesTried": [
+        "tree-sitter-bash",
+        "@curlconverter/tree-sitter-bash",
+        "@willbooster/tree-sitter-bash",
+        "@ohos-ports/tree-sitter-bash",
+        "@sengac/tree-sitter-bash"
+      ],
+      "versionsExamined": 23,
+      "leads": [
+        {
+          "package": "tree-sitter-bash",
+          "version": "0.25.0",
+          "bytes": 1380769,
+          "byteDelta": -24366,
+          "sha256": "364f0a2cd385c792239423026ef442dbd073d34c396b7bc9e5932426b8e4aa5d"
+        },
+        {
+          "package": "@sengac/tree-sitter-bash",
+          "version": "0.25.10",
+          "bytes": 1380769,
+          "byteDelta": -24366,
+          "sha256": "364f0a2cd385c792239423026ef442dbd073d34c396b7bc9e5932426b8e4aa5d"
+        }
+      ],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "graphql",
+      "status": "no-match",
+      "shippedSha256": "9cd70f691576f0217834e62cd584bac603971d4c1889cbf068a1029ff2855b27",
+      "shippedBytes": 41223,
+      "packagesTried": [
+        "tree-sitter-graphql",
+        "wasm/tree-sitter-graphql"
+      ],
+      "versionsExamined": 2,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "hcl",
+      "status": "no-match",
+      "shippedSha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+      "shippedBytes": 92478,
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-hcl",
+        "tree-sitter-hcl",
+        "wasm/tree-sitter-hcl"
+      ],
+      "versionsExamined": 3,
+      "leads": [
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-hcl",
+          "version": "1.2.0",
+          "bytes": 92484,
+          "byteDelta": 6,
+          "sha256": "0d9ef3ae926acc0411bfecba9b34df4ea659061917b96455570a45a70824e890"
+        }
+      ],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "html",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.12",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-html.wasm",
+      "bytes": 18468,
+      "sha256": "11b3405c1543fb012f5ed7f8ee73125076dce8b168301e1e787e4c717da6b456",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 18468,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "java",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-java.wasm",
+      "bytes": 430239,
+      "sha256": "637aac4415fb39a211a4f4292d63c66b5ce9c32fa2cd35464af4f681d91b9a1f",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 430239,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "json",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-json.wasm",
+      "bytes": 5961,
+      "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 5961,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "kotlin",
+      "status": "no-match",
+      "shippedSha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+      "shippedBytes": 5837109,
+      "packagesTried": [
+        "tree-sitter-kotlin",
+        "@tree-sitter-grammars/tree-sitter-kotlin",
+        "@ohos-ports/tree-sitter-kotlin",
+        "@sengac/tree-sitter-kotlin"
+      ],
+      "versionsExamined": 15,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "lua",
+      "status": "no-match",
+      "shippedSha256": "9ebb71c0a6acc4791ba7b46624900584024646af2ac9c3c036775c7e5c937f3a",
+      "shippedBytes": 50917,
+      "packagesTried": [
+        "tree-sitter-lua",
+        "@tree-sitter-grammars/tree-sitter-lua"
+      ],
+      "versionsExamined": 9,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "markdown",
+      "status": "no-match",
+      "shippedSha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+      "shippedBytes": 421534,
+      "packagesTried": [
+        "tree-sitter-markdown",
+        "@tree-sitter-grammars/tree-sitter-markdown",
+        "wasm/tree-sitter-markdown"
+      ],
+      "versionsExamined": 11,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "nim",
+      "status": "no-artifact",
+      "reason": "lane ships no wasm (generic or alias)"
+    },
+    {
+      "lane": "protobuf",
+      "status": "no-artifact",
+      "reason": "lane ships no wasm (generic or alias)"
+    },
+    {
+      "lane": "r",
+      "status": "identified",
+      "package": "@eagleoutice/tree-sitter-r",
+      "version": "1.1.2",
+      "provenanceKind": "language-package",
+      "wasmFile": "tree-sitter-r.wasm",
+      "bytes": 490899,
+      "sha256": "b11a872a88ad8a9ebc85607ef3fd4cabdf6cbead51421ec1492b4591b6854553",
+      "shippedBytes": 490899,
+      "versionsExamined": 5
+    },
+    {
+      "lane": "ruby",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-ruby.wasm",
+      "bytes": 2106447,
+      "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 2106447,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "sass",
+      "status": "no-match",
+      "shippedSha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
+      "shippedBytes": 150539,
+      "packagesTried": [
+        "tree-sitter-css"
+      ],
+      "versionsExamined": 6,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "scss",
+      "status": "no-match",
+      "shippedSha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
+      "shippedBytes": 150539,
+      "packagesTried": [
+        "tree-sitter-css"
+      ],
+      "versionsExamined": 6,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "svelte",
+      "status": "no-match",
+      "shippedSha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
+      "shippedBytes": 47873,
+      "packagesTried": [
+        "tree-sitter-svelte",
+        "@tree-sitter-grammars/tree-sitter-svelte"
+      ],
+      "versionsExamined": 8,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "terraform",
+      "status": "no-match",
+      "shippedSha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+      "shippedBytes": 92478,
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-hcl",
+        "tree-sitter-hcl"
+      ],
+      "versionsExamined": 3,
+      "leads": [
+        {
+          "package": "@tree-sitter-grammars/tree-sitter-hcl",
+          "version": "1.2.0",
+          "bytes": 92484,
+          "byteDelta": 6,
+          "sha256": "0d9ef3ae926acc0411bfecba9b34df4ea659061917b96455570a45a70824e890"
+        }
+      ],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "toml",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-toml.wasm",
+      "bytes": 25436,
+      "sha256": "7849ac8ce9d10a4684ca189ea8ad3654c20c38acb2d674a014a164398cbd37a2",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 25436,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "tsx",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.11",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-tsx.wasm",
+      "bytes": 2411272,
+      "sha256": "6aa3b2c70e76f5d48eafef1093e9c4de383e13f2fdde2f4e9b98a378f6a8f1b6",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 2411272,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "vb",
+      "status": "no-artifact",
+      "reason": "lane ships no wasm (generic or alias)"
+    },
+    {
+      "lane": "vue",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.12",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-vue.wasm",
+      "bytes": 23895,
+      "sha256": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 23895,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "xml",
+      "status": "no-match",
+      "shippedSha256": "50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1",
+      "shippedBytes": 50008,
+      "packagesTried": [
+        "@tree-sitter-grammars/tree-sitter-xml",
+        "tree-sitter-xml",
+        "wasm/tree-sitter-xml"
+      ],
+      "versionsExamined": 7,
+      "leads": [],
+      "conclusion": "No published artifact matches these bytes. The shipped wasm is therefore a LOCAL build, a fork, a vendored prebuild, or a redistributor's package — and its version cannot be recovered by hash. That is a finding, not a dead end: it must be recorded as `local build of unrecorded provenance`, and the source has to be found by reading the analyzer doc and the vendored grammar rather than by matching bytes."
+    },
+    {
+      "lane": "yaml",
+      "status": "identified",
+      "package": "@tree-sitter-grammars/tree-sitter-yaml",
+      "version": "0.7.1",
+      "provenanceKind": "language-package",
+      "wasmFile": "tree-sitter-yaml.wasm",
+      "bytes": 189255,
+      "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+      "shippedBytes": 189255,
+      "versionsExamined": 1
+    },
+    {
+      "lane": "zig",
+      "status": "identified",
+      "package": "tree-sitter-wasms",
+      "version": "0.1.13",
+      "provenanceKind": "redistributor-collection",
+      "wasmFile": "tree-sitter-zig.wasm",
+      "bytes": 690754,
+      "sha256": "59cc4531aa661e2de4c5bc04e4045b6bdd5d2bfa75045cbda5f673102d140eef",
+      "note": "these bytes are a REDISTRIBUTOR BUILD. The collection version is exact; the underlying grammar version is not stated by the collection and must not be inferred from it.",
+      "shippedBytes": 690754,
+      "versionsExamined": 1
+    }
+  ]
+}
