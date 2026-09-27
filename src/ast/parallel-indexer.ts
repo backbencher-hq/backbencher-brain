@@ -1794,8 +1794,8 @@ export async function storeResults(
  
    const insertFile = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_file 
-     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertSymbol = rawDb.prepare(`
@@ -2011,6 +2011,15 @@ export async function storeResults(
            fileLayer,
            now,
            now,
+           // The analyzer's FileMetadata, which every analyzer returns and this
+           // table had nowhere to store. The framework_type column above is the
+           // only field ever promoted out of it, so patterns, detectedFrameworks,
+           // architecturalInsights, complexity, cyclomaticComplexity and
+           // codeQuality were computed for all 29 languages and discarded on the
+           // way in. Serialized whole rather than split into columns, matching
+           // brain_relationship.metadata, so a field an analyzer adds later needs
+           // no migration. See ensureFileMetadataColumn in schema-ddl.ts.
+           result.metadata ? JSON.stringify(result.metadata) : null,
          )
  
          // Hoisted per-file index structures — used by both symbol storage and
