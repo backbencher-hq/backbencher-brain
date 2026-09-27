@@ -702,6 +702,27 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(functionNode.namedChildCount - 1) : undefined
       if (last?.text) return { name: last.text, nameNode: last }
     }
+    // M60 LUA-22: a call through a COMPUTED index has no name to record.
+    // `dao[method or context .. "_by_" .. endpoint_key](...)` —
+    // kong/api/endpoints.lua:260 — has a callee that is an EXPRESSION, and
+    // falling through to `functionNode.text` published that whole expression as
+    // the relationship target. A payload masquerading as a name is the defect
+    // class M60 records for other lanes ("publishes the target
+    // 'ns.Iface<number>', a payload rather than a name"), and it is worse here:
+    // the target is unmatchable, unreferenceable and unbounded in shape.
+    //
+    // Skipped rather than recorded as a best guess: a computed callee is not a
+    // fact about the call graph, and inventing a name for it would be the same
+    // fabrication under a different spelling. A literal index (`dao["rows"]`)
+    // IS a name and is handled by the dot/method branch above.
+    // The node type is `bracket_index_expression` in the WIRED grammar, measured
+    // by parsing `dao[expr](x)`. Writing `table_index_expression` here — which is
+    // what the 0.5.0 grammar repo's node-types.json calls it — repeated LUA-00's
+    // exact error: naming a node type the pinned grammar does not emit, which
+    // makes the branch unreachable. verify-lua-grasped-fields caught it, which is
+    // the gate doing precisely the job it was built for, on the very defect class
+    // it was built to catch, in the same lane.
+    if (functionNode.type === "bracket_index_expression") return undefined
     if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
     return undefined
   }
