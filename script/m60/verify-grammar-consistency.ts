@@ -488,6 +488,116 @@ const c8Hard = c8.filter((x) => x.status === "fail")
 if (c8Hard.length) {
   for (const f of c8Hard) hard.push(`C8 ${f.check}: ${f.detail}`)
 }
+// ---------------------------------------------------------------------------
+// C9 — a lane's SURFACE, where bytes could not settle it
+// ---------------------------------------------------------------------------
+
+// Two measurements made byte comparison the wrong instrument for provenance. The builder is
+// not bit-reproducible (bash: 1,403,134 of 1,403,135 bytes), so a byte MISMATCH cannot
+// distinguish "wrong grammar" from "same grammar, one linker flag different". And kotlin
+// cannot be built at all here — 5.8 MB, and compiling its parser.c exhausted a 15 GB machine
+// — so the largest unversioned lane had no story at all.
+//
+// The answer is the grammar's VOCABULARY, and it is decisive where bytes are ambiguous: a
+// one-byte linker difference cannot add or remove a node type. C9 therefore requires that
+// any surface verdict is a real measurement against a named candidate, and that a lane
+// cannot quietly claim a surface identity it did not earn.
+
+const SURFACE_REL = "validation/m60/results/M60.0.grammar-surface.json"
+const c9: Array<{ check: string; status: "pass" | "fail"; detail: string }> = []
+const surfacePath = path.join(ROOT, SURFACE_REL)
+if (!existsSync(surfacePath)) {
+  c9.push({ check: "artifact-exists", status: "fail", detail: `no surface artifact at ${SURFACE_REL}` })
+} else {
+  let surf: any = null
+  try {
+    surf = JSON.parse(readFileSync(surfacePath, "utf8"))
+  } catch (e: any) {
+    c9.push({ check: "artifact-exists", status: "fail", detail: `unparseable: ${e?.message ?? e}` })
+  }
+  if (surf) {
+    const rows = surf.results ?? []
+    // 1. A surface verdict must be one this grader can actually produce.
+    const GRADES = ["surface-identical", "surface-compatible", "different", "not-comparable", "no-candidate-comparable"]
+    const badGrade = rows.filter((r: any) => !GRADES.includes(r.verdict))
+    c9.push({
+      check: "grades-are-declared",
+      status: badGrade.length === 0 ? "pass" : "fail",
+      detail: badGrade.length === 0 ? `${rows.length} lane(s), every verdict one of ${GRADES.length} declared grade(s)` : `${badGrade.length} lane(s) carry an undeclared verdict: ${badGrade.map((r: any) => `${r.lane}=${r.verdict}`).join(", ")}`,
+    })
+
+    // 2. A POSITIVE surface verdict must name the candidate it was measured against. This is
+    //    the check that stops "surface-identical" being asserted for a lane nobody compared.
+    const positive = rows.filter((r: any) => r.verdict === "surface-identical" || r.verdict === "surface-compatible")
+    // `best` must be BACKED BY AN ATTEMPT, not merely well-formed. The first version of this
+    // check tested only that best.package and best.version were present, and so it happily
+    // accepted a hand-written "surface-identical vs tree-sitter-kotlin-fantasm@9.9.9" — a
+    // package that does not exist, attached to a lane whose real measurement is
+    // `surface-compatible`. The gate passed its own injection, which is the failure mode this
+    // whole milestone is about. A verdict is only as good as the attempt row it points at, so
+    // the pointer is what gets checked: `best` must name a package@version that appears in this
+    // lane's own `attempts`, with the same grade.
+    const uncited = positive.filter((r: any) => {
+      if (!r.best?.package || !r.best?.version || !Array.isArray(r.attempts) || !r.attempts.length) return true
+      const backing = r.attempts.find((a: any) => a.package === r.best.package && a.version === r.best.version && a.grade === r.verdict)
+      return !backing
+    })
+    c9.push({
+      check: "positive-verdicts-name-their-candidate",
+      status: uncited.length === 0 ? "pass" : "fail",
+      detail:
+        uncited.length === 0
+          ? `${positive.length} positive verdict(s), each backed by an attempt row naming the package and version it was measured against${positive.length ? " (" + positive.map((r: any) => `${r.lane}: ${r.verdict} vs ${r.best.package}@${r.best.version}`).join(", ") + ")" : ""}`
+          : `${uncited.length} lane(s) claim a positive surface verdict that no attempt in the artifact supports: ${uncited.map((r: any) => r.lane).join(", ")} — a verdict must point at the measurement that produced it`,
+    })
+
+    // 3. The digests must be REAL digests of the recorded vocabularies, not placeholders. A
+    //    surface verdict whose digest does not hash its own type list is a decoration.
+    const badDigest = rows.filter((r: any) => {
+      const d = r.surface?.digests
+      if (!d?.types || !d?.fields) return true
+      return !/^[0-9a-f]{64}$/.test(d.types) || !/^[0-9a-f]{64}$/.test(d.fields)
+    })
+    c9.push({
+      check: "digests-are-real",
+      status: badDigest.length === 0 ? "pass" : "fail",
+      detail: badDigest.length === 0 ? `every recorded surface carries a 64-hex digest for its types and fields` : `${badDigest.length} lane(s) have a missing or malformed digest: ${badDigest.map((r: any) => r.lane).join(", ")}`,
+    })
+
+    // 4. A surface verdict must not CONTRADICT a rebuild verdict for the same lane. If a
+    //    rebuild says byte-identical to X, a surface comparison against a DIFFERENT package
+    //    claiming a positive identity is a contradiction, and the pair needs a human.
+    const rebuildPath = path.join(ROOT, "validation", "m60", "results", "M60.0.local-rebuilds.json")
+    const contradictions: string[] = []
+    if (existsSync(rebuildPath)) {
+      try {
+        const rb = JSON.parse(readFileSync(rebuildPath, "utf8")).results ?? []
+        for (const r of rows) {
+          const m = rb.find((x: any) => x.lane === r.lane)
+          if (!m || !m.best || r.verdict !== "surface-identical") continue
+          if (`${m.best.package}@${m.best.version}` !== `${r.best.package}@${r.best.version}`) {
+            contradictions.push(`${r.lane}: byte-identical rebuild of ${m.best.package}@${m.best.version} but surface-identical to ${r.best.package}@${r.best.version}`)
+          }
+        }
+      } catch {
+        /* declared absence */
+      }
+    }
+    c9.push({
+      check: "no-contradiction-with-rebuild-verdicts",
+      status: contradictions.length === 0 ? "pass" : "fail",
+      detail: contradictions.length === 0 ? "no lane is byte-identical to one package and surface-identical to another" : contradictions.join("; "),
+    })
+  }
+}
+const c9Hard = c9.filter((x) => x.status === "fail")
+for (const f of c9Hard) hard.push(`C9 ${f.check}: ${f.detail}`)
+checks.push({
+  id: "C9",
+  status: c9Hard.length ? "fail" : "pass",
+  detail: `${c9.filter((x) => x.status === "pass").length}/${c9.length} — provenance by vocabulary where bytes are ambiguous, and every positive verdict names the candidate it was measured against`,
+})
+
 checks.push({
   id: "C8",
   status: c8Hard.length ? "fail" : "pass",
@@ -531,7 +641,7 @@ const result = {
     R4_notRebuildableFromRepo: R4_notRebuildable,
     surveyedButNotPinned: surveyedNotPinned,
   },
-  detail: { C1: { pinnedNotSurveyed, surveyedNotPinned }, C2: c2, C3: c3, C4: c4, C6: c6, C8: c8 },
+  detail: { C1: { pinnedNotSurveyed, surveyedNotPinned }, C2: c2, C3: c3, C4: c4, C6: c6, C8: c8, C9: c9 },
   passed: hard.length === 0,
   policy:
     "Offline: never downloads, never fetches upstream, never mutates a grammar or a registry. Reads validation/m14/grammar-pins.json (the pin contract) and validation/m60/grammar-survey.json (the upstream observation) and proves they agree with each other and with the prose sites that quote versions. It deliberately restates no pin, so it can never become a second version record.",
