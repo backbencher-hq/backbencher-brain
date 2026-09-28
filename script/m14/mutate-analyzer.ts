@@ -11310,6 +11310,31 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
   },
   {
+    id: "typescript/accessor-pair-duplicate",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R7 regression: an object-literal get/set pair stops collapsing to one property. The fix keeps the LAST accessor of a pair; the defect emitted one symbol per accessor, and because containment emits one `contains` row per member symbol, the same edge appeared twice. This transform reconstructs that output by giving every object-literal PROPERTY member a second declaration \u2014 the observable shape of the pre-fix analyzer. It cannot read the AST, so it cannot know which properties were accessor pairs, and it therefore over-applies: the point is that object-literal-accessor-pair's exact-count pin (contains o->size equals 1) MUST fail, which is the only assertion in the suite that can fail on a duplicate at all, since expectSymbols is a >=1 match and passes happily with both symbols present.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const byName = new Map<string, any>()
+      for (const s of symbols) if (!byName.has(s.name)) byName.set(s.name, s)
+      const extraSymbols: any[] = []
+      const extraRels: any[] = []
+      for (const s of symbols) {
+        // Object-literal members: an owner that is a value binding, not a
+        // type-ish container. Class members were never affected (the class
+        // pre-pass has always collapsed the pair), so they are left alone.
+        if (String(s.kind) !== "property" || !s.ownerName) continue
+        const owner = byName.get(s.ownerName)
+        if (!owner || !["constant", "variable", "parameter"].includes(String(owner.kind))) continue
+        extraSymbols.push({ ...s, id: `${s.id}-dup` })
+        extraRels.push({ source: s.ownerName, target: s.name, type: "contains", confidence: 1.0, metadata: {} })
+      }
+      return extraSymbols.length > 0 ? { ...r, symbols: [...symbols, ...extraSymbols], relationships: [...rels, ...extraRels] } : r
+    },
+  },
+  {
     id: "typescript/require-form-signal-drop",
     language: "typescript",
     defectClass: "finding-loss",
