@@ -49,6 +49,12 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "elixir", wasm: "tree-sitter-elixir.wasm", analyzer: "real-elixir-analyzer.ts" },
   { language: "erlang", wasm: "tree-sitter-erlang.wasm", analyzer: "real-erlang-analyzer.ts" },
   { language: "fsharp", wasm: "tree-sitter-fsharp.wasm", analyzer: "real-fsharp-analyzer.ts" },
+  // M60 VB wave. The analyzer is new and the grammar is a vendored+patched
+  // tree-sitter-vbnet, so this row is what makes F1 (grammar conformance: 0
+  // unknown node types, 0 unknown fields) actually MEASURE the lane rather than
+  // skip it -- which is the difference between "the VB lane passes F1" and
+  // "nothing checked VB".
+  { language: "vb", wasm: "tree-sitter-vbnet.wasm", analyzer: "real-vb-analyzer.ts" },
   { language: "go", wasm: "tree-sitter-go.wasm", analyzer: "real-go-analyzer.ts" },
   { language: "graphql", wasm: "tree-sitter-graphql.wasm", analyzer: "real-graphql-analyzer.ts" },
   { language: "groovy", wasm: "tree-sitter-groovy.wasm", analyzer: "real-groovy-analyzer.ts" },

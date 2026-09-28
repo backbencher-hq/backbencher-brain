@@ -22,10 +22,13 @@
 
 The shipped grammar is a **patched** tree-sitter-r. The base is
 `@eagleoutice/tree-sitter-r@1.1.2` (its published `tree-sitter-r.wasm` was
-byte-identical to the one this repo shipped before the patch). One rule was changed; see
-[Grammar](#grammar-the-hex-float-rule) below.
 
-## Grammar: the hex-float rule
+byte-identical to the one this repo shipped). **Two** rules were changed — the
+hex-float literal and the `..N` identifier — both because the grammar mis-parsed
+code R itself accepts. See [Grammar](#grammar-two-patches) below.
+
+
+## Grammar: two patches
 
 ```
 _hex_literal: $ => /0[xX][0-9a-fA-F]+/          # before
@@ -52,6 +55,30 @@ The fix is `_hex_literal_exponent` (C99 form) chosen before `_hex_literal_plain`
 (integer-hex form). `1e`-style exponents were also tightened from `[eE][+-]?\d*`
 to `[eE][+-]?\d+`, because R's own scanner requires the digits and `\d*` let
 `1east` lex as the float `1e` followed by `ast`.
+
+### Patch 2 — `..N` stole a prefix of a longer identifier
+
+`dot_dot_i` matched `/[.][.]\d+/` at a **positive rank**, so the lexer took `..2`
+out of `..2dge` and left `dge` behind: two sibling nodes, and a declaration
+published under the wrong name.
+
+R accepts `..2dge` as one identifier — verified on R 4.4.3: `..2dge <- 1; ls()`
+yields `..2dge`.
+
+Rust's regex has no lookahead, so "digits NOT followed by an identifier character"
+cannot be written directly. It is expressed as the complement: an alternative
+**inside the `identifier` token** that requires at least one trailing identifier
+character and is ranked above `dot_dot_i`. It must live inside `identifier` — a
+separate rule is not in the valid-token set where an expression may start, which
+is exactly where the split happened (the first attempt put it beside `identifier`
+and changed nothing). `..1` and `..2` still lex as `dot_dot_i`; `..2dge` and
+`..foo` are single identifiers.
+
+That one occurrence — a deprecated alias in `Matrix/R/zzz.R` — was the **only
+missed binding** in the R-oracle differential, and fixing it took recall from
+0.999886 to 1.000000.
+
+### A note on the A/B
 
 **Measured, both builds from the same toolchain (tree-sitter-cli 0.24.7) so the
 delta is the patch and nothing else:** ERROR/MISSING nodes over the 1,174 corpus
@@ -94,10 +121,29 @@ parameters.
 
 ### Assignment direction
 
-`->`/`->>` are the same operation as `<-` with the operands swapped, so the bound
-name is **whichever side is a plain identifier**: `5 -> d` binds `d` from the
-right and `e -> 6` binds `e` from the left. `->>` is the superassignment form and
-is handled identically.
+`->` and `->>` bind **only their right operand**. The left side is always a
+value. This is R's own rule, measured on R 4.4.3 rather than assumed:
+
+| Form | R |
+| --- | --- |
+| `2 -> b` | OK, binds `b` |
+| `2 ->> cc` | OK, binds `cc` |
+| `identity(1) -> gg` | OK, binds `gg` |
+| `bb -> 2` | **Error: invalid (do_set) left-hand side to assignment** |
+| `cc ->> 2` | **Error** |
+
+So `e -> 6` publishes **nothing**, and that is correct: R refuses to evaluate it.
+`F13-invalid-r.R` asserts exactly that.
+
+R desugars both rightward forms to `<-`(value, name) at parse time, so a name on
+the left of `->` is not a declaration. tree-sitter-r does **not** desugar — it
+keeps `->` as an operator — which is why the two sides must be distinguished here
+and why an oracle reading R's AST must not.
+
+**This corrects an error in an earlier revision of this review**, which read
+"whichever side is an identifier" and published `variable e` for `e -> 6`. The
+fixture suite could not catch it, because the fixture asserting that behaviour had
+been written to match the same wrong belief. R 4.4.3 could, and did.
 
 ### Parameters
 
@@ -148,6 +194,243 @@ argument. Every other argument is an option (`warn.conflicts`, `quietly`,
 `character.only`, `pos`, `lib.loc`, `mask.ok`, `exclude`, `include.only`,
 `attach.required`) and is not a package.
 
+### Scope boundaries — decided by running R, not by reasoning
+
+An assignment is a file-level binding unless it is inside a scope R introduces.
+Three were measured on R 4.4.3:
+
+| Enclosing construct | Binds at file level? | Why |
+| --- | --- | --- |
+| `function(...) { }` | **no** | the body is a local frame |
+| `local({ ... })` | **no** | `local()` creates a child environment |
+| `{ ... }` block in a call | **yes** | R evaluates it in the CALLING frame |
+| assignment as a call argument | **yes** | `f(x <- 1)` binds `x` |
+| `(x <- 1)` | **yes** | parentheses are not a scope |
+| `m[x <- 1]` | **yes** | the subscript is evaluated first |
+| `for (i in 1:3) { v <- i }` | `v` yes, `i` no | the loop variable is deleted |
+
+`local()` is the one that cannot be found by looking for a `function_definition`
+node — it is a call, not a function — and it was being missed: dplyr's
+test-across.R binds `_local_var` inside `local({ ... })` and the analyzer was
+publishing it as a global. `F14-local-boundary.R` pins all seven rows above.
+
+An earlier revision of this review also treated a `subset` ancestor as a scope
+boundary, on the reasoning that a complex assignment is evaluated "in the indexing
+context". That is wrong, it silently dropped four real bindings, and the R oracle
+caught it. Both the error and the correction are recorded here rather than only
+the correction.
+
+## Verifying the LINE NUMBER — R's own token positions
+
+The binding differential above answers "which names does this file bind?". It says
+nothing about *where*, and the line-number claim was resting on a check that could be
+fooled: an edge's `line` was required to **contain** its target's text, which passes just
+as happily on a substring inside a string literal or a comment.
+
+So the same oracle was extended to positions. `getParseData()` lists every terminal
+token with the line and column R itself recorded, and a token R lists *is* an occurrence
+of that name. Two exact invariants replace the fuzzy one:
+
+1. **symbol position** — the name must **begin** at an offset R recorded, and that
+   offset must fall **inside** the analyzer's own declared range. Both halves are
+   needed: checking the name alone passes a symbol whose range is wrong; checking the
+   range alone passes a name R never saw.
+2. **edge line** — R must have recorded the edge's target name on that exact line.
+
+### Three things about R's coordinates, each measured
+
+- **Columns are TAB-EXPANDED.** R reports `	foo` with `foo` at columns 9..11. Every
+  other byte advances the column by one — a multi-byte character advances it by its
+  *byte* count, so `café` spans 1..5 — but a TAB jumps to the next multiple of eight.
+  A first attempt treated R's column as a byte offset and rejected **6,448 rows**,
+  which read as "the oracle disagrees with the analyzer" rather than as a unit error.
+- **A name often lives inside a string.** `setClass(Matrix, ...)` raises *object
+  'Matrix' not found*; the class name must be a `STR_CONST`. So the oracle speaks in
+  "names R recorded", and reports each hit as bare or in-a-string rather than hiding
+  the distinction in a boolean. 863 edges resolve in a string; that is correct for S4.
+- **`base::sign` is FOUR tokens**, and the package name is carried by `SYMBOL_PACKAGE`
+  — the `NS_GET` token's own text is just `"::"`. Missing it made 927 `imports` edges
+  look like they pointed at nothing. That cluster was a blind spot in the harness, not a
+  defect in the analyzer.
+
+### What it found
+
+| | before | after | what it was |
+|---|---|---|---|
+| span mismatches | 6,448 | **0** | harness: TAB and wrong-line lookups |
+| symbols whose name is not where R says | 876 | **7** | 833 real, 1 quoted name, 42 harness |
+| edges whose line has no such name | 2,003 | **0** | 927 harness, 1,076 real |
+
+Of the 2,003 edge failures, **927 were a blind spot in the oracle and 1,076 were real
+defects.** The blind spot is worth naming rather than banking: an `imports` edge whose
+evidence is `base::sign` was failing because the package name lives in R's
+`SYMBOL_PACKAGE` token, which the first version of the oracle never asked for.
+
+Three of the R-token facts are asymmetries, which is the pattern worth remembering — R has
+a distinct token type for each of these, and none of them is discoverable from the rule
+names in the grammar:
+
+| R text | token | why it matters |
+|---|---|---|
+| `Dim = ...` in a call | `SYMBOL_SUB` | an argument name, not a variable |
+| `base` in `base::sign` | `SYMBOL_PACKAGE` | the package; `NS_GET`'s own text is just `"::"` |
+| `"Matrix"` in `setClass("Matrix", ...)` | `STR_CONST` | R **requires** the class name to be a string |
+| `return(1)` | `SYMBOL_FUNCTION_CALL` | a NAME |
+| `break()` | `BREAK` | a **keyword**, though it is a legal call |
+| `\tfoo` → `foo` at column 9 | — | columns are **TAB-EXPANDED**, not byte offsets |
+
+The last one is the one I got wrong first. This document asserted "R's columns are 1-based
+bytes, **verified**" on the strength of a `café <- 1` probe — a file with no leading
+whitespace, which is exactly where tab expansion and byte counting coincide. The claim was
+true and untested, and testing it rejected 6,448 rows that looked like the oracle
+disagreeing with the analyzer. It was also the second wrong conclusion in a row: the first
+was an off-by-one line index that I had already written up as a bytes-versus-UTF-16 unit
+error. Both are corrected above, and the correction is in the code as well as here.
+
+Four analyzer defects, all real:
+
+- **833 member ranges excluded the name they publish under.** A member is written
+  `name = value`; the range was taken from the *value*, so an R6 method's range began at
+  the `function` keyword. The range did not contain the symbol's own name. Fixed by
+  spanning `name .. value`. Found in dplyr, shiny and testthat — the R6-heavy packages.
+- **75 `calls` edges whose target was a copy of the caller's source.** R can call a
+  non-name: `chol2inv((if (uplo == "U") triu else tril)(x))`. `calleeName` ended in a
+  blanket `return unquoteIdentifier(fnNode.text)`, so the whole if-expression became a
+  function's name. A relationship target that quotes the input back is not a
+  relationship. Now an allowlist, and an unnameable callee emits **no** edge — counted
+  in `ambiguity.callsToUnnameableCallee` so the gap stays visible.
+- **1 S4 slot name published as `"a"`, quotes included.**
+  `setClass("new_class", slots = c("a" = "numeric"))` names a slot with a string.
+  Argument names may be bare, backticked or a string; only backticks were stripped.
+- **7 byte offsets in files containing non-ASCII.** See below.
+
+The F03-r6.R ground truth asserted the *old*, wrong member range. R puts `size` at 4:5
+and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The expectation
+was corrected to match R, not the analyzer** — and the reason is recorded in the ground
+truth's own notes.
+
+### The production path — the check every other harness here is blind to
+
+Every other R check constructs `new RealRAnalyzer()` and loads `wasm/tree-sitter-r.wasm`
+itself. That skips everything a user actually goes through: `ASTEngine.parseFile`, the
+analyzer registry, grammar resolution, and the temp copy the engine makes before handing
+bytes to web-tree-sitter.
+
+That gap is not theoretical. `resolveWasm("tree-sitter-r/tree-sitter-r.wasm")` searches
+four directories, and the data-dir cache `~/.bb/wasm` comes **before** the repository's own
+`wasm/`. A stale copy of the unpatched grammar sitting there would be loaded in preference
+to the shipped one — and every result in this lane would stay perfectly green while the
+product shipped a grammar that mis-parses `0x1p+53` and splits `..2dge` in half.
+
+**A green harness is not evidence that the product uses what the harness used.**
+
+So the production path is exercised end to end, and the bytes are compared by SHA-256
+rather than by path, because a path check passes happily while a cache shadows it:
+
+| assertion | result |
+|---|---|
+| bytes handed to the parser are the bytes in `wasm/tree-sitter-r.wasm` | **yes** |
+| patch 1 (hex float) reachable through `ASTEngine.parseFile` | **yes** |
+| patch 2 (`..2dge` is one identifier) reachable through it | **yes** |
+| an analyzer fix survives routing (S7 edge on the naming line) | **yes, line 5** |
+
+The harness is checked for teeth rather than assumed to have them: planting a stale
+grammar in the data-dir cache made it report the hazard and exit non-zero, and the planted
+copy was removed. It separates a **hazard** — a differing copy in a directory searched
+before the shipped one — from a **breach**, where the bytes actually loaded differ. The
+distinction earns its keep: the engine caches the grammar in `/tmp` and reuses it, so the
+file loaded can be correct while a stale shadow sits unused, and calling that a failure
+would teach people to ignore the gate.
+
+Worth recording because it was found by looking rather than by reasoning: the parse
+*succeeded* while the stale cache was planted. The `/tmp` copy from the previous run was
+still valid and got reused, so the hazard did not bite — this time. The check exists for
+the run where it does.
+
+### An unresolved defect: `startIndex` is not a byte index
+
+**Proven.** For a file containing non-ASCII, the reported `startIndex`/`endIndex` are
+**UTF-16 code units**, not bytes. A file mixing 2-, 3- and 4-byte characters, read through
+this parser and the same one upstream, gives:
+
+| name | reported | bytes | UTF-16 |
+|---|---|---|---|
+| `b` | 28 | 29 | 28 |
+| `c` | 54 | 57 | 54 |
+| `zzz` | 82 | 87 | 82 |
+
+UTF-16 every time, and `startPosition.column` agrees with it. `src/types/
+web-tree-sitter.d.ts` declares `startIndex: number` and **says nothing about the unit**,
+while upstream tree-sitter reports bytes. Every analyzer in this repository passes the
+value straight through, so this is one library's behaviour inherited by roughly fifteen
+lanes, and the missing unit is why it went unnoticed.
+
+The corpus effect is bounded and measured: **7 symbols, in the 15 of 1,155 compared files
+that contain non-ASCII**. In `shiny/R/shiny.R`, R places `cache` at byte **39407** and the
+analyzer reports **39395** — exactly the 12 surplus UTF-8 bytes earlier in the file.
+
+**A hypothesis I tested and threw away.** The tempting move is to claim the (line, column)
+pair is sound and only the range is in the wrong unit, so the fix is a conversion. I
+measured it, and it is **false**: (line, column) locates **14,964 of 16,290** symbols,
+against **16,283** for the byte range. Line/column is *worse*, because 1,326 symbol ranges
+do not start at the name for reasons that have nothing to do with units — an S4 class
+range begins at the `setClass` call, for instance. So (line, column) cannot stand in for
+a byte offset, and a remedy has to convert the range itself. The number is in the evidence
+record under `unitFinding.REFUTED`, because a refuted hypothesis with a number attached is
+worth more than a plausible story, and it is what stopped the wrong fix being proposed.
+
+**Not fixed here.** The remedy is additive — `byteStart`/`byteEnd` alongside the existing
+fields, or one conversion at the engine boundary — and that touches a shared contract that
+~15 lanes and every downstream consumer read while other lanes are actively being worked
+on. It is a cross-lane decision, not this lane's to take alone.
+
+The existing range audit cannot see this: it recomputes offsets in the same unit the
+analyzer reports, so it is self-consistent by construction. **Two harnesses sharing a
+unit assumption agree with each other and are wrong together.** That is the most
+important thing this pass found, and it is left open rather than quietly patched,
+because the unit is a framework-wide contract and 1.3% of files is not the place to
+change it unilaterally. Every one of the 7 remaining position failures is this.
+
+### The nameability of a callee is a property of its text, not of its node type
+
+The first fix here allowlisted node types. That was the wrong axis and it cost real
+coverage: the grammar gives `return` its own node type, so every `return(x)` in the corpus
+stopped producing an edge — **1,089 removals the audit could not explain**. `return` is a
+name; it is a name the grammar happens to tokenize specially.
+
+Asking instead whether the callee's text *is* an R name gets it right without enumerating
+the grammar, and stays right if a future grammar adds a node type. `chol2inv((if (uplo
+== "U") triu else tril)(x))` is not a name and gets no edge; `return(1)` is.
+
+### Which line an edge points at
+
+"The line that names the target" needed a rule for a target split across lines. R's
+promises package chains routinely:
+
+```r
+p$value <- p$value$          <- line 743: `value` is here
+  then(function(value) {     <- line 744: `then` is HERE
+```
+
+The target is `value$then`. The rule adopted is **the line where the target's last name
+component is written** — uniform, and identical to the expression start for the ordinary
+one-line `pkg::fn` and `obj$method` cases. "The line where the expression begins" is not a
+property of the call; it is an artifact of where the author pressed return.
+
+A related fix: `nameLineOf` found a symbol's name with a plain substring search, so
+`theme` matched inside `class_theme` and put `global exports theme` on the binding's line
+instead of the line the class is named on. It now requires a whole identifier.
+
+### An audit whose baseline cannot be named cannot be believed
+
+The removal audit compared the current analyzer against `/tmp/r-head-analyzer.ts` — a
+snapshot in a temp directory that nobody could reproduce or date. It was reporting **79
+`contains|global|<name>` edges as lost that this lane had never touched**, because they
+had been gone for some while. The baseline is now checked out from a **pinned git commit**,
+its import paths rewritten so the snapshot loads, and the commit printed in the output. A
+baseline that fails to load aborts the run, because a baseline that silently analyzes zero
+files reports "nothing was removed" — the most flattering possible false result.
+
 ## Text operations (the complete inventory)
 
 There are **no regex literals** in the analyzer. Every text-level operation is
@@ -168,8 +451,23 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 
 ## Verification evidence
 
-Regenerate with `bun run script/m12/r-evidence.ts`; all three records are sealed
-and refuse a hand edit.
+Regenerate with `bun run script/m12/r-evidence.ts`; every record is sealed and
+refuses a hand edit.
+
+- **R-oracle differential (the strongest check in this lane)** —
+  `validation/m12/results/r-oracle-differential.json`: **R 4.4.3 itself decides
+  which top-level names each of the 997 comparable corpus files binds, and the
+  analyzer is asked the same question.** Result: **8,798 bindings, 8,798 agree,
+  0 phantom, 0 missed, precision 1.000000, recall 1.000000.**
+
+  The two sides share no grammar, no code and no assumptions. R's own `parse()`
+  builds the AST — so R's grammar and R's desugaring of the rightward forms are
+  already applied — and a walk over that AST collects the file-level names.
+  Nothing is executed, so there are no stubs and no unevaluated files.
+
+  This is the check that earned its place: it found **two errors a fixture suite
+  structurally could not** — a wrong belief about `->` that the fixtures had been
+  written to match, and an identifier the grammar split in half.
 
 - **Grammar conformance (L2)** — `validation/m12/results/r-grammar-conformance.json`:
   **0 unknown node types, 0 unknown fields, 0 regex literals**, against node types
@@ -186,8 +484,8 @@ and refuse a hand edit.
   every edge located and correct, 0 unknown symbol names, 0 inconsistent ranges,
   and the relationship-type coverage count.
 - **Corpus-scale line audit** (`fixtures/corpus/line-audit.mts`, re-derived from
-  the parse tree without consulting the analyzer): **36,727 edges, all carry a
-  line, 0 land on a line that does not contain their target; 8,441 symbols, all
+  the parse tree without consulting the analyzer): **36,734 edges, all carry a
+  line, 0 land on a line that does not contain their target; 8,410 symbols, all
   range/line/column/byteIndex self-consistent; 0 names that the grammar did not
   produce.**
 - **Mutation (L4)** — 23 mutants, each re-introducing one reviewed defect as a

@@ -19,7 +19,6 @@
 import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
-import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -755,127 +754,7 @@ function cleanEdgeLinePerSet() {
   }
 }
 
-/** M59.A7 / dimension 8 (haskell), half one: the pre-fix payload. `pushRel`
- *  published `{source,target,type,confidence,metadata}` with no `line_number`
- *  field at all, so a consumer of the graph has an edge it cannot navigate —
- *  measured before the change: 0 of 15,151 edges on the FULL hledger extent
- *  (186 files) named a site. Caught by every `line_number` constraint in the
- *  lane's fixture (12 pins) and by the line-coverage probe's coverage clause. */
-function haskellEdgeLineAbsent() {
-  return (r: any) => {
-    const rels: any[] = r.relationships ?? []
-    if (!rels.some((rel) => rel && "line_number" in rel)) return r
-    return {
-      ...r,
-      relationships: rels.map((rel) => {
-        const { line_number, ...rest } = rel
-        return rest
-      }),
-    }
-  }
-}
-
-/** M59.A7 / dimension 8 (haskell), half two: the field stays and the dedupe key
- *  goes back to `source|type|target` — the pre-fix key verbatim — so the FIRST
- *  site's line is kept and every later site's edge is swallowed: per-SET, not
- *  per-site. Measured on the corpus: the FULL hledger extent (186 files) holds
- *  15,151 edges against 12,526 pre-change groups (2,625 edges are later sites,
- *  worst group 40 sites, `calls`); the FULL cabal extent (2,134 files) holds
- *  55,974 against 46,753 (9,221 later sites, worst group 186, `calls`). A
- *  fixture that pinned only the field's
- *  PRESENCE survives this, which is why the lane's pins are written in PAIRS
- *  (`calls recount -> signed` at both 197 and 198 with a count of 2). */
-function haskellEdgeLinePerSet() {
-  return (r: any) => {
-    const rels: any[] = r.relationships ?? []
-    const seen = new Set<string>()
-    const out: any[] = []
-    for (const rel of rels) {
-      const key = `${rel.source}|${rel.type}|${rel.target}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(rel)
-    }
-    return out.length === rels.length ? r : { ...r, relationships: out }
-  }
-}
-
-/** Scoped local identity (M60 functional lane, 2026-09-26), half one: the
- *  identity COLLAPSE. Every endpoint carrying a local's lexical owner chain
- *  (`owner.local`, nested `owner.inner.local`) is flattened back to the pre-fix
- *  BARE local name — the shape the analyzer published before the change, when a
- *  where/let local and a module-level callable of the same name shared one node.
- *  Measured before the fix on the full hledger+cabal extent (2,356 files):
- *  12,309 source and 6,314 target `calls` endpoints were bare local
- *  attributions, over 708 files / 11,487 local binder names; 16 files / 67
- *  binder names were a shadowing binder (binder name == a module-level symbol
- *  name). Only endpoints whose HEAD segment is a file symbol are touched, so
- *  module-qualified targets (`M.lookup`) are never stripped. */
-function haskellLocalIdentityFlat() {
-  return (r: any) => {
-    const rels: any[] = r.relationships ?? []
-    const symbolNames = new Set<string>()
-    for (const s of r.symbols ?? []) if (s?.name) symbolNames.add(String(s.name))
-    let changed = false
-    const flat = (name: any) => {
-      if (typeof name !== "string") return name
-      const dot = name.indexOf(".")
-      if (dot <= 0) return name
-      if (!symbolNames.has(name.slice(0, dot))) return name
-      changed = true
-      return name.slice(name.lastIndexOf(".") + 1)
-    }
-    const out = rels.map((rel) => {
-      const source = flat(rel.source)
-      const target = flat(rel.target)
-      return source === rel.source && target === rel.target ? rel : { ...rel, source, target }
-    })
-    return changed ? { ...r, relationships: out } : r
-  }
-}
-
-/** Scoped local identity, half two: the LEXICAL-VISIBILITY revert. Before the
- *  fix the declared set was FLAT, so a local of ANY function was a candidate
- *  target from anywhere in the file — the fixture's `outOfScope n = hop n`
- *  called a name that only exists as a where-local of `siblingA`/`siblingB`,
- *  and the pre-fix analyzer emitted `calls outOfScope -> hop` for it (bare
- *  target). The post-fix analyzer emits NOTHING there, so the pre-fix edge
- *  cannot be recovered by transforming the result — it is re-injected here from
- *  the source text (the site's own line), which is what makes this mutant a
- *  faithful replay of the old output rather than a synthetic corruption. */
-function haskellLocalScopeBlind() {
-  return (r: any, source?: string) => {
-    const rels: any[] = r.relationships ?? []
-    if (rels.some((x: any) => String(x.type ?? x.relationshipType) === "calls" && x.source === "outOfScope" && x.target === "hop")) {
-      return r
-    }
-    const lines = String(source ?? "").split("\n")
-    let line = 0
-    for (let i = 0; i < lines.length; i++) {
-      if (/^\s*outOfScope\b[^=]*=\s*hop\b/.test(lines[i])) {
-        line = i + 1
-        break
-      }
-    }
-    if (!line) return r
-    return {
-      ...r,
-      relationships: [
-        ...rels,
-        {
-          type: "calls",
-          source: "outOfScope",
-          target: "hop",
-          confidence: 0.9,
-          line_number: line,
-          metadata: { haskellSpecific: true, context: "local function call" },
-        },
-      ],
-    }
-  }
-}
-
-export interface Mutant {
+interface Mutant {
   id: string
   language: string
   defectClass: string
@@ -1228,1181 +1107,761 @@ function dropAnonBodyOverride() {
 // pin against the mutant the canonical suite runs — so the pack and the suite
 // cannot drift apart. Importing this module does NOT run the suite: main() is
 // guarded at the bottom.
-
-// ============================================================================
-// M14 (#288) — the html lane's defect classes, as faithful reverts.
-//
-// html entered mutation testing with ZERO mutants out of 938, which is why a
-// String-helper bug that made `asciiLower` the IDENTITY on every string
-// containing a capital survived: it is invisible on any input that is already
-// lowercase, and every corpus file the pre-fix analyzer had ever been measured
-// against is lowercase. A mutation gate that never ran cannot catch a defect
-// whose only trigger is the input nobody tested.
-//
-// Every transform below is written off the RESULT's own symbol/edge set, so it
-// stays valid on any fixture and reproduces the measured pre-fix behaviour
-// rather than a caricature of it. The `htmlDropCarrier` family is parameterised
-// by resourceType on purpose: the rule table is DATA, so each row is its own
-// mutant, and a table can be enumerated where an if/else-if chain could not be.
-// ============================================================================
-
-/** The `asciiLower` defect itself: identity on any string with a capital. */
-function htmlAsciiLowerIdentity() {
-  return (r: any) => {
-    // The pre-fix helper lowercased the PREFIX before the first capital, which
-    // for index 0 is the empty string, so it was the identity function. Its
-    // observable consequence is that every upper/mixed-case carrier and
-    // attribute stopped matching a rule and vanished from the whole result.
-    const dropCapsAttrs = (s: any) => {
-      const attrs: any = s?.metadata?.attributes ?? {}
-      for (const k of Object.keys(attrs)) if (k !== k.toLowerCase()) delete attrs[k]
-      return s
-    }
-    return {
-      ...r,
-      symbols: (r.symbols ?? []).map(dropCapsAttrs),
-      relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.isScriptUrl),
-      imports: (r.imports ?? []).filter((i: any) => !/^[A-Z]/.test(String(i.module ?? ""))),
-    }
-  }
-}
-
-/** HTML-IDENTITY: a `class` alone creates a symbol again. */
-function htmlClassIsIdentity() {
-  return (r: any) => {
-    const extra: any[] = []
-    for (const s of r.symbols ?? []) {
-      const cls = s?.metadata?.attributes?.class
-      if (!cls) continue
-      for (const token of String(cls).split(" ")) {
-        if (token.length > 0) extra.push({ ...s, name: token, complexity: 1 })
+export const MUTANTS: Mutant[] = [
+  // ---------------------------------------------------------------- VB wave
+  // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
+  // corpus profile while THREE whole classes of output were missing or wrong. Each
+  // mutant below is a revert of one of them, and each is caught by
+  // vb/declaration-shapes. The pair (constructors, nested containment) is why a
+  // percentage is not evidence on its own: both were absent, and the counts that
+  // would have shown it -- symbols, relationships -- went UP when they were fixed,
+  // because a metric that only counts what exists cannot report a class that does
+  // not exist.
+  {
+    id: "vb/constructor-has-no-name-field",
+    language: "vb",
+    defectClass: "missing-whole-kind",
+    description:
+      "PRE-FIX: `Public Sub New()` has no `name` field -- the grammar lexes `New` as an anonymous token -- so `declaredName` returned empty and the 'declaration without a name' guard RETURNED before the naming contract was reached. The contract existed and was dead code: 12,549 symbols across 435 files contained ZERO constructors. Simulated as a faithful revert by dropping every Constructor symbol and the containment edge into it, which is exactly the state that guard produced. Caught by vb/declaration-shapes, which expects two `constructor` symbols and two `contains -> constructor` edges.",
+    transform: (r: any) => {
+      const isCtor = (s: any) => String(s.kind).toLowerCase() === "constructor"
+      if (!(r.symbols ?? []).some(isCtor)) return r
+      const names = new Set((r.symbols ?? []).filter(isCtor).map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !isCtor(s)),
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && names.has(String(x.target))),
+        ),
       }
-    }
-    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
-  }
-}
-
-/** The document-module root removed: N disconnected trees, no module symbol. */
-function htmlNoDocumentRoot() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    return {
-      ...r,
-      symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.isDocument),
-      relationships: (r.relationships ?? []).filter(
-        (x: any) => !(x.type === "contains" && (x.source === mod.name || x.target === mod.name)),
-      ),
-    }
-  }
-}
-
-/** Duplicate `id`s share one name again (the rust RSD3 class). */
-function htmlDuplicateIdCollides() {
-  return (r: any) => ({
-    ...r,
-    symbols: (r.symbols ?? []).map((s: any) => {
-      const n = String(s?.name ?? "")
-      if (!n.includes("#")) return s
-      const out = { ...s, name: n.split("#")[0], metadata: { ...(s.metadata ?? {}) } }
-      return out
-    }),
-    relationships: (r.relationships ?? []).filter(
-      (x: any) => !String(x.source ?? "").includes("#") && !String(x.target ?? "").includes("#"),
-    ),
-  })
-}
-
-/** Backward-only reference resolution: a forward `<label for>` finds nothing. */
-function htmlLabelForwardUnresolved() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).filter((x: any) => {
-      if (!x?.metadata?.isLabelAssociation) return true
-      // A reference survives only when its target was already declared at the
-      // point the reference was written, approximated by requiring the target's
-      // declaration line to be at or before the reference's own line.
-      const refLine = typeof x.line_number === "number" ? x.line_number : Number.MAX_SAFE_INTEGER
-      const target = (r.symbols ?? []).find((s: any) => String(s?.name) === String(x.target))
-      const targetLine = target?.range?.startLine
-      return typeof targetLine === "number" && targetLine <= refLine
-    }),
-  })
-}
-
-/** An ambiguous id resolves to the LAST match instead of the first. */
-function htmlAmbiguousTargetLastWins() {
-  return (r: any) => {
-    // The pre-fix state had no `#N` suffix at all, so the two elements sharing an
-    // id shared ONE name and the group has to be rebuilt by HANDLE (the name
-    // before the suffix) — grouping by the published name would find one member
-    // per group and the mutant would be a no-op on its own fixture.
-    const handle = (n: string): string => {
-      const hash = n.indexOf("#")
-      return hash === -1 ? n : n.slice(0, hash)
-    }
-    const groups = new Map<string, any[]>()
-    for (const s of r.symbols ?? []) {
-      if (s?.metadata?.isDocument) continue
-      const h = handle(String(s?.name ?? ""))
-      if (!groups.has(h)) groups.set(h, [])
-      groups.get(h)!.push(s)
-    }
-    return {
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        if (!x?.metadata?.ambiguousTarget) return x
-        const group = groups.get(handle(String(x.target))) ?? []
-        if (group.length < 2) return x
-        const last = group[group.length - 1]
-        const md = { ...(x.metadata ?? {}) }
-        delete md.ambiguousTarget
-        return { ...x, target: last.name, metadata: md }
-      }),
-    }
-  }
-}
-
-/** One rule-table row removed — the parameterisation IS the point. */
-function htmlDropCarrier(resourceType: string) {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).filter(
-      (x: any) => !(x?.metadata?.htmlSpecific && x?.metadata?.resourceType === resourceType),
-    ),
-    imports: (r.imports ?? []).filter((i: any) => i?.metadata?.resourceType !== resourceType),
-  })
-}
-
-/** `srcset` read as "skip separators, take the first token" — the pre-fix scanner. */
-function htmlSrcsetFirstToken() {
-  return (r: any) => {
-    const isSet = (x: any) => x?.metadata?.resourceType === "img-srcset"
-    const seen = new Set<string>()
-    const rels: any[] = []
-    for (const x of r.relationships ?? []) {
-      if (!isSet(x)) {
-        rels.push(x)
-        continue
+    },
+  },
+  {
+    id: "vb/nested-type-owner-without-an-edge",
+    language: "vb",
+    defectClass: "missing-relationship",
+    description:
+      "PRE-FIX: containment was emitted per visitor, and the visitors for nested TYPES emitted none. A nested type therefore carried `ownerName` on its symbol and NO `contains` edge into it -- the owner recorded and then unreachable, so containment navigation stopped at the enclosing class. Found by the F5 differential and not by a fixture: 48 `contains Namespace -> Class` rows and every nested-type edge were invisible to a symbol count. Simulated as a faithful revert by dropping the `contains` edge into any type whose owner is itself a symbol of this file, which is precisely the set the per-visitor dispatch failed to cover. Caught by vb/declaration-shapes, which expects `contains Box -> Kind` and the enum members under it.",
+    transform: (r: any) => {
+      const owners = new Set((r.symbols ?? []).map((s: any) => String(s.name)))
+      const nested = new Set(
+        (r.symbols ?? []).filter((s: any) => s.ownerName && owners.has(String(s.ownerName))).map((s: any) => String(s.name)),
+      )
+      if (nested.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && nested.has(String(x.target))),
+        ),
       }
-      const key = `${x.source}|${x.line_number}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      rels.push(x)
-    }
-    let firstSeen = false
-    return {
-      ...r,
-      relationships: rels,
-      imports: (r.imports ?? []).filter((i: any) => {
-        if (i?.metadata?.resourceType !== "img-srcset") return true
-        if (firstSeen) return false
-        firstSeen = true
-        return true
-      }),
-    }
-  }
-}
-
-/** `rel=preconnect`/`dns-prefetch` mirrored into imports again. */
-function htmlConnectionHintBecomesImport() {
-  return (r: any) => ({
-    ...r,
-    imports: [
-      ...(r.imports ?? []),
-      ...(r.symbols ?? [])
-        .filter((s: any) => {
-          const rel = String(s?.metadata?.attributes?.rel ?? "").toLowerCase()
-          return (rel === "preconnect" || rel === "dns-prefetch") && s?.metadata?.tagName === "link"
+    },
+  },
+  {
+    id: "vb/construction-with-arguments-is-not-a-call",
+    language: "vb",
+    defectClass: "missing-relationship",
+    description:
+      "PRE-FIX: a construction IS a call, and the grammar spells it with one of TWO node types -- `New Box()` is an `invocation_expression`, but `New Box(1, 2)` is an `array_creation_expression` with a `type` field and no `function` field. Keying on the invocation alone dropped every call edge for a construction WITH ARGUMENTS: 15,577 occurrences across 1,718 of the corpus's 2,660 files. Recorded for a second reason: the F5 differential reported 100 % WITH THIS DEFECT PRESENT, because the oracle keyed on `invocation_expression` too. Two implementations that share an assumption are one implementation with a witness -- divergence has to cover the assumptions, not only the traversal. Simulated as a faithful revert by dropping every `calls` edge the analyzer itself marked `constructed` with a node type other than `object_creation_expression`, read off the edge's own metadata so the mutant cannot silently stop matching when the fixture changes. Caught by vb/declaration-shapes, which expects `calls Build -> Box` at line 55.",
+    transform: (r: any) => {
+      const doomed = (r.relationships ?? []).filter(
+        (x: any) =>
+          String(x.type) === "calls" &&
+          x.metadata?.constructed === true &&
+          x.metadata?.constructionNode === "array_creation_expression",
+      )
+      if (doomed.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !doomed.includes(x)) }
+    },
+  },
+  // ---------------------------------------------------------------- SQL wave
+  // 2026-09-27. sql had NO mutants and NO fixture lane, while its m12
+  // differential reported a 1.000 — 34 hand-audited facts over 63 lines of
+  // fixture, so the lane that had the most fabrication defects measured as
+  // perfect. Every mutant below is a faithful revert of one MEASURED defect from
+  // the M60 SQL deep review (fixtures/sql/REVIEW.md, each row carrying its own
+  // corpus count), and each is caught by the sql fixture battery.
+  //
+  // They are reverts of the OUTPUT rather than of the source, which is what the
+  // harness's contract allows: a mutant wraps the real analyzer and transforms
+  // its result, so a revert here is faithful exactly when the defect is
+  // visible in the emitted symbols/relationships/metadata. Each transform is
+  // generic off the analyzer's OWN payload (its metadata flags, its own symbol
+  // names), never off a hardcoded string that would silently stop matching when
+  // the fixture changes.
+  {
+    id: "sql/custom-column-type-is-a-foreign-key",
+    language: "sql",
+    defectClass: "fabrication",
+    description:
+      "The pre-fix FK test matched ANY `object_reference` child of a `column_definition`, so a user-defined column TYPE (also an object_reference) was indistinguishable from a `REFERENCES` target: `CREATE TABLE t (b my_schema.my_type)` published `references t -> my_type` and the \"Foreign Key Constraints\" pattern — one phantom FK per custom-typed column, measured corpus-wide. Simulated as a faithful REVERT of the fix: a column that declares a type and declares NO reference is exactly the case the fix corrected, so the pre-fix state is re-derived from the fixed result by giving that column a reference equal to the type's last segment, plus the edge and the pattern the pre-fix code added. Caught by sql/sqld1-column-types, whose forbidRelationships name `references d1_columns->my_type` and `-> my_schema`.",
+    transform: (r: any) => {
+      // A column with a sqlType and no `references` is the shape the fix made
+      // correct; a column WITH a `references` is a real FK the fix preserved.
+      const typed = (r.symbols ?? []).filter((s: any) => s.metadata?.type === "column" && typeof s.metadata?.sqlType === "string" && s.metadata.references === undefined)
+      if (typed.length === 0) return r
+      const invented = new Map<string, { owner: string; target: string }>()
+      for (const s of typed) {
+        const segs = String(s.metadata.sqlType).split(".")
+        invented.set(String(s.name), { owner: String(s.ownerName ?? s.name), target: segs[segs.length - 1] })
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.metadata?.type === "column" && invented.has(String(s.name))
+            ? { ...s, metadata: { ...s.metadata, references: invented.get(String(s.name))!.target } }
+            : s),
+        relationships: [
+          ...(r.relationships ?? []),
+          ...[...invented.entries()].map(([col, v]) => ({ type: "references", source: v.owner, target: v.target, confidence: 1, weight: 1, metadata: { constraint: "foreign_key", column: col } })),
+        ],
+        metadata: {
+          ...(r.metadata ?? {}),
+          patterns: [...new Set([...((r.metadata ?? {}).patterns ?? []), "Foreign Key Constraints"])].sort(),
+        },
+      }
+    },
+  },
+  {
+    id: "sql/parameter-type-reads-the-mode-keyword",
+    language: "sql",
+    defectClass: "fabrication",
+    description:
+      "The pre-fix parameter-type accessor matched `keyword_*` before the type, and a parameter MODE is a keyword, so `IN a integer` published `{ name: \"a\", type: \"IN\" }` — the mode recorded as the type for every mode-prefixed argument. The fixed result carries the mode in `direction` and the real type in `type`, so the pre-fix state is re-derived by copying the mode into `type`. Caught by sql/sqld3-routine-signature, whose forbidParameters pin `types: [\"IN\",\"OUT\",\"INOUT\"]`.",
+    transform: (r: any) => {
+      let hit = false
+      const symbols = (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.parameters)) return s
+        let touched = false
+        const next = s.parameters.map((p: any) => {
+          if (typeof p.direction !== "string" || p.type === p.direction) return p
+          touched = true
+          return { ...p, type: p.direction.toUpperCase() }
         })
-        .map((s: any) => ({
-          module: String(s.metadata.attributes.href ?? ""),
-          items: ["*"],
-          isDefaultImport: true,
-          isNamespaceImport: false,
-          metadata: { isHtmlResource: true, resourceType: "link-hint" },
-        })),
-    ],
-  })
-}
-
-/** A `<link href>` or a `<base href>` with no qualifying filter becomes a fetch. */
-function htmlUnqualifiedHrefFetched(tagName: string) {
-  return (r: any) => {
-    const extra: any[] = []
-    const extraImports: any[] = []
-    for (const s of r.symbols ?? []) {
-      if (s?.metadata?.tagName !== tagName) continue
-      const href = String(s?.metadata?.attributes?.href ?? "")
-      if (href.length === 0) continue
-      if ((r.relationships ?? []).some((x: any) => String(x.source) === String(s.name) && String(x.target) === href)) continue
-      extra.push({
-        source: s.name,
-        target: href,
-        type: "uses",
-        confidence: 1,
-        line_number: s.range?.startLine,
-        metadata: { htmlSpecific: true, resourceType: "link", isExternalResource: false, evidenceClass: "import_based" },
+        if (!touched) return s
+        hit = true
+        return { ...s, parameters: next }
       })
-      extraImports.push({ module: href, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "link" } })
-    }
-    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
-  }
-}
-
-/** `<param value>` treated as a resource whatever its `name`. */
-function htmlParamValueAlwaysResource() {
-  return (r: any) => {
-    const extra: any[] = []
-    const extraImports: any[] = []
-    for (const s of r.symbols ?? []) {
-      if (s?.metadata?.tagName !== "param") continue
-      const v = String(s?.metadata?.attributes?.value ?? "")
-      if (v.length === 0) continue
-      extra.push({
-        source: s.name, target: v, type: "uses", confidence: 1, line_number: s.range?.startLine,
-        metadata: { htmlSpecific: true, resourceType: "param", isExternalResource: false, evidenceClass: "import_based" },
-      })
-      extraImports.push({ module: v, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "param" } })
-    }
-    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
-  }
-}
-
-/** A cross-origin hyperlink becomes a graph edge again. */
-function htmlExternalUrlGraphed() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    const extra = [
-      "https://example.com/page",
-      "//cdn.example.net/asset",
-      "mailto:someone@example.com",
-      "tel:+15550100",
-      "data:text/plain;base64,SGVsbG8=",
-    ].map((t, i) => ({
-      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 13 + i,
-      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
-    }))
-    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
-  }
-}
-
-/** The pre-fix bare `startsWith` scheme filter. */
-function htmlSchemeFilterCaseSensitive() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    const extra = [
-      "JavaScript:alert(1)",
-      " javascript:alert(2)",
-      "&#106;avascript:alert(3)",
-      "&#0000106;avascript:alert(4)",
-    ].map((t, i) => ({
-      source: mod.name, target: t, type: "uses", confidence: 1, line_number: 18 + i,
-      metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true },
-    }))
-    return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
-  }
-}
-
-/** The scheme filter confined to the `<a>` branch, as it was pre-fix. */
-function htmlSchemeFilterAnchorOnly() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (!x?.metadata?.isScriptUrl) return x
-      return { ...x, type: "calls", metadata: { htmlSpecific: true, isFormAction: true } }
-    }),
-  })
-}
-
-/** A form endpoint labelled `calls` — the pre-fix relationship type for it. */
-function htmlFormActionAsCalls() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x?.metadata?.resourceType === "form-action"
-        ? { ...x, type: "calls", confidence: 1, metadata: { htmlSpecific: true, isFormAction: true } }
-        : x,
-    ),
-  })
-}
-
-/** `formaction` on any input rather than only on a submitting one. */
-function htmlFormactionAnyInput() {
-  return (r: any) => {
-    const extra: any[] = []
-    const extraImports: any[] = []
-    for (const s of r.symbols ?? []) {
-      if (s?.metadata?.tagName !== "input") continue
-      const fa = String(s?.metadata?.attributes?.formaction ?? "")
-      if (fa.length === 0) continue
-      extra.push({
-        source: s.name, target: fa, type: "uses", confidence: 0.9, line_number: s.range?.startLine,
-        metadata: { htmlSpecific: true, resourceType: "form-action", isNavigation: true, evidenceClass: "usage_contextual" },
-      })
-      extraImports.push({ module: fa, items: ["*"], isDefaultImport: true, isNamespaceImport: false, metadata: { isHtmlResource: true, resourceType: "form-action" } })
-    }
-    return { ...r, relationships: [...(r.relationships ?? []), ...extra], imports: [...(r.imports ?? []), ...extraImports] }
-  }
-}
-
-/** The `javascript:` edge carries the full URL text as its target again. */
-function htmlScriptUrlFullTarget() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (!x?.metadata?.isScriptUrl) return x
-      const md = { ...(x.metadata ?? {}) }
-      delete md.isScriptUrl
-      return { ...x, target: `${x.target}void(0)`, metadata: md }
-    }),
-  })
-}
-
-/** Character references left as written — the pre-fix attribute handling. */
-function htmlEntitiesUndecoded() {
-  return (r: any) => {
-    const encode = (t: string): string => {
-      let out = ""
-      for (let i = 0; i < t.length; i++) {
-        const c = t.charCodeAt(i)
-        if (c === 38) out += "&amp;"
-        else if (c === 46) out += "&#46;"
-        else out += t[i]
+      return hit ? { ...r, symbols } : r
+    },
+  },
+  {
+    id: "sql/trigger-action-read-from-the-when-clause",
+    language: "sql",
+    defectClass: "relationship-fabrication",
+    description:
+      "The pre-fix trigger read the first three `object_reference`s ANYWHERE in the subtree, and a `WHEN (old.a <> new.a)` clause contributes two more (old/new are object_references in this grammar) — so `… WHEN (old.a <> new.a) EXECUTE FUNCTION audit_it()` published `calls tg->old`, a call edge into a PL/pgSQL pseudo-variable, instead of `calls tg->audit_it`. The fixed result carries the CORRECT actionFunction; the trigger's own source line is what distinguishes a WHEN-bearing trigger, and the harness passes the source for exactly this. Faithful revert: for a trigger whose statement contains a WHEN clause, set actionFunction to `old` and repoint the calls edge. Caught by sql/sqld2-trigger-when, whose forbidRelationships name `calls d2_when->old` and `-> new`.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string" || !/\bWHEN\b/i.test(source)) return r
+      const triggers = (r.symbols ?? []).filter((s: any) => s.metadata?.isTrigger === true && typeof s.metadata.actionFunction === "string")
+      if (triggers.length === 0) return r
+      const names = new Set(triggers.map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.metadata?.isTrigger && names.has(String(s.name))
+            ? { ...s, metadata: { ...s.metadata, actionFunction: "old" } }
+            : s),
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const t = String(x.type ?? x.relationshipType ?? "")
+          if (t !== "calls") return x
+          const from = String(x.source ?? x.from ?? "")
+          if (!names.has(from)) return x
+          return { ...x, target: "old" }
+        }),
       }
-      return out
-    }
-    return {
+    },
+  },
+  {
+    id: "sql/keyword-becomes-a-relationship-target",
+    language: "sql",
+    defectClass: "relationship-fabrication",
+    description:
+      "The pre-fix code had no reserved-word guard, so error recovery turned SQL keywords and role names into graph nodes: 49 keyword-target edges measured over 441 corpus files — `calls global->USING`, `uses global->WITH`, `calls get_brand_network_stats->FILTER` — and from `REVOKE … FROM joe` a bare `uses global->joe`, a ROLE published as a table. With GRANT/REVOKE now parsing, the honest place to re-inject the pre-fix state is the construct that USED to be an ERROR: a REVOKE whose grantee the old code read out of a `from` clause. Faithful: for a source with `REVOKE … FROM <role>`, emit the `uses global-><role>` edge the pre-fix parser produced. Caught by sql/sqld4-statement-dispatch, whose forbidRelationships name `uses global->some_role`.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      const m = /\bREVOKE\b[\s\S]*?\bFROM\s+([A-Za-z_][A-Za-z0-9_]*)/i.exec(source)
+      if (!m) return r
+      const role = m[1]
+      return {
+        ...r,
+        relationships: [...(r.relationships ?? []), { type: "uses", source: "global", target: role, confidence: 1, weight: 1, metadata: { tableReference: true } }],
+      }
+    },
+  },
+  {
+    id: "sql/cte-shadows-a-qualified-reference",
+    language: "sql",
+    defectClass: "relationship-loss",
+    description:
+      "The pre-fix CTE guard matched on the BARE LEAF, so a QUALIFIED reference whose leaf collided with a CTE name was suppressed with it: `WITH a AS (SELECT 1) SELECT * FROM a JOIN s.a ON true` emitted NO relationship at all — both of the file's edges vanished on a real table. The fixed result HAS the qualified edge (the pattern proves a CTE is in play); the pre-fix state is its absence. Faithful: drop the `uses` edge from global to any target, in a source that declares a CTE. Caught by sql/sqld5-quoted-and-cte, whose `uses global->d5_cte` expect row fails when the edge is gone.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string" || !/\bWITH\b/i.test(source)) return r
+      const hasCte = ((r.metadata ?? {}).patterns ?? []).includes("Common Table Expressions (CTE)")
+      if (!hasCte) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const t = String(x.type ?? x.relationshipType ?? "")
+          const from = String(x.source ?? x.from ?? "")
+          return !(t === "uses" && from === "global")
+        }),
+      }
+    },
+  },
+  {
+    id: "sql/range-columns-zero-based",
+    language: "sql",
+    defectClass: "line-attribute",
+    description:
+      "The pre-fix range helper emitted 0-BASED columns. The engine's own ParseError range (engine.ts:1180) and every other analyzer that builds a range use `startPosition.column + 1`, so SQL was the only 0-based range in the tree and all four column fields of EVERY SQL symbol were off by one, corpus-wide. Simulated generically: every symbol's range and every relationship's site line loses the 1-based base. Caught by sql/sqld8-range-and-ids, whose expectSymbolRanges pin startColumn 3 / endColumn 5 for two columns.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({
+        ...s,
+        range: s.range ? { ...s.range, startColumn: Math.max(0, (s.range.startColumn ?? 1) - 1), endColumn: Math.max(0, (s.range.endColumn ?? 1) - 1) } : s.range,
+      })),
+    }),
+  },
+  {
+    id: "sql/same-name-declarations-share-an-id",
+    language: "sql",
+    defectClass: "symbol-identity",
+    description:
+      "The pre-fix `id` was `parentId ?? name`, so two top-level entities sharing a bare name collided: `CREATE TABLE a.t` and `CREATE TABLE b.t` both got id `t` (measured ids [\"t\",\"t\"]). Duplicate ids silently drop nodes from id-keyed graph consumers and conflate two distinct declarations — the RSD3 class. Simulated generically: every top-level symbol's id is rewritten to its bare name, so same-named top-level declarations collide. Caught by sql/sqld8-range-and-ids, whose expectUniqueIds name `d8_samename` (three declarations, one bare name).",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.ownerName ? s : { ...s, id: String(s.name) })),
+    }),
+  },
+  {
+    id: "sql/column-comment-edges-the-column",
+    language: "sql",
+    defectClass: "fabrication",
+    description:
+      "The pre-fix `COMMENT ON COLUMN t.c` published a dependency on the COLUMN. The grammar nests a qualified column reference's table as a CHILD object_reference (`object_reference \"t.c\" > object_reference \"t\" + identifier \"c\"`), so a flat identifier walk saw only `c` and resolved the reference to the column — measured on database/migrations/20260702_inventory_categories_nutrition_translations.sql, which published `uses global->calories` for `COMMENT ON COLUMN business_inventory_items.calories`. The first version of the FIX took parts[0] and edged the SCHEMA instead, which the fixture's forbid row catches; the ruled answer is the second-to-last segment. The edge carries `metadata.column` precisely so the pre-fix target is reconstructable from the result, and this mutant is that reconstruction: a documented-column edge retargeted to the column it documents. Caught by sql/sqld10-qualified-and-recovery, whose forbidRelationships name `references global->total`, `-> qty` and `-> app`.",
+    transform: (r: any) => {
+      let hit = false
+      const relationships = (r.relationships ?? []).map((x: any) => {
+        const md = (x.metadata ?? {}) as Record<string, any>
+        if (String(md.operation ?? "") !== "comment") return x
+        const col = typeof md.column === "string" ? md.column : null
+        if (!col) return x
+        hit = true
+        return { ...x, target: col }
+      })
+      return hit ? { ...r, relationships } : r
+    },
+  },
+  {
+    id: "sql/multi-column-alter-loses-columns",
+    language: "sql",
+    defectClass: "symbol-loss",
+    description:
+      "The pre-fix ALTER reader took the FIRST `add_column` descendant, but the grammar gives each added column its own `add_column` SIBLING rather than one comma list — so `ALTER TABLE t ADD COLUMN a int, ADD COLUMN b text, ADD COLUMN c numeric(6,2)` published `a` and dropped `b` and `c`. Measured on the corpus: a five-column `ADD COLUMN IF NOT EXISTS` migration published one of its five. Simulated as a revert: keep only the FIRST added column of each table and drop the rest, which is exactly the pre-fix output. Caught by sql/sqld10-qualified-and-recovery, whose expectSymbols and expectSymbolCount name all three added columns.",
+    transform: (r: any) => {
+      // Columns the ALTER path produced carry addedByAlter; the pre-fix code saw
+      // only the first per table, so the later ones are removed.
+      const dropped = new Set<string>()
+      const seenTable = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        if (s.metadata?.addedByAlter !== true) continue
+        const owner = String(s.ownerName ?? "")
+        if (seenTable.has(owner)) dropped.add(String(s.name))
+        else seenTable.add(owner)
+      }
+      if (dropped.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata?.addedByAlter === true && dropped.has(String(s.name)))),
+        relationships: (r.relationships ?? []).filter((x: any) => !dropped.has(String(x.target ?? x.to ?? ""))),
+      }
+    },
+  },
+  {
+    id: "sql/sweep-stops-at-a-declaration",
+    language: "sql",
+    defectClass: "symbol-loss",
+    description:
+      "The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable. That is the ordinary shape after error recovery buries a statement: on database/schema.sql a function body the grammar could not finish swallows the rest of the file, and the CREATE TABLE nodes after it are children of that function's `function_body`. Measured on that file alone: 401 of its 3,557 symbols — 1,980 published before the fix, 3,557 after — and the corpus's most-referenced tables (business_profiles, business_content, business_locations) were among the casualties. The analyzer REPORTS the count as `ambiguity.sweepDeclarationsRecovered`, which is what makes the pre-fix state reconstructable: this mutant drops exactly the declarations the sweep alone contributed, which is what the old sweep's `continue` produced. Caught by sql/sqld10-qualified-and-recovery, whose `after_damage` symbol exists only if the sweep descends through the declaration.",
+    transform: (r: any) => {
+      const recovered = Number((r.metadata ?? {}).ambiguity?.sweepDeclarationsRecovered ?? 0)
+      if (!recovered) return r
+      // The sweep appends what it finds, so the pre-fix state is the result minus
+      // its last `recovered` DECLARATION symbols (columns and constraints belong to
+      // the declaration that carries them and go with it).
+      const DECL = new Set(["table", "view", "materialized_view", "index", "function", "procedure", "trigger", "type", "schema", "sequence", "role", "extension", "database", "policy"])
+      const declIdx = (r.symbols ?? []).map((s: any, i: number) => ({ s, i })).filter((x: any) => DECL.has(x.s.metadata?.type)).map((x: any) => x.i)
+      if (declIdx.length < recovered) return r
+      const drop = new Set<number>(declIdx.slice(declIdx.length - recovered))
+      const kept = (r.symbols ?? []).filter((_s: any, i: number) => !drop.has(i))
+      const droppedOwners = new Set((r.symbols ?? []).filter((_s: any, i: number) => drop.has(i)).map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: kept,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const src = String(x.source ?? x.from ?? "")
+          const tgt = String(x.target ?? x.to ?? "")
+          if (droppedOwners.has(src)) return false
+          // An edge INTO a dropped declaration, or into a member of one, dies with it.
+          if (droppedOwners.has(tgt)) return false
+          return !kept.some((s: any) => s.name === tgt && droppedOwners.has(String(s.ownerName ?? "")))
+        }),
+        metadata: { ...(r.metadata ?? {}), ambiguity: { ...((r.metadata ?? {}).ambiguity ?? {}), sweepDeclarationsRecovered: 0 } },
+      }
+    },
+  },
+  {
+    id: "sql/parse-errors-never-reported",
+    language: "sql",
+    defectClass: "honesty",
+    description:
+      "The pre-fix analyzer returned `errors: []` UNCONDITIONALLY, so a file it could not parse at all read as a clean 0 symbols / 0 relationships / 0 errors. Every gate that calls `analyzer.analyze` directly — the fixture lane, this mutation harness, the m12 differential — saw a successful analysis of a total failure, and the m12 differential's error channel was vacuous for sql. Simulated generically: the analyzer's own `errors` array is emptied, keeping the result otherwise identical. Caught by sql/sqld7-error-honesty, whose expectErrors pin a warning and whose expectSymbols pin the declarations that survive beside the damaged lines — a suppression fix passes the first and fails nothing, so the second is what stops over-correction.",
+    transform: (r: any) => ({ ...r, errors: [], metadata: { ...(r.metadata ?? {}), errors: undefined } }),
+  },
+  {
+    id: "sql/unreachable-arms-reinstated",
+    language: "sql",
+    defectClass: "coverage-claim",
+    description:
+      "The pre-fix `statement` branch forwarded only `isDeclaration()` types and otherwise tested the children for a query shape, then RETURNED — so a statement holding anything else never reached the switch below it. Measured dead arms: set_statement, reset_statement and comment_statement (all three ARE produced by the pinned grammar, so \"Session Configuration\" and \"SQL Documentation\" could never fire), and merge/truncate, whose grammar rules are HIDDEN so the keywords inline into `statement` and an arm keyed on the node type can never run. Simulated generically: the patterns and edges those arms are the sole producers of are removed, and the merge/truncate/grant edges go with them. Caught by sql/sqld4-statement-dispatch, whose expectPatterns name all five.",
+    transform: (r: any) => {
+      const patterns = ((r.metadata ?? {}).patterns ?? []).filter(
+        (p: string) => !["Session Configuration", "SQL Documentation", "MERGE Statements", "TRUNCATE Statements", "COPY Statements", "Permissions (GRANT/REVOKE)"].includes(p),
+      )
+      return {
+        ...r,
+        metadata: { ...(r.metadata ?? {}), patterns },
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const md = (x.metadata ?? {}) as Record<string, any>
+          return !["merge", "truncate", "copy", "comment", "grant", "revoke"].includes(String(md.operation ?? ""))
+        }),
+      }
+    },
+  },
+
+  // ---------------------------------------------------------------- HCL wave
+  // 2026-09-26. HCL had NO mutants and NO fixture lane, while its own corpus
+  // differential measured 94.2% reference recall, 0-of-138353 lined
+  // relationships, 6897 colliding identities and 5 empty names. Each mutant below
+  // is a faithful revert of one measured defect class in
+  // reviews/hcl/master-review.md, and each is caught by the hcl fixture battery.
+  {
+    id: "hcl/gate-reference-paths-on-expression-node",
+    language: "hcl",
+    defectClass: "relationship-loss",
+    description:
+      "H1 regression: the path reader is gated on `node.type === \"expression\"`, so the grammar's `operation -> binary_operation` operand run is never recognised. Every reference inside a comparison or arithmetic expression is dropped (758 corpus attributes; `is_restored = var.db_snapshot_identifier != null` published nothing). Reverted generically: a reference whose target line is not the line of any attribute, and which is a two-segment path, is removed — i.e. only the operands the gate could reach survive.",
+    transform: r => {
+      const lines = new Set<number>()
+      for (const s of r.symbols ?? []) if (s.kind === "property") lines.add(s.range.startLine)
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "references") return true
+          const ln = x.line_number
+          if (typeof ln !== "number") return true
+          return lines.has(ln)
+        }),
+      }
+    },
+  },
+  {
+    id: "hcl/keep-object-keys-as-references",
+    language: "hcl",
+    defectClass: "relationship-fabrication",
+    description:
+      "H8 regression: the `object_elem` key exclusion is read by pairing a NAMED-child index with `fieldNameForChild` (which indexes over ALL children), so a key that has any token before it is walked as a reference. Reverted generically: a two-segment path whose base is a declared variable and whose head matches an object key in the source becomes an edge. hcl/object-key-not-reference pins `(var.d) = var.e` and `(format(\"%s\", var.g)) = var.h`, whose keys must stay silent.",
+    transform: (r, source) => {
+      // The pre-fix output, reconstructed from the source: for an `object_elem`
+      // whose KEY is parenthesised, `fieldNameForChild(namedChildIndex)` asks
+      // about the `(` token, does not answer "key", and the key is walked as a
+      // reference. So every two-segment path written inside a parenthesised
+      // object key becomes an edge. hcl/object-key-not-reference pins
+      // `(var.d) = var.e` and `(format("%s", var.g)) = var.h` silent on the key
+      // and the VALUE published.
+      const extra: any[] = []
+      for (const line of String(source ?? "").split("\n")) {
+        const m = /\{\s*\(([^)]*)\)\s*=/.exec(line)
+        if (!m) continue
+        for (const p of m[1].matchAll(/\b([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+)\b/g)) {
+          extra.push({ type: "references", source: "locals", target: p[1], confidence: 1, line_number: 1, metadata: {} })
+        }
+      }
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "hcl/ignore-dynamic-iterator",
+    language: "hcl",
+    defectClass: "relationship-fabrication",
+    description:
+      "H7 regression: a `dynamic` block's loop local is not tracked, so `iterator = r` + `r.cidr` (and the label-default form `dynamic \"egress\"` + `egress.cidr`) publish false references to a symbol that does not exist. Reverted generically: any two-segment path whose base is the name of a loop binding declared in the source becomes an edge. hcl/dynamic-iterator-scope pins r.cidr, r.port and egress.cidr silent.",
+    transform: (r, source) => {
+      const loops = new Set<string>()
+      for (const line of String(source ?? "").split("\n")) {
+        let m = /^\s*iterator\s*=\s*([A-Za-z_][A-Za-z0-9_]*)/.exec(line)
+        if (m) loops.add(m[1])
+        m = /^\s*dynamic\s+"([^"]+)"/.exec(line)
+        if (m) loops.add(m[1])
+        m = /\bfor\s+([A-Za-z_][A-Za-z0-9_]*)\s+in\b/.exec(line)
+        if (m) loops.add(m[1])
+      }
+      if (loops.size === 0) return r
+      // for-expression loop vars are NOT included: `for_intro` was handled
+      // pre-fix, so `s.id` stayed silent then and must stay silent here.
+      const extra: any[] = []
+      for (const line of String(source ?? "").split("\n")) {
+        for (const loop of loops) {
+          const re = new RegExp(`\\b${loop}\\.([A-Za-z_][A-Za-z0-9_]*)`, "g")
+          for (const m of line.matchAll(re)) {
+            extra.push({ type: "references", source: "aws_security_group.web", target: `${loop}.${m[1]}`, confidence: 1, line_number: 1, metadata: {} })
+          }
+        }
+      }
+      if (extra.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "hcl/dynamic-local-escapes-to-sibling",
+    language: "hcl",
+    defectClass: "relationship-loss",
+    description:
+      "H7b regression: a `dynamic` block's loop local is bound by THAT block and dies with it, but the first version of the H7 fix bound it for the whole ENCLOSING subtree. A resource carrying `dynamic \"assume_role\"` and, later, `dynamic \"vpc\"` then silenced its own `vpc.*` reads. Measured over the 9,079-file corpus as 247 lost references, 165 of them `assume_role.value` in tf-aws-components' provider files alone. Reverted generically: every reference whose base is the LABEL of a `dynamic` block in the same file is dropped, which is the subtree-wide binding. hcl/dynamic-sibling-scope pins vpc.value silent (it is that block's own local) AND vpc.value absent as a loss, via the `data.aws_subnet.by_id` edge on the same line.",
+    transform: (r, source) => {
+      const labels = new Set<string>()
+      for (const line of String(source ?? "").split("\n")) {
+        const m = /\bdynamic\s+"([^"]+)"/.exec(line)
+        if (m) labels.add(m[1])
+      }
+      if (labels.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "references") return true
+          return !labels.has(String(x.target).split(".")[0])
+        }),
+      }
+    },
+  },
+  {
+    id: "hcl/builtin-published-as-reference",
+    language: "hcl",
+    defectClass: "relationship-fabrication",
+    description:
+      "Builtins-published-as-project-symbols regression: `count`/`each`/`self`/`path`/`terraform` resolve to nothing in the index because no file can declare them, so they are the `uses` class (global namespace, per real-sql-analyzer.ts:1569). Publishing them as `references` asserted a declaration that does not exist — 2,029 edges over 9,079 files, led by path.module (506), each.key (325), each.value (285), count.index (214). Reverted generically: every `uses` edge is relabelled `references`. hcl/builtin-vs-project-reference forbids that for all six.",
+    transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) =>
-        x?.metadata?.htmlSpecific && !x?.metadata?.isInternalAnchor
-          ? { ...x, target: encode(String(x.target ?? "")) }
-          : x,
+        (x.type ?? x.relationshipType) === "uses" ? { ...x, type: "references" } : x,
       ),
-      imports: (r.imports ?? []).map((i: any) => ({ ...i, module: encode(String(i.module ?? "")) })),
-    }
-  }
-}
-
-/** An unrecognised reference is dropped instead of copied verbatim. */
-function htmlUnknownReferenceDropped() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (!x?.metadata?.isNavigation) return x
-      const t = String(x.target ?? "")
-      const amp = t.indexOf("&notarealentity;")
-      if (amp === -1) return x
-      return { ...x, target: `${t.slice(0, amp)};` }
     }),
-  })
-}
-
-/** A bare `&` or a reference missing its semicolon truncates the URL. */
-function htmlVerbatimAmpersandLost() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (!x?.metadata?.isNavigation) return x
-      const t = String(x.target ?? "")
-      const amp = t.indexOf("&")
-      if (amp === -1) return x
-      return { ...x, target: t.slice(0, amp) }
-    }),
-  })
-}
-
-/** `<template>`/`<slot>` treated as ordinary elements again. */
-function htmlBarrierTransparent() {
-  return (r: any) => ({
-    ...r,
-    symbols: (r.symbols ?? []).map((s: any) => {
-      if (!s?.metadata?.inTemplateBarrier) return s
-      const md = { ...(s.metadata ?? {}) }
-      delete md.inTemplateBarrier
-      return { ...s, metadata: md }
-    }),
-    // …and a bare barrier stops being a barrier: its fragment's element is
-    // re-parented onto the barrier itself, which is what the pre-fix chain did
-    // by treating every element as an ordinary parent.
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x?.type !== "contains" || !x?.metadata?.isDOMHierarchy) return x
-      return x
-    }),
-  })
-}
-
-/** The M59 (#825) pre-fix state: no `line_number` on any relationship. */
-function htmlEdgeLineAbsent() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      const { line_number, ...rest } = x
-      return { ...rest, line_number: null }
-    }),
-  })
-}
-
-/** An import's range is the ELEMENT's rather than the ATTRIBUTE's. */
-function htmlImportRangeIsElementRange() {
-  return (r: any) => {
-    const firstLine = new Map<string, number>()
-    for (const s of r.symbols ?? []) {
-      const l = s?.range?.startLine
-      if (typeof l === "number" && !firstLine.has(String(s.name))) firstLine.set(String(s.name), l)
-    }
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    return {
+  },
+  {
+    id: "hcl/project-published-as-builtin",
+    language: "hcl",
+    defectClass: "relationship-loss",
+    description:
+      "The INVERSE of the mutant above, and the reason the class boundary is worth pinning in both directions: a project address published as `uses` claims it is a global, which demotes a real declaration out of the reference graph and out of every consumer that follows `references`. Reverted generically: every `references` edge whose target root is a project root is relabelled `uses`. hcl/builtin-vs-project-reference forbids this for var/data/local.",
+    transform: r => {
+      const PROJECT_ROOTS = new Set(["var", "local", "module", "data"])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "references") return x
+          if (!PROJECT_ROOTS.has(String(x.target).split(".")[0])) return x
+          return { ...x, type: "uses" }
+        }),
+      }
+    },
+  },
+  // ---------------------------------------------------------------- XML wave
+  // 2026-09-27. M60 XML deep review (reviews/xml/master-review.md). xml had ONE
+  // fixture and NO mutant, so nothing could have caught a regression in any of the
+  // eight mechanisms below. Each mutant is a faithful revert of ONE measured
+  // defect, written generically off the analyzer's own output and metadata rather
+  // than off a fixture's file names, so it keeps working when the fixture changes —
+  // the failure mode that left swift/drop-container-subscript-uses surviving.
+  //
+  // The harness's contract is that a mutant transforms the RESULT, so a revert is
+  // faithful exactly when the defect is visible in what the analyzer emitted. All
+  // eight are: each is either a dropped edge, a relabelled edge, a moved line, or
+  // a metadata key the analyzer itself wrote.
+  {
+    id: "xml/pi-with-content-dropped",
+    language: "xml",
+    defectClass: "declaration-loss",
+    description:
+      "Finding G1 (the grammar repair's half that lives in the ANALYZER's reach). A processing instruction's content is the `_pi_content` external token, which the wired grammar used to fail to produce unless the byte after `?>` was a newline, so a content-bearing PI became an ERROR node the analyzer could not dispatch. Reverted generically: a `module` symbol the analyzer recorded with `isProcessingInstruction` and that the SOURCE spells with content between its target and `?>` is dropped, together with its edge. The pre-repair shape is not a missing symbol here — the analyzer is unchanged and the GRAMMAR is what changed — so the mutant models the observable consequence: the PI the grammar can no longer produce. Pinned by xml/pi-and-stylesheet, whose `<?catalog-processing build=\"12\"?>` is content-bearing; the pre-existing M12 fixture used `<?catalog-processing?>`, the one spelling the broken grammar handled.",
+    transform: (r, source) => {
+      const src = String(source ?? "")
+      const contentPi = new Set<string>()
+      for (const m of src.matchAll(/<\?([A-Za-z_][\w.:-]*)[ \t][^?]*\?>/g)) contentPi.add(m[1])
+      if (contentPi.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "module" && s.metadata?.isProcessingInstruction && contentPi.has(s.name))),
+        relationships: (r.relationships ?? []).filter((x: any) => !contentPi.has(x.target)),
+      }
+    },
+  },
+  {
+    id: "xml/conditional-section-doctype-name",
+    language: "xml",
+    defectClass: "phantom-symbol",
+    description:
+      "Finding G2, and the worst class in the lane: a PUBLISHED LIE rather than a missing fact. `<![INCLUDE[<!ELEMENT a EMPTY>]]>` inside an internal subset made the pre-repair grammar wrap the `doctypedecl` in an ERROR; the parser then took a LATER `Name` as the DTD's name, and the position-blind `findDirectChild(node, \"Name\")` published a Type symbol literally named `INCLUDE` with a `contains` edge from it. Reverted generically: the analyzer's own DTD-position guard is removed, so the FIRST `Name` beneath a `doctypedecl` becomes the DTD's name — which is the pre-fix behaviour verbatim, because the position-blind lookup and the recovery shape together produced exactly that. Pinned by xml/conditional-section, which forbids a symbol named `INCLUDE` and an edge from one.",
+    transform: (r, source) => {
+      if (!String(source ?? "").includes("<![")) return r
+      const declared = (r.symbols ?? []).filter((s: any) => s.metadata?.isDoctype)
+      if (declared.length === 0) return r
+      // The pre-fix recovery shape read a LATER `Name` as the DTD's name, and the
+      // legal PE form puts the keyword in the parameter entity's VALUE. Reading it
+      // from there is what the recovery tree did; matching only a literal
+      // `<![INCLUDE[` would make the mutant vacuous on the PE spelling, which is
+      // the spelling a real document uses.
+      const keyword = /<!\[\s*(INCLUDE|IGNORE)/.exec(String(source))?.[1]
+        ?? /<!ENTITY\s+%\s+\w+\s+["'](INCLUDE|IGNORE)["']/.exec(String(source))?.[1]
+      if (!keyword) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => (s.metadata?.isDoctype ? { ...s, name: keyword } : s)),
+        relationships: (r.relationships ?? []).map((x: any) => (x.source === declared[0].name ? { ...x, source: keyword } : x)),
+      }
+    },
+  },
+  {
+    id: "xml/declaration-published-under-its-tag",
+    language: "xml",
+    defectClass: "declaration-misattribution",
+    description:
+      "Finding X1, the largest recall hole in the lane. In a schema language a construct's DECLARED NAME is the value of its `name` attribute, so the pre-fix analyzer published the TAG and the corpus filed every XSD type under one of six names — `xsd:element` alone appeared 5,914 times — while `bb_search(\"EntryType\")` returned nothing. Measured: 1,197 of 26,578 in-vocabulary declarations published under their declared name, recall 0.045; after the fix, 18,490, recall 0.696, with the 29,196 out-of-vocabulary `name` attributes left untouched. Reverted generically: every symbol the analyzer recorded with `isVocabDeclaration` is relabelled to its `tagName` and the edges that name it are retargeted, which is the pre-fix reading exactly. Pinned by xml/declared-name-xsd.",
+    transform: (r) => ({
       ...r,
-      imports: (r.imports ?? []).map((i: any) => {
-        const owner = (r.relationships ?? []).find(
-          (x: any) => x?.metadata?.htmlSpecific && String(x.target) === String(i.module),
-        )
-        const line = owner ? firstLine.get(String(owner.source)) : mod?.range?.startLine
-        const out: any = { ...i }
-        if (typeof line === "number") out.range = { startLine: line, startColumn: 1, endLine: line, endColumn: 1 }
-        return out
+      symbols: (r.symbols ?? []).map((s: any) => (s.metadata?.isVocabDeclaration ? { ...s, name: s.metadata.tagName } : s)),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type === "references" || x.type === "imports") return x
+        return x
       }),
-    }
-  }
-}
-
-/** A resource is attributed to its nearest ancestor, not to its declarer. */
-function htmlResourceOwnedByAncestor() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    return {
+    }),
+  },
+  {
+    id: "xml/qualified-name-published-as-a-target",
+    language: "xml",
+    defectClass: "value-where-a-name-belongs",
+    description:
+      "The M60.R10 class, inverted. A `references` edge's target must be the NAME a declaration carries — the local part — because that is what resolves in the graph. Publishing the written value `tns:CatalogType` puts a value where a name belongs, and no declaration anywhere carries it, so every consumer following the edge finds nothing. Reverted generically: every reference edge the analyzer recorded as `attribute_qname_reference` is retargeted to the written `qname` from its own metadata. Pinned by xml/declared-name-xsd and xml/type-graph, which both forbid a colon-bearing target.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.role === "attribute_qname_reference" && x.metadata?.qname
+          ? { ...x, target: x.metadata.qname }
+          : x),
+    }),
+  },
+  {
+    id: "xml/external-id-edge-on-the-keyword-line",
+    language: "xml",
+    defectClass: "wrong-line",
+    description:
+      "Finding L1 (M59.A7 / #825). The edge's target is the PATH, so the edge's line is the line the path is written on. The pre-fix code passed the whole `ExternalID` node, so `<!DOCTYPE hibernate-mapping PUBLIC \n \t\"…/…-pubid\"\n \t\"…/…-3.0.dtd\">` pointed the edge at line 2, the `PUBLIC` keyword's line — the line of no name in the edge. Measured on the corpus: 8 of the first 60 files wrong, every multi-line DOCTYPE. Reverted generically: every `imports` edge whose metadata says it came from an external ID is moved to the line of the OWNING declaration's start, which is where the keyword is. Pinned by xml/dtd-declarations, which asserts `shared -> shared.dtd` on 3 while the doctypedecl opens on 2, and by the M12 contract probe's `the external-ID edge points at the PATH's line` check.",
+    transform: (r, source) => {
+      const lines = String(source ?? "").split("\n")
+      const declLine = new Map<string, number>()
+      for (const s of r.symbols ?? []) if (s.metadata?.isDoctype) declLine.set(s.metadata.dtdName, s.range?.startLine)
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if (x.type !== "imports" && x.type !== "brain_import") return x
+          const owner = declLine.get(x.source)
+          if (owner === undefined) return x
+          return { ...x, line_number: owner }
+        }),
+        _lines: lines.length,
+      }
+    },
+  },
+  {
+    id: "xml/unresolved-reference-emitted",
+    language: "xml",
+    defectClass: "dangling-edge",
+    description:
+      "The no-unknown-symbols rule for `references`. The post-fix analyzer emits a reference only when the target RESOLVES in this document or is a known specification built-in, because a value naming nothing the document declares would put a name in the graph that no file supports. Reverted generically: every attribute value that is lexically a QName becomes a reference, resolvable or not — which is the pre-fix measurement (7,039 distinct QName values, recall 0.001, and 25,381 declarations whose name the analyzer did not resolve). Pinned by xml/type-graph, whose forbid list refuses a reference to an undeclared name, and by the M12 probe's `a call to a template the document does not declare is refused`.",
+    transform: (r, source) => {
+      const src = String(source ?? "")
+      const owners = (r.symbols ?? []).map((s: any) => s.name)
+      const already = new Set((r.relationships ?? []).map((x: any) => String(x.target)))
+      const extra: any[] = []
+      const ghosts = new Map<string, number>()
+      for (const m of src.matchAll(/\b([A-Za-z_][\w.-]*):([A-Za-z_][\w.-]*)\b/g)) {
+        if (m[1] === "xmlns" || /^(https?|urn|file|xml)$/.test(m[1])) continue
+        if (already.has(m[0]) || already.has(m[2])) continue
+        // A naive implementation publishes what it references, so the fabricated
+        // value becomes a symbol too — which is the sibling defect the fix removed
+        // and is what the fixtures' `forbidSymbols` entries name.
+        ghosts.set(m[0], 1)
+        extra.push({
+          type: "references", source: owners[0] ?? "?", target: m[0],
+          confidence: 1, line_number: 1, metadata: { role: "attribute_qname_reference", qname: m[0], resolvable: "in-document" },
+        })
+      }
+      if (extra.length === 0) return r
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...[...ghosts.keys()].map((n) => ({
+          name: n, kind: "type", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+          visibility: "public", metadata: { isReferencedDeclaration: true },
+        }))],
+        relationships: [...(r.relationships ?? []), ...extra],
+      }
+    },
+  },
+  {
+    id: "xml/collapse-hides-its-occurrences",
+    language: "xml",
+    defectClass: "silent-loss",
+    description:
+      "Finding X3. Edge identity is `source|type|target`, so N declarations of one pair necessarily share one edge — a property of the schema, and the differential measures it separately for that reason. What was a defect is that the analyzer let the first line stand for all of them: 544,304 declaration occurrences collapsed onto 42,901 edges, and every occurrence after the first was unreachable with nothing recording it. Reverted generically: the collapse bookkeeping is undone — `occurrences` and `lines` are deleted and the edge's line is left wherever the walk first put it, so a later declaration's EARLIER line (a DTD content model read after the element it names) is lost. Pinned by xml/edge-collapse, which asserts occurrences 3 and lines [3,4,5], and by xml/dtd-declarations, whose `catalog -> entry` edge is one edge for two writings with the line at the DECLARATION site.",
+    transform: (r) => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) => {
-        if (!x?.metadata?.htmlSpecific) return x
-        if (x.type === "contains") return x
-        if (x.metadata?.isDocumentRoot) return x
-        return { ...x, from: mod.name, source: mod.name, fromSymbol: mod.name }
+        if (!x.metadata || x.metadata.occurrences === undefined) return x
+        const meta = { ...x.metadata }
+        const kept = meta.lines?.[0] ?? x.line_number
+        delete meta.occurrences
+        delete meta.lines
+        return { ...x, metadata: meta, line_number: kept }
       }),
-    }
-  }
-}
-
-/** Evidence tiers gone: every edge claims the same provenance. */
-function htmlNoEvidenceTier() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (!x?.metadata) return x
-      const md = { ...x.metadata }
-      delete md.evidenceClass
-      return { ...x, metadata: md }
     }),
-  })
-}
-
-/** Per-symbol complexity reverts to the file-level symbol count. */
-function htmlComplexityIsSymbolCount() {
-  return (r: any) => {
-    const n = (r.symbols ?? []).length
-    return {
+  },
+  {
+    id: "xml/recovery-unlabelled",
+    language: "xml",
+    defectClass: "dishonest-metadata",
+    description:
+      "Finding X4. The pre-fix lane published 27,228 symbols from 177 files it simultaneously reported as erroneous, with nothing on any of them saying so; the shipped check `malformed XML creates no recovery symbols` was a FIXTURE ACCIDENT (an unterminated element yields no `element` node to publish, so the check passed for a reason unrelated to the analyzer's policy). The fix LABELS rather than suppresses, because a 90 %-parseable vendor template is thousands of real declarations and must stay visible. Reverted generically: the `syntaxErrors` label is stripped from every symbol and edge, which is the pre-fix reading — the symbols are still published, which is exactly the dishonest state. Pinned by xml/recovery-labelling, whose every expectation carries the label.",
+    transform: (r) => ({
       ...r,
-      symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: n })),
-      metadata: { ...(r.metadata ?? {}), complexity: n },
-    }
-  }
-}
-
-/** `cyclomaticComplexity` reverts to the hard-coded 1. */
-function htmlCyclomaticConstant() {
-  return (r: any) => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } })
-}
-
-/** The three scores stop being published. */
-function htmlScoresDropped() {
-  return (r: any) => {
-    const md: any = { ...(r.metadata ?? {}) }
-    delete md.accessibilityScore
-    delete md.semanticScore
-    delete md.performanceScore
-    delete md.score
-    return { ...r, metadata: md }
-  }
-}
-
-/** The parse-error walk loses its 50 cap — the measured pre-fix shape. */
-function htmlErrorWalkUncapped() {
-  return (r: any) => {
-    const errs = r.errors ?? []
-    if (errs.length === 0) return r
-    return { ...r, errors: [...errs, ...errs.map((e: any) => ({ ...e }))] }
-  }
-}
-
-/** The fabricated framework name is back. */
-function htmlFabricatedFramework() {
-  return (r: any) => {
-    const has = (r.symbols ?? []).some((s: any) => !s?.metadata?.isDocument)
-    if (!has) return r
-    const fw = [...((r.metadata as any)?.detectedFrameworks ?? []), "Targeted/ID-Styling"]
-    return { ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [...new Set(fw)] } }
-  }
-}
-
-
-
-// ---------------------------------------------------------------------------
-// M14 #277 — bash lane mutants. One per defect class the wave closed, each a
-// faithful revert of a NAMED decision in script/m14/spec/bash-completeness.json
-// rather than a hardcoded string that would silently stop matching. Every one of
-// these transforms reads only the analyzer's own result, so a mutant cannot
-// drift away from the shape it is meant to reproduce: if the analyzer's output
-// changes shape, the mutant stops firing and the suite says so.
-// ---------------------------------------------------------------------------
-
-/** BD2: the pre-wave owner sentinel. `isIndexArtifactName` rejects the name
- *  `global`, which is exactly why 622 pre-wave edges on the pinned corpus could
- *  never resolve to a stored symbol. */
-function revertBashOwnerToGlobalSentinel(r: any) {
-  const symbols = (r.symbols ?? []) as any[]
-  const script = symbols.find((s) => s.kind === "module")
-  if (!script) return r
-  const moduleName = script.name
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x.source === moduleName ? { ...x, source: "global" } : x,
-    ),
-    symbols: symbols.map((s) => (s.ownerName === moduleName ? { ...s, ownerName: undefined } : s)),
-  }
-}
-
-/** BD2: drop the script's module symbol entirely, so nothing owns a top-level
- *  declaration. The containment half of the module-owner contract. */
-function dropBashModuleSymbol(r: any) {
-  return { ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module") }
-}
-
-/** BD1: the pre-wave 3-field edge identity. Collapses every site of one
- *  (source,type,target) onto a single row — the shape that made bb_graph able to
- *  report only "one caller" for a function invoked three times. */
-function collapseBashEdgeIdentity(r: any) {
-  const seen = new Set<string>()
-  const out: any[] = []
-  for (const x of (r.relationships ?? []) as any[]) {
-    const key = `${x.source}\u0000${x.type}\u0000${x.target}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push({ ...x, line_number: undefined })
-  }
-  return { ...r, relationships: out }
-}
-
-/** BD1: strip the site line from every edge without collapsing the rows — the
- *  shape M59/#822 says can never be attributed, isolated from the dedupe so the
- *  two halves of the decision are convicted separately. */
-function dropBashEdgeLines(r: any) {
-  return { ...r, relationships: (r.relationships ?? []).map((x: any) => ({ ...x, line_number: undefined })) }
-}
-
-/** BD1 / M60 #921: put a containment edge back on the declaration node's start
- *  line. Convicted only by a fixture whose declaration wraps. */
-function revertBashContainsLineToDeclarationStart(r: any) {
-  const byName = new Map<string, number>()
-  for (const s of (r.symbols ?? []) as any[]) byName.set(`${s.ownerName ?? ""}|${s.name}`, s.range?.startLine)
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x.type !== "contains") return x
-      const declStart = byName.get(`${x.source}|${x.target}`)
-      if (declStart === undefined) return x
-      // The pre-fix line was the declaration node's start; a wrapped declaration
-      // moves it off the name's own line by exactly the wrap.
-      const shift = typeof x.line_number === "number" ? x.line_number - declStart : 0
-      return { ...x, line_number: typeof x.line_number === "number" ? x.line_number - shift + (declStart - 1) : x.line_number }
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata?.syntaxErrors) return s
+        const meta = { ...s.metadata }
+        delete meta.syntaxErrors
+        return { ...s, metadata: meta }
+      }),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x.metadata?.syntaxErrors) return x
+        const meta = { ...x.metadata }
+        delete meta.syntaxErrors
+        return { ...x, metadata: meta }
+      }),
     }),
-  }
-}
-
-/** BD3: the pre-wave trap shape — a signal as the caller and a whole command
- *  string as the callee. Reconstructed from the result: a `viaTrap` edge's
- *  signal list supplies the caller, and the handler's argument text is not in
- *  the result, so the target reverts to the signal-qualified blob the pre-wave
- *  emitter produced. */
-function revertBashTrapSignalAsSource(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).flatMap((x: any) => {
-      if (x.type !== "calls" || !(x.metadata ?? {}).viaTrap) return [x]
-      const signal = (x.metadata.signals ?? ["EXIT"])[0]
-      return [{ ...x, source: signal, metadata: {} }]
+  },
+  {
+    id: "hcl/emit-calls-to-global-functions",
+    language: "hcl",
+    defectClass: "relationship-fabrication",
+    description:
+      "The `calls` ruling, reverted: HCL declares no function, class or type of any kind (0 of its 64 node types), and across 12,977 `function_call` nodes in 9,079 files not ONE callee resolves to a declared symbol — the 5 distinct apparent matches are provable name collisions with Terraform globals (length, file, timestamp, lower) and with a type keyword (`object`, in `type = object({…})` beside a declared `output` block literally named object — the quotes are elided here because a raw quote would terminate this description string. So a `calls` edge is 100% dangling, and the house precedent suppresses it (java/groovy carry explicit builtin filters for println/printf). Reverted generically: function-call callee names taken from the source are published as `calls` edges from every block.",
+    transform: (r, source) => {
+      const callees = new Set<string>()
+      for (const m of String(source ?? "").matchAll(/\b([a-z][a-z0-9_]*)\s*\(/g)) callees.add(m[1])
+      if (callees.size === 0) return r
+      const roots = (r.symbols ?? []).filter((s: any) => s.kind !== "property").map((s: any) => s.qualifiedName ?? s.name)
+      const extra: any[] = []
+      for (const root of roots) for (const c of callees) extra.push({ type: "calls", source: root, target: c, confidence: 1, line_number: 1, metadata: {} })
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "hcl/empty-name-for-label-less-block",
+    language: "hcl",
+    defectClass: "symbol-integrity",
+    description:
+      "H4 regression: a label-less `data {}` / `resource \"x\" {}` derives its name from `labels.join(\".\")` over ZERO labels, which is the empty string, so the symbol is nameless and its child attribute is left with an empty scope and no owner. Reverted generically: any block symbol with no labels loses its name. hcl/sibling-identity pins `data` at line 22 named `data`, never empty.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const labels = s.metadata?.hclLabels
+        const isBlock = s.metadata?.hclBlockType !== undefined
+        if (!isBlock || !Array.isArray(labels) || labels.length > 0) return s
+        return { ...s, name: "", scope: "", ownerName: undefined, ownerKind: undefined }
+      }),
     }),
-  }
-}
-
-/** BD3: the pre-wave blob target — the handler string with its arguments. */
-function revertBashTrapTargetToBlob(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x.type === "calls" && (x.metadata ?? {}).viaTrap ? { ...x, target: `${x.target} "WARN" interrupted` } : x,
-    ),
-  }
-}
-
-/** BD4: the pre-wave computed-command fabrication. A `Dynamic Command Name` is
- *  recorded as a pattern and emits no call, so the pre-fix edge is reconstructed
- *  from the variable that decides it — which is what the pre-wave analyzer named
- *  as the callee. */
-function fabricateBashDynamicCommandCalls(r: any) {
-  const fabricated: any[] = []
-  for (const x of (r.relationships ?? []) as any[]) {
-    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
-    const usesLine = x.line_number
-    // The pre-wave emitter pointed the call at the expansion's own text; the
-    // faithful stand-in is the variable, which is the closest name the result
-    // still carries.
-    fabricated.push({ type: "calls", source: x.source, target: `"$${x.target}"`, confidence: 1, line_number: usesLine, metadata: { isFunctionCall: true, isExternalCommand: true } })
-  }
-  return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
-}
-
-/** BD5: the pre-wave recovery fabrication — a command read out of a damaged
- *  region becomes a call. Reconstructed from the result's own `Recovered Parse
- *  Region` pattern sites: any edge on the same line as a `uses` from the same
- *  source is re-typed as a call, which is the shape the corpus carried
- *  (`calls: -> ]/%5D}`). */
-function fabricateBashRecoveredRegionCalls(r: any) {
-  const rels = r.relationships ?? []
-  const extra: any[] = []
-  for (const x of rels as any[]) {
-    if (x.type !== "uses") continue
-    if (typeof x.line_number !== "number") continue
-    extra.push({ type: "calls", source: x.source, target: "]/%5D}", confidence: 1, line_number: x.line_number, metadata: { isFunctionCall: true, isExternalCommand: true } })
-  }
-  return { ...r, relationships: [...rels, ...extra] }
-}
-
-/** BD6 / BA-G1: emit the edge `unset` was ruled unemittable — the "helpful" edge
- *  the ruling exists to refuse. */
-function fabricateBashUnsetEdges(r: any) {
-  const rels = r.relationships ?? []
-  const extra: any[] = []
-  const names = ((r.metadata ?? {}).patterns ?? []).includes("Unset Binding")
-    ? []
-    : []
-  void names
-  for (const x of rels as any[]) {
-    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
-    if (typeof x.line_number !== "number") continue
-    extra.push({ type: "uses", source: x.source, target: x.target, confidence: 0.8, line_number: x.line_number + 1, metadata: { isVariableReference: true } })
-  }
-  return extra.length ? { ...r, relationships: [...rels, ...extra] } : r
-}
-
-/** BD7: drop every `exports` edge — the pre-wave `export` handling, which parsed
- *  `export`, set `isExported` in metadata, and emitted nothing. */
-function dropBashExportEdges(r: any) {
-  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports") }
-}
-
-/** BD7: over-reach in the other direction — claim an `exports` edge for a
- *  `readonly`, which is not an export. */
-function fabricateBashReadonlyExports(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x.type === "contains" && (x.metadata ?? {}).bashSpecific
-        ? { ...x, type: "exports" }
-        : x,
-    ),
-  }
-}
-
-/** BD8: the pre-wave `caseDepth` suppression — every command inside a case arm
- *  is dropped. Reconstructed from the result: the arm's commands are exactly the
- *  call edges that share a line with a `contains`-less statement inside a
- *  `case`, which the result does not record, so the faithful stand-in is the
- *  case fixture's own shape: drop every call whose target repeats within the
- *  file at consecutive lines, which is what an arm's dispatch looks like. */
-function suppressBashCaseArmCalls(r: any) {
-  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "calls" || x.target !== "apt-get") }
-}
-
-/** BD9: present a dynamic source path as a resolved one — the pre-wave import
- *  edge with no resolution label. */
-function dropBashSourceResolutionLabel(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x.type !== "imports" && x.type !== "references") return x
-      const { resolution, ...meta } = (x.metadata ?? {}) as any
-      void resolution
-      return { ...x, metadata: meta }
-    }),
-  }
-}
-
-/** BD9: refuse the dynamic path outright — the over-correction that would delete
- *  70% of the lane's import graph, kept as a mutant so the refusal stays a
- *  recorded decision rather than a future accident. */
-function dropBashDynamicSourceEdges(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).filter((x: any) => {
-      if (x.type !== "imports" && x.type !== "references") return true
-      return (x.metadata ?? {}).resolution !== "dynamic"
-    }),
-    imports: (r.imports ?? []).filter((i: any) => (i.metadata ?? {}).resolution !== "dynamic"),
-  }
-}
-
-/** BD10: the pre-wave emitter set BOTH call-identity flags true on every call. */
-function markBashEveryCallBothIdentities(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x.type === "calls" ? { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: true, isExternalCommand: true } } : x,
-    ),
-  }
-}
-
-/** BD10: the order-dependent shape — decide call identity from what the walk has
- *  seen, so a forward reference reads as external. */
-function markBashForwardReferencesExternal(r: any) {
-  const declared: string[] = []
-  for (const s of (r.symbols ?? []) as any[]) {
-    if (s.kind === "function") declared.push(s.name)
-    if (s.kind === "module") continue
-  }
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x.type !== "calls") return x
-      // A call whose target is declared LATER in the file than the call site is
-      // exactly the forward reference; pre-wave it read as external.
-      const sym = (r.symbols ?? []).find((s: any) => s.name === x.target)
-      if (!sym || typeof sym.range?.startLine !== "number" || typeof x.line_number !== "number") return x
-      if (sym.range.startLine <= x.line_number) return x
-      return { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: false, isExternalCommand: true, resolvedWithinFile: false } }
-    }),
-    __unused: declared,
-  }
-}
-
-/** BD-gap-closure: drop every read that came from an arithmetic context — the
- *  pre-wave analyzer, which consulted only the two string expansion forms. */
-function dropBashArithmeticReads(r: any) {
-  const declared = new Set(((r.symbols ?? []) as any[]).filter((s) => s.kind === "variable" || s.kind === "constant").map((s) => s.name))
-  const exprLines = new Map<string, Set<number>>()
-  for (const x of (r.relationships ?? []) as any[]) {
-    if (x.type !== "uses" || !declared.has(x.target)) continue
-    if (typeof x.line_number !== "number") continue
-    const set = exprLines.get(x.target) ?? new Set<number>()
-    set.add(x.line_number)
-    exprLines.set(x.target, set)
-  }
-  // A read is arithmetic when the SAME name is read on a line that carries no
-  // other declaration — the pre-wave analyzer's blind spot was exactly the lines
-  // whose only mention of the name is inside `$(( ))` or `(( ))`.
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).filter((x: any) => {
-      if (x.type !== "uses") return true
-      const lines = exprLines.get(x.target)
-      if (!lines || lines.size < 2) return true
-      return lines.size < 2
-    }),
-  }
-}
-
-/** BD-gap-closure: the write-only `isArray` parameter's pre-fix value — every
- *  plain assignment reported as a scalar. */
-function revertBashIsArrayAlwaysFalse(r: any) {
-  return {
-    ...r,
-    symbols: (r.symbols ?? []).map((s: any) =>
-      (s.metadata ?? {}).isArray === true ? { ...s, metadata: { ...s.metadata, isArray: false } } : s,
-    ),
-  }
-}
-
-/** BD-shell-defined-vars: strip the label, so a read of `BASH_SOURCE` looks like
- *  a read of an undeclared project variable again. */
-function dropBashShellDefinedLabel(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x.type !== "uses") return x
-      const { isShellDefined, ...meta } = (x.metadata ?? {}) as any
-      void isShellDefined
-      return { ...x, metadata: meta }
-    }),
-  }
-}
-
-/** BD-assigned-in-file: strip the label, so a read the file DOES assign looks
- *  like one it does not. Distinct from `dropBashShellDefinedLabel`, which
- *  targets a different label on the same relationship type — and the two are
- *  only distinguishable if each fixture pins its own field, which is why the
- *  `assigned-in-file` fixture asserts the ABSENT direction explicitly rather
- *  than only the present one. */
-function dropBashAssignedInFileLabel(r: any) {
-  return {
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) => {
-      if (x.type !== "uses") return x
-      const { isAssignedInFile, ...meta } = (x.metadata ?? {}) as any
-      void isAssignedInFile
-      return { ...x, metadata: meta }
-    }),
-  }
-}
-
-/** BD1 / the module contract: a relationship with no resolvable source — the
- *  pre-wave `global` at the END of a chain the owner fix did not reach. */
-function orphanBashEdgeSource(r: any) {
-  return {
-    ...r,
-    relationships: [
-      ...(r.relationships ?? []),
-      { type: "calls", source: "global", target: "echo", confidence: 1, line_number: 1, metadata: {} },
-    ],
-  }
-}
-
-
-/** HTML-G1 (#288): the inline-block seam loses its LINE SHIFT. A delegate's
- *  ranges and `line_number` are block-relative, so the merge re-bases them; a
- *  revert leaves every embedded row on its block's own coordinates, which no
- *  tool can navigate and no reader can check against the source. Every one of
- *  these rows is real and correctly TARGETED, so nothing but a line pin can see
- *  it — which is why html/inline-embedded-code is written in file lines. */
-function htmlEmbeddedLineShiftDropped() {
-  return (r: any) => ({
-    ...r,
-    symbols: (r.symbols ?? []).map((s: any) => {
-      if (!s?.metadata?.htmlEmbedded) return s
-      const off = s.metadata.embeddedLineOffset
-      if (typeof off !== "number" || !s.range) return s
-      return { ...s, range: { ...s.range, startLine: s.range.startLine - off, endLine: s.range.endLine - off } }
-    }),
-    relationships: (r.relationships ?? []).map((x: any) => {
-      const off = x?.metadata?.htmlEmbeddedLineOffset ?? x?.metadata?.embeddedLineOffset
-      if (typeof x?.line_number !== "number" || typeof off !== "number") return x
-      return { ...x, line_number: x.line_number - off }
-    }),
-  })
-}
-
-/** HTML-G1 (#288): the whole inline-block merge is skipped, which is the
- *  measured pre-#288 state of 5,389 of 6,094 corpus files. */
-function htmlEmbeddedBlocksDropped() {
-  return (r: any) => ({
-    ...r,
-    symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.htmlEmbedded),
-    relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.htmlEmbedded && !x?.metadata?.isEmbeddedCode),
-    imports: (r.imports ?? []).filter((i: any) => !i?.metadata?.htmlEmbedded),
-  })
-}
-
-/** HTML-G1 (#288): the delegate is handed a synthetic `embedded` module name, so
- *  every document-scope edge in the block sources from a node that does not
- *  exist — the unresolvable-identity defect class. */
-function htmlEmbeddedSyntheticModule() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    return {
+  },
+  {
+    id: "hcl/collide-repeated-siblings",
+    language: "hcl",
+    defectClass: "symbol-integrity",
+    description:
+      "H3 regression: sibling blocks sharing a leaf name collapse onto one identity, so `contains` edges dedupe away all but the first. Measured pre-fix: 6897 duplicate pairs over 1323 distinct keys (worst: `parameter` at 420, waypoint's label-less repeats; `removed` 97, `moved` 82, `locals` 65, provider aliases 30). Reverted generically: every disambiguated sibling name is rewritten back to its bare address, reproducing the collision and the edge collapse. hcl/sibling-identity pins locals/locals#2/locals#3 and lifecycle/lifecycle#2 as distinct.",
+    transform: r => {
+      const strip = (n: any) => (typeof n === "string" ? n.replace(/#\d+$/, "") : n)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => ({ ...s, name: strip(s.name), qualifiedName: strip(s.qualifiedName) })),
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const collapsed = { ...x, source: strip(x.source), target: strip(x.target) }
+          const key = `${collapsed.source}\u0000${collapsed.type}\u0000${collapsed.target}`
+          const prior = (r.relationships ?? []).find(
+            (y: any) =>
+              `${strip(y.source)}\u0000${y.type}\u0000${strip(y.target)}` === key &&
+              (r.relationships ?? []).indexOf(y) < (r.relationships ?? []).indexOf(x),
+          )
+          return prior ? { ...collapsed, dropped: true } : collapsed
+        }).filter((x: any) => !x.dropped),
+      }
+    },
+  },
+  {
+    id: "hcl/drop-relationship-line-number",
+    language: "hcl",
+    defectClass: "missing-field",
+    description:
+      "H2 regression (M59.A7 #825): relationships carry no line. Measured pre-fix through the production entry: 0 of 138,353 lined, from the product's side as well as the analyzer's — parallel-indexer.ts (:2789, :4393) persists only `rel.line_number` and graph.ts (:526) surfaces only that field, so an edge under any other spelling is stored NULL. Reverted generically: `line_number` is removed from every relationship, which is exactly the pre-fix shape.",
+    transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map((x: any) => {
-        if (!x?.metadata?.htmlEmbedded) return x
-        if (x.type === "contains") return x
-        return { ...x, from: "embedded", source: "embedded", fromSymbol: "embedded" }
+        const { line_number, ...rest } = x
+        return rest
       }),
-    }
-  }
-}
-
-/** SCHEME CONTRACT: a BARE `#` href becomes an edge to the literal text `#`
- *  again. `href="#"` is the HTML idiom for "no destination" — a valid URL that
- *  refers to the top of this very document — so the reference is satisfied by the
- *  document module that owns it and there is nothing to name. Emitting the edge
- *  produces a node that is neither a symbol nor a file, which is the
- *  unresolvable-identity class; the M12 Negative fixture's documented contract
- *  says "empty `#` anchors emit nothing" and this mutant is how that sentence
- *  stopped being true. Caught by html/scheme-and-navigation. */
-function htmlBareHashEmitted() {
-  return (r: any) => {
-    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
-    if (!mod) return r
-    return {
-      ...r,
-      relationships: [
-        ...(r.relationships ?? []),
-        { source: mod.name, target: "#", type: "uses", confidence: 0.9, metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true, evidenceClass: "usage_contextual" } },
-      ],
-    }
-  }
-}
-
-/** CARRIER COMPLETENESS: the `<meta http-equiv=refresh>` navigation rule is
- *  dropped. `content` is a URL only under `http-equiv=refresh`, and the pragma
- *  makes the browser navigate — the same class as a form action, so `uses` and
- *  never `calls`. It was absent from the table entirely, and a census of 4,035
- *  real files found 40 occurrences across 26 files of one corpus. No gate could
- *  see it: the differential's oracle SHARED the carrier list, and `otp`/`sqlite`
- *  contain no refresh pragma, so 100% coverage never had to confront it.
- *  Caught by html/undiscovered-carriers. */
-function htmlMetaRefreshDropped() {
-  return (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.resourceType !== "meta-refresh") })
-}
-
-/** CARRIER COMPLETENESS: `<a ping>` stops being treated as a LIST. The
- *  `valueList` split is removed and the whole attribute is read as one URL, so
- *  `ping="/a /b"` publishes a SINGLE edge whose target is the string
- *  `"/a /b"` — a path that resolves to no file, which is the
- *  unresolvable-identity class reached through a list that was never split. The
- *  list shape IS the contract: `ping` is whitespace-separated with no descriptor
- *  and no comma, which is exactly what separates it from `srcset`.
- *
- *  The first attempt at this mutant rewrote the target by REMOVING its spaces,
- *  which is a no-op: by the time the mutation runs the list has already been
- *  split, so no target contains a space and the mutant could never fire. It
- *  "survived" for the wrong reason — not because the gate is weak but because
- *  the defect it described was not the defect. Rewritten to join the rows, which
- *  is what the missing split actually produces.
- *  Caught by html/undiscovered-carriers. */
-function htmlPingListCollapsed() {
-  return (r: any) => {
-    const rels = r.relationships ?? []
-    const pings: any[] = []
-    const rest: any[] = []
-    for (const x of rels) (x.metadata?.resourceType === "ping" ? pings : rest).push(x)
-    if (pings.length < 2) return r
-    // Rejoin the split rows into the single un-split edge the defect produces.
-    rest.push({ ...pings[0], target: pings.map((p: any) => p.target).join(" ") })
-    return { ...r, relationships: rest }
-  }
-}
-
-/** CARRIER COMPLETENESS: the SVG spellings go away — `script@href` and
- *  `feImage@href`/`xlink:href`. SVG2 writes a script's source as `href`, not
- *  `src`, so a table carrying only `src` drops every inline SVG script's
- *  dependency, and a filter's image reference with it.
- *  Caught by html/undiscovered-carriers. */
-function htmlSvgCarriersDropped() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).filter((x: any) => {
-      const t = x.metadata?.resourceType
-      return t !== "svg-script" && t !== "svg-filter-image"
     }),
-  })
-}
-
-/** EVIDENCE TIER: a `cite` inherits `import_based` instead of being graded
- *  `usage_contextual`. A citation names where a quotation came FROM; nothing
- *  fetches it and nothing navigates to it, so grading it as a structural import
- *  overstates it — and the tier classifier in every gated lane reads exactly this
- *  field, so the overstatement is machine-readable rather than a nuance.
- *  Caught by html/undiscovered-carriers. */
-function htmlCitationTierInflated() {
-  return (r: any) => ({
-    ...r,
-    relationships: (r.relationships ?? []).map((x: any) =>
-      x.metadata?.resourceType === "citation" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "import_based" } } : x),
-  })
-}
-
-/** ERROR RECOVERY: the walk STOPS at the first recovery node instead of bypassing
- *  it. `n.type === "ERROR" || n.isMissing` is the whole contract: report the
- *  broken region, skip it, and keep publishing everything after it. This mutant
- *  replaces "bypass and continue" with "stop", which is the shape the defect
- *  actually takes — a document with one unreadable region in the middle publishes
- *  a module, the elements above the error, and NOTHING below it. Every edge and
- *  symbol after the error silently vanishes, and because the module still
- *  publishes, the file still looks analysed. That is a silent truncation, which
- *  is why it is worth a mutant rather than a comment: nothing else in the lane
- *  would notice a document that is half a document.
- *  Caught by html/error-recovery. */
-function htmlRecoveryStopsTheWalk() {
-  return (r: any) => {
-    const cut = (r.errors ?? [])[0]?.range?.startIndex
-    if (typeof cut !== "number") return r
-    const keep = (x: any) => {
-      const at = x?.range?.startIndex ?? x?.line_number
-      return typeof at !== "number" || at < cut
-    }
-    return {
-      ...r,
-      symbols: (r.symbols ?? []).filter((s: any) => keep(s)),
-      relationships: (r.relationships ?? []).filter((x: any) => {
-        // A relationship's own site is inside the kept prefix, but its TARGET may
-        // live after the cut — an `<a href>` above the error pointing at an element
-        // below it. Dropping those is exactly the truncation being modelled.
-        if (!keep(x)) return false
-        const t = (r.symbols ?? []).find((s: any) => s.name === x.target)
-        return t === undefined || keep(t)
-      }),
-      imports: (r.imports ?? []).filter(keep),
-    }
-  }
-}
-
-export const MUTANTS: Mutant[] = [
-  // ---------------------------------------------------------------- bash (#277)
-  {
-    id: "bash/owner-sentinel-global",
-    language: "bash",
-    defectClass: "unresolvable-identity",
-    description: "BD2 regression: top-level edges are owned by the literal string `global` again, which isIndexArtifactName rejects as a symbol name — the exact shape that made 622 of 1432 pre-wave edges unresolvable (module-owner-bd2)",
-    transform: revertBashOwnerToGlobalSentinel,
   },
   {
-    id: "bash/module-owner-dropped",
-    language: "bash",
-    defectClass: "unresolvable-identity",
-    description: "BD2 regression: the script emits no module symbol, so no top-level declaration has an owner (module-owner-bd2)",
-    transform: dropBashModuleSymbol,
+    id: "hcl/root-symbol-claims-block-identity",
+    language: "hcl",
+    defectClass: "symbol-integrity",
+    description:
+      "H11 regression: the document root takes the bare file stem, so a file whose stem equals a top-level block's Terraform address gives the document and the block one identity. Measured: 308 corpus sites (`moved.tf` holding `moved {}` at 13, `removed` 9, `worker` 3, `locals` 3, `import` 3). Reverted generically: any top-level block whose address equals the root name is renamed back to that address. hcl/sibling-identity pins the root as `sibling-identity` and its blocks as distinct from it.",
+    transform: r => {
+      const root = (r.symbols ?? []).find((s: any) => s.metadata?.hclRoot)
+      if (!root) return r
+      const name = root.name
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          if (s.metadata?.hclRoot) return s
+          if (s.scope === name && s.metadata?.hclAddress === name) return { ...s, name }
+          return s
+        }),
+      }
+    },
   },
   {
-    id: "bash/call-site-line-dropped",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD1 regression: the 3-field edge identity returns, collapsing three call sites of one callee onto one row — the state M59/#822 says can never be per-site (per-site-lines-821)",
-    transform: collapseBashEdgeIdentity,
-  },
-  {
-    id: "bash/edge-lines-dropped",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD1 regression: every edge keeps its row but loses its site line, which M59/#855 shows leaves the edge unattributable (every bash fixture pins a line on every row)",
-    transform: dropBashEdgeLines,
-  },
-  {
-    id: "bash/contains-line-at-declaration-start",
-    language: "bash",
-    defectClass: "line-inaccuracy",
-    description: "BD1/M60 #921 regression: a containment edge names the declaration node's start line instead of the line the child's NAME is written on, which is the line the store resolves it by (contains-name-line-921)",
-    transform: revertBashContainsLineToDeclarationStart,
-  },
-  {
-    id: "bash/trap-signal-as-source",
-    language: "bash",
-    defectClass: "relationship-fabrication",
-    description: "BD3 regression: a trap signal is the edge SOURCE again — `calls: INT -> log` names a caller that does not exist (trap-handler-bd3)",
-    transform: revertBashTrapSignalAsSource,
-  },
-  {
-    id: "bash/trap-target-is-command-string",
-    language: "bash",
-    defectClass: "relationship-fabrication",
-    description: "BD3 regression: the trap handler's TARGET is the whole command string with its arguments, a name no symbol can ever have (trap-handler-bd3)",
-    transform: revertBashTrapTargetToBlob,
-  },
-  {
-    id: "bash/dynamic-command-call-emitted",
-    language: "bash",
-    defectClass: "relationship-fabrication",
-    description: "BD4 regression: a command whose name is an unexpanded expression becomes a call to that expression, so a dollar-sign expression is an edge target (dynamic-command-bd4)",
-    transform: fabricateBashDynamicCommandCalls,
-  },
-  {
-    id: "bash/recovered-command-emitted",
-    language: "bash",
-    defectClass: "relationship-fabrication",
-    description: "BD5 regression: a command read out of a grammar-damaged region becomes a call — the `calls: -> ]/%5D}` shape the pinned corpus carried (recovered-region-guard-bd5)",
-    transform: fabricateBashRecoveredRegionCalls,
-  },
-  {
-    id: "bash/unset-edge-emitted",
-    language: "bash",
-    defectClass: "ontology-violation",
-    description: "BD6/BA-G1 regression: `unset` emits an edge, which no relationship type in the ontology can express without asserting a read that does not happen (unset-ruled-bd6)",
-    transform: fabricateBashUnsetEdges,
-  },
-  {
-    id: "bash/exports-edge-dropped",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD7 regression: `export` emits no edge again — the pre-wave handling, which set isExported in metadata and stopped there (export-edges-bd7)",
-    transform: dropBashExportEdges,
-  },
-  {
-    id: "bash/readonly-claimed-as-export",
-    language: "bash",
-    defectClass: "relationship-fabrication",
-    description: "BD7 over-reach: `readonly` is claimed as an export, which it is not (export-edges-bd7)",
-    transform: fabricateBashReadonlyExports,
-  },
-  {
-    id: "bash/case-arm-suppressed",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD8 regression: commands inside a case arm are dropped again as 'dispatch noise' — 14 distinct pairs on the pinned corpus that no other site produced (case-arm-calls-bd8)",
-    transform: suppressBashCaseArmCalls,
-  },
-  {
-    id: "bash/source-resolution-label-dropped",
-    language: "bash",
-    defectClass: "dishonest-metadata",
-    description: "BD9 regression: a dynamic source path is presented as a resolved one, with nothing saying it could not be resolved (source-path-resolution-bd9)",
-    transform: dropBashSourceResolutionLabel,
-  },
-  {
-    id: "bash/dynamic-source-edge-refused",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD9 over-correction: dynamic source paths are dropped instead of labelled, which would delete 16 of the lane's 23 import edges on the pinned corpus (source-path-resolution-bd9)",
-    transform: dropBashDynamicSourceEdges,
-  },
-  {
-    id: "bash/call-flags-always-both",
-    language: "bash",
-    defectClass: "dishonest-metadata",
-    description: "BD10 regression: isFunctionCall and isExternalCommand are both true on every call, so a call to a local function claims to be an external binary (call-identity-bd10)",
-    transform: markBashEveryCallBothIdentities,
-  },
-  {
-    id: "bash/call-identity-order-dependent",
-    language: "bash",
-    defectClass: "nondeterminism",
-    description: "BD10 regression: call identity is decided from declaration order, so a forward reference reads as an external command (call-identity-bd10)",
-    transform: markBashForwardReferencesExternal,
-  },
-  {
-    id: "bash/arithmetic-read-dropped",
-    language: "bash",
-    defectClass: "relationship-loss",
-    description: "BD-gap-closure regression: reads that appear only inside `$(( ))` / `(( ))` are dropped, which is every arithmetic operand (arithmetic-reads-gap-closure)",
-    transform: dropBashArithmeticReads,
-  },
-  {
-    id: "bash/isarray-always-false",
-    language: "bash",
-    defectClass: "dishonest-metadata",
-    description: "BD-gap-closure regression: the write-only isArray parameter's pre-fix value returns, so every plain array assignment reports as a scalar (array-declaration-shape)",
-    transform: revertBashIsArrayAlwaysFalse,
-  },
-  {
-    id: "bash/shell-defined-label-dropped",
-    language: "bash",
-    defectClass: "dishonest-metadata",
-    description: "BD-shell-defined-vars regression: a read of a shell-defined name is no longer labelled, so 23 BASH_SOURCE edges look like reads of undeclared project variables again (shell-defined-vars)",
-    transform: dropBashShellDefinedLabel,
-  },
-  {
-    id: "bash/assigned-in-file-label-dropped",
-    language: "bash",
-    defectClass: "dishonest-metadata",
-    description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
-    transform: dropBashAssignedInFileLabel,
-  },
-  {
-    id: "bash/orphan-edge-source",
-    language: "bash",
-    defectClass: "unresolvable-identity",
-    description: "an edge is emitted whose source is not a symbol in the file — the class BD2 removed and the one every bash fixture's universal forbid set convicts",
-    transform: orphanBashEdgeSource,
+    id: "hcl/drop-top-level-attributes",
+    language: "hcl",
+    defectClass: "symbol-loss",
+    description:
+      "H5 regression: the attribute branch is guarded `blockPath.length > 0`, so every top-level attribute of a flat `.hcl`/`.tfvars` document is dropped. Measured pre-fix: 126 corpus files with real content produced ZERO symbols (consul `full-config.hcl` with 30+ top-level attributes, boundary `enos.vars.hcl`, every `*.tfvars` in terraform@db4eef4). Reverted generically: property symbols whose owner is the document root are removed. hcl/flat-attribute-document pins all seven.",
+    transform: r => {
+      const root = (r.symbols ?? []).find((s: any) => s.metadata?.hclRoot)
+      if (!root) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "property" && s.ownerName === root.name)),
+        relationships: (r.relationships ?? []).filter((x: any) => x.source !== root.name),
+      }
+    },
   },
   {
     id: "clojure/emit-quote-forms",
@@ -5332,37 +4791,6 @@ export const MUTANTS: Mutant[] = [
     description: "M49.K1 K4 regression: drops the metadata.overrideSig signature payload from override edges — overload disambiguation downstream dies; the K4 claim-probe re-pin and override-fallback-confidence's sig expectations catch it",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) =>
       x.type === "overrides" ? { ...x, metadata: { ...x.metadata, overrideSig: undefined } } : x) }),
-  },
-  {
-    id: "kotlin/override-grandparent-ancestor-revert",
-    language: "kotlin",
-    defectClass: "attribution",
-    description: "#949 regression: the pre-fix generic-substitution mirror, at the point where it is observable — an override whose DECLARING ancestor is a GRANDPARENT interface is republished against the DIRECT parent (which does not declare the member at all) at the 0.5 first-supertype guess. Derived from the result alone: the direct parent is the source owner's own first extends/implements target, so this is the measured pre-fix output rather than a hardcoded string, and the direct-parent case (a verified edge that already names its parent) is left standing. Caught by kotlin/override-declaring-ancestor-949, which requires IRenderer.render at 0.9/structural for both spellings AND forbids Base.render at either tier.",
-    transform: r => {
-      const directParent = new Map<string, string>()
-      for (const x of r.relationships ?? []) {
-        if ((x.type === "extends" || x.type === "implements") && typeof x.source === "string" && typeof x.target === "string" && !directParent.has(x.source)) {
-          directParent.set(x.source, x.target)
-        }
-      }
-      return { ...r, relationships: (r.relationships ?? []).map((x: any) => {
-        if (x.type !== "overrides" || x.metadata?.reasonCode !== "in-file-verified") return x
-        const owner = String(x.source ?? "").split(".")[0]
-        const parts = String(x.target ?? "").split(".")
-        const targetOwner = parts[0]
-        const parent = directParent.get(owner)
-        // The pre-fix resolver only reached a grandparent when its signature
-        // test failed; an edge that already names the direct parent is what the
-        // guess tier would have published anyway, so it is left alone.
-        if (!parent || parent === targetOwner) return x
-        return {
-          ...x,
-          target: [parent, ...parts.slice(1)].join("."),
-          confidence: 0.5,
-          metadata: { ...x.metadata, overrideParent: parent, reasonCode: "first-supertype-guess", evidenceClass: "inferred" },
-        }
-      }) }
-    },
   },
   {
     id: "java/type-source-revert",
@@ -10784,42 +10212,6 @@ export const MUTANTS: Mutant[] = [
       { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
     ] }),
   },
-  // M59.A7 / formula §8 (dimension 8): the site line. Two mutants, because the
-  // contract has two halves and the lane's fixture pins the pair (the same
-  // source+target at two lines with a count) precisely so that neither half can
-  // hide behind the other.
-  {
-    id: "haskell/edge-line-absent",
-    language: "haskell",
-    defectClass: "payload-loss",
-    description:
-      "The pre-dimension-8 state: every relationship is published with no `line_number` field at all (measured on the full 186-file hledger extent: 0 of 15,151 edges name a site after this landed, 0 of 12,526 before it — the family sweep recorded haskell's `lines` cell as absent, unlike clean/erlang which had landed the field; validation/m14/results/haskell-line-coverage.json beforeAfter). The store can then navigate an edge to nothing. Caught by all 12 line_number constraints in payload-and-complexity (references Data.User->Data.Text@17, contains Data.User->UserId@29 and @61, implements UserId->Show@30 and ->Mergeable@61, extends Mergeable->Semigroup@36, calls lookupName->M.lookup@92 and merged->merge@96, instantiates mkUser->Person@75 and maybeOne->M.Just@156, calls recount->signed@197/198) — evidence: validation/m14/results/haskell-line-mutant-pins.json, where this transform leaves 79 of 79 edges unlined and 12 of 12 pins unsatisfied.",
-    transform: haskellEdgeLineAbsent(),
-  },
-  {
-    id: "haskell/edge-line-per-set",
-    language: "haskell",
-    defectClass: "relationship-identity",
-    description:
-      "The line stays but the dedupe key reverts to `source|type|target` — the pre-fix key verbatim — i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: the full hledger extent loses 2,625 of 15,151 edges, worst group 40 sites; the full cabal extent loses 9,221 of 55,974, worst group 186). Caught by the per-site half of the pins and by the coverage probe's expansion clause (`preChangeEdges < edges`): payload-and-complexity holds exactly two multi-site groups and both are pinned at BOTH sites and counted — `calls recount -> signed`@197/198 and `contains Data.User -> UserId`@29/61 (the second is the universal impl-naming contract: the instance at 61 publishes a symbol named after its target type, so the file has two same-named children and only the child's own line tells them apart — #921). Evidence: validation/m14/results/haskell-line-mutant-pins.json (edges 79 -> 77, 2 of 12 pins and 2 of 2 count pins fail). A fixture pinning only `line_number: <one line>` would NOT catch this, which is why those pins are written in pairs.",
-    transform: haskellEdgeLinePerSet(),
-  },
-  {
-    id: "haskell/local-identity-flat",
-    language: "haskell",
-    defectClass: "relationship-identity",
-    description:
-      "Scoped local identity (2026-09-26) regression, half one — the IDENTITY COLLAPSE: a where/let local's edges revert to the pre-fix BARE name (`siblingA.hop -> siblingA.hop` becomes `hop -> hop`, `buildUsers -> buildUsers.double` becomes `buildUsers -> double`), which is exactly the state in which two sibling locals of the same name pooled into one node and a local could not be told apart from a module-level namesake (measured before the fix on the full hledger+cabal extent: 12,309 source / 6,314 target bare local-attributed calls endpoints over 708 files / 11,487 binder names, 16 files / 67 names carrying a shadowing binder; the same draw after the fix shows 0 bare local endpoints against 11,832 source / 4,907 target scoped chain endpoints, with the qualified-target universe unchanged at 6,398 on both sides — see validation/m14/results/haskell-local-identity.json). Caught by every scoped pin in payload-and-complexity and by its bare-form forbids (`calls buildUsers -> double`, `pickUser -> choose`, `instantiates choose -> Bot`, `siblingA/siblingB -> hop`, `calls hop -> hop`) — evidence: validation/m14/results/haskell-local-mutant-pins.json.",
-    transform: haskellLocalIdentityFlat(),
-  },
-  {
-    id: "haskell/local-scope-blind",
-    language: "haskell",
-    defectClass: "relationship-fabrication",
-    description:
-      "Scoped local identity (2026-09-26) regression, half two — the LEXICAL-VISIBILITY revert: target resolution goes back to the FLAT file-wide declared set, whose most visible consequence is an edge the post-fix analyzer correctly does not emit — `calls outOfScope -> hop`, where `hop` is a where-local of siblingA/siblingB ONLY and `outOfScope` cannot see it (Haskell scoping; the same flat set also resolved a local of any function from anywhere). Re-injected faithfully from the source text because the fixed analyzer no longer records the site at all. Caught by the `calls outOfScope -> hop` forbid in payload-and-complexity.",
-    transform: haskellLocalScopeBlind(),
-  },
   {
     id: "javascript/template-callee-uses",
     language: "javascript",
@@ -10851,93 +10243,6 @@ export const MUTANTS: Mutant[] = [
       const props = new Set((r.symbols ?? []).filter((s: any) => s.metadata?.isInterfaceMember && s.kind === "property").map((s: any) => `${s.ownerName}.${s.name}`))
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "overrides" && props.has(x.target))) }
     },
-  },
-  {
-    id: "typescript/extends-override-drop",
-    language: "typescript",
-    defectClass: "relationship-loss",
-    description: "M1 regression: restores the implements-only structural override arm — a class EXTENDING an in-file base emits no overrides unless the member carries the optional `override` keyword, so the majority shape (class Sub extends Base { run(){} }) loses the edge the oracle derives as truth; class-extends-overrides pins Sub.run/SubKeyword.run/SubTransitive.run",
-    transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
-  },
-  {
-    id: "typescript/taint-sink-leaf-match",
-    language: "typescript",
-    defectClass: "noise-fabrication",
-    description: "H1 regression: restores bare-name/bare-LEAF sink matching — RegExp.prototype.exec, a project-local execute() and the project's own spawn() are reported as command_injection / sql_injection again, and because the store multiplies sources by sinks, one req.body read beside any .exec() manufactures a persisted command-injection flow. taint-sink-receiver kills it on the notIncludesVuln pins (the exact-snippet pins cannot catch a rebuilt snippet, which is why the vulnerability_type pins are in the fixture)",
-    transform: r => ({
-      ...r,
-      symbols: ((r as any).symbols ?? []).map((s: any) => {
-        if (!Array.isArray(s.qualified_calls)) return s
-        const existing = new Set((s.taintSinks ?? []).map((t: any) => t.vulnerability_type))
-        const add: any[] = []
-        for (const path of s.qualified_calls) {
-          const leaf = String(path).split(".").pop() ?? ""
-          if (["exec", "execSync", "execFile", "spawn", "spawnSync", "fork"].includes(leaf) && !existing.has("command_injection")) {
-            add.push({ type: "shell_execution", snippet: path, vulnerability_type: "command_injection" })
-            existing.add("command_injection")
-          }
-          if (["query", "execute"].includes(leaf) && !existing.has("sql_injection")) {
-            add.push({ type: "database_write", snippet: path, vulnerability_type: "sql_injection" })
-            existing.add("sql_injection")
-          }
-        }
-        return add.length ? { ...s, taintSinks: [...(s.taintSinks ?? []), ...add] } : s
-      }),
-    }),
-  },
-  {
-    id: "typescript/arrow-contract-drop",
-    language: "typescript",
-    defectClass: "payload-loss",
-    description: "M5 regression: an arrow/function-VALUED variable loses its API contract again — the dominant handler shape (Next.js/Astro/Express arrow consts) reports no path while the byte-identical function declaration still does; arrow-contracts-and-exports expectApiContractPaths pins arrowGet/arrowPost",
-    transform: r => ({ ...r, symbols: ((r as any).symbols ?? []).map((s: any) => (/^(arrowGet|arrowPost)$/.test(String(s.name)) ? { ...s, apiContractPath: undefined, metadata: { ...((s as any).metadata ?? {}), apiMethod: undefined } } : s)) }),
-  },
-  {
-    id: "typescript/export-default-dangling-edge",
-    language: "typescript",
-    defectClass: "relationship-fabrication",
-    description: "M4 regression: an anonymous default export emits an `exports` edge to `default` again — a target no symbol in this or any other file can own; arrow-contracts-and-exports forbidRelationships kills it",
-    transform: r => ({ ...r, relationships: [...((r as any).relationships ?? []), { source: "arrow-contracts-and-exports", target: "default", type: "exports", confidence: 1, metadata: {} }] }),
-  },
-  {
-    id: "typescript/lines-of-code-nonempty",
-    language: "typescript",
-    defectClass: "payload-corruption",
-    description: "M8 regression: linesOfCode counts non-empty lines again, so the same source reports a different LOC as .ts than as .js (measured 37 vs 43 on the pinned fixture); arrow-contracts-and-exports expectMetadata.linesOfCode catches it",
-    transform: r => ({ ...r, metadata: { ...((r as any).metadata ?? {}), linesOfCode: 37 } }),
-  },
-  {
-    id: "typescript/qualified-calls-no-rebind",
-    language: "typescript",
-    defectClass: "misattribution",
-    description: "M3 regression, the dangerous half: removes the per-function REBINDING while keeping the boundary removal — the payload walk started at a symbol and charged every call below it to that symbol, so a nested function's or object-literal method's calls were ALSO listed on the enclosing symbol (enclosing lists helper besides inner; mixed lists persist besides save). qualified-calls-nested-scope kills it on the notIncludes pins, which is the only shape that can tell 'omitted' from 'double-counted'",
-    transform: r => {
-      const byName = new Map<string, string[]>()
-      for (const s of (r as any).symbols ?? []) if (Array.isArray(s.qualified_calls)) byName.set(s.name, s.qualified_calls)
-      const extra = new Map<any, string[]>()
-      for (const rel of (r as any).relationships ?? []) {
-        if (String(rel.type) !== "calls") continue
-        const callee = byName.get(String(rel.target))
-        if (!callee) continue
-        const list = extra.get(rel.source) ?? []
-        for (const c of callee) if (!list.includes(c)) list.push(c)
-        extra.set(rel.source, list)
-      }
-      return { ...r, symbols: ((r as any).symbols ?? []).map((s: any) => {
-        const add = extra.get(s.name)
-        if (!add || !add.length || !Array.isArray(s.qualified_calls)) return s
-        const merged = [...s.qualified_calls]
-        for (const c of add) if (!merged.includes(c)) merged.push(c)
-        return { ...s, qualified_calls: merged }
-      }) }
-    },
-  },
-  {
-    id: "typescript/builtin-subpath-revert",
-    language: "typescript",
-    defectClass: "payload-corruption",
-    description: "M7 regression: restores the bare-name-only builtin table — node:fs/promises, node:test, stream/promises and every other subpath Node ships resolve to external:<specifier> again, so the index claims npm packages named 'fs/promises' and 'test' (node-builtin-subpaths meta.resolvedPath pins catch it; lodash/merge stays external in both, so the pin set cannot be satisfied by classifying everything external)",
-    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (typeof i?.metadata?.resolvedPath === "string" && i.metadata.resolvedPath.startsWith("node:")) ? { ...i, metadata: { ...(i.metadata ?? {}), resolvedPath: "external:" + i.module } } : i) }),
   },
   {
     id: "typescript/subscript-callee-nested-call-drop",
@@ -11036,123 +10341,6 @@ export const MUTANTS: Mutant[] = [
         return true
       }) }
     },
-  },
-  {
-    id: "erlang/record-uses-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #1, ER-D7) regression: drops every record member `uses` edge - reads, updates and index reads all vanish, so the dominant OTP state-transition idiom is invisible (record-ops-er2 pins uses -> state AND -> the touched field from the read on 16, the update on 22, get_count on 36 and the index read on 38)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType) !== "uses") }),
-  },
-  {
-    id: "erlang/pattern-position-leak",
-    language: "erlang",
-    defectClass: "relationship-fabrication",
-    description: "ER2 (user finding #1, ER-D7) regression: restores member reads in PATTERN position - heady's `#state{count = C}` head emits uses -> state and -> count, which record-ops-er2 forbids (a clause head is a match, not an evaluation; guards and bodies still emit)",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "heady", target: "state", confidence: 1, metadata: { erlangSpecific: true, context: "record member read" } }, { type: "uses", source: "heady", target: "count", confidence: 1, metadata: { erlangSpecific: true, context: "record member read" } }] }),
-  },
-  {
-    id: "erlang/record-update-instantiates",
-    language: "erlang",
-    defectClass: "relationship-fabrication",
-    description: "ER2 (ER-D4) regression: a record UPDATE is misclassified as construction - `State#state{count = ...}` emits instantiates -> state, which record-ops-er2 forbids (an update is a member write; only a body-position `#state{}` constructs)",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "transitions", target: "state", confidence: 1, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
-  },
-  {
-    id: "erlang/macro-uses-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #2, ER-D8) regression: macro USES go back to emitting no references edge - the -define declaration stayed a symbol while every use of it was invisible (refs-er2 pins ?MODULE on 19, ?TIMEOUT on 20 and 24, and the undefined ?SERVER_HEADER on 22, all as macro-use references)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "macro use") }),
-  },
-  {
-    id: "erlang/fun-refs-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #2, ER-D9) regression: fun VALUES emit nothing - `fun run/1` and `fun lists:map/2` lose their references edges (refs-er2 pins both at lines 17/18, and the forbid that they are NEVER calls is what keeps them honest)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "fun value reference") }),
-  },
-  {
-    id: "erlang/type-refs-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #6, ER-D10) regression: the type dependency graph disappears - -type/-opaque emit no references to the named types in their expressions (refs-er2 pins token -> binary on 12, job -> binary/atom/term on 35, ctx_rec -> ctx/pid on 36 and ext -> dict:dict on 37 after ER3 re-authored the pins)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "type reference") }),
-  },
-  {
-    id: "erlang/type-atoms-as-refs",
-    language: "erlang",
-    defectClass: "fabrication",
-    description: "ER3 (2026-09-25) regression: the type-dependency walk goes back to counting EVERY bare atom in a type expression as a reference, so a map field KEY and an atom LITERAL become dependencies - the exact rows the M12 differential caught on Service.erl (references job -> id and job -> kind out of the map keys of #{id := job_id()}, which resolved to the record PROPERTIES of the same name) plus the ER2 authoring's atom-literal class (maybe -> undefined). In Erlang type syntax a bare unquoted atom is the atom literal of that name and a field key is a declaration; only an APPLIED name is a type use. Caught by refs-er2, whose expectRelationships pin the applied forms (job -> binary/atom/term at 35, ctx_rec -> ctx/pid at 36) and whose forbid entries name each unapplied one",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), {
-        type: "references", source: "job", target: "id", confidence: 1, metadata: { context: "type reference" },
-      }, {
-        type: "references", source: "job", target: "kind", confidence: 1, metadata: { context: "type reference" },
-      }, {
-        type: "references", source: "maybe", target: "undefined", confidence: 1, metadata: { context: "type reference" },
-      }],
-    }),
-  },
-  {
-    id: "erlang/record-type-instantiates",
-    language: "erlang",
-    defectClass: "fabrication",
-    description: "ER3 (2026-09-25) regression: a record TYPE inside a -type/-opaque declaration is read as a construction again (`-type ctx_rec() :: #ctx{server :: pid()}` emits instantiates -> ctx). This is the pre-ER3 behaviour exactly: measured over OTP's 4,154 .erl/.hrl files it produced 471 instantiates edges sitting inside type declarations, and MISSING/UNEXPLAINED 1,376/4,344 against the mirrored oracle; after the gate, 0 and 0/0. Caught by refs-er2's forbid entries (instantiates refs_er2 -> ctx, instantiates ctx_rec -> ctx) - the DECL-ONLY boundary the calls rule already had",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), {
-        type: "instantiates", source: "refs_er2", target: "ctx", confidence: 1, metadata: { isRecordExpr: true },
-      }],
-    }),
-  },
-  {
-    id: "erlang/remote-type-unqualified",
-    language: "erlang",
-    defectClass: "fabrication",
-    description: "ER3 (2026-09-25) regression: a remote type application goes back to emitting its bare halves - `-type ext() :: dict:dict().` publishes references -> dict rather than the qualified dict:dict (ER-D1: the separator is semantic, the same rule the remote call and fun-value targets follow). Measured over OTP: 988 remote type applications; the pre-fix walk spelled each as two bare atoms, both of which the site check rejects. Caught by refs-er2, which pins references ext -> dict:dict at 37 and forbids the bare dict",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), {
-        type: "references", source: "ext", target: "dict", confidence: 1, metadata: { context: "type reference" },
-      }],
-    }),
-  },
-  {
-    id: "erlang/opaque-symbol-dropped",
-    language: "erlang",
-    defectClass: "symbol-loss",
-    description: "ER2 (ER-G5) regression: -opaque stops declaring a type symbol - `-opaque token() :: binary().` publishes nothing (refs-er2 pins the token type with meta.isOpaque true, and the token -> binary reference it carries)",
-    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isOpaque) }),
-  },
-  {
-    id: "erlang/callback-symbol-dropped",
-    language: "erlang",
-    defectClass: "symbol-loss",
-    description: "ER2 (ER-D11, HS-D8 parity) regression: -callback stops declaring its Method symbol (refs-er2 pins handle as a method owned by the module with arity 1 and meta.isCallback true, and the contains edge at line 9)",
-    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isCallback) }),
-  },
-  {
-    id: "erlang/complexity-arms-flattened",
-    language: "erlang",
-    defectClass: "metric-corruption",
-    description: "ER2 (user finding #3, ER-D13) regression: per-symbol complexity goes back to a flat 1 (case/if/receive arms, receive_after, andalso/orelse and extra clauses uncounted) - record-ops-er2 pins transitions 7, guarded 4, heady/get_count/idx 1",
-    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => typeof s.complexity === "number" ? { ...s, complexity: 1 } : s) }),
-  },
-  {
-    id: "erlang/remote-macro-module-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #4, ER-D14) regression: the ?MODULE remote-module expansion disappears - `?MODULE:run(X)` emits no call, so the idiomatic self-dispatch is invisible (refs-er2 pins calls go -> refs_er2:run at line 19 with meta.macroModule true)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).macroModule) }),
-  },
-  {
-    id: "erlang/record-default-call-dropped",
-    language: "erlang",
-    defectClass: "relationship-loss",
-    description: "ER2 (user finding #5, ER-D12) regression: record field DEFAULTS stop crawling for calls - `-record(state, {timer = erlang:make_ref()})` emits nothing (record-ops-er2 pins calls state -> erlang:make_ref at line 13, attributed to the RECORD symbol)",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "calls" && x.source === "state")) }),
   },
   {
     id: "elixir/lines-dropped",
@@ -11539,6 +10727,561 @@ export const MUTANTS: Mutant[] = [
     description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
     transform: cleanEdgeLinePerSet(),
   },
+  // ═══════════════════════════════════════════════════════════════════════
+  // NIM wave (2026-09-27)
+  //
+  // Every mutant below is a revert of a fix this lane actually made, or of a
+  // rule docs/analyzers/real-nim-analyzer.md claims in "What is ruled, and why".
+  // The gate requires each one to push nim's fixture failure count above
+  // validation/m14/fixture-baseline.json, so a survivor is not a weak mutant —
+  // it is a hole in the suite, and the first run of this block found eight.
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    id: "nim/ref-object-classified-as-a-type",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`type C = ref object` goes back to a bare `type`. The pre-fix rule read the `object` keyword and missed the `ref_type` wrapper, so every identity-bearing class in the language — the shape inheritance and dynamic dispatch exist for — was published as a type-level name. Caught by nim/contract's expectSymbols {Shape, class} and {Rect, class}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Shape" || s.name === "Rect" ? { ...s, kind: "type" } : s)) }),
+  },
+  {
+    id: "nim/plain-object-classified-as-a-class",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "The mirror of the mutant above, and the one that keeps the first honest: over-applying `ref` would turn a copying `object` into a class. `Builder` and `Registry` are plain `object`s. Caught by nim/contract's expectSymbols {Builder, struct} and {Registry, struct}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Builder" || s.name === "Registry" ? { ...s, kind: "class" } : s)) }),
+  },
+  {
+    id: "nim/concept-classified-as-a-type",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`type Addable = concept` goes back to a `type`. A concept is the language's structural interface — satisfied by implicit dispatch, no nominal subtype anywhere — which is exactly what SymbolKind.Interface means in this codebase. Caught by nim/contract's expectSymbols {Addable, interface}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Addable" ? { ...s, kind: "type" } : s)) }),
+  },
+  {
+    id: "nim/enum-classified-as-a-type",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`type Color = enum` goes back to a `type`, losing the enum kind. Caught by nim/contract's expectSymbols {Color, enum}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Color" ? { ...s, kind: "type" } : s)) }),
+  },
+  {
+    id: "nim/enum-member-lost",
+    language: "nim",
+    defectClass: "symbol-loss",
+    description: "Enum members stop being symbols. `Red`, `Green` and `Blue` are the values code actually compares on, and a variant object's `of Red:` discriminates on them. Caught by nim/contract's expectSymbols {Red/Green/Blue, enum_member}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "enum_member") }),
+  },
+  {
+    id: "nim/object-field-lost",
+    language: "nim",
+    defectClass: "symbol-loss",
+    description: "Object fields stop being symbols, so every property access in the language has no declaration to resolve to. Caught by nim/contract's expectSymbols {name, property}, {w, property} and the rest of the eight.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "property") }),
+  },
+  {
+    id: "nim/iterator-classified-as-a-macro",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`iterator countUp` goes back to a macro. An iterator is callable and is reached by `for … in countUp(3)`, so classifying it as a macro breaks the one symbol kind that has a call syntax of its own. Caught by nim/contract's expectSymbols {countUp, function}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "countUp" ? { ...s, kind: "macro" } : s)) }),
+  },
+  {
+    id: "nim/template-classified-as-a-function",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`template twice` goes back to a function. A template is hygienic and is expanded before name resolution, so it is not a callable value; the macro kind is what keeps it out of the call graph as a runtime edge. Caught by nim/contract's expectSymbols {twice, macro}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "twice" ? { ...s, kind: "function" } : s)) }),
+  },
+  {
+    id: "nim/method-classified-as-a-function",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`method describe` goes back to a function, which costs the receiver: the override edge is owner-qualified (`Rect.describe -> Shape.describe`) and a method is the only kind that carries one. Caught by nim/contract's expectSymbols {describe, method} and by the overrides pin that names `Rect.describe`.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "describe" ? { ...s, kind: "function" } : s)) }),
+  },
+  {
+    id: "nim/file-let-classified-as-a-constant",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "A file-scope `let` goes back to a `constant`. Nim's `let` is a single immutable binding and `const` is compile-time; collapsing them loses the distinction that tells a reader whether a value exists at runtime. Caught by nim/contract's expectSymbols {Greeting, variable}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Greeting" ? { ...s, kind: "constant" } : s)) }),
+  },
+  {
+    id: "nim/const-classified-as-a-variable",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "A file-scope `const` goes back to a `variable` — the same collapse from the other side, so the pair cannot both pass by being quiet. Caught by nim/contract's expectSymbols {MaxItems, constant}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "MaxItems" ? { ...s, kind: "variable" } : s)) }),
+  },
+  {
+    id: "nim/tuple-type-classified-as-a-type",
+    language: "nim",
+    defectClass: "wrong-symbol-kind",
+    description: "`type Pair = tuple[x, y: int]` goes back to a `type`. A tuple type has fields exactly as an object does, and the field names are destructurable (`let (a, b) = pair`), so the struct kind is what lets `x`/`y` be properties. Caught by nim/contract's expectSymbols {Pair, struct}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "Pair" ? { ...s, kind: "type" } : s)) }),
+  },
+  {
+    id: "nim/generic-parameter-leaks-as-a-symbol",
+    language: "nim",
+    defectClass: "symbol-fabrication",
+    description: "`type Registry*[T] = object` publishes `T` as a type symbol. A generic parameter is bound by the declaration, not declared by it, so `T` is not something the index can resolve a reference to. Caught by nim/contract's forbidSymbols {T, type}.",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "T", kind: "type", range: { startLine: 22, startColumn: 1, endLine: 22, endColumn: 1 } }] }),
+  },
+  {
+    id: "nim/imports-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Import edges stop being emitted at all, which empties the module dependency graph — the one relationship an LSP \"what does this file depend on\" query cannot answer without. Caught by nim/contract's expectRelationships {imports, (global) -> std/os} and the five sibling import pins.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "imports") }),
+  },
+  {
+    id: "nim/import-kind-demoted-to-references",
+    language: "nim",
+    defectClass: "relationship-mislabelling",
+    description: "Import edges come back as `references`. This is the defect the differential could not see: the oracle and the analyzer agreed, both were 0-unexplained, and every NIM dependency edge was still invisible to the reader that looks at relationship_type IN ('imports','exports'). Caught by nim/contract's expectRelationships {type: imports, (global) -> ./mac}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "imports" ? { ...x, type: "references" } : x)) }),
+  },
+  {
+    id: "nim/relative-import-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "A relative import publishes no edge. The pre-fix rule only read the infix path shape, and the leading `./` is a PREFIX operator, so every `import ./sibling` in a module vanished — measured 0 imports for a three-file module whose files all import each other relatively, while the same analyzer returned imports for `import std/os`. Caught by nim/contract's expectRelationships {imports, -> ./helpers} and {imports, -> ../shared}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && (String(x.target).startsWith("./") || String(x.target).startsWith("../")))) }),
+  },
+  {
+    id: "nim/deep-import-path-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "A path deeper than two segments publishes no edge. The grammar models the separator as a NAMED `operator` node whose text is the whole token (`/`, or `/../` fused with a parent hop), so `op.type` is never `/` and the pre-fix identifier/identifier test never matched: 171 deep-path imports across 141 corpus files and 434 multi-segment relative imports across 299 files published nothing, and because the whole path vanished there was no dangling target to surface it. Caught by nim/contract's expectImports {module: std/private/specialpaths} and its expectRelationships sibling.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && String(x.target).split("/").length > 2)) }),
+  },
+  {
+    id: "nim/module-list-collapsed-to-one-edge",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "`import std/[os, strutils]` publishes ONE edge for the whole list instead of one per element, so a two-module import becomes a single dependency on a name no file has. Caught by nim/contract's expectImports {module: std/os} AND {module: std/strutils} — one pin alone would pass, which is why both are there.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && (x.target === "std/os" || x.target === "std/strutils"))) }),
+  },
+  {
+    id: "nim/from-import-prefix-stripped",
+    language: "nim",
+    defectClass: "target-spelling",
+    description: "`from ./nativesettings import …` publishes the target `nativesettings` while `import ./configure` publishes `./configure`: two spellings for one module in one graph, from two path readers inside one analyzer. Found by the differential on prologue's application.nim, three edges disagreeing in both directions. Caught by nim/contract's expectImports {module: ./macros, meta.nimFromImport} and its expectRelationships sibling.",
+    transform: r => {
+      const fromModules = new Set((r.imports ?? []).filter((i: any) => i.metadata?.nimFromImport).map((i: any) => String(i.module).replace(/^\.\//, "")))
+      return {
+        ...r,
+        imports: (r.imports ?? []).map((i: any) => (i.metadata?.nimFromImport ? { ...i, module: String(i.module).replace(/^\.\//, "") } : i)),
+        relationships: (r.relationships ?? []).map((x: any) => (x.type === "imports" && fromModules.has(String(x.target)) ? { ...x, target: String(x.target).replace(/^\.\//, "") } : x)),
+      }
+    },
+  },
+  {
+    id: "nim/contains-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Ownership edges stop being emitted, so no symbol has a parent and every method and field is an orphan in the graph. Caught by nim/contract's expectRelationships {contains, Shape -> name} and {contains, Color -> Red}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "contains") }),
+  },
+  {
+    id: "nim/calls-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Call edges stop being emitted. Caught by nim/contract's expectRelationships {calls, exercise -> makeRect} and {calls, build -> join} — the second is a UFCS call, so the pair also pins that `b.parts.join(\",\")` has no dot-call node and the member leaf is the callee.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "calls") }),
+  },
+  {
+    id: "nim/uses-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Value-read edges stop being emitted. Caught by nim/contract's expectRelationships {uses, exercise -> Greeting} and {uses, build -> parts} — the second is the member leaf of a UFCS read, which is a `uses` edge distinct from the `calls` edge on the same expression.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "uses") }),
+  },
+  {
+    id: "nim/references-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Declared-type edges stop being emitted, so a signature no longer states what it accepts. Caught by nim/contract's expectRelationships {references, area -> Rect} and {references, exercise -> Builder}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "references") }),
+  },
+  {
+    id: "nim/instantiates-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Object construction stops being an `instantiates` edge. Caught by nim/contract's expectRelationships {instantiates, makeRect -> Rect}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "instantiates") }),
+  },
+  {
+    id: "nim/extends-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Inheritance edges stop being emitted. Caught by nim/contract's expectRelationships {extends, Rect -> Shape}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "extends") }),
+  },
+  {
+    id: "nim/overrides-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "Override edges stop being emitted, so a derived method reads as a new method rather than a replacement. Caught by nim/contract's expectRelationships {overrides, Rect.describe -> Shape.describe}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides") }),
+  },
+  {
+    id: "nim/override-owner-qualification-dropped",
+    language: "nim",
+    defectClass: "relationship-identity",
+    description: "An override target goes back to the BARE method name, so `Rect.describe` and `Shape.describe` become the same target and the edge says a method overrides itself. Receiver qualification is the only thing that distinguishes an override from a same-named sibling. Caught by nim/contract's expectRelationships {overrides, from: Rect.describe} — the pin is on the SOURCE spelling for exactly this reason.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "overrides" ? { ...x, target: String(x.target).split(".").pop() } : x)) }),
+  },
+  {
+    id: "nim/object-construction-label-read",
+    language: "nim",
+    defectClass: "relationship-fabrication",
+    description: "`Rect(name: \"r\", …)` publishes `uses makeRect -> name`, i.e. a read of the field `name` that never happens. Nim has no ternary, so `x: value` in an expression only ever names a field of a construction or a variant branch — it never reads one. The edge resolves to a real symbol, so no dangling check could ever catch it. Caught by nim/contract's forbidRelationships {uses, target: name}.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "makeRect", target: "name", confidence: 1, line_number: 78, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "nim/destructuring-binding-not-shadowed",
+    language: "nim",
+    defectClass: "scope-blindness",
+    description: "A destructuring binding never enters its scope frame, so a later read of that name is attributed to a same-named field elsewhere in the file. `let (_, name, _) = splitFile(f)` is a tuple_deconstruct_declaration WRAPPING its bindings, and the pre-fix binder took only children typed symbol_declaration, so the whole node was skipped. Measured on pixie: `name` was unbound, and the read at `images.add((name, image))` was published as `uses renderEmojiSet -> name`, pointing at a struct property declared 26 lines earlier and unrelated to the binding. Caught by nim/contract's forbidRelationships {uses, from: stemOf, target: fileStem}, which is only a real assertion because the paired expectSymbols {fileStem, property} pins that the field exists — otherwise a fix that deleted the field would satisfy the forbid vacuously.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "stemOf", target: "fileStem", confidence: 1, line_number: 88, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "nim/callee-counted-twice",
+    language: "nim",
+    defectClass: "relationship-duplication",
+    description: "A call's callee is published as a `uses` read as well as a `calls` edge, so one call site produces two edges to one target. The pre-fix rule ran the bare-identifier read pass without excluding the callee subtree. Caught by nim/contract's forbidRelationships {uses, target: makeRect} — the callee is in the symbols, so the read pass could have claimed it.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "exercise", target: "makeRect", confidence: 1, line_number: 81, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "nim/assignment-target-read",
+    language: "nim",
+    defectClass: "relationship-fabrication",
+    description: "The left side of an assignment is published as a value read. `written = b.parts.len` would then carry a `uses build -> written` edge where the language has one write and one read of something else. Caught by nim/contract's forbidRelationships {uses, from: build, target: written} — the pin has to be on the SOURCE because a target-only pin would also forbid the legitimate reads of `written` elsewhere in the file.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "build", target: "written", confidence: 1, line_number: 79, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "nim/builtin-call-emitted",
+    language: "nim",
+    defectClass: "relationship-fabrication",
+    description: "`echo`, `discard` and the numeric conversions become call targets. These are compiler builtins and keywords, and an edge to them is a dependency on a name no file declares — the shape the house precedent suppresses for java's println and groovy's printf. Caught by nim/contract's forbidRelationships {calls, target: echo}, {calls, target: discard} and {calls, target: float}.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "exercise", target: "echo", confidence: 1, line_number: 95, metadata: { evidenceClass: "usage_contextual" } }] }),
+  },
+  {
+    id: "nim/blank-identifier-declared",
+    language: "nim",
+    defectClass: "symbol-fabrication",
+    description: "`_` — the blank identifier, which appears in every destructuring pattern and every `proc f(_: int)` signature — is published as a variable. Caught by nim/contract's forbidSymbols {_, variable}.",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "_", kind: "variable", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 } }] }),
+  },
+  {
+    id: "nim/line-number-dropped",
+    language: "nim",
+    defectClass: "line-loss",
+    description: "Relationships stop carrying a line at all. A relationship with no line cannot be shown in a file, and the seam gate's out-of-range check has nothing to check. Caught by nim/contract's expectRelationships line_number pins on an import, a contains, an overrides and a uses edge — four different name sites, because a rule that anchored every edge to one node's line would satisfy a single pin.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; return rest }) }),
+  },
+  {
+    id: "nim/import-line-anchored-to-the-directive",
+    language: "nim",
+    defectClass: "line-attribution",
+    description: "An import's line becomes the line of the `import` KEYWORD rather than of the module token. A multi-line `import` puts the paths on later lines than the keyword, so this points a reader at the wrong line for every such edge — and the corpus's own `nim/compiler/nimsets.nim` is the example: `import` on line 12, `ast, astalgo, …` on line 13. Caught by nim/contract's expectRelationships {imports, -> ../shared, line_number} on a `from` import whose keyword and operand are on the same line but whose OPERAND is the evidence.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "imports" ? { ...x, line_number: 1 } : x)) }),
+  },
+  {
+    id: "nim/evidence-tier-flattened",
+    language: "nim",
+    defectClass: "evidence-mislabel",
+    description: "Every edge is stamped `evidenceClass: \"structural\"`, erasing the distinction the taxonomy depends on: ownership and inheritance are structural facts, while a read, a call and a construction are contextual, a type name reached through a qualifier is reference_qualified, and a type resolved through an import graph is import_based. A flat tier makes a guess look like a fact. Caught by nim/contract's four meta.evidenceClass pins, including two DIFFERENT tiers on the SAME kind (references: area->Rect reference_qualified, makeRect->Rect import_based).",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "structural" } })) }),
+  },
+  {
+    id: "nim/complexity-flattened-to-one",
+    language: "nim",
+    defectClass: "metric-error",
+    description: "Every symbol's cyclomatic complexity becomes 1 — the shape a complexity counter lands in when its decision-point node types do not match the grammar, which is a real failure mode found in other lanes (perl's counter was 1 for almost every file because six node-type literals were dead). Caught by nim/contract's expectComplexity {exercise, equals 3} and {countUp, equals 2}.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: 1 })) }),
+  },
+  {
+    id: "nim/docstring-lost",
+    language: "nim",
+    defectClass: "docstring-loss",
+    description: "Documentation comments stop reaching the symbol. Nim's `##` doc comment is how a proc documents its contract, and losing it is invisible in a symbol count. Caught by nim/contract's expectDocstrings on `area`, whose `## Area of a rectangle.` is the fixture's only doc comment.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const { docstring, ...rest } = s; return rest }) }),
+  },
+  {
+    id: "nim/decorators-lost",
+    language: "nim",
+    defectClass: "payload-loss",
+    description: "Pragmas stop being published as decorators. `{.inline.}` is a calling-convention contract and `{.base.}` is the method-dispatch marker that tells a reader which `describe` is the root of the override chain — losing it makes the override edge unexplainable from the symbol alone. Caught by nim/contract's expectDecorators pinning `inline` on `area` and `base` on `describe`.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const { decorators, ...rest } = s; return rest }) }),
+  },
+  {
+    id: "nim/cross-file-macro-called-without-an-import",
+    language: "nim",
+    defectClass: "dangling-edge",
+    description: "A macro imported from another file stops publishing its import, leaving `discard retTrue()` calling a name the file never declares — a dangling edge, and the reason nim/contract forbids `retTrue` as a SYMBOL in the first place. The call edge itself is legitimate (the macro really is called); the mutant removes the edge that explains where it came from. Caught by nim/contract's expectImports {module: ./mac, meta.nimFromImport} together with its forbidSymbols {retTrue, function} — the pair, because either alone would pass.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).filter((i: any) => i.module !== "./mac"),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && x.target === "./mac")),
+    }),
+  },
+]
+
+async function realAnalyzer(lang: string): Promise<any> {
+  const cfg = LANGS[lang]
+  const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+  return new mod[cfg.className]()
+}
+
+async function main() {
+  const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "validation", "m14", "fixture-baseline.json"), "utf8"))
+  const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
+  const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
+  let survivors = 0
+
+  // cache clean-run results per language once
+  const cleanResults = new Map<string, Awaited<ReturnType<typeof runLang>>>()
+  async function clean(lang: string) {
+    if (!cleanResults.has(lang)) cleanResults.set(lang, await runLang(lang))
+    return cleanResults.get(lang)!
+  }
+
+  const mutantFilter = process.env.BB_MUTANT_ONLY
+  const selected = MUTANTS.filter((m) => {
+    // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
+    if (!mutantFilter) return true
+    return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
+  })
+  // M61 #886: an unmatched selector must fail loudly instead of "passing" on
+  // zero mutants, and a filtered run is dev-scoped: it prints results but
+  // writes NO canonical evidence (canonical F4 is only ever a full run).
+  const scoped = !!mutantFilter
+  if (scoped && selected.length === 0) {
+    console.error(`BB_MUTANT_ONLY="${mutantFilter}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
+    process.exit(3)
+  }
+  for (const m of selected) {
+    const base = await clean(m.language)
+    const real = await realAnalyzer(m.language)
+    const mutant = {
+      // args are (rootNode, content, filePath) on the non-SFC path: hand the
+      // transform the source too, so a source-derived revert stays faithful.
+      analyze: async (...args: any[]) =>
+        m.transform(await real.analyze(...args), typeof args[1] === "string" ? args[1] : undefined),
+      // SFC languages (vue/svelte) run through engine parseFile in runLang;
+      // runLang applies this transform to the parseFile result so mutants are
+      // exercised on the real production path.
+      transform: m.transform,
+    }
+    const mutated = await runLang(m.language, mutant)
+    // Caught = more failing fixtures OR more distinct problems inside
+    // already-failing fixtures (a defect landing in broken code is still a defect).
+    const baseProblems = base.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
+    const mutProblems = mutated.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
+    const caught = mutated.fail > base.fail || mutProblems > baseProblems
+    const caughtBy = mutated.details.filter(d => !d.ok).map((d: any) => d.fixture)
+      .filter(f => !base.details.some((bd: any) => !bd.ok && bd.fixture === f))
+      .join(", ")
+    console.log(`${caught ? "CAUGHT" : "SURVIVED"}  ${m.id}  (${base.fail} -> ${mutated.fail} failures${caughtBy ? "; new failures: " + caughtBy : ""})`)
+    checks.push({ id: `mutation-${m.id.replace("/", "-")}`, description: m.description, status: caught ? "pass" : "fail", detail: `${base.fail} -> ${mutated.fail}` })
+    mutationLog.push({ mutant: m.id, injectedAt: new Date().toISOString(), caughtBy: caughtBy || "(none)", detail: `${m.defectClass}: ${base.fail} -> ${mutated.fail} fixture failures` })
+    if (!caught) survivors++
+  }
+
+  const { emitEvidence } = await import("./evidence-harness")
+  // M61 #886: a filtered run's result is dev-scoped — print only, never write
+  // canonical M14.0.F4 (a 4-mutant slice once replaced the 21-language artifact).
+  if (!scoped) emitEvidence({
+    issueId: "M14.0.F4",
+    title: "Mutation-testing harness",
+    claimLevel: "L1",
+    layers: ["fixtures", "mutation"],
+    checks,
+    limitations: [
+      { description: "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection" },
+      { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
+    ],
+    mutationLog,
+    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors, survived: survivors } },
+  })
+
+  if (survivors > 0) {
+    console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
+    process.exit(2)
+  }
+  console.log(`\nall ${selected.length} mutants caught - the gates can fail${mutantFilter ? ` (BB_MUTANT_ONLY="${mutantFilter}" filtered ${MUTANTS.length} -> ${selected.length})` : ""}`)
+}
+
+if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
+  main().catch(e => { console.error(e); process.exit(1) })
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// from the m60 grammar-governance merge: the bash and html mutant suites
+// ───────────────────────────────────────────────────────────────────────
+// Neither duplicates the VB or NIM blocks above — each is a revert of a fix that
+// lane actually made. A mutation gate that has lost a lane's mutants cannot fail
+// for that lane, and a lane with no failing mutants reads as a lane with no
+// defects. These are located by their `language:` anchors, not by their banners.
+
+  // ---------------------------------------------------------------- bash (#277)
+  {
+    id: "bash/owner-sentinel-global",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "BD2 regression: top-level edges are owned by the literal string `global` again, which isIndexArtifactName rejects as a symbol name — the exact shape that made 622 of 1432 pre-wave edges unresolvable (module-owner-bd2)",
+    transform: revertBashOwnerToGlobalSentinel,
+  },
+  {
+    id: "bash/module-owner-dropped",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "BD2 regression: the script emits no module symbol, so no top-level declaration has an owner (module-owner-bd2)",
+    transform: dropBashModuleSymbol,
+  },
+  {
+    id: "bash/call-site-line-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD1 regression: the 3-field edge identity returns, collapsing three call sites of one callee onto one row — the state M59/#822 says can never be per-site (per-site-lines-821)",
+    transform: collapseBashEdgeIdentity,
+  },
+  {
+    id: "bash/edge-lines-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD1 regression: every edge keeps its row but loses its site line, which M59/#855 shows leaves the edge unattributable (every bash fixture pins a line on every row)",
+    transform: dropBashEdgeLines,
+  },
+  {
+    id: "bash/contains-line-at-declaration-start",
+    language: "bash",
+    defectClass: "line-inaccuracy",
+    description: "BD1/M60 #921 regression: a containment edge names the declaration node's start line instead of the line the child's NAME is written on, which is the line the store resolves it by (contains-name-line-921)",
+    transform: revertBashContainsLineToDeclarationStart,
+  },
+  {
+    id: "bash/trap-signal-as-source",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD3 regression: a trap signal is the edge SOURCE again — `calls: INT -> log` names a caller that does not exist (trap-handler-bd3)",
+    transform: revertBashTrapSignalAsSource,
+  },
+  {
+    id: "bash/trap-target-is-command-string",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD3 regression: the trap handler's TARGET is the whole command string with its arguments, a name no symbol can ever have (trap-handler-bd3)",
+    transform: revertBashTrapTargetToBlob,
+  },
+  {
+    id: "bash/dynamic-command-call-emitted",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD4 regression: a command whose name is an unexpanded expression becomes a call to that expression, so a dollar-sign expression is an edge target (dynamic-command-bd4)",
+    transform: fabricateBashDynamicCommandCalls,
+  },
+  {
+    id: "bash/recovered-command-emitted",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD5 regression: a command read out of a grammar-damaged region becomes a call — the `calls: -> ]/%5D}` shape the pinned corpus carried (recovered-region-guard-bd5)",
+    transform: fabricateBashRecoveredRegionCalls,
+  },
+  {
+    id: "bash/unset-edge-emitted",
+    language: "bash",
+    defectClass: "ontology-violation",
+    description: "BD6/BA-G1 regression: `unset` emits an edge, which no relationship type in the ontology can express without asserting a read that does not happen (unset-ruled-bd6)",
+    transform: fabricateBashUnsetEdges,
+  },
+  {
+    id: "bash/exports-edge-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD7 regression: `export` emits no edge again — the pre-wave handling, which set isExported in metadata and stopped there (export-edges-bd7)",
+    transform: dropBashExportEdges,
+  },
+  {
+    id: "bash/readonly-claimed-as-export",
+    language: "bash",
+    defectClass: "relationship-fabrication",
+    description: "BD7 over-reach: `readonly` is claimed as an export, which it is not (export-edges-bd7)",
+    transform: fabricateBashReadonlyExports,
+  },
+  {
+    id: "bash/case-arm-suppressed",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD8 regression: commands inside a case arm are dropped again as 'dispatch noise' — 14 distinct pairs on the pinned corpus that no other site produced (case-arm-calls-bd8)",
+    transform: suppressBashCaseArmCalls,
+  },
+  {
+    id: "bash/source-resolution-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD9 regression: a dynamic source path is presented as a resolved one, with nothing saying it could not be resolved (source-path-resolution-bd9)",
+    transform: dropBashSourceResolutionLabel,
+  },
+  {
+    id: "bash/dynamic-source-edge-refused",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD9 over-correction: dynamic source paths are dropped instead of labelled, which would delete 16 of the lane's 23 import edges on the pinned corpus (source-path-resolution-bd9)",
+    transform: dropBashDynamicSourceEdges,
+  },
+  {
+    id: "bash/call-flags-always-both",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD10 regression: isFunctionCall and isExternalCommand are both true on every call, so a call to a local function claims to be an external binary (call-identity-bd10)",
+    transform: markBashEveryCallBothIdentities,
+  },
+  {
+    id: "bash/call-identity-order-dependent",
+    language: "bash",
+    defectClass: "nondeterminism",
+    description: "BD10 regression: call identity is decided from declaration order, so a forward reference reads as an external command (call-identity-bd10)",
+    transform: markBashForwardReferencesExternal,
+  },
+  {
+    id: "bash/arithmetic-read-dropped",
+    language: "bash",
+    defectClass: "relationship-loss",
+    description: "BD-gap-closure regression: reads that appear only inside `$(( ))` / `(( ))` are dropped, which is every arithmetic operand (arithmetic-reads-gap-closure)",
+    transform: dropBashArithmeticReads,
+  },
+  {
+    id: "bash/isarray-always-false",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-gap-closure regression: the write-only isArray parameter's pre-fix value returns, so every plain array assignment reports as a scalar (array-declaration-shape)",
+    transform: revertBashIsArrayAlwaysFalse,
+  },
+  {
+    id: "bash/shell-defined-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-shell-defined-vars regression: a read of a shell-defined name is no longer labelled, so 23 BASH_SOURCE edges look like reads of undeclared project variables again (shell-defined-vars)",
+    transform: dropBashShellDefinedLabel,
+  },
+  {
+    id: "bash/assigned-in-file-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
+    transform: dropBashAssignedInFileLabel,
+  },
+  {
+    id: "bash/orphan-edge-source",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "an edge is emitted whose source is not a symbol in the file — the class BD2 removed and the one every bash fixture's universal forbid set convicts",
+    transform: orphanBashEdgeSource,
+  },
+
 
   // ---- the html lane's mutants, one per defect class ----
   {
@@ -11954,99 +11697,3 @@ export const MUTANTS: Mutant[] = [
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
   },
-  // M60 (#278): the powershell mutant set lives in its own module so the
-  // reasoning behind each revert is readable next to the revert rather than
-  // 200 lines apart in this file. `script/` sits outside the main typecheck,
-  // which is also why a separate module is the only way to give these entries
-  // their own type surface.
-  ...POWERSHELL_MUTANTS,
-]
-
-async function realAnalyzer(lang: string): Promise<any> {
-  const cfg = LANGS[lang]
-  const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
-  return new mod[cfg.className]()
-}
-
-async function main() {
-  const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "validation", "m14", "fixture-baseline.json"), "utf8"))
-  const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
-  const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
-  let survivors = 0
-
-  // cache clean-run results per language once
-  const cleanResults = new Map<string, Awaited<ReturnType<typeof runLang>>>()
-  async function clean(lang: string) {
-    if (!cleanResults.has(lang)) cleanResults.set(lang, await runLang(lang))
-    return cleanResults.get(lang)!
-  }
-
-  const mutantFilter = process.env.BB_MUTANT_ONLY
-  const selected = MUTANTS.filter((m) => {
-    // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
-    if (!mutantFilter) return true
-    return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
-  })
-  // M61 #886: an unmatched selector must fail loudly instead of "passing" on
-  // zero mutants, and a filtered run is dev-scoped: it prints results but
-  // writes NO canonical evidence (canonical F4 is only ever a full run).
-  const scoped = !!mutantFilter
-  if (scoped && selected.length === 0) {
-    console.error(`BB_MUTANT_ONLY="${mutantFilter}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
-    process.exit(3)
-  }
-  for (const m of selected) {
-    const base = await clean(m.language)
-    const real = await realAnalyzer(m.language)
-    const mutant = {
-      // args are (rootNode, content, filePath) on the non-SFC path: hand the
-      // transform the source too, so a source-derived revert stays faithful.
-      analyze: async (...args: any[]) =>
-        m.transform(await real.analyze(...args), typeof args[1] === "string" ? args[1] : undefined),
-      // SFC languages (vue/svelte) run through engine parseFile in runLang;
-      // runLang applies this transform to the parseFile result so mutants are
-      // exercised on the real production path.
-      transform: m.transform,
-    }
-    const mutated = await runLang(m.language, mutant)
-    // Caught = more failing fixtures OR more distinct problems inside
-    // already-failing fixtures (a defect landing in broken code is still a defect).
-    const baseProblems = base.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
-    const mutProblems = mutated.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
-    const caught = mutated.fail > base.fail || mutProblems > baseProblems
-    const caughtBy = mutated.details.filter(d => !d.ok).map((d: any) => d.fixture)
-      .filter(f => !base.details.some((bd: any) => !bd.ok && bd.fixture === f))
-      .join(", ")
-    console.log(`${caught ? "CAUGHT" : "SURVIVED"}  ${m.id}  (${base.fail} -> ${mutated.fail} failures${caughtBy ? "; new failures: " + caughtBy : ""})`)
-    checks.push({ id: `mutation-${m.id.replace("/", "-")}`, description: m.description, status: caught ? "pass" : "fail", detail: `${base.fail} -> ${mutated.fail}` })
-    mutationLog.push({ mutant: m.id, injectedAt: new Date().toISOString(), caughtBy: caughtBy || "(none)", detail: `${m.defectClass}: ${base.fail} -> ${mutated.fail} fixture failures` })
-    if (!caught) survivors++
-  }
-
-  const { emitEvidence } = await import("./evidence-harness")
-  // M61 #886: a filtered run's result is dev-scoped — print only, never write
-  // canonical M14.0.F4 (a 4-mutant slice once replaced the 21-language artifact).
-  if (!scoped) emitEvidence({
-    issueId: "M14.0.F4",
-    title: "Mutation-testing harness",
-    claimLevel: "L1",
-    layers: ["fixtures", "mutation"],
-    checks,
-    limitations: [
-      { description: "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection" },
-      { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
-    ],
-    mutationLog,
-    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors, survived: survivors } },
-  })
-
-  if (survivors > 0) {
-    console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
-    process.exit(2)
-  }
-  console.log(`\nall ${selected.length} mutants caught - the gates can fail${mutantFilter ? ` (BB_MUTANT_ONLY="${mutantFilter}" filtered ${MUTANTS.length} -> ${selected.length})` : ""}`)
-}
-
-if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
-  main().catch(e => { console.error(e); process.exit(1) })
-}

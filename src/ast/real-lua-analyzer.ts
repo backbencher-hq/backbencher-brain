@@ -410,8 +410,26 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.patterns.add("Object-Oriented Programming (Metatables)")
       const target = values[0]
       const metatable = values[1]
-      if (target && metatable && !this.isTableNode(target)) {
-        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
+      // M60 LUA-32: BOTH arguments must be names, not expressions. The guard below
+      // only ever checked the first argument, so `setmetatable(self, { __index =
+      // super })` published `extends self -> { __index = super }` — the whole
+      // table constructor as the TARGET. Two measured losses on kong:
+      // `self -> { __index = super }` at kong/db/dao/init.lua:990 and
+      // `_M -> { __call = ..., __index = ... }` at kong/cmd/utils/log.lua:88, whose
+      // target spans five lines.
+      //
+      // That second one is why this hid for so long: the target contains NEWLINES,
+      // and pool-worker's target filter rejects any target containing one, so the
+      // edge never reached the store. Through the pipeline the defect was
+      // INVISIBLE — the edge was simply absent, indistinguishable from an edge that
+      // was never derived. It surfaced only from the direct-path/pipeline seam
+      // probe added in LUA-31, which compares the two paths per file and reports
+      // labels the pipeline drops. Same defect class as LUA-29 on a path LUA-29's
+      // whitelist never touched.
+      const srcName = this.nameBearing(target)
+      const mtName = this.nameBearing(metatable)
+      if (target && metatable && !this.isTableNode(target) && srcName && mtName) {
+        this.addRelationship(ctx, srcName, mtName, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
       }
       if (metatable?.type === "identifier") {
         const tableName = metatable.text
@@ -532,6 +550,51 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!target) return
     if (target.type === "identifier") {
       ctx.exports.push({ name: target.text, isDefault: true, range: this.nodeToRange(node), metadata: { luaSpecific: true } })
+      return
+    }
+    // M60 LUA-09: `return { a = 1, b = 2 }` published NOTHING. Only `return
+    // <ident>` was ever handled, and the returned table literal is the dominant
+    // way a Lua module publishes its surface — 366 of Kong's 1,309 files and 33
+    // of Luvit's 199, carrying 1,377 nameable exports, by the grammar-based
+    // census in script/m60/lua-export-census.ts. Not estimated from a guess at
+    // prevalence: counted off the wired grammar, because the census also
+    // settled which shapes must stay silent (see below).
+    //
+    // The rule is deliberately narrow, and each exclusion is a measurement or a
+    // correctness constraint, not caution for its own sake:
+    //
+    //   - A member with NO `name` field is a POSITIONAL entry (`return { 1, 2 }`)
+    //     and publishes nothing. Publishing it would mean inventing a name that
+    //     no source text supports. The existing `tableFieldNames` helper cannot
+    //     be reused here: it falls back to `namedChild(0)`, which for a
+    //     positional entry is the VALUE, so it would yield the names "1" and
+    //     "2". Only the `name` FIELD is read.
+    //   - A `["k"] = 1` member puts a STRING node in the `name` field, not an
+    //     identifier (measured), with the unquoted text under `content`. An
+    //     identifier-only match would silently drop every string key.
+    //   - A nested `return { sub = { x = 1 } }` publishes `sub` only. `x` is a
+    //     member of sub, not of the module; flattening it would invent a
+    //     top-level export.
+    //   - `return require("x")`, `return "s"` and `return setmetatable(M, mt)`
+    //     stay silent. Naming a re-export would mean inventing an export name
+    //     from a module path or a literal, which is a different relationship
+    //     entirely. Pinned as silent in the gate so a future change cannot start
+    //     inventing them unnoticed.
+    if (target.type === "table_constructor") {
+      for (let i = 0; i < target.namedChildCount; i++) {
+        const f = target.namedChild(i)
+        if (!f || f.type !== "field") continue
+        const key = f.childForFieldName("name")
+        if (!key) continue
+        let name: string | undefined
+        if (key.type === "identifier") name = key.text
+        else if (key.type === "string") name = this.stringValue(key)
+        if (!name) continue
+        // M59: the range is the NAME-BEARING node's own, not the `return`
+        // statement's. On a multi-line literal those differ, and anchoring on
+        // the return would collapse every member onto the `return` line.
+        ctx.exports.push({ name, isDefault: false, range: this.nodeToRange(key), metadata: { luaSpecific: true } })
+      }
     }
   }
 
@@ -713,6 +776,24 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   // the LAST named child, so its own start position is the line the method name
   // is written on — which is exactly M59 (#825)'s rule and exactly what java
   // gets from `childForFieldName("name")` on its invocation node.
+  // M60 LUA-32: the ONE rule for "is this node a name", shared by the callee
+  // whitelist (LUA-29/LUA-30) and the setmetatable path, so the two cannot drift
+  // apart the way `table_index_expression` did (LUA-27). Three node forms carry a
+  // name; everything else is an expression, and an expression used as a target is
+  // a payload — unmatchable, unreferenceable, and unbounded in shape.
+  //
+  // `dot_index_expression` and `method_index_expression` yield their FULL TEXT
+  // (`Account.Meta`), which is a path rather than a bare name. That is kept
+  // deliberately: these are relationship ENDPOINTS, not symbols, and the
+  // member-identity rule that forbids '.' in a SYMBOL name (verify-lua-member-identity)
+  // is a different contract from what a reference to `Account.Meta` may look like.
+  private nameBearing(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    if (node.type === "identifier") return node.text
+    if (node.type === "dot_index_expression" || node.type === "method_index_expression") return node.text
+    return undefined
+  }
+
   private callee(functionNode: Node): { name: string; nameNode: Node } | undefined {
     if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode }
     if (functionNode.type === "dot_index_expression" || functionNode.type === "method_index_expression") {
@@ -739,7 +820,56 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // makes the branch unreachable. verify-lua-grasped-fields caught it, which is
     // the gate doing precisely the job it was built for, on the very defect class
     // it was built to catch, in the same lane.
-    if (functionNode.type === "bracket_index_expression") return undefined
+    // M60 LUA-30: a LITERAL string index IS a name, and LUA-22's fix above threw
+    // it away with the computed ones. `dao["rows"]()` names exactly the field
+    // `dao.rows()` names, but the measured tree builds both as
+    // `bracket_index_expression` — the literal one as {table, field=string}, the
+    // computed one as {table, field=<expr>} — so the branch cannot tell them
+    // apart by TYPE and the whole class was dropped. Measured on a probe:
+    //   dao["rows"]()  ->  NO EDGE      (should be calls:rows)
+    //   dao.rows()     ->  calls:rows
+    // The comment above this branch claimed "a literal index IS a name and is
+    // handled by the dot/method branch above". That was false: a literal index is
+    // a bracket_index_expression, never a dot or method one, so the intent was
+    // documented and never implemented. A comment asserting a behaviour is not
+    // evidence that the behaviour exists.
+    //
+    // Only a literal STRING names a field. Measured, all three forms:
+    //   dao["rows"]()  field=string      -> the name IS the unquoted content
+    //   dao[1]()       field=number      -> an array index, not a name
+    //   dao[k]()       field=identifier  -> a VARIABLE holding the key, and
+    //                                       which key is not statically knowable
+    if (functionNode.type === "bracket_index_expression") {
+      const field = functionNode.childForFieldName("field")
+      if (field?.type !== "string") return undefined
+      const literal = this.stringValue(field)
+      return literal ? { name: literal, nameNode: field } : undefined
+    }
+    // M60 LUA-29: a call ON A CALL has no name either, and this fallthrough was
+    // publishing one. `require("some.module")()` — the shape at
+    // kong/cmd/init.lua:9 and kong/init.lua:58 — has a callee that is itself a
+    // `function_call`, so `functionNode.text` produced the relationship target
+    // `require("kong.globalpatches")`, a payload rather than a name, the same
+    // defect class LUA-22 fixed two lines above for computed indexes and missed
+    // here for the adjacent case. Measured on kong: 51 edges whose target is a
+    // whole call, e.g. `require("kong.tools.dns")`,
+    // `ws_migration_teardown(operations.postgres.teardown)`,
+    // `sandbox(expression)`. Unmatchable, unreferenceable, unbounded in shape —
+    // every property M60 records for a fabricated target.
+    //
+    // It survived this long because the ORACLE shared it: script/m60/lua-truth-oracle.ts
+    // had no guard here either, so both sides emitted the payload and the
+    // differential read the agreement as confirmation. Fixing the oracle's side
+    // first is what exposed it — which is the argument the LUA-22 comment makes
+    // about an oracle that shares a defect, demonstrated rather than asserted.
+    //
+    // A WHITELIST, for the reason LUA-27 gives on the oracle side: two blacklists
+    // in a row is how `table_index_expression` stayed in the oracle as dead code.
+    // These four forms are the only callees that carry a name, and the grammar —
+    // not this file's memory of it — is the authority for that list.
+    if (functionNode.type === "function_call" || functionNode.type === "table_constructor" ||
+        functionNode.type === "binary_expression" || functionNode.type === "parenthesized_expression" ||
+        functionNode.type === "string" || functionNode.type === "number") return undefined
     if (functionNode.text) return { name: functionNode.text, nameNode: functionNode }
     return undefined
   }

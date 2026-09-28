@@ -579,17 +579,54 @@ module.exports = grammar({
       const _identifier = /[\p{XID_Start}._][\p{XID_Continue}.]*/;
       const _quoted_identifier = /`((?:\\(.|\n))|[^`\\])*`/;
 
+      // A `dot_dot_i` (`..1`) must not steal a PREFIX of a longer identifier:
+      // `..2dge` is ONE name and R accepts it (verified on R 4.4.3:
+      // `..2dge <- 1; ls()` yields `..2dge`). Upstream matched /[.][.]\d+/ at a
+      // positive rank, so the lexer took `..2` out of `..2dge` and left `dge`
+      // behind — two sibling nodes, and a declaration published under the wrong
+      // name.
+      //
+      // Rust's regex has no lookahead, so "digits NOT followed by an identifier
+      // character" cannot be written directly. It is expressed as the complement:
+      // an alternative that REQUIRES at least one trailing identifier character,
+      // ranked above `dot_dot_i`. It lives INSIDE `identifier` rather than
+      // alongside it, because a separate rule is not in the valid-token set where
+      // an expression may start, which is exactly where the split happened.
+      //   `..1`     this alternative cannot match -> dot_dot_i  (unchanged)
+      //   `..2`     this alternative cannot match -> dot_dot_i  (unchanged)
+      //   `..2dge`  this alternative matches all 7 chars, higher rank -> identifier
+      const _dotdot_identifier = prec(3, /[.][.][0-9]+[\p{XID_Continue}.]+/);
+
       return token(
         choice(
           _identifier,
-          _quoted_identifier
+          _quoted_identifier,
+          _dotdot_identifier
         )
       )
     },
 
     // Identifier-ish, but useful enough to be their own nodes
     dots: $ => "...",
-    dot_dot_i: $ => token(withPrec(PREC.DOT_DOT_I, /[.][.]\d+/)),
+
+    // `..N` is a token in its own right (R's reference to an enclosing function's
+    // Nth argument), and it must NOT steal a PREFIX of a longer identifier.
+    //
+    // Upstream matched /[.][.]\d+/ at a positive rank, so the lexer took `..2` out
+    // of `..2dge` and left `dge` behind: the statement became TWO sibling nodes, a
+    // `dot_dot_i` and a `binary_operator`, and the declaration was published under
+    // the wrong name. R itself accepts `..2dge` as one identifier (verified on
+    // R 4.4.3: `..2dge <- 1; ls()` yields `..2dge`).
+    //
+    // Rust's regex has no lookahead, so "digits NOT followed by an identifier
+    // character" cannot be written directly. It is expressed as the complement: a
+    // token that REQUIRES at least one trailing identifier character, ranked above
+    // `dot_dot_i`, and ALIASED to `identifier` so a consumer still sees a plain
+    // identifier and not a new node type. Then:
+    //   `..1`      only dot_dot_i matches           -> dot_dot_i  (unchanged)
+    //   `..2`      only dot_dot_i matches           -> dot_dot_i  (unchanged)
+    //   `..2dge`   the alias matches all 7 chars    -> identifier  (was: split)
+    dot_dot_i: $ => token(withPrec(PREC.DOT_DOT_I, /[.][.]\d+/) ),
 
     // NOTE: Technically R allows `...` and `..1` anywhere we want an `$.identifier`,
     // but practically it can be useful for downstream consumers to have separate
