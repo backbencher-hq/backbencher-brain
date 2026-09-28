@@ -223,6 +223,20 @@ function bindingNameAbove(value: Node): string | undefined {
  * function boundary ends the search, because nothing inside a function body is
  * a module-level member of anything.
  */
+/**
+ * `get` / `set` are ANONYMOUS token children of a `method_definition` — not
+ * named children — so a named-child walk never sees them. Verified against the
+ * pinned typescript grammar: in `{ get size(){}, set size(v){} }` both members
+ * are `method_definition` and each carries one anonymous `get`/`set` token.
+ */
+function accessorKindOf(node: Node): "get" | "set" | undefined {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && (c.type === "get" || c.type === "set")) return c.type
+  }
+  return undefined
+}
+
 function containerOwnerName(n: Node): string | undefined {
   let p: Node | null = n.parent
   while (p) {
@@ -3409,6 +3423,31 @@ class TypeScriptAnalysisRunner {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
+
+    // R7: a get/set pair is ONE property in TypeScript's type system, and the
+    // CLASS path already rules that way — its body pre-pass keeps the last
+    // declaration of each name. The object-literal path had no such pass, so
+    // `{ get size(){}, set size(v){} }` produced TWO `size` symbols sharing one
+    // owner, and therefore TWO identical `contains owner -> size` rows: a
+    // duplicate symbol, a duplicate edge, and an ambiguous name for every
+    // consumer that resolves a member by name. Measured: 1 duplicate row per
+    // accessor pair, in both the TypeScript and JavaScript lanes.
+    //
+    // Keeping the LAST accessor mirrors the class rule exactly. Returning false
+    // also leaves the walker to descend into the skipped accessor's body, so its
+    // calls are still recorded — against the OWNER, which is what the class path
+    // does today (a getter body calling `compute()` yields `calls C -> compute`),
+    // so this loses no edge that the class path keeps.
+    if (accessorKindOf(node) !== undefined) {
+      const parent = node.parent
+      if (parent) {
+        for (let i = 0; i < parent.namedChildCount; i++) {
+          const sib = parent.namedChild(i)
+          if (!sib || sib.startIndex <= node.startIndex) continue
+          if (accessorKindOf(sib) !== undefined && sib.childForFieldName("name")?.text === name) return false
+        }
+      }
+    }
     // R1: the ownership rule is the twin's, ported verbatim
     // (`containerOwnerName`), so an object-literal member, a class-expression
     // member and a class-declaration member are resolved by ONE contract
