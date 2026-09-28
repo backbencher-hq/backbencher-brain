@@ -15292,7 +15292,29 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang === "dart" || lang === "swift" || lang === "cpp" ? [] : ["overrides"]),   // 2026-09-28: csharp JOINS the overrides-audited set. Its paired exclusion (this entry and the truth-side skip in the csharp block) had stood since C923 on the grounds that the truth derives the member contract it would have to adjudicate — a claim that was half true, since the override-MODIFIER form had no truth at all. The pair came out together and the run is the evidence: 13,221/13,221, 0 MISSING, 0 unexplained. ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" || lang === "xml" ? ["contains"] : []),   // XML joins the CONTAINS-audited set, and ONLY contains. Its oracle
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang === "dart" || lang === "swift" || lang === "cpp" ? [] : ["overrides"]),
+        // RESTORED 2026-09-28 (clojure lane). A same-day csharp-lane edit appended a
+        // `//` comment to the physical line that carried the `calls` and `contains`
+        // entries below, and a `//` comment runs to END OF LINE — so the whole rest of
+        // that line was silently deleted. Measured by evaluating the allowlist
+        // expression before and after the edit: 17 lanes LOST `calls` (java, kotlin,
+        // scala, groovy, clojure, typescript, javascript, vue, svelte, elixir, erlang,
+        // clean, go, ruby, dart, haskell, perl) and perl + xml LOST `contains`.
+        //
+        // The symptom reads exactly like a broken analyzer and is worse than one:
+        // truth still derives the label, so every such lane reports MISSING in the
+        // thousands, while `unexplained=0` because the ANALYZER side was filtered
+        // down to the labels that survived. Measured on clojure/core.async: coverage
+        // 19.8%, MISSING=1,691, analyzer-edges 295 — against 100% / 0 / 1,047 from
+        // the same analyzer and the same `deriveClojureEdges` read by an independent
+        // harness (script/m14/tmp/clj-full-f5.ts).
+        //
+        // The fix is the two entries back, on lines of their own, so no comment can
+        // reach them again. The csharp lane's own `["calls", "references", "uses"]`
+        // entry is untouched and still on its own line.
+ ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []),
+ ...(lang === "perl" || lang === "xml" ? ["contains"] : []),
+   // 2026-09-28: csharp JOINS the overrides-audited set. Its paired exclusion (this entry and the truth-side skip in the csharp block) had stood since C923 on the grounds that the truth derives the member contract it would have to adjudicate — a claim that was half true, since the override-MODIFIER form had no truth at all. The pair came out together and the run is the evidence: 13,221/13,221, 0 MISSING, 0 unexplained. ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" || lang === "xml" ? ["contains"] : []),   // XML joins the CONTAINS-audited set, and ONLY contains. Its oracle
         // derives containment and the DTD declaration classes and nothing else, so
         // auditing `imports`/`references`/`calls` here would score every such edge
         // UNEXPLAINED against an oracle that never derives them — a false alarm by
