@@ -12397,19 +12397,33 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         }
         return out
       }
-      const heritageEdge = (owner: any, nameNode: any, label: "extends" | "implements") => {
+      // A MEMBER-LEVEL clause keeps the name WHOLE; a type-level one does not.
+      //
+      // `Public Sub Refresh() Implements IThing.Refresh` identifies the member BY
+      // its interface, and the method is named `Refresh` precisely because it
+      // implements `IThing.Refresh`. Last-segment reduction therefore yields
+      // `implements Refresh -> Refresh` -- an edge from a symbol to itself, which
+      // is not navigable and answers none of the questions asked of it. The full
+      // `IThing.Refresh` is what makes the edge mean something.
+      //
+      // This was 17 of the 23 rows the full-corpus sweep reported as MISSING, and
+      // they all read as self-edges for exactly this reason: the oracle was right
+      // that a relationship exists and wrong about its shape.
+      const heritageEdge = (owner: any, nameNode: any, label: "extends" | "implements", memberLevel = false) => {
         if (!owner) return
         const on = contractName(owner)
         if (on.length === 0) return
-        const leaf = lastIdent(nameNode)
+        const leaf = memberLevel ? nameNode : lastIdent(nameNode)
         if (!leaf) return
         edges.push({ label, from: on, target: String(leaf.text).trim() })
       }
       for (const n of all) {
         if (n.type === "inherits_statement" || n.type === "inherits_clause" || n.type === "inherits_member_clause") {
-          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "extends")
+          const member = n.type === "inherits_member_clause"
+          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "extends", member)
         } else if (n.type === "implements_statement" || n.type === "implements_clause" || n.type === "implements_member_clause") {
-          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "implements")
+          const member = n.type === "implements_member_clause"
+          for (const nn of topLevelNames(n)) heritageEdge(ownerOf(n), nn, "implements", member)
         }
       }
     }
