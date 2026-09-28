@@ -52,6 +52,7 @@
     "audit:evidence": "bun run script/m14/evidence-harness.ts validate",
     "audit:fixtures": "bun run script/m14/run-fixtures.ts",
     "audit:mutations": "bun run script/m14/mutate-analyzer.ts",
+    "audit:imports": "bun run script/m14/verify-js-imports-corpus.ts",
     "audit:differential": "bun run script/m14/verify-differential-evidence.ts && bun run script/m14/differential.ts && bun run audit:freshness",
     "audit:freshness": "bun run script/m12/verify-differential-freshness.ts --allow-unpinned",
     "audit:honesty": "bun run script/m14/verify-honesty.ts",
