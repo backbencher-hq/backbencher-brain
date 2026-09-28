@@ -208,6 +208,83 @@ context". That is wrong, it silently dropped four real bindings, and the R oracl
 caught it. Both the error and the correction are recorded here rather than only
 the correction.
 
+## Verifying the LINE NUMBER — R's own token positions
+
+The binding differential above answers "which names does this file bind?". It says
+nothing about *where*, and the line-number claim was resting on a check that could be
+fooled: an edge's `line` was required to **contain** its target's text, which passes just
+as happily on a substring inside a string literal or a comment.
+
+So the same oracle was extended to positions. `getParseData()` lists every terminal
+token with the line and column R itself recorded, and a token R lists *is* an occurrence
+of that name. Two exact invariants replace the fuzzy one:
+
+1. **symbol position** — the name must **begin** at an offset R recorded, and that
+   offset must fall **inside** the analyzer's own declared range. Both halves are
+   needed: checking the name alone passes a symbol whose range is wrong; checking the
+   range alone passes a name R never saw.
+2. **edge line** — R must have recorded the edge's target name on that exact line.
+
+### Three things about R's coordinates, each measured
+
+- **Columns are TAB-EXPANDED.** R reports `	foo` with `foo` at columns 9..11. Every
+  other byte advances the column by one — a multi-byte character advances it by its
+  *byte* count, so `café` spans 1..5 — but a TAB jumps to the next multiple of eight.
+  A first attempt treated R's column as a byte offset and rejected **6,448 rows**,
+  which read as "the oracle disagrees with the analyzer" rather than as a unit error.
+- **A name often lives inside a string.** `setClass(Matrix, ...)` raises *object
+  'Matrix' not found*; the class name must be a `STR_CONST`. So the oracle speaks in
+  "names R recorded", and reports each hit as bare or in-a-string rather than hiding
+  the distinction in a boolean. 863 edges resolve in a string; that is correct for S4.
+- **`base::sign` is FOUR tokens**, and the package name is carried by `SYMBOL_PACKAGE`
+  — the `NS_GET` token's own text is just `"::"`. Missing it made 927 `imports` edges
+  look like they pointed at nothing. That cluster was a blind spot in the harness, not a
+  defect in the analyzer.
+
+### What it found
+
+| | before | after | what it was |
+|---|---|---|---|
+| span mismatches | 6,448 | **0** | harness: TAB and wrong-line lookups |
+| symbols whose name is not where R says | 876 | **7** | 833 real, 1 quoted name, 42 harness |
+| edges whose line has no such name | 2,003 | **465** | 927 harness, 1,003 real, 71 harness |
+
+Four analyzer defects, all real:
+
+- **833 member ranges excluded the name they publish under.** A member is written
+  `name = value`; the range was taken from the *value*, so an R6 method's range began at
+  the `function` keyword. The range did not contain the symbol's own name. Fixed by
+  spanning `name .. value`. Found in dplyr, shiny and testthat — the R6-heavy packages.
+- **75 `calls` edges whose target was a copy of the caller's source.** R can call a
+  non-name: `chol2inv((if (uplo == "U") triu else tril)(x))`. `calleeName` ended in a
+  blanket `return unquoteIdentifier(fnNode.text)`, so the whole if-expression became a
+  function's name. A relationship target that quotes the input back is not a
+  relationship. Now an allowlist, and an unnameable callee emits **no** edge — counted
+  in `ambiguity.callsToUnnameableCallee` so the gap stays visible.
+- **1 S4 slot name published as `"a"`, quotes included.**
+  `setClass("new_class", slots = c("a" = "numeric"))` names a slot with a string.
+  Argument names may be bare, backticked or a string; only backticks were stripped.
+- **7 byte offsets in files containing non-ASCII.** See below.
+
+The F03-r6.R ground truth asserted the *old*, wrong member range. R puts `size` at 4:5
+and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The expectation
+was corrected to match R, not the analyzer** — and the reason is recorded in the ground
+truth's own notes.
+
+### An unresolved defect: `byteIndex` is not a byte index
+
+For a file containing non-ASCII, the reported `startIndex`/`endIndex` are **code-unit**
+offsets. In `shiny/R/shiny.R`, R places `cache` at byte **39407**; the analyzer reports
+**39395**, and the difference is exactly the 12 surplus bytes from non-ASCII characters
+earlier in the file. **15 of 1,174** R files are affected.
+
+The existing range audit cannot see this: it recomputes offsets in the same unit the
+analyzer reports, so it is self-consistent by construction. **Two harnesses sharing a
+unit assumption agree with each other and are wrong together.** That is the most
+important thing this pass found, and it is left open rather than quietly patched,
+because the unit is a framework-wide contract and 1.3% of files is not the place to
+change it unilaterally. Every one of the 7 remaining position failures is this.
+
 ## Text operations (the complete inventory)
 
 There are **no regex literals** in the analyzer. Every text-level operation is

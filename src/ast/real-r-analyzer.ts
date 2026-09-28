@@ -772,7 +772,23 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return ""
     }
     if (fnNode.type === "identifier") return this.unquoteIdentifier(fnNode.text)
-    return this.unquoteIdentifier(fnNode.text)
+    // Anything else is NOT a name, and the empty string is the honest answer. The
+    // previous version of this line was `return this.unquoteIdentifier(fnNode.text)`, a
+    // blanket fallback that turned ANY node's source text into a function's name. For an
+    // ordinary call that is merely redundant, but R can CALL a non-name, and when it does
+    // the text became the target:
+    //
+    //     chol2inv((if (uplo == "U") triu else tril)(x), ...)
+    //
+    // produced a `calls` edge whose target was the whole string
+    // `(if (uplo == "U") triu else tril)`. 75 such edges in the pinned corpora. A
+    // relationship target that is a copy of the caller's own source is not a
+    // relationship; it is the analysis quoting its input back.
+    //
+    // The list is an ALLOWLIST on purpose. Enumerating the node types R builds a callee
+    // from is checkable; enumerating the ones it does not is not, and a node type added
+    // by a grammar update would silently become a name again.
+    return ""
   }
 
   /**
@@ -1149,7 +1165,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: memberName,
             kind: ASTEngine.SymbolKind.Method,
-            range: this.getRange(memberValue),
+            range: this.getDeclarationRange(memberNameNode, memberValue),
             signature: this.extractSignature(memberValue),
             parameters: this.extractParameters(memberValue),
             docstring: "",
@@ -1167,7 +1183,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: memberName,
             kind: ASTEngine.SymbolKind.Property,
-            range: this.getRange(memberValue),
+            range: this.getDeclarationRange(memberNameNode, memberValue),
             ownerName: className,
             ownerKind: ASTEngine.SymbolKind.Class,
             docstring: "",
@@ -1327,7 +1343,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
     declaredTypes: Set<string>,
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
     fnStack: Array<{ node: Node; attribution: CallAttribution | null }>,
   ): void {
     const fnNode = node.childForFieldName("function")
@@ -1391,7 +1407,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `Cls$new`), because the qualified form is the information a reader needs;
       // `calleeName` is the bare name used only for dispatch decisions.
       const callTarget = this.callTargetName(fnNode, fnName)
-      this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, fnNode)
+      // An unnameable callee produces no edge. Counting it keeps the gap visible instead
+      // of letting it vanish into a total.
+      if (!callTarget) ambiguity.callsToUnnameableCallee = (ambiguity.callsToUnnameableCallee ?? 0) + 1
+      else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, fnNode)
       if (attribution.confidence < 1.0) ambiguity.callsAttributedThroughClosure++
 
       // R6/R5 construction is only certain when the receiver was declared as a
@@ -1615,7 +1634,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
   ) {
     if (!args) return
     const fnName = this.calleeName(node.childForFieldName("function"))
@@ -1940,6 +1959,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * function slot is not a simple callable form.
    */
   private callTargetName(fnNode: Node, bare: string): string {
+    if (!bare) return ""
     if (fnNode.type === "identifier") return bare
     if (fnNode.type === "namespace_operator" || fnNode.type === "extract_operator") {
       const ns = fnNode.childForFieldName("lhs")
@@ -2057,7 +2077,19 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (entry?.type !== "argument") continue
       const entryName = entry.childForFieldName("name")
       if (entryName?.text) {
-        results.push({ name: this.unquoteIdentifier(entryName.text), range: this.getRange(entryName), via })
+        // An argument name can be written three ways -- bare (`Dim = ...`), backticked
+        // (`` `odd name` = ... ``) or as a string (`"a" = ...`) -- and R requires the
+        // last form in places. The S4 idiom
+        //
+        //     setClass("new_class", slots = c("a" = "numeric"))
+        //
+        // names its slot with a string, and this function stripped only backticks, so the
+        // published symbol was literally `"a"`, quotes included. That name exists in
+        // exactly one R file in the pinned corpora, and the R-positions oracle found it
+        // because R has no token whose text is `"a"`. Backticks then quotes, because a
+        // backticked name may itself contain a double quote.
+        const name = this.unquoteString(this.unquoteIdentifier(entryName.text))
+        results.push({ name, range: this.getRange(entryName), via })
       }
     }
     return results
@@ -2137,6 +2169,31 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return results
+  }
+
+  /**
+   * The range of a member DECLARATION: from the declared name to the end of its value.
+   *
+   * A member is written `name = value`, and a range taken from `value` alone starts at
+   * the value. For an R6 or R5 method that means the range begins at the `function`
+   * keyword and so EXCLUDES the name the symbol is published under -- a range that does
+   * not contain the thing it names. The R-positions oracle found 833 of these across the
+   * pinned corpora (dplyr, shiny, testthat), every one a method, all of them off by the
+   * length of `name = `.
+   *
+   * Both nodes are required, so a member with no name is not representable here and the
+   * caller is forced to decide what it means rather than being handed a range that
+   * silently omits the name.
+   */
+  private getDeclarationRange(nameNode: Node, valueNode: Node) {
+    return {
+      startLine: nameNode.startPosition.row + 1,
+      startColumn: nameNode.startPosition.column + 1,
+      endLine: valueNode.endPosition.row + 1,
+      endColumn: valueNode.endPosition.column + 1,
+      startIndex: nameNode.startIndex,
+      endIndex: valueNode.endIndex,
+    }
   }
 
   private getRange(node: Node) {

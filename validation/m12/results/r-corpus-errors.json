@@ -12,7 +12,7 @@
       "trackedRFiles": 266,
       "linesOfCode": 21932,
       "symbols": 1625,
-      "relationships": 6047,
+      "relationships": 5913,
       "filesWithParseError": 1
     },
     {
@@ -21,7 +21,7 @@
       "trackedRFiles": 80,
       "linesOfCode": 29334,
       "symbols": 3716,
-      "relationships": 8352,
+      "relationships": 8217,
       "filesWithParseError": 0
     },
     {
@@ -30,7 +30,7 @@
       "trackedRFiles": 195,
       "linesOfCode": 39535,
       "symbols": 3517,
-      "relationships": 6997,
+      "relationships": 6891,
       "filesWithParseError": 0
     },
     {
@@ -39,7 +39,7 @@
       "trackedRFiles": 276,
       "linesOfCode": 50497,
       "symbols": 3484,
-      "relationships": 10390,
+      "relationships": 10099,
       "filesWithParseError": 1
     },
     {
@@ -48,21 +48,21 @@
       "trackedRFiles": 357,
       "linesOfCode": 65252,
       "symbols": 3963,
-      "relationships": 10106,
+      "relationships": 9891,
       "filesWithParseError": 0
     }
   ],
   "totals": {
     "trackedRFiles": 1174,
     "symbols": 16305,
-    "relationships": 41892,
+    "relationships": 41011,
     "filesWithParseError": 2
   },
   "note": "Every tracked .R/.r file of every pinned corpus repo, parsed with the shipped grammar. The two remaining parse-error files are CORRECT failures, not defects: shiny/inst/app_template/app.R is a Go text/template file that ships inside the shiny package and is not R, and testthat's tests/.../test-error-1.R is a deliberate syntax-error fixture. Before the hex-float grammar fix Matrix reported 12 error nodes across 4 files.",
-  "currentCommit": "df610c61b6ae821e365833526f10a76a3fe3f08e",
+  "currentCommit": "0dc5d2f5424cba39266faa983973550a84fc3624",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-27T17:21:06.120Z",
-    "contentSha256": "6e56a58a1020ff3a4aec2b29dd3c7ea2441ce73c894d52c694aad3c614ccca2f"
+    "sealedAt": "2026-09-28T00:34:45.279Z",
+    "contentSha256": "5e72b07c45608c9974a5ec985a2f11a6f8ee24f25a11c1b6ece0ea4748b2e517"
   }
 }
