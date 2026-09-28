@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 33.69,
-    "loadAvgEnd": 30.18,
+    "loadAvgStart": 41.85,
+    "loadAvgEnd": 39.16,
     "sliceCount": 1
   },
   "counts": {
@@ -1542,18 +1542,18 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.1
+        "avgMsPerFile": 2.2
       },
-      "sampleSetHash": "afd807e1584ee597"
+      "sampleSetHash": "8127d7c0de552761"
     },
     "kubernetes:markdown": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 1.5
+        "avgMsPerFile": 1.9
       },
-      "sampleSetHash": "f509964a42c1bb07"
+      "sampleSetHash": "850beced0f7f393d"
     },
     "element-plus:scss": {
       "missing": 64,
@@ -1624,8 +1624,8 @@
     "jq:c": "2b743b65d0eac283",
     "svelte:css": "def94838c364b04e",
     "grails-core:css": "13f8825d05114cf8",
-    "scala3:markdown": "afd807e1584ee597",
-    "kubernetes:markdown": "f509964a42c1bb07",
+    "scala3:markdown": "8127d7c0de552761",
+    "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840"
   }
 }
