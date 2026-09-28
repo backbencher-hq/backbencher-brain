@@ -363,6 +363,40 @@ O(n) scans.
 
 ## Verification
 
+### The differential found four defects in its own oracle, from another lane's corpus
+
+This lane reads **100% coverage / 0 unexplained on both corpora**, and it read that way
+at every step of the SCSS work below — while four defects in `deriveCssEdges` were live
+and undiscovered. They were found because registering the `scss` lane pointed the same
+oracle at element-plus, which is 170 of the 254 `.scss` files in 13 corpora and vendors
+VitePress documentation styles:
+
+1. a comma group was resolved as a **unit** — `.doc-content h1, h2` names only its first
+   member correctly;
+2. there was no **cross product** — `h1..h6 { .el-tag, .vp-tag {} }` is twelve selectors,
+   and the intermediate fix asserted five the author never wrote;
+3. the product **repeated members** — four parents times two children is eight entries of
+   which four are duplicates;
+4. **`&` did not expand per parent member** — `&:first-child` under a six-member parent is
+   six selectors, and substituting the comma-JOINED parent suffixed only the last one.
+
+Plus: a name still containing `&` after resolution is **not a name** (224 rules in 160
+files, whose referent is a mixin call site outside the file), and the **unquoted `url()`
+import branch never fired** — the payload is a grandchild, so four of the six imports in
+one corpus file were silently absent from the truth. That file sits outside the rotating
+60-file sample, which is why the row read 100% while the truth was quietly short.
+
+None of this changed the ruling that a comma group is **one** symbol and **one**
+endpoint. It sharpened it: one endpoint per RULE, with each member RESOLVED inside that
+one name. Those are two different operations, and conflating them produced the original
+error and all four of these.
+
+A second opinion is only worth having if it is had. Nothing about this lane's own
+evidence was wrong — it was complete with respect to two corpora, and every defect lived
+in the parts of CSS that two corpora happen not to contain.
+
+### The gates
+
 Eleven gates plus a mutant set. The mutants are 13 faithful reverts of defects
 measured during this work (`script/m60/css-mutants.ts`), and **all 13 are caught** —
 which is the only claim worth making about them. Two did not survive their first
