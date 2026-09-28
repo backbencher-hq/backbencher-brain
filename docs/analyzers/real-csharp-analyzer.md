@@ -372,3 +372,79 @@ reports "0 unexplained":
   argument types, `where T : Dep` constraint clauses) is unchanged by this round. One boundary
   is now *closed* rather than opened: a `using Alias = T;` directive's type arguments were
   previously unwritten, and D3 writes them.
+
+## 2026-09-28, later — the labels that had nobody on the other side
+
+**The premise: an oracle that agrees with the lane finds nothing.** This round's first question
+was "are all the relationships emitted?", and the honest answer — from a ledger
+(`script/m14/tmp/cs-deep-18-relationship-ledger.ts`, 300 roslyn files, 25,374 edges) — was that
+only **60.3%** of them had an independent corpus derivation. `uses` (24.9%), `contains` (12.9%)
+and `overrides` (1.6%) were adjudicable by nothing but the lane's own fixtures. Writing the
+missing truth for two of the three found **two more fabrications**, which is the argument for
+doing it: a MISSING row had to become *expressible* before it could be seen.
+
+### `overrides` joins the compared set
+
+The class carried a paired exclusion on both sides, commented as *"the truth DERIVES the rule it
+would have to adjudicate, so a comparison would be self-agreeing."* That was **half true**:
+`deriveCSharpEdges` pushed `overrides` exactly once, for the C923 interface-member form. The
+`override`-**modifier** form had no truth derivation at all — which is what **299 UNEXPLAINED
+edges** on a 60-file draw were (8.8% of the lane's output; not wrong edges, edges with nobody on
+the other side). Both forms now derive from one input (the per-type member and base tables the
+C923 walk builds). The **signature is deliberately not re-derived** — a second spelling of the
+parameter-type rule free to drift is the failure a differential exists to catch — so this truth
+is a documented **lower bound** on the target set. Same 60 files, same sample hash
+`37c7d7bd9f8c8914`, only the truth side changed: **13,221 / 13,221, 0 MISSING, 0 unexplained.**
+
+### `uses` (field-access half) joins the compared set — and found two fabrications
+
+- **CS-D6 — a READ dropped because something else in the function is CALLED by the same name.**
+  The guard `!emittedCalls.has(`${src}->${tgt}`)` was keyed on (source, target) with **no site**.
+  Its stated purpose was to avoid duplicating a `calls` edge for a member access in callee
+  position, but `isCallee` already does that **structurally** (span against the invocation's
+  `function` field). The name-keyed guard was a coarser duplicate of a precise rule, and in C# a
+  static member and a method call can share a name, so real reads vanished — 4 occurrences over
+  150 real roslyn files, e.g. `_options.X.Severity == ReportDiagnostic.Suppress` dropped because
+  `context.ReportDiagnostic(d)` is called in the same function.
+- **CS-D7 — a declared TYPE published as a read, in two positions.** A **field's** type is not a
+  direct child of `field_declaration` (the grammar nests it under `variable_declaration`), so the
+  "first direct identifier" gate never saw it and `public Widget Widget;` published
+  `uses Collides -> Widget` on its own line. For a **property** the first direct identifier is the
+  *type*, so the gate took the type and let the property's own *name* through —
+  `public Widget Widget { get; set; }` published `uses Widget -> Widget`. Both now read the
+  grammar's `name` / `type` **fields**; the declared-type graph already publishes these names, so
+  R9 owns the type position and this pass stops claiming it.
+
+Both claims are held from **both** directions: the new truth reconciles **3,894 / 3,894, 0 either
+way** over 200 files, and the **pre-fix** analyzer materialised from git publishes neither CS-D6
+read and both CS-D7 self-reads when run over the same fixture. At corpus scale: **11,983 / 11,983,
+100%, 0 MISSING, 0 unexplained.** The **bare-identifier half** (617 rows, `identifier_usage`) is
+scoped **out** of the comparison and the limit is written into the allowlist, because it still
+has no truth and admitting it would report rows UNEXPLAINED for the truth's silence — a
+manufactured red. Lifting that is a one-line change once the derivation lands.
+
+### A sixth candidate, refuted and recorded as a boundary
+
+`resolveOverrides` Pass 3 does not check that the parent *declares* the member, and a probe
+produces exactly that shape — but on code that **compiles** it cannot happen, because C# requires
+an `override` member to come from the base *class*, and the base class is by language rule the
+**first** base-list entry. The probe's input is CS0115 (no suitable method to override). Measured
+over 400 real roslyn files: **642/642** override edges name a member declared in the same file,
+**0 fabrications.** Recorded as a boundary, not a fix.
+
+### Gates
+
+F3 **17/17** · F4 **57/57** (two new mutants, both CAUGHT) · F1 csharp PASS (**106 refs**, 0
+unknown) · F6 198 fixture types, 0 uncovered, 0 dead literals · SPEC A–H 8/8 · hygiene clean ·
+typecheck clean.
+
+### Oracle coverage, before and after
+
+| | share of emitted edges with an independent corpus oracle |
+|---|---|
+| before this round | **60.3%** |
+| after | **87.1%** |
+
+Remaining: `contains` (12.9%) — structurally self-agreeing, since it is derived from the same
+`ownerName` as the symbol table, so it cannot disagree with the symbols and is exactly why it is
+not independently checked — and the 617-row bare-identifier `uses` half.
