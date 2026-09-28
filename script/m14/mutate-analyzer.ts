@@ -11709,6 +11709,20 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "exercise", target: "echo", confidence: 1, line_number: 95, metadata: { evidenceClass: "usage_contextual" } }] }),
   },
   {
+    id: "nim/parenless-ufcs-call-lost",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "A PARENLESS UFCS member call stops being a call: `let s = b.build` and `r.describe` are `build(b)` and `describe(r)` written with no parentheses and no call node, so the member-leaf pass had no callee branch and published nothing. Found by the M12 ground truth — its audit asserted the row by reading the source, which is the one move an oracle that mirrors the analyzer cannot make, because the differential's oracle omitted it too and the lane reported 0% unexplained with both wrong in the same direction. Caught by nim/contract's expectRelationships {calls, exercise -> build}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.target === "build" && x.source === "exercise")) }),
+  },
+  {
+    id: "nim/concept-parameter-read",
+    language: "nim",
+    defectClass: "relationship-fabrication",
+    description: "A concept stops being a scope frame, so its formal parameter becomes unbound and the reads in its body are published as file-scope value reads: `type Addable = concept x` / `(x + x) is SomeNumber` produced `uses (global) -> x`. A concept parameter is the one formal parameter in Nim written with no symbol_declaration wrapper and no type annotation, so no other rule caught it. Found by the M12 ground truth as its single false positive at precision 0.990. Caught by nim/contract's forbidRelationships {uses, (global) -> x}.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "(global)", target: "x", confidence: 1, line_number: 39, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+  },
+  {
     id: "nim/blank-identifier-declared",
     language: "nim",
     defectClass: "symbol-fabrication",

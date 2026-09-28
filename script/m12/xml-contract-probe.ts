@@ -262,10 +262,17 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
   // lead to three different places: this file, a built-in type table, or another
   // file. X7 added the third (`external`, with `importedFrom`) and this is what
   // stops a fourth being invented silently or the third being dropped again.
-  const RESOLVABLE = new Set(["in-document", "builtin", "external"])
+  // X13 added a fourth class. `unresolved` is a REAL reference this file does not
+  // satisfy — a bare type name satisfied only by an `xs:include`, which a per-file
+  // analyzer cannot see — and it must carry `ambiguousWithBuiltin` when the name
+  // is also a built-in, because that is the one case where a consumer must not
+  // guess either way. The rule is written as a shape so a fifth class cannot be
+  // invented without saying what it resolves to.
+  const RESOLVABLE = new Set(["in-document", "builtin", "external", "unresolved"])
   const badResolvable: string[] = []
   let refEdges = 0
   let externalEdges = 0
+  let unresolvedEdges = 0
   for (const f of readdirSync(dir).filter((f) => /\.(xml|xsd|xsl|xslt|rng|wsdl)$/.test(f)).sort()) {
     const p = `${dir}/${f}`
     const r: any = await ASTEngine.parseFile(p, readFileSync(p, "utf8"))
@@ -277,6 +284,12 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
         externalEdges++
         // an external reference is only followable if it says which file
         if (typeof e.metadata?.importedFrom !== "string" || e.metadata.importedFrom.length === 0) badResolvable.push(`${f}: external without importedFrom`)
+      } else if (v === "unresolved") {
+        // An unresolved reference must not have been published as a local symbol.
+        // The component is in another file; a symbol here would be the R10 lie, and
+        // `unresolved` exists precisely so the claim can be recorded WITHOUT one.
+        unresolvedEdges++
+        if ((r.symbols ?? []).some((sy: any) => sy.name === e.target)) badResolvable.push(`${f}: ${e.target} unresolved but published as a local symbol`)
       } else if (!RESOLVABLE.has(String(v))) {
         badResolvable.push(`${f}: ${e.source}->${e.target} resolvable=${JSON.stringify(v)}`)
       }
@@ -312,6 +325,9 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
     implicitBad.length ? implicitBad.slice(0, 5).join("; ") : `${implicitSeen.length} implicit-prefix reference(s), all resolved`)
   check("the fixture set exercises the implicit-prefix rule", implicitSeen.length > 0,
     `${implicitSeen.length} reference(s) through a spec-bound prefix`)
+
+  check("the fixture set exercises the unresolved resolvability class", unresolvedEdges > 0,
+    `${unresolvedEdges} unresolved reference(s) — X13's class must be reachable or it is untested`)
 
   check("the fixture set exercises the external resolvability class", externalEdges > 0,
     `${externalEdges} external reference(s) — X7's class must be reachable or it is untested`)
