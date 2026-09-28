@@ -561,6 +561,22 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       log("Taint extraction failed:", e)
     }
 
+    // ONE split of the file for the whole symbol list, not one per symbol.
+    //
+    // Measured 2026-09-28 (script/m60/yaml-scaling-probe.ts, per-doubling ratios, which
+    // survive a loaded box in a way an absolute ms/file cannot): the `.map` below called
+    // `content.split("\n")` for EVERY function/class/method/interface symbol, so a file with
+    // n such symbols split the entire source n times. That is O(n^2) in file size, on the
+    // PRODUCTION path, for every language. A CPU profile put 81% of all sampled time in
+    // `stringSplitFast` with this frame as the only caller.
+    //
+    // YAML exposed it rather than causing it: yaml publishes a `class` symbol for every
+    // object-valued key, so a 4,096-key nested document produced 4,096 class symbols and
+    // 4,096 whole-file splits. Flat documents are unaffected (property symbols do not
+    // take this branch), which is why the same probe measured a flat mapping as linear
+    // and a nested one at ~1.93 per doubling. The `??=` keeps the split lazy so a file
+    // with no such symbol never pays for it at all.
+    let snippetLines: string[] | undefined
     const ret = {
       success: true,
       language: parsed.language || language,
@@ -607,7 +623,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         .map((s: any) => {
         let snippet = ""
         if (["function", "class", "method", "interface"].includes(s.kind)) {
-          const lines = content.split("\n")
+          const lines = snippetLines ?? (snippetLines = content.split("\n"))
           snippet = lines.slice(Math.max(0, s.range.startLine - 1), s.range.endLine).join("\n")
           if (snippet.length > 10000) snippet = snippet.substring(0, 10000)
         }
@@ -747,6 +763,20 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       }),
       relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
+      // The analyzer's WHOLE `metadata` object was being dropped here, and this
+      // is the function `parallel-indexer.ts:889` uses — the production indexing
+      // path. `engine.ts` carries it (its own result type is
+      // `Omit<ParseResult, "language" | "metadata"> & { metadata?: ... }`), so the
+      // two entry points disagreed and the worker was the lossy one. Found by
+      // running the bash contract probe through `parseFile` rather than through
+      // the analyzer directly: the analyzer reported 10 patterns for
+      // `Deploy.sh` — Strict Error Handling, Insecure Pipe Execution, Privilege
+      // Escalation, Destructive File Operation — and `parseFile` returned none.
+      // Every pattern-based signal in every language was invisible to the index.
+      // Purely additive: nothing read this before, so no consumer changes
+      // behaviour, and the fields that WERE forwarded (`framework` above) are
+      // left exactly as they were.
+      metadata: parsed.metadata,
     }
 
     if (ext === ".dart") {
