@@ -1108,6 +1108,71 @@ function dropAnonBodyOverride() {
 // cannot drift apart. Importing this module does NOT run the suite: main() is
 // guarded at the bottom.
 export const MUTANTS: Mutant[] = [
+  // ---------------------------------------------------------------- VB wave
+  // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
+  // corpus profile while THREE whole classes of output were missing or wrong. Each
+  // mutant below is a revert of one of them, and each is caught by
+  // vb/declaration-shapes. The pair (constructors, nested containment) is why a
+  // percentage is not evidence on its own: both were absent, and the counts that
+  // would have shown it -- symbols, relationships -- went UP when they were fixed,
+  // because a metric that only counts what exists cannot report a class that does
+  // not exist.
+  {
+    id: "vb/constructor-has-no-name-field",
+    language: "vb",
+    defectClass: "missing-whole-kind",
+    description:
+      "PRE-FIX: `Public Sub New()` has no `name` field -- the grammar lexes `New` as an anonymous token -- so `declaredName` returned empty and the 'declaration without a name' guard RETURNED before the naming contract was reached. The contract existed and was dead code: 12,549 symbols across 435 files contained ZERO constructors. Simulated as a faithful revert by dropping every Constructor symbol and the containment edge into it, which is exactly the state that guard produced. Caught by vb/declaration-shapes, which expects two `constructor` symbols and two `contains -> constructor` edges.",
+    transform: (r: any) => {
+      const isCtor = (s: any) => String(s.kind).toLowerCase() === "constructor"
+      if (!(r.symbols ?? []).some(isCtor)) return r
+      const names = new Set((r.symbols ?? []).filter(isCtor).map((s: any) => String(s.name)))
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !isCtor(s)),
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && names.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "vb/nested-type-owner-without-an-edge",
+    language: "vb",
+    defectClass: "missing-relationship",
+    description:
+      "PRE-FIX: containment was emitted per visitor, and the visitors for nested TYPES emitted none. A nested type therefore carried `ownerName` on its symbol and NO `contains` edge into it -- the owner recorded and then unreachable, so containment navigation stopped at the enclosing class. Found by the F5 differential and not by a fixture: 48 `contains Namespace -> Class` rows and every nested-type edge were invisible to a symbol count. Simulated as a faithful revert by dropping the `contains` edge into any type whose owner is itself a symbol of this file, which is precisely the set the per-visitor dispatch failed to cover. Caught by vb/declaration-shapes, which expects `contains Box -> Kind` and the enum members under it.",
+    transform: (r: any) => {
+      const owners = new Set((r.symbols ?? []).map((s: any) => String(s.name)))
+      const nested = new Set(
+        (r.symbols ?? []).filter((s: any) => s.ownerName && owners.has(String(s.ownerName))).map((s: any) => String(s.name)),
+      )
+      if (nested.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter(
+          (x: any) => !(String(x.type) === "contains" && nested.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
+    id: "vb/construction-with-arguments-is-not-a-call",
+    language: "vb",
+    defectClass: "missing-relationship",
+    description:
+      "PRE-FIX: a construction IS a call, and the grammar spells it with one of TWO node types -- `New Box()` is an `invocation_expression`, but `New Box(1, 2)` is an `array_creation_expression` with a `type` field and no `function` field. Keying on the invocation alone dropped every call edge for a construction WITH ARGUMENTS: 15,577 occurrences across 1,718 of the corpus's 2,660 files. Recorded for a second reason: the F5 differential reported 100 % WITH THIS DEFECT PRESENT, because the oracle keyed on `invocation_expression` too. Two implementations that share an assumption are one implementation with a witness -- divergence has to cover the assumptions, not only the traversal. Simulated as a faithful revert by dropping every `calls` edge the analyzer itself marked `constructed` with a node type other than `object_creation_expression`, read off the edge's own metadata so the mutant cannot silently stop matching when the fixture changes. Caught by vb/declaration-shapes, which expects `calls Build -> Box` at line 55.",
+    transform: (r: any) => {
+      const doomed = (r.relationships ?? []).filter(
+        (x: any) =>
+          String(x.type) === "calls" &&
+          x.metadata?.constructed === true &&
+          x.metadata?.constructionNode === "array_creation_expression",
+      )
+      if (doomed.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !doomed.includes(x)) }
+    },
+  },
   // ---------------------------------------------------------------- SQL wave
   // 2026-09-27. sql had NO mutants and NO fixture lane, while its m12
   // differential reported a 1.000 — 34 hand-audited facts over 63 lines of
