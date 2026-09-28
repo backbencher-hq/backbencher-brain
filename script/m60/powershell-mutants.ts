@@ -815,4 +815,93 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
           : x),
     }),
   },
+  {
+    id: "powershell/variable-argument-not-read",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a variable passed as a command ARGUMENT is not read. The largest of the five defects the F9 completeness audit found, and the most consequential: `Write-Host $a` published the call edge and no `uses` at all, so every variable handed to a cmdlet was invisible in the graph while the same variable interpolated in a string was read. Measured rather than estimated — reading command arguments took the corpora from 114,096 to 129,259 relationships across 760 files, and a line-level check over all 25,023 variable-reference edges then read 100.00% justified.\n\nScoped to the `isArgumentReference` marker rather than deleting every variable read, because an argument read and an interpolation read are the same row shape (`uses` + `isVariableReference`); without the marker a mutant for this defect would silently revert three others. That is the same standard the PS9 entry in this file already states — a mutant that cannot be attributed faithfully is not written. Caught by variable-reads-psa4's argument rows and its `uses == 9` count.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isArgumentReference === true),
+  },
+  {
+    id: "powershell/braced-variable-keeps-braces",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a BRACED variable keeps its braces, so `${a}` and `$a` become two different symbols. Measured on a probe: `$a = 1` declared `a`, and a string containing `${a}` published `uses -> {a}` — a read naming a symbol nothing declares, so the reference was lost rather than merely misspelled. The braced spelling is how PowerShell writes a variable whose name would otherwise run into adjacent text, so it is not rare. Caught by variable-reads-psa4's `braced` rows and its `{braced}` forbidSymbol, which pins the DECLARATION side too because the name reaches the graph two ways.",
+    // Keyed on `isBracedVariable`, and the transform is the READ half only — stated
+    // plainly because the first draft of this entry was the opposite mistake: it
+    // re-braced any name that ALREADY had braces, which after the fix matches
+    // nothing, and the mutant SURVIVED at 0 failures. That is the whole reason a
+    // mutant is run rather than written and assumed. The DECLARATION half of the
+    // defect is pinned by the fixture's `forbidSymbols` row for `{braced}`, which a
+    // read-only transform cannot reach; naming that here rather than implying a
+    // coverage the entry does not have.
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.isBracedVariable ? { ...x, target: `{${x.target}}` } : x),
+    }),
+  },
+  {
+    id: "powershell/here-string-interpolation-unread",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: an EXPANDABLE HERE-STRING is not interpolated. A here-string published no read at all while the identical text in a double-quoted string did, because `expandable_here_string_literal` is a different node type from `expandable_string_literal` and only the latter was in the switch. The second half of the defect was a LINE off-by-one with the line break and the sigil inside the target: the grammar gives the interpolation a span starting at the end of the previous line (`variable [6,8]-[7,8]` for a `$message` written on line 7), so the edge was published one line high. Caught by variable-reads-psa4's two here-string rows, whose line numbers ARE the assertion.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isHereStringInterpolation === true),
+  },
+  {
+    id: "powershell/splat-keeps-at-sign",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a SPLAT keeps its `@`, so `@name` and `$name` become two different symbols. The grammar models `@name` as a `variable` node whose text carries NO sigil, so the dollar-strip did nothing to it and `New-PSOptions @OptionsArguments` published `uses -> @OptionsArguments`. Found by the line-level check, where the splat rows were the one real defect hiding among its false negatives. Caught by variable-reads-psa4's splat row and its `@splatArgs` forbidSymbol.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.metadata?.isVariableReference ? { ...x, target: `@${x.target}` } : x),
+    }),
+  },
+  {
+    id: "powershell/dynamic-method-target-as-call",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A4 REVERT: a DYNAMIC method target is published as a call to a sigil-bearing name. `$type::$method()` wrote `calls -> $method`, which is wrong twice: a variable is stored stripped, so `$method` is a name no symbol can have, and the source says the method is CHOSEN AT RUNTIME, so calling a method named `$method` asserts a fact the code does not contain. The correct edge is a `uses` of the variable holding the name. Found on ConstrainedLanguageRestriction.Tests.ps1:513 — the last row of the line-level check's residue, at which point it read 100.00%. Caught by variable-reads-psa4's `isDynamicMethodTarget` row and its `calls -> $method` forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.metadata?.isDynamicMethodTarget
+          ? { ...x, type: "calls", target: `$${x.target}`, metadata: { ...(x.metadata ?? {}), isDynamicMethodTarget: undefined, isVariableReference: undefined } }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/counter-update-operand-unread",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: an INCREMENT or DECREMENT publishes no read of its operand. All four types were in the F9 audit's \"the analyzer never names it\" set, and probing them confirmed every one emitted nothing, so `$count++` left the graph with a declaration and no read. Keyed on `isCounterUpdate` so the revert is attributable to this defect alone; the increment and the compound-assignment reads are separate rows with separate markers and separate mutants. Caught by variable-reads-psa4's four counter rows.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isCounterUpdate === true),
+  },
+  {
+    id: "powershell/compound-assignment-read-dropped",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a COMPOUND assignment publishes no read of its left side. `$total += 1` is a read of `$total` and a write to it; the write is the declaration, and the read was nowhere, so a variable the graph could see being created had a use it could not. The operator is the whole distinction — a plain `=` gains no read edge, which is what the count row pins. Caught by variable-reads-psa4's two compound rows and their `assignmentOperator` metadata.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isCompoundAssignmentRead === true),
+  },
+  {
+    id: "powershell/prefix-counter-missed",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT, the half-defect: a PREFIX counter update is missed because the operand is found by a direct-child lookup. `$count++` puts its variable directly under the increment node, but `++$count` nests it as `pre_increment_expression > unary_expression > variable`, so a direct lookup finds the postfix pair and silently misses the prefix pair. That is the same shape of miss as `sub_expression` (PS16) and `left_assignment_expression` (PS2), and it is invisible in a count — two of four sites missing reads as an error count looks like a partial success. Caught by variable-reads-psa4's two `isPostfix: false` rows, which fail on their own if the prefix forms are the ones dropped.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.isCounterUpdate && x.metadata?.isPostfix === true ? { ...x, metadata: { ...x.metadata, isPostfix: false } } : x),
+    }),  },
 ]
