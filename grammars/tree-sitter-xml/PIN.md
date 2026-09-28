@@ -21,6 +21,21 @@ be repaired by hand) is the first question for every lane, so it was settled
 first. **It does not apply, and the negative result is what makes the two
 repairs below necessary rather than optional.**
 
+> **This file is inside the hashed tree.** `verify-grammar-pins.ts` records a
+> sha256 for *every* file under `grammars/tree-sitter-xml/`, and this file is one
+> of them, so editing any prose here makes the pin fail until it is re-recorded
+> with `bun script/m14/verify-grammar-pins.ts --lane xml --write`. That converges
+> in one step: the re-record rewrites the JSON, not this file.
+>
+> It is a false alarm in the strict sense — a markdown file is not an input to
+> `tree-sitter generate` or to the C compile, so no edit here can change the wasm.
+> It is kept inside the tree anyway because the pin's stated rule is that the
+> vendored source cannot drift *at all*, and a narrower rule applied to one lane
+> would be a special case in shared code. A sibling lane's `README.md` is inside
+> its hashed tree for the same reason. If that ever becomes a nuisance the honest
+> fix is to narrow `walkFiles` to build inputs for *every* lane at once, not to
+> exempt this one file.
+
 The pre-repair wired wasm's enumerable surface, read through web-tree-sitter's
 `Language` API, is **143 ids / 51 named / 2 fields (`root`, `content`)** — and a
 wasm built from upstream HEAD (v0.7.0, `5000ae8f`) has **exactly the same
