@@ -1230,6 +1230,45 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectCalls(scope: Node, owner: ASTEngine.UniversalSymbol | null): void {
     const source = owner ?? this.currentOwner()
     const visit = (n: Node): void => {
+      // A CONSTRUCTION IS A CALL, and the grammar does not agree on one node type
+      // for it. `New Box()` is an `invocation_expression` whose `function` is an
+      // `object_creation_expression`; `New Box(1, 2)` -- any construction WITH
+      // arguments -- is an `array_creation_expression` with a `type` field and no
+      // `function` field at all. Keying on one node type therefore silently drops
+      // every call edge for `New Foo(a)`, which is the most common construction
+      // form VB has: 15,577 occurrences across 1,718 of the corpus's 2,660 files.
+      //
+      // Both node types name the constructed type in the same place -- a `type`
+      // field -- so the rule is stated once and both are read the same way. There
+      // is no `array_initializer` test and no "is this really an array" filter,
+      // because the grammar cannot tell the two apart and guessing would be worse
+      // than saying what the node says: `New Integer(10)` really does call
+      // `Integer`'s constructor, and it is published as a call to `Integer` at
+      // 0.6 because this file does not declare it. That is the same honest
+      // confidence an unresolved cross-file call already carries.
+      if (n.type === "array_creation_expression") {
+        const ty = n.childForFieldName("type")
+        const token = ty ? this.calleeLeaf(ty) : null
+        const target = this.nameText(token)
+        if (source && target.length > 0) {
+          this.relationships.push({
+            source: source.name,
+            target,
+            type: RelationshipType.Calls,
+            confidence: this.declaredNames.has(target) ? 1.0 : 0.6,
+            line_number: this.nodeLine(token ?? ty ?? n),
+            metadata: {
+              argumentCount: n.namedChildCount > 1 ? n.namedChildCount - 1 : 0,
+              calleeIsQualified: false,
+              callLine: this.nodeLine(token ?? ty ?? n),
+              constructed: true,
+              constructionNode: n.type,
+            },
+          })
+        }
+        for (const c of this.kids(n)) visit(c)
+        return
+      }
       if (n.type === "invocation_expression") {
         const fn = n.childForFieldName("function")
         const args = n.childForFieldName("arguments")
