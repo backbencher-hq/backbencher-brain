@@ -45,6 +45,17 @@
 | field_access | no | no expressions to evaluate | — |
 | `yaml_merge` | yes (as `extends`) | merge key `<<` | see `extends` |
 | `yaml_tag_include` | yes (as `imports`) | a `!include`-style tag naming a file | `import_based` |
+| `yaml_keyword_include` | yes (as `imports`) | a file named by a KEYWORD rather than a tag — Ansible `include_tasks` / `import_tasks`, Helm `values`. Distinct from `yaml_tag_include` because the two are decided by different syntax: one is the key's value, the other is a tag on the value | `import_based`, `isExternal: true` |
+| `yaml_action_use` | yes (as `imports`) | GitHub Actions `uses:`, emitted **only** in a file the shape index proved is a workflow | `import_based`, `isExternal: true` |
+| `yaml_action_use_unverified` | yes (as `references`) | the same `uses:` value in a file that is **not** a workflow. It is not an import, because nothing established that a bare `uses:` in an arbitrary YAML file means an action reference; it is a `references` edge at 0.7 carrying `resolved: false` and `unresolvedReason: file-shape-is-not-a-github-workflow` | 0.7, `inferred`, explicitly unresolved WITH A REASON |
+
+All **nine** `metadata.relationshipType` families the lane can emit are listed above, which is
+the sense in which the relationship surface is fully accounted: `declared_type`,
+`yaml_json_pointer`, `yaml_depends_on`, `yaml_resource_ref`, `yaml_action_use`,
+`yaml_action_use_unverified`, `yaml_tag_include`, `yaml_keyword_include`, `yaml_merge`. The
+four that are deliberately **not** types — `calls`, `implements`, `instantiates`, `overrides` —
+are ruled with reasons in the rows above, so the ontology table has no silent gaps: every cell
+is either a described emission or a stated refusal.
 
 Two consequences of the format are worth stating because they look like omissions:
 
