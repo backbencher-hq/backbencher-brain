@@ -1928,7 +1928,12 @@ export namespace ASTEngine {
       if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
         try {
           const fs = require("fs")
-          const content = fs.readFileSync(r.fileId, "utf8")
+          // Decoded the same way the indexer decodes, or the offsets computed here
+          // are offsets into a DIFFERENT string than the one that was parsed — a
+          // UTF-16 file's offsets would be measured against NUL-interleaved text
+          // while the tree was built from the transcoded text, and every symbol in
+          // the file would be misplaced. See src/util/source-text.ts.
+          const content = decodeSourceText(fs.readFileSync(r.fileId)).text
           const lines = content.split("\n")
           let offset = 0
           for (let i = 0; i < Math.min(r.lineStart, lines.length); i++) {
