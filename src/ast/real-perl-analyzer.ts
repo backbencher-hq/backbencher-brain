@@ -811,43 +811,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       ...(versionRequirements.length ? { perlVersion: versionRequirements[0], perlVersions: versionRequirements } : {}),
     } as Partial<ASTEngine.FileMetadata>
 
-    // Evidence-tier classification (managed-OO family contract — ruby/swift/
-    // dart/csharp/objc/php precedent; M14 section D requires >=2 distinct
-    // evidenceClass values, and src/lsp/evidence_tier.ts rule 1 says a STORED
-    // legend-tier value wins and is never re-derived).
-    this.classifyEvidenceTier(relationships)
-
     return { symbols, relationships, imports, exports, errors, metadata }
-  }
-
-  /**
-   * Perl's own confidences decide the floors, not a copied constant: the
-   * source-declared edges (`extends`/`implements`/`instantiates` from `use
-   * parent`, `with`, `use role`, a class invocant) are all 0.9, `contains` is
-   * 1.0, `calls` is 0.9, and `overrides` is 0.5 because it is guessed from a
-   * first-parent chain. So the guessed kind lands on `inferred` on its own,
-   * with no special case: a 0.5 edge can never clear a 0.7 structural floor.
-   */
-  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
-    for (const r of relationships) {
-      const type = r.type ?? r.relationshipType ?? ""
-      // Attach FIRST, then classify: the branches below all `continue`, so
-      // writing the metadata after them would discard every classification
-      // except the fallthrough's.
-      const md: any = r.metadata ?? {}
-      r.metadata = md
-      if (type === "contains") { md.evidenceClass = "structural"; continue }
-      if (type === "instantiates" || type === "extends" || type === "implements") {
-        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
-        continue
-      }
-      if (type === "calls") {
-        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
-        continue
-      }
-      if (type === "overrides") { md.evidenceClass = "inferred"; continue }
-      md.evidenceClass = "inferred"
-    }
   }
 
   private result(
