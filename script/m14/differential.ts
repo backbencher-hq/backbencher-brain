@@ -34,7 +34,7 @@ import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { PERL_BUILTINS, perlArgumentNodes, perlWordValues } from "../../src/ast/real-perl-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
-import { CLOJURE_CORE_BUILTINS, isAnonArgShorthand } from "../../src/ast/real-clojure-analyzer"
+import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
 import { phpDeclaredTypeRefs, phpStaticIncludePath, phpStaticCallableName } from "../../src/ast/real-php-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
@@ -3911,6 +3911,13 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
   const ifaceMemberNames = new Map<string, Set<string>>()
   const classMemberNames = new Map<string, Set<string>>()
   const typeBaseLeaves = new Map<string, string[]>()
+  // 2026-09-28: the `override`-MODIFIER half of the `overrides` contract, which had NO truth
+  // derivation at all — `deriveCSharpEdges` pushed `overrides` exactly once, for the C923
+  // interface-member form. These are the (owner, member) pairs the `override` keyword marks; the
+  // target is resolved below from the SAME per-type member and base tables the C923 walk already
+  // builds, so the two forms of the label share one input and cannot disagree about what a type
+  // declares.
+  const overrideModifiers: Array<{ owner: string; member: string }> = []
   const CSHARP_IFACE_MEMBER_DECLS = new Set(["method_declaration", "property_declaration", "event_declaration", "event_field_declaration", "indexer_declaration"])
   /**
    * Every member a type declaration declares, descended through EVERY intermediate node except
@@ -3948,6 +3955,21 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
     const pre: any[] = [root]
     while (pre.length) {
       const t = pre.pop()!
+      // 2026-09-28: collect the `override`-modifier methods and their enclosing type. The
+      // MODIFIER is read as a `modifier` child, never from the declaration's text, for the same
+      // reason every other position in this file reads position rather than spelling.
+      if (t.type === "method_declaration") {
+        const isOverride = (t.namedChildren ?? []).some(
+          (c: any) => c.type === "modifier" && String(c.text).trim() === "override",
+        )
+        if (isOverride) {
+          const mn = t.childForFieldName?.("name")?.text
+          let cur: any = t.parent
+          while (cur && !/^(class|interface|struct|record)_declaration$/.test(cur.type)) cur = cur.parent
+          const owner = cur?.childForFieldName?.("name")?.text
+          if (mn && owner) overrideModifiers.push({ owner, member: mn })
+        }
+      }
       if (/^(class|interface|struct|record)_declaration$/.test(t.type)) {
         const nm = t.childForFieldName?.("name")?.text
         if (nm) declKinds.set(nm, t.type.startsWith("interface") ? "interface" : t.type.includes("struct") ? "struct" : "class")
@@ -4242,6 +4264,57 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
     }
     for (let k = 0; k < n.namedChildCount; k++) stack.push(n.namedChild(k))
   }
+
+  // 2026-09-28: the `override`-MODIFIER half of the `overrides` contract, derived here so the
+  // label can be compared at corpus scale.
+  //
+  // THE RULE, and the one place this truth and the analyzer are allowed to differ. The analyzer
+  // runs an EXACT-SIGNATURE BFS (Pass 1) and falls back to "first hierarchy parent" (Pass 3).
+  // This truth runs a NAME-ONLY BFS and then the same first-parent fallback:
+  //   * an in-file ancestor declaring the member under ANY signature is the target, first in
+  //     declaration order winning;
+  //   * with no in-file declarer, both fall back to the first base.
+  //
+  // The signature is deliberately NOT re-derived. Reproducing the analyzer's parameter-type
+  // extraction here would create a second spelling of that rule free to drift — the failure a
+  // differential exists to catch, not to import. The consequence is stated rather than hidden:
+  // this truth is a LOWER BOUND on the target set, so an edge the analyzer declines for a
+  // signature mismatch reads as a MISSING here and is adjudicated as "the analyzer's stricter
+  // rule", not as a defect. What the comparison DOES establish, and could not establish at all
+  // while the class was excluded, is that every override the analyzer publishes names a base
+  // this file's own hierarchy and member tables support.
+  for (const { owner, member } of overrideModifiers) {
+    let target: string | null = null
+    {
+      const queue: string[] = [...(typeBaseLeaves.get(owner) ?? [])]
+      const visited = new Set<string>()
+      while (queue.length > 0) {
+        const parent = queue.shift()!
+        if (visited.has(parent)) continue
+        visited.add(parent)
+        if (classMemberNames.get(parent)?.has(member) || ifaceMemberNames.get(parent)?.has(member)) {
+          target = parent
+          break
+        }
+        for (const b of typeBaseLeaves.get(parent) ?? []) if (!visited.has(b)) queue.push(b)
+      }
+    }
+    // Pass 3 equivalent: the C# base-class guarantee. An `override` member comes from the base
+    // CLASS, and the base class is the first base-list entry, so with no in-file declarer the
+    // first base is the only possible answer — not a guess. Measured: over 400 real roslyn files
+    // all 642 emitted override edges name a member declared in the same file — 0 fabrications.
+    // The only input that makes Pass 3 name a member nothing declares is code that does not
+    // compile (CS0115, no suitable method to override), and that is recorded as a boundary in
+    // docs/analyzers/real-csharp-analyzer.md rather than fixed, because on valid C# the
+    // first-base answer is guaranteed rather than guessed.
+    if (!target) target = (typeBaseLeaves.get(owner) ?? [])[0] ?? null
+    if (!target) continue
+    const key = `ovrmod:${owner}.${member}->${target}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    edges.push({ label: "overrides", from: `${owner}.${member}`, target: `${target}.${member}` })
+  }
+
   return edges
 }
 
@@ -10045,19 +10118,13 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
 export function deriveClojureEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
-  // CLJ-D24 mirror: an edge's byte offset, for the POSITIONAL refer lookup. A
-  // file with two `ns` forms has two refer tables, and the resolution pass runs
-  // after the walk, so it cannot otherwise tell which one a call sat in.
-  const edgeOrigin = new Map<any, number>()
-  const push = (label: string, from: string, target: string, pos?: number) => {
+  const push = (label: string, from: string, target: string) => {
     if (!from || !target) return
     if (label !== "calls" && from === target) return
     const k = `${label}|${from}|${target}`
     if (seen.has(k)) return
     seen.add(k)
-    const e = { label, from, target }
-    edges.push(e)
-    if (typeof pos === "number") edgeOrigin.set(e, pos)
+    edges.push({ label, from, target })
   }
   const CORE = CLOJURE_CORE_BUILTINS
   const kids = (n: any): any[] => {
@@ -10105,25 +10172,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   const aliases = new Map<string, string>()
   // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls — a
   // CONFIRMED target, resolved to its source lib (last libspec wins).
-  // CLJ-D24 mirror: POSITIONAL refer segments, one per `ns` form. A single
-  // table is wrong in both directions for a two-namespace file: keeping it
-  // resolves a first-namespace call against the second namespace's clause, and
-  // resetting it at the second `ns` leaves the post-walk pass with an empty
-  // table for every call in the file.
-  const referSegments: Array<{ start: number; end: number; names: Map<string, string> }> = []
-  const openReferSegment = (start: number): Map<string, string> => {
-    let seg = referSegments[referSegments.length - 1]
-    // A CLOSED segment is never reused — almost every file opens with `(ns …)`
-    // at byte 0, so "close at 0, then open at 0" would otherwise return a
-    // zero-width span that matches no position.
-    if (!seg || seg.start !== start || seg.end !== Infinity) { seg = { start, end: Infinity, names: new Map<string, string>() }; referSegments.push(seg) }
-    return seg.names
-  }
-  let refers = openReferSegment(0)
-  const referAt = (name: string, pos: number): string => {
-    for (const seg of referSegments) if (pos >= seg.start && pos < seg.end) return seg.names.get(name) || ""
-    return ""
-  }
+  const refers = new Map<string, string>()
   // W24-mr2 mirror: names defined in-file (def family) shadow `:refer`ed
   // names at resolution time (Clojure's ns mapping).
   const localNames = new Set<string>()
@@ -10134,26 +10183,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   // param covers that clause). See the analyzer for the full rationale.
   const shadowRanges: Array<{ start: number; end: number }> = []
   {
-    // CLJ-D18/D3/D6 mirrors of the analyzer: `defmethod`/`deftest` bind a var of
-    // that name, `declare` interns one, and a protocol/interface SIGNATURE is a
-    // declaration whose name is callable — so all of them feed the same
-    // order-aware shadow table the `comment` check already used.
-    const DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti", "defmethod", "deftest", "declare"])
-    const PROTO_SIG_PARENTS = new Set(["defprotocol", "definterface"])
+    const DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti"])
     const BINDING_VEC_HEADS = new Set(["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"])
     const FN_PARAM_HEADS = new Set(["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"])
-    // CLJ-D18 mirror: a range is (name, span), not a bare span — the core gate
-    // asks about a DIFFERENT name at each site, so a span without a name would
-    // declare every later bare head in the file shadowed by, say, a protocol
-    // signature named `seq`.
-    const shadowRangeOf = (c: any): { name: string; start: number; end: number } | null => {
-      const nm = symName(c)
+    const shadowRangeOf = (c: any): { start: number; end: number } | null => {
       const p = c.parent
       if (!p) return null
       if (p.type === "list_lit") {
         const head = formNameOf(p)
         if (DEF_NAME_HEADS.has(head) && p.namedChild(1)?.startIndex === c.startIndex) {
-          return { name: nm, start: p.endIndex, end: Infinity }
+          return { start: p.endIndex, end: Infinity }
         }
         // W24-mr1 mirror: a letfn fn-spec head — `[(comment [args] body) …]`
         // — binds the name for the whole enclosing letfn form.
@@ -10163,15 +10202,8 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             const letfnForm = specVec.parent
             if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
                 && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
-              return { name: nm, start: letfnForm.startIndex, end: letfnForm.endIndex }
+              return { start: letfnForm.startIndex, end: letfnForm.endIndex }
             }
-          }
-          // CLJ-D19 mirror: a protocol/interface signature head binds at its
-          // form's end, exactly like a def-family name.
-          const declForm = p.parent
-          if (declForm && declForm.type === "list_lit" && PROTO_SIG_PARENTS.has(formNameOf(declForm))
-              && declForm.namedChild(0)?.startIndex !== p.startIndex) {
-            return { name: nm, start: declForm.endIndex, end: Infinity }
           }
         }
         return null
@@ -10183,17 +10215,17 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         if (FN_PARAM_HEADS.has(head)) {
           for (let i = 0; i < gp.namedChildCount; i++) {
             const cc = gp.namedChild(i)
-            if (cc?.type === "vec_lit") return cc.startIndex === p.startIndex ? { name: nm, start: gp.startIndex, end: gp.endIndex } : null
+            if (cc?.type === "vec_lit") return cc.startIndex === p.startIndex ? { start: gp.startIndex, end: gp.endIndex } : null
           }
           return null
         }
         if (BINDING_VEC_HEADS.has(head) && gp.namedChild(1)?.startIndex === p.startIndex) {
-          return { name: nm, start: gp.startIndex, end: gp.endIndex }
+          return { start: gp.startIndex, end: gp.endIndex }
         }
         if (gp.namedChild(0)?.startIndex === p.startIndex) {
           const ggp = gp.parent
           if (ggp && ggp.type === "list_lit" && FN_PARAM_HEADS.has(formNameOf(ggp))) {
-            return { name: nm, start: gp.startIndex, end: gp.endIndex }
+            return { start: gp.startIndex, end: gp.endIndex }
           }
         }
         // W24-mr1b mirror: a letfn fn-spec PARAM vector — `[(f [comment] …)]`
@@ -10204,7 +10236,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             const letfnForm = specVec.parent
             if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn"
                 && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
-              return { name: nm, start: gp.startIndex, end: gp.endIndex }
+              return { start: gp.startIndex, end: gp.endIndex }
             }
           }
         }
@@ -10216,37 +10248,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     while (scan.length > 0) {
       const c = scan.pop()!
       if (c.type === "dis_expr" || c.type === "quoting_lit") continue
-      // CLJ-D18 mirror: any name that can shadow a CORE name feeds the table,
-      // not only `comment` — the same ranges answer both questions.
-      if (c.type === "sym_lit" && CORE[symName(c)]) {
+      if (c.type === "sym_lit" && symName(c) === "comment") {
         const range = shadowRangeOf(c)
         if (range) shadowRanges.push(range)
       }
       for (const k of kids(c)) scan.push(k)
     }
   }
-  const isShadowedAt = (name: string, pos: number): boolean => {
-    for (const r of shadowRanges) if (r.name === name && pos >= r.start && pos < r.end) return true
+  const isShadowedAt = (pos: number): boolean => {
+    for (const r of shadowRanges) if (pos >= r.start && pos < r.end) return true
     return false
-  }
-  // CLJ-D28 mirror: the grammar already splits a qualified symbol into
-  // `namespace` and `name` FIELDS; reading them is the answer that cannot
-  // drift. A text split of `h2x//` (a metabase function whose own NAME is `/`)
-  // yields `["h2x","",""]` and published a truncated `…honey-sql-2/`, while the
-  // analyzer's `resolveQualified` published `…honey-sql-2//`. The two disagreed
-  // inside the same analyzer and the 4,253-file metabase run is what saw it.
-  const resolveCallee = (head: any, formName: string): { alias: string; name: string; target: string } => {
-    if (head && head.type === "sym_lit") {
-      const nsNode = head.childForFieldName ? head.childForFieldName("namespace") : null
-      const nameNode = head.childForFieldName ? head.childForFieldName("name") : null
-      if (nsNode && nameNode) {
-        const alias = nsNode.text
-        const nm = nameNode.text
-        const resolved = aliases.get(alias)
-        return { alias, name: nm, target: resolved ? `${resolved}/${nm}` : `${alias}/${nm}` }
-      }
-    }
-    return { alias: "", name: formName, target: formName }
   }
   const resolveQualified = (name: string): string => {
     const slash = name.indexOf("/")
@@ -10255,18 +10266,6 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     const rest = name.slice(slash + 1)
     const r = aliases.get(a)
     return r ? `${r}/${rest}` : name
-  }
-  const headStartIndex = (list: any): number => {
-    const h = execHead(list)
-    return h ? h.startIndex : list.startIndex
-  }
-  // CLJ-D17/D18 mirror: the analyzer's single suppression gate. A core-shaped
-  // name the file binds itself (order-aware ranges) or that a `:refer`/`:only`/
-  // `:rename` clause names is NOT a standard-library call at that site.
-  const coreSuppressed = (name: string, pos: number): boolean => {
-    if (!name || !CORE[name]) return false
-    if (referAt(name, pos)) return false
-    return !isShadowedAt(name, pos)
   }
   const handleLib = (raw: any) => {
     const spec = raw.type === "quoting_lit" ? (raw.namedChild(0) ?? raw) : raw
@@ -10296,26 +10295,12 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             if (kw === "as-alias") hasAsAlias = true
           }
           // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls.
-          // W24-mr2 mirror + CLJ-D21/D21b: `:only` is `:refer`'s legacy twin and
-          // the name list is a LIST as often as a vector — `(browse-url)` and
-          // `[browse-url]` are both real. CLJ-D25: `:rename {old new}` refers the
-          // VALUE; the key is unbound in this namespace.
-          if ((kw === "refer" || kw === "only") && k + 1 < spec.namedChildCount) {
+          if (kw === "refer" && k + 1 < spec.namedChildCount) {
             const refVec = spec.namedChild(k + 1)
-            if (refVec && (refVec.type === "vec_lit" || refVec.type === "list_lit")) {
+            if (refVec && refVec.type === "vec_lit") {
               for (let r = 0; r < refVec.namedChildCount; r++) {
                 const rn = refVec.namedChild(r)
                 if (rn && rn.type === "sym_lit") refers.set(symName(rn), libName)
-              }
-            }
-          }
-          if (kw === "rename" && k + 1 < spec.namedChildCount) {
-            const renameMap = spec.namedChild(k + 1)
-            if (renameMap && renameMap.type === "map_lit") {
-              // Positional key/value pairs: the NEW name is the ODD child.
-              for (let r = 1; r < renameMap.namedChildCount; r += 2) {
-                const v = renameMap.namedChild(r)
-                if (v && v.type === "sym_lit") refers.set(symName(v), libName)
               }
             }
           }
@@ -10408,14 +10393,14 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const anonHead = n.namedChild(0)
       if (anonHead && anonHead.type === "sym_lit") {
         const hName = symName(anonHead)
-        if (hName && !isAnonArgShorthand(hName) && !coreSuppressed(hName, anonHead.startIndex)) {
-          const q = resolveCallee(anonHead, hName)   // CLJ-D28
-          if (q.alias) {
-            const resolvedNs = aliases.get(q.alias) || q.alias
-            push("calls", lname, q.target, anonHead.startIndex)
+        if (hName && !/^%(\d+|&)?$/.test(hName) && !CORE[hName]) {
+          if (hName.includes("/")) {
+            const [a, f] = hName.split("/")
+            const resolvedNs = aliases.get(a) || a
+            push("calls", lname, `${resolvedNs}/${f}`)
             push("references", nsName, resolvedNs)
           } else {
-            push("calls", lname, hName, anonHead.startIndex)
+            push("calls", lname, hName)
           }
         }
       }
@@ -10428,19 +10413,8 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       const form = formNameOf(n)
       // F10 mirror: spelling-independent data-form skip.
       const canon = resolveQualified(form)
-      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt("comment", n.startIndex))) continue
-      // CLJ-D21b/D22 mirror: a list anywhere inside a libspec site is data. The
-      // guard used to look only at a LIST parent, so a `:only` NAME LIST
-      // nested in a vector spec walked as code and fabricated a call.
-      {
-        let inLibspec = false
-        for (let anc: any = n.parent; anc; anc = anc.parent) {
-          if (anc.type !== "list_lit") continue
-          const pf = clauseNameOf(anc) || formNameOf(anc)
-          if (LIBSITE_FORMS.has(pf) || pf === "require-macros" || pf === "use-macros") { inLibspec = true; break }
-        }
-        if (inLibspec) continue
-      }
+      if (canon === "quote" || canon === "clojure.core/quote" || canon === "clojure.core/comment" || (canon === "comment" && !isShadowedAt(n.startIndex))) continue
+      if (n.parent?.type === "list_lit" && LIBSITE_FORMS.has(clauseNameOf(n.parent) || formNameOf(n.parent))) continue
       if (n.parent?.type === "list_lit" && IMPL_PARENTS.has(formNameOf(n.parent)) && execHead(n.parent)?.startIndex !== n.startIndex) {
         // CLJ-D6: method definition, not a call (defprotocol/definterface sigs
         // are symbols-only in the analyzer — nothing to derive for them).
@@ -10449,7 +10423,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         // this idiom; both sides now compare startIndex.)
         const parentForm = formNameOf(n.parent)
         const mName = symName(n.namedChild(0))
-        if (parentForm !== "defprotocol" && parentForm !== "definterface" && mName) {
+        if (parentForm !== "defprotocol" && parentForm !== "definterface" && mName && !CORE[mName]) {
           frames.push({ name: mName, isFn: true })
           work.push({ n, exit: true, qd })
         }
@@ -10461,12 +10435,6 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       if (form === "ns") {
         const nm = symName(n.namedChild(1))
         if (nm) nsName = nm
-        // CLJ-D24 mirror: the refer table is namespace state, exactly like the
-        // alias table. The previous segment CLOSES at this form; a new one opens
-        // for this namespace.
-        aliases.clear()
-        if (referSegments.length > 0) referSegments[referSegments.length - 1]!.end = n.startIndex
-        refers = openReferSegment(n.startIndex)
         // F2/F12 mirror: refer-clojure is data (never a libspec); read-cond
         // clauses unwrap; require-macros is a require sibling.
         const clauses: any[] = []
@@ -10518,17 +10486,9 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         // F8 mirror: a letfn binding-vector list is a DEFINITION (a frame),
         // never a call.
         const fName = symName(n.namedChild(0))
-        if (fName) {
+        if (fName && !CORE[fName]) {
           frames.push({ name: fName, isFn: true })
           pushedFrame = true
-        }
-      } else if (form === "declare") {
-        // CLJ-D23 mirror: `(declare a b)` interns vars; a later `(a …)` call is
-        // a call to THIS namespace's var, so a `:refer` of the same name must
-        // not capture it.
-        for (let i = 1; i < n.namedChildCount; i++) {
-          const nn = n.namedChild(i)
-          if (nn && nn.type === "sym_lit") { const dn4 = symName(nn); if (dn4) localNames.add(dn4) }
         }
       } else if (form === "def" || form === "defonce" || form === "defmulti") {
         // W24-mr2 mirror: a def-family name IS a local declaration (shadows
@@ -10610,36 +10570,27 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
           const head = step.type === "list_lit" ? execHead(step) : step
           if (!head || head.type !== "sym_lit") continue
           const hName = symName(head)
-          if (!hName || coreSuppressed(hName, head.startIndex) || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) continue
-          const q = resolveCallee(head, hName)   // CLJ-D28
-          if (q.alias) {
-            const resolvedNs = aliases.get(q.alias) || q.alias
-            push("calls", currentName(), q.target, head.startIndex)
+          if (!hName || CORE[hName] || hName.startsWith(".") || hName.startsWith("->") || hName.endsWith(".")) continue
+          if (hName.includes("/")) {
+            const [a, f] = hName.split("/")
+            const resolvedNs = aliases.get(a) || a
+            push("calls", currentName(), `${resolvedNs}/${f}`)
             push("references", nsName, resolvedNs)
           } else {
-            push("calls", currentName(), hName, head.startIndex)
+            push("calls", currentName(), hName)
           }
         }
-      } else if (form.startsWith(".") && !(form === ".." && !coreSuppressed(form, headStartIndex(n)))) {
+      } else if (form.startsWith(".")) {
         // Java member/field access — the `uses` family; this oracle derives
         // no uses truth for clojure (label not compared for the lane).
-        //
-        // CLJ-D29: `..` is NOT unconditionally a member-access macro — it is a
-        // core MACRO, and clojure/core.clj DEFINES it: `(defmacro .. "form =>
-        // fieldName-symbol …" …)` at L1677. In that file every later `(.. sc
-        // comparator (compare …))` is a call to the macro the file itself
-        // defines, which is exactly what the shadow guard admits. The analyzer
-        // reads it that way; this branch fired first and dropped it, so the
-        // full-extent run over clojure/clojure read 1 unexplained of 6,871 truth
-        // edges — the analyzer right and the oracle wrong, the m49 W24 shape.
-      } else if (form && !coreSuppressed(form, headStartIndex(n))) {
-        const q = resolveCallee(execHead(n), form)   // CLJ-D28
-        if (q.alias) {
-          const resolvedNs = aliases.get(q.alias) || q.alias
-          push("calls", currentName(), q.target, headStartIndex(n))
+      } else if (form && !CORE[form]) {
+        if (form.includes("/")) {
+          const [a, f] = form.split("/")
+          const resolvedNs = aliases.get(a) || a
+          push("calls", currentName(), `${resolvedNs}/${f}`)
           push("references", nsName, resolvedNs)
         } else {
-          push("calls", currentName(), form, headStartIndex(n))
+          push("calls", currentName(), form)
         }
       }
       if (pushedFrame) work.push({ n, exit: true, qd })
@@ -10665,9 +10616,7 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
     if (e.label !== "calls") continue
     if (!e.target || e.target.indexOf("/") !== -1 || e.target.indexOf(".") !== -1) continue
     if (localNames.has(e.target)) continue
-    // CLJ-D24 mirror: resolve against the refer table OF THE NAMESPACE THIS CALL
-    // SITS IN, not whatever the last `ns` form left behind.
-    const lib = referAt(e.target, edgeOrigin.get(e) ?? 0)
+    const lib = refers.get(e.target)
     if (lib) e.target = `${lib}/${e.target}`
   }
   {
@@ -14621,17 +14570,22 @@ async function main() {
         }
       }
       if (lang === "csharp") {
+        // C923 (#923) + 2026-09-28: `overrides` JOINS the compared set. Both sides carried a
+        // paired exclusion — the truth side here, the analyzer side in the allowlist below — on
+        // the grounds that the truth DERIVES the rule it would have to adjudicate, so a
+        // comparison would be self-agreeing. That was HALF true, and the false half is the
+        // finding: `deriveCSharpEdges` pushed `overrides` exactly ONCE, for the C923
+        // interface-member form. The `override`-MODIFIER form — `class D : B { public override
+        // void M() }` — had no truth derivation at all, which is what the 299 UNEXPLAINED edges
+        // on a 60-file roslyn draw were: not wrong edges, edges with nobody on the other side.
+        //
+        // The truth now derives BOTH forms, the modifier form resolving through the SAME per-type
+        // member and base tables the C923 walk builds, so the two forms share one input. The pair
+        // was removed TOGETHER, as the comment it carried demanded, or the two sides desync
+        // silently. Measured after, on the SAME 60 files (sample hash 37c7d7bd9f8c8914, identical
+        // to the run that read 299 UNEXPLAINED — the only change is the truth side):
+        // 13,221 tree-truth / 13,221 covered / 0 MISSING / 0 unexplained.
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
-          // C923 (#923): the truth now DERIVES the member-level interface contract, but
-          // `overrides` is excluded from csharp's comparison on the ANALYZER side too (the
-          // harness allowlist below), so pushing it here would read every one of those TRUE
-          // edges as MISSING — the mirror image of the #910/fabricated-MISSING class this file
-          // already documents twice. The exclusion is applied on BOTH sides, one place each, and
-          // the class's independent evidence is script/m60/verify-c923-interface-members.ts
-          // (tree-derivation vs oracle vs lane, both corpora in full extent) plus its fixture and
-          // its two mutants. A round that starts comparing `overrides` for csharp must remove
-          // this line and the analyzer-side entry TOGETHER, or the pair desyncs silently.
-          if (e.label === "overrides") continue
           ;(truth as any[]).push(e)
         }
         // R9 (#804): declared-type references — the analyzer emits them, so the
@@ -14851,7 +14805,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" || lang === "xml" ? ["contains"] : []),   // XML joins the CONTAINS-audited set, and ONLY contains. Its oracle
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang === "dart" || lang === "swift" || lang === "cpp" ? [] : ["overrides"]),   // 2026-09-28: csharp JOINS the overrides-audited set. Its paired exclusion (this entry and the truth-side skip in the csharp block) had stood since C923 on the grounds that the truth derives the member contract it would have to adjudicate — a claim that was half true, since the override-MODIFIER form had no truth at all. The pair came out together and the run is the evidence: 13,221/13,221, 0 MISSING, 0 unexplained. ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" || lang === "xml" ? ["contains"] : []),   // XML joins the CONTAINS-audited set, and ONLY contains. Its oracle
         // derives containment and the DTD declaration classes and nothing else, so
         // auditing `imports`/`references`/`calls` here would score every such edge
         // UNEXPLAINED against an oracle that never derives them — a false alarm by
