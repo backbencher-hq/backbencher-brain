@@ -345,6 +345,26 @@
       }
     },
     {
+      "analyzer": "scss",
+      "corpusTarget": "element-plus",
+      "status": "measured",
+      "candidates": [
+        "element-plus@1b45ace0(clean)"
+      ],
+      "measured": {
+        "revision": "1b45ace0a08d77b3fc1807c5688b42f7d7362ab7",
+        "sample": "160 non-empty tracked *.scss files of 170 tracked (the 10 empty files are named in the artifact and excluded here rather than silently dropped, because an empty stylesheet parses trivially and would otherwise pad the clean-file count for free) — the full tracked set, sorted, from element-plus@1b45ace0. The corpus-errors artifact is mode=full-corpus, so the sample file, the manifest and the artifact now name ONE file set, which is the #859 SAMPLE DRIFT class the css entry already records for itself.",
+        "fixtures": 1,
+        "fixtureFacts": 9,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 1402,
+        "corpusRelationships": 803,
+        "grammarErrorFiles": 72,
+        "note": "The ground truth is INDEPENDENT and that is the whole point of the entry: validation/m12/ground-truth/scss.json is a hand audit of the fixture written from the source and the Sass specification, not from analyzer output, which is what makes it able to disagree — and on its first run it did. 9 facts expected, 8 observed, recall 0.889, and the single false negative was a `@function` CALLED in a value (`width: double(4px)`) producing no edge while a `$var` read on the line above did: the same class of claim, one of the two implemented. Fixing it took this entry to 9/9, and the same pass found that the read/call walk STOPPED at an ERROR node, so every claim nested inside a region the grammar had lost was invisible while the rest of the lane recovers through errors on purpose. GRAMMAR: upstream tree-sitter-scss 1.0.0 first, then vendored into grammars/tree-sitter-scss/ and PATCHED in two places, so the committed wasm/tree-sitter-scss.wasm is a local build: (1) `@use`/`@forward` did not parse at all on the stock grammar — the rule was `seq('@use', $._value, ';')` and nothing else — and it was the largest residual class in the corpus; (2) `!default`/`!global` on a declaration and on a parameter were not recognised. The lane is its own analyzer, not a CSS configuration: .scss routes to `scss`, and .sass and .less remain declared zero-file CSS mappings rather than silently mis-parsed. THE PARSE FLOOR IS A MEASUREMENT, NOT A TARGET. 72 of 160 files carry at least one ERROR span, dominated by common/var.scss (1,716 lines, over 400 disjoint error spans) where the grammar cannot lex `map.merge((…))` map literals. Beside that number the artifact reports filesRecoveredWithOutput=66 of 72: a lane that REFUSES a broken file and a lane that RECOVERS a broken file have the same errorFiles count and are not the same lane. crashes=0."
+      }
+    },
+    {
       "analyzer": "c",
       "corpusTarget": "zig",
       "status": "measured",
