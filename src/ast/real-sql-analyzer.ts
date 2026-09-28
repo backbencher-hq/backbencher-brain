@@ -72,7 +72,84 @@ const SQL_KEYWORDS = new Set([
  * `set_config` and `cardinality` were all measured leaking out of the corpus.
  */
 const SQL_BUILTINS = new Set([
-  // aggregate
+  // Provided by PostgreSQL or a stock EXTENSION rather than by this project.
+  //
+  // WHY THIS BLOCK EXISTS, measured 2026-09-27. Every name the analyzer
+  // suppresses here is one a consumer of the graph could otherwise mistake for
+  // a project function — and an AI agent reading `calls X->encode` has no way to
+  // know `encode` is pgcrypto's. Classifying the whole unknown population on
+  // ProxiCall put 48 edges / 3 names in this category (`encode` 30, `digest` 17,
+  // `daterange` 1) and a further 122 edges / 42 names that were ALSO SQL-provided
+  // but live in files the grammar cannot parse (`uuid_generate_v4` 16,
+  // `gen_random_bytes` 12, `array_append`, `regexp_replace`, `regexp_matches`,
+  // `has_function_privilege`). Only 11 edges are genuinely dangling project
+  // references, so the raw "unknown" count was overwhelmingly this gap and not a
+  // real dangling-reference problem.
+  //
+  // Extensions are included deliberately: uuid-ossp, pgcrypto and PostGIS ship
+  // these functions as part of a normal PostgreSQL install, and a project that
+  // calls them has no declaration for them anywhere.
+  //
+  // pgcrypto
+  "encode", "decode", "digest", "hmac", "crypt", "gen_salt", "gen_random_bytes",
+  "gen_random_uuid",   // uuid-ossp and friends
+  "uuid_generate_v4", "uuid_generate_v1", "uuid_nil", "gen_random_uuid",
+  // pgTAP / assertion helpers
+  "has_function_privilege", "has_table_privilege", "has_schema_privilege",
+  "has_column_privilege", "has_database_privilege", "has_type_privilege",
+  "throws_ok", "lives_ok", "is", "isnt", "matches", "results_eq", "set_eq",
+  // information_schema / catalogue accessors
+  "pg_get_functiondef", "pg_get_viewdef", "pg_get_indexdef", "pg_get_constraintdef",
+  "pg_get_triggerdef", "pg_get_expr", "pg_get_userbyid", "pg_get_viewdef",
+  "pg_get_partkeydef", "pg_get_statisticsobjdef_columns", "pg_tablespace_location",
+  "pg_relation_filenode", "pg_get_function_arguments", "pg_get_function_result",
+  "pg_get_function_identity_arguments", "format_type", "pg_typeof", "pg_table_is_visible",
+  "pg_function_is_visible", "pg_opclass_is_visible", "pg_conversion_is_visible",
+  "pg_collation_is_visible", "pg_ts_config_is_visible", "pg_statistics_obj_is_visible",
+  "pg_total_relation_size", "pg_relation_size", "pg_table_size", "pg_indexes_size",
+  "pg_database_size", "pg_size_pretty", "pg_column_size", "pg_size_bytes",
+  "pg_encoding_to_char", "pg_char_to_encoding", "pg_advisory_lock", "pg_advisory_unlock",
+  "pg_advisory_xact_lock", "pg_try_advisory_lock", "pg_notify", "pg_sleep",
+  "pg_backend_pid", "pg_current_xact_id", "txid_current", "pg_export_snapshot",
+  "pg_import_snapshot", "pg_cancel_backend", "pg_terminate_backend", "pg_reload_conf",
+  "pg_stat_reset", "pg_is_in_recovery", "pg_last_wal_receive_lsn",
+  "pg_current_wal_lsn", "pg_wal_lsn_diff", "pg_switch_wal", "pg_create_restore_point",
+  "pg_replication_origin_advance", "pg_logical_emit_message",
+  "pg_column_is_updatable", "pg_index_column_has_property", "pg_indexam_has_property",
+  "pg_index_has_property", "pg_index_column_has_property", "pg_options_to_table",
+  "pg_tablespace_databases", "pg_ls_dir", "pg_read_file", "pg_read_binary_file",
+  "pg_stat_file", "pg_ls_logdir", "pg_ls_waldir", "pg_ls_tmpdir", "pg_ls_archive_statusdir",
+  // string / pattern builtins the corpus leans on
+  "regexp_replace", "regexp_match", "regexp_matches", "regexp_count", "regexp_instr",
+  "regexp_like", "regexp_substr", "split_part", "string_to_array", "array_to_string",
+  "array_position", "array_positions", "array_remove", "array_replace", "array_prepend",
+  "array_append", "array_cat", "array_fill", "cardinality", "array_dims", "array_upper",
+  "array_lower", "array_ndims", "array_length", "trim_array", "width_bucket",
+  // range / multirange, which the corpus uses for exclusion constraints
+  "daterange", "tsrange", "tstzrange", "int4range", "int8range", "numrange",
+  "range_merge", "range_lower", "range_upper", "range_lower_inc", "range_upper_inc",
+  "range_lower_inf", "range_upper_inf", "range_empty", "int4multirange", "datemultirange",
+  "int8multirange", "nummultirange", "tsmultirange", "tstzmultirange",
+  "range_contains", "range_contained_by", "range_overlaps", "range_adjacent",
+  // PostGIS, which the extension corpus is full of
+  "st_x", "st_y", "st_z", "st_m", "st_2d", "st_3d", "st_srid", "st_set_srid",
+  "st_astext", "st_asbinary", "st_asgeojson", "st_geometrytype", "st_type",
+  "st_geometryn", "st_numgeometries", "st_npoints", "st_nrings", "st_isempty",
+  "st_isvalid", "st_isvalidreason", "st_issimple", "st_isclosed", "st_isring",
+  "st_transform", "st_intersects", "st_contains", "st_within", "st_containsproperly",
+  "st_covers", "st_coveredby", "st_overlaps", "st_crosses", "st_touches",
+  "st_distance", "st_dwithin", "st_area", "st_perimeter", "st_length", "st_length2d",
+  "st_buffer", "st_convexhull", "st_envelope", "st_centroid", "st_makeenvelope",
+  "st_makepoint", "st_makeline", "st_geographyfromtext",
+  "st_geometryfromtext", "st_geogfromtext", "st_geomfromtext", "st_point",
+  "postgis_version", "postgis_full_version", "postgis_geos_version",
+  "box2d", "box3d", "geometry", "geography", "box", "path", "polygon",
+  // aggregate / window extras the corpus uses
+  "percentile_cont", "percentile_disc", "mode", "rank", "dense_rank", "row_number",
+  "ntile", "first_value", "last_value", "nth_value", "grouping", "corr", "covar_pop",
+  "covar_samp", "regr_slope", "regr_intercept", "regr_r2", "regr_count", "regr_avgx", "regr_avgy",
+  "bool_and", "bool_or", "every", "bit_and", "bit_or", "bit_xor", "json_agg", "json_object_agg",
+  "aggregate", // aggregate
   "any_value", "array_agg", "avg", "bit_and", "bit_or", "bool_and", "bool_or", "count",
   "every", "json_agg", "json_object_agg", "jsonb_agg", "jsonb_object_agg", "max", "min",
   "string_agg", "sum", "xmlagg",
