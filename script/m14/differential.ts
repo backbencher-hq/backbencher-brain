@@ -110,8 +110,19 @@ function writeBaselinePin(
     if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
   }
   const merged = {
-    samplePerLang: SAMPLE_PER_LANG,
-    loadContext: { loadAvgStart, loadAvgEnd: loadAvg1(), sliceCount },
+    // `samplePerLang` describes the CANONICAL sweep's sampling, and a scoped run
+    // must not redefine it. This line was `SAMPLE_PER_LANG`, and because
+    // `SAMPLE_PER_LANG` is derived from `--sample`, a scoped `--sample 40
+    // --pin-baseline` overwrote a recorded 60 with 40 — silently changing what
+    // every future full sweep will be compared against, across all 32 lanes, for
+    // a change nobody made. Found by being damaged by it: the xml pin rewrote
+    // the shared baseline's sample size on its way to recording one row.
+    //
+    // So a scoped run PRESERVES the recorded value and states its own alongside.
+    // If no canonical value has been recorded yet, the scoped run's is the best
+    // information available and is recorded as the baseline.
+    samplePerLang: previous.samplePerLang ?? SAMPLE_PER_LANG,
+    samplePerLangOfThisPin: SAMPLE_PER_LANG,
     counts: { ...(previous.counts ?? previous), ...clean },
     hashes,
     // WHICH run last wrote each provenance class, so a reader can tell a floor
@@ -439,6 +450,9 @@ export const SECOND_CORPUS: Record<string, string> = {
   // is what a second opinion has to be for. Same checkout serves as go's
   // primary? no: go's primary is go-tools; terraform is go's SECOND corpus.
   hcl: "tf-aws-components",
+  // consul's Makefile is the opposite idiom: a hand-written build for one Go
+  // program, with order-only prerequisites, pattern rules and shell functions.
+  make: "consul",
   // F5 wave (CLEAN): clean-stdlib (74 icl/dcl) is an independent corpus —
   // the compiler's own standard library, a different dialect from Clyde
   // (tooling). NOTE: 312 total Clean files on this box is short of the
@@ -9614,9 +9628,19 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
   const isOption = (v: string): boolean => v.length > 0 && v[0] === "-"
   /** Perl's compile-time tokens; as an invocant they name no class. */
   const MAGIC = new Set(["__PACKAGE__", "__FILE__", "__LINE__", "__SUB__", "__DATA__", "__END__"])
-  // Inner `ambiguous_function_call_expression` nodes that are the CLASS half of an
-  // indirect-object call. Keyed by byte POSITION: web-tree-sitter hands out a
-  // fresh JS wrapper on every access, so an identity Set silently matches nothing.
+  /**
+   * Does this receiver node NAME a class? A positive allowlist, because a
+   * negative test can only enumerate the dynamic receivers someone has already
+   * hit. `function_call_expression` is absent on purpose: its `function` field
+   * names a FUNCTION, and `use_module('X')->new(@a)` constructs nothing
+   * knowable. `ambiguous_function_call_expression` is present because that is
+   * the indirect-object spelling, where `function` IS the class.
+   */
+  // Inner `ambiguous_function_call_expression` nodes that are the CLASS half of
+  // an indirect-object call. Keyed by byte POSITION: web-tree-sitter hands out a
+  // fresh JS wrapper on every access, so an identity Set silently matches
+  // nothing. Mirrors the analyzer's own suppression so the two agree on which
+  // node is a class carrier and which is a call.
   const indirectCarriers = new Set<string>()
   const nodeKey = (n: any) => `${n?.startIndex}:${n?.endIndex}:${n?.type}`
   /**
@@ -9644,14 +9668,6 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
     }
     return undefined
   }
-  /**
-   * Does this receiver node NAME a class? A positive allowlist, because a
-   * negative test can only enumerate the dynamic receivers someone has already
-   * hit. `function_call_expression` is absent on purpose: its `function` field
-   * names a FUNCTION, and `use_module('X')->new(@a)` constructs nothing
-   * knowable. `ambiguous_function_call_expression` is present because that is
-   * the indirect-object spelling, where `function` IS the class.
-   */
   const namesAClass = (n: any): boolean => {
     switch (n?.type) {
       case "bareword":
@@ -9852,6 +9868,12 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           // the grammar spells the class as the `function` FIELD of the inner
           // ambiguous call. Reading words out of the whole argument subtree is
           // what published a phantom class `DSN` from `$h->{DSN}` — a hash KEY.
+          // Read STRUCTURALLY, from the named children. `argumentNodes` keeps an
+          // argument only when it contributes a WORD, and the nested call
+          // contributes none when its own arguments are a plain scalar or a list
+          // of literals — so it returned the class for `new Win32::ODBC $x->{DSN}`
+          // (kept by a hash KEY, the very thing that made `DSN` a phantom class)
+          // and nothing at all for `new Win32::ODBC $dbname`. Same trap, same fix.
           const innerName = indirectClassOf(n)
           if (innerName) {
             push("instantiates", src(), `${leaf(innerName)}.constructor`)
@@ -9913,12 +9935,20 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
         const innerName = indirectClassOf(n)
         if (innerName) push("instantiates", src(), `${leaf(innerName)}.constructor`)
         else {
-          const args = argumentNodes(n)
-          const requested = args[0] ? words(args[0])[0] : undefined
+          const requested = argumentNodes(n)[0] ? words(argumentNodes(n)[0])[0] : undefined
           const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
           push("instantiates", src(), inst)
         }
-      } else if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends") {
+      } else if (
+        target &&
+        // A `&`-sigil callee with NO argument list is a code-slot REFERENCE,
+        // not an invocation: `defined &DynaLoader::boot_DynaLoader` is a
+        // definedness test. With an argument list it is perl's explicit-call
+        // syntax and IS a call — suppressing on the `&` alone cost 323 truth
+        // rows on perl5, which is how the distinction got pinned down.
+        !(target.startsWith("&") && argumentNodes(n).length === 0) &&
+        !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends"
+      ) {
         push("calls", src(), leaf(target))
       }
     }
@@ -11995,9 +12025,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     //   - descending through everything is correct precisely because only an
     //     `element` node can open a scope, so bindings cannot leak sideways out of
     //     a subtree. `document`, `content` and `prolog` are pure containers.
-    const nsOf = new Map<any, string>()
-    const nameOf = new Map<any, string>()
-    const ownerOf = new Map<any, any>()
+    // KEYED BY `node.id`, A NUMBER — and that is the whole fix for the bug that
+    // stopped this oracle working.
+    //
+    // These tables were keyed by the node OBJECT, on the assumption that two
+    // references to the same tree node are the same reference. In web-tree-sitter
+    // they are not: `node.child(i)` constructs a FRESH wrapper every call, so
+    // `parent.child(0) === parent.child(0)` is **false** while
+    // `parent.child(0).id === parent.child(0).id` is true. A `Map` keyed by object
+    // is therefore not a lookup table — it is a set of one-use keys. Phase 1
+    // filled it and phase 2 read it with different wrappers and found nothing,
+    // which is why every derived edge carried an empty `from` and nothing could
+    // ever match. Demonstrated rather than assumed:
+    //
+    //     const a = el.child(0), b = el.child(0)
+    //     a === b            // false
+    //     a.id === b.id      // true
+    //     new Map([[a,"x"]]).get(b)   // undefined
+    //     new Map([[a.id,"x"]]).get(b.id)  // "x"
+    //
+    // The corpus differential keys by `n.id` and never had this bug, which is
+    // worth recording: the two oracles were written by different hands and the
+    // one written more carefully was the one in the throwaway directory.
+    const nsOf = new Map<number, string>()
+    const nameOf = new Map<number, string>()
+    const ownerOf = new Map<number, number>()
     {
       // Two statements on purpose: a scope must be resolved for an element's
       // CHILDREN using the scope that element OPENS, while the element's own
@@ -12005,16 +12057,16 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // is the bug this shape exists to prevent — a declaration construct would
       // then be able to read its own `xmlns` and resolve itself into a
       // vocabulary, which is how a prefix leaks across a boundary.
-      const walkScoped = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: any) => {
+      const walkScoped = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: number | null) => {
         if (n.type === "element") {
           resolveElement(n, scopeNs, scopePfx, owner)
-          for (let i = 0; i < n.childCount; i++) walkScoped(n.child(i), nsOf.get(n)!, pfxOf.get(n)!, n)
+          for (let i = 0; i < n.childCount; i++) walkScoped(n.child(i), nsOf.get(n.id)!, pfxOf.get(n.id)!, n.id)
           return
         }
         for (let i = 0; i < n.childCount; i++) walkScoped(n.child(i), scopeNs, scopePfx, owner)
       }
-      const pfxOf = new Map<any, Map<string, string>>()
-      const resolveElement = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: any) => {
+      const pfxOf = new Map<number, Map<string, string>>()
+      const resolveElement = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: number | null) => {
         let ns = scopeNs
         const pfx = new Map(scopePfx)
         const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
@@ -12025,8 +12077,8 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           if (k === "xmlns") ns = v
           else if (k.startsWith("xmlns:")) { const p = k.slice(6); if (p) pfx.set(p, v) }
         }
-        nsOf.set(n, ns)
-        pfxOf.set(n, pfx)
+        nsOf.set(n.id, ns)
+        pfxOf.set(n.id, pfx)
         const colon = written.indexOf(":")
         const pre = colon >= 0 ? written.slice(0, colon) : ""
         const eff = pre ? pfx.get(pre) : ns
@@ -12034,12 +12086,131 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           const decl = named(tag, "Attribute")
             .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
             .find((x: any) => XML_NAME_ATTR.has(x.k) && x.v.length > 0)
-          if (decl) nameOf.set(n, decl.v)
+          if (decl) nameOf.set(n.id, decl.v)
         }
-        if (!nameOf.has(n)) nameOf.set(n, written)
-        if (owner) ownerOf.set(n, owner)
+        if (!nameOf.has(n.id)) nameOf.set(n.id, written)
+        if (owner !== null) ownerOf.set(n.id, owner)
       }
       walkScoped(root, "", new Map(), null)
+    }
+
+    // ---- DTD declarations, derived from the DTD side of `doctypedecl`
+    //
+    // A declaration inside the internal subset is NOT an `element` node, so
+    // nothing above sees it, and its owner is the DOCTYPE's `Name` rather than
+    // an element. The analyzer publishes both (a Type symbol owned by the DTD,
+    // and a `contains` edge from the DTD's name), so the oracle derives both or
+    // the lane would score the analyzer's whole DTD layer as fabrication — which
+    // is what an earlier version did by accident, when the DTD branch sat under
+    // `if (n.type !== "element") continue` and could never fire.
+    //
+    // The five node types are the grammar's own, read off the tree rather than
+    // assumed: `elementdecl`, `AttlistDecl`, `GEDecl`, `PEDecl`, `NotationDecl`.
+    // `GEDecl` and `PEDecl` are single nodes for an EXTERNAL entity — they are
+    // where `SYSTEM "…"` lives — and their `Name` child is the entity's name.
+    const DTD_DECL_TYPES = new Set(["elementdecl", "AttlistDecl", "GEDecl", "PEDecl", "NotationDecl"])
+    const parentOf = new Map<number, number>()
+    {
+      const stack: any[] = [root]
+      while (stack.length) {
+        const n = stack.pop()!
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c) parentOf.set(c.id, n.id)
+        }
+        for (let i = n.childCount - 1; i >= 0; i--) { const c = n.child(i); if (c) stack.push(c) }
+      }
+    }
+    // Two more DTD claims, both `contains` edges the analyzer emits and neither
+    // of which is a declaration:
+    //
+    //   CONTENT MODEL  `<!ELEMENT c (a+, (b|c)*)>` says c MAY admit a, b and c.
+    //                  These are `Name` nodes under a `contentspec`.
+    //   NOTATION TYPE  `<!ATTLIST c s NOTATION (gif|jpg)>` says the value of `s`
+    //                  must be one of two NOTATIONs. Also `Name` nodes, under an
+    //                  `AttDef`'s `NotationType`.
+    //
+    // Both are USAGE claims rather than tree nesting — the document saying what a
+    // name may appear as — which is why the analyzer tiers them
+    // `usage_contextual` and why they are not derivable from the element walk at
+    // all. They were the last two classes the oracle could not see, and a lane
+    // that cannot see them scores the analyzer's whole DTD usage layer as
+    // fabrication, which is how `unexplained` reached 2 and the pin refused.
+    const dtdUsageEdges: { from: string; to: string; line: number }[] = []
+    for (const n of nodes) {
+      if (n.type === "elementdecl") {
+        const owner = first(n, "Name")?.text ?? ""
+        if (!owner) continue
+        const spec = first(n, "contentspec")
+        if (!spec) continue
+        const stack: any[] = [spec]
+        while (stack.length) {
+          const cur = stack.pop()!
+          if (cur.type === "Name") {
+            const t = cur.text.trim()
+            if (t) dtdUsageEdges.push({ from: owner, to: t, line: cur.startPosition.row + 1 })
+          }
+          for (let i = 0; i < cur.childCount; i++) { const c = cur.child(i); if (c) stack.push(c) }
+        }
+      } else if (n.type === "GEDecl" || n.type === "PEDecl") {
+        // `<!ENTITY logo SYSTEM "logo.png" NDATA png>` — an UNPARSED entity whose
+        // value must be a NOTATION, and the `NDATA` clause names which one. That
+        // is a relationship between two declared names and the analyzer emits it
+        // as `dtd_ndata_notation`. It is the third usage-shaped DTD class and the
+        // last one the oracle could not see: `NDataDecl` is a child of the entity
+        // node, so it is in the tree, but it is neither a declaration nor a `Name`
+        // under a `contentspec`, and nothing above walked into it.
+        const owner = first(n, "Name")?.text ?? ""
+        if (!owner) continue
+        const nd = first(n, "NDataDecl")
+        if (!nd) continue
+        const notation = first(nd, "Name")?.text ?? ""
+        if (notation) dtdUsageEdges.push({ from: owner, to: notation, line: nd.startPosition.row + 1 })
+      } else if (n.type === "AttlistDecl") {
+        const owner = first(n, "Name")?.text ?? ""
+        if (!owner) continue
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const attDef = n.namedChild(i)
+          if (attDef?.type !== "AttDef") continue
+          const nt = first(attDef, "NotationType")
+          if (!nt) continue
+          const stack: any[] = [nt]
+          while (stack.length) {
+            const cur = stack.pop()!
+            if (cur.type === "Name") {
+              const t = cur.text.trim()
+              if (t) dtdUsageEdges.push({ from: owner, to: t, line: cur.startPosition.row + 1 })
+            }
+            for (let j = 0; j < cur.childCount; j++) { const c = cur.child(j); if (c) stack.push(c) }
+          }
+        }
+      }
+    }
+
+    const byId = new Map<number, any>()
+    for (const n of nodes) byId.set(n.id, n)
+    const doctypeNameOf = (n: any): string => {
+      let cur: any = n
+      let id = parentOf.get(n.id)
+      while (id !== undefined) {
+        cur = byId.get(id)
+        if (!cur) break
+        if (cur.type === "doctypedecl") return first(cur, "Name")?.text ?? ""
+        id = parentOf.get(cur.id)
+      }
+      return ""
+    }
+
+    /** The published name of the nearest ANCESTOR element, or "" at document level. */
+    const nearestElementName = (n: any, parents: Map<number, number>, nodesById: Map<number, any>): string => {
+      let id = parents.get(n.id)
+      while (id !== undefined) {
+        const cur = nodesById.get(id)
+        if (!cur) break
+        if (cur.type === "element") return nameOf.get(cur.id) ?? tagNameOf(cur)
+        id = parents.get(cur.id)
+      }
+      return ""
     }
 
     // ---- phase 2: emit edges from the tables
@@ -12055,11 +12226,44 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       edges.push(cls ? ({ label, from, target: to } as any) : { label, from, target: to })
       if (cls) (edges[edges.length - 1] as any).edgeClass = cls
     }
+    for (const u of dtdUsageEdges) push(u.from, u.to, "contains")
+
+    // A processing instruction NESTED INSIDE an element is contained by it, and
+    // the analyzer emits that edge. A document-level PI has no element owner and
+    // correctly gets none — which is the rule the analyzer's own comment states,
+    // and which this reproduces by only pushing when an element ancestor exists.
+    // Adobe writes `<?xpacket begin?>` … `<?xpacket end?>` around XMP metadata
+    // inside `<metadata>`, so real SVG in the corpus exercises exactly this, and
+    // it was the last class the oracle could not see.
     for (const n of nodes) {
+      if (n.type !== "PI") continue
+      const target = first(n, "PITarget")?.text.trim() ?? ""
+      // `<?xml …?>` is an XMLDecl, never a PI target, and a PI whose target
+      // lower-cases to `xml` is a declaration rather than an instruction.
+      if (!target || target.toLowerCase() === "xml") continue
+      const owner = nearestElementName(n, parentOf, byId)
+      if (owner) push(owner, target, "contains")
+    }
+
+    for (const n of nodes) {
+      if (DTD_DECL_TYPES.has(n.type)) {
+        // A correctly-parsed declaration's Name is its FIRST named child. If it
+        // is not, the tree is a recovery shape and any Name beneath it may be a
+        // fragment of something the parser did not understand — publishing it
+        // would put a name in the graph that no declaration carries. This is the
+        // same guard the analyzer applies, for the same reason.
+        const firstNamed = n.namedChildCount > 0 ? n.namedChild(0) : null
+        const nameNode = first(n, "Name")
+        if (nameNode && firstNamed && firstNamed.id === nameNode.id) {
+          const dtd = doctypeNameOf(n)
+          if (dtd) push(dtd, nameNode.text, "contains")
+        }
+        continue
+      }
       if (n.type !== "element") continue
-      const self = nameOf.get(n) ?? ""
-      const own = ownerOf.get(n)
-      const owner = own ? nameOf.get(own) ?? "" : ""
+      const self = nameOf.get(n.id) ?? ""
+      const own = ownerOf.get(n.id) ?? null
+      const owner = own !== null ? nameOf.get(own) ?? "" : ""
       const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
       // element -> attribute, read from the tree, never from source text
       for (const a of named(tag, "Attribute")) {
@@ -12335,12 +12539,21 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // whose SOURCE this oracle cannot name is an edge it silently drops
     // (measured: `calls constructor -> AchieveMailman`).
     const contractName = (d: any): string =>
-      d.type === "constructor_declaration" ? "constructor" : nameOfDecl(d)
+      d.type === "constructor_declaration" ? "constructor"
+      : d.type === "operator_declaration" ? "operator"
+      : nameOfDecl(d)
     const isDecl = (t: string) =>
       t === "class_declaration" || t === "structure_declaration" ||
       t === "interface_declaration" || t === "module_declaration" ||
       t === "enum_declaration" || t === "delegate_declaration" ||
       t === "method_declaration" || t === "constructor_declaration" ||
+      // An INTERFACE's members are declarations. The analyzer grew these and the
+      // oracle did not, which showed up as 2 UNEXPLAINED `contains
+      // ISelectionScreen -> <member>` rows in the full-corpus sweep -- the
+      // differential correctly reporting that one side had learned something the
+      // other had not, which is the only way that failure can be caught.
+      t === "interface_method_declaration" || t === "interface_property_declaration" ||
+      t === "interface_event_declaration" ||
       t === "property_declaration" || t === "event_declaration" ||
       t === "operator_declaration" || t === "declare_statement" ||
       t === "field_declaration" || t === "enum_member_declaration" ||
@@ -12359,6 +12572,35 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // disagree, one of them is wrong about nesting, which is exactly the class of
     // defect a recursion-vs-sweep divergence can find.
     const declNodes = all.filter((n) => isDecl(n.type))
+    // The OWNER OF A CALL is the nearest enclosing callable or TYPE -- never a
+    // field, property, event or enum member, even though those are declarations
+    // and so can contain the invocation by byte range.
+    //
+    // A field initializer is the case that proves it: `Private _terrain As
+    // Terrain = New Terrain(...)` puts the construction inside the
+    // `field_declaration`, so range-containment hands the call to `_terrain`. But
+    // an initializer runs in the TYPE's initialization context, not the field's
+    // -- and `calls _terrain -> Terrain` is an edge whose source names something
+    // that cannot be called. The analyzer attributes it to the type, which is the
+    // useful answer, and the full-corpus sweep reported the disagreement.
+    const CALL_OWNERS = new Set([
+      "method_declaration", "constructor_declaration", "declare_statement",
+      "operator_declaration", "lambda_expression", "delegate_declaration",
+      "class_declaration", "structure_declaration", "interface_declaration",
+      "module_declaration", "enum_declaration", "namespace_declaration",
+    ])
+    /** The nearest enclosing declaration that can actually be the SOURCE of a call. */
+    const callOwnerOf = (node: any): any => {
+      let best: any = null
+      for (const d of declNodes) {
+        if (d.id === node.id) continue
+        if (!CALL_OWNERS.has(d.type)) continue
+        if (d.startIndex <= node.startIndex && node.endIndex <= d.endIndex) {
+          if (!best || (d.endIndex - d.startIndex) < (best.endIndex - best.startIndex)) best = d
+        }
+      }
+      return best
+    }
     const ownerOf = (node: any): any => {
       let best: any = null
       for (const d of declNodes) {
@@ -12552,7 +12794,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const ty = n.childForFieldName?.("type")
         const leaf = ty ? lastIdent(ty) : null
         if (!leaf) continue
-        const from = ownerOf(n)
+        const from = callOwnerOf(n)
         if (!from) continue
         const fromName = contractName(from)
         if (fromName.length === 0) continue
@@ -12564,7 +12806,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       if (!fn) continue
       const leaf = lastIdent(fn)
       if (!leaf) continue
-      const from = ownerOf(n)
+      const from = callOwnerOf(n)
       if (!from) continue
       const fromName = contractName(from)
       if (fromName.length === 0) continue
