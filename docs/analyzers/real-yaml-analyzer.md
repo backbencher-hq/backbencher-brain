@@ -220,6 +220,23 @@ payload, not a worse algorithm.
   reads **precision 1.000 / recall 1.000, FP 0, FN 0, unknown 0**
   (`validation/m12/results/yaml-differential.json`).
 
+**What the buckets are worth, because "0 unexplained" is only as strong as its excuses.**
+Audited per bucket on 2026-09-28, and recorded in the artifact as `bucketIndependence`:
+
+| bucket | paths | standing |
+|---|---|---|
+| `grammarLossProvenByOracle` | 121,796 | **path-level audit**, byte-level, no rule: 88,675 paths accounted, 0 unexplained |
+| `grammarContainmentLoss` | 38,240 | **the weakest, and not independent evidence.** Excused by a referee (`treeKeyPaths`) that shares no code with the analyzer but was *converged on it* — extended at every disagreement (10,752 rows for ERROR-reached pairs, 55 for orphan sequence items, plus the `#N` policy), never to find a defect |
+| `documentModule` | 1,099 | **verified sound**: `nodeType === "document"` matches `documentCount` exactly (28/28 across fixtures), and the analyzer sets it in exactly one place |
+| `oracleUnparseable` | 70 | files PyYAML itself rejects, named per file |
+| `duplicateKeySuffix`, `anchorConstant`, `mergeAliasExpansion` | 7 | stated policy differences between two parsers |
+
+Nothing is charged to the analyzer: `analyzerDefect` and `analyzerVsTree` are both **0**.
+But the honest reading of `grammarContainmentLoss` is "the analyzer's declared policies,
+which the oracle's set cannot express" — the same category as the 7 policy rows — rather
+than independent confirmation. A referee patched until it agrees perfectly is a model of the
+analyzer, and 0/0 in both directions is what a fitted referee looks like.
+
 ## Corpus validation
 
 - Corpus target: `validation/m12/corpus-manifest.json` → `kubernetes@dfd7b93a` (primary),
