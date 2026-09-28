@@ -234,6 +234,7 @@ literals pays one extra parse per literal. Not separately benchmarked.
 | m12 differential | 84 facts, P = R = 1.000 | phantom classes pinned as **absences** |
 | pin contract | sql lane validates | a drifted sha is a `PIN FAILURE` |
 | regex census | no sql finding | — |
+| perf gate (`script/m60/sql-perf-gate.ts`, `verify:m60-sql-perf`) | P1–P5 pass | bars are a regression detector, not a benchmark; `BB_PERF_QUIET=1` skips writing the artifact |
 
 Two mutants are **retired rather than left green**, and the harness now has a `retired` flag so
 the record stays in the file, is printed on every run, and is not silently skipped.
@@ -265,8 +266,23 @@ the record stays in the file, is printed on every run, and is not silently skipp
   `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE … ENABLE ROW LEVEL
   SECURITY`, and all 5 changed-shape files gain a `having` node. The gate has no bucket for
   either, and its verdict has not been changed.
-- 91 unknown symbol edges (0.73 % of 12,447) on ProxiCall are unresolved and unexplained.
-- There is no perf gate and no complexity figure covering the recovery passes.
+- Unknown relationship targets on ProxiCall are **76 edges (0.61 % of 12,470)**, re-measured
+  2026-09-27 after the plpgsql grammar and the EXECUTE-literal pass. The count was **165
+  (1.31 %)** before `SQL_BUILTINS` was extended with the measured set of PostgreSQL- and
+  extension-provided names; 89 of those edges were `encode`, `digest`, `daterange`,
+  `uuid_generate_v4`, `gen_random_bytes`, `array_append`, `regexp_replace` and friends — SQL
+  functions an agent reading the graph could easily mistake for project code. The remaining
+  76 are dominated by system catalogs (82 edges / 17 names, `pg_policies`, `pg_class`,
+  `pg_namespace`) which are legitimate external references rather than unknowns, and by names
+  declared in files the grammar still cannot parse.
+- The perf gate measures files the analyzer actually processes in full (**<= 400 KB**). 309 of
+  the 696 extension-corpus files are larger and hold **91.8 % of its bytes**; the engine
+  truncates anything over 1 MB, so throughput over the raw 235 MB corpus is not a meaningful
+  number and an earlier figure of "22 symbols/s" that counted those bytes was wrong by ~18x. On
+  files actually analyzed the corpus runs at p50 54 ms, p95 2.7 s, max 4.8 s, ~104 KB/s, and
+  the primary corpus at p50 24 ms, p95 253 ms. Cost is dominated by the **main analysis pass**
+  (70–80 % of wall on the slowest files), not by the grammar and not by the recovery passes,
+  which cost zero on those files.
 
 ## Evidence pointers
 
