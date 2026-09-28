@@ -169,15 +169,15 @@
         "id": "NIMD4",
         "node_type": "nimble",
         "status": "RULED",
-        "question": "The grammar's own file-types declares `nimble`, and .nimble files are real NIM source. Route them to the nim analyzer?",
-        "resolution": "Not yet, and not on the strength of the grammar's file-types list. A .nimble is a package manifest with `requires`/`task`/`bin` blocks whose surface is not the module surface this analyzer models, and the corpus scan already shows what routing on grammar metadata alone buys: 171 tracked .nimble files whose parse health has never been measured. So the decision waits for a measurement, and the corpus record notes the 171 files as excluded from the complexity artifact (5,056 .nim/.nims files measured, 5,227 total in the parse record) rather than quietly reporting one number as if it covered both."
+        "question": "The grammar's own file-types declares `nimble`, and 171 tracked .nimble files exist in the corpus. Route them to the nim analyzer?",
+        "resolution": "YES, on measurement rather than on the grammar's file-types list \u2014 declaring a format is not evidence the analyzer models it, and routing on the declaration alone is the claim-without-coverage class. Measured over every tracked .nimble of all 12 pinned corpora: 171 files, 0 error files, 0 error nodes, 26 symbols, 315 relationships, 11 imports. 100% parse health, and a .nimble's `task`/`bin` blocks declare real things rather than being pure data, so it belongs in the symbol graph. The corpus parse record already covered these files (5,227 total, of which 5,056 are .nim/.nims); the complexity artifact measured the .nim/.nims subset and recorded the 171 .nimble share separately, so neither record silently claims the other's coverage."
       },
       {
         "id": "NIMD5",
         "node_type": "nims",
         "status": "RULED",
-        "question": "`.nims` is a Nim configuration script, in the grammar's file-types and produced by 35 tracked files in the corpus. Route it?",
-        "resolution": "Not in production yet, but it is measured: the differential lane's ext list carries `nim,nims` so the sweep does not silently skip it, and the corpus parse record counts its files. What is missing is a routing decision backed by a parse-health number for the extension alone, which is why it stays out of language-detection.ts rather than being guessed at. The measured `nim+nims` counts per repo are in the corpus artifact."
+        "question": "`.nims` is a Nim configuration script, in the grammar's file-types and 65 tracked files in the corpus. Route it?",
+        "resolution": "YES, and on the same measurement: 65 files, 0 error files, 0 error nodes, 43 symbols, 279 relationships, 96 imports. A .nims is NimScript \u2014 set_cmd, switch, buildFile, all procs and calls on a real stdlib \u2014 so it is Nim code by any reading that matters, and the analyzer extracts it like any other module. `src/ast/language-detection.ts` now routes .nims and .nimble to nim, and the differential and fixture lanes' ext lists were updated in the same change so the claim and the router cannot drift apart: a lane that swept an extension the router skips is the inert-pin class, and a lane that under-reports what the router now handles is the same defect wearing a hat."
       }
     ]
   }
