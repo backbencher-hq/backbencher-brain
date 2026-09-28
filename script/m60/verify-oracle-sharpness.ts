@@ -976,8 +976,23 @@ function selftest(): number {
     rubyOwn.has("real-ruby-analyzer.ts") && rubyOwn.has("differential.ts"))
   check("scope: a lane's own analyzer is an INPUT, never environment (the split's direction)",
     rubyOwn.has("real-ruby-analyzer.ts") && !rubyEnv.has("real-ruby-analyzer.ts"))
-  check("scope: a core-reached analyzer stays an input even when only a DYNAMIC import reaches it (fsharp, engine.ts)",
-    rubyOwn.has("real-fsharp-analyzer.ts") && rubyEnv.has("real-haskell-analyzer.ts"))
+  // THIS CHECK WAS UNSATISFIABLE, and had been since `8b33f4f1` gave fsharp its own F5 seat.
+  // It read `rubyOwn.has("real-fsharp-analyzer.ts") && rubyEnv.has("real-haskell-analyzer.ts")`,
+  // i.e. it asked for one file to be BOTH an owned input and environment — while `owned ∪ foreign`
+  // is the whole closure BY CONSTRUCTION (splitClosure partitions it), so the first conjunct can
+  // never hold true for any analyzer that is another lane's. The example was valid when the check
+  // was written (fsharp was not yet a LANGS lane, so nothing pruned it and the dynamic import in
+  // engine.ts made it ruby's input); enrolling fsharp flipped it, and no gate runs this self-test
+  // on its own, so the fence stayed red rather than failing closed anywhere.
+  //
+  // Re-expressed on the property itself rather than on a name: engine.ts is reached from the
+  // harness ONLY by a dynamic import (`await import("../../src/ast/engine")`), a lane's own
+  // analyzer must be an input, and a neighbour LANE's analyzer must be pruned. The analyzer side
+  // is DERIVED from what the lane owns, so a future enrollment cannot make this stale again —
+  // which is exactly how the previous version died.
+  const rubyOwnAnalyzer = [...rubyOwn].some((f) => /^real-.*-analyzer\.ts$/.test(f))
+  check("scope: a core-reached module and analyzer stay inputs when only a DYNAMIC import reaches them (engine.ts), and a neighbour LANE's analyzer is pruned (fsharp)",
+    rubyOwn.has("engine.ts") && rubyOwnAnalyzer && rubyEnv.has("real-fsharp-analyzer.ts"))
   check("scope: on the real tree, the haskell analyzer is environment for ruby (the file whose save refused every lane)",
     !rubyOwn.has("real-haskell-analyzer.ts") && rubyEnv.has("real-haskell-analyzer.ts"))
   check("scope: on the real tree, the split still covers the whole closure",
