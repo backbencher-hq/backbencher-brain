@@ -56,8 +56,9 @@ over the document's top-level definitions. `extend scalar S` emits **nothing**: 
 scalar extension has no members, and it is recorded on the scalar's own metadata
 instead.
 
-Every symbol carries an AST-derived range (1-based line, 1-based column, byte
-offsets), `ownerName`/`ownerKind`, `returnType`/`parameters`/`defaultValue`, and
+Every symbol carries an AST-derived range — **1-based line, 1-based column, and
+`startIndex`/`endIndex` measured in CHARACTERS, not bytes** — plus
+`ownerName`/`ownerKind`, `returnType`/`parameters`/`defaultValue`, and
 `docstring` — the description's **value** (§2.9.4: escapes resolved, block
 strings dedented), not its raw text. `metadata.graphqlType` is the grammar's node
 type on every branch; `metadata.graphqlCategory` is the specification's word for
@@ -140,6 +141,36 @@ on one line, under two roles. A line is never invented; a relationship whose
 source or target would be empty is refused at the emitter, because the grammar's
 recovery for an unresolvable type produces a `Type` node with a MISSING `Name`.
 
+### Columns and offsets are characters, and tree-sitter's own docs say bytes
+
+This is worth stating because the obvious reading of the upstream documentation is
+wrong in a way that produces a silent, hard-to-spot bug. tree-sitter's C API
+documents `TSPoint.column` as *"the zero-based **byte** offset of the node from the
+start of its row"*, and the `start_index` fields as byte offsets. **web-tree-sitter
+reports characters**, measured rather than assumed, on a line where the two differ:
+
+```
+  "ééé" field: String      21 characters, 24 bytes
+      ^ the `f` of `field`
+  binding startPosition.column = 8   character index of `f` = 8   byte index = 11
+  binding startIndex          = 21   src.slice(21, 26) === "field"   (a byte slice returns mojibake)
+```
+
+So the analyzer's `startColumn` is a 1-based **character** column — which is what an
+editor shows and what a column number is expected to mean — and `startIndex` /
+`endIndex` are **character** offsets, so `content.slice(startIndex, endIndex)`
+returns the symbol's own source text. A consumer that reads these as byte offsets
+and slices a `Buffer` gets corruption on any file with non-ASCII before the symbol,
+and GraphQL descriptions are routinely non-English, so this is not an edge case.
+
+**Do not "fix" this by converting.** The conversion looks necessary from the
+upstream docs and would break the analyzer; the corpus sweep's own
+`rangeExcludesOwnName` check slices the source with these offsets and is green on
+the three fixtures that contain non-ASCII (`05-collision`, `06-identity`,
+`07-damaged`), so a conversion would turn that gate red. Every analyzer in the
+repository passes the binding's value straight through (61 sites), so this is the
+house convention and not a graphql-local decision.
+
 ## Argument optionality
 
 `isOptional` follows the specification, not a guess from `!`: an argument is
@@ -201,6 +232,51 @@ Built-in scalars and introspection meta-fields are **specification vocabulary**:
 every schema answers them and no schema declares them, so no `brain_symbol` row
 will ever exist and neither store strategy can land them. That is a property of
 the store, not of the edge — the edge names exactly what the document says.
+
+## Robustness: degenerate input and pathological depth
+
+Every other gate in this lane feeds the analyzer well-formed, shallow, ASCII
+GraphQL. That comfortable test set hid a real defect, and the shape of it is worth
+recording.
+
+`findDescendant` walked the AST by **recursion**, and it recurses to the depth of
+the subtree whenever its predicate does not match early. `[[…[Int]]]` is exactly
+that case, because the `NamedType` sits at the **bottom**. Measured: list nesting
+**2,749 deep threw `RangeError: Maximum call stack size exceeded`**, and the
+engine's guard turns any throw into a minimal result — so the file yielded **zero
+symbols** and one opaque error, silently losing a whole type definition. The
+threshold is a function of stack-frame size, so it is a platform figure rather than
+a guarantee.
+
+It survived the corpus for a reason that is itself a lesson: **`A & B & C` never
+triggered it.** The left-recursive rules put a `NamedType` at depth 1, so the
+predicate matched immediately and the recursion never went deep — 5,000 clauses
+worked. A defect only one shape of input can reach is a defect a representative
+corpus will not find, and this corpus is three real repositories and still missed
+it.
+
+**Four** helpers were converted to an explicit stack, and the gate that found the
+first one then found three more at 20,000 clauses that the earlier probe had not
+reached:
+
+| helper | exposed by | before | after |
+|---|---|---|---|
+| `findDescendant` | `[[…[Int]]]` | threw at 2,749 | ok at 20,000 |
+| `enumValueReferences` | a deeply nested `Value` | same class | ok at 20,000 |
+| `collectNamedTypes` | `A & B & C …` (left-recursive) | ok to 5,000, threw at 20,000 | ok at 20,000 |
+| `collectDirectiveLocations` | `on A \| B \| C …` | ok to 5,000, threw at 20,000 | ok at 20,000 |
+
+Children are pushed in **reverse** so they pop in order, which preserves the
+pre-order the recursion produced — the conversions are behaviour-preserving, and the
+differential is unchanged at P=1.000 / R=1.000. A 20,000-clause `implements` chain
+now yields 40,002 symbols and 60,002 relationships instead of throwing.
+
+Gate 8e also runs twelve **degenerate** files that no other gate would produce: an
+empty file, whitespace only, comment only, no trailing newline, a UTF-8 **BOM**,
+**CRLF** line endings, tabs, non-ASCII before a name, invalid UTF-8 in a comment,
+4,000 fields on one line, and trailing blank lines. Every one must produce a result
+— possibly zero symbols — and never an exception; every symbol's range must be
+1-based and its offsets must slice out its own source text.
 
 ## Regex and text-scan inventory
 
@@ -322,7 +398,7 @@ claim was the gate that could not run.
 | `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, mirror byte-identical, source↔wasm proof **zero in both directions** |
 | `script/m14/tmp/graphql/out/contract-battery.json` | 52 hand-audited cases | **52/52** |
 | `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 7 fixtures, 8 channels | **292 facts, P=1.000, R=1.000** |
-| `script/m14/tmp/graphql/out/mutation.json` | 33 mutants, one per finding | **29 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 2 declared equivalent, each with its structural justification. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
+| `script/m14/tmp/graphql/out/mutation.json` | 36 mutants, one per finding | **30 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 4 declared equivalent — two of them **derivable** from the grammar's own rules rather than merely unobserved. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
 | `script/m14/tmp/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
 | `script/m14/tmp/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
 | `script/m14/tmp/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
