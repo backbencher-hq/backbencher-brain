@@ -9928,7 +9928,24 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           push("instantiates", src(), `${leaf(t)}.constructor`)
         }
       } else if (method && !PERL_BUILTINS.has(method)) {
-        push("calls", src(), leaf(method))
+        // A receiver that NAMES A CLASS makes the method's OWNER derivable, so
+        // the target is `Receiver.method` and not a bare leaf. Without this the
+        // oracle agreed with the analyzer on dropping it — the THIRD time this
+        // pair has shared a premise (after the `use constant { ... }` dead
+        // branch and the `!inSub` gap), which is why the defect was invisible at
+        // 100% coverage / 0 unexplained for as long as it was. 15,754 of 71,230
+        // corpus `calls` edges had a class receiver and lost it.
+        //
+        // The discriminator is `namesAClass`, already declared above for the
+        // `instantiates` guard: one rule, two labels, and the same leaf
+        // convention both already used (`Mojo::Util->f` is `Util.f`, exactly as
+        // the analyzer's `instantiates` path already emitted `Util.constructor`).
+        const recv = invocant ? (invocant.text ?? "") : ""
+        if (invocant && namesAClass(invocant) && recv && !recv.includes("$") && !recv.includes("->")) {
+          push("calls", src(), `${leaf(recv)}.${method}`)
+        } else {
+          push("calls", src(), leaf(method))
+        }
       }
     } else if (inSub && (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression")) {
       const fnNode = n.childForFieldName?.("function") || byType(n, "function")
@@ -12602,6 +12619,30 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       return out
     }
 
+    /**
+     * A field's declaration UNITS: one per `variable_declarator`, or the
+     * declaration itself for everything else.
+     *
+     * `Dim X, Y, width As Integer` is ONE `field_declaration` with three
+     * `variable_declarator` children and therefore three members. Reading one
+     * name per field_declaration made the other two look like analyzer
+     * fabrications -- measured on P3D's ItemObject.vb, 8 `contains` rows the
+     * analyzer published and this oracle could not derive.
+     *
+     * Shared with the `references` derivation below, which needs the same units
+     * because a field's TYPE is shared by its declarators while its SYMBOLS are
+     * not. One definition, so the two cannot drift.
+     */
+    const fieldUnits = (d: any): any[] => {
+      if (d.type !== "field_declaration") return [d]
+      const out: any[] = []
+      for (let i = 0; i < d.namedChildCount; i++) {
+        const c = d.namedChild(i)
+        if (c && c.type === "variable_declarator") out.push(c)
+      }
+      return out.length > 0 ? out : [d]
+    }
+
     // ------------------------------------------------- ownership by RANGE
     // The nearest enclosing declaration, found by byte containment over the flat
     // list. The analyzer derives the same fact from a push/pop stack; if the two
@@ -12682,9 +12723,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // therefore three members; reading one name per field_declaration made the
       // other two look like analyzer fabrications. Measured on P3D's ItemObject.vb:
       // 8 `contains` rows the analyzer published and the oracle could not derive.
-      const units: any[] = d.type === "field_declaration"
-        ? (() => { const out: any[] = []; for (let i = 0; i < d.namedChildCount; i++) { const c = d.namedChild(i); if (c && c.type === "variable_declarator") out.push(c) } return out })()
-        : [d]
+      const units = fieldUnits(d)
       for (const unit of units) {
         // A CONSTRUCTOR IS NAMED BY THE CONTRACT, and so is this oracle.
         // `Public Sub New()` has no `name` field: `New` is an anonymous token, so
@@ -12880,6 +12919,73 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         from: member,
         target: baseName.length > 0 ? `${baseName}.${member}` : member,
       })
+    }
+
+    // ------------------------------------------------------------ references
+    // THE LARGEST CLASS IN THE INDEX, AND THE ONE NOTHING CHECKED.
+    //
+    // `references` is 14,501 of the analyzer's 39,125 edges -- 37% of everything
+    // it publishes -- and it was deliberately EXCLUDED from the audited label set
+    // on the grounds that the oracle did not derive it. That was correct about the
+    // consequence and wrong about the conclusion: excluding the biggest class did
+    // not make it smaller, it made it the largest class in the product that no
+    // second implementation had ever agreed with. The #910 lesson cuts both ways
+    // -- a label the truth side cannot derive is a manufactured RED, and a label
+    // nobody derives is a manufactured GREEN. This was the second.
+    //
+    // It is derivable, and the contract is small: a declaration's TYPE POSITIONS
+    // name types, and a type this file does not declare is a `references` edge
+    // from the declaration to that type's last segment. The positions are
+    // enumerable from the tree -- an `as_clause` on the declaration, and one
+    // inside each of its parameters -- so this reads them by walking for
+    // `as_clause` under a declaration, which is a different route to the same
+    // facts than the analyzer's six hand-placed call sites (returnType x2,
+    // parameter, propertyType, eventType, fieldType).
+    const TYPE_POSITIONS = new Set([
+      "method_declaration", "constructor_declaration", "operator_declaration",
+      "property_declaration", "event_declaration", "field_declaration",
+      "declare_statement", "interface_method_declaration",
+      "interface_property_declaration", "interface_event_declaration",
+    ])
+    /** Every `as_clause` at or under `n`, including inside its parameter list. */
+    const asClausesIn = (n: any): any[] => {
+      const out: any[] = []
+      const walk = (x: any, depth: number): void => {
+        if (depth > 8) return
+        for (let i = 0; i < x.childCount; i++) {
+          const c = x.child(i)
+          if (!c) continue
+          if (c.type === "as_clause") { out.push(c); continue }
+          // a nested declaration owns its own types; do not walk into it
+          if (TYPE_POSITIONS.has(c.type)) continue
+          walk(c, depth + 1)
+        }
+      }
+      walk(n, 0)
+      return out
+    }
+    const fileDeclares = new Set<string>()
+    for (const d of declNodes) {
+      const n = contractName(d)
+      if (n.length > 0) fileDeclares.add(n)
+    }
+    for (const d of declNodes) {
+      if (!TYPE_POSITIONS.has(d.type)) continue
+      // a FIELD declares one symbol per declarator, so each declarator is a source
+      for (const src of fieldUnits(d)) {
+        const srcName = contractName(src)
+        if (srcName.length === 0) continue
+        for (const ac of asClausesIn(src)) {
+          const ty = ac.childForFieldName?.("declared_type") ?? ac.namedChild?.(0)
+          if (!ty) continue
+          const leaf = lastIdent(ty)
+          if (!leaf) continue
+          const target = String(leaf.text).trim()
+          if (target.length === 0) continue
+          if (fileDeclares.has(target)) continue
+          edges.push({ label: "references", from: srcName, target })
+        }
+      }
     }
 
     // -------------------------------------------------------------- imports
@@ -15317,7 +15423,12 @@ async function main() {
           // largest class (13,832 of 33,910 edges over 435 files). Auditing a
           // class with no independent derivation of it would be a manufactured
           // red, which is the failure mode the gate exists to prevent.
-          ...(lang === "vb" ? ["calls", "contains", "imports"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+          // `references` joined the audited set once the oracle could derive it. It was
+          // excluded while it was the largest UNVERIFIED class in the product --
+          // 37% of all published edges, agreed with by no second implementation --
+          // and excluding the biggest class does not make it smaller, it makes it
+          // invisible.
+          ...(lang === "vb" ? ["calls", "contains", "imports", "references", "overrides"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
