@@ -301,6 +301,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const bindingScopes: { outer: Map<string, string> }[] = []
     /** Names this document declares, for `references` resolvability. */
     const declaredNames = new Set<string>()
+    /**
+     * Namespaces this document IMPORTS, and the file each came from.
+     *
+     * M60 finding X7: a `references` edge whose prefix is bound to a namespace
+     * this document imports points at a component declared in ANOTHER FILE, and
+     * the reference pass used to refuse it. The refusal is right for a prefix
+     * bound to nothing — recording that would put a name in the graph that no
+     * file supports, the M60.R10 "a value where a name belongs" lie. It is wrong
+     * here, because the document already says where the name lives: the
+     * `imports` edge for the same `xsd:import` names the file. Dropping the
+     * reference left the graph claiming two documents are independent while
+     * holding an edge that says one of them includes the other.
+     *
+     * So there are THREE resolvability classes, not two, and the third is the
+     * one that makes a schema set a graph:
+     *   in-document — the name is declared here
+     *   builtin     — the name is an XML/XSD built-in type
+     *   external    — the name is declared in a file this document imports, and
+     *                 the edge records WHICH file, so a consumer can follow it
+     */
+    const importedNamespaces = new Map<string, { path?: string; element: string }>()
 
     /**
      * Attribute values that MAY name a declaration, held until the walk is over.
@@ -890,6 +911,47 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }, candidate.node)
     }
 
+    // ── which namespaces does this document IMPORT? ───────────────────────────
+    // A separate pass rather than a hook in the element branch, because the
+    // import may be declared AFTER the reference that needs it: a schema that
+    // references `pic:pic` on line 56 and imports that namespace on line 41 is
+    // the ordinary spelling, and resolving on the spot would drop it — the same
+    // forward-reference trap the candidate queue exists to avoid, one level up.
+    {
+      const IMPORT_ELEMENTS = new Set(["import", "include", "import-schema"])
+      const stack: Node[] = [rootNode]
+      while (stack.length) {
+        const n = stack.pop()!
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c) stack.push(c)
+        }
+        if (n.type !== "element") continue
+        const tag = n.children.find((c) => c && (c.type === "STag" || c.type === "EmptyElemTag"))
+        if (!tag) continue
+        const local = this.findDirectChild(tag, "Name")?.text.trim().split(":").pop() ?? ""
+        if (!IMPORT_ELEMENTS.has(local)) continue
+        let nsUri: string | undefined
+        let path: string | undefined
+        for (let i = 0; i < tag.namedChildCount; i++) {
+          const attr = tag.namedChild(i)
+          if (attr?.type !== "Attribute") continue
+          const an = this.findDirectChild(attr, "Name")?.text.trim()
+          const av = this.findDirectChild(attr, "AttValue")
+          const value = av ? this.unquote(av.text).trim() : undefined
+          if (!an || value === undefined) continue
+          if (an === "namespace") nsUri = value
+          // `schemaLocation` is a namespace/URI PAIR LIST; the URIs are the
+          // paths, and the odd-indexed tokens are the ones that are files.
+          else if (an === "schemaLocation") {
+            const parts = RealXmlAnalyzer.splitOnWhitespace(value)
+            path = parts.length % 2 === 0 ? parts[parts.length - 1] : parts[0]
+          } else if (an === "href") path = value
+        }
+        if (nsUri) importedNamespaces.set(nsUri, { path, element: local })
+      }
+    }
+
     // ── the deferred reference pass ───────────────────────────────────────────
     // Every name in the document is now known, so every candidate can be
     // decided. A value that names nothing this document declares and is not a
@@ -913,7 +975,14 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!qname) continue
       const resolvableInDocument = declaredNames.has(qname.local)
       const isBuiltin = candidate.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(candidate.binding)
-      if (!resolvableInDocument && !isBuiltin) continue
+      // X7: an IMPORTED namespace makes the name resolvable in a third way. The
+      // target symbol is deliberately NOT published — the component is not in
+      // this file, and a phantom local symbol is exactly the R10 lie — but the
+      // EDGE is, carrying the file it lives in.
+      const imported = !resolvableInDocument && !isBuiltin && candidate.binding !== undefined
+        ? importedNamespaces.get(candidate.binding)
+        : undefined
+      if (!resolvableInDocument && !isBuiltin && !imported) continue
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
       }
@@ -923,7 +992,10 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         qname: candidate.value,
         prefix: qname.prefix,
         namespaceUri: candidate.binding,
-        resolvable: isBuiltin ? "builtin" : "in-document",
+        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : "external",
+        // where the name actually lives, so a consumer can follow it rather than
+        // having to guess from the namespace alone
+        ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
       }, candidate.valueNode)
     }
 

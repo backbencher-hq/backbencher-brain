@@ -256,6 +256,36 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
   }
   check("every declared name came from a NAMING attribute (name/id), never from a value", violations.length === 0,
     violations.length ? `PROMOTED VALUES: ${violations.slice(0, 6).map((v) => `${v.file} ${v.name}<-${v.by}`).join("; ")}` : `${declared.length} declaration(s) across the fixture set, all from name/id`)
+  // The three resolvability classes, as a rule. A `references` edge that does not
+  // say HOW it resolves is asking the consumer to guess, and the three answers
+  // lead to three different places: this file, a built-in type table, or another
+  // file. X7 added the third (`external`, with `importedFrom`) and this is what
+  // stops a fourth being invented silently or the third being dropped again.
+  const RESOLVABLE = new Set(["in-document", "builtin", "external"])
+  const badResolvable: string[] = []
+  let refEdges = 0
+  let externalEdges = 0
+  for (const f of readdirSync(dir).filter((f) => /\.(xml|xsd|xsl|xslt|rng|wsdl)$/.test(f)).sort()) {
+    const p = `${dir}/${f}`
+    const r: any = await ASTEngine.parseFile(p, readFileSync(p, "utf8"))
+    for (const e of r.relationships ?? []) {
+      if (e.type !== "references") continue
+      refEdges++
+      const v = e.metadata?.resolvable
+      if (v === "external") {
+        externalEdges++
+        // an external reference is only followable if it says which file
+        if (typeof e.metadata?.importedFrom !== "string" || e.metadata.importedFrom.length === 0) badResolvable.push(`${f}: external without importedFrom`)
+      } else if (!RESOLVABLE.has(String(v))) {
+        badResolvable.push(`${f}: ${e.source}->${e.target} resolvable=${JSON.stringify(v)}`)
+      }
+    }
+  }
+  check("every reference edge declares HOW it resolves, and an external one names the file", badResolvable.length === 0,
+    badResolvable.length ? badResolvable.slice(0, 6).join("; ") : `${refEdges} reference edge(s), ${externalEdges} external`)
+  check("the fixture set exercises the external resolvability class", externalEdges > 0,
+    `${externalEdges} external reference(s) — X7's class must be reachable or it is untested`)
+
   check("the fixture set actually exercises the declared-name rule", declared.length > 0,
     `${declared.length} vocabulary declaration(s) found — a rule that can never fire is not a rule`)
 }

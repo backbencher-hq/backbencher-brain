@@ -44,12 +44,12 @@
     {
       "name": "F. the fixture set is present and non-empty",
       "passed": true,
-      "detail": "8 fixtures"
+      "detail": "9 fixtures"
     },
     {
       "name": "G. one symbol per tree element and per tree attribute, per file",
       "passed": true,
-      "detail": "12 sources, 39 elements and 40 attributes, all exact"
+      "detail": "13 sources, 44 elements and 50 attributes, all exact"
     }
   ],
   "passed": true,
@@ -119,22 +119,22 @@
     "PublicID"
   ],
   "observed": {
-    "Name": 120922,
-    "CharData": 81479,
-    "element": 46680,
-    "STag": 36248,
-    "ETag": 36224,
-    "content": 36029,
-    "Attribute": 35558,
-    "AttValue": 35558,
-    "EmptyElemTag": 10456,
-    "Comment": 1998,
-    "document": 1201,
-    "prolog": 1162,
-    "XMLDecl": 1149,
-    "VersionNum": 1149,
+    "Name": 120938,
+    "CharData": 81484,
+    "element": 46685,
+    "STag": 36249,
+    "ETag": 36225,
+    "content": 36030,
+    "Attribute": 35568,
+    "AttValue": 35568,
+    "EmptyElemTag": 10460,
+    "Comment": 1999,
+    "document": 1202,
+    "prolog": 1163,
+    "XMLDecl": 1150,
+    "VersionNum": 1150,
     "ERROR": 559,
-    "EncName": 541,
+    "EncName": 542,
     "TokenizedType": 295,
     "EntityRef": 133,
     "AttDef": 48,
@@ -205,26 +205,26 @@
     "CharData": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:Negative.xml"
     ],
     "EmptyElemTag": [
       "fixture:Catalog.xml",
       "fixture:ConditionalSection.xml",
       "fixture:Doctype.xml",
-      "fixture:Schema.xsd"
+      "fixture:ExternalReference.xsd"
     ],
     "Attribute": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:Negative.xml"
     ],
     "AttValue": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:Negative.xml"
     ],
     "STag": [
       "fixture:Catalog.xml",
@@ -257,8 +257,8 @@
       "fixture:DtdDeclarations.xml"
     ],
     "EncName": [
-      "corpus:cxf",
       "fixture:Catalog.xml",
+      "fixture:ExternalReference.xsd",
       "fixture:ProcessingInstruction.xml",
       "probe:PI_SHAPE_PROBE"
     ],
@@ -368,6 +368,11 @@
       "fixture:DtdDeclarations.xml",
       "probe:DTD_SHAPE_PROBE"
     ],
+    "Comment": [
+      "corpus:cxf",
+      "fixture:ExternalReference.xsd",
+      "probe:CDATA_SHAPE_PROBE"
+    ],
     "ERROR": [
       "corpus:cxf",
       "fixture:Negative.xml"
@@ -406,10 +411,6 @@
       "probe:DTD_SHAPE_PROBE"
     ],
     "CharRef": [
-      "corpus:cxf",
-      "probe:CDATA_SHAPE_PROBE"
-    ],
-    "Comment": [
       "corpus:cxf",
       "probe:CDATA_SHAPE_PROBE"
     ],
@@ -457,6 +458,13 @@
       "symbolElements": 1,
       "treeAttributes": 0,
       "symbolAttributes": 0
+    },
+    {
+      "file": "fixture:ExternalReference.xsd",
+      "treeElements": 5,
+      "symbolElements": 5,
+      "treeAttributes": 10,
+      "symbolAttributes": 10
     },
     {
       "file": "fixture:Negative.xml",
@@ -520,6 +528,7 @@
     "ConditionalSection.xml",
     "Doctype.xml",
     "DtdDeclarations.xml",
+    "ExternalReference.xsd",
     "Negative.xml",
     "ProcessingInstruction.xml",
     "Schema.xsd",
