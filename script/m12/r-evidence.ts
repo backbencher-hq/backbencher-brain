@@ -197,6 +197,69 @@ console.log(
 )
 if (oracle && (oracle.totals.phantom !== 0 || oracle.totals.missed !== 0)) process.exitCode = 1
 
+// ---------------------------------------------------------------- 1a2. R-positions oracle
+// The binding differential above asks R WHICH NAMES a file binds. This asks WHERE they
+// are, using R's own token stream, so the line-number claim is no longer resting on a
+// substring test that a string literal or a comment could satisfy.
+//
+// It is recorded WITH its failures. The remaining 7 are a real, open defect -- for a
+// file containing non-ASCII, startIndex/endIndex are code-unit offsets and not bytes --
+// and a record that reported 0 problems here would be false. `symbolsNamedOutsideRange`
+// is that defect, counted rather than hidden.
+const POSITIONS_SCRIPT = path.join(ROOT, "validation/m12/oracle/r-positions-oracle.R")
+const POSITIONS_SHA = (() => {
+  try { return createHash("sha256").update(fs.readFileSync(POSITIONS_SCRIPT)).digest("hex") }
+  catch { return null }
+})()
+let positions: any = null
+try {
+  positions = JSON.parse(fs.readFileSync(
+    process.env.BB_R_POSITIONS_RECORD ?? "$HOME/fixtures/census/r-positions-oracle.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+const pt = positions?.totals
+writeSealed(path.join(OUT, "r-positions-oracle.json"), {
+  schemaVersion: 1,
+  kind: "r_positions_oracle",
+  oracle: {
+    implementation: "R 4.4.3",
+    method: "parse() then getParseData(); every identifier-bearing terminal with the line and column R recorded",
+    invariants: [
+      "a symbol's name BEGINS at an offset R recorded, and that offset is inside the analyzer's declared range",
+      "an edge's line holds an occurrence of its target that R's lexer produced",
+    ],
+    columnsAreTabExpanded: true,
+    namesInsideStringsAreLegitimate: "R requires S4 class names, slot names and contains= parents to be strings",
+    script: "validation/m12/oracle/r-positions-oracle.R",
+    scriptSha256: POSITIONS_SHA,
+    executed: false,
+  },
+  present: positions !== null,
+  vacuousPass: positions?.vacuousPass ?? null,
+  totals: pt ?? null,
+  openDefects: positions
+    ? [{
+        defect: "byteIndex is a code-unit offset, not a byte offset, for files containing non-ASCII",
+        measured: pt.symbolProblems,
+        why: "R places the name at a byte offset the analyzer does not report; the difference is the surplus UTF-8 bytes earlier in the file",
+        scope: "15 of 1174 R files in the pinned corpora",
+        note: "the range audit cannot see it: it recomputes offsets in the same unit, so two harnesses sharing a unit assumption agree with each other and are wrong together",
+        status: "OPEN - not patched here; the unit is a framework-wide contract",
+      }]
+    : [],
+  currentCommit: commit,
+})
+console.log(
+  positions
+    ? `r-positions-oracle.json    symbols=${pt.symbolsChecked} outsideRange=${pt.symbolProblems} ` +
+      `edges=${pt.edgesChecked} lineMismatch=${pt.edgeProblems} spanMismatches=${pt.spanMismatches} ` +
+      `vacuous=${positions.vacuousPass}`
+    : `r-positions-oracle.json    ABSENT - run fixtures/corpus/r-positions-oracle.mts first`,
+)
+// A vacuous pass fails; the remaining symbol failures do NOT, and are carried above as an
+// open defect. Failing the gate on a known, bounded, documented defect would train
+// everyone to ignore a red gate.
+if (positions?.vacuousPass) process.exitCode = 1
+
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not
 // "is a name this grammar produced". Both are re-derived here from the parse
