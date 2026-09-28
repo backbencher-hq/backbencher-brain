@@ -108,6 +108,22 @@ export function perlWordValues(node: Node): string[] {
     const content = node.childForFieldName("content") || perlFindChildByType(node, "string_content")
     return [content ? content.text : unquote(node.text)]
   }
+  if (node.type === "interpolated_string_literal") {
+    // A DOUBLE-quoted literal. Its words are the `string_content` pieces; the
+    // interpolated VARIABLES are payload and must never become words, or
+    // `use lib "./t/lib"` would publish `$dir` as an imported name. Unread
+    // before this wave, so every double-quoted argument lost its items —
+    // `use feature "class"`, `use lib "./t/lib"`, `use warnings "once"`.
+    const values: string[] = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === "string_content" || child.type === "noninterpolated_string_content") {
+        for (const w of splitWords(child.text)) values.push(w)
+      }
+    }
+    return values
+  }
   const values: string[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
@@ -164,7 +180,7 @@ export function perlArgumentNodes(node: Node): Node[] {
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
     if (!child || child === module) continue
-    if (child.type === "string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
+    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
       if (perlWordValues(child).length > 0) result.push(child)
     }
   }
@@ -949,14 +965,22 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * and never the values.
    */
   private fatCommaKeys(node: Node): Node[] {
+    // `use constant A => 1;`         -> use_statement > list_expression
+    // `use constant { A => 1, B => 2 };` -> use_statement > anonymous_hash_expression > list_expression
+    // The two forms differ by ONE level of anonymous_hash_expression, and
+    // findChildByType searches direct named children only, so the shallow
+    // lookup missed the brace form entirely. The pre-fix code carried an
+    // `else if (node.type === "anonymous_hash_expression")` branch that was
+    // unreachable: the caller passes the use_statement, never the hash. So
+    // every brace-form `use constant` declared ZERO constants -- 2 files and
+    // every constant in them, including Mojo::Util's PC_* table.
     let list: Node | undefined
     if (node.type === "list_expression") list = node
     else {
-      const inner = this.findChildByType(node, "list_expression")
-      if (inner) list = inner
-      else if (node.type === "anonymous_hash_expression") {
-        const nested = this.findChildByType(node, "list_expression")
-        if (nested) list = nested
+      list = this.findChildByType(node, "list_expression")
+      if (!list) {
+        const hash = this.findChildByType(node, "anonymous_hash_expression")
+        if (hash) list = this.findChildByType(hash, "list_expression")
       }
     }
     if (!list) return []
