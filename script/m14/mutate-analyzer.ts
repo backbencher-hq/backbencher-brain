@@ -194,6 +194,67 @@ function dropKotlinHeritageLines(r: any) {
   }
 }
 
+/**
+ * #924 (M60 name surface): quoting syntax goes back to being part of a NAME.
+ *
+ * The pre-fix behavior of the whole class, on the kotlin row: `fun `in`(x: Int)` publishes
+ * `in` and `param.`in`(1)` calls `in`, because the published string is the grammar's own
+ * identifier token, which carries the quoting.
+ *
+ * Faithful by construction, not by hardcoding: the pre-fix spellings are RE-DERIVED from the
+ * file's own backtick runs, so the mutant stays valid on any fixture. And the rewrite is
+ * SEGMENT-wise, because a substring rewrite is wrong in both directions here — `in` occurs
+ * inside `insert` and inside `Parameters.in`, and only the second is a quoted identifier.
+ */
+function revertQuotedNameSurface(r: any, source?: string) {
+  const text = typeof source === "string" ? source : typeof r.rawContent === "string" ? r.rawContent : ""
+  const quoted = new Map<string, string>()
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "`") continue
+    const close = text.indexOf("`", i + 1)
+    if (close === -1) break
+    const bare = text.slice(i + 1, close)
+    if (bare) quoted.set(bare, text.slice(i, close + 1))
+    i = close
+  }
+  if (quoted.size === 0) return r
+  const requote = (v: unknown) => {
+    if (typeof v !== "string" || v === "") return v
+    let changed = false
+    const out = v
+      .split(/([^A-Za-z0-9_$]+)/)
+      .map((seg) => {
+        const q = quoted.get(seg)
+        if (!q) return seg
+        changed = true
+        return q
+      })
+      .join("")
+    return changed ? out : v
+  }
+  const symbols = (r.symbols ?? []).map((s: any) => {
+    const name = requote(s?.name)
+    if (name === s?.name) return s
+    return { ...s, name, id: requote(s?.id), ownerName: requote(s?.ownerName) }
+  })
+  const relationships = (r.relationships ?? []).map((x: any) => {
+    const tgt = requote(x?.target ?? x?.to ?? x?.toSymbol)
+    const src = requote(x?.source ?? x?.from ?? x?.fromSymbol)
+    const same =
+      tgt === (x?.target ?? x?.to ?? x?.toSymbol) && src === (x?.source ?? x?.from ?? x?.fromSymbol)
+    if (same) return x
+    const out: any = { ...x }
+    if (out.target !== undefined) out.target = tgt
+    if (out.to !== undefined) out.to = tgt
+    if (out.toSymbol !== undefined) out.toSymbol = tgt
+    if (out.source !== undefined) out.source = src
+    if (out.from !== undefined) out.from = src
+    if (out.fromSymbol !== undefined) out.fromSymbol = src
+    return out
+  })
+  return { ...r, symbols, relationships }
+}
+
 // M59 (#825), kotlin half: the NAIVE alternative the fixture forbids — every
 // heritage edge stamped with the line the CLASS DECLARATION starts on. A
 // wrapped supertype list (`internal class TestScopeImpl(...) :` / line 184
@@ -4944,6 +5005,14 @@ export const MUTANTS: Mutant[] = [
     defectClass: "edge-absence",
     description: "M59 (#825) regression: the injector's own inconsistency — componentN set ownerName (so `contains Money -> component1` existed) while copy/equals/hashCode/toString did not (so those members were the only ones with no containment edge at all). Caught by kotlin/data-class-phantoms, which pins a containment edge for each of the four.",
     transform: dropNonComponentPhantomContainment,
+  },
+  {
+    id: "kotlin/quoted-name-surface-revert",
+    language: "kotlin",
+    defectClass: "name-surface",
+    description:
+      "#924 (M60, the kotlin row of the name-surface class) regression: the quoting syntax goes back to being part of the NAME — `fun `in`(x: Int)` publishes `in` instead of `in`, `param.`in`(1)` calls `in`, and the declaration's `contains` target carries the backticks again. Faithful by construction: the pre-fix spellings are re-derived from the fixture's own backtick runs, and only whole identifier SEGMENTS are rewritten, so `Parameters.`in`` is restored while an unrelated `insert` is not. Caught by kotlin/quoted-name-surface-924, whose forbidSymbols name all three quoted spellings and whose `targetEndsWith: \"`\"` pins cover the containment, call, read and reference surfaces as a CLASS rather than as a sample. NOTE what this mutant cannot catch, stated because the lane shipped it: the repair's ORACLE half was dead (the strip call sat inside a `//` comment) and every fixture in the suite stayed green — a fixture reads the analyzer, and the analyzer was the correct side. That state is caught by F9-PROBE-KT-QUOTED-NAME-924-ORACLE (script/m14/verify-probe-battery.ts), the only instrument that asserts the oracle's spelling directly.",
+    transform: revertQuotedNameSurface,
   },
   {
     id: "scala/anon-member-initializer-call-loss",
@@ -11948,6 +12017,16 @@ export const MUTANTS: Mutant[] = [
   },
 
   // ---- the html lane's mutants, one per defect class ----
+  {
+    id: "toml/own-error-report-dropped",
+    language: "toml",
+    defectClass: "underclaim",
+    description: "The analyzer's OWN recovery diagnostic is dropped, leaving the engine to report alone. The error-recovery contract is REPORTED / BYPASSED / KEEP PUBLISHING, and before this the toml analyzer pushed no diagnostics at all, so the reported half was entirely the engine's reached through a caller — a contract resting on someone else's completeness. The mutant removes only the analyzer-authored message, so the engine's `Syntax error (...)` survives and a fixture that merely counted errors would still pass; the fixture pins the analyzer's message verbatim, so this is caught. This is the mirror of the svelte lane's `namedChild` blindness: there the analyzer walked too few nodes, here it contributed nothing at all.",
+    transform: (r: any) => ({
+      ...r,
+      errors: (r.errors ?? []).filter((e: any) => !String(e?.message ?? "").includes("bypassing this broken node")),
+    }),
+  },
   {
     id: "toml/error-node-becomes-symbol",
     language: "toml",
