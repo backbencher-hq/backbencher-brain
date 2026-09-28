@@ -23,7 +23,20 @@
  *   parseDamage        files with `hasError`, and the ERROR/MISSING split — the
  *                      grammar's own number, which no analyzer decision changes
  *   symbols/rels       the emitted surface
- *   kinds              every relationship type, with the ABSENT ones named
+ *   kinds              every relationship type, with the ones this DRAW did not
+ *                      exercise named. Read this as NOT-EXERCISED, not as
+ *                      NOT-IMPLEMENTED: the label used to say `ABSENT` and that
+ *                      word is wrong, because the four types it names
+ *                      (extends/implements/overrides/imports) are all implemented
+ *                      and all gated — they are simply absent from a 49-file draw
+ *                      that excludes `test/` trees, and PowerShell's class
+ *                      constructs live in `test/powershell/Language/Classes/`. An
+ *                      audit asked whether these types were carried out, read
+ *                      `ABSENT` as unimplemented, and had to be corrected against
+ *                      the analyzer source. An instrument whose label invites the
+ *                      wrong reading is a defect in the instrument, so the field
+ *                      keeps its name for the schema and the MEANING is stated here
+ *                      and in the printed row.
  *   lineNumber         relationships carrying a line, and the target-name-line
  *                      consistency rate (M59 #825's metric)
  *   unknownSymbols     relationship targets that match NO symbol in the same
@@ -226,7 +239,7 @@ for (const repo of REPOS) {
     `  ${r.perf.perFileMs}ms/f  ${r.perf.factsPerMs} facts/ms`,
   )
   console.log(`             kinds: ${JSON.stringify(r.kinds)}`)
-  if (r.absent.length) console.log(`             ABSENT: ${r.absent.join(", ")}`)
+  if (r.absent.length) console.log(`             not exercised by this draw (all implemented + gated; this draw excludes test/ trees): ${r.absent.join(", ")}`)
 }
 
 const out = {
