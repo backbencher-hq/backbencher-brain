@@ -482,7 +482,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `object` copies; `ref object` has identity, inheritance and dynamic
       // dispatch. The raw spelling is preserved in metadata either way.
       kind = objectKind === "ref_type" ? ASTEngine.SymbolKind.Class : ASTEngine.SymbolKind.Struct
-    } else if (rhs && (rhs.type === "tuple_type" || rhs.type === "tuple_deconstruct_declaration")) {
+    } else if (rhs && (rhs.type === "tuple_type" || rhs.type === "tuple_deconstruct_declaration" || rhs.type === "tuple_construction")) {
+      // BOTH tuple spellings, because the grammar gives them different node
+      // types and only one of them was in this list:
+      //   type U = tuple[a: int, b: string]  -> tuple_type            (named)
+      //   type T = (int, string)             -> tuple_construction   (unnamed)
+      // The second is the ORDINARY way to write an unnamed tuple in Nim — the
+      // compiler accepts `tuple[int, string]` with 3 errors and `(int, string)`
+      // with none — and before this it fell through to a bare `type`, so every
+      // anonymous tuple type in the language was published as a type-level name
+      // with no fields, while the named spelling beside it published a struct.
+      // Measured by the mutation run: nim/tuple-type-classified-as-a-type had
+      // survived, which is what sent me to the trees.
       kind = ASTEngine.SymbolKind.Struct
     } else {
       // Everything else — `ref Foo`, `ptr T`, `distinct float`, `seq[X]`,
@@ -521,9 +532,55 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!c.isNamed && c.type === "=") seenEq.value = true
         continue
       }
-      if (c.isNamed) return c
+      if (c.isNamed) return this.unwrapTypeExpression(c)
     }
     return null
+  }
+
+  /**
+   * See through the `type_expression` wrapper the grammar puts around a type
+   * RHS, so the classifier sees the SHAPE rather than the wrapper.
+   *
+   * Found by mutation, not by inspection (nim/tuple-type-classified-as-a-type
+   * SURVIVED the first run, which is the harness reporting that a documented
+   * rule — "a tuple type is a struct" — had no test behind it and turned out
+   * to be FALSE). The trees for the three shapes are not parallel:
+   *
+   *   type Color = enum …      -> enum_declaration          (no wrapper)
+   *   type A = concept x       -> concept_declaration       (no wrapper)
+   *   type Pair = tuple[x, y]  -> type_expression           (WRAPPER)
+   *                                 └── tuple_type
+   *
+   * so the old rule matched `tuple_type` at the top level, never saw it behind
+   * the wrapper, and `type Pair = tuple[x, y: int]` fell through to the
+   * catch-all and published a bare `type` — losing the struct kind its own
+   * documentation promised.
+   */
+  private unwrapTypeExpression(node: Node): Node {
+    let cur = node
+    // Bounded: a type RHS cannot nest type_expression arbitrarily, and a cycle
+    // guard is cheaper than a stack overflow on a malformed tree.
+    for (let i = 0; i < 8; i++) {
+      if (cur.type !== "type_expression") return cur
+      const inner = this.firstChildOfType(cur, "tuple_type") ??
+        this.firstChildOfType(cur, "tuple_construction") ??
+        this.firstChildOfType(cur, "enum_declaration") ??
+        this.firstChildOfType(cur, "concept_declaration") ??
+        this.firstChildOfType(cur, "object_declaration") ??
+        this.firstChildOfType(cur, "ref_type") ??
+        this.firstChildOfType(cur, "distinct_type") ??
+        this.firstChildOfType(cur, "pointer_type") ??
+        this.firstChildOfType(cur, "array_type") ??
+        this.firstChildOfType(cur, "generic_type") ??
+        this.firstChildOfType(cur, "sequence_type") ??
+        this.firstChildOfType(cur, "set_type") ??
+        this.firstChildOfType(cur, "table_type") ??
+        this.firstChildOfType(cur, "range_type") ??
+        this.firstChildOfType(cur, "ordinal_type")
+      if (!inner) return cur
+      cur = inner
+    }
+    return cur
   }
 
   /**
@@ -569,6 +626,18 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /** True when some ancestor of `node` has the given type, within a bounded
+   *  walk. A malformed tree cannot hang this: the guard is 64 levels, deeper
+   *  than any declaration nesting the grammar produces. */
+  private hasAncestorOfType(node: Node, type: string): boolean {
+    let cur: Node | null = node.parent
+    for (let i = 0; cur && i < 64; i++) {
+      if (cur.type === type) return true
+      cur = cur.parent
+    }
+    return false
+  }
+
   private buildFieldSymbols(
     node: Node,
     owner: ASTEngine.UniversalSymbol,
@@ -578,6 +647,28 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const list = node.namedChildCount > 0 ? node.namedChild(0) : null
     if (!list || list.type !== "symbol_declaration_list") return out
     const typeNode = node.childForFieldName("type")
+    // An UNNAMED tuple element declares a TYPE, not a field. The grammar cannot
+    // tell the two apart by shape — it builds the same
+    // symbol_declaration_list for `tuple[x, y: int]` (names `x`, `y`, then a
+    // `: int` type) and for `tuple[int, string]` (the "names" ARE the types,
+    // with no type part at all) — so the discriminator is the ABSENCE of the
+    // declaration's own type field, which is a structural fact and not a
+    // builtin-name guess.
+    //
+    // Measured before this guard: `type T2 = tuple[int, string]` published
+    // `property:int` and `property:string`, i.e. two properties named after
+    // builtin TYPES, each with a `contains` edge off T2. Nothing else in the
+    // analyzer could have caught it: both names are real identifiers, so no
+    // dangling check fires, and a symbol-count check sees two extra rows, not a
+    // wrong two. Found by reading the tree while triaging
+    // nim/tuple-type-classified-as-a-type, which had survived.
+    // Scoped to a tuple element on purpose: a `variant_discriminator_declaration`
+    // (`case isCircle`) also carries no `type` field, and applying the rule to
+    // every typeless field_declaration silently dropped the discriminator — a
+    // regression this guard introduced and the variant probe caught immediately.
+    // Inside an OBJECT there is no unnamed element, so the ancestor test is what
+    // separates `tuple[int, string]` from `case isCircle`.
+    if (!typeNode && this.hasAncestorOfType(node, "tuple_type")) return out
     const doc = docCommentByStartLine.get(node.startPosition.row + 1)
     for (let i = 0; i < list.namedChildCount; i++) {
       const decl = list.namedChild(i)
