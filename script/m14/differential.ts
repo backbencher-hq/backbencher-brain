@@ -1431,9 +1431,14 @@ export function deriveJavaContainsTruth(root: any): { label: string; from: strin
         membersOf("(anonymous)", c)
         if (t?.text) {
           // `new Stack<>()` types the instantiation with type arguments; the
-          // synthetic name carries the ERASURE only, so strip them before the
-          // last-segment split (measured: `anonymous_Stack<>` vs `anonymous_Stack`).
-          const seg = t.text.split("<")[0]!.split(".").pop()!
+          // synthetic name carries the ERASURE only, so strip them. The DOTTED
+          // spelling is kept WHOLE — pinned on the corpus (37 sampled
+          // instantiations, every one `anonymous_<full name>`):
+          //     new ConnectionSourcesListener<>() {} -> anonymous_ConnectionSourcesListener
+          //     new MappingContext.Listener()  {}    -> anonymous_MappingContext.Listener
+          // Taking the last dot segment (as a first cut did) reduced the second
+          // to `anonymous_Listener`, which is not the row the analyzer publishes.
+          const seg = t.text.split("<")[0]!
           push("(anonymous)", `anonymous_${seg}`)
         }
       }
@@ -1443,6 +1448,21 @@ export function deriveJavaContainsTruth(root: any): { label: string; from: strin
       const body = n.childForFieldName("body")
       if (body) membersOf(owner!, body)
       else membersOf(owner!, n)
+      // A RECORD's components are declared in its `parameters` field, not in a
+      // body — `record HibernateAlias(String path, String alias, JoinType
+      // joinType)` has no class_body holding them. Reading only the body dropped
+      // every component, which is what left `contains HibernateAlias -> path /
+      // alias / joinType` and `InterceptorState -> entityName / persistentClass /
+      // identifier / lazyToString` unexplained at 400 files (8 UNEXPLAINED rows).
+      // The analyzer is right on all eight: a record component IS a declared
+      // member, and a compact record has no body at all to find it in.
+      const params = n.childForFieldName("parameters")
+      if (params) {
+        for (const c of named(params)) {
+          const nm = fieldName(c, "name")
+          if (nm) push(owner!, nm)
+        }
+      }
     }
     for (const c of named(n)) walk(c)
   }
@@ -1604,6 +1624,25 @@ export function deriveJavaReferencesTruth(root: any): { label: string; from: str
         const lt = c.indexOf("<")
         if (lt > 0) c = c.slice(0, lt)
         push(c)
+        // A cast publishes its BASE type and NOT its type arguments:
+        // `(HibernateCallback<Void>) s -> ...` yields `HibernateCallback` alone.
+        // That is position-specific and deliberate — a DECLARATION publishes base
+        // plus every argument (`Map<String, List<X>> f` -> Map, String, List, X),
+        // and the cast's own `extractJavaTypeBaseName(generic_type)` is what
+        // drops them. Measured: descending into the cast's `type_arguments` is
+        // what produced `references -> Void` MISSING rows on
+        // InstanceApiHelper.java and GrailsHibernateTemplate.java.
+        //
+        // So the type field is not walked — while the OPERAND still is, because
+        // the expression being cast can contain types of its own.
+        // Compare by SPAN, not object identity: every `namedChild()` call hands
+        // back a FRESH wrapper, so `c !== typeField` was true even for the very
+        // node `childForFieldName` returned, and the type arguments were walked
+        // anyway — which is why the first attempt at this fix changed nothing.
+        const tf = n.childForFieldName?.("type")
+        const tfStart = tf?.startIndex
+        for (const c2 of named(n)) if (c2 && c2.startIndex !== tfStart) walk(c2)
+        return
       }
     }
     // (2) a METHOD REFERENCE's receiver is a name written in the file — either a
@@ -1614,7 +1653,10 @@ export function deriveJavaReferencesTruth(root: any): { label: string; from: str
     // siblingAnnotation` unexplained.
     if (n.type === "method_reference") {
       const recv = n.namedChild(0)
-      if (recv?.text) push(recv.text.split(".").pop()!)
+      // `this::m` / `super::m` name the RECEIVER, not a type — pushing them
+      // produced `references -> this` MISSING rows. The analyzer already refuses
+      // them (`isKeywordReceiver`); the oracle must refuse them too.
+      if (recv?.text && recv.text !== "this" && recv.text !== "super") push(recv.text.split(".").pop()!)
     }
     if (n.type === "import_declaration") {
       for (const c of named(n)) {
