@@ -108,20 +108,48 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 
 | | |
 |---|---:|
-| symbols | 12,549 |
-| relationships | 33,910 |
+| symbols | 12,834 |
+| relationships | 35,442 |
 | imports | 1,157 |
 | crash files | 0 |
 | empty names / unknown kinds | 0 / 0 |
 | relationships without a line | 0 |
-| members without `ownerName` | 414 — **all** in grammar-errored files, 0 in clean ones |
+| members without `ownerName` | 423 — **all** in grammar-errored files, 0 in clean ones |
 
 Kinds: 5456 variable, 4370 method, 913 enum_member, 725 property, 481 class,
-166 namespace, 137 interface, 118 enum, 99 struct, 63 module, 11 type, 10 event.
-Edges: 13832 references, 11060 contains, 7540 calls, 1157 imports, 265 extends,
+**285 constructor**, 166 namespace, 137 interface, 118 enum, 99 struct, 63 module,
+11 type, 10 event.
+Edges: 14410 references, 11973 contains, 7581 calls, 1157 imports, 265 extends,
 56 implements.
 
 M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
 
-**Not closed.** No F5 differential lane, no fixtures, no mutants, no F8 spec, no
-F10 floor. See `docs/vb.md` and `reviews/vb/master-review.md`.
+M14.0.F5: **100 % on both corpora**, edge for edge — `P3D-Legacy` 544/544 truth
+edges covered, `DISMTools` 1908/1908, with **0 missing, 0 unexplained, 0
+heuristic** on each, and `analyzer-edges` equal to `tree-truth` exactly. Audited
+labels: `calls`, `contains`, `imports`, `extends`, `implements`. `references` is
+deliberately excluded because the oracle does not derive it.
+
+The differential is what found the three defects a corpus-wide count could not,
+because in each case the count stayed healthy while a class of output was missing
+or wrong:
+
+- **constructors were absent entirely** — `Public Sub New()` has no `name` field
+  (`New` is an anonymous token), so the "declaration without a name" guard
+  returned *before* the naming contract was reached. 12,549 symbols contained
+  zero constructors; there are 285 now. Any check that can reject a declaration
+  has to be evaluated against the contract, not in front of it.
+- **callee targets were expression text** — `New AnimatedBlock()` is
+  `(object_creation_expression type: (simple_name (identifier)))`, the type is in
+  a `type` field, and the naming helper only followed `name`, so it published the
+  literal string `"New AnimatedBlock"`. 31 in one method.
+- **nested types had an `ownerName` and no edge** — containment was emitted per
+  visitor, and a nested type's visitor did not emit one, so containment
+  navigation stopped at the enclosing class. It is emitted once in `pushSymbol`
+  now, which is the form that cannot recur.
+
+**Not closed.** No fixtures, no mutants, no F8 spec, no F10 floor, and no
+committed `M14.0.F5` artifact — the canonical artifact belongs to the full
+60-file, 30-language sweep, and a scoped `--lang vb` run refuses to write it
+rather than replace a bigger claim with a smaller one. See `docs/vb.md` and
+`reviews/vb/master-review.md`.
