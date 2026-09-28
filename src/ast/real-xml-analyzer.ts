@@ -479,6 +479,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const also = (existing.metadata.alsoRoles as string[] | undefined) ?? []
           if (!also.includes(role)) also.push(role)
           existing.metadata.alsoRoles = also
+          // X14: `evidenceClass` is the tier of the PRIMARY role, so a consumer
+          // asking "is this edge ALSO a usage claim?" had to know the tier table
+          // and re-derive it. The roles were recorded and their tiers were not, so
+          // `alsoRoles` was present but not QUERYABLE — the one thing a field
+          // called "also" exists to be.
+          //
+          // Measured: 148 of 813 content-model sites carry `structural` on the
+          // edge with `dtd_content_model` in `alsoRoles`, which is exactly the
+          // 148 a consumer could not tell apart from 665 genuine nesting edges.
+          //
+          // An ARRAY OF OBJECTS rather than a second map keyed by role, so the
+          // order of `alsoRoles` and the order of its tiers cannot disagree — a
+          // map would have two independent orderings and no way to pair them
+          // without trusting the reader to zip them. Position is the join key,
+          // which is why `alsoRoles` is never re-sorted and never deduped
+          // independently of this list.
+          const tiers = (existing.metadata.alsoRoleTiers as { role: string; tier: string }[] | undefined) ?? []
+          if (!tiers.some((t) => t.role === role)) {
+            tiers.push({ role, tier: RealXmlAnalyzer.EVIDENCE_TIER[role] ?? "inferred" })
+          }
+          existing.metadata.alsoRoleTiers = tiers
         }
         // Seed from the EDGE's own line_number, not from a metadata key: the
         // relationship carries `line_number`, so reading `metadata.line` seeded

@@ -393,6 +393,16 @@
       "detail": "2 reference(s) through a spec-bound prefix"
     },
     {
+      "name": "every merged edge records a TIER for each of its other roles, in step with alsoRoles",
+      "passed": true,
+      "detail": "1 merged edge(s), 1 secondary usage claim(s) now answerable from metadata"
+    },
+    {
+      "name": "the fixture set exercises the merged-edge tier pairing",
+      "passed": true,
+      "detail": "1 merged edge(s), 1 with a usage-claiming secondary role"
+    },
+    {
       "name": "the fixture set exercises the unresolved resolvability class",
       "passed": true,
       "detail": "2 unresolved reference(s) — X13's class must be reachable or it is untested"
@@ -424,7 +434,7 @@
     }
   ],
   "passed": true,
-  "count": 101,
-  "passedCount": 101,
+  "count": 103,
+  "passedCount": 103,
   "failed": []
 }
