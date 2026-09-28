@@ -1102,20 +1102,20 @@
     "sql": {
       "wired": {
         "file": "wasm/tree-sitter-sql.wasm",
-        "sha256": "63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289",
-        "bytes": 11574479
+        "sha256": "9d2142efde7d17205b5e662343536eba1babe1c965857e24dd4f4b253a693e20",
+        "bytes": 12130082
       },
       "surface": {
-        "ids": 786,
-        "uniqueNames": 782,
-        "namedIds": 566,
-        "namedUnique": 562,
-        "anonIds": 220,
-        "anonUnique": 220,
-        "fieldCount": 53,
-        "idOrderDigest": "d1b89737f278c8f7b098e7f6f695b37b5a84a6c26fc98cb6136b783f3bc4e71f",
-        "typeSetDigest": "27745644575db354653ed08ffcfb25de063d5e43d8ef4b7b416155e1cca83d15",
-        "fieldSetDigest": "c63f5b80b6b87674744f6c6fc6abff7a69df25dda1d125d851d8822d581352aa"
+        "ids": 825,
+        "uniqueNames": 821,
+        "namedIds": 593,
+        "namedUnique": 589,
+        "anonIds": 232,
+        "anonUnique": 232,
+        "fieldCount": 62,
+        "idOrderDigest": "a58acde97583d48cd79538709da52ac6a931a484815ca06353640938bddc4fee",
+        "typeSetDigest": "f98f965bb1ee21ad8efc29051dfeab0fb7925e192cd45f97e6d9598a279aeb2f",
+        "fieldSetDigest": "6e6552aef40f6a89d1c9b34be84041f2813009ff7acced8429e3dfe41d08418b"
       },
       "provenance": {
         "kind": "local-rebuild-from-patched-upstream-source",
@@ -1127,9 +1127,10 @@
           "P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.",
           "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.",
           "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).",
-          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."
+          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it.",
+          "P5 (grammar/statements/plpgsql.js + grammar/statements/create-function.js + grammar.js, 2026-09-27): PL/pgSQL procedural statement scaffolding \u2014 IF/ELSIF/ELSE/END IF, LOOP, WHILE, FOR ... IN, BEGIN/EXCEPTION/END, assignment, RETURN, RAISE, EXECUTE, PERFORM, ASSERT, EXIT/CONTINUE, plus a DECLARE section reusing the existing `function_declaration`. 16 new keywords. The dollar-quoted body forms of `function_body` route through the new `_plpgsql_body_item`; `do_statement` gained a structured body with the opaque token retained as a fallback. Three conflicts are DECLARED rather than resolved by deleting a capability: [$.plpgsql_block, $._plpgsql_body_item], [$.function_body, $.plpgsql_declarations], and [$.plpgsql_block]."
         ],
-        "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via fixtures/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.",
+        "patchEvidence": "Shape A/B over 6 dialects plus two corpora, re-runnable via fixtures/sql/probe/grammar-ab.mts and fixtures/sql/probe/contract-battery.mts. P1-P4: 9 shapes fixed, 0 regressions, corpus tree level error files 320 -> 256 and error nodes 6533 -> 5544. P5 (plpgsql): ProxiCall tree error nodes 5170 -> 3305 (-36.0%) and named nodes 245,847 -> 268,968 (+9.4%); on the PostgreSQL extension corpus error nodes 93,944 -> 82,087 (-12.6%) and named nodes +8.4%, with NO structure collapse anywhere \u2014 which is the distinction from the rejected V3 candidate, which lost up to 95.8% of the tree in 49 files. The construct battery went from 2/8 to 6/8 clean with no regression in it, and the `block-declarations` contract case passes. The surface moved 786 -> 825 node types and 53 -> 62 fields, so unlike P1-P4 this patch is NOT field-neutral: it adds `query`, `condition`, `range`, `variable`, `target`, `value`, `option`, `format` and `argument` fields.",
         "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."
       },
       "sourceVsWasm": {
@@ -1168,15 +1169,27 @@
           "byteIdentical": false
         },
         {
-          "label": "V3 candidate (built, measured, REJECTED)",
+          "label": "V3 candidate (opaque DO, REJECTED)",
           "path": "~/fixtures/sql/grammar/patched-sql-v3.wasm",
           "sha256": "c8c08dabbe81716df260b62d4a222b5c2d23f0bc2bfd49487e90c49f31a1a969",
           "byteIdentical": false
         },
         {
-          "label": "V1 candidate (earlier, superseded by V2)",
-          "path": "~/fixtures/sql/grammar/patched-sql.wasm",
-          "sha256": "51c297997d35cfe5142e44f83ded7fa883bf9c647b653c4ebb06f28047a816a0",
+          "label": "V4 candidate (plpgsql, blocked on block-declarations)",
+          "path": "~/fixtures/sql/grammar/patched-sql-v4.wasm",
+          "sha256": "10d96f225e75f9a568fd6ec11acb12f7b347d4d47b7fb3fd958af959ffb977b1",
+          "byteIdentical": false
+        },
+        {
+          "label": "V5 candidate (DECLARE restored, same failure)",
+          "path": "~/fixtures/sql/grammar/patched-sql-v5.wasm",
+          "sha256": "3410bc1f2a6c5cc3d7a950c227784367951de2a20376e81a5a2b22eaa1533a16",
+          "byteIdentical": false
+        },
+        {
+          "label": "V2 (superseded by V6; the previous wired bytes)",
+          "path": "~/fixtures/sql/grammar/patched-sql-v2.wasm",
+          "sha256": "63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289",
           "byteIdentical": false
         }
       ],
