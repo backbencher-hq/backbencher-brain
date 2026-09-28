@@ -3798,9 +3798,23 @@ export function deriveCSharpUsingReferences(root: any): { label: string; from: s
     const n = stack.pop()!
     if (n.type === "using_directive") {
       const t = csharpUsingDirectiveTarget(n)
-      if (t && !seen.has(t.module)) {
-        seen.add(t.module)
-        out.push({ label: "references", from: "root", target: t.module })
+      if (t) {
+        if (!seen.has(t.module)) {
+          seen.add(t.module)
+          out.push({ label: "references", from: "root", target: t.module })
+        }
+        // D3 (2026-09-28, csharp lane): a using ALIAS may name a generic TYPE, and the module
+        // is the type's NAME — so the type ARGUMENTS are separate dependencies, which the
+        // analyzer publishes as their own `references` edges. Derived from the SAME
+        // `csharpUsingDirectiveTarget` return value, never a second walk, so the two sides
+        // cannot disagree about which arguments a directive carries (CSD14's rule).
+        for (const a of t.typeArguments) {
+          if (a === t.module) continue
+          const key = `${t.module}${a}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          out.push({ label: "references", from: "root", target: a })
+        }
       }
     }
     for (const c of n.namedChildren ?? []) stack.push(c)
@@ -4014,7 +4028,24 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         }
       }
       if (nm && baseList) {
-        const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
+        // D5 (2026-09-28, csharp lane): a class with a PRIMARY CONSTRUCTOR and a base list
+        // puts the base call's ARGUMENT LIST in the base_list as a SIBLING of the type —
+        // `private sealed class AndNode(Node left, Node right) : BinaryNode(left, right)` parses
+        // as `base_list [ primary_constructor_base_type, argument_list ]`. The analyzer skips
+        // that child (CSD9, probe-verified in 2026-09-04); this loop did not, so `leafOf` turned
+        // the argument list's text into a base TYPE and the oracle published
+        // `implements OrNode -> (left,right)` — a target that is a parenthesised argument list
+        // rather than a name, and a MISSING the analyzer could never satisfy. It survived every
+        // canonical draw because the shape (C# 12 primary constructors with an argument-taking
+        // base) is absent from both pinned corpora: measured 1,168 occurrences in roslyn's `src`
+        // alone, and the F5 differential found it on a third corpus the lane had never drawn.
+        // The mirror is the analyzer's own rule, which is the whole point of CSD14.
+        const baseTypes: string[] = []
+        for (const b of baseList.namedChildren) {
+          if (!b) continue
+          if (b.type === "argument_list") continue
+          baseTypes.push(leafOf(b.text))
+        }
         const isInterfaceDecl = n.type === "interface_declaration"
         for (let i = 0; i < baseTypes.length; i++) {
           const target = baseTypes[i]
@@ -13923,22 +13954,65 @@ async function main() {
     // text — cheap, no second parse) so `class X : ICommandRuntime2` and
     // `interface Y : IWSManConnectionOptions` resolve deterministically to
     // implements / extends the same way the analyzer does.
+    //
+    // D4 (2026-09-28, csharp lane): THAT SET WAS A LAST-WRITE-WINS MAP OVER A NAME, AND A
+    // NAME IS NOT A TYPE. Found by this very differential on a corpus the lane had never
+    // drawn (roslyn, 60 files): one MISSING edge, `implements Derived -> Base`, in a file
+    // that declares `public class Base` IN ITS OWN FILE — twelve other roslyn files declare
+    // `interface Base`, so the interface entry won and the oracle contradicted the analyzer
+    // on a declaration with no ambiguity in it at all.
+    //
+    // Measured over 1,500 roslyn files (script/m14/tmp/cs-deep-15-ambiguous-companion.ts):
+    // 92 of 2,666 declared type names (3.5%) are declared under MORE THAN ONE kind, and the
+    // worst are the ones a repository reuses hardest — `C` is a class in 172 files and an
+    // interface in one, `Program` a class in 66 and an interface in one, `Base` a class in
+    // 18 and an interface in one. Of 1,227 base-list entries resolvable ONLY through this
+    // companion, **378 (31%) were decided AGAINST the file's own declaration of that name.**
+    //
+    // The fix is to make the companion SOUND rather than clever: a name enters it only when
+    // EVERY declaration of that name in the corpus is an interface. An ambiguous name is then
+    // simply absent, and the analyzer falls back to the deterministic C# rule it has always
+    // documented (first base = extends) — a default that is right for a class base and wrong
+    // for an interface base, which is the honest per-file answer, instead of a confident
+    // answer that is wrong. The oracle reads the SAME set, so the two sides stay in lockstep
+    // (CSD14) and the lane's F5 floor can no longer be moved by another file's declaration.
     const CSHARP_INTERFACES = new Set<string>()
     if (lang === "csharp") {
-      const re = /\binterface\s+([A-Za-z_][A-Za-z0-9_]*)/g
+      // name -> every kind the corpus declares it under (a name that is ever a class,
+      // struct, record or enum is not a name we can call an interface)
+      const KINDS_BY_NAME = new Map<string, Set<string>>()
+      const DECLS: Array<[string, RegExp]> = [
+        ["interface", /\binterface\s+([A-Za-z_][A-Za-z0-9_]*)/g],
+        ["class", /\b(?:^|[^A-Za-z0-9_])class\s+([A-Za-z_][A-Za-z0-9_]*)/g],
+        ["struct", /\b(?:^|[^A-Za-z0-9_])struct\s+([A-Za-z_][A-Za-z0-9_]*)/g],
+        ["enum", /\b(?:^|[^A-Za-z0-9_])enum\s+([A-Za-z_][A-Za-z0-9_]*)/g],
+        ["record", /\b(?:^|[^A-Za-z0-9_])record\s+(?:class\s+|struct\s+)?([A-Za-z_][A-Za-z0-9_]*)/g],
+      ]
       for (const f of files) {
         let s: string
         try { s = fs.readFileSync(f, "utf8") } catch { continue }
-        re.lastIndex = 0
-        let m: RegExpExecArray | null
-        while ((m = re.exec(s))) if (m[1]) CSHARP_INTERFACES.add(m[1])
+        for (const [kind, re] of DECLS) {
+          re.lastIndex = 0
+          let m: RegExpExecArray | null
+          while ((m = re.exec(s))) {
+            if (!m[1]) continue
+            let set = KINDS_BY_NAME.get(m[1])
+            if (!set) { set = new Set<string>(); KINDS_BY_NAME.set(m[1], set) }
+            set.add(kind)
+          }
+        }
+      }
+      for (const [name, kinds] of KINDS_BY_NAME) {
+        if (kinds.size === 1 && kinds.has("interface")) CSHARP_INTERFACES.add(name)
       }
       // Same corpus knowledge handed to the ANALYZER as its cross-file
       // `context.typeKinds` companion (values = SymbolKind.Interface string).
       // Now `class X : IArgumentCompleter` resolves to implements on BOTH
       // sides — the analyzer with a real companion and the oracle with the
       // same set — instead of the analyzer falling back to deterministic
-      // extends (which the oracle would then contradict).
+      // extends (which the oracle would then contradict). D4 narrowed it to
+      // UNAMBIGUOUS interface names, which is what makes the two sides agree
+      // for the right reason rather than by coincidence.
     }
     const CSHARP_INTERFACE_KINDS = new Map<string, string>()
     if (lang === "csharp") for (const nm of CSHARP_INTERFACES) CSHARP_INTERFACE_KINDS.set(nm, "interface")

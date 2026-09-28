@@ -400,7 +400,7 @@ const CSHARP_BUILTINS = new Set([
  */
 export function csharpUsingDirectiveTarget(
   node: any,
-): { module: string; targetNode: any; alias: string | null } | null {
+): { module: string; typeArguments: string[]; targetNode: any; alias: string | null } | null {
   if (!node) return null
   const firstNamed = (pred: (n: any) => boolean): any => {
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -438,13 +438,139 @@ export function csharpUsingDirectiveTarget(
   // `script/m14/tmp/cs-alias-position-battery.ts`), so the qualifier is removed here — the one
   // point where a using directive's text becomes a module name. Shared with the oracle by
   // construction: the differential's csharp truth calls THIS function.
-  const module = csharpTypeNameText(csharpTypeSpelling(String(targetNode?.text ?? "")))
+  const spelled = csharpTypeNameText(csharpTypeSpelling(String(targetNode?.text ?? "")))
+  // D3 (2026-09-28, this round): a using ALIAS may name a TYPE, and a type is not always a
+  // name. `using M = Dictionary<string, Widget>;` published `Dictionary<string,Widget>` — a
+  // type EXPRESSION, with its type arguments welded on — as both the module and the
+  // `references` target, and with a TUPLE argument it published the element NAMES too:
+  //
+  //   using PropertiesMap = ImmutableDictionary<(UnusedValuePreference preference,
+  //                                               bool isUnusedLocalAssignment,
+  //                                               bool isRemovableAssignment), …>;
+  //   -> "ImmutableDictionary<(UnusedValuePreference preference,bool isUnusedLocalAssignment,
+  //       bool isRemovableAssignment),…>"
+  //
+  // which is a target no source can ever name, in the one position where the file declares
+  // what it imports. Every OTHER name position in this analyzer already strips the type
+  // arguments through `csharpCleanTypeLeaf` (heritage, creation, target-typed `new()`, and
+  // from this round the attribute payload), so this was the single place that did not.
+  //
+  // Stripping them is only half the fix: R9's own contract says "the argument is the real
+  // dependency", so the arguments are NOT dropped — they are returned here, from the same
+  // walk, and the caller publishes one `references` edge per argument beside the module
+  // edge. Measured frequency (script/m14/tmp/cs-deep-12-frequencies.ts): 132 occurrences in
+  // 116 of 1,500 roslyn files, 1 in 1,500 aspnetcore files.
+  const module = csharpCleanTypeLeaf(spelled)
   if (!module) return null
   return {
     module,
+    typeArguments: csharpTypeExpressionArguments(targetNode),
     targetNode,
     alias: aliasNode ? csharpTypeNameText(String(aliasNode.text ?? "")) : null,
   }
+}
+
+/**
+ * D3: the TYPE NAMES a using directive's target expression carries beyond its base.
+ *
+ * Read from the tree, never from text: only a `generic_name` introduces arguments, the
+ * wrappers that can wrap one are descended, a `tuple_type` yields each element's TYPE and
+ * never its NAME, and every argument that is itself a type expression contributes its base
+ * AND its own arguments (R9's rule, applied at argument depth). Each name is taken through
+ * the same canonical-name rule the module uses, so `System.Text.StringBuilder` and
+ * `StringBuilder` agree the way every other position in this analyzer agrees, and
+ * predefined types (`string`, `int`) are silent — the grammar's own tag.
+ *
+ * Deduplicated: two arguments naming the same type are one dependency.
+ */
+function csharpTypeExpressionArguments(targetNode: any): string[] {
+  if (!targetNode) return []
+  const out: string[] = []
+  const seen = new Set<string>()
+  const add = (raw: string): void => {
+    const name = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(raw)))
+    if (!name || name === "var" || name === "dynamic" || name === "nint" || name === "nuint") return
+    if (seen.has(name)) return
+    seen.add(name)
+    out.push(name)
+  }
+  /**
+   * One type ARGUMENT, as a list of names. An argument is itself a type expression, so
+   * `List<Widget>` as an argument contributes BOTH `List` and `Widget` — the same
+   * base-plus-arguments rule the declared-type graph uses (R9), which is why this
+   * function is a walk and not a lookup. A tuple argument contributes each element's
+   * TYPE and never its NAME; a predefined type contributes nothing (the grammar's own
+   * tag, the documented silence).
+   */
+  const walkArgument = (n: any): void => {
+    if (!n) return
+    const t = n.type
+    if (t === "predefined_type" || t === "implicit_type" || t === "void_keyword") return
+    if (t === "identifier") { add(String(n.text ?? "")); return }
+    if (t === "tuple_type") {
+      for (const el of n.namedChildren ?? []) {
+        if (el.type !== "tuple_element") continue
+        walkArgument(el.childForFieldName?.("type") ?? el.namedChild(0))
+      }
+      return
+    }
+    if (t === "generic_name") {
+      const base = n.namedChild(0)
+      if (base) walkArgument(base)
+      const args = (n.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
+      if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
+      return
+    }
+    if (t === "qualified_name" || t === "alias_qualified_name") {
+      // A qualified name is ONE name: publish its leaf and nothing else. If the leaf is
+      // itself a `generic_name` its own arguments are this name's arguments, walked below.
+      const leaf = csharpTypeLeafNode(n)
+      if (leaf) {
+        add(String(leaf.text ?? ""))
+        const owner = n.namedChild(n.namedChildCount - 1)
+        if (owner && owner.type === "generic_name") {
+          const args = (owner.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
+          if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
+        }
+      }
+      return
+    }
+    for (const c of n.namedChildren ?? []) walkArgument(c)
+  }
+  /**
+   * The arguments the TARGET itself carries. Only a `generic_name` introduces
+   * arguments; the wrappers that can wrap one (`array_type`, `pointer_type`,
+   * `nullable_type`, `ref_type`, and the `qualified_name` whose last segment is the
+   * `generic_name`) are descended, and a plain namespace path contributes none —
+   * `using System.Text;` is a path, and its segments are not type arguments.
+   */
+  const collectFromTarget = (n: any): void => {
+    if (!n) return
+    const t = n.type
+    if (t === "generic_name") {
+      const args = (n.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
+      if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
+      return
+    }
+    if (t === "qualified_name" || t === "alias_qualified_name") {
+      const last = n.namedChild(n.namedChildCount - 1)
+      if (last && last.type === "generic_name") collectFromTarget(last)
+      return
+    }
+    if (t === "array_type" || t === "pointer_type" || t === "nullable_type" || t === "ref_type") {
+      const inner = n.namedChild(0)
+      if (inner) collectFromTarget(inner)
+      return
+    }
+    if (t === "tuple_type") {
+      for (const el of n.namedChildren ?? []) {
+        if (el.type !== "tuple_element") continue
+        collectFromTarget(el.childForFieldName?.("type") ?? el.namedChild(0))
+      }
+    }
+  }
+  collectFromTarget(targetNode)
+  return out
 }
 
 /**
@@ -625,6 +751,30 @@ function csharpTypeLeafNode(n: Node | null | undefined): Node | undefined {
  * Wrappers are descended (`array_type`, `nullable_type`, `pointer_type`, `ref_type`,
  * `tuple_type`/`tuple_element`, `scoped_type`, function pointers); a `generic_name`
  * yields its base AND each type argument; a `qualified_name` yields one leaf name.
+ *
+ * D1 (2026-09-28, this round): a QUALIFIED name whose LAST SEGMENT is generic carries
+ * its `type_argument_list` on that segment, and the leaf-only rule above walked straight
+ * past it. tree-sitter-c-sharp spells
+ *
+ *     System.Collections.Generic.Dictionary<string, Widget>
+ *     -> qualified_name [ qualified_name, ".", generic_name [ identifier, type_argument_list ] ]
+ *
+ * so the leaf descent reached the `identifier` inside the `generic_name`, published
+ * `Dictionary`, and returned — while the PLAIN twin
+ *
+ *     Dictionary<string, Widget>
+ *     -> generic_name [ identifier, type_argument_list ]
+ *
+ * took the branch below and published `Widget` as well. One type, two spellings, TWO
+ * DIFFERENT DEPENDENCY SETS: the qualified spelling silently dropped every type
+ * argument, which is the dependency R9's own contract calls "the real dependency" (see
+ * this round's header). Measured with script/m14/tmp/cs-deep-8-declared-type-rootcause.ts
+ * (the trees) and script/m14/tmp/cs-deep-11-qualified-generic-probe.ts (all ten
+ * spellings side by side); frequency over 1,500 roslyn files: 39 occurrences in 12
+ * files, against 3,033 plain occurrences in 725 — the shape is REAL and RARE, which is
+ * exactly the combination that survives five depth draws (the trap #804's record names
+ * for `record struct`). So the arguments are walked here, on the qualified path, by the
+ * SAME `type_argument_list` lookup the working branch uses — one rule, not two.
  */
 function csharpDeclaredTypeLeaves(
   typeRoot: Node | null | undefined,
@@ -648,6 +798,14 @@ function csharpDeclaredTypeLeaves(
     if (t === "qualified_name" || t === "alias_qualified_name") {
       const leaf = csharpTypeLeafNode(n)
       if (leaf) accept(leaf, String(leaf.text ?? ""))
+      // D1: the path's LAST SEGMENT may be the `generic_name` that owns the type
+      // arguments. Walking them is the same rule the `generic_name` branch applies, and
+      // it is the only difference between the two spellings of one type.
+      const lastSegment = n.namedChild(n.namedChildCount - 1)
+      if (lastSegment && lastSegment.type === "generic_name") {
+        const args = (lastSegment.namedChildren as Node[]).find((c) => c.type === "type_argument_list")
+        if (args) for (const a of args.namedChildren as Node[]) walk(a)
+      }
       return
     }
     if (t === "generic_name" || t === "primary_constructor_base_type") {
@@ -976,7 +1134,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // confirmable) — a second reading here would be free to drift from it.
           const usingTarget = csharpUsingDirectiveTarget(node)
           if (!usingTarget) continue
-          const { module: text, targetNode: nameNode2, alias: usingAlias } = usingTarget
+          const { module: text, typeArguments, targetNode: nameNode2, alias: usingAlias } = usingTarget
           imports.push({
             module: text,
             source: text,
@@ -1005,6 +1163,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(usingAlias ? { isUsingAlias: true, usingAlias } : {}),
             },
           })
+          // D3 (2026-09-28, this round): a using ALIAS may name a generic TYPE, and the type
+          // ARGUMENTS are the dependencies the import itself no longer carries (the module
+          // edge publishes the base name, because a module must be a name — see
+          // csharpUsingDirectiveTarget). So each argument gets its own `references` edge from
+          // the same source, marked `using_type_argument` so the two roles stay
+          // distinguishable in the payload.
+          //
+          // The metadata deliberately carries NEITHER `isImport` NOR `isUsingDirective`, and
+          // that is load-bearing rather than an omission: `classifyEvidenceTier` keys
+          // `reference_qualified` on exactly `!(isUsingDirective || isImport)`, so copying
+          // the module edge's flags would stamp an argument — which is a TYPE reference, not
+          // a namespace import — with the import evidence class. The oracle derives these
+          // from the same function, so the differential compares them rather than reporting
+          // them as fabrication.
+          for (const arg of typeArguments) {
+            if (arg === text) continue
+            relationships.push({
+              source: "root",
+              target: arg,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.9,
+              line_number: this.nodeLine(this.nodeNamingToken(nameNode2, arg) ?? nameNode2),
+              metadata: { relationshipType: "using_type_argument" },
+            })
+          }
         }
       }
 
@@ -3645,9 +3828,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `[global::Root]` from the decorator list entirely: measured, the qualified class
           // published `decorators: []` while its plain twin published `["Root"]`), and the
           // qualifier is not part of the name it publishes.
+          //
+          // D2 (2026-09-28, this round): the same omission, one node type further on. A
+          // GENERIC attribute's name child is a `generic_name` — a fourth shape this
+          // predicate never named — so `[Marker<int>]` published `decorators: []` while its
+          // plain twin `[Marker]` published `["Marker"]`. And the twin that DOES get named,
+          // `[System.Marker<int>]`, published `"System.Marker<int>"`: a type EXPRESSION where
+          // the position publishes a NAME, which is the defect class R10 exists to catch (its
+          // DELIMITER set `;(){},` would have convicted the `,` on any corpus holding the
+          // shape; over 1,500 roslyn files the shape occurs once, and 13 times in 1,500
+          // aspnetcore files — `[JSMarshalAs<JSType.Number>]`, `[TestRenderMode<…>]`,
+          // production code, measured by script/m14/tmp/cs-deep-12-frequencies.ts).
+          //
+          // So this position now goes through the lane's ONE canonical-name rule, the same
+          // `csharpCleanTypeLeaf` that strips generic arguments and nullability in heritage,
+          // creation and target-typed `new()`: an attribute publishes the type's NAME with its
+          // full dotted path intact (`System.Marker`) and its type arguments dropped
+          // (`Marker`). Two wrongs, one cause, one rule — and the `generic_name` shape is now
+          // in the predicate so it is not silently absent.
           const nameNode = this.findChild(attr, (n) =>
-            n.type === "identifier" || n.type === "qualified_name" || n.type === "alias_qualified_name")
-          if (nameNode) attrs.push(csharpTypeSpelling(nameNode.text))
+            n.type === "identifier" || n.type === "generic_name" ||
+            n.type === "qualified_name" || n.type === "alias_qualified_name")
+          if (nameNode) {
+            const name = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(nameNode.text)))
+            if (name) attrs.push(name)
+          }
         }
       }
     }
