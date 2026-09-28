@@ -108,8 +108,8 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 
 | | |
 |---|---:|
-| symbols | 12,834 |
-| relationships | 38,432 |
+| symbols | 12,930 |
+| relationships | 38,619 |
 | imports | 1,157 |
 | crash files | 0 |
 | empty names / unknown kinds | 0 / 0 |
@@ -123,6 +123,17 @@ Edges: 14410 references, 11973 contains, 10451 calls, 1157 imports, 265 extends,
 176 implements.
 
 M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
+
+M14.0.F8 (node-type census, `script/m14/vb-node-type-census.ts`): **145/145
+classified, exit 0.** The first run found 146 distinct named types against 42
+classified — the "every construct is accounted for" claim was 29 % true and
+nothing had measured it. Two whole kinds fell out of the unclassified 101:
+**interface members** (three node types in neither set, so nothing visited them
+and every interface was an empty shell) and **operators** (no `name` field, plus
+a visitor that classified the operator's own symbol as punctuation). The
+classification is four-way — declaration, relationship source, known candidate,
+silent — because "classified" and "handled" are different words, and the two-way
+split is what hid both.
 
 M14.0.F5: **100 % edge for edge, on a 120-file draw** — `P3D-Legacy` 60 of 1,880
 files, 627/627 truth edges covered; `DISMTools` 60 of 483, 1,966/1,966; **0
@@ -143,6 +154,16 @@ or wrong:
   reading the callee from `function` dropped 15,577 call edges across 1,718 of
   2,660 files. Found NOT by the differential, which read 100 % with the defect
   live because the oracle made the same assumption; found by writing the fixture.
+- **an interface's members were never visited** — three node types in neither the
+  declaration set nor the silent set, so nothing dispatched them and every
+  interface was published as a name with no members while the implementing class
+  had all of them. Found by the census, not by a differential: no edge was
+  *wrong*, a whole class of declaration was *absent*.
+- **no operator was ever published**, for two independent reasons — no `name`
+  field, and a visitor that skipped the operator's own token because
+  `isKeyword` rejects every token not starting with a letter (written to reject
+  `(`, and it rejected every operator symbol). Word operators are worse: the
+  keyword and the word are inlined away and exist nowhere in the tree.
 - **member-level heritage was never collected** — `visitHeritage` was called from
   exactly one place, the type visitor, so `Public Sub Refresh() Implements
   IThing.Refresh` published nothing at all. Found by the full-corpus sweep (17 of

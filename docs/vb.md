@@ -35,13 +35,13 @@ resolution, analyzer dispatch and the wasm load are all exercised.
 | | |
 |---|---:|
 | symbols | **12,834** |
-| relationships | **38,432** |
+| relationships | **38,619** |
 | imports | **1,157** |
 | crash files | **0** |
 | pipeline mismatches | **0** |
 | empty symbol names | **0** |
 | unknown symbol kinds | **0** |
-| **relationships without a site line** | **0** of 38,432 |
+| **relationships without a site line** | **0** of 38,619 |
 
 ### The analyzer's own differential (F5) — 100 % on a 120-file draw
 
@@ -278,7 +278,7 @@ header form `Class C : Inherits B, Implements I` / `Interface I : IDisposable`.
 
 **Every edge carries a 1-based site line** on the node that names the thing, so a
 call split across three lines is navigable to the line its callee name is
-written on. This is enforced, not asserted: **0 of 38,432** published
+written on. This is enforced, not asserted: **0 of 38,619** published
 relationships lack one.
 
 **A constructor is published as `constructor`**, with the class in `ownerName` —
@@ -297,6 +297,78 @@ not have to rediscover it.)
   That one does **not** break the grammar — tree-sitter skips it, measured, not
   assumed — but `readFileSync(path, "utf8")` does not strip it, so any surface
   that compares raw text sees a leading U+FEFF on half of all VB files.
+
+## The node-type census (F8) — and what it found
+
+`script/m14/vb-node-type-census.ts` walks every named node the grammar produces
+over the corpus and checks that each type is **accounted for**. It is the check
+that makes "every construct is handled" a number rather than a claim.
+
+The first run, over 2,660 files and 3,041,677 named nodes:
+
+```
+distinct named types     146
+classified                45   (19 declaration + 26 silent)
+UNCLASSIFIED             101
+```
+
+**The "every node type is classified" claim was 29 % true, and nothing had ever
+measured it.** Two whole kinds of defect were in the unclassified 101, and both
+had been invisible to every other check in this lane:
+
+**An interface's members were never visited.** `interface_method_declaration`,
+`interface_property_declaration` and `interface_event_declaration` were in
+*neither* the declaration set nor the silent set — which is the whole defect:
+nothing dispatched them, so **every interface was published as an empty shell**,
+a name with no members, while the class implementing it had all of them. DISMTools
+and P3D are both Windows Forms applications whose designer emits an interface per
+dialog, so this was not a rare shape.
+
+**No operator was ever published**, for two independent reasons.
+`operator_declaration` has no `name` field — the operator is an anonymous token —
+so the same empty-name guard that hid constructors hid every operator. And
+`visitOperator` then skipped that very token, because `isKeyword` returns `true`
+for any token that does not start with a letter, which was written to reject `(`
+and also rejected every operator *symbol*. Word operators (`Operator CType`) fail
+a second time: the keyword and the word are inlined away and exist nowhere in the
+tree, so there is no node to name from. So the name is the contract literal
+`operator` — the same shape a constructor takes — and the symbol is recorded in
+`metadata.operatorSymbol` wherever the grammar kept it.
+
+The census is now **145/145 classified and exits 0**, and it fails when a node
+type appears that the analyzer has not accounted for. The classification is
+four-way, because a two-way split is what hid both of these:
+
+| set | meaning | count |
+|---|---|---:|
+| `DECLARATION_NODES` | a symbol is published | 19 |
+| `RELATIONSHIP_SOURCES` | no symbol, but a relationship is derived | 7 |
+| `RELATIONSHIP_CANDIDATES` | silent today; a real relationship a future wave could derive | 8 |
+| `SILENT_INTERNAL` | nothing published, no candidate | 111 |
+
+`RELATIONSHIP_SOURCES` and `RELATIONSHIP_CANDIDATES` are new, and they exist
+because "classified" and "handled" are different words. `array_creation_expression`
+sat in neither set, which is what let the analyzer read a construction's callee
+from a `function` field the node does not have; `implements_member_clause` sat in
+`SILENT_INTERNAL`, which is a claim that the node carries nothing when it carries
+a relationship. And the candidates — `constructor_initializer` (`: base(...)`),
+`add_handler_statement`, `raiseevent_statement`, `event_member`, the property
+accessors, `lambda_expression` — are recorded as *known* rather than left to read
+as *nobody has looked*.
+
+`ERROR` is reported separately as parse health (86,945 nodes) and is explicitly
+not treated as a type: it is the parser's name for a span it could not read, and
+filing it as unclassified would have swamped the report with a number that is not
+a classification question.
+
+The census also refuses to conclude anything on an empty corpus. Its first run
+found zero files (a wrong default path) and printed *"all 0 node types in the
+corpus are classified"* — a vacuous pass, exit 0, on the strength of having
+measured nothing. A gate that can pass by measuring nothing is worse than no gate.
+
+```sh
+bun run script/m14/vb-node-type-census.ts
+```
 
 ## What is not done
 
@@ -326,8 +398,9 @@ has not finished:
    logic is correct; when the grammar collapses a class into an ERROR the class
    symbol is lost, and the members still recovered from inside that ERROR have no
    owner to name. Fixing this belongs in the grammar.
-4. **No fixtures, no regression mutants, no F8 node-type spec, no F10
-   parse-success floor, no closure-wave record, no completion-matrix tick.**
+4. **One fixture file and six mutants (F3/F4), and the F8 node-type census is
+   done** — 145/145 classified. Still missing: a parse-success floor (F10), a
+   closure-wave record, and a completion-matrix tick.
 5. **`M14.0.F5` has no committed artifact for this lane.** The differential runs
    and is at 100 %, but a scoped `--lang vb` run deliberately refuses to write
    the canonical artifact: it belongs to the full 60-file, 30-language sweep,
