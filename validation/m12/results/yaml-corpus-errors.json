@@ -458,7 +458,7 @@
  "symbols": 275689,
  "relationships": 284303,
  "knownGrammarLimitation": {
-  "reason": "multi-line double-quoted scalar (a `description:` folded across a line break) puts a 58-byte ERROR at the document root",
+  "reason": "a multi-line double-quoted scalar (a `description:` folded across a line break) makes the DOCUMENT ROOT an ERROR node, and the parse stops there: measured over docker/api/docs/v1.25..v1.38 the root ERROR spans 72,809-110,341 bytes and the tree covers only 27.6-31.1% of the file, so 69-72% is never parsed (the 58-byte node is a separate NESTED error where the trigger begins)",
   "files": [
    "api/docs/v1.25.yaml",
    "api/docs/v1.26.yaml",
