@@ -63,7 +63,7 @@ const { RealCleanAnalyzer } = await import(path.join(ROOT, "src", "ast", "real-c
 
 const files = walkFiles(path.join(REPOS, REPO_NAME)).sort().slice(0, LIMIT)
 
-type Triple = { label: string; from: string; target: string }
+type Triple = { label: string; from: string; target: string; line?: number }
 const key = (t: Triple) => `${t.label}|${t.from}|${t.target}`
 
 // ---- the causes, in the order the analyzer's own contract states them
@@ -125,6 +125,30 @@ const causes: Cause[] = [
     missing: 0, unexplained: 0, samples: [],
   },
   {
+    id: "K-oracle-implements-head",
+    label: "an `implements` whose TARGET TYPE is not a bare `constructor` node",
+    verdict: "ORACLE GAP, and it is the SAME bug the analyzer had — read this next to cause A. The oracle does `firstOf(node, \"constructor\")?.text` and emits nothing when that is empty, so it derives no `implements` for an instance whose target type is a type_variable (`instance List [] a`), a constrained type (`instance == {#Char}`), or a dotted type. The analyzer reads the same head structurally and gets a name for all of them. The fix is the analyzer's `instanceTargetName` walk, in the oracle.",
+    missing: 0, unexplained: 0, samples: [],
+  },
+  {
+    id: "L-operator-definition-call",
+    label: "a call between OPERATOR names (an operator definition's body)",
+    verdict: "ORACLE GAP — the oracle's `operator_definition` arm does not derive calls inside an operator's body, so every operator-to-operator call is unexplained. The analyzer's unparenthesize normalization (`(!!|)` -> `!!|`) is the spelling the M12 ground truth and the `declaration-forms` fixity rows already pin.",
+    missing: 0, unexplained: 0, samples: [],
+  },
+  {
+    id: "N-call-to-a-name-with-no-callable-symbol",
+    label: "a call whose target is declared in-file but publishes no symbol of its own",
+    verdict: "CHARACTERISED, NOT FIXED — 5 edges. Two shapes: (1) a `code inline` function (`clear_lowercase_bit :: !Char -> Char` / `= code inline { … }`, called from four places) publishes NO symbol, so the call's target has no row to resolve to; (2) a name that is a CLASS imported from another file but collides with an instance MEMBER declared here (`abs`) resolves by name to that method, so the edge is real but the target identity is a name-keyed artefact. The calls are made by the source and are not fabrications; what is imprecise is the target. Recorded rather than changed — suppressing a call the source plainly makes would be the larger error, and promoting `code inline` bodies to symbols is a separate decision.",
+    missing: 0, unexplained: 0, samples: [],
+  },
+  {
+    id: "P-call-inside-a-macro-or-generic-case-body",
+    label: "a call whose SOURCE body is a macro or a generic case equation",
+    verdict: "ORACLE GAP — the oracle's walk enters `function_declaration` and `operator_definition` bodies and nothing else, so a call inside a MACRO body (`IsAlpha c :== …`, a definition macro, which the analyzer publishes as a `macro` symbol and treats as a frame) or inside a GENERIC CASE equation (`bimap{|PAIR|} fx _ fy _ …`) is never derived. The analyzer is right: a macro body is expanded at its use site, so a call in it is a call of the module. Note this is the same blind spot as cause I, which is calls TO a macro; this is calls FROM one.",
+    missing: 0, unexplained: 0, samples: [],
+  },
+  {
     id: "F-unattributed",
     label: "a disagreement matching none of the above",
     verdict: "NEEDS INVESTIGATION — this is the bucket that should be empty. Anything here is a real disagreement nobody has explained yet.",
@@ -154,7 +178,7 @@ for (const f of files) {
   const truth: Triple[] = deriveCleanEdges(tree.rootNode).filter((e) => COMPARED.has(e.label))
   const mine: Triple[] = result.relationships
     .filter((r: any) => COMPARED.has(String(r.type)))
-    .map((r: any) => ({ label: String(r.type), from: String(r.source), target: String(r.target) }))
+    .map((r: any) => ({ label: String(r.type), from: String(r.source), target: String(r.target), line: r.line_number }))
 
   const truthKeys = new Set(truth.map(key))
   const mineKeys = new Set(mine.map(key))
@@ -173,7 +197,49 @@ for (const f of files) {
   const funcNames = new Set(syms.filter((s: any) => s.kind === "function" || s.kind === "method").map((s: any) => s.name))
   const ctorNames = new Set(syms.filter((s: any) => s.kind === "constructor").map((s: any) => s.name))
   const macroNames = new Set(syms.filter((s: any) => s.kind === "macro").map((s: any) => s.name))
+  const declaredCallableKinds = new Set([
+    ...syms.filter((s: any) => s.kind === "function" || s.kind === "method").map((s: any) => s.name),
+    ...syms.filter((s: any) => s.kind === "operator" || s.metadata?.isOperatorDefinition).map((s: any) => s.name),
+  ])
+  // Files with an operator DEFINITION, whose bodies the oracle does not walk.
+  const macroBodyLines = new Set<number>()
+  {
+    const scanBodies = (n: any): void => {
+      if (n.type === "macro_definition" || n.type === "generic_case_definition") {
+        const from = n.startPosition.row + 1
+        const to = n.endPosition.row + 1
+        for (let l = from; l <= to; l++) macroBodyLines.add(l)
+      }
+      for (let i = 0; i < n.childCount; i++) if (n.child(i).isNamed) scanBodies(n.child(i))
+    }
+    scanBodies(tree.rootNode)
+  }
+  const operatorCallSites = new Set<string>()
+  {
+    const scanOps = (n: any): void => {
+      if (n.type === "operator_definition") operatorCallSites.add(rel)
+      for (let i = 0; i < n.childCount; i++) if (n.child(i).isNamed) scanOps(n.child(i))
+    }
+    scanOps(tree.rootNode)
+  }
   const typeDefNames = new Set(syms.filter((s: any) => s.kind === "type").map((s: any) => s.name))
+  // Does the instance's target-type argument exist as a bare `constructor` node? That
+  // is the ONE shape the oracle's `firstOf(node, "constructor")` recognises, and the
+  // whole of cause K is the instances whose target type is not that shape.
+  const bareCtorHeads = new Set<string>()
+  const scanHeads = (n: any): void => {
+    if (n.type === "instance_declaration") {
+      const cls = n.childForFieldName("name")?.text
+      let head = ""
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c.type === "constructor" && n.fieldNameForChild(i) !== "name") { head = c.text; break }
+      }
+      if (cls && head) bareCtorHeads.add(`${cls}\u0000${head}`)
+    }
+    for (let i = 0; i < n.childCount; i++) if (n.child(i).isNamed) scanHeads(n.child(i))
+  }
+  scanHeads(tree.rootNode)
   const leaf = (t: string) => (t.includes(".") ? t.slice(t.indexOf(".") + 1) : t)
   // A function PARAMETER: a name bound by a definition's `pattern` field. Read off
   // the tree, not off the symbol, because the symbol carries parameters as a list and
@@ -217,16 +283,21 @@ for (const f of files) {
     const l = leaf(m.target)
     if (m.label === "calls") {
       if (m.from.includes(".") && scopedSources.has(m.from)) put("G-where-local-source", "unexplained", m, rel)
-      else if (m.target.includes(".") && localNames.has(l)) put("D-where-local-call", "unexplained", m, rel)
+      else if (localNames.has(l)) put("D-where-local-call", "unexplained", m, rel)
       else if (m.target.includes(".")) put("E-single-quoted-name", "unexplained", m, rel)
       else if (classNames.has(l)) put("C-class-dictionary-call", "unexplained", m, rel)
       else if (funcNames.has(l) && /^[A-Z]/.test(l) && !ctorNames.has(l)) put("B-uppercase-function-is-a-call", "unexplained", m, rel)
       else if (paramNames.has(m.target)) put("H-call-to-parameter", "unexplained", m, rel)
       else if (macroNames.has(l)) put("I-macro-application", "unexplained", m, rel)
       else if (typeDefNames.has(l)) put("J-type-coercion", "unexplained", m, rel)
+      else if (macroBodyLines.has(m.line!)) put("P-call-inside-a-macro-or-generic-case-body", "unexplained", m, rel)
+      else if (operatorCallSites.has(rel)) put("L-operator-definition-call", "unexplained", m, rel)
+      else if (!funcNames.has(l)) put("N-call-to-a-name-with-no-callable-symbol", "unexplained", m, rel)
       else { put("F-unattributed", "unexplained", m, rel); if (unexpMiss.length < 25) unexpMiss.push(`UNEXPL(${m.label} ${m.from} -> ${m.target})  ${rel}`) }
     } else if (m.label === "instantiates") {
       put("A-declined-instantiation", "unexplained", m, rel)
+    } else if (m.label === "implements" && !bareCtorHeads.has(`${m.target} ${m.source}`)) {
+      put("K-oracle-implements-head", "unexplained", m, rel)
     } else {
       put("F-unattributed", "unexplained", m, rel)
       if (unexpMiss.length < 25) unexpMiss.push(`UNEXPL(${m.label} ${m.from} -> ${m.target})  ${rel}`)
