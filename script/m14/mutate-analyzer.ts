@@ -6781,6 +6781,180 @@ export const MUTANTS: Mutant[] = [
       }
     },
   },
+  // ═══ GO26 (round 5) ════════════════════════════════════════════════════
+  // The round-5 line-by-line read found ten classes; each has ONE regression
+  // mutant here and a pin (fixture `go/round5-surfaces`, or probe
+  // `F9-PROBE-GO-BARE-CALLABLE-SET` where no valid-Go file can reach the shape).
+  // Both directions were executed: each mutant below was run against the
+  // pre-fix code and is reported as CAUGHT, and the fixture was re-run with the
+  // fixes reverted one class at a time (see reviews/go/sixth-review.md §5).
+  {
+    id: "go/export-ascii-only",
+    language: "go",
+    defectClass: "name-surface",
+    description:
+      "GO26 regression: the export test goes back to an ASCII RANGE (`name[0] >= \"A\" && name[0] <= \"Z\"`). Go's spec defines `exported` as a UNICODE upper-case test, so every legal identifier with a non-ASCII head was published `private` — and `private` fails the export predicate, so the symbol was dropped from the public-API list the product serves entirely. Reconstructed from the output: every `visibility: \"public\"` whose name starts outside A-Z is re-published private. Caught by go/round5-surfaces (expectVisibility + expectExports on `Ünï` / `Ö` / `Ä`).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const n = String(s.name ?? "")
+        if (!n || s.visibility !== "public") return s
+        const c = n[0]
+        return c >= "A" && c <= "Z" ? s : { ...s, visibility: "private" }
+      }),
+    }),
+  },
+  {
+    id: "go/predeclared-comparable-leaks",
+    language: "go",
+    defectClass: "dangling-edge",
+    description:
+      "GO26 regression: `comparable` leaves the PREDECLARED exclusion set. The set was built before generics and never revisited, so `any` was in it and `comparable` was not — and the pinned grammar types a generic type-parameter list as `parameter_declaration` nodes, so `type Pair[K comparable, V any]` published a `declared_type` target `Pair -> comparable`, a name no declaration can define. Reconstructed from the output: the member symbol the type-parameter constraint names. Caught by go/round5-surfaces (forbidReferences `declared_type -> comparable`, forbidSymbols `comparable` owned by `Pair`).",
+    transform: r => {
+      // The pre-fix code EMITTED the edge, so the mutant has to add it, not
+      // relabel an existing one: a generic type's type-parameter constraint
+      // reached the `parameter_declaration` case and named `comparable` as a
+      // declared type. Reconstructed from the symbol payload's own
+      // `hasGenerics` flag, which is the marker the pre-fix code ignored.
+      const genericStructs = (r.symbols ?? []).filter(
+        (s: any) => (s.metadata as any)?.hasGenerics && String(s.kind) === "struct",
+      )
+      if (genericStructs.length === 0) return r
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...genericStructs.map((s: any) => ({
+            source: String(s.name),
+            target: "comparable",
+            type: "references" as any,
+            confidence: 0.95,
+            metadata: { relationshipType: "declared_type", evidenceClass: "reference_qualified" },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "go/unnamed-param-as-return-type",
+    language: "go",
+    defectClass: "label-surface",
+    description:
+      "GO26 regression: parameter-vs-result goes back to the ARITY HEURISTIC (`namedChildCount === 1 ? \"return_type\" : \"declared_type\"`). An unnamed PARAMETER and an unnamed RESULT are both one-named-child `parameter_declaration` nodes, so every unnamed parameter was published as a `return_type` reference — and the tree already says which list it is, in the enclosing declaration's `result` FIELD. Reconstructed from the output: every `return_type` edge on a function whose `result` field is empty. Caught by go/round5-surfaces (`takesUnnamed -> Server` must be `declared_type`; the `return_type` variant is forbidden, and `returnsUnnamed -> Server` pins the control).",
+    transform: r => {
+      // The pre-fix label is a function of the PARAMETER DECLARATION's shape
+      // (`namedChildCount === 1`), and the payload carries that shape directly:
+      // `extractGoParameters` names a parameter with no name node `arg<N>`,
+      // while a named parameter carries its real name. So the pre-fix
+      // mislabelling is exactly the set of `references` edges leaving a
+      // function that has an `arg<N>` parameter and no result — which is what
+      // this relabels back to `return_type`.
+      const unnamedParam = new Set(
+        (r.symbols ?? [])
+          .filter(
+            (s: any) =>
+              (String(s.kind) === "function" || String(s.kind) === "method") &&
+              !s.returnType &&
+              Array.isArray(s.parameters) &&
+              s.parameters.some((p: any) => /^arg\d+$/.test(String(p?.name ?? ""))),
+          )
+          .map((s: any) => String(s.name)),
+      )
+      if (unnamedParam.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const rel = normRel(x)
+          if (rel.type !== "references" || (x.metadata ?? {}).relationshipType !== "declared_type") return x
+          if (!unnamedParam.has(rel.source)) return x
+          return { ...x, metadata: { ...((x.metadata ?? {}) as any), relationshipType: "return_type" } }
+        }),
+      }
+    },
+  },
+  {
+    id: "go/module-range-hardcoded",
+    language: "go",
+    defectClass: "range-incoherence",
+    description:
+      "GO26 regression: the Module symbol's range goes back to a hand-built literal at line 1 / byte 0, sized from the package NAME's length. That is only right when the package clause is the first thing in the file, and a `//go:build` header sits above it in 158 of the two pinned corpora's 3,924 files and 2,462 of kubernetes's 17,848 — so every byte of the range pointed into the build-tag comment. Reconstructed from the output: the Module range is recomputed from the name length at line 1. Caught by go/round5-surfaces (expectSymbolRanges on the `roundfive` module symbol; the fixture's `//go:build` header is what makes the shape reachable).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (String(s.kind) !== "module") return s
+        const n = String(s.name ?? "")
+        return {
+          ...s,
+          range: {
+            startLine: 1,
+            startColumn: 1,
+            endLine: 1,
+            endColumn: n.length + 9,
+            startIndex: 0,
+            endIndex: n.length + 8,
+          },
+        }
+      }),
+    }),
+  },
+  {
+    id: "go/alias-struct-embedding-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GO26 regression: an ALIAS to a struct stops emitting `extends`. `type A = struct{ *Inner }` is legal Go; the pre-round embedding pass read `type_spec` only — as did the F5 oracle, so the two agreed on the omission and no differential could charge it — and the MEMBER symbol was published all the same, leaving the graph claiming `A` contains `Inner` while `A` extended nothing. Reconstructed from the output: an `extends` edge from a source that has a member symbol whose owner is a `type_alias` (metadata.isTypeAlias) and no own struct. Caught by go/round5-surfaces (expects `extends Alias -> Inner`; the oracle change in the same round is what keeps the two sides symmetric).",
+    transform: r => {
+      const aliasStructs = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => (s.metadata as any)?.isTypeAlias && String(s.kind) === "struct")
+          .map((s: any) => String(s.name)),
+      )
+      if (aliasStructs.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const rel = normRel(x)
+          return !(rel.type === "extends" && aliasStructs.has(rel.source))
+        }),
+      }
+    },
+  },
+  {
+    id: "go/struct-kind-class-vacuous",
+    language: "go",
+    defectClass: "dead-logic",
+    description:
+      "GO26 regression: the STRUCT predicate goes back to `SymbolKind.Class`, which the go analyzer has never emitted (Go's struct is `SymbolKind.Struct`). Two product features were therefore unreachable for the analyzer's whole life: `generateGoArchitecturalInsights`'s `struct_design` insight never fired for ANY Go file, and `calculateArchitecturalScore`'s method:struct-ratio bonus could never be granted. Reconstructed from the output: the score is recomputed with the struct list forced empty, which is what the vacuous predicate produced. Caught by go/round5-surfaces (expectMetadata.architecturalScore is pinned at the value that INCLUDES the +3 bonus — the fixture carries methods on `Inner` precisely to bring its ratio inside the [1,5] band the bonus needs, so a vacuous struct list moves the pin by exactly the bonus).",
+    transform: r => {
+      const md: any = (r.metadata ?? {}) as any
+      if (typeof md.architecturalScore !== "number") return r
+      const structs = (r.symbols ?? []).filter(
+        (s: any) => String(s.kind) === "struct" && (s.metadata as any)?.isGoStruct,
+      ).length
+      const methods = (r.symbols ?? []).filter((s: any) => String(s.kind) === "method").length
+      if (structs === 0) return r
+      const ratio = methods / structs
+      const withBonus = md.architecturalScore + (ratio >= 1 && ratio <= 5 ? 3 : 0)
+      return { ...r, metadata: { ...md, architecturalScore: withBonus } }
+    },
+  },
+  {
+    id: "go/framework-vocab-drift",
+    language: "go",
+    defectClass: "dead-logic",
+    description:
+      "GO26 regression: the two framework VOCABULARIES drift apart again. The file-level detector and the per-import detector were independently written and disagreed in both directions, so `gorm` was known to one and could never be pushed into the other — which left `getGoFrameworkPatterns`'s `case \"gorm\"` (with `detectGORMPatterns`, a written-out pattern set) permanently unreachable. Reconstructed from the output: every framework beyond the pre-round seven-name list is dropped from `detectedFrameworks` and `framework`, and the gorm pattern entry goes with it. Caught by go/round5-surfaces (expectFrameworks + expectMetadata.detectedFrameworks + expectMetadata.framework).",
+    transform: r => {
+      const md: any = (r.metadata ?? {}) as any
+      const pre = new Set(["gin", "echo", "fiber", "net_http", "gorilla_mux", "grpc", "testify"])
+      const kept = (md.detectedFrameworks ?? []).filter((n: string) => pre.has(n))
+      const patterns = (md.frameworkPatterns ?? []).filter((p: any) => pre.has(String(p.framework)))
+      return {
+        ...r,
+        metadata: { ...md, detectedFrameworks: kept, frameworkPatterns: patterns, framework: kept[0] ?? md.framework },
+      }
+    },
+  },
   {
     id: "svelte/script-relative-indices",
     language: "svelte",
