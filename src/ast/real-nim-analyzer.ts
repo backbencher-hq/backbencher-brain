@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
 
 /**
  * REAL NIM ANALYZER v1.0 — declaration-site extraction over the pinned
@@ -70,7 +71,7 @@ import { ASTEngine } from "./engine"
  * `classifyEvidenceTier`; they are genuinely facts about the file.
  */
 export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -109,7 +110,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
-    this.collectOverrides(symbols, relationships, declaredSubtypes)
+    this.collectOverrides(symbols, relationships, declaredSubtypes, context?.overrideCompanion)
     this.collectCallsAndUses(rootNode, relationships, {
       fileValues,
       fileTypes,
@@ -430,6 +431,20 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParameters: genericParameters.length > 0 ? genericParameters : undefined,
       decorators: pragmas.length > 0 ? pragmas : undefined,
       comments: doc ? [doc] : undefined,
+      // A METHOD's owner is its receiver TYPE, and `ownerName` is the
+      // family-standard field for that — the one the store binds for ownership
+      // and the one `buildOverrideCompanion` keys on to index
+      // (owner -> declared method names) from previously parsed files.
+      //
+      // Leaving it unset made NIM methods invisible to every owner-based
+      // mechanism in the codebase, not just this one: the companion index came
+      // back EMPTY for a file whose base class declared a method, so
+      // cross-file override resolution could not work no matter what the
+      // override pass did. The receiver was already known, just parked in
+      // `metadata.nimReceiverType` where nothing generic reads it. The metadata
+      // copy stays — the override labels are built from it, and it is the
+      // documented place the receiver is recorded.
+      ...(receiverType ? { ownerName: receiverType, ownerKind: ASTEngine.SymbolKind.Class } : {}),
       // The store binds `brain_symbol.docstring` from this field (see
       // parallel-indexer's insertSymbol binding). Emitting only `comments`
       // produced docs=0 for every nim symbol through the real CLI, so the `##`
@@ -1391,8 +1406,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     declaredSubtypes: Map<string, Set<string>>,
+    companion?: Map<string, Set<string>>,
   ): void {
-    if (declaredSubtypes.size === 0) return
+    if (declaredSubtypes.size === 0 && !companion) return
     // Group every method in this file by (receiver type, name). A Nim method
     // override keeps the SAME name and differs only in its receiver type, so
     // the name alone cannot address either end of the edge — the family's
@@ -1439,6 +1455,70 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+    }
+    if (!companion || byKey.size === 0) return
+    // ── CROSS-FILE overrides ──────────────────────────────────────────────
+    // A Nim method's DIRECT base is already named in the source and already in
+    // this file's symbols, even when the base TYPE lives in another module: the
+    // receiver's `nimInherits` is the written base name. What a per-file
+    // analyzer cannot know is whether that other module DECLARES a method of
+    // the same name — which is exactly what the project's override companion
+    // index answers.
+    //
+    // This adopts the same shared resolver six other analyzers use
+    // (`findDeclaringParent`, src/ast/override-context.ts) rather than a Nim-
+    // specific reimplementation, so the semantics are identical across
+    // languages: the first ancestor in declaration order that actually declares
+    // the method, falling back to the first parent only when no ancestor does.
+    //
+    // The honest depth limit, and it is a real one: the companion carries
+    // (owner -> method names) and NOT each type's own base list, so the walk can
+    // descend only as far as bases visible in THIS file. A hierarchy three
+    // modules deep, where the middle module's base is in a third, stops at the
+    // visible link. That is recorded on the edge as `nimCrossFileBase` so a
+    // reader can tell a companion-resolved edge from a same-file one, and it is
+    // the same limit the java/kotlin lanes document.
+    const parentsOf = new Map<string, string[]>()
+    for (const [base, subs] of declaredSubtypes) {
+      for (const sub of subs) {
+        const arr = parentsOf.get(sub) ?? []
+        if (arr.indexOf(base) === -1) arr.push(base)
+        parentsOf.set(sub, arr)
+      }
+    }
+    const getParents = (typeName: string): readonly string[] => parentsOf.get(typeName) ?? []
+    for (const [key, group] of byKey) {
+      const sep = key.indexOf(" ")
+      const receiver = key.slice(0, sep)
+      const name = key.slice(sep + 1)
+      const startParents = parentsOf.get(receiver) ?? []
+      if (startParents.length === 0) continue
+      const declaring = findDeclaringParent(name, startParents, companion, getParents)
+      if (!declaring || declaring === receiver) continue
+      const sourceLabel = `${receiver}.${name}`
+      const targetLabel = `${declaring}.${name}`
+      const k = `${sourceLabel} ${targetLabel}`
+      if (emitted.has(k)) continue
+      emitted.add(k)
+      relationships.push({
+        source: sourceLabel,
+        target: targetLabel,
+        type: ASTEngine.RelationshipType.Overrides,
+        // 0.9, not 1: the companion asserts that the other module DECLARES the
+        // method, which is the substance of the edge, but the walk could not
+        // descend past a base that is itself in a third module. The
+        // differential's 0.7 claim threshold keeps this a claim rather than an
+        // assertion, which is the honest reading of a partly-visible hierarchy.
+        confidence: 0.9,
+        ...(group[0]?.range?.startLine ? { line_number: group[0].range.startLine } : {}),
+        metadata: {
+          relationshipType: "nim_method_override",
+          receiverType: receiver,
+          baseReceiverType: declaring,
+          nimCrossFileBase: true,
+          nimResolution: "companion-index",
+        },
+      })
     }
   }
 

@@ -11723,6 +11723,35 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "(global)", target: "x", confidence: 1, line_number: 39, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
   },
   {
+    id: "nim/method-owner-name-dropped",
+    language: "nim",
+    defectClass: "relationship-loss",
+    description: "A method stops declaring `ownerName`, i.e. it stops being OWNED by its receiver type. That one field is the family standard for ownership, and dropping it silently disabled three things at once: the `contains` edge from the receiver to the method, the store's ownership binding, and the project-wide override companion index — which is why cross-file override resolution could not work no matter what the override pass did. The companion came back EMPTY for a file whose base class declared a method. Caught by nim/extbase's expectSymbols {render, method, ownerName: ExtBase} and its expectRelationships {contains, ExtBase -> render}; the symbol pin is listed first because the edge alone would also be satisfied by a hardcoded owner.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => { const { ownerName, ownerKind, ...rest } = s; return s.kind === "method" ? rest : s }),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && (x.target === "render" || x.target === "describe"))),
+    }),
+  },
+  // A MUTANT THAT IS DELIBERATELY NOT HERE: "the override companion index stops
+  // being consulted", i.e. reverting nim/cross-file-override-lost.
+  //
+  // It was written, and it SURVIVED — correctly. The mutation gate's contract is
+  // that a mutant must turn the FIXTURE suite red, and the fixture runner calls
+  // the analyzer with no AnalyzeContext, so the cross-file edge is never produced
+  // in the first place and removing it changes nothing a fixture can see. No
+  // single-file fixture can express a project-level fact: the base type and the
+  // method it declares live in a different module by definition.
+  //
+  // So the family is gated where a project context EXISTS — the M12 ground truth
+  // (validation/m12/ground-truth/nim.json), whose harness builds the companion in
+  // its pass 1 and passes it in pass 2. That lane now asserts
+  // `overrides:GlossPainter.paint -> Painter.paint` across two files, and it
+  // fails if the edge disappears. Leaving a permanently-surviving mutant in the
+  // list would have made the gate red forever over a family that is genuinely
+  // covered; the fixture-visible half of the same mechanism (a method declaring
+  // its ownerName) IS gated here, as nim/method-owner-name-dropped.
+  {
     id: "nim/blank-identifier-declared",
     language: "nim",
     defectClass: "symbol-fabrication",

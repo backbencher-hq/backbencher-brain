@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "validation/m12/fixtures/nim/{Contract,mac,helpers,shared}.nim",
-  "auditNote": "Hand-audited from the fixture source against the contract in docs/analyzers/real-nim-analyzer.md \u2014 symbol kinds, the ruled read/write table, and the import path rules. NOT dumped from the analyzer: every fact's evidence field cites the construct it asserts, so a wrong analyzer can be caught rather than confirmed. The fixture is accepted by the Nim 2.2.12 compiler, so no fact asserts behaviour the language rejects. Three facts are here BECAUSE the analyzer does not emit them, each verified in a minimal repro first: a parenless UFCS call (calls exercise->describe), and the two extends/references rows for an undeclared base (`ref object of RootObj`). One fixture line was corrected DURING the audit and the correction is worth recording: it first read `export proc helper*(x: int)`, which the Nim 2.2.12 compiler rejects with 9 errors and which occurs 0 times across all 12 corpora \u2014 the grammar's ERROR node and the compiler agreed, and the fixture was wrong. It is now `proc helper*` plus `export helper`, the real re-export form. One observed edge is deliberately ABSENT: `uses (global) -> x`, which reads a tuple type's field name as if it were a value. A second audit row was ADDED after the analyzer emitted it: `b.build` is as much a parenless UFCS call as `r.describe` is, and the first pass caught only one of the two. And two rows were REMOVED from this audit after the analyzer declined them: `extends Shape -> RootObj` and `references Shape -> RootObj`. `RootObj` is one of the four NIM_COMPILER_ROOTS \u2014 the implicit roots of the compiler's own type system, which no file in an analyzed project declares \u2014 and the analyzer deliberately publishes no edge to them because such an edge could never resolve. The audit asserted them on the grounds that the base IS written in the source; the analyzer's counter-argument is that a dependency edge to a name that exists in no analyzed file is a guaranteed-dangling row, and a dangling row in the dependency graph is worse than an absent one. The ruling is recorded in the analyzer and the audit adopts it. This is the one place in this lane where the analyzer's refusal is a judgement call rather than a defect, and it is called out here rather than left implicit.",
+  "source": "validation/m12/fixtures/nim/{Contract,mac,helpers,shared,painter,gloss}.nim",
+  "auditNote": "Hand-audited from the fixture source against the contract in docs/analyzers/real-nim-analyzer.md \u2014 symbol kinds, the ruled read/write table, and the import path rules. NOT dumped from the analyzer: every fact's evidence field cites the construct it asserts, so a wrong analyzer can be caught rather than confirmed. The fixture is accepted by the Nim 2.2.12 compiler, so no fact asserts behaviour the language rejects. Three facts are here BECAUSE the analyzer does not emit them, each verified in a minimal repro first: a parenless UFCS call (calls exercise->describe), and the two extends/references rows for an undeclared base (`ref object of RootObj`). One fixture line was corrected DURING the audit and the correction is worth recording: it first read `export proc helper*(x: int)`, which the Nim 2.2.12 compiler rejects with 9 errors and which occurs 0 times across all 12 corpora \u2014 the grammar's ERROR node and the compiler agreed, and the fixture was wrong. It is now `proc helper*` plus `export helper`, the real re-export form. One observed edge is deliberately ABSENT: `uses (global) -> x`, which reads a tuple type's field name as if it were a value. A second audit row was ADDED after the analyzer emitted it: `b.build` is as much a parenless UFCS call as `r.describe` is, and the first pass caught only one of the two. And two rows were REMOVED from this audit after the analyzer declined them: `extends Shape -> RootObj` and `references Shape -> RootObj`. `RootObj` is one of the four NIM_COMPILER_ROOTS \u2014 the implicit roots of the compiler's own type system, which no file in an analyzed project declares \u2014 and the analyzer deliberately publishes no edge to them because such an edge could never resolve. The audit asserted them on the grounds that the base IS written in the source; the analyzer's counter-argument is that a dependency edge to a name that exists in no analyzed file is a guaranteed-dangling row, and a dangling row in the dependency graph is worse than an absent one. The ruling is recorded in the analyzer and the audit adopts it. This is the one place in this lane where the analyzer's refusal is a judgement call rather than a defect, and it is called out here rather than left implicit. A THIRD omission, in the same direction: the audit left out the two method `contains` rows. They appeared only when a method began declaring `ownerName`, which is what makes the method owned by its receiver \u2014 the same field the project-wide override companion index keys on. An ownership edge that depends on an unrelated-looking field is easy to miss, and it is the third time this audit has been the thing that was wrong rather than the analyzer. The fixture set gained a CROSS-FILE OVERRIDE PAIR (painter.nim declares the base and its method; gloss.nim derives and overrides it in a sibling module) because no single-file fixture can express that family: the edge is project knowledge, supplied by the caller as the override companion index, and the M12 differential harness is one of the few places that builds one. Its production path does not \u2014 the seam gate runs the real `bb index`, which has no companion \u2014 so this family is gated by the differential and NOT by the fixture lane, and the mutation for it points there. Adding the pair then cost a second pass of the same failure mode: the first audit named the two types, three members, the extends edge and the overrides edge, and MISSED nine other edges the analyzer correctly published for those two files \u2014 the import, both receiver type references, both field ownerships and both member reads, plus the derived method's call to itself. Every one is a contract fact and the audit had simply not enumerated them, which is what the harness reported as precision 0.929. The lesson is the fourth instance of the same thing: an audit that writes down what it expects to see, rather than walking the file construct by construct, under-specifies by omission and the gap shows up as analyzer error.",
   "facts": [
     {
       "id": "symbol:Contract.nim:12:enum:Color",
@@ -1592,6 +1592,321 @@
       "evidence": {
         "authority": "manual_audit",
         "reference": "Contract.nim:99 `let s = b.build` \u2014 a PARENLESS UFCS member call: `b.build` invokes `build(b)`. The first audit missed this row; the analyzer emitting it is what exposed the omission, and the same shape at `r.describe` is the false negative the audit DID catch"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Shape:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:51 `method describe*(s: Shape) {.base.}` \u2014 a method is OWNED by its receiver type, which is what the `contains` ontology says (\"methods under their receiver\"). The first audit omitted both method rows; setting `ownerName` on a method is what made them appear, and the analyzer was right to emit them all along"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Rect:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:54 `method describe*(s: Rect)` \u2014 the derived method is owned by Rect"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:2:class:Painter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 2,
+      "attributes": {
+        "name": "Painter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:2 `Painter* = ref object of RootObj` \u2014 the base of the cross-file override pair, declared in ITS OWN module"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:3:property:canvas",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 3,
+      "attributes": {
+        "name": "canvas",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:3 `canvas*: string`"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:5:method:paint",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 5,
+      "attributes": {
+        "name": "paint",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:5 `method paint*(p: Painter) {.base.}` \u2014 the ROOT of the override chain, in the base's module"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:4:class:GlossPainter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 4,
+      "attributes": {
+        "name": "GlossPainter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:4 `GlossPainter* = ref object of Painter` \u2014 the base `Painter` is declared in painter.nim, a module this file never sees, so the overrides edge below is not derivable from this file alone"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:5:property:sheen",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 5,
+      "attributes": {
+        "name": "sheen",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:5 `sheen*: int`"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:7:method:paint",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 7,
+      "attributes": {
+        "name": "paint",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:7 `method paint*(g: GlossPainter)` \u2014 same method name, different receiver, different FILE"
+      }
+    },
+    {
+      "id": "rel:painter.nim:contains:Painter:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "Painter",
+      "targetId": "paint",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim the base module's method is owned by its receiver type"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:contains:GlossPainter:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "paint",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim the derived module's method likewise"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:extends:GlossPainter:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim the base is named in the source even though it lives in another module \u2014 verified emitting for a base outside this file"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:overrides:GlossPainter.paint:Painter.paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter.paint",
+      "targetId": "Painter.paint",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim THE CROSS-FILE OVERRIDE EDGE. `Painter` and the `paint` it declares are both in painter.nim. Nothing in gloss.nim can see them, so this edge exists only because the caller supplies the project-wide override companion index (engine `AnalyzeContext.overrideCompanion`, the same mechanism six other analyzers use). The receiver-qualified label is what makes it addressable: two methods, one name"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:imports:(global):./painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "(global)",
+      "targetId": "./painter",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `import ./painter` \u2014 the base module, a relative path that keeps its written spelling"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:references:GlossPainter:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `ref object of Painter` \u2014 the declared base type is a type reference of the OWNING type, whether or not it is declared in this file"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:references:paint:GlossPainter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "GlossPainter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `method paint*(g: GlossPainter)` \u2014 a method's receiver is a declared-type dependency of the method"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:contains:GlossPainter:sheen",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "sheen",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `sheen*: int` \u2014 a field is owned by its type"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:uses:paint:sheen",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "sheen",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `$g.sheen` \u2014 the member leaf of a read is a value dependency"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:calls:paint:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "paint",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `$paint(g)` \u2014 a PARENLESS UFCS call to the override itself. Same name at both ends, and that is correct: the derived method calls its own name, and the label is qualified by owner elsewhere"
+      }
+    },
+    {
+      "id": "rel:painter.nim:contains:Painter:canvas",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "Painter",
+      "targetId": "canvas",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `canvas*: string` \u2014 a field is owned by its type"
+      }
+    },
+    {
+      "id": "rel:painter.nim:references:paint:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "paint",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `method paint*(p: Painter)` \u2014 the base method's receiver"
+      }
+    },
+    {
+      "id": "rel:painter.nim:uses:paint:canvas",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "paint",
+      "targetId": "canvas",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `p.canvas` \u2014 a member read"
       }
     }
   ]
