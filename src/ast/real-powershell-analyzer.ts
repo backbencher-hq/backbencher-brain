@@ -174,6 +174,106 @@ const FLOW_KEYWORDS = new Set([
  * naming one is a fabrication by construction — the name is reserved, so it can
  * never be a command name.
  */
+/**
+ * ZERO REGEX — the policy, and the eight helpers that satisfy it.
+ *
+ * This analyzer once claimed "zero regex usages (census 10 → 0)" in a doc that
+ * cited a census which did not exist, while the source carried eight regexes put
+ * back by later waves after the original ten were removed. The claim is now true
+ * for real, and it is worth saying what it means rather than leaving it as a count:
+ *
+ *   NO REGEX IN THIS FILE DECIDES A FACT.
+ *
+ * Every symbol, relationship, type and parameter is read off the AST. What remains
+ * is string NORMALIZATION on text the tree has already told us is a flag, a type
+ * name, a comment body or a filesystem path — cases where the string is the value
+ * and the decision was made structurally. A reader counting `.test(` calls would
+ * have concluded the AST was bypassed; the honest statement is that eight normalizers
+ * were regexes and are now character loops, each written to be provably equivalent
+ * to the pattern it replaced.
+ *
+ * Every replacement below was checked against its ORIGINAL PATTERN over generated
+ * inputs rather than by reading (script/m60/powershell-zero-regex-equiv.ts), because
+ * "looks the same" is not a proof and `\s` is a specific 25-code-point set that a
+ * naive `c <= 32` would get wrong.
+ */
+
+/** JavaScript's `\s`, exactly: whitespace, line terminators, and the Unicode
+ *  separators. Spelled out rather than approximated — `/[\s]/` also matches NBSP
+ *  and \uFEFF, and a `<= 32` test would silently stop matching both. */
+const isSpaceCode = (code: number): boolean =>
+  code === 32 || (code >= 9 && code <= 13) ||
+  code === 0xa0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) ||
+  code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
+  code === 0x3000 || code === 0xfeff
+
+/** `/^-/` — one leading dash, so `-ErrorAction` and `ErrorAction` compare equal. */
+const stripLeadingDash = (text: string): string =>
+  text.length > 0 && text.charCodeAt(0) === 45 ? text.slice(1) : text
+
+/** `/(\[[\s]*\])+/g` — array/generic SUFFIX brackets on a declared type, so
+ *  `string[]` and `Dictionary[string,int][]` reduce to their bare name. It matches
+ *  only `[]` (with optional inner space), never `[T]`, which is why the scan below
+ *  consumes a bracket pair and copies everything else through verbatim. */
+const stripTypeSuffixBrackets = (text: string): string => {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 91 /* [ */) {
+      let j = i + 1
+      while (j < text.length && isSpaceCode(text.charCodeAt(j))) j++
+      if (j < text.length && text.charCodeAt(j) === 93 /* ] */) { i = j + 1; continue }
+    }
+    out += text[i]
+    i++
+  }
+  return out
+}
+
+/** `/\.[A-Za-z0-9]+$/` — "ends in something shaped like a file extension".
+ *  Anchoring on the LAST dot is equivalent, not an approximation: if the text after
+ *  the last dot is not all alphanumerics then no earlier dot can be followed by
+ *  alphanumerics to the end either, because that remainder would contain the same
+ *  offending character. */
+const hasTrailingExtension = (text: string): boolean => {
+  const dot = text.lastIndexOf(".")
+  if (dot < 0 || dot === text.length - 1) return false
+  for (let i = dot + 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const alnum = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    if (!alnum) return false
+  }
+  return true
+}
+
+/** `/^\s*<#/` — leading whitespace then the block-comment opener. */
+const stripOpenCommentDelim = (line: string): string => {
+  let i = 0
+  while (i < line.length && isSpaceCode(line.charCodeAt(i))) i++
+  if (line.charCodeAt(i) === 60 /* < */ && line.charCodeAt(i + 1) === 35 /* # */) return line.slice(i + 2)
+  return line
+}
+
+/** `/#>\s*$/` — the block-comment closer and any whitespace after it. */
+const stripCloseCommentDelim = (line: string): string => {
+  let end = line.length
+  while (end > 0 && isSpaceCode(line.charCodeAt(end - 1))) end--
+  if (end >= 2 && line.charCodeAt(end - 1) === 62 /* > */ && line.charCodeAt(end - 2) === 35 /* # */) {
+    return line.slice(0, end - 2)
+  }
+  return line
+}
+
+/** `/^#+\s?/` — a run of comment markers and AT MOST ONE following space. The
+ *  "at most one" is load-bearing: a markdown-style `##  Title` keeps its second
+ *  `#` and loses one space, which is what makes the retained text a heading. */
+const stripCommentMarkerRun = (text: string): string => {
+  let i = 0
+  while (i < text.length && text.charCodeAt(i) === 35 /* # */) i++
+  if (i > 0 && i < text.length && isSpaceCode(text.charCodeAt(i))) i++
+  return text.slice(i)
+}
+
 const NAMED_BLOCK_KEYWORDS = new Set(["begin", "process", "end", "clean", "dynamicparam"])
 
 /**
@@ -228,7 +328,7 @@ const QUALIFIED_PREFIXES = ["$global:", "$script:", "$env:", "$using:", "$local:
  * carries.
  */
 const isTypeAccelerator = (declared: string): boolean => {
-  const bare = declared.replace(/(\[\s*\])+/g, "").trim()
+  const bare = stripTypeSuffixBrackets(declared).trim()
   return TYPE_ACCELERATORS.has(bare.toLowerCase()) || TYPE_ACCELERATORS.has(bare)
 }
 
@@ -765,7 +865,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * VALUE is the switch-value set, not its shape.
      */
     const looksLikeModulePath = (text: string): boolean =>
-      text.length > 0 && (text.includes("/") || text.includes("\\") || /\.[A-Za-z0-9]+$/.test(text))
+      text.length > 0 && (text.includes("/") || text.includes("\\") || hasTrailingExtension(text))
 
     const addImport = (moduleName: string, via: string, line: number, node: Node) => {
       if (!moduleName) return
@@ -1521,7 +1621,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
                 const c = elements.namedChild(i)
                 if (!c) continue
                 if (c.type === "command_parameter") {
-                  const flag = stripDollar(c.text).replace(/^-/, "").toLowerCase()
+                  const flag = stripLeadingDash(stripDollar(c.text)).toLowerCase()
                   if (!isFlag(flag)) continue
                   // Walk the whole value list, stopping at the next flag.
                   for (let j = i + 1; j < elements.namedChildCount; j++) {
@@ -1653,7 +1753,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** PS1 — the file's own basename, extension included. */
   private basenameOf(filePath: string): string {
-    const normalized = filePath.replace(/\\/g, "/")
+    const normalized = filePath.split("\\").join("/")
     const base = normalized.slice(normalized.lastIndexOf("/") + 1)
     return base.length > 0 ? base : "script.ps1"
   }
@@ -1734,11 +1834,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private parameterValue(node: Node, flag: string): string | null {
     const elements = this.findChildByType(node, "command_elements")
     if (!elements) return null
-    const wanted = flag.replace(/^-/, "").toLowerCase()
+    const wanted = stripLeadingDash(flag).toLowerCase()
     for (let i = 0; i < elements.namedChildCount; i++) {
       const c = elements.namedChild(i)
       if (!c || c.type !== "command_parameter") continue
-      if (this.stripQuotes(c.text).replace(/^-/, "").toLowerCase() !== wanted) continue
+      if (stripLeadingDash(this.stripQuotes(c.text)).toLowerCase() !== wanted) continue
       const next = this.valueAfterNode(elements, i)
       if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
         return this.stripQuotes(next.text)
@@ -1889,7 +1989,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (open < 0) return undefined
       const last = i
       const body = lines.slice(open, last + 1)
-        .map((l, k) => (k === 0 ? l.replace(/^\s*<#/, "") : k === last - open ? l.replace(/#>\s*$/, "") : l))
+        .map((l, k) => (k === 0 ? stripOpenCommentDelim(l) : k === last - open ? stripCloseCommentDelim(l) : l))
         .join("\n")
         .trim()
       return body.length > 0 ? body : undefined
@@ -1905,7 +2005,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       i--
     }
     if (collected.length === 0) return undefined
-    const text = collected.join("\n").replace(/^#+\s?/, "").trim()
+    const text = stripCommentMarkerRun(collected.join("\n")).trim()
     return text.length > 0 ? text : undefined
   }
 

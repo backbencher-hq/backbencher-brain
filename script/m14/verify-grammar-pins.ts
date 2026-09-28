@@ -673,9 +673,16 @@ export const LANES: Record<string, LaneDecision> = {
       "reviews/powershell/resolution.md",
       "reviews/powershell/grammar-worklist.md",
     ],
+    // A SECOND copy used to be listed here: "the pre-patch local build, preserved for
+    // bisect", pointing at /tmp/opencode/ps-lane/wired-0.26.4-unpatched.wasm. It is
+    // removed, and the reason is the gate finding it: the pin reported the copy as
+    // VANISHED. A /tmp path is scratch by definition, so a durable record naming one
+    // fails on the next cleanup, on another machine, or in CI — the pin would be
+    // asserting provenance it cannot re-establish. The npm-cache tarball copy above
+    // carries the same bytes (sha 796124137f05…, 1,088,467 B) and IS re-derivable, so
+    // the bisect capability survives without an artifact that cannot exist tomorrow.
     copies: [
       { label: "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)", path: path.join(CACHE, "tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm") },
-      { label: "the pre-patch local build, preserved for bisect (sha 796124137f05…)", path: "/tmp/opencode/ps-lane/wired-0.26.4-unpatched.wasm" },
     ],
     notVendored: [
       { path: "src/parser.c", why: "generated from grammar.js; 4.5 MB; `tree-sitter generate` rebuilds it" },

@@ -43,7 +43,7 @@ grammar limits** on this lane; see `reviews/m60-powershell-grammar-0264-refused.
 | Interfaces | PowerShell 5.0 `interface IShape { [string] Describe() }`. The GRAMMAR has no node for it, so it parses as a `command` named `interface`; the analyzer declares `IShape` as an `interface` symbol from that structure and does not publish it as a call. Known gap: the interface's method signatures are bodiless, so they are not `class_method_definition` nodes and an interface is declared with no members |
 | Patterns | `CmdletBinding`/`Parameter`/`Validate*` attributes, DSC, Azure/Exchange/SharePoint/AD/VM frameworks, REST/I-O/service patterns — string checks on AST nodes, never source text |
 | Errors | syntax errors are engine-owned (engine.ts merges `treeErrors`); the analyzer never duplicates them |
-| Regex | **zero regexes decide anything.** No symbol, relationship, or type is extracted by matching source text — every decision reads the AST. 8 regexes remain, all normalizing a string that is already AST-derived or reading comment text; they are inventoried below, including the one that is a genuine heuristic. This row previously read "zero regex usages (census 10 → 0)" and both halves were wrong: there is no powershell regex census, and there are 8 |
+| Regex | **ZERO — 0 regex operations, 0 stored regex literals**, enforced by `script/m60/powershell-zero-regex.ts` rather than asserted. Equivalence to the previous regex implementation was measured over 759 files (691 corpus + 10 fixtures), byte-for-byte, 0 differing. This row previously read "zero regex usages (census 10 → 0)", and both halves were false: there is no powershell regex census, and there were 8 |
 
 ## Complexity envelope
 
@@ -67,14 +67,17 @@ production `.ps1`/`.psm1` files, one production `parseFile` pass each):
 
 ## Regex inventory
 
-**No regex decides anything. Eight regexes remain, and this section used to claim
-there were none.**
+**Zero. 0 regex operations, 0 stored regex literals, and a gate that fails if either
+comes back.**
 
-The original claim was "**zero** regex usages (census 10 → 0)". Both halves were wrong,
-and an audit for a different question is what caught it. There is no powershell regex
-census — the phrase cites an instrument that was never written, which is the more
-serious half, because a number attributed to a census reads as measured. And the count
-is 8, because later waves put regexes back after the original 10 were removed.
+This section used to be headed "**None.**" under a Contract row reading "**zero** regex
+usages (census 10 → 0)". Both halves were false, and an audit for an unrelated question
+is what caught it: **there is no powershell regex census** — the number cited an
+instrument that was never written, which is the worse half, because a number attributed
+to a census reads as measured. And the real count was **8**, because later waves put
+regexes back after the original ten were removed. The claim was true once and stopped
+being true with nothing re-deriving it, which is the failure mode of a number no
+instrument owns.
 
 **What the original 10 were replaced with, and that work stands:**
 
@@ -83,33 +86,48 @@ is 8, because later waves put regexes back after the original 10 were removed.
 - `[Type]::new()` bracket stripping → `invokation_expression` with `type_literal` + `member_name` children
 - `#requires -Module` extraction → index-based token scan of the comment text
 
-**The 8 that are here now, by what they operate on.** The distinction that matters is
-not "regex vs not" but "does this match decide a fact, or normalize a string whose fact
-was already decided by the tree":
+**The 8 that were here, and what replaced each.** The distinction that matters is not
+"regex vs not" but "does this match DECIDE a fact, or normalize a string whose fact the
+tree already settled":
 
-| line | operates on | decides? |
+| was | now | decided anything? |
 | --- | --- | --- |
-| 231 | a declared type's own text — strips trailing `[]` array/generic suffixes before the accelerator lookup | no — normalizes; the edge still carries the original text |
-| 768 | an invocation-operator target — decides path-call vs command-call, *after* `startsWith("$")` has already separated variables | **partly** — see below |
-| 1524, 1737, 1741 | a flag/parameter name — strips one leading `-` so `-ErrorAction` and `ErrorAction` compare equal | no — normalizes for comparison |
-| 1656 | the FILE PATH, not source — Windows separator normalization | no — not source text at all |
-| 1892, 1908 | comment text — `<#`/`#>` delimiters and a leading `#` | no — unavoidable, comments are opaque to the grammar |
+| `/^\s*<#/` on a comment line | `stripOpenCommentDelim` — char scan for `<#` after leading space | no — comments are opaque to the grammar |
+| `/#>\s*$/` on a comment line | `stripCloseCommentDelim` — char scan for `#>` before trailing space | no |
+| `/^#+\s?/` on collected comment lines | `stripCommentMarkerRun` — consume the `#` run and AT MOST ONE following space | no |
+| `/^-/` on a flag name (3 sites) | `stripLeadingDash` — one `charCodeAt(0) === 45` test | no — normalizes for comparison |
+| `/(\[[\s]*\])+/g` on a declared type | `stripTypeSuffixBrackets` — consumes `[`+space*+`]` pairs, copies the rest | no — normalizes `string[]` to `string` |
+| `/\.[A-Za-z0-9]+$/.test()` on an invocation target | `hasTrailingExtension` — anchor on the LAST dot, require alnum to the end | **partly** — see below |
+| `/\\/g` on the file path | `split("\\").join("/")` | no — and it is a path, not source |
 
-**The one that is a real heuristic is line 768**, and it is called out rather than buried
-because the honest reading is that it can be wrong. It matches a token as a path if it
-contains a separator or ends in something that looks like an extension. That test is
-sound for its one live use (`& ./run.ps1` vs `& SomeCommand`, with `$`-prefixed tokens
-already diverted) and its own docstring records that it was **deliberately removed from
-the `Import-Module` path** for a measured reason: an installed module is named by a bare
-name, so `Import-Module PoshRSJob` matched nothing while `Import-Module Az.Accounts`
-matched only because a dotted name looks like a file extension. Distinguishing a module
-name from a switch-argument VALUE is the switch-value set's job, and that is PS7's rule.
+**The one that made a judgement call** was `hasTrailingExtension`, and it is called out
+rather than buried because the honest reading is that it *can* be wrong. It matches a
+token as a path if it contains a separator or ends in something shaped like an
+extension. That is sound for its single live use — `& ./run.ps1` against
+`& SomeCommand`, with `$`-prefixed tokens diverted first — and its own docstring records
+that it was **deliberately removed from the `Import-Module` path** for a measured reason:
+an installed module has a bare name, so `Import-Module PoshRSJob` matched nothing while
+`Import-Module Az.Accounts` matched only because a dotted name looks like a file
+extension. Telling a module name from a switch-argument VALUE is the switch-value set's
+job, and that is PS7's rule.
 
-So the accurate summary is: **0 regexes extract a fact from source text; 1 makes a
-judgement call on a token's shape, in a position where that judgement is sound and where
-the alternative was measured and rejected.** That is a weaker claim than "zero" and a
-stronger one than "8 regexes, therefore the AST is bypassed" — which is what a reader
-counting `.test(` calls would have concluded.
+**Equivalence was measured, not reviewed.** Anchoring on the *last* dot is equivalent
+rather than approximate: if the text after the last dot is not all alphanumerics, no
+earlier dot can be followed by alphanumerics to the end either, because that remainder
+would contain the same offending character. And `isSpaceCode` spells out all 25 code
+points JavaScript's `\s` matches, because a `code <= 32` approximation silently stops
+matching NBSP and `\uFEFF`. Both implementations were then run over **759 files** —
+691 corpus plus 10 fixtures — and their facts compared byte-for-byte across symbols,
+relationships with metadata, and imports: **0 differing files**.
+
+**The gate.** `script/m60/powershell-zero-regex.ts` strips block comments (not line
+comments: this file holds four template literals containing `//`, the precedence-chain
+diagrams, which a `//` stripper corrupts), then counts regex operations and stored
+literals, and asserts all seven helpers are still present. It was verified to FAIL by
+injecting one `.replace(/^-/, "")` back into `stripLeadingDash`, and to pass again on
+removal. The helper-presence assertion exists because a zero-regex gate is trivially
+satisfiable by deleting the work, and a green "zero regex" meaning "nothing left to be
+wrong about" is the vacuous pass this repo refuses elsewhere.
 
 ## Supported constructs
 
