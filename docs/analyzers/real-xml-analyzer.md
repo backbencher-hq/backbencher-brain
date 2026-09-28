@@ -182,13 +182,15 @@ Evidence: `validation/m12/results/xml-corpus-complexity.json`.
 | Run | files | symbols | relationships | wall ms | files/s | symbols/s | relationships/s | errors | crashes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Grails XML/XSD corpus (superseded) | 154 | 6,195 | 2,388 | 2,188.9 | 70.36 | 2,830.24 | 1,090.98 | 0 | 0 |
-| CXF archetypes, all seven globs | 2,439 | 184,388 | 76,455 | 301,312.6 | 8.09 | 611.95 | 253.74 | 0 | 0 |
+| CXF archetypes, all seven globs | 2,439 | 184,388 | 76,455 | 268,928 | 9.07 | 686 | 284 | 0 | 0 |
 
 The second row is 16x the file count and 30x the symbol count of the first, and
 it is the honest figure: the first row measured only `*.xml`/`*.xsd` and so
 excluded every `.dtd`, `.xsl`, `.xslt`, `.rng`, and `.wsdl` file, which is most of
-what a real corpus contains. Peak RSS 320 MB, 229 MB delta, single process, no
-database writes.
+what a real corpus contains. Peak RSS 298 MB, single process, no database writes. The symbol and
+relationship totals are stable across runs; the rates move a few percent with
+machine load, which is why the gate's perf budget takes the minimum over repeated
+timed runs rather than one measurement.
 
 The hot path is a single explicit stack traversal. Each AST node is visited
 once; direct child lookups scan only the bounded child list of that grammar
