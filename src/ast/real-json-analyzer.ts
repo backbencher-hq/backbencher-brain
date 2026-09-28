@@ -238,7 +238,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (node.type === "object") {
         this.updateDepth(ctx, parentPath)
-        if (frame.emitObject) this.addArrayObjectSymbol(ctx, node, parentPath)
+        if (frame.emitObject) this.addArrayObjectSymbol(ctx, node, parentPath, parentName)
         // `parentName` MUST be threaded here. Omitting it made pushNamedChildren
         // default it to `parentPath`, so every key inside a nested object got the
         // QUALIFIED path as its owner: `inner`'s owner came out as `Basic.nested`
@@ -506,26 +506,31 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * The SYMBOL name for the array item at `itemPath` (`arr.objs[0]` -> `objs[0]`),
-   * and the name of the array that holds it (`objs`).
+   * An array item's SYMBOL name and the SYMBOL name of the array that holds it.
    *
-   * Two identities were being confused here. The item's qualified PATH is
-   * `arr.objs[0]`, its SYMBOL name is the last dot-segment `objs[0]`, and the
-   * holding array's SYMBOL name is `objs`. Using the path where a name belonged
-   * produced a `contains` edge whose source (`arr.objs`) is not a symbol, so it
-   * resolved to nothing; and descending into an item with the ARRAY's name gave
-   * the item's own keys the wrong owner — `a` was reported as contained by `objs`
-   * when it lives inside `objs[0]`.
+   * Derived from the array's own NAME plus the index, never from the item's path.
+   * The previous version took the last dot-segment of the path, which is correct
+   * only while the module name has no dot in it — and a JSON file whose name does
+   * contain one is entirely ordinary: `index.svelte.warnings.json` gave the module
+   * `index.svelte.warnings` and the item owner came out as `warnings`, so every
+   * `contains` edge from it named no symbol at all. The same file is a snapshot
+   * fixture, and 14 such edges were the largest genuinely-unresolvable class in the
+   * corpus. `tsconfig.build.json` and every `*.svelte.*.json` have the same shape.
+   *
+   * The array's own name is already on the frame: `parentName` when an array frame
+   * is popped IS the name of the array, because the frame is pushed with the key it
+   * was written under, and a document's top-level array arrives with the module name.
    */
-  private arrayItemNames(itemPath: string, rootName: string): { item: string; holder: string } {
-    const bracket = itemPath.lastIndexOf("[")
-    const upToBracket = bracket > 0 ? itemPath.slice(0, bracket) : rootName
-    const lastDot = upToBracket.lastIndexOf(".")
-    return { item: itemPath.slice(lastDot + 1), holder: lastDot >= 0 ? upToBracket.slice(lastDot + 1) : upToBracket }
+  private arrayItemName(arrayName: string, index: number): { item: string; holder: string } {
+    return { item: `${arrayName}[${index}]`, holder: arrayName }
   }
 
-  private addArrayObjectSymbol(ctx: JsonContext, node: Node, path: string): void {
-    const { item: name, holder: ownerName } = this.arrayItemNames(path, ctx.rootName)
+  private addArrayObjectSymbol(ctx: JsonContext, node: Node, path: string, itemName: string): void {
+    // The item's name is on the frame; the holder is that name up to its bracket, so
+    // a dotted module name survives intact.
+    const bracket = itemName.lastIndexOf("[")
+    const name = itemName
+    const ownerName = bracket > 0 ? itemName.slice(0, bracket) : ctx.rootName
     this.addSymbol(ctx, {
       name,
       kind: ASTEngine.SymbolKind.Class,
@@ -560,7 +565,9 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The frame's parentName is the ITEM's symbol name, so the keys inside an
       // array element are owned by that element. Passing the array's name here is
       // what made `a` a child of `objs` instead of `objs[0]`.
-      const { item } = this.arrayItemNames(itemPath, parentPath)
+      // `parentName` here is the ARRAY's own name, so the item is named from it
+      // rather than from a path segment.
+      const { item } = this.arrayItemName(parentName, i)
       stack.push({
         node: child,
         parentPath: itemPath,

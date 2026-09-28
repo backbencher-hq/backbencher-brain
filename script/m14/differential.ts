@@ -281,6 +281,15 @@ export const LANG_REPOS: Record<string, string> = {
   // one, and pointing the lane at fresh repositories instead would leave the
   // pre-wave claim un-refuted rather than superseded.
   bash: "otp",
+  // scss's corpus is element-plus: 170 of the 254 `.scss` files across 13 corpora,
+  // and the only one that is a real Sass codebase rather than a stray file in an
+  // otherwise-CSS repo. It is also the HARD corpus — 16 of 160 files parsed clean
+  // before the grammar patches against 50 of 74 for phpmyadmin — so a green row here
+  // is worth more than a green row on an easy one. phpmyadmin (74 files) is the
+  // natural second corpus and is deliberately NOT registered: the differential takes
+  // one corpus per lane, and adding a second would mean picking which number is the
+  // claim, which is the thing a single declared corpus prevents.
+  scss: "element-plus",
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -599,6 +608,12 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // question was most worth asking, because two grammar defects had been fixed
   // upstream of it and both changed the tree the oracle reads.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  // scss is its own lane with its own wasm, analyzer and oracle. It is NOT folded into
+  // the css entry: `deriveScssEdges` is a genuinely separate derivation (it resolves
+  // ownership by DESCENDING and recording the enclosing statement, where the analyzer
+  // resolves it by RANGE), and sharing one entry would make a bug in either invisible
+  // to the differential — which is the one thing the differential exists to prevent.
+  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
   // `ext` is the lane's SAMPLING UNIVERSE, and for cpp it read "cc,h" until the
   // M37.19 family round (2026-09-25): .cpp — the most common C++ extension — and
   // .hpp were invisible to every F5 draw. Three other declarations in this repo
@@ -1421,6 +1436,155 @@ export function deriveJavaContainsTruth(root: any): { label: string; from: strin
           for (const d of named(c)) if (d.type === "enum_constant") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
         } else if (TYPE(c.type)) {
           const nm = fieldName(c, "name"); if (nm) push(owner!, nm)     // a nested type is a member too
+        }
+      }
+    }
+    for (const c of named(n)) walk(c)
+  }
+  walk(root)
+  return edges
+}
+
+// JD-J3: java `references` truth.
+//
+// Java's `references` class is how the analyzer names a type the file does not
+// declare. Measured on the corpus it is the LARGEST class the analyzer emits —
+// 2,709 edges per 60-file draw, 41% of its whole output — across twelve rules.
+// The rules are NOT all one fact, and writing them as one is what produced 55
+// false MISSING rows in the first cut. Pinned by probe on the real grammar:
+//
+//   published AS `references` (this oracle's subject)
+//     declared_type   field / formal parameter / local / return / catch type
+//     cast_target     `(Widget) o`
+//     instanceof_check `o instanceof Widget`
+//     class_literal   `Widget.class`
+//     array_creation  `new Widget[3]`
+//     throws_type     `void m() throws Widget`
+//     method_reference_receiver `Widget::go`
+//     java_import     every import's written path
+//     permits         a sealed class's subtypes
+//
+//   published under ANOTHER label, so NOT a reference and NOT derived here.
+//   Both alternatives are wrong in opposite directions: deriving them invents
+//   MISSING rows the analyzer is right to omit, and omitting a real reference
+//   hides a genuine gap. Measured, each of these on the pinned grammar:
+//     extends Base              -> [extends]
+//     implements Face           -> [implements]
+//     new Widget()              -> [instantiates]
+//     var x = ...               -> (nothing; a type-inference placeholder names
+//                                  no type, and the analyzer skips it explicitly)
+//
+// `new Widget[3]` is the exception that proves the rule: it IS an
+// object_creation_expression, and it IS published — as `array_creation` —
+// because an array creation names a type in a declaration position too.
+export function deriveJavaReferencesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string) => {
+    if (!target) return
+    if (seen.has(target)) return
+    seen.add(target)
+    edges.push({ label: "references", from: "(expr)", target })
+  }
+  const named = (n: any): any[] => (n?.namedChildren ?? [])
+  const same = (a: any, b: any) => !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+
+  // Is this type node published by the analyzer under a DIFFERENT label?
+  const notAReference = (n: any): boolean => {
+    if (n.text === "var") return true
+    const p = n.parent
+    if (!p) return false
+    // `extends X` / `implements X` -> extends / implements. The type sits
+    // inside a `type_list`, so the immediate parent is `type_list` and the
+    // clause is one level further up. Matching only the immediate parent left 6
+    // false MISSING rows in the third cut (ConsoleLogger, Runnable, GrailsCache
+    // x2, ...).
+    if (p.type === "superclass" || p.type === "super_interfaces" || p.type === "extends_interfaces") return true
+    if (p.type === "type_list" && (p.parent?.type === "super_interfaces" || p.parent?.type === "extends_interfaces" || p.parent?.type === "superclass")) return true
+    // An EXPLICIT type witness on a call — `Collections.<String, Object>singletonMap(k, v)`
+    // — is a call-site type ARGUMENT, not a declaration. The analyzer's
+    // `references` contract is declarations and type CHECKS (return/field/param/
+    // local/catch/cast/instanceof/class-literal/array/throws); generic arguments
+    // inside a DECLARATION are covered (`List<Object> f` does reference Object),
+    // but the witness form is outside that contract. Measured: exactly 1 row in
+    // 60 files, and deriving it would make the lane owe an edge it does not
+    // declare. Ruled rather than "fixed" — recorded as a limitation.
+    if (p.type === "type_arguments" && p.parent?.type === "method_invocation") return true
+    // `new X()` -> instantiates, but `new X[]` -> array_creation (a reference).
+    // The type is not always the node itself: `new java.util.ArrayList<>()` puts
+    // the scannable `scoped_type_identifier` INSIDE a `generic_type`, which is
+    // what the `type` field actually points at. Matching only the direct field
+    // left 16 false MISSING rows in the second cut, so climb the wrappers first.
+    let q: any = n
+    for (let i = 0; i < 8 && q; i++) {
+      const par: any = q.parent
+      if (!par) break
+      if (par.type === "object_creation_expression") {
+        const t = par.childForFieldName?.("type")
+        if (t && t.startIndex <= q.startIndex && t.endIndex >= q.endIndex) {
+          let arr: any = t
+          while (arr && (arr.type === "array_type" || arr.type === "annotated_type" || arr.type === "generic_type")) {
+            arr = arr.type === "generic_type" ? (arr.childForFieldName?.("type") ?? arr.namedChild?.(0)) : (arr.childForFieldName?.("element") ?? arr.namedChild?.(0))
+          }
+          if (!arr || arr.type !== "array_type") return true
+        }
+        break
+      }
+      if (par.type !== "generic_type" && par.type !== "annotated_type" && par.type !== "scoped_type_identifier" && par.type !== "array_type") break
+      q = par
+    }
+    return false
+  }
+
+  const walk = (n: any) => {
+    if (n.type === "type_identifier") {
+      if (!notAReference(n)) push(n.text)
+      for (const c of named(n)) walk(c)
+      return
+    }
+    if (n.type === "scoped_type_identifier") {
+      if (!notAReference(n)) push(n.text)
+      for (const c of named(n)) walk(c)
+      return
+    }
+    // A CAST publishes its type's FULL spelling, arguments included: the pinned
+    // grammar shows `cast_expression(type=generic_type:"Class<?>")` and the
+    // analyzer emits `Class<?>` — the wildcard is part of the written type. Only
+    // the cast does this; a field's `Map<String, List<X>>` is published as
+    // base + arguments separately. So the cast is stated at its own spelling
+    // rather than forced through the leaf-name rule, which is what left
+    // `UNEXPLAINED getMethodOrClosureMethod -> Class<?>` unmatched.
+    if (n.type === "cast_expression") {
+      const t = n.childForFieldName?.("type")
+      if (t?.text) {
+        // A cast publishes its type's BASE name, brackets and arguments both
+        // stripped: pinned on the grammar, `(List<String>)` -> List,
+        // `(a.b.Widget)` -> a.b.Widget, `(Widget)` -> Widget. Stating the
+        // spelling rather than only the leaves is what lets the row match.
+        let c = t.text
+        while (c.endsWith("[]")) c = c.slice(0, c.length - 2)
+        const lt = c.indexOf("<")
+        if (lt > 0) c = c.slice(0, lt)
+        push(c)
+      }
+    }
+    // (2) a METHOD REFERENCE's receiver is a name written in the file — either a
+    // type (`Runnable::run`) or a variable holding the receiver
+    // (`siblingAnnotation::setMember`). The analyzer publishes it as
+    // `method_reference_receiver`; the oracle derived no method-ref receivers at
+    // all, which is what left `applyStaticTypesTransformation ->
+    // siblingAnnotation` unexplained.
+    if (n.type === "method_reference") {
+      const recv = n.namedChild(0)
+      if (recv?.text) push(recv.text.split(".").pop()!)
+    }
+    if (n.type === "import_declaration") {
+      for (const c of named(n)) {
+        if (c.type === "scoped_identifier") {
+          const txt = c.text
+          push(txt.endsWith(".*") ? txt.slice(0, -2) : txt)
+        } else if (c.type === "identifier") {
+          push(c.text)
         }
       }
     }
@@ -14328,6 +14492,152 @@ function oracleRefreshUrl(content: string): string {
 //   imports    an `@import`/`@use`/`@forward` in this file imports the string it
 //              names. The source is the MODULE, i.e. the file — which is what an
 //              @import belongs to.
+/**
+ * M14 F10 — the SCSS truth, derived from the parse tree and importing NOTHING from
+ * `RealScssAnalyzer`.
+ *
+ * ── WHY THIS HAS TO BE A SECOND IMPLEMENTATION ──────────────────────────────────
+ *
+ * The differential's whole value is that it is wrong in a DIFFERENT DIRECTION from the
+ * analyzer. If both read the same helper, a bug in that helper is invisible: the truth
+ * moves with the thing it is supposed to check, and the row stays green. That is not
+ * hypothetical — the CSS oracle was itself wrong eight times, each time on a
+ * measurement, and one of those eight (`nested rule's parent was the RAW selector`)
+ * had been hiding a real analyzer bug in the opposite direction.
+ *
+ * So this deliberately does NOT reuse the analyzer's helpers. The analyzer resolves
+ * ownership by RANGE (innermost published symbol containing the statement) because a
+ * threaded `owner` variable produced three fabrications; this oracle instead records
+ * the enclosing `rule_set` / `mixin_statement` / `function_statement` as it descends,
+ * which is the approach the analyzer's first version used and got wrong. Two different
+ * mechanisms, so an error in one does not appear in the other.
+ *
+ * It derives the four SCSS classes the lane emits:
+ *   uses        `@include n`   -> the `@mixin n` this file declares
+ *   references  `$v` read      -> the `$v` this file declares
+ *   imports     `@use`/`@forward` -> the module path
+ *   uses        `@extend .s`   -> the selector extended
+ *
+ * and it deliberately derives NOTHING else. A truth that also modelled the CSS classes
+ * would duplicate `deriveCssEdges`, and the SCSS grammar is a superset of the CSS one,
+ * so the CSS oracle already covers those — adding them here would double-count every
+ * `contains` edge in the comparison.
+ */
+export function deriveScssEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const textOf = (n: any): string => (n && typeof n.text === "string" ? n.text : "")
+  const collapse = (t: string): string => t.replace(/\s+/g, " ").trim()
+
+  /** every named child, INCLUDING anonymous ones — the `!default` flag is anonymous */
+  const kids = (n: any): any[] => {
+    const out: any[] = []
+    if (!n) return out
+    for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) out.push(c) }
+    return out
+  }
+  const namedKids = (n: any): any[] => kids(n).filter((c: any) => c.isNamed)
+  const kidOfType = (n: any, t: string): any | null => namedKids(n).find((c: any) => c.type === t) ?? null
+
+  // Pass 1 — what the file DECLARES, before any reference resolves, because Sass does
+  // not care whether a use precedes its declaration.
+  const mixins = new Set<string>()
+  const functions = new Set<string>()
+  const variables = new Set<string>()
+  const namespaces = new Set<string>()
+  ;(function walk(n: any) {
+    if (!n || n.type === "ERROR") return
+    if (n.type === "mixin_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      if (name) mixins.add(`@mixin ${collapse(textOf(name))}`)
+    } else if (n.type === "function_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      if (name) functions.add(`@function ${collapse(textOf(name))}`)
+    } else if (n.type === "use_statement") {
+      const ns = kidOfType(n, "plain_value") ?? kidOfType(n, "identifier")
+      // `as *` binds no name, so there is nothing to record
+      if (ns) namespaces.add(collapse(textOf(ns)))
+    } else if (n.type === "declaration") {
+      const prop = kidOfType(n, "property_name")
+      // a `$var:` assignment is a declaration; a bare `$var` elsewhere is a read
+      if (prop && textOf(prop).startsWith("$")) variables.add(textOf(prop))
+    }
+    for (const c of kids(n)) walk(c)
+  })(root)
+
+  // Pass 2 — the references, carrying the enclosing entity as `owner` as we descend.
+  ;(function walk(n: any, owner: string) {
+    if (!n || n.type === "ERROR") return
+    let nextOwner = owner
+    if (n.type === "mixin_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      nextOwner = name ? `@mixin ${collapse(textOf(name))}` : owner
+    } else if (n.type === "function_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      nextOwner = name ? `@function ${collapse(textOf(name))}` : owner
+    } else if (n.type === "rule_set") {
+      const sels = kidOfType(n, "selectors")
+      if (sels) {
+        const sel = collapse(textOf(sels)).replace(/\s*,\s*/g, ", ")
+        for (const one of sel.split(", ")) push("contains", one, nextOwner)
+      }
+    }
+    switch (n.type) {
+      case "include_statement": {
+        const name = kidOfType(n, "identifier") ?? kidOfType(n, "plain_value")
+        if (name) {
+          const bare = collapse(textOf(name))
+          const [ns, nm] = bare.includes(".") ? bare.split(".") : [undefined, bare]
+          // `mixins`/`functions`/`namespaces` are SETS of PUBLISHED names
+          // (`@mixin button`), not maps from bare name to published name — the first
+          // version called `.get()` on all three and threw `mixins.get is not a
+          // function` on the first `@include` in the corpus. Looking a name up means
+          // constructing the published spelling and asking whether it was declared.
+          const resolve = (b: string): string | undefined =>
+            mixins.has(`@mixin ${b}`) ? `@mixin ${b}` : functions.has(`@function ${b}`) ? `@function ${b}` : undefined
+          const target = ns && namespaces.has(ns) ? resolve(nm) : resolve(bare)
+          if (target) push("uses", nextOwner, target)
+        }
+        break
+      }
+      case "extend_statement": {
+        const sel = kidOfType(n, "class_selector") ?? kidOfType(n, "id_selector") ?? kidOfType(n, "type_selector")
+        if (sel) push("uses", nextOwner, collapse(textOf(sel)))
+        break
+      }
+      case "use_statement":
+      case "forward_statement": {
+        const mod = kidOfType(n, "string_value")
+        if (mod) push("imports", nextOwner, collapse(textOf(mod)).replace(/^["']|["']$/g, ""))
+        break
+      }
+      case "variable": {
+        if (variables.has(textOf(n))) {
+          // the left-hand side of its own assignment is not a read of itself
+          const parent = n.parent
+          const isOwnLhs =
+            parent?.type === "declaration" &&
+            textOf(kidOfType(parent, "property_name")) === textOf(n)
+          if (!isOwnLhs) push("references", nextOwner, textOf(n))
+        }
+        break
+      }
+      default:
+        break
+    }
+    for (const c of kids(n)) walk(c, nextOwner)
+  })(root, "")
+
+  return edges
+}
+
 export function deriveCssEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14530,10 +14840,83 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
    *                       an oracle that only handles the explicit form drops every
    *                       implicit-nested rule on the floor.
    */
+  /**
+   * A nested selector's RESOLVED name, with every member of a comma group resolved
+   * SEPARATELY.
+   *
+   * The first version prefixed the parent onto the whole group:
+   *
+   *     .doc-content { h1, h2 {} }   ->   `.doc-content h1, h2`
+   *
+   * which is not a selector anyone wrote and names only its first member correctly.
+   * The analyzer resolves each member and publishes ONE symbol for the group:
+   *
+   *     ->   `.doc-content h1, .doc-content h2`
+   *
+   * Resolving per member is also the only version that makes the group usable: it is
+   * why a comma group's members are individually addressable, and a name that
+   * silently means `.doc-content h1` while spelling `h2` is a name a consumer cannot
+   * join against anything.
+   *
+   * Found by the SCSS lane, whose corpus draws the shape the CSS corpora do not
+   * (element-plus vendors VitePress's documentation styles, which nest comma groups
+   * under a container class). It is NOT scss-specific: the same input reproduces
+   * identically under tree-sitter-css and tree-sitter-scss, and the CSS lane's own
+   * differential is 100% because its corpora never nest a comma group.
+   *
+   * Split on the character, not a pattern: `String.split(",")` and a trim per member.
+   * A regex here would have to decide what a comma inside `:is(a, b)`, an attribute
+   * selector `[a="x,y"]` or a quoted string is, and this lane's whole grammar for that
+   * is already the parse tree — the tree knows where the top-level commas are, and the
+   * cheap textual version cannot.
+   */
   const nestedResolved = (asWritten: string, parent: string): string | null => {
     if (!asWritten) return null
-    if (asWritten.includes("&")) return normSelector(asWritten.split("&").join(parent))
-    return normSelector(`${parent} ${asWritten}`)
+    const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
+    const parents = parent.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
+    if (members.length === 0 || parents.length === 0) return null
+    // The CROSS PRODUCT, and this is the second half of the comma-group fix.
+    //
+    // Per-member resolution alone is still wrong when the PARENT is a group too. CSS
+    // nesting is not distributive over commas:
+    //
+    //     h1, h2, h3, h4, h5, h6 {
+    //       .el-tag, .vp-tag { margin-left: 8px }
+    //     }
+    //
+    // is TWELVE selectors — a descendant of each of the six, matching either of the two
+    // — not two, and certainly not the six-and-two the middle version produced by
+    // prefixing the whole parent group onto each member:
+    //
+    //     `.doc-content h1, … h6 .el-tag, .doc-content h1, … h6 .vp-tag`
+    //
+    // which is a name whose FIRST member (`.doc-content h1`) is not a selector anyone
+    // wrote and whose last member is. The analyzer produces the correct twelve.
+    //
+    // `&` short-circuits the product: `&.b, &.c` under a six-member parent is two
+    // selectors written with `&`, not twelve, because each `&` stands for the whole
+    // parent group in that position. So a member containing `&` is resolved on its own.
+    //
+    // ORDER IS PART OF THE NAME, and the product is emitted PARENT-major: for each
+    // parent, for each member. The first version looped members outer and produced the
+    // same twelve selectors in the other order —
+    //
+    //     `… h1 .el-tag, h2 .el-tag, … h6 .el-tag, h1 .vp-tag, …`
+    //
+    // — and the comparison matches `label|target` as a STRING, so a reordering reads as
+    // a missing row and an unexplained one. The analyzer's order is the one that
+    // matters, so the oracle matches it. A set-equality comparison would have made this
+    // invisible, which is worth knowing: the harness cannot tell an ordering apart, and
+    // neither can a consumer that joins on the name.
+    const resolved: string[] = []
+    for (const p of parents) {
+      for (const member of members) {
+        resolved.push(
+          member.includes("&") ? normSelector(member.split("&").join(parent)) : normSelector(`${p} ${member}`),
+        )
+      }
+    }
+    return normSelector(resolved.join(", "))
   }
 
   // Pass 2 — edges. One walk carries the innermost enclosing context, so
@@ -14667,9 +15050,64 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
     if (n.type === "rule_set") {
       const inner = children(n).find((c: any) => c.type === "selectors")
       const asWritten = inner ? normSelector(textOf(inner)) : null
+      // CSS-D8: a RESET selector — `*`, `*::before`, `*|a` — carries no semantic
+      // symbol and is suppressed, and a mixed group is SPLIT so the reset members are
+      // dropped and the real ones are kept under their own names. The oracle has to
+      // honour the suppression, because the analyzer suppresses the rule's WHOLE
+      // subtree with it: `* { scrollbar-color: var(--a) var(--b) }` publishes no symbol
+      // and no `var()` reads, and an oracle that derived the reads would report two
+      // MISSING relationships for a ruling the lane made on purpose.
+      //
+      // Character tests rather than a pattern: a selector is a reset member when its
+      // trimmed text is exactly `*` or begins with `*` followed by `|`, `::` or a
+      // combinator — which is what "names the universal selector and nothing else"
+      // reduces to, and needs no regex to say.
+      const isResetMember = (t: string): boolean => {
+        const x = t.trim()
+        if (x === "*") return true
+        if (!x.startsWith("*")) return false
+        const next = x.charAt(1)
+        return next === "|" || next === ":" || next === " " || next === ">"
+      }
+      if (asWritten) {
+        const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
+        const real = members.filter((m) => !isResetMember(m))
+        // a group that is ENTIRELY reset selectors publishes nothing, and neither does
+        // anything inside it
+        if (real.length === 0) return
+        // a MIXED group keeps only its real members, which is the D8 split
+        if (real.length !== members.length) {
+          const rejoined = real.join(", ")
+          childParent = enclosingSelector ? nestedResolved(rejoined, enclosingSelector) : rejoined
+          if (enclosingSelector && !childParent.includes("&")) push("contains", enclosingSelector, childParent)
+          for (const c of children(n)) walk(c, ctx, childParent)
+          return
+        }
+      }
       if (asWritten) {
         const resolved = enclosingSelector ? nestedResolved(asWritten, enclosingSelector) : asWritten
-        if (resolved) {
+        // A name that STILL contains `&` after resolution is not a name. `&` stands
+        // for whatever selector the mixin is `@include`d into, which is a CALL SITE —
+        // frequently in another file — so the rule's true name cannot be determined
+        // from this file at all. Measured on element-plus: 224 rules in 160 files sit
+        // under a mixin/`@include`/`@each` opener and use `&`, and every one of them is
+        // in this state.
+        //
+        // The first version pushed those anyway, deriving names like
+        // `&.is-light .#{$namespace}-alert__description` and reporting 30 of them as
+        // MISSING. They were not missing relationships; they were relationships to a
+        // name that cannot be joined against anything, which is the same
+        // placeholder-literal defect (M60 R7) as publishing `@layer reset, base,
+        // components` for a layer.
+        //
+        // So an unresolvable `&` parent is treated as ABSENT: no `contains` is pushed
+        // for it, and its children resolve against the last RESOLVABLE ancestor
+        // instead. That is the analyzer's behaviour and it is the right one — the
+        // alternative, publishing the stripped form, silently MERGES every
+        // `&.is-light` variant of a rule into one symbol, which is the identity
+        // collision this project has spent a wave removing. The merge is a real cost
+        // and it is declared rather than hidden.
+        if (resolved && !resolved.includes("&")) {
           childParent = resolved
           if (enclosingSelector) push("contains", enclosingSelector, resolved)
         }
@@ -15523,6 +15961,33 @@ async function main() {
         noteSkip("oracle-threw", relPath, err)
         continue
       }
+      if (lang === "scss") {
+        // M14 F10: the scss truth, and it is the SUM of both oracles.
+        //
+        // The first version ran `deriveScssEdges` alone, on the reasoning that the SCSS
+        // grammar is a superset so `deriveCssEdges` would "already cover" the CSS
+        // classes. `deriveCssEdges` does not run on this file at all — it is only called
+        // for `lang === "css"` — so the CSS half of the truth was simply MISSING, and
+        // the row read `TR=3 cov=2 MISSING=1 unexp=110 unexplained=108 (98.2%)`: three
+        // truth rows against 110 analyzer edges, which looks like an analyzer inventing
+        // almost everything it emits and is in fact a truth that modelled 3% of it.
+        //
+        // The reasoning was right about the grammar and wrong about the harness. The
+        // analyzer's result IS the CSS walk plus the SCSS additions (it delegates), so
+        // the truth has to be the CSS oracle plus the SCSS oracle. A delegate needs a
+        // delegate, or the differential compares the addition against the whole.
+        //
+        // The module name is the file's BASENAME with the extension, matching the
+        // analyzer's `importerName`, and `@use`/`@forward` carry their own module path
+        // so they are unaffected by it.
+        const scssModule = (relPath.split("/").pop() || "stylesheet").replace(/\.[^.]+$/, "") || "stylesheet"
+        for (const e of deriveCssEdges(root, scssModule)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveScssEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "css") {
         // M14 F10: the css truth. `deriveCssEdges` needs the module name for
         // `@import` — an import belongs to the FILE that declares it, and the
@@ -15797,6 +16262,15 @@ async function main() {
         // an unaudited label cannot be caught going missing even once; java's
         // had the same gap and the same size of blind spot.
         for (const e of deriveJavaContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // JD-J3 (M60 java deep review, 2026-09-27): `references`, the LAST of
+        // java's four unaudited classes and by far the largest — 2,709 edges per
+        // 60-file draw, 41% of the analyzer's whole output, across twelve rules.
+        // Deriving it is what makes the label comparable; see
+        // deriveJavaReferencesTruth for the per-position spelling rules and for
+        // the four truth defects this truth itself carried before it was right.
+        for (const e of deriveJavaReferencesTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -16203,7 +16677,7 @@ async function main() {
           // deriveJavaScriptEdges from the two language rules, in a pre-pass
           // outside the decorator-skipping walk, so it audits those nodes rather
           // than stepping around them.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -16246,6 +16720,21 @@ async function main() {
           // `uses` here would compare the analyzer against an oracle that never
           // emits it, which reads as a lane full of unexplained edges.
           ...(lang === "toml" ? ["contains"] : []),
+          // scss: `deriveScssEdges` derives `uses` (`@include` -> a declared mixin,
+          // `@extend` -> the extended selector), `references` (a `$var` read -> a
+          // declared variable), `imports` (`@use`/`@forward` -> the module) and
+          // `contains` (a rule inside the mixin or function that encloses it). All
+          // four, by the rule this file states: a label is comparable exactly when the
+          // lane's oracle derives it.
+          //
+          // The omission here is the fourth instance of the SAME harness gap the #910
+          // (c imports), G7 (groovy uses) and powershell-`contains` notes record, and it
+          // is the one that produces the most alarming output: with `scss` in no
+          // allowlist entry, EVERY analyzer edge was filtered out and all 45 derived
+          // truth rows read as MISSING — `cov=0 (0%) MISSING=45`, which reads as an
+          // analyzer that emits nothing at all rather than a comparison that was never
+          // switched on. The lane emits 2,829 relationships over 244 files.
+          ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
           ...(lang === "powershell" ? ["exports"] : []),
           ...(lang === "powershell" ? ["references"] : []),
           // M14 F10: css is comparable on exactly the four kinds its oracle
@@ -17518,6 +18007,8 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   const pathToName = new Map<string, string>()
   const refs: { from: string; refPath: string }[] = []
   const deps: { from: string; name: string }[] = []
+  const endpoints: { from: string; target: string }[] = []
+  const HTTP_METHOD_KEYS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"])
 
   const keyText = (pair: any): string | null => {
     const k = pair.childForFieldName?.("key")
@@ -17553,9 +18044,15 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       const items = (node.namedChildren ?? []).filter((c: any) => c.type !== "[")
       items.forEach((item: any, i: number) => {
         if (!isObject(item)) return // a scalar element has no named children
+        // The item is named from the ARRAY's own name plus the index, never from
+        // the item's path. Taking the last dot-segment is correct only while the
+        // module name has no dot, and `index.svelte.warnings.json` is an ordinary
+        // filename: that path gives `warnings[0]` where the truth is
+        // `index.svelte.warnings[0]`. The analyzer had the same bug and both were
+        // fixed from the same rule — an array element is identified by its index
+        // UNDER THE ARRAY, and the array is named by the key it was written under.
         const itemPath = `${parentPath}[${i}]`
-        const lastDot = parentPath.lastIndexOf(".")
-        const itemName = `${itemPath.slice(lastDot + 1)}`
+        const itemName = `${parentName}[${i}]`
         if (parentName) edges.push({ label: "contains", from: parentName, target: itemName })
         pathToName.set(itemPath, itemName)
         walk(item, itemPath, itemName)
@@ -17576,6 +18073,13 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
       // probe caught.
       if (parentName) edges.push({ label: "contains", from: parentName, target: key })
       pathToName.set(here, key)
+      // OpenAPI path entry: a `/`-prefixed key whose object declares an HTTP method.
+      if (key.length > 1 && key.startsWith("/") && isObject(value)) {
+        const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
+        if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
+          endpoints.push({ from: parentName || scriptName, target: key })
+        }
+      }
       if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
         for (const dep of (value.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
           const depKey = keyText(dep)
@@ -17606,20 +18110,49 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // WORSE NUMBERS (files-with-truth 2,201 -> 1,884), which read like an analyzer
   // regression rather than a broken instrument. An instrument that fails by being
   // absent is the hardest kind of failure to notice and the easiest to misattribute.
-  const topLevel =
-    (root?.namedChildren ?? []).find((c: any) => c.type === "object" || c.type === "array") ??
-    (root?.type === "object" || root?.type === "array" ? root : null)
-  if (topLevel) walk(topLevel, scriptName, scriptName)
+  // EVERY top-level value, not just the first. Concatenated JSON documents are legal
+  // input for tooling that streams them, and kubernetes' `hack/testdata` holds
+  // several: two `Service` objects back to back in one file. The oracle walked only
+  // the first, so the whole second document's containment went uncorroborated and
+  // 12 edges read as fabrications. Note the cost this exposes rather than hides: the
+  // two documents both declare `spec`, so both symbols are named `spec` and the
+  // edges from them are AMBIGUOUS — which is the language property recorded in §7,
+  // arriving through a door nobody expected.
+  const topLevels: any[] =
+    root?.type === "object" || root?.type === "array"
+      ? [root]
+      : (root?.namedChildren ?? []).filter((c: any) => c.type === "object" || c.type === "array")
+  for (const topLevel of topLevels) walk(topLevel, scriptName, scriptName)
 
-  // Pass 2 — resolve each `$ref` against the index Pass 1 built. A local ref
-  // (`#/a/b`) is a JSON Pointer from the document root; anything else is external
-  // and has no target in this file, so it is left for the analyzer to label.
+  // Pass 2 — resolve each `$ref` against the index Pass 1 built.
+  //
+  // A `$ref` names a LOCATION in the document, not a symbol, so the edge targets the
+  // LOCATION. This is not a cosmetic choice and it is the whole adjudication for
+  // 7,653 edges: the first version of this oracle resolved a pointer to the bare
+  // NAME declared there, the analyzer resolves it to the PATH, and the two disagreed
+  // on 91% of every `references` edge in the corpus — kubernetes' OpenAPI specs,
+  // where a `$ref` is a location and the name at that location is one of several
+  // possible names. A pointer into a document cannot be answered with a name,
+  // because nothing guarantees the name is unique; a location can. The analyzer was
+  // right and the oracle was under-specified.
   for (const r of refs) {
     if (!r.refPath.startsWith("#/")) continue
-    const pointer = r.refPath.slice(2)
-    const target = pathToName.get(pointer)
-    if (target !== undefined) edges.push({ label: "references", from: r.from, target })
+    // A JSON Pointer is RELATIVE TO THE DOCUMENT ROOT, so `#/components/schemas/X`
+    // names `<module>.components.schemas.X`. The lookup used the raw pointer
+    // (`components/schemas/X`) against a path index keyed from the module name, so it
+    // never matched and 7,653 kubernetes OpenAPI `$ref`s — the single largest class in
+    // the corpus — were skipped by the oracle and read as fabrications. A pointer is
+    // not a path in the document; it is a path FROM the document.
+    const pointerPath = `${scriptName}.${r.refPath.slice(2).replaceAll("/", ".")}`
+    if (!pathToName.has(pointerPath)) continue // no declaration at that location
+    edges.push({ label: "references", from: r.from, target: pointerPath })
   }
+
+  // An OpenAPI/Swagger `paths` entry: a key beginning with `/` whose object holds at
+  // least one HTTP method. The endpoints are USED by the `paths` object, and the
+  // method names are the evidence — the rule is structural, taken from the OpenAPI
+  // document shape rather than from the analyzer's `isApiEndpoint`.
+  for (const e of endpoints) edges.push({ label: "uses", from: e.from, target: e.target })
 
   // The manifest's dependencies are `uses`, sourced by the file's own module.
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
