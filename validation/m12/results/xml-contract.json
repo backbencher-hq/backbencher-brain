@@ -380,7 +380,17 @@
     {
       "name": "every reference edge declares HOW it resolves, and an external one names the file",
       "passed": true,
-      "detail": "8 reference edge(s), 2 external"
+      "detail": "10 reference edge(s), 2 external"
+    },
+    {
+      "name": "a reference through a spec-bound implicit prefix resolves to its namespace",
+      "passed": true,
+      "detail": "2 implicit-prefix reference(s), all resolved"
+    },
+    {
+      "name": "the fixture set exercises the implicit-prefix rule",
+      "passed": true,
+      "detail": "2 reference(s) through a spec-bound prefix"
     },
     {
       "name": "the fixture set exercises the external resolvability class",
@@ -394,7 +404,7 @@
     }
   ],
   "passed": true,
-  "count": 95,
-  "passedCount": 95,
+  "count": 97,
+  "passedCount": 97,
   "failed": []
 }
