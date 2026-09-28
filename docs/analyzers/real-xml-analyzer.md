@@ -252,7 +252,11 @@ the one shown above to be wrong.
 
 - Manifest: `fixtures/xml/repositories/MANIFEST.json` — six repositories at pinned
   revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
-  `*.xsl`, `*.xslt`, `*.rng`, `*.wsdl`), deterministic lexicographic order
+  `*.xsl`, `*.xslt`, `*.svg`, `*.rng`), deterministic lexicographic order.
+  grails-core's 314 are 146 xml + 9 xsd + 4 dtd + 155 svg, so a lane that measured
+  only `*.xml`/`*.xsd` was measuring 49% of the corpus it claimed. `*.wsdl` is
+  NOT in the set: the engine does not claim it, and 805 such files are recorded
+  as unrouted under the M60 #913 ruling to refuse rather than claim
 - Pinned: grails-core `334007a`, docx4j `0e8e763`, libxml2 `c43dc98`, maven
   `d296cc33`, cxf `e43776be`, libxslt `ec95343`
 - Error acceptance, grails 314 files: **0 unexpected error files, 0 crashes**,

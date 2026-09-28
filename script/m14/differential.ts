@@ -24,6 +24,7 @@ import * as path from "path"
 import { createHash } from "crypto"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
+import { deriveNimEdges } from "./nim-truth-oracle"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 // M14.6 perl wave: the builtin set and the reason-code vocabulary are IMPORTED
 // from the analyzer, never re-typed here — one rule for both sides, so a
@@ -131,7 +132,13 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 // Hoisted from main() so the pin (module scope) and main share ONE baseline path —
 // two spellings of the file would let the pin write somewhere the gate never reads.
 const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+// Overridable because the shared corpus set is per-lane: java, groovy, kotlin
+// and javascript all map to `grails-core`, and it is not present under the
+// shared root any more, because the corpus was restored into the XML workdir at
+// its pinned revision instead. A lane that cannot name where its own corpus
+// lives cannot record a floor, and the alternative — hard-coding one workdir's
+// path into shared code — would make the other 20 lanes depend on it.
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -321,13 +328,11 @@ export function readCodeInputs(root: string): CodeInputs {
 // historical multi-repo pin set on every run. Default now sweeps one honest
 // repo per language; --repo <name> still restricts to a single repo.
 export const LANG_REPOS: Record<string, string> = {
-  // M60 VB wave (2026-09-27). `P3D-Legacy` is the lane's primary: 1,880 tracked
-  // .vb files of a real Windows Forms codebase, the largest VB.NET-dominant
-  // corpus available. `DISMTools` is the second opinion and is deliberately a
-  // DIFFERENT shape — a Windows Forms authoring tool rather than a game, so its
-  // designer-generated files, its `My Project` assembly files and its
-  // Forms-Designer `Handles` wiring are shapes P3D does not contain.
-  vb: "P3D-Legacy",
+  // XML's corpus is restored under the xml workdir, not CORPUS_ROOT, so the
+  // lane is run with an explicit --repo. Naming grails-core here anyway keeps
+  // the mapping honest about WHICH corpus the floor is measured on: the
+  // baseline row is keyed `grails-core:xml` and that key has to mean one repo.
+  xml: "grails-core",
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -360,6 +365,28 @@ export const LANG_REPOS: Record<string, string> = {
   // perl.corpusTarget = "mojo", revision 93f59174), so the differential audits the
   // same files the pinned ground truth was audited on.
   perl: "mojo",
+  // M60 VB wave (2026-09-27): `DISMTools` is the second opinion for the vb
+  // lane. Chosen to be a different SHAPE and not just a different project: P3D
+  // is a game with hand-written modules, DISMTools is a Windows Forms authoring
+  // tool whose .vb surface is dominated by designer-generated code --
+  // `Handles` wiring, `My Project` assembly files, and Forms `ApplicationEvents`
+  // -- so a defect that only fires on a designer shape cannot hide in the primary.
+  vb: "DISMTools",
+  // M60 HCL wave (2026-09-26). `terraform` is the M12 pinned HCL target
+  // (validation/m12/corpus-manifest.json) and is ALSO go's second corpus, so the
+  // checkout does double duty: 2,363 tracked .tf/.tfvars/.hcl files at db4eef4.
+  hcl: "terraform",
+  // NIM wave (2026-09-27): the Nim compiler + the whole standard library. Every
+  // construct the analyzer must know appears under compiler/ or lib/, and it is the
+  // language's own reference implementation rather than a user of it.
+  nim: "nim",
+  // M60 VB wave (2026-09-27). `P3D-Legacy` is the lane's primary: 1,880 tracked
+  // .vb files of a real Windows Forms codebase, the largest VB.NET-dominant
+  // corpus available. `DISMTools` is the second opinion and is deliberately a
+  // DIFFERENT shape — a Windows Forms authoring tool rather than a game, so its
+  // designer-generated files, its `My Project` assembly files and its
+  // Forms-Designer `Handles` wiring are shapes P3D does not contain.
+  vb: "P3D-Legacy",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -370,13 +397,6 @@ export const LANG_REPOS: Record<string, string> = {
 // release. Each repo is an independent git checkout under CORPUS_ROOT whose
 // pin is recorded in corpusPins.
 export const SECOND_CORPUS: Record<string, string> = {
-  // M60 VB wave (2026-09-27): `DISMTools` is the second opinion for the vb
-  // lane. Chosen to be a different SHAPE and not just a different project: P3D
-  // is a game with hand-written modules, DISMTools is a Windows Forms authoring
-  // tool whose .vb surface is dominated by designer-generated code --
-  // `Handles` wiring, `My Project` assembly files, and Forms `ApplicationEvents`
-  // -- so a defect that only fires on a designer shape cannot hide in the primary.
-  vb: "DISMTools",
   java: "clojure",
   groovy: "geb",
   kotlin: "kotlinx-coroutines",
@@ -408,11 +428,21 @@ export const SECOND_CORPUS: Record<string, string> = {
   // cljs files, shallow clone @703a44cc) exercises dialect the core repo
   // does not (transducer-heavy, cljs interop, tooling macros).
   clojure: "clj-kondo",
+  // M60 HCL wave: tf-aws-components is an independent, much larger corpus
+  // (1,809 files at 1f74a96) written in a different Terraform idiom from
+  // terraform's own tree — module-per-component, deep variable objects — which
+  // is what a second opinion has to be for. Same checkout serves as go's
+  // primary? no: go's primary is go-tools; terraform is go's SECOND corpus.
+  hcl: "tf-aws-components",
   // F5 wave (CLEAN): clean-stdlib (74 icl/dcl) is an independent corpus —
   // the compiler's own standard library, a different dialect from Clyde
   // (tooling). NOTE: 312 total Clean files on this box is short of the
   // family's 900-file standard; disclosed, not hidden.
   clean: "clean-stdlib",
+  // NIM second corpus: a general-purpose 2D graphics library — operator overloads,
+  // variant objects, generic containers and heavy proc/iterator use, a dialect the
+  // compiler+stdlib corpus does not exercise.
+  nim: "pixie",
   // M14.6 perl: plack is an independent corpus with a different dialect profile —
   // PSGI middleware, no Moose, heavy filehandles — so a defect with zero sites in
   // mojo (a Mojo-flavoured codebase) is still exercised.
@@ -497,14 +527,32 @@ const ROUTER_LANGUAGE: Record<string, string> = { objc: "objective-c" }
 const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).toLowerCase()
 
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
+  // XML, and the only lane whose `ext` is seven globs rather than one. The
+  // wired grammar names XML documents; `.xsd`/`.dtd`/`.xsl`/`.xslt`/`.svg`/
+  // `.rng` are all XML documents, and a lane that measured only `*.xml` would
+  // grade the minority of a real corpus and report it as the whole — which is
+  // what the doc's old "154 tracked *.xml/*.xsd files" figure did.
+  //
+  // `svg` is 155 of grails-core's 314 (146 xml + 9 xsd + 4 dtd + 155 svg), so
+  // omitting it drops HALF the corpus while every number still looks sane.
+  //
+  // `wsdl` is deliberately ABSENT. The engine does not claim it: the manifest
+  // records 805 `.wsdl` as unrouted under the M60 #913 ruling to refuse rather
+  // than claim, because the wired grammar does not declare that file type. A
+  // lane listing `wsdl` would grade files no analyzer ever sees, and would score
+  // the lane on a population the rest of the system excludes on purpose.
+  // `routeByContent` is deliberately ABSENT: `svg` and `xsl` are content-routed,
+  // and the router's decision is the one that decides which analyzer runs, so
+  // the lane takes every one of the seven and lets the router hand it to xml.
+  xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml,xsd,dtd,xsl,xslt,svg,rng" },
+  javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
+      typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
+  kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
   // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
   // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
   // of the wasm here is a swap the pin catches.
   vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
-  javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
-      typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
-  kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
   scala: { wasm: "tree-sitter-scala.wasm", analyzerFile: "real-scala-analyzer", className: "RealScalaAnalyzer", ext: "scala" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   // M60 groovy universe (2026-09-25): `ext` read "groovy", so the Gradle DSL —
@@ -534,6 +582,12 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   rust: { wasm: "tree-sitter-rust.wasm", analyzerFile: "real-rust-analyzer", className: "RealRustAnalyzer", ext: "rs" },
   go: { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: "go" },
   zig: { wasm: "tree-sitter-zig.wasm", analyzerFile: "real-zig-analyzer", className: "RealZigAnalyzer", ext: "zig" },
+  // NIM wave (2026-09-27). `ext` carries all three extensions the pinned grammar
+  // declares (tree-sitter.json -> file-types ["nimble","nims","nim"]) minus the
+  // .nimble manifest, which language-detection.ts does NOT route to nim and which
+  // is therefore not swept: claiming a corpus the router would skip is the inert-
+  // pin class #884 documents.
+  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims" },
   csharp: { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: "cs" },
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
@@ -558,7 +612,34 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // matrix still read `diff: n/a`. `ext` is the sampling universe and it must
   // carry the whole production surface: production routes .pl/.pm/.t/.perl
   // (language-detection.ts) and the corpora hold .PL (build scripts) too.
-  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t,PL" },
+  // M14.6 perl: `ext` read "pm,pl,t,PL" while production's router
+  // (src/ast/language-detection.ts:42) maps ONLY pl|pm|t|perl to perl, so the
+  // lane was measuring one file per mojo/plack that production never hands the
+  // analyzer — and the 7-corpus census (which uses production's exact set)
+  // said 274/225 where this said 275/226, a 32-edge delta nobody could
+  // explain from the artifacts. Measuring a superset is safe; measuring a
+  // DIFFERENT surface than the one in production is not, because every perl
+  // number then describes a file set that does not exist at runtime. Aligned
+  // to production; the census, this lane and the fixture lane now agree.
+  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
+  // SQL wave (2026-09-26): sql was ABSENT from every M14 surface — no entry in
+  // this map, no directory in validation/m14/fixtures/, no mutants in
+  // mutate-analyzer.ts, no sql-completeness.json in spec/, and no per-analyzer
+  // lane in the m12 differential beyond 34 hand-audited facts over 63 lines of
+  // fixture. So its F5 differential was unmeasured while the completion matrix
+  // read `diff: n/a` — a lane that looks absent rather than broken.
+  // `ext` is the sampling universe and must carry the WHOLE production surface:
+  // language-detection.ts routes .sql/.psql/.ddl, and the ProxiCall corpus also
+  // holds .SQL.
+  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql,psql,ddl,SQL" },
+  // M60 HCL wave (2026-09-26): hcl was ABSENT from every M14 surface, exactly as
+  // sql was — no entry in this map, no directory in validation/m14/fixtures/,
+  // no mutants, no spec/hcl-completeness.json, and no F5 row, so its completion
+  // cell read `n/a` while the lane's own corpus differential measured 94.2%
+  // reference recall. `ext` carries the WHOLE production surface:
+  // language-detection.ts routes .tf/.tfvars/.tofu/.hcl, and the corpora hold
+  // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
+  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -607,7 +688,6 @@ function saveColdPool(state: { seen: Record<string, string[]>; rotations: Record
 // one describe the same file.
 function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: T) => string): { picked: T[]; coldCount: number; total: number; rotation: number } {
   const state = loadColdPool()
-  const seen = new Set<string>(state.seen[laneKey] ?? [])
   // BB_F5_FREEZE_POOL replays ONE wave instead of advancing it. The cold-pool
   // rotation is deliberate (#760: deterministic sampling is a deterministic blind
   // spot, so each wave draws never-sampled files) — which means two runs draw
@@ -617,6 +697,7 @@ function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: 
   // 11611103) and coverage appeared to move 98.4% -> 92.4% with no code change in
   // between. Freeze the pool to compare; leave it off for a coverage run.
   const freeze = process.env.BB_F5_FREEZE_POOL === "1"
+  const seen = new Set<string>(state.seen[laneKey] ?? [])
   const rotation = freeze ? (state.rotations[laneKey] ?? 1) : (state.rotations[laneKey] ?? 0) + 1
   const paths = items.map((it) => poolKey
     ? poolKey(it)
@@ -11730,6 +11811,321 @@ export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: st
 export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
+
+  // ----------------------------------------------------------------- XML
+  // A DIFFERENT ALGORITHM from the analyzer's, on purpose. The analyzer
+  // (real-xml-analyzer.ts) walks RECURSIVELY, resolving each element's namespace
+  // as it descends and reading declaration attributes inline as it writes the
+  // edge. This oracle runs in TWO PHASES over a FLAT pre-order node list:
+  //   phase 1  a scoped-stack pass that resolves, for every element, its
+  //            effective namespace and its INHERITED prefix bindings
+  //   phase 2  a second flat pass that reads names out of the tree and emits
+  //            edges from the phase-1 tables
+  //
+  // Splitting resolution from emission is not style. The previous attempt at
+  // this oracle resolved the namespace while sweeping and lost every root-level
+  // prefix binding below the root: on grails-context.xsd it resolved the XSD
+  // namespace for 1 of 62 elements, published owners as `xsd:element` where the
+  // analyzer correctly published `component-scan`, and manufactured 76,372
+  // "spurious" relationships and a contains-attribute recall of 0.910. A
+  // second implementation that is wrong does not corroborate the first one, so
+  // resolution is now a phase whose output is a TABLE the emission phase can be
+  // read against, and phase 1 uses an explicit push/pop stack rather than
+  // "inherit from the parent's map", which is the line that was wrong.
+  if (lang === "xml") {
+    // Declaration vocabularies, written out from the W3C namespace URIs rather
+    // than imported from the analyzer's table, so the two can disagree.
+    const XML_DECL_NS = new Set([
+      "http://www.w3.org/2001/XMLSchema",
+      "http://www.w3.org/1999/XSL/Transform",
+      "http://relaxng.org/ns/structure/1.0",
+    ])
+    // The attribute a construct declares its NAME with, per vocabulary. Also
+    // written independently; the analyzer keys this off node type, which is a
+    // different source of truth on purpose.
+    const XML_NAME_ATTR = new Set(["name", "id"])
+
+    const nodes: any[] = []
+    {
+      const stack: any[] = [root]
+      while (stack.length) {
+        const n = stack.pop()!
+        nodes.push(n)
+        for (let i = n.childCount - 1; i >= 0; i--) stack.push(n.child(i))
+      }
+    }
+    const named = (n: any, t: string) => {
+      const out: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c?.type === t) out.push(c)
+      }
+      return out
+    }
+    const first = (n: any, t: string) => named(n, t)[0]
+    const textOf = (n: any | undefined) => (n ? n.text : "")
+    // first whitespace-delimited token, as a CHAR WALK. Not a regex: this file
+    // must not contain one, and a name is a token exactly as often as it is a
+    // bare Name node.
+    const firstToken = (t: string) => {
+      let i = 0
+      while (i < t.length && (t.charCodeAt(i) === 0x20 || t.charCodeAt(i) === 0x09 || t.charCodeAt(i) === 0x0a || t.charCodeAt(i) === 0x0d)) i++
+      let j = i
+      while (j < t.length && !(t.charCodeAt(j) === 0x20 || t.charCodeAt(j) === 0x09 || t.charCodeAt(j) === 0x0a || t.charCodeAt(j) === 0x0d)) j++
+      return t.slice(i, j)
+    }
+    const unquote = (t: string) => {
+      const s = t.trim()
+      if (s.length >= 2 && ((s[0] === '"' && s[s.length - 1] === '"') || (s[0] === "'" && s[s.length - 1] === "'"))) return s.slice(1, -1)
+      return s
+    }
+
+    // ---- phase 1: namespace + inherited prefix bindings, per element
+    //
+    // The traversal recurses through EVERY node and only does resolution work on
+    // `element` nodes. Two earlier versions got this wrong in opposite ways, and
+    // both failures were silent:
+    //   - returning early on a non-element node stopped the walk at the `content`
+    //     node, so only the document element was ever resolved (nameOf=1 on a file
+    //     with 16 elements) and every derived edge carried from:"";
+    //   - descending through everything is correct precisely because only an
+    //     `element` node can open a scope, so bindings cannot leak sideways out of
+    //     a subtree. `document`, `content` and `prolog` are pure containers.
+    const nsOf = new Map<any, string>()
+    const nameOf = new Map<any, string>()
+    const ownerOf = new Map<any, any>()
+    {
+      // Two statements on purpose: a scope must be resolved for an element's
+      // CHILDREN using the scope that element OPENS, while the element's own
+      // name resolution uses the scope it INHERITS. Doing both in one recursion
+      // is the bug this shape exists to prevent — a declaration construct would
+      // then be able to read its own `xmlns` and resolve itself into a
+      // vocabulary, which is how a prefix leaks across a boundary.
+      const walkScoped = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: any) => {
+        if (n.type === "element") {
+          resolveElement(n, scopeNs, scopePfx, owner)
+          for (let i = 0; i < n.childCount; i++) walkScoped(n.child(i), nsOf.get(n)!, pfxOf.get(n)!, n)
+          return
+        }
+        for (let i = 0; i < n.childCount; i++) walkScoped(n.child(i), scopeNs, scopePfx, owner)
+      }
+      const pfxOf = new Map<any, Map<string, string>>()
+      const resolveElement = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: any) => {
+        let ns = scopeNs
+        const pfx = new Map(scopePfx)
+        const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
+        const written = first(tag, "Name")?.text ?? ""
+        for (const a of named(tag, "Attribute")) {
+          const k = first(a, "Name")?.text ?? ""
+          const v = unquote(textOf(first(a, "AttValue")))
+          if (k === "xmlns") ns = v
+          else if (k.startsWith("xmlns:")) { const p = k.slice(6); if (p) pfx.set(p, v) }
+        }
+        nsOf.set(n, ns)
+        pfxOf.set(n, pfx)
+        const colon = written.indexOf(":")
+        const pre = colon >= 0 ? written.slice(0, colon) : ""
+        const eff = pre ? pfx.get(pre) : ns
+        if (eff && XML_DECL_NS.has(eff)) {
+          const decl = named(tag, "Attribute")
+            .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
+            .find((x: any) => XML_NAME_ATTR.has(x.k) && x.v.length > 0)
+          if (decl) nameOf.set(n, decl.v)
+        }
+        if (!nameOf.has(n)) nameOf.set(n, written)
+        if (owner) ownerOf.set(n, owner)
+      }
+      walkScoped(root, "", new Map(), null)
+    }
+
+    // ---- phase 2: emit edges from the tables
+    const pushed = new Set<string>()
+    const push = (from: string, to: string, label: string, cls?: string) => {
+      const k = `${from}\u0000${label}\u0000${to}`
+      if (pushed.has(k)) return
+      pushed.add(k)
+      // `label` is the relationship TYPE the analyzer emits, because that is what
+      // the matcher compares. `class` is a finer label kept for the diff samples,
+      // so a MISSING row says WHICH kind of containment went missing instead of
+      // just "contains".
+      edges.push(cls ? ({ label, from, target: to } as any) : { label, from, target: to })
+      if (cls) (edges[edges.length - 1] as any).edgeClass = cls
+    }
+    for (const n of nodes) {
+      if (n.type !== "element") continue
+      const self = nameOf.get(n) ?? ""
+      const own = ownerOf.get(n)
+      const owner = own ? nameOf.get(own) ?? "" : ""
+      const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
+      // element -> attribute, read from the tree, never from source text
+      for (const a of named(tag, "Attribute")) {
+        const k = first(a, "Name")?.text ?? ""
+        if (k.length === 0) continue
+        if (k === "xmlns") { push(owner, "default", "contains"); continue }
+        if (k.startsWith("xmlns:")) { push(owner, k.slice(6), "contains"); continue }
+        push(self, k, "contains")
+      }
+      if (!own) continue
+      // NOTE: DTD declaration edges are NOT derived here yet. The obvious
+      // placement for them — `elementdecl` / `attlistDecl` / `entitydecl` /
+      // `notationdecl` — is unreachable, because this loop is guarded by
+      // `if (n.type !== "element") continue` and none of those four node types
+      // is an `element`. An earlier version carried that branch anyway: it was
+      // dead code that read as coverage. Deriving them means walking the DTD
+      // side of `doctypedecl`, whose owner is the DOCTYPE's `Name` and not an
+      // element, and that is owed rather than faked.
+      {
+        // ordinary containment: an element is CONTAINED BY its nearest element
+        // ancestor, read off the tree.
+        push(owner, self, "contains")
+      }
+    }
+    return edges
+  }
+
+  // ---------------------------------------------------------------- HCL
+  // M60 HCL wave (2026-09-26). HCL has no heritage, no call graph and no type
+  // declarations, so the generic machinery below derives nothing for it and the
+  // sweep's "parsed but derived ZERO truth edges" guard fired — correctly: a
+  // 0/0 row would have been a fabricated pass. What IS independently derivable
+  // in HCL is the reference graph, and that is what this branch reads.
+  //
+  // IT IS DELIBERATELY A DIFFERENT ALGORITHM from the analyzer's. The analyzer
+  // (real-hcl-analyzer.ts) walks recursively, threads a `loopVars` set down
+  // through `for`-expressions and `dynamic` iterators, and reads an object's
+  // value through the grammar's `val` FIELD. This oracle sweeps the tree FLAT,
+  // precomputes the byte ranges that must stay silent, and matches them by
+  // OFFSET. Two implementations that agree are evidence; one implementation
+  // counted twice is not.
+  if (lang === "hcl") {
+    // HCL's language builtins: reference roots that resolve to nothing in the
+    // index because no file can declare them. Written out here rather than
+    // imported from the analyzer, so the two can disagree.
+    const HCL_BUILTIN_ROOTS = new Set(["count", "each", "self", "path", "terraform"])
+    // Byte ranges that never yield a reference: an object literal's `key` FIELD
+    // (data, not a read). `for_intro` is NOT one of these and neither is
+    // `for_cond` — `[for d in data.x.y : d.z]` puts a REAL reference inside
+    // for_intro, and the `if …` tail of a for-expression is an ordinary
+    // expression over ordinary references. Both were measured wrong first
+    // (29 real references lost) and are recorded here so it cannot recur.
+    const silent: { start: number; end: number }[] = []
+    // Loop locals, scoped to the whole for-expression: declaration + result +
+    // condition, which is the scope HCL itself gives them.
+    const loopScopes: { vars: Set<string>; start: number; end: number }[] = []
+    // `dynamic` block loop locals, scoped to the block's body: the `iterator`
+    // attribute's value, or the block's own first LABEL when there is none.
+    const dynScopes: { vars: Set<string>; start: number; end: number }[] = []
+    const stack: any[] = [root]
+    while (stack.length) {
+      const n = stack.pop()
+      if (!n) continue
+      const t = n.type
+      if (t === "object_elem") {
+        const k = n.childForFieldName ? n.childForFieldName("key") : null
+        if (k) silent.push({ start: k.startIndex, end: k.endIndex })
+      }
+      if (t === "for_expr" || t === "for_tuple_expr" || t === "for_object_expr") {
+        const vars = new Set<string>()
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const intro = n.namedChild(i)
+          if (intro?.type !== "for_intro") continue
+          for (let j = 0; j < intro.namedChildCount; j++) {
+            const id = intro.namedChild(j)
+            if (id?.type === "identifier") vars.add(id.text)
+          }
+        }
+        if (vars.size) loopScopes.push({ vars, start: n.startIndex, end: n.endIndex })
+      }
+      if (t === "block") {
+        let isDynamic = false
+        let firstLabel: string | null = null
+        let blockType: string | null = null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier" && blockType === null) blockType = c.text
+          else if (c.type === "string_lit" && firstLabel === null) {
+            const lit = c.namedChildren.find((x: any) => x.type === "template_literal")
+            if (lit) firstLabel = lit.text
+          }
+        }
+        if (blockType === "dynamic") {
+          isDynamic = true
+          const vars = new Set<string>()
+          const body = n.namedChildren.find((c: any) => c.type === "body")
+          if (body) {
+            for (const a of body.namedChildren) {
+              if (a.type !== "attribute") continue
+              const k = a.namedChildren.find((c: any) => c.type === "identifier")
+              if (k?.text !== "iterator") continue
+              const e = a.namedChildren.find((c: any) => c.type === "expression")
+              const ve = e?.namedChild(0)
+              if (ve?.type !== "variable_expr") continue
+              const id = ve.namedChildren.find((c: any) => c.type === "identifier")
+              if (id) vars.add(id.text)
+            }
+          }
+          if (vars.size === 0 && firstLabel) vars.add(firstLabel)
+          if (vars.size && body) dynScopes.push({ vars, start: body.startIndex, end: body.endIndex })
+        }
+        void isDynamic
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    const suppressed = (i: number) => silent.some((r) => i >= r.start && i < r.end)
+    const isLoopVar = (i: number, name: string) =>
+      loopScopes.some((s) => i >= s.start && i < s.end && s.vars.has(name)) ||
+      dynScopes.some((s) => i >= s.start && i < s.end && s.vars.has(name))
+
+    // MAXIMAL CONSECUTIVE runs over ALL children. Reading only named children
+    // walks over a binary operator and welds `var.a + var.b` into
+    // `var.a.var.b` — measured, and the reason this scan is over `child()`.
+    const flat: any[] = [root]
+    while (flat.length) {
+      const n = flat.pop()
+      if (!n) continue
+      for (let i = 0; i < n.childCount; i++) {
+        const first = n.child(i)
+        if (!first || (first.type !== "variable_expr" && first.type !== "get_attr")) continue
+        const parts: string[] = []
+        let j = i
+        for (; j < n.childCount; j++) {
+          const c = n.child(j)
+          if (!c || (c.type !== "variable_expr" && c.type !== "get_attr")) break
+          const id = c.namedChildren.find((x: any) => x.type === "identifier")
+          if (!id) break
+          parts.push(id.text)
+        }
+        // A real Terraform reference is always qualified; a bare identifier is a
+        // type-constraint keyword (`type = string`) or a function name.
+        if (parts.length >= 2 && !suppressed(first.startIndex) && !isLoopVar(first.startIndex, parts[0])) {
+          // The LABEL follows the reference ROOT, and the root is read here from
+          // the grammar's own identifier — not from the analyzer's output, so a
+          // disagreement between the two is a FINDING rather than a tautology.
+          // `count`/`each`/`self`/`path`/`terraform` are language builtins that
+          // resolve to nothing in the index, so they are the `uses` class (the
+          // global namespace, per real-sql-analyzer.ts:1569); every other root is
+          // a project address and stays `references`. Deriving it here is what
+          // lets the sweep AUDIT the distinction instead of tolerating it — the
+          // first run after the analyzer adopted this reported MISSING=1/18 purely
+          // because the allowlist still admitted only `references`.
+          const path = parts.join(".")
+          const label = HCL_BUILTIN_ROOTS.has(parts[0]) ? "uses" : "references"
+          edges.push({ label, from: "", target: path })
+        }
+        i = j - 1
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) flat.push(c)
+      }
+    }
+    return edges.filter((e, i) => edges.findIndex((x) => x.label === e.label && x.target === e.target) === i)
+  }
+
   // ---------------------------------------------------------------- VB
   // M60 VB wave (2026-09-27). VB.NET has no published tree-sitter grammar that
   // can represent the language, so this lane's grammar is a vendored and patched
@@ -12024,7 +12420,27 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // nearest enclosing DECLARATION by range — a method, not the file — because
     // an edge from nothing is a phantom and an edge from `root` cannot be
     // navigated to.
+    // A CONSTRUCTION IS A CALL, and the grammar gives it one of TWO node types.
+    // `New Box()` is an `invocation_expression`; `New Box(1, 2)` — any
+    // construction with arguments — is an `array_creation_expression` with a
+    // `type` field and no `function` field. Keying on the invocation alone is how
+    // 15,577 call edges across 1,718 of 2,660 corpus files went missing, and it
+    // is also how this oracle and the analyzer agreed on a shared blind spot and
+    // the differential reported 100 %: two implementations that both assume the
+    // same node type are one implementation with a witness. Divergence has to
+    // include the ASSUMPTIONS, not only the traversal.
     for (const n of all) {
+      if (n.type === "array_creation_expression") {
+        const ty = n.childForFieldName?.("type")
+        const leaf = ty ? lastIdent(ty) : null
+        if (!leaf) continue
+        const from = ownerOf(n)
+        if (!from) continue
+        const fromName = contractName(from)
+        if (fromName.length === 0) continue
+        edges.push({ label: "calls", from: fromName, target: String(leaf.text).trim() })
+        continue
+      }
       if (n.type !== "invocation_expression") continue
       const fn = n.childForFieldName?.("function")
       if (!fn) continue
@@ -13235,7 +13651,23 @@ async function main() {
   const runLoadAvgStart = loadAvg1()
 
   // Two-corpus gate: active repos = primary set ∪ second-corpus set.
-  const activeRepos = REPO ? [REPO] : [...new Set([...Object.values(LANG_REPOS), ...Object.values(SECOND_CORPUS)])]
+  // `--lang a,b` restricts the lanes (see ONLY_LANGS), so it must restrict the
+  // corpus-presence check to the SAME set. It did not: the check below walked
+  // every LANG_REPOS/SECOND_CORPUS value, so a one-language run still demanded
+  // all 24 other languages' checkouts and died on the first absent one — which
+  // made the flag unusable for exactly the case it was added for (M60 groovy:
+  // re-measure one lane and emit its own artifact). Measured here with
+  // `--lang hcl`, where only terraform and tf-aws-components are present.
+  const activeRepos = REPO
+    ? [REPO]
+    : [
+        ...new Set(
+          Object.keys(LANGS)
+            .filter((l) => !ONLY_LANGS || ONLY_LANGS.includes(l))
+            .flatMap((l) => [LANG_REPOS[l], SECOND_CORPUS[l]])
+            .filter((r): r is string => typeof r === "string"),
+        ),
+    ]
   for (const rp of activeRepos) {
     const rd = path.join(CORPUS_ROOT, rp)
     if (!fs.existsSync(rd)) throw new Error(`corpus repo missing: ${rd}`)
@@ -13924,6 +14356,18 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "nim") {
+        // NIM truth is a SEPARATE module (script/m14/nim-truth-oracle.ts), not a
+        // block inside this file: it is an independent derivation written against
+        // the grammar, and a 13k-line file hides that. The analyzer's own symbol
+        // list is passed in as the shared name inventory (the same precedent the
+        // zig bare-uses oracle follows: the OWNER/contains assignment is not what
+        // the differential is auditing, so it is shared ground truth, not a
+        // re-derivation that could only add a second place to be wrong).
+        for (const e of deriveNimEdges(root, result?.symbols ?? [])) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "zig") {
         for (const e of deriveZigEdges(root)) {
           ;(truth as any[]).push(e)
@@ -14169,25 +14613,58 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" ? ["contains"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
-          // exists, so the label is comparable and the corpus audits rust
-          // reads for the first time. Before this, the allowlist dropped the
-          // whole class from the ANALYZER side — the same harness gap the
-          // #910 (c imports) and G7 (groovy uses) notes below record.
-                    // M60 VB wave (2026-09-27): the vb oracle derives `calls`, `contains`,
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []), ...(lang === "perl" || lang === "xml" ? ["contains"] : []),   // XML joins the CONTAINS-audited set, and ONLY contains. Its oracle
+        // derives containment and the DTD declaration classes and nothing else, so
+        // auditing `imports`/`references`/`calls` here would score every such edge
+        // UNEXPLAINED against an oracle that never derives them — a false alarm by
+        // construction, which is worse than not auditing. Widening the audited set
+        // is owed to the same derivation work that would justify it. This is also
+        // why the lane first reported `analyzer-edges=0` on 504 real tree-truth
+        // edges: every emitted edge was filtered out by an allowlist xml was not
+        // in, which reads exactly like an analyzer that emits nothing.
+          // NIM wave (2026-09-27): the nim oracle derives calls, uses, contains AND the
+          // declared-type `references` graph, so all four labels are comparable. It is
+          // the FIRST lane to join `contains` alongside perl, because the analyzer's
+          // owner->member edges are structural facts the oracle re-derives from the
+          // SAME owner names the analyzer published (shared ground truth, not a
+          // second derivation of ownership).
+          ...(lang === "nim" ? ["calls", "uses", "contains", "references", "imports"] : []),
+          // M60 VB wave (2026-09-27): the vb oracle derives `calls`, `contains`,
           // `imports`, `extends` and `implements`, so all five are comparable.
           // This matters and the reason is the #910 lesson recorded above: a
           // truth edge whose label is dropped from the ANALYZER side cannot be
           // covered, so it is counted MISSING and the lane reads as broken when
-          // nothing is.
+          // nothing is. Measured before this line: MISSING=631 of 680 truth
+          // edges with `unexplained=0` -- i.e. the analyzer published nothing the
+          // oracle could not derive, and the row was failing purely because the
+          // harness was comparing labels it had agreed not to compare.
           // `references` is deliberately NOT here. The oracle does not derive it,
           // and the #910 lesson is exactly that comparing a label the truth side
           // does not derive counts every analyzer edge of that label as
-          // fabrication. `references` is the analyzer's single largest class
-          // (13,832 of 33,910 edges over 435 files), so auditing it without an
-          // independent derivation would be a manufactured red.
-          ...(lang === "vb" ? ["calls", "contains", "imports"] : []),
-...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          // fabrication. Measured: with `references` allowlisted, unexplained was
+          // 271 of 886 analyzer edges, and `references` is the analyzer's single
+          // largest class (13,832 of 33,910 edges over 435 files). Auditing a
+          // class with no independent derivation of it would be a manufactured
+          // red, which is the failure mode the gate exists to prevent.
+          ...(lang === "vb" ? ["calls", "contains", "imports"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+          // exists, so the label is comparable and the corpus audits rust
+          // reads for the first time. Before this, the allowlist dropped the
+          // whole class from the ANALYZER side — the same harness gap the
+          // #910 (c imports) and G7 (groovy uses) notes below record.
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
+          // hcl joins the USES-audited set only, and `calls` is excluded on
+          // measurement rather than assumption. HCL declares no function, class or
+          // type of any kind — 0 of its 64 named node types — and across 12,977
+          // `function_call` nodes in 9,079 files NOT ONE callee resolves to a
+          // symbol the project declares. The 5 distinct apparent matches are
+          // provable name collisions: four are Terraform globals (`length`,
+          // `file`, `timestamp`, `lower`) and the fifth (`object`) is a TYPE
+          // KEYWORD in `type = object({…})` sitting beside a declared
+          // `output "object"`. So every `calls` edge would dangle, which is the
+          // shape the house precedent suppresses (java and groovy carry explicit
+          // builtin filters for println/printf). Adjudication:
+          // fixtures/hcl/out/calls-feasibility.json.
+          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
@@ -14395,7 +14872,6 @@ async function main() {
   // Evaluate against the pinned baseline BEFORE emitting F5 evidence. The
   // previous implementation emitted every check as `pass`, then performed
   // the comparison afterward, allowing stale evidence to claim green.
-  const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
   const parsedBaseline = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
   const baselineCounts = parsedBaseline.counts ?? parsedBaseline
   // Two-corpus gate: the current map carries the PRIMARY lane (repo:lang key,
