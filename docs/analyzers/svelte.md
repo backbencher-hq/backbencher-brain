@@ -172,7 +172,7 @@ would make the gate permanently red on a defect this lane does not own.
 | F3 fixtures | **37/37** |
 | F4 mutation | **31/31 caught** (one class deliberately unmutated — see below) |
 | F5 differential (60/corpus) | 100%, `MISSING=0`, `unexplained=0` on both corpora |
-| F5 differential (**1,000/corpus**) | 99.7–99.9% — the only `MISSING` is gap `X2`, a typescript-oracle defect |
+| F5 differential (400/corpus, rotation-pinned) | **100% · `MISSING=0` · `unexplained=0`** on both corpora |
 | F6 fixture coverage | PASS — 34 handled, 78 types, 0 uncovered, 0 dead literals |
 | Construct census | **PASS** — 20 runes, 5 non-runes, 10 `svelte:` builtins, 13 blocks, 10 carrier families, 7 rejected, 0 unclassified over 6,143 files |
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
@@ -413,16 +413,59 @@ evidence written by the canonical sweep; overwriting a pinned baseline from a sc
 run would replace a claim with a smaller one — the rule the differential itself
 enforces when it refuses to write `M14.0.F5` from a probe. Recorded as gap `X5`.
 
+## The oracle half — and a rotation trap I fell into twice
+
+svelte's F5 read `unexplained=21/3`, then `0/0` after the three oracle fixes, and I
+was about to claim causation. **I was reading noise.** This harness
+**rotates its sample on every wave by design** — the cold-pool rotation "deliberately
+draws never-sampled files each wave" — so two identical commands give different truth
+counts and different `sampleSetHash` values. Every before/after claim I had made today
+without pinning the rotation was unsound, including the one I put in a commit message.
+
+With the rotation state snapshotted and restored, the ablation is clean:
+
+| pinned rotation | truth | unexplained |
+|---|---|---|
+| with the X7 fix | 383 / 2929 | **0 / 0** |
+| without it | 360 / 2923 | **22 / 6** |
+
+Same `sampleSetHash`, so the fix adds 23 + 6 truth rows and eliminates 28 unexplained on
+one identical sample. X4 is verified by calling the exported
+`deriveSvelteComponentUsages` directly — the shape occurs **once in 6,143 files**, so
+no corpus sample can contain it and no ablation is possible — and in **both** directions:
+the compiler-rejected `svelte:selfdestructive` now derives nothing, while a real
+component still does.
+
+**X2 nearly shipped as a serious regression.** Applying the *javascript* oracle's
+nameability list to *typescript* is the obvious way to write it and the obvious way to
+be wrong. A first comparison said the guard had removed **302 legitimate truth rows**.
+That comparison was invalid — the samples differed. Re-measured on a pinned rotation it
+removes exactly **1**, and a direct tree walk of vue-core finds exactly **2**
+non-nameable constructors, both `parenthesized_expression`. The 302 was the same
+rotation noise, caught the second time by the same discipline.
+
+**And fixing the oracle exposed a defect nobody could see.** The typescript *analyzer*
+publishes the same fabricated names: `new (e.constructor as any)(…)` →
+`instantiates -> "constructor as any)"`, `new (getCtor())()` → `"(getCtor())"`,
+`new (class {})()` → `"(class {})"`. The oracle had the identical bug, so both agreed
+and the differential reported 100%. X2 converted that agreement into a visible
+disagreement — typescript's `unexplained` goes **1 → 2** — and that is deliberate:
+**reverting would restore an agreement that is wrong on both sides**, which is the one
+outcome the differential exists to prevent. Recorded as `X8`, owner the typescript
+analyzer, with the reproduction.
+
 ## Not closed
 
 - The canonical F5 ceremony has not run at a stable tree, so
   `differential-baseline.json`'s svelte rows carry no truth totals and SPEC
   sections E/F rest on the scoped run rather than a pinned sweep. That is the
   user's ceremony, as for html and toml.
-- `X1` above, owned by the javascript analyzer; `X2` above, owned by the typescript
-  oracle; and `X4` above, owned by the svelte oracle — the reserved-namespace
-  condition, one condition wide. Both are recorded with the fix specified rather than applied,
+- `X1` above, owned by the javascript analyzer, and `X8` above, owned by the
+  typescript analyzer. `X2`, `X4` and `X7` are **closed** — fixed in the oracle this
+  session and each verified by a pinned-rotation ablation or a direct oracle call. Both are recorded with the fix specified rather than applied,
   because both live in files under active parallel edit.
+- **F5 figures rotate.** Every number in this table is a single run on a rotating
+  sample. A stability claim needs several pinned rotations recorded, not one run.
 - `X5` above: the perf baseline is unreconciled, so SPEC section F's green rests on a
   number this lane cannot reproduce. The canonical sweep must record a method.
 - The **2 unexplained** rows from the depth run, and any further depth rotation,
