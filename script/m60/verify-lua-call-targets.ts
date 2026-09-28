@@ -154,6 +154,36 @@ for (const [n, src, why, want] of [
   }
 }
 
+// M60 LUA-32: the same rule on the `setmetatable` path, which LUA-29's callee
+// whitelist never touched. `setmetatable(self, { __index = super })` published
+// `extends self -> { __index = super }` — a whole table constructor as a
+// relationship TARGET. The one at kong/cmd/utils/log.lua:88 spans five lines, and
+// because pool-worker rejects any target containing a newline the edge never
+// reached the store: through the pipeline the defect was INVISIBLE, the edge
+// merely absent. It surfaced only from the direct-vs-pipeline seam probe.
+{
+  const mt = async (src: string): Promise<string[]> => {
+    const p = join(dir, `mt-${Buffer.from(src).toString("hex").slice(0, 24)}.lua`)
+    writeFileSync(p, src)
+    const r: any = await parseWithAnalyzer(p)
+    return (r.relationships ?? []).filter((x: any) => x.type === "extends").map((x: any) => `${x.source}->${x.target}`)
+    }
+  check(
+    JSON.stringify(await mt('local A = {}\nlocal M = {}\nsetmetatable(A, M)\nreturn A\n')) === JSON.stringify(["A->M"]),
+    "a named metatable still yields extends",
+    "the legitimate setmetatable edge must survive the fix",
+  )
+  for (const [why, src] of [
+    ["an inline metatable table", 'local A = {}\nsetmetatable(A, { __index = M })\nreturn A\n'],
+    ["a metatable built by a call", 'local A = {}\nsetmetatable(A, make_meta())\nreturn A\n'],
+    ["a multi-line metatable table", 'local A = {}\nsetmetatable(A, {\n  __index = M,\n  __call = function(_, ...)\n    return A\n  end,\n})\nreturn A\n'],
+  ] as Array<[string, string]>) {
+    const got = await mt(src)
+    check(got.length === 0, `${why} publishes no extends target`, `got ${JSON.stringify(got)}`)
+    for (const g of got) check(!/\n/.test(g), `no multi-line target from ${why}`, JSON.stringify(g))
+  }
+}
+
 console.log(`verify-lua-call-targets: ${pass} passed, ${fail} failed`)
 for (const f of failures) console.log(`  FAIL ${f}`)
 rmSync(dir, { recursive: true, force: true })
