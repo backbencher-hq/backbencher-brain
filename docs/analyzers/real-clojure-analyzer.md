@@ -162,7 +162,12 @@ a corpus data artifact, disclosed).
   rule for rule. It imports `CLOJURE_CORE_BUILTINS` and `isAnonArgShorthand` **by reference** so
   the core surface cannot drift between the two sides.
 - **F5, four corpora at full extent** (not a 60-file draw), read with
-  `script/m14/tmp/clj-full-f5.ts`:
+  `script/m14/tmp/clj-full-f5.ts` — which imports this repo's own `deriveClojureEdges` and
+  `normTarget` and re-implements the harness's comparison semantics, so the number is the
+  same claim `differential.ts` makes over every file instead of 60. (The cross-check has
+  already earned its place: it is what caught a harness defect — a `//` comment that had
+  deleted the `calls` label for 17 lanes — which read as a 19.8% coverage red for this lane
+  while the analyzer was correct. See `reviews/clojure/deep-review-2026-09-28.md`, CLJ-H1.)
 
   | corpus | files | tree-truth | covered | MISSING | analyzer edges | unexplained |
   |---|---|---|---|---|---|---|
