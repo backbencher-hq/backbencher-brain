@@ -159,11 +159,12 @@ would make the gate permanently red on a defect this lane does not own.
 | Gate | Result |
 |---|---|
 | F1 grammar audit | PASS — 32 refs, 0 unknown, 0 unknown fields |
-| F3 fixtures | **34/34** |
-| F4 mutation | **29/29 caught** |
+| F3 fixtures | **35/35** |
+| F4 mutation | **29/29 caught** (one class deliberately unmutated — see below) |
 | F5 differential (60/corpus) | 100%, `MISSING=0`, `unexplained=0` on both corpora |
 | F5 differential (**1,000/corpus**) | 99.7–99.9% — the only `MISSING` is gap `X2`, a typescript-oracle defect |
 | F6 fixture coverage | PASS — 34 handled, 78 types, 0 uncovered, 0 dead literals |
+| Construct census | **PASS** — 20 runes, 5 non-runes, 0 unclassified over 6,143 files |
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
 | SPEC A–H | **8/8** — 76 types classified, gap list 16 CLOSED + 1 open cross-lane |
 | Regex census | **0** |
@@ -190,6 +191,49 @@ invocation and the D8 template handler — told apart by target rather than by l
 because a dedupe on `(source, target, type)` would otherwise let one of the two be
 lost and the seam would still pass. Negative control: demanding a second rune call
 fails naming it.
+
+## The construct census — the defect a differential cannot see
+
+This lane had **no census**. html and toml each have one that consults neither the
+analyzer nor the oracle, and svelte's 34 fixtures, 29 mutants and F5 were all one
+author's reading of the Svelte spec — so a construct both sides forgot could not
+appear as a disagreement.
+
+**It found one immediately.** The rune filter did not recognise `$state.eager`
+(15 corpus occurrences) or `$effect.pending` (11), so both leaked:
+`$state.eager(0)` published `calls -> eager` and `$effect.pending()` published
+`calls -> pending` — framework plumbing named in the graph as though the component
+called it. The F5 oracle missed the same two runes from the same spec, so the two
+**agreed** and the lane read 100%.
+
+**The fix's effect is visible on the primary gate.** At 1,000 files per corpus the
+svelte corpus's `unexplained` count went **2 → 0**, which is what identifies those
+two rows as exactly this defect. Nothing else changed.
+
+**Fixed as exact names, never leaf segments — and that is load-bearing.** The same
+`$name.member` shape is how ordinary user data is written: `$order.scoops` (6),
+`$value.foo` (6), `$a.foo` (5), `$formData.dob` (5), `$storeDeeper.items` (3), plus
+SvelteKit's `$lib` (3,549) and `$app` (25) — 78 distinct dotted forms in all.
+Adding the bare leaves would suppress `$my.eager` and `$my.pending`. That repair
+was tried as a **negative control on the census and correctly failed**; the census
+asserts in both directions.
+
+The rule that gives the gate teeth: **a form whose base is a declared rune base
+must itself be a declared rune.** A plain "classify everything" would be vacuous
+with a user-data fallback; this is not, and it is what caught the omission.
+
+**Three negative controls, each exiting 1:** un-declaring `$state.eager`; adding
+the bare leaves; declaring a non-rune absent from the corpus. The third control was
+initially written backwards by me — I removed a declaration, but that check fires on
+a *stale* one — and was corrected rather than counted.
+
+**No mutant for this class, deliberately.** A harness transforms output; this defect
+is a missing *suppression*, so reproducing it means adding an edge at a line the
+transform cannot know without reading source. My first attempt removed the edge
+instead and **survived**, because removing a fabricated edge makes a forbidding
+fixture pass more. Deleted rather than shipped — the same call made for toml's
+values-as-symbols mutant. The census's 20 positive suppression probes are the
+instrument that can see this direction at all.
 
 ## F5 at depth — the 60-file sample was not enough
 

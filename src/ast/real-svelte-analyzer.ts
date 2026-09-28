@@ -85,8 +85,8 @@ const SVELTE_BUILTIN_TAGS = new Set([
 
 // Svelte compiler macros / runes — calls to these are never relationships.
 const SVELTE_RUNES = new Set([
-  "$state", "$state.raw", "$state.snapshot", "$derived", "$derived.by",
-  "$effect", "$effect.pre", "$effect.tracking", "$effect.root", "$effect.untracked",
+  "$state", "$state.raw", "$state.snapshot", "$state.eager", "$derived", "$derived.by",
+  "$effect", "$effect.pre", "$effect.tracking", "$effect.root", "$effect.untracked", "$effect.pending",
   "$props", "$props.id", "$props.is_safe", "$bindable", "$host", "$inspect",
   "$inspect.trace", "$render", "$props",
 ])
@@ -156,6 +156,22 @@ function isInvokingRune(calleeExpression: string): boolean {
   return SVELTE_INVOKING_RUNES.has(calleeExpression)
 }
 
+// `$state.eager` and `$effect.pending` are added as EXACT names, never as leaf
+// segments in RUNE_LEAF_SEGMENTS, and that is load-bearing rather than stylistic.
+// Measured over the 6,143-file corpus: the same `$name.member` SHAPE is also how
+// ordinary user data is written — `$order.scoops` (6), `$value.foo` (6),
+// `$a.foo` (5), `$formData.dob` (5), `$storeDeeper.items` (3) — plus SvelteKit's
+// import aliases `$lib` (3,549) and `$app` (25) and 78 distinct dotted forms in
+// total. Adding the bare leaves `eager`/`pending` would suppress any
+// `$anything.eager`, and a framework primitive leaking into the graph is exactly
+// what this filter exists to prevent. Before the fix both leaked: `$state.eager(0)`
+// published `calls -> eager` and `$effect.pending()` published `calls -> pending`,
+// naming framework plumbing as though it were a component member.
+//
+// Found by the construct census (`script/m14/verify-svelte-census.ts`), which
+// consults NEITHER this analyzer nor the F5 oracle — a census that read either
+// side would inherit the same omission, which is how a shared premise survives a
+// 100% differential.
 function isRuneCallee(calleeExpression: string): boolean {
   if (!calleeExpression.startsWith("$")) return false
   if (SVELTE_RUNES.has(calleeExpression)) return true
