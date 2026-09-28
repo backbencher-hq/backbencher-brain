@@ -380,6 +380,122 @@ export function recoveredDeclaredName(declNode: Node): Node | null {
 }
 
 /**
+ * D7, arm A: the declared name of a `class`/`struct`/`union` specifier, read from
+ * the grammar's `name` FIELD rather than from a direct `type_identifier` child.
+ *
+ * `findChild(node, "type_identifier")` is a DIRECT-child scan, so a name the
+ * grammar hands over as a `qualified_identifier` was invisible to it and the class
+ * published as `anonymous` — the analyzer's deliberate no-name sentinel, so the
+ * row was not merely wrong but ambiguous with the sentinel. Measured 26 sites over
+ * 1,722 real C++ files, all of the same legal C++ shape:
+ *
+ *   template <>
+ *   struct fmt::formatter<explicitly_convertible_to_std_string_view>
+ *       : formatter<std::string_view> { auto format(…) const; };
+ *   //  -> class "anonymous" + method format owner=anonymous
+ *   //     while three sibling `formatter` classes publish correctly
+ *
+ * A `class_specifier` DOES have a qualified name — an explicit specialization names
+ * the template it specializes — so the rule is the CPPD1 leaf: the last `::`
+ * segment, which is `formatter`. This is the same problem CPPD1's existing
+ * `template_type` fallback was written for; a `qualified_identifier` is that
+ * problem arriving by a different route, and the two now share one descent.
+ *
+ * Returns null when nothing legible is there, so the caller can refuse rather than
+ * invent. Exported for the F5 oracle (#916's reason).
+ */
+export function specifierDeclaredName(spec: Node): string | null {
+  const leafOf = (n: Node | null, depth = 0): string | null => {
+    if (!n || depth > 8) return null
+    if (n.type === "type_identifier" || n.type === "identifier") {
+      return isCppSpelledName(n.text) ? n.text : null
+    }
+    if (n.type === "template_type") {
+      const tn: Node | null = n.childForFieldName?.("name") ?? null
+      if (tn) return leafOf(tn, depth + 1)
+      const lt = n.text.indexOf("<")
+      return lt > 0 ? n.text.slice(0, lt).trim() : null
+    }
+    if (n.type === "qualified_identifier") {
+      // right-leaning: qualified_identifier[ns X, ::, qualified_identifier[…, type_identifier]]
+      return leafOf(n.namedChild(n.namedChildCount - 1), depth + 1)
+    }
+    return null
+  }
+  const nameField: Node | null = spec.childForFieldName?.("name") ?? null
+  if (nameField) {
+    if (nameField.type === "type_identifier" || nameField.type === "identifier") {
+      return isCppSpelledName(nameField.text) ? nameField.text : null
+    }
+    if (nameField.type === "qualified_identifier" || nameField.type === "template_type") {
+      return leafOf(nameField)
+    }
+  }
+  return null
+}
+
+/**
+ * D7, arm B: the declared name of an `enum` whose `name` field holds a C++23
+ * attribute instead — `enum class [[=fmt::as_identifiers]] color { … }`.
+ *
+ * **An `enum_specifier` has no qualified name in C++.** `enum class ns::E` is not
+ * valid C++; you write `namespace ns { enum class E; }`. So a `::`-qualified path
+ * sitting in an enum's `name` slot is the grammar's account of something else, and
+ * the measurement says what: 22 sites over 1,722 real C++ files, every one of them
+ * this attribute, and every one of them published as `anonymous` while the real
+ * name was pushed into the enclosing declaration:
+ *
+ *   declaration [ERR] [type=enum_specifier declarator=init_declarator]
+ *     enum_specifier [ERR] [name=qualified_identifier] "enum class [[=fmt::as_identifiers"
+ *       ERROR [ERR] "[[="
+ *       qualified_identifier "fmt::as_identifiers"     <- the ATTRIBUTE, in the name slot
+ *     ERROR [ERR] "]]"
+ *     init_declarator [declarator=identifier value=initializer_list] "color { … }"
+ *       identifier "color"                              <- the REAL declared name
+ *
+ * The rule is deliberately narrow, because the alternative is a guess: the name
+ * field must be a `qualified_identifier` (the disqualifying evidence), the parent
+ * must be a declaration, and the declaration's declarator must be an
+ * `init_declarator` whose own declarator is a bare `identifier`. Anything less and
+ * the answer is null, and the caller publishes no name rather than the attribute's.
+ *
+ * The same identifier is the reason the declaration branch must NOT also publish it
+ * as a `variable`: the recovery displaced the enum's name, and publishing it twice
+ * is how `fmt/test/enum-test.cc:24` ended up with both `variable "color"` and
+ * `enum "anonymous"`. Exported for the F5 oracle.
+ */
+export function attributeDisplacedEnumName(enumSpec: Node): string | null {
+  // The discriminator is NOT the spelling of the attribute — it is where the
+  // declaration put the real name. Both attribute spellings were measured and they
+  // reach the analyzer differently:
+  //
+  //   [[=fmt::as_identifiers]]  -> name field = qualified_identifier("fmt::as_identifiers")
+  //   [[=as_identifiers]]       -> name field = type_identifier("as_identifiers")
+  //
+  // so a test on the name field's TYPE catches one and misses the other — and the
+  // first cut of this fix did exactly that, publishing `enum as_identifiers` while
+  // the real name `color` went out as a phantom variable. What both shapes share is
+  // that the grammar could not place the enum and read the rest of the declaration
+  // as a brace-initialized VARIABLE: the real name is a bare `identifier` in the
+  // enclosing declaration's `init_declarator`, starting after the enum's own end.
+  // That is the evidence, and it is what the rule reads.
+  //
+  // The narrowness is what keeps it from being a guess: the parent must be a
+  // declaration, the declarator must be an `init_declarator`, its declarator must be
+  // a bare `identifier`, and that identifier must start after the enum node ends. A
+  // well-placed `enum class E : int { … };` is an `enum_specifier` in statement
+  // position with no enclosing declaration, so it cannot match.
+  const decl: Node | null = enumSpec.parent ?? null
+  if (!decl || (decl.type !== "declaration" && decl.type !== "field_declaration")) return null
+  const outer: Node | null = decl.childForFieldName?.("declarator") ?? null
+  if (!outer || outer.type !== "init_declarator") return null
+  const id: Node | null = outer.childForFieldName?.("declarator") ?? null
+  if (!id || id.type !== "identifier") return null
+  if (id.startIndex <= enumSpec.endIndex) return null
+  return isCppSpelledName(id.text) ? id.text : null
+}
+
+/**
  * #924: the NAME and the OWNER of a `qualified_identifier` standing as a
  * declarator's own name. The grammar splits two very different shapes into the
  * SAME node, and the separator token is what tells them apart:
@@ -1533,6 +1649,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the same class Box, not a new anonymous type).
         const name =
           this.childText(node, "type_identifier") ||
+          // D7 arm A: a `class`/`struct` may have a QUALIFIED name (an explicit
+          // specialization, `template <> struct fmt::formatter<T> : formatter<U>
+          // { … }`), which the direct-child `type_identifier` scan cannot see, so
+          // the class published as `anonymous` — the no-name sentinel. The rule
+          // is CPPD1's leaf, read off the grammar's `name` field.
+          specifierDeclaredName(node) ||
           (() => {
             const tt = this.findChild(node, "template_type")
             if (tt) {
@@ -1688,7 +1810,14 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "enum_specifier") {
         const enumNameNode = node.childForFieldName("name") || this.findChild(node, "type_identifier")
-        const name = this.childText(node, "type_identifier") || "anonymous"
+        // D7 arm B: the attribute displaced the name out of the enum and into
+        // the enclosing declaration, so the `name` field holds `fmt::as_identifiers`
+        // and the `type_identifier` scan finds nothing -> `anonymous`. The real
+        // name is legible in the declaration; an enum has no qualified name in C++,
+        // so a qualified path in this slot is never a name (see
+        // `attributeDisplacedEnumName` for the full shape and the narrowness).
+        const displaced = attributeDisplacedEnumName(node)
+        const name = displaced || this.childText(node, "type_identifier") || specifierDeclaredName(node) || "anonymous"
         // D1: an enum is named by an identifier; a keyword spelling is recovery.
         // The scope is not entered either, for the reason the class branch gives.
         if (!isCppSpelledName(name)) {
@@ -2057,6 +2186,25 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               recoveredDeclaredName(d) ??
               (d.type === "init_declarator" ? declaredNameNode(d) : declaredValueName(d))
             const name = idNode ? idNode.text : ""
+            // D7 arm B: this declarator can BE the enum's displaced name rather
+            // than a variable. `enum class [[=fmt::as_identifiers]] color { … }`
+            // parses as a declaration whose `init_declarator` is `color { … }`, so
+            // publishing the declarator gave `fmt/test/enum-test.cc:24` BOTH
+            // `variable "color"` and `enum "anonymous"` for one enum. The
+            // evidence is the same one `attributeDisplacedEnumName` reads: the
+            // declarator's `type` field is an `enum_specifier` whose own `name`
+            // field holds a qualified path, which no enum name in C++ can. When
+            // it is present the name belongs to the ENUM and no variable is
+            // published for it.
+            const isDisplacedEnumName = (() => {
+              // `d` is the `init_declarator`, so the `type` field lives on its
+              // parent DECLARATION — reading it off `d` finds nothing and the
+              // guard silently never fires (which is what the first cut did).
+              const holder: Node | null = d.type === "init_declarator" ? d.parent ?? null : d
+              const tf: Node | null = holder?.childForFieldName?.("type") ?? null
+              if (!tf || tf.type !== "enum_specifier") return false
+              return attributeDisplacedEnumName(tf) === name
+            })()
             // Function-local declarations are execution artifacts, not
             // declaration sites — only class-scope fields and file-scope
             // variables become symbols.
@@ -2075,7 +2223,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 fnScope.locals.add(name)
               }
             }
-            if (name && !stringIncludes(name, "(") && !insideFunction && !this.isBareMacroDeclaration(node, name)) {
+            if (name && !isDisplacedEnumName && !stringIncludes(name, "(") && !insideFunction && !this.isBareMacroDeclaration(node, name)) {
               // File-scope static (internal linkage) → private, matching the
               // C family contract; class-scope members keep the
               // access-specifier visibility.

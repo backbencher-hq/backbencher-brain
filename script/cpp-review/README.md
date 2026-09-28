@@ -20,9 +20,23 @@ All of them honour `BB_CORPUS_ROOT` (default `$HOME/ishaq/fixtures/repositories`
 | `class-extent.ts` | for one class: where the grammar's node ends, where the source's brace balance ends, and the gap. |
 | `macro-label-recovery.ts` | the D4 tree shape in isolation (declarator error-adjacent to a single bare identifier). |
 | `d5-fnparam.ts` | **a hypothesis that measurement REFUTED.** Kept on purpose: the theory was that `parameter_declaration[declarator=function_declarator]` is always recovery (C++ has no function-*type* parameter). 177 sites over 970 files, and the population is overwhelmingly legitimate direct-initialization — `std::string contents(ReadEntireFile(f));` — so gating on that shape would have deleted real code. The repo's practice is to record what was measured and thrown away. |
+| `loss-census.ts` | **the complement of the register.** For every declaration the grammar hands over at file/namespace/class scope, is there a published symbol? D1–D6 are all fabrication-shaped and cannot see a loss; this asks the other question, and found D7. |
+| `coverage-share.ts` | how much of the lane's output the M14 differential actually audits (17.4% of rows are inside its "100% covered" and unexamined) |
+| `d7-attribute-name.ts` | D7's measurement: specifiers whose `name` field is a `qualified_identifier`, and which arm each belongs to |
+| `dbg-parent.ts`, `enumnodes.ts` | two-line node probes used to pin a parent/field chain before a fix was written on it |
 | `perf-interleaved.ts` | the pre/post A/B, both arms in ONE process, order alternated per rep, parse excluded. |
 
 ## Two disciplines these encode
+
+**A gate must be able to fail, and D7 is the one that proved it.** The first cut of D7's
+check imported the analyzer's own `specifierDeclaredName` — consistent with every other
+class, and wrong here. Its self-test died with *"Export named 'specifierDeclaredName' not
+found"* instead of reporting a violation, because a gate that imports the code under test
+cannot be run against the code it gates. D7's legibility test is therefore stated inside
+the register as the contract it is (five lines), while the analyzer implements it in the
+two exported helpers. Two statements of one small contract, on purpose: one of them has
+to be able to run when the other is broken. Verified: pre-fix analyzer → `D7: 22`,
+`pass: false`; fixed → 0.
 
 **A shape is not a defect; an OUTPUT is.** The first version of `defect-register.ts` asserted
 on tree shapes for D4/D5 and on repeated `(source,type,target)` rows for D3. All three were
