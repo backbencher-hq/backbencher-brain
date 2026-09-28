@@ -283,6 +283,35 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
   }
   check("every reference edge declares HOW it resolves, and an external one names the file", badResolvable.length === 0,
     badResolvable.length ? badResolvable.slice(0, 6).join("; ") : `${refEdges} reference edge(s), ${externalEdges} external`)
+  // X8: a reference through a prefix the Namespaces specification binds in EVERY
+  // document must resolve to that namespace, whether or not the document declares
+  // it — and it cannot declare it, since re-binding `xml` is an error. A refused
+  // `ref="xml:lang"` is invisible in every other metric: there is simply no edge,
+  // and a missing edge for a name nothing supports is the CORRECT reading for a
+  // prefix bound to nothing. The only way to tell the two apart is to require
+  // that these two specific prefixes, when they appear, resolve.
+  const IMPLICIT = new Map([["xml", "http://www.w3.org/XML/1998/namespace"], ["xmlns", "http://www.w3.org/2000/xmlns/"]])
+  const implicitSeen: string[] = []
+  const implicitBad: string[] = []
+  for (const f of readdirSync(dir).filter((f) => /\.(xml|xsd|xsl|xslt|rng|wsdl)$/.test(f)).sort()) {
+    const p = `${dir}/${f}`
+    const r: any = await ASTEngine.parseFile(p, readFileSync(p, "utf8"))
+    for (const e of r.relationships ?? []) {
+      if (e.type !== "references") continue
+      const q = String(e.metadata?.qname ?? "")
+      const colon = q.indexOf(":")
+      if (colon < 0) continue
+      const prefix = q.slice(0, colon)
+      if (!IMPLICIT.has(prefix)) continue
+      implicitSeen.push(`${f}:${q}`)
+      if (e.metadata?.resolvable !== "builtin") implicitBad.push(`${f} ${q} resolvable=${JSON.stringify(e.metadata?.resolvable)}`)
+    }
+  }
+  check("a reference through a spec-bound implicit prefix resolves to its namespace", implicitBad.length === 0,
+    implicitBad.length ? implicitBad.slice(0, 5).join("; ") : `${implicitSeen.length} implicit-prefix reference(s), all resolved`)
+  check("the fixture set exercises the implicit-prefix rule", implicitSeen.length > 0,
+    `${implicitSeen.length} reference(s) through a spec-bound prefix`)
+
   check("the fixture set exercises the external resolvability class", externalEdges > 0,
     `${externalEdges} external reference(s) — X7's class must be reachable or it is untested`)
 
