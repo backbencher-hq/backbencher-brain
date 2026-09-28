@@ -334,6 +334,30 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "xml data/config wave (M60, 2026-09-27)",
   },
+  nim: {
+    id: "nim",
+    wasm: "tree-sitter-nim.wasm",
+    classification: "nim-completeness.json",
+    fixturesDir: "validation/m14/fixtures/nim",
+    docs: ["docs/analyzers/real-nim-analyzer.md"],
+    differentialCheck: "differential-nim",
+    perfKey: "nim:nim",
+    // Exactly the eight kinds the nim analyzer emits, and all eight are pinned
+    // by validation/m14/fixtures/nim (calls 3, contains 3, extends 1, imports 3,
+    // instantiates 1, overrides 1, references 3, uses 2). `implements` is NOT
+    // listed because it is structurally N/A — a Nim concept is satisfied by
+    // implicit structural dispatch and the source never names a nominal
+    // subtype, so there is nothing to point at. That is ruling NIMD3 in
+    // script/m14/spec/nim-completeness.json, not a silent absence.
+    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "overrides", "references", "uses"],
+    // Matrix 1b rows nim actually pins. `complexity` is a per-SYMBOL value
+    // (expectComplexity), unlike perl's whole-file decision count.
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "nim/contract per-symbol cyclomatic complexity" },
+      imports: { key: "expectImports", pin: "nim/contract the three import path shapes" },
+    },
+    title: "nim wave (#419 sections A-D, G; E/F await the canonical sweep)",
+  },
   php: {
     id: "php",
     wasm: "tree-sitter-php.wasm",
