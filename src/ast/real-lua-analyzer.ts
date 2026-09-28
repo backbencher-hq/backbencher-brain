@@ -410,8 +410,26 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       ctx.patterns.add("Object-Oriented Programming (Metatables)")
       const target = values[0]
       const metatable = values[1]
-      if (target && metatable && !this.isTableNode(target)) {
-        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
+      // M60 LUA-32: BOTH arguments must be names, not expressions. The guard below
+      // only ever checked the first argument, so `setmetatable(self, { __index =
+      // super })` published `extends self -> { __index = super }` — the whole
+      // table constructor as the TARGET. Two measured losses on kong:
+      // `self -> { __index = super }` at kong/db/dao/init.lua:990 and
+      // `_M -> { __call = ..., __index = ... }` at kong/cmd/utils/log.lua:88, whose
+      // target spans five lines.
+      //
+      // That second one is why this hid for so long: the target contains NEWLINES,
+      // and pool-worker's target filter rejects any target containing one, so the
+      // edge never reached the store. Through the pipeline the defect was
+      // INVISIBLE — the edge was simply absent, indistinguishable from an edge that
+      // was never derived. It surfaced only from the direct-path/pipeline seam
+      // probe added in LUA-31, which compares the two paths per file and reports
+      // labels the pipeline drops. Same defect class as LUA-29 on a path LUA-29's
+      // whitelist never touched.
+      const srcName = this.nameBearing(target)
+      const mtName = this.nameBearing(metatable)
+      if (target && metatable && !this.isTableNode(target) && srcName && mtName) {
+        this.addRelationship(ctx, srcName, mtName, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: "lua_metatable" }, metatable)
       }
       if (metatable?.type === "identifier") {
         const tableName = metatable.text
@@ -758,6 +776,24 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   // the LAST named child, so its own start position is the line the method name
   // is written on — which is exactly M59 (#825)'s rule and exactly what java
   // gets from `childForFieldName("name")` on its invocation node.
+  // M60 LUA-32: the ONE rule for "is this node a name", shared by the callee
+  // whitelist (LUA-29/LUA-30) and the setmetatable path, so the two cannot drift
+  // apart the way `table_index_expression` did (LUA-27). Three node forms carry a
+  // name; everything else is an expression, and an expression used as a target is
+  // a payload — unmatchable, unreferenceable, and unbounded in shape.
+  //
+  // `dot_index_expression` and `method_index_expression` yield their FULL TEXT
+  // (`Account.Meta`), which is a path rather than a bare name. That is kept
+  // deliberately: these are relationship ENDPOINTS, not symbols, and the
+  // member-identity rule that forbids '.' in a SYMBOL name (verify-lua-member-identity)
+  // is a different contract from what a reference to `Account.Meta` may look like.
+  private nameBearing(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    if (node.type === "identifier") return node.text
+    if (node.type === "dot_index_expression" || node.type === "method_index_expression") return node.text
+    return undefined
+  }
+
   private callee(functionNode: Node): { name: string; nameNode: Node } | undefined {
     if (functionNode.type === "identifier") return { name: functionNode.text, nameNode: functionNode }
     if (functionNode.type === "dot_index_expression" || functionNode.type === "method_index_expression") {
