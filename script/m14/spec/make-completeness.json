@@ -5,20 +5,29 @@
     "upstream": "tree-sitter-grammars/tree-sitter-make",
     "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
     "package": "tree-sitter-make@1.1.1",
-    "wiredSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
+    "wiredSha256": "ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12",
     "vendoredSource": "grammars/tree-sitter-make",
     "gate": "bun run script/m14/verify-grammar-pins.ts",
     "sourceVsWasm": {
       "nodeTypesJson": "grammars/tree-sitter-make/src/node-types.json",
       "declaredNamedTypes": 44,
       "wasmNamedUnique": 44,
-      "wasmUniqueNames": 188,
+      "wasmUniqueNames": 189,
       "wasmFieldCount": 24,
       "declaredFieldCount": 24,
       "missingInWasm": [],
       "namedOnlyInWasm": [],
-      "anonymousNote": "91 anonymous types declared vs 130 anonymous ids in the wasm; node-types.json deduplicates identical anonymous tokens that the id table lists once per id, so the anonymous counts are not expected to agree and are not part of the proof. The named and field sets agree exactly in both directions."
-    }
+      "anonymousNote": "91 anonymous types declared vs 131 anonymous ids in the wasm; node-types.json deduplicates identical anonymous tokens that the id table lists once per id, so the anonymous counts are not expected to agree and are not part of the proof. The named and field sets agree exactly in both directions. The patches add no node type and no field, so this proof is unchanged in kind by adopting them — only the id count moves (188 -> 189)."
+    },
+    "kind": "local-rebuild-from-patched-upstream-source",
+    "wiredBytes": 165855,
+    "pristineSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
+    "pristineBytes": 148909,
+    "pristineRetainedAt": "fixtures/make/ab/pristine-make.wasm (with pristine-src/ and grammar.patch, so the A/B is re-runnable)",
+    "patches": [
+      "P1 `_ordinary_rule`: target-scoped `target: export VAR = value` (closed MAKE-G3)",
+      "P2 `_shell_escape`: `$$( ... )` as a shell command, not a make expansion (closed MAKE-G4)"
+    ]
   },
   "corpus": {
     "_note": "Enumerated by RULE (filenames Makefile/makefile/GNUmakefile/Makefile.am/Makefile.in, or suffix .mk), not by a hardcoded list, and every file is sha256'd with its repository pinned, so a later run that draws a different set says so rather than quietly reporting different numbers. A census filtered by what the analyzer already handles cannot find what it drops, so nothing is filtered here. `completeness-inventory` prints 46 classified types against this spec's 44 entries, and the difference is NOT a gap: the wasm carries 46 named NODE IDS for 44 unique names, because `word` and `text` each occupy two ids (the grammar gives the bare and quoted forms separate ids). The 44 unique names are what src/node-types.json declares and what the two sets agree on exactly, in both directions.",
@@ -144,7 +153,7 @@
     ]
   },
   "gap": {
-    "_description": "Four findings, all recorded here rather than left for a reader to discover: two grammar limitations the vendored tree-sitter-make 1.1.1 cannot parse (MAKE-G3, MAKE-G4) and two declared grammar features that are unmodelled and unexercised (MAKE-G1, MAKE-G2). Both grammar limitations are pinned as a RESIDUAL in script/m12/make-corpus-errors.ts and make-corpus-measure.ts, so those gates are green while the residual matches this ruling and go RED the moment it grows.",
+    "_description": "Two findings, both recorded here rather than left for a reader to discover: two declared grammar features that are unmodelled and unexercised (MAKE-G1, MAKE-G2). The two GRAMMAR LIMITATIONS previously recorded here as MAKE-G3 and MAKE-G4 are FIXED — the residual in script/m12/make-corpus-errors.ts and make-corpus-measure.ts is now EMPTY, pinned to zero real ERROR/MISSING nodes. Those two pins went RED when the patched grammar dropped the residual from 2 files / 9 nodes to 0, which is the point of a pin: it failed on an improvement rather than being edited to match one.",
     "gaps": [
       {
         "id": "MAKE-G1",
@@ -161,16 +170,31 @@
       {
         "id": "MAKE-G3",
         "node_type": null,
-        "status": "OPEN",
-        "description": "GRAMMAR limitation, not an analyzer defect, and deliberately NOT patched. The target-scoped form `target: export VAR = value` — 10 lines across 2 of 99 files (boundary/Makefile, tf-aws-components/.../runner/Makefile) — is not parsed by tree-sitter-make 1.1.1: the line becomes an ERROR node, and 5 distinct variable names (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_VERSION_FILE, UI_DEFAULT_BRANCH, AWS_PROFILE) are therefore not extracted. The loss is VISIBLE, not silent: the engine's tree-error collector reports 8 and 2 errors for those two files, and `pattern_list` appears in the tree only as the grammar's partial recovery on exactly these lines. Patching the grammar was considered and refused: it would trade a clean source<->wasm identity proof (0 missing, 0 extra, both directions, re-checkable offline) for 10 lines in 2 files, and the SQL lane's patch is not a precedent that scales down to a loss this small. Fixing it upstream, or re-measuring when a grammar release covers it, is the honest route."
+        "status": "FIXED",
+        "description": "CLOSED by patching the vendored grammar, after the trade below was MEASURED instead of assumed. The target-scoped form `target: export VAR = value` was not parsed by tree-sitter-make 1.1.1: the line became an ERROR node, so 9 variable names (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH, AWS_PROFILE) were never extracted and the analyzer published error-recovery artefacts instead — `uses install -> BOUNDARY_INSTALL_BINARY=1` and `uses docker-build-dev -> GOOS=$(DEV_DOCKER_GOOS)`, i.e. whole assignment text used as a name. Cause: `variable_assignment` accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` puts the `export` keyword BEFORE the assignment and nothing allowed it after the colon. P1 adds that branch.\n\nThe original ruling was to REFUSE this patch, to protect the source<->wasm identity proof (0 missing / 0 extra, both directions, re-checkable offline) for 10 lines in 2 files. That trade does not survive measurement: the patch adds NO node type and NO field — 44 named / 24 fields before and after, zero added, zero removed — so the proof loses nothing and is re-established for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing and 0 extra. Product level: 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer needed NO change, which is the strongest evidence the patch is well-founded: the constructs it repairs were already modelled, just unreachable. The pristine build and the patch are retained under fixtures/make/ab/ so the A/B stays re-runnable.",
+        "fixedBy": "grammar patches P1 (grammars/tree-sitter-make/grammar.js `_ordinary_rule`); measured in fixtures/make/out/grammar-ab.json + grammar-ab-product.json"
       },
       {
         "id": "MAKE-G4",
         "node_type": null,
-        "status": "OPEN",
-        "description": "SECOND grammar limitation, found by the same gate run and likewise not patched. `MAIN_PACKAGES=$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` in vault/Makefile line 5 — a shell command inside an escaped-dollar expansion that itself contains a nested `$(...)` reference — is not parsed by tree-sitter-make 1.1.1 and becomes one ERROR node. It is a real loss: MAIN_PACKAGES is not extracted, and any reference to it downstream dangles. Distinct from MAKE-G3, which is the target-scoped `target: export VAR = value` form. Patching was refused for the same reason: the source<->wasm identity proof is worth more than 1 node in 1 file, and the loss is VISIBLE (the engine reports it, and make-corpus-errors pins it)."
+        "status": "FIXED",
+        "description": "CLOSED by patching the vendored grammar. `MAIN_PACKAGES=$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` in vault/Makefile line 5 is a shell command inside an escaped-dollar expansion with a nested reference; tree-sitter-make 1.1.1 routed `$$` into variable_reference / substitution_reference / automatic_variable / function_call, none of which can parse a shell command head (spaces, pipes). `$$` is Make's ESCAPED dollar — Make does not expand it and hands `$( ... )` to the shell — so this is a modelling error, not a missing feature. P2 adds a hidden `_shell_escape` keyed on `$$` ONLY, so `$(FOO)` is still a variable reference, with the variable_reference/_paren_text ambiguity DECLARED as a conflict and resolved by dynamic precedence: a static precedence would discard one reading for every input instead of only for the inputs where it is wrong. `MAIN_PACKAGES` is now declared. The `$(GO_CMD)` inside is correctly NOT a Make reference, because Make does not expand it.",
+        "fixedBy": "grammar patch P2 (grammars/tree-sitter-make/grammar.js `_shell_escape`); measured in fixtures/make/out/grammar-ab.json"
       }
-    ]
+    ],
+    "summary": {
+      "declared_named_types": 44,
+      "unmodelled_or_unexercised_open": [
+        "MAKE-G1",
+        "MAKE-G2"
+      ],
+      "fixed_by_measured_grammar_patch": [
+        "MAKE-G3",
+        "MAKE-G4"
+      ],
+      "residual_error_nodes": 0,
+      "note": "G1/G2 remain OPEN and are corpus-COVERAGE gaps (0 occurrences in 99 files), not correctness defects: no corpus evidence is not the same claim as no risk."
+    }
   },
   "design_decision": {
     "_rule": "A question the grammar raises that has no single right answer, adjudicated on measurement and recorded with the numbers that settled it.",

@@ -338,41 +338,77 @@ export const LANES: Record<string, LaneDecision> = {
     copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-hcl.wasm") }],
   },
 
-  // M60 Make wave (2026-09-27). The website advertises a Make analyzer through
-  // `SUPPORTED_LANGUAGES` (website/src/data/truth.generated.ts is derived from
-  // it), and the lane had NO entry here at all — so the one artifact a reader
-  // would consult to answer "which grammar is this?" had no Make row, while the
-  // grammar itself turned out to be the cleanest in the family.
+  // M60 Make wave, REVISED (2026-09-28). The pin started as a plain
+  // byte-identical-to-upstream record and is now a LOCAL BUILD FROM PATCHED
+  // UPSTREAM SOURCE, which is a different kind of claim and is recorded as one.
+  //
+  // Why: upstream `tree-sitter-make` 1.1.1 is the HEAD of the only maintained
+  // grammar of its kind, so there is nothing to swap to — the question is only
+  // whether it models the language. It does not. Over the lane's 99-file pinned
+  // corpus the pristine build emits 11 ERROR nodes in 3 files, every one a
+  // construct GNU Make documents: the target-scoped form `target: export VAR =
+  // value` (8 nodes, 9 invisible variables) and `$$($(VAR) cmd)` (1 node,
+  // `MAIN_PACKAGES` lost). Both were first recorded as OPEN gaps with the
+  // decision NOT to patch, on the grounds that a clean source<->wasm identity
+  // proof was worth more than 9 declarations.
+  //
+  // That trade was then measured instead of assumed, and it does not hold. The
+  // two patches add NO node type and NO field — 44 named / 24 fields before and
+  // after, zero added, zero removed — so the proof has nothing to lose, and the
+  // proof is re-established below for the PATCHED source. Measured: 11 -> 0
+  // error nodes, 3 files improved, 0 regressed, and at the PRODUCT level 1,772
+  // -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 "lost" facts
+  // being garbage the error recovery had invented (a `?` as a name, a whole
+  // `VAR=value` as a name) or a reference re-attributed to its correct owner.
+  //
+  // The analyzer needed no change, which is the strongest evidence the patch is
+  // well-founded: the constructs it repairs were already modelled, just
+  // unreachable. The pristine build and the patch are retained under
+  // fixtures/make/ab/ so the comparison stays re-runnable forever.
   make: {
     wired: "wasm/tree-sitter-make.wasm",
     provenance: {
-      kind: "byte-identical-to-vendored-upstream-source",
+      kind: "local-rebuild-from-patched-upstream-source",
       package: "tree-sitter-make",
       version: "1.1.1",
       upstream: {
         repo: "tree-sitter-grammars/tree-sitter-make",
         version: "1.1.1",
         rev: "70613f3d812cbabbd7f38d104d60a409c4008b43",
-        builtWith: "tree-sitter-cli 0.26.5; the generated src/parser.c declares LANGUAGE_VERSION 15",
+        builtWith: "tree-sitter-cli generate + build --wasm (rebuildable from grammars/tree-sitter-make)",
       },
+      patches: [
+        "P1 (grammar.js `_ordinary_rule`): a second branch for the TARGET-SCOPED form `target: export VAR = value`. `variable_assignment` already accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` places the `export` keyword BEFORE the assignment and nothing allowed it after the colon. Measured: 8 of the corpus's 11 ERROR nodes, and 9 variable names the analyzer could not see (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH).",
+        "P2 (grammar.js `_shell_escape`): `$$( ... )` is Make's ESCAPED dollar — Make does not expand it and hands `$( ... )` to the shell. The grammar routed `$$` into variable_reference / substitution_reference / automatic_variable / function_call, none of which can parse a shell command head (spaces, pipes). A hidden rule keyed on `$$` ONLY, so `$(FOO)` is still a variable reference, with the variable_reference/_paren_text ambiguity DECLARED as a conflict and resolved by dynamic precedence rather than a static one.",
+      ],
+      patchEvidence: "Surface A/B over all 99 pinned corpus files, plus a PRODUCT-level A/B through RealMakefileAnalyzer: 11 -> 0 error nodes, 3 files improved, 0 regressed; 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The named node-type set and the field set are IDENTICAL before and after (44 / 24, zero added, zero removed), which is why no analyzer change was required. A control build of the UNPATCHED source with the same toolchain is functionally identical to the wired pristine build (same 188 ids, 44 named, 24 fields, 6 error files, 11 error nodes), so every difference is the patch and not the toolchain. Re-runnable: fixtures/make/probes/grammar-ab.mts over fixtures/make/ab/pristine-make.wasm.",
+      retained: "fixtures/make/ab/{pristine-src,pristine-make.wasm,grammar.patch} — the pristine tree and build are kept so the A/B above can be repeated rather than believed.",
     },
     source: {
       state: "vendored",
       dir: "grammars/tree-sitter-make",
       note:
-        "grammar.js + package.json + LICENSE + PIN.md + src/ (grammar.json, node-types.json, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-make@70613f3d kept at /tmp/opencode/ts-make. src/parser.c IS vendored (928 KB) even though the xml/hcl/sql lanes skip the generated file, because this lane's central claim IS the source<->wasm identity proof and that proof is not checkable without the generated source.",
+        "grammar.js (PATCHED — it is the patched grammar.js that is vendored, because the pin must describe what is actually wired) + package.json + LICENSE + PIN.md + src/ (grammar.json, node-types.json, parser.c, tree_sitter/ headers). src/parser.c IS vendored (1,084,442 bytes) so the source<->wasm proof is re-checkable offline; unlike the xml/sql lanes this lane's central claim IS that proof.",
     },
     decision:
-      "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 188 ids / 44 named / 130 anonymous / 24 fields; the vendored src/node-types.json at 70613f3d declares exactly 44 named types and exactly those 24 fields. The set difference is ZERO in both directions, on the named set and on the field set, so the wired bytes ARE a build of this source and the Groovy situation does NOT apply. The ANONYMOUS counts differ (91 declared vs 130 in the wasm) only because node-types.json deduplicates identical anonymous tokens that the id table lists once per id; that difference is recorded here rather than hidden, and it is not part of the proof. There is no newer published alternative — 1.1.1 is the current HEAD of the only maintained tree-sitter-make in the grammars org — so the pin's value is provenance and drift detection, not an upgrade.",
+      "ADOPT the patched local build, and keep the pristine one forever. The pristine build is not merely 'not good enough' — it loses 9 declarations the product can see and invents facts like a `?` used as a variable name. The patches add no node type and no field, so the source<->wasm identity proof is fully preserved and re-measured for the patched source: 189 ids / 44 named / 131 anonymous / 24 fields against 44 declared named types and 24 declared fields, zero missing and zero extra in both directions. Adopting an upstream SWAP was never on the table — 1.1.1 is the current HEAD of the only maintained tree-sitter-make, so the pin's value is correctness of the model, not novelty of the version.",
     alternatives: [
+      {
+        option: "keep the pristine build and the two gaps open",
+        measured:
+          "REJECTED on measurement, having been the lane's position for a day. 11 ERROR nodes over 99 files, 9 invisible variable declarations, and error-recovery artefacts published as facts (a `?` as a name; `BOUNDARY_INSTALL_BINARY=1` as a name). The argument for it — that patching costs the identity proof — is answered by the patches adding no node type and no field, so the proof costs nothing.",
+        artifact: "fixtures/make/out/grammar-ab.json",
+      },
       {
         option: "hand-repair the wasm the way groovy's was repaired",
         measured:
-          "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. Make's does not — 0 missing and 0 extra named types, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
-        artifact: "fixtures/make/out/grammar-conformance.json",
+          "unnecessary and wrong here: that repair exists because a vendored wasm had drifted from its source. This lane regenerates from source with a recorded toolchain and keeps the pristine build for A/B, so the drift cannot recur unobserved.",
+        artifact: "fixtures/make/out/grammar-ab.json",
       },
     ],
     evidence: [
+      "fixtures/make/out/grammar-ab.json",
+      "fixtures/make/out/grammar-ab-product.json",
       "fixtures/make/out/grammar-conformance.json",
       "grammars/tree-sitter-make/PIN.md",
       "reviews/make/master-review.md",
@@ -477,6 +513,67 @@ export const LANES: Record<string, LaneDecision> = {
   // anchored FIXes, and the wasm is built from the result. The patch is code
   // rather than a hand edit so that it is reviewable as a diff and idempotent
   // on re-run.
+  protobuf: {
+    wired: "wasm/tree-sitter-protobuf.wasm",
+    provenance: {
+      kind: "local-rebuild-from-patched-vendored-source",
+      base: { repo: "amaanq/tree-sitter-proto", version: "0.1.0", rev: "e9f6b43f6844bd2189b50a422d4e2094313f6aa3" },
+      acquisition:
+        "THE HARD CONSTRAINT ON THIS LANE, recorded because it shapes everything else. `ProtocolBuffers/tree-sitter-proto` and `tree-sitter-grammars/tree-sitter-protobuf` do not exist, and NO protobuf grammar is published on npm at all — `tree-sitter-protobuf`, `tree-sitter-proto` and `tree-sitter-protocolbuffers` are all absent from the registry. So there was no registry route and no canonical vendor: the source had to be cloned, and `tree-sitter.json` had to be WRITTEN, because upstream has none and without it the CLI silently falls back to ABI 14 and `tree-sitter build --wasm` refuses outright. Nine of the sixteen vendored grammars here are registry packages; this one is a local build because it has to be.",
+      patches: [
+        "FIX 1 `edition` — the 2023-editions file option. Upstream's root was `optional($.syntax)` only, and in an editions file `edition` REPLACES `syntax` rather than being an alternative spelling, so every editions file was 2 ERROR nodes. 52 of the reference implementation's 108 files declare one.",
+        "FIX 2 negative field numbers — `field_number` was a bare `int_lit` with no sign. The specification's field-number space is the signed 32-bit range with 19000-19999 reserved, so negative numbers are legal and occur in migrated schemas. The sign is a separate optional token rather than a change to `int_lit`, so a sign cannot appear where the grammar forbids one.",
+        "FIX 3 `import option \"...\";` — editions' option-import, the mechanism behind `features`. Upstream's `import` allowed only `weak`/`public`. This was most of `descriptor.proto`'s damage.",
+        "FIX 4 an option list on `extensions` — upstream ended at `;`, so `extensions 536000000 [declaration = {…}];` was an ERROR. This is how `descriptor.proto` declares its own extension range, and the aggregate inside it failed too, so one construct took 70 error nodes with it.",
+        "FIX 5 proto2 `group` — absent entirely upstream. Structurally a FIELD whose type is the keyword `group` and whose body is a nested message rather than a `;`, so it is a second alternative of `field`; sharing the terminator would need an empty rule, which tree-sitter rejects. 12 of the 108 reference files use it, so ruling it would have left the lane unable to read a quarter of protobuf's own corpus.",
+        "FIX 6 a parenthesised `(fullIdent)` as ANY dotted option-name segment — upstream allowed it only as the first element, so `features.(pb.cpp).repeated_type` and `(a.b).(c.d)` were ERRORs. Both appear in the reference implementation's own option tests: 16 nodes in `repeated_field_proxy_test.proto`, 19 in `unittest_custom_options.proto`.",
+        "FIX 7 a leading dot on an `extend` target — upstream's `extend` used `full_ident` (no leading dot) while `message_or_enum_type` had one, so `extend .google.protobuf.FieldOptions {…}` was an ERROR. Fully qualified extend targets are the norm in real schemas, not an edge case. The dot stays anonymous, so no node type is added.",
+        "FIX 8 the `local` declaration modifier — a 2023-editions top-level modifier on message/enum/service/extend, unknown upstream and used by the reference implementation's own `cpp_file_options.proto`. Anonymous and optional, so a consumer sees the same node either way.",
+        "ADDED tree-sitter.json (not a grammar patch): the ABI-15 marker upstream lacks. Without it the CLI generates ABI 14 and `tree-sitter build --wasm` fails with \"please ensure you have one\".",
+      ],
+      ruled: [
+        "`any { … }` — the proto2 MessageSet form inside a group. RULED, with the consequence measured rather than asserted. The specification deprecates MessageSet outright; it appears in 1 file of 108, and that file is `unittest_custom_options.proto`, the reference implementation's deliberate parser-breaking torture test. Consequence: 13 ERROR nodes in that one file. Every OTHER construct in that same file parses correctly in isolation — verified by extracting each and parsing it alone — so the errors reported on lines 338-341 are tree-sitter's RECOVERY misattributing damage from the `any { }` further down, not separate defects. A file using MessageSet loses that construct's fields, not the file.",
+      ],
+      patchEvidence:
+        "Measured on `protocolbuffers/protobuf` @ the pinned revision — the reference implementation's OWN 108 .proto files, 17,213 lines, which is the strongest correctness test available because the language's own descriptor.proto is the file every protobuf tool reads. Error progression on that corpus: upstream as published 62 files / 527 nodes; +FIX 1-2, 28 / 421; +FIX 3-5, 12 / 79; +FIX 6-8, 1 / 13. A 97.5% reduction in error nodes, and the 70-error failure on descriptor.proto is gone entirely. Each patch has its own case in fixtures/protobuf/out/grammar-gaps.json, and each was confirmed NECESSARY by building upstream and watching that construct fail there too. Artifacts: fixtures/protobuf/out/grammar-gaps.json, fixtures/protobuf/out/grammar-ab.json, fixtures/protobuf/out/extraction-ab.json.",
+      upstreamClaimVsMeasurement:
+        "Upstream's README says \"The grammar should be complete. I've tested the grammar against some really large and nasty proto files and it passes.\" Measured: 62 of 108 files of protobuf's own corpus carried 527 ERROR nodes before patching. The claim is recorded because it was measured false, and because a 0-star, 0-fork repository created and last pushed on the same day is not a foundation to take on trust.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-proto",
+      note:
+        "grammar.js (the PATCHED grammar, which is what `tree-sitter generate` reads) + src/{grammar.json,node-types.json,parser.c} + tree-sitter.json (written by us: the ABI-15 marker upstream lacks) + package.json + LICENSE (MIT) + README.md (the divergence record, all eight patches with their evidence, the ruled gap with its consequence, and the regeneration sequence) + queries/ (upstream's, carried through untouched) + .upstream-revision. The three generated files are vendored ON PURPOSE: `sourceVsWasmFor` needs the JSON pair for the offline source<->wasm proof, and `measureVendored` hashes EVERY file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. 299 KB here — the same call graphql made at 283 KB and hcl at 600 KB, and the opposite of nim at 41 MB. The .gitignore DIRECTORY re-inclusion matters as much as the file negations: git does not descend into an excluded directory, so negating the files alone is silently a no-op.",
+    },
+    decision:
+      "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions, re-measured by this gate on every run — every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The build reads 107 of protobuf's own 108 reference files with ZERO error nodes, against 62 files / 527 nodes for upstream as published, and the one remaining file is a construct the specification itself deprecates. (3) The pre-patch wasm is kept byte-for-byte so the extraction A/B is reproducible rather than remembered, and the direction is uniform: strictly fewer error files and fewer error nodes, with no construct traded away — the eight patches are all ADDITIVE and the one change that narrowed a rule (the `field` terminator) was required because the group alternative cannot share it. (4) The snake_case node surface is preserved exactly, matching nine of the ten vendored grammars here, so no analyzer string literal and no m12/m14/m60 row changes spelling — the one thing an upgrade must not do to this repository.",
+    alternatives: [
+      {
+        option: "remove the protobuf route and the m60 matrix row, and document protobuf as unsupported",
+        measured:
+          "REJECTED, and the measurement is the point. This was the live alternative while the grammar was missing, and it is a defensible fallback: `.proto` was ROUTED, so a protobuf file threw an unhandled \"parser not yet implemented\" rather than degrading, and protobuf is the only one of 47 routed languages whose failure is that deliberate marker. But protobuf is the most widely deployed IDL in existence — gRPC, Kubernetes, etcd, Envoy/Istio, Consul, Vault, CockroachDB — so removing the claim trades a crash for a missing capability rather than fixing anything. It is the correct answer only if the grammar could not be made to work, and it now reads 107/108 of the language's own corpus.",
+        artifact: "reviews/protobuf/master-review.md",
+      },
+      {
+        option: "keep upstream unmodified and document the eight gaps as boundaries",
+        measured:
+          "REJECTED on capability. 62 of 108 files of protobuf's own corpus carry error nodes before patching, and 70 of those are in descriptor.proto — the file every protobuf tool reads. A documented boundary is the right answer for a gap nobody can fix; a construct that breaks the language's own descriptor is not that. Two of the eight (editions, and `import option`) are not gaps in a rare corner at all: 52 of the 108 files declare an edition, so half the reference corpus is unreadable without FIX 1.",
+        artifact: "fixtures/protobuf/out/grammar-ab.json",
+      },
+    ],
+    evidence: [
+      "fixtures/protobuf/out/grammar-census.json",
+      "fixtures/protobuf/out/grammar-gaps.json",
+      "fixtures/protobuf/out/grammar-ab.json",
+      "fixtures/protobuf/out/extraction-ab.json",
+    ],
+    copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-protobuf.wasm") }],
+    notVendored: [
+      { path: "binding.gyp, bindings/, Cargo.toml, flake.nix, project.nix, shell.nix, .envrc", why: "native bindings and a Nix dev shell; not parser source" },
+      { path: "corpus/", why: "upstream's own parse tests; the lane's corpus is the reference implementation plus two independent repositories, tracked in the manifest" },
+    ],
+  },
+
   graphql: {
     wired: "wasm/tree-sitter-graphql.wasm",
     provenance: {
@@ -824,7 +921,7 @@ export const LANES: Record<string, LaneDecision> = {
     decision: "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
     alternatives: [{"option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)", "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.", "artifact": "validation/m60/sql/v3-rejection.json", "rejected": true, "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."}, {"option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11", "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.", "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md", "rejected": true, "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."}],
     evidence: ["fixtures/sql/REVIEW.md", "validation/m60/sql/v3-rejection.json", "fixtures/sql/probe/grammar-ab.mts", "script/m60/measure-grammar-recovery.ts", "script/m14/spec/sql-completeness.json"],
-    copies: [{"label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)", "path": "$HOME/fixtures/sql/grammar/pristine-sql.wasm"}, {"label": "V3 candidate (built, measured, REJECTED)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v3.wasm"}, {"label": "V1 candidate (earlier, superseded by V2)", "path": "$HOME/fixtures/sql/grammar/patched-sql.wasm"}],
+    copies: [{"label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)", "path": "$HOME/fixtures/sql/grammar/pristine-sql.wasm"}, {"label": "V3 candidate (opaque DO, REJECTED)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v3.wasm"}, {"label": "V4 candidate (plpgsql, blocked on block-declarations)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v4.wasm"}, {"label": "V5 candidate (DECLARE restored, same failure)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v5.wasm"}, {"label": "V2 (superseded by V6; the previous wired bytes)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v2.wasm"}],
     notVendored: [{"path": "src/parser.c", "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"}, {"path": "src/grammar.json, src/node-types.json", "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"}, {"path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/", "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"}],
   },
 }

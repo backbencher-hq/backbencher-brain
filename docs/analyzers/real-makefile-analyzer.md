@@ -8,15 +8,20 @@ positions. **There is no source-text regular expression in this file**, and
 `script/m14/tmp/make/` re-checks that claim on every run.
 
 - Grammar: `tree-sitter-grammars/tree-sitter-make` @ `70613f3d`, package
-  `tree-sitter-make@1.1.1` (MIT), vendored at `grammars/tree-sitter-make/`.
+  `tree-sitter-make@1.1.1` (MIT), vendored at `grammars/tree-sitter-make/` as a
+  **local build from patched upstream source** — 2 measured patches, adding no new
+  node type and no new field, with the pristine build retained for A/B. See
+  `grammars/tree-sitter-make/PIN.md`.
 - Source↔wasm proof: 44 named node types and 24 fields declared by
   `src/node-types.json`, 44 named and 24 fields in the wired wasm, **zero missing
   and zero extra in both directions**. See `grammars/tree-sitter-make/PIN.md`.
-- Grammar conformance: 1,772 symbols / 5,870 relationships / 4 imports over the
+- Grammar conformance: 1,781 symbols / 5,880 relationships / 4 imports over the
   pinned 99-file corpus, 0 unknown node types, 0 unknown fields.
 - Corpus differential vs an independent oracle: **recall 1.000000, precision
-  1.000000**, 0 missing, 0 spurious, and **2,427 / 2,427 line numbers agreeing**.
-- Completeness: 44/44 named types classified, sections **A–H 8/8**.
+  1.000000**, 0 missing, 0 spurious, and **2,418 / 2,418 line numbers agreeing**.
+- **0 files with ERROR/MISSING nodes** across the 99-file pinned corpus.
+- Completeness: 44/44 named types classified, sections **A–H 8/8**. The corpus
+  grammar residual is pinned to **zero** real ERROR/MISSING nodes.
 
 ## What Make's graph actually looks like
 
@@ -87,19 +92,34 @@ node naively produces a plausible wrong answer:
 
 ## Known gaps, stated rather than hidden
 
-| | |
-|---|---|
-| `MAKE-G3` | `target: export VAR = value` — 10 lines in 2 of 99 files — is not parsed by tree-sitter-make 1.1.1. 5 variable names are not extracted. **Visible, not silent**: the engine's tree-error collector reports 8 and 2 errors for those files. Patching the grammar was refused: it would trade a clean source↔wasm identity proof for 10 lines in 2 files. |
-| `MAKE-G1` | `VPATH = src` is not modelled. 0 corpus occurrences, so there is nothing to design against; the sibling `vpath` directive form *is* recorded, so the two spellings are deliberately asymmetric. |
-| `MAKE-G2` | `.RECIPEPREFIX = >` is not modelled. 0 corpus occurrences, which is not the same claim as no risk. |
-| `MAKE-G4` | A second grammar limitation: `MAIN_PACKAGES=$$($(GO_CMD) list …)` — a shell command inside an escaped-dollar expansion with a nested reference — is one ERROR node in `vault/Makefile`, so `MAIN_PACKAGES` is not extracted. Pinned in the two M12 corpus gates. |
+| `MAKE-G1` | `VPATH = src` is not modelled. 0 corpus occurrences, so there is nothing to design against; the sibling `vpath` directive form *is* recorded, so the two spellings are deliberately asymmetric. A coverage gap, not a correctness defect. |
+| `MAKE-G2` | `.RECIPEPREFIX = >` is not modelled. 0 corpus occurrences, which is not the same claim as no risk. A coverage gap, not a correctness defect. |
+
+The two **grammar** gaps that used to sit here are closed. `MAKE-G3`
+(`target: export VAR = value`) and `MAKE-G4` (`$$($(GO_CMD) list …)` — a shell
+command inside an escaped-dollar expansion) were recorded as deliberately
+unpatched, to protect the source↔wasm identity proof. That trade was then
+measured rather than assumed, and it does not hold: the two patches add **no node
+type and no field** — 44 named / 24 fields before and after, zero added, zero
+removed — so the proof loses nothing and is re-measured for the patched source.
+
+Measured over the 99-file corpus: **11 ERROR nodes → 0**, 3 files improved, 0
+regressed. At the product level, **1,772 → 1,781 symbols** and **5,870 → 5,880
+relationships**. Every one of the 19 facts the patch changes is either
+error-recovery garbage that is now gone (a `?` used as a variable name, a whole
+`VAR=value` used as a name) or a reference re-attributed to the variable whose
+value it is read in. **The analyzer needed no change** — the constructs were
+already modelled, just unreachable, which is the strongest evidence the patch is
+well-founded. 9 previously invisible declarations are now visible. The pristine
+build and the patch are retained under `fixtures/make/ab/` so the comparison can
+be repeated rather than believed.
 
 ## Relationships emitted
 
-`contains` 1,742 · `references` 1,971 · `exports` 1,347 · `uses` 805 ·
+`contains` 1,752 · `references` 1,976 · `exports` 1,357 · `uses` 790 ·
 `imports` 4 · `calls` 1.
 
-Every one of the 5,870 carries **`line_number`**, which is a product field: the
+Every one of the 5,880 carries **`line_number`**, which is a product field: the
 indexer stores it and the address surfaces serve call-site positions from it. The
 lane shipped with **0 of 1,784** edges carrying one.
 
