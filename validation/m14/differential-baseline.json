@@ -1532,8 +1532,8 @@
       },
       "grammarResidual": {
         "files": 15,
-        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar; the ERROR it emits is 58 bytes at the document root, losing containment for the whole file",
-        "attribution": "proved by PyYAML parsing those same 15 files cleanly — the defect is the grammar's, filed against it under the M60 fork policy, not worked around in this lane"
+        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment — the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
+        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained — a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
       },
       "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
     }
