@@ -12,7 +12,7 @@
       "trackedRFiles": 266,
       "linesOfCode": 21932,
       "symbols": 1625,
-      "relationships": 5913,
+      "relationships": 6044,
       "filesWithParseError": 1
     },
     {
@@ -21,7 +21,7 @@
       "trackedRFiles": 80,
       "linesOfCode": 29334,
       "symbols": 3716,
-      "relationships": 8217,
+      "relationships": 8324,
       "filesWithParseError": 0
     },
     {
@@ -30,7 +30,7 @@
       "trackedRFiles": 195,
       "linesOfCode": 39535,
       "symbols": 3517,
-      "relationships": 6891,
+      "relationships": 6991,
       "filesWithParseError": 0
     },
     {
@@ -39,7 +39,7 @@
       "trackedRFiles": 276,
       "linesOfCode": 50497,
       "symbols": 3484,
-      "relationships": 10099,
+      "relationships": 10369,
       "filesWithParseError": 1
     },
     {
@@ -48,21 +48,21 @@
       "trackedRFiles": 357,
       "linesOfCode": 65252,
       "symbols": 3963,
-      "relationships": 9891,
+      "relationships": 10092,
       "filesWithParseError": 0
     }
   ],
   "totals": {
     "trackedRFiles": 1174,
     "symbols": 16305,
-    "relationships": 41011,
+    "relationships": 41820,
     "filesWithParseError": 2
   },
   "note": "Every tracked .R/.r file of every pinned corpus repo, parsed with the shipped grammar. The two remaining parse-error files are CORRECT failures, not defects: shiny/inst/app_template/app.R is a Go text/template file that ships inside the shiny package and is not R, and testthat's tests/.../test-error-1.R is a deliberate syntax-error fixture. Before the hex-float grammar fix Matrix reported 12 error nodes across 4 files.",
-  "currentCommit": "0dc5d2f5424cba39266faa983973550a84fc3624",
+  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T00:34:45.279Z",
-    "contentSha256": "5e72b07c45608c9974a5ec985a2f11a6f8ee24f25a11c1b6ece0ea4748b2e517"
+    "sealedAt": "2026-09-28T03:06:57.788Z",
+    "contentSha256": "da90596885554a727ae1e9f3818cf35d87d408fc531d690eb8e13f6170ebf8d9"
   }
 }

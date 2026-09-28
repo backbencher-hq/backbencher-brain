@@ -637,8 +637,15 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // and the binding is a real R object in its own right, so both are emitted
       // and linked rather than one silently replacing the other.
       const s7Args = this.getArgumentsNode(callNode)
-      const declared = s7Args ? this.stringArgumentAt(s7Args, 0) : undefined
+      // The node as well as the text: it is the line that NAMES the class, which is not
+      // necessarily the line the call starts on.
+      const declaredNode = this.stringArgumentNodeAt(s7Args, 0)
+      const declared = declaredNode ? this.stringNodeText(declaredNode) : undefined
       const className = declared || name
+      // With no declared string, `className` falls back to the binding name, which the
+      // enclosing assignment already names. Falling back to the CALL node then keeps the
+      // edge on a line that mentions the binding, rather than inventing a position.
+      const classNameNode = declaredNode ?? node
       symbols.push({
         name: className,
         kind: ASTEngine.SymbolKind.Class,
@@ -656,7 +663,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           docstring: doc,
           metadata: { rSpecific: true, isS7ClassBinding: true, boundClass: className },
         })
-        this.pushRel(relationships, name, className, ASTEngine.RelationshipType.References, 1.0, { rSpecific: true, relationshipSubType: "s7_class_binding" }, node)
+        this.pushRel(relationships, name, className, ASTEngine.RelationshipType.References, 1.0, { rSpecific: true, relationshipSubType: "s7_class_binding" }, classNameNode)
       }
       for (const parent of this.extractNamedArguments(callNode, "parent")) {
         this.pushRel(relationships, className, parent, ASTEngine.RelationshipType.Extends, 1.0, { rSpecific: true, relationshipSubType: "s7_parent" }, this.namedArgumentNode(callNode, "parent", parent))
@@ -772,11 +779,12 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return ""
     }
     if (fnNode.type === "identifier") return this.unquoteIdentifier(fnNode.text)
-    // Anything else is NOT a name, and the empty string is the honest answer. The
-    // previous version of this line was `return this.unquoteIdentifier(fnNode.text)`, a
-    // blanket fallback that turned ANY node's source text into a function's name. For an
-    // ordinary call that is merely redundant, but R can CALL a non-name, and when it does
-    // the text became the target:
+    // A callee is nameable when its own text IS an R name -- and it is that simple, with
+    // no list of node types involved.
+    //
+    // The previous version of this line was a blanket `return unquoteIdentifier(
+    // fnNode.text)`, which turned ANY node's source text into a function's name. R can
+    // CALL a non-name, and when it does the text became the target:
     //
     //     chol2inv((if (uplo == "U") triu else tril)(x), ...)
     //
@@ -785,10 +793,49 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     // relationship target that is a copy of the caller's own source is not a
     // relationship; it is the analysis quoting its input back.
     //
-    // The list is an ALLOWLIST on purpose. Enumerating the node types R builds a callee
-    // from is checkable; enumerating the ones it does not is not, and a node type added
-    // by a grammar update would silently become a name again.
+    // An earlier attempt at this fix ALLOWLISTED node types, which was the wrong axis and
+    // cost real coverage: the grammar gives `return` its own node type, so every
+    // `return(x)` in the corpus stopped producing an edge -- 1,089 removals the audit
+    // could not explain. `return` is a name; it is a name the grammar happens to
+    // tokenize specially. Asking whether the TEXT is a name gets that right without
+    // enumerating the grammar, and it stays right if the grammar adds a node type.
+    if (this.isRName(fnNode.text)) return this.unquoteIdentifier(fnNode.text)
     return ""
+  }
+
+  /**
+   * Is this text an R name? R's rule: a letter or a `.` not followed by a digit, then
+   * letters, digits, `.` and `_`; or a backtick-quoted name, inside which almost
+   * anything is legal. Letters beyond ASCII are accepted, since R source is frequently
+   * UTF-8 and a name is a name in any alphabet.
+   *
+   * Character codes rather than a regexp, to keep the analyzer free of pattern matching.
+   * This is the only place the analyzer inspects a node's TEXT to decide what it is -- the
+   * grammar's node types do not carry a "this is a name" flag -- and it is listed in the
+   * documentation's inventory of text operations.
+   */
+  private isRName(text: string): boolean {
+    if (text.length === 0) return false
+    if (text.charCodeAt(0) === 96) {
+      return text.length >= 2 && text.charCodeAt(text.length - 1) === 96
+    }
+    const isLetter = (c: number) =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 0xc0 && c <= 0x24f) || (c >= 0x370 && c <= 0x1fff)
+    const isDigit = (c: number) => c >= 48 && c <= 57
+    const first = text.charCodeAt(0)
+    let i = 0
+    if (first === 46) {
+      i = 1
+      if (i < text.length && isDigit(text.charCodeAt(i))) return false
+    } else if (!isLetter(first)) {
+      return false
+    }
+    for (; i < text.length; i++) {
+      const c = text.charCodeAt(i)
+      if (isLetter(c) || isDigit(c) || c === 46 || c === 95) continue
+      return false
+    }
+    return true
   }
 
   /**
@@ -986,6 +1033,45 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * start when the name is synthesized (an S4 `validity` method has no literal
    * token in the source).
    */
+  /**
+   * Whether `at` is the start of the IDENTIFIER `name` in `segment`, rather than a place
+   * where those characters merely occur.
+   *
+   * R identifiers continue with letters, digits, `.` and `_`, so `theme` occurs inside
+   * `class_theme` and `sizes` inside `resize`. A substring search cannot tell those apart
+   * from the real thing, and the consequence is a relationship pointing at a line that
+   * does not name its target: `class_theme <- S7::new_class(` on line 219 matched
+   * `theme`, so `global exports theme` and `global contains theme` were attributed to 219
+   * while the class name is written on 220. Eight such edges in ggplot2's all-classes.R.
+   *
+   * A backtick-quoted name is a special case: inside backticks almost anything is legal,
+   * so only the closing backtick is excluded, and the backticks themselves are not part of
+   * the name.
+   */
+  private isIdentifierOccurrence(segment: string, at: number, name: string): boolean {
+    // Character codes, not a regexp: the analyzer carries no pattern matching at all, and
+    // the grammar-conformance audit counts regex literals and would (correctly) fail on
+    // one. The first version of this line was `/[A-Za-z0-9._]/.test(ch)`.
+    const isPart = (ch: string | undefined) => {
+      if (ch === undefined) return false
+      const c = ch.charCodeAt(0)
+      return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 46 || c === 95
+    }
+    const before = at > 0 ? segment[at - 1] : undefined
+    if (before === "`") {
+      // Inside backticks almost anything is legal, so a backticked name ends only at the
+      // closing backtick.
+      return segment[at + name.length] === "`"
+    }
+    // The only thing that disqualifies a position is a preceding identifier character.
+    // An allowlist of "acceptable" delimiters would be longer, easier to get wrong, and
+    // would reject the exotic ones; `$`, `::`, `=`, `(`, `,` and whitespace all work here
+    // for free because none of them is an identifier part.
+    if (isPart(before)) return false
+    const after = segment[at + name.length]
+    return !isPart(after)
+  }
+
   private nameLineOf(symbol: ASTEngine.UniversalSymbol, content: string): number {
     const start = symbol.range.startIndex
     const end = symbol.range.endIndex
@@ -993,7 +1079,16 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return symbol.range.startLine
     }
     const segment = content.substring(start, end)
-    const at = segment.indexOf(symbol.name)
+    // Every occurrence is examined, not just the first: a later one may be the real
+    // identifier while an earlier one is a substring. The scan is over the symbol's own
+    // range, so it is bounded by the declaration and cannot walk the file.
+    let at = -1
+    for (let from = 0; from <= segment.length - symbol.name.length; from++) {
+      const i = segment.indexOf(symbol.name, from)
+      if (i === -1) break
+      if (this.isIdentifierOccurrence(segment, i, symbol.name)) { at = i; break }
+      from = i
+    }
     if (at === -1) return symbol.range.startLine
     let line = symbol.range.startLine
     for (let i = 0; i < at; i++) if (segment.charCodeAt(i) === 10) line++
@@ -1410,7 +1505,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // An unnameable callee produces no edge. Counting it keeps the gap visible instead
       // of letting it vanish into a total.
       if (!callTarget) ambiguity.callsToUnnameableCallee = (ambiguity.callsToUnnameableCallee ?? 0) + 1
-      else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, fnNode)
+      else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, this.callTargetNode(fnNode, callTarget))
       if (attribution.confidence < 1.0) ambiguity.callsAttributedThroughClosure++
 
       // R6/R5 construction is only certain when the receiver was declared as a
@@ -1966,15 +2061,77 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const op = fnNode.childForFieldName("operator")?.text
       const rhs = fnNode.childForFieldName("rhs")
       if (ns && op && rhs) {
-        return `${this.unquoteIdentifier(ns.text)}${op}${rhs.type === "identifier" ? this.unquoteIdentifier(rhs.text) : rhs.text}`
+        // The receiver must itself be NAMEABLE for a qualified target to mean anything.
+        // R's promises package chains, so the LHS is routinely a call:
+        //
+        //     promises::promise(function(resolve, reject) { ... })$then
+        //
+        // and interpolating that LHS verbatim made the target a copy of the caller's
+        // source again -- the same failure the if-expression callee had, one level down
+        // and reached through a different branch. 4 such edges in testthat.
+        //
+        // When the receiver is a plain name or a chain of them, the qualified form is the
+        // information a reader wants (`pkg::fn`, `obj$method`, `Cls$new`). When it is not,
+        // the bare method name is the honest target: the call is still to `then`, and the
+        // receiver is an expression rather than a thing with a name.
+        const receiver = this.calleeName(ns)
+        if (!receiver) return bare
+        const rhsName = rhs.type === "identifier" ? this.unquoteIdentifier(rhs.text) : rhs.text
+        return `${receiver}${op}${rhsName}`
       }
       return bare
     }
     return bare
   }
 
+  /**
+   * The node that WRITES the edge's target, which is the node the edge's `line_number`
+   * must come from.
+   *
+   * The rule is: **the line where the target's LAST name component is written.** For
+   * `pkg::fn` and `obj$method` on one line that is the same line either way, so the
+   * common case is unaffected. It matters when R splits a chain, which the promises
+   * package does routinely:
+   *
+   *     p$value <- p$value$          <- line 743: `value` is here
+   *       then(function(value) {     <- line 744: `then` is HERE
+   *
+   * The target is `value$then`, and the method name is what identifies the call and what
+   * a reader searches for. Preferring the rhs puts the edge on 744. Preferring the
+   * expression start put it on 743, a line that does not contain the string `then` at
+   * all -- and "the line where the expression happens to begin" is not a stable property
+   * of the call, it is an artifact of where the author pressed return.
+   */
+  private callTargetNode(fnNode: Node, _target: string): Node {
+    if (fnNode.type !== "namespace_operator" && fnNode.type !== "extract_operator") return fnNode
+    const rhs = fnNode.childForFieldName("rhs")
+    if (rhs && rhs.type === "identifier") return rhs
+    return fnNode
+  }
+
   private stringArgumentAt(args: Node | null, index: number): string | undefined {
-    if (!args) return undefined
+    const n = this.stringArgumentNodeAt(args, index)
+    return n ? this.stringNodeText(n) : undefined
+  }
+
+  /**
+   * The Nth positional STRING argument of a call, as the NODE rather than the text.
+   *
+   * The node matters because an edge's `line_number` is the line of the node that NAMES
+   * the target, and the name of an S7 class lives in a string that need not be on the
+   * same line as the call:
+   *
+   *     class_theme <- S7::new_class(        <- line 219
+   *       "theme", class_S3_gg,              <- line 220: this is where `theme` is named
+   *       ...
+   *
+   * Attributing the edge to the call put `class_theme references theme` on line 219, a
+   * line that does not contain the word `theme` anywhere. The R-positions oracle found 6
+   * such edges in ggplot2 alone. Passing the string node puts the edge on the line that
+   * actually names the class, which is the line a reader needs.
+   */
+  private stringArgumentNodeAt(args: Node | null, index: number): Node | null {
+    if (!args) return null
     let seen = 0
     // The grammar exposes commas as named children too, so skip punctuation
     // explicitly while retaining source-order positional arguments.
@@ -1985,16 +2142,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (arg.childForFieldName("name")) continue
         const value = arg.childForFieldName("value")
         if (!value) continue
-        if (seen === index && value.type === "string") return this.stringNodeText(value)
-        if (seen === index) return undefined
+        if (seen === index) return value.type === "string" ? value : null
         seen++
         continue
       }
-      if (seen === index && arg.type === "string") return this.stringNodeText(arg)
-      if (seen === index) return undefined
+      if (seen === index) return arg.type === "string" ? arg : null
       seen++
     }
-    return undefined
+    return null
   }
 
   /** The Nth positional STRING argument of a call, unquoted. */
