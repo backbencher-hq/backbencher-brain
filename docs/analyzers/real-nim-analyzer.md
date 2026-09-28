@@ -40,7 +40,7 @@ two-command rebuild sequence. `.nim` is the only routed extension — see
 | `func f()` | `function` | `func_declaration` |
 | `iterator f()` | `function` | `iterator_declaration` |
 | `converter f()` | `function` | `converter_declaration` |
-| `method f()` | `method` | `method_declaration`, receiver type in metadata |
+| `method f()` | `method` | `method_declaration`; the receiver type is BOTH `ownerName` (so the method is owned, indexed and companion-visible) and `metadata.nimReceiverType` |
 | `template f()` | `macro` | `template_declaration` |
 | `macro f()` | `macro` | `macro_declaration` |
 | `type O = object` | `struct` | `object_declaration`, non-ref |
@@ -505,12 +505,48 @@ quiet machine will cover all 5,227 through the production path.
    `tree-sitter generate` needs for a 41 MB `parser.c` while other work is in
    flight. An unproven grammar patch wired into a pin would be worse than a
    recorded gap.
-2. **Cross-file method overrides are out of reach.** `overrides` needs the
-   project-wide type hierarchy; the analyzer is per-file, so it emits an override
-   only when the base is declared in the same file. Same-file overrides are
-   covered by fixture, seam and corpus evidence. The alternative — resolving
-   against a corpus-wide name set — would attribute an override to a same-named
-   method of an unrelated type, which is the failure mode this lane refuses.
+2. **Cross-file method overrides now RESOLVE — through the project's companion
+   index, and the per-file default is preserved.** The capability is not
+   NIM-specific: `ASTEngine.AnalyzeContext.overrideCompanion` already existed and
+   six analyzers consumed it, and NIM was the one that could not use it. The
+   blocker turned out to be one missing field rather than a missing algorithm —
+   **a Nim method never declared `ownerName`**. A method's owner IS its receiver
+   type, and `ownerName` is the family-standard field for that, but the receiver
+   was parked in `metadata.nimReceiverType` where nothing generic reads it. So the
+   companion index came back EMPTY for a file whose base class declared a method
+   (`buildOverrideCompanion` keys on `ownerName` + `kind === "method"`), and
+   cross-file resolution could not work no matter what the override pass did.
+   Setting `ownerName` also produced the `contains` edge from a receiver to its
+   method, which the ontology in this document had always claimed.
+
+   The override pass now calls the shared `findDeclaringParent` resolver, so the
+   semantics are identical to java/kotlin/csharp/groovy/scala/swift: the first
+   ancestor in declaration order that actually declares the method. The edge is
+   emitted at **confidence 0.9, not 1.0**, and that is load-bearing — the
+   companion carries `owner -> method names` and NOT each type's own base list, so
+   the walk descends only as far as bases visible in the current file. A hierarchy
+   three modules deep, whose middle module's base is in a third, stops at the
+   visible link. The edge records `nimCrossFileBase` and
+   `nimResolution: "companion-index"` so a companion-resolved edge is
+   distinguishable from a same-file one, and 0.9 keeps it a claim rather than an
+   assertion under the differential's 0.7 threshold.
+
+   **This family is gated by the M12 ground truth, not by a fixture lane**, and
+   that is a property of the fact rather than a gap in coverage: the base type and
+   the method it declares live in different modules by definition, so no
+   single-file fixture can express it. The ground truth asserts
+   `overrides:GlossPainter.paint -> Painter.paint` across `painter.nim` and
+   `gloss.nim`, and its harness is one of the few callers that builds a
+   companion. A mutant for it was written and deliberately REMOVED: the mutation
+   gate requires a mutant to turn the fixture suite red, and the fixture runner
+   passes no context, so the mutant was vacuous by construction and would have
+   made the gate red forever over a genuinely covered family. The fixture-visible
+   half of the same mechanism — a method declaring its `ownerName` — is gated
+   normally, as `nim/method-owner-name-dropped`.
+
+   The production indexer does not yet build a companion, so `bb index` behaves
+   as the honest per-file default. That is the same position the six adopting
+   languages are in, and it is stated here rather than implied.
 3. **`.nims` and `.nimble` are now ROUTED — decided on measurement, as the
    deferral required.** They were left pending on purpose, with a recorded reason:
    the pinned grammar declares both in its own `file-types`, and declaring a
