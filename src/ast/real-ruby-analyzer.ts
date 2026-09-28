@@ -384,10 +384,24 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // scope is kept verbatim (`A::B`) — identical reopen spellings merge,
         // matching how nested owners are compared by string elsewhere.
         const rawName = nameNode.text
-        const sepIdx = rawName.indexOf("::")
+        // LAST `::`, not the first. RUBD13 promised that a reopen and the nested
+        // spelling are ONE identity, and for `class M::Inner` the first and last
+        // separator coincide, so the ruling held by accident. For three or more
+        // segments they do not: `class Admin::Announcements::DistributionsController`
+        // split on the FIRST `::` produced a symbol NAMED
+        // `Announcements::DistributionsController` owned by `Admin`, while the
+        // nested spelling `module Admin; module Announcements; class
+        // DistributionsController` produces name `DistributionsController` under
+        // the chain Admin > Announcements. The two spellings therefore never
+        // unified, which is the exact failure RUBD13 was filed to prevent — and
+        // the file's OWN `leafName` helper splits on lastIndexOf, so the
+        // analyzer carried two rules that disagreed.
+        // Measured over 1,200 files: 58 non-leaf class/module names
+        // (mastodon 32, rails 26, rubocop 0).
+        const sepIdx = rawName.lastIndexOf("::")
         const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
         const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        const effOwner = scopeOwner ?? owner
+        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
 
         const superClass = this.extractSuperclass(node)
         const isRailsModel = this.isRailsModelName(superClass)
@@ -486,10 +500,19 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Same reopen normalization as class (`module A::B` ≡ nested
         // `module A; module B`) — RUBD13, master-review 2026-09.
         const rawName = nameNode.text
-        const sepIdx = rawName.indexOf("::")
+        // Same LAST-separator rule as the class branch above, for the same
+        // reason: `module A::B::C` must be the same identity as
+        // `module A; module B; module C`.
+        const sepIdx = rawName.lastIndexOf("::")
         const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
         const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        const effOwner = scopeOwner ?? owner
+        // The prefix is a path RELATIVE TO THE CURRENT SCOPE, so it resolves
+        // against the enclosing owner rather than replacing it.
+        // `module Outer; module Inner::Deep` names `Outer::Inner::Deep`, and
+        // `scopeOwner ?? owner` produced the bare `Inner` — an owner that looks
+        // top-level for a module three levels down, which is how the two
+        // spellings still failed to unify even after the leaf fix.
+        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
 
         const sym: ASTEngine.UniversalSymbol = {
           name,
@@ -1688,6 +1711,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
             let name = this.stripSymbolColon(arg.text)
             if (arg.type === "string") name = this.stripQuotes(arg.text)
+            // `define_method("#{sym}?")` names a method only at RUNTIME — the
+            // argument is a TEMPLATE, not a name, and the graph gained a symbol
+            // literally called `#{sym}?` that resolves to no method in any file.
+            // R7's placeholder-name doctrine: a symbol name must name something.
+            // The method is unknowable statically, so nothing is emitted, which
+            // is the same silence `define_method(some_var)` already gets.
+            // Measured: 7 symbols in 4 files per 1,200 (rails).
+            if (name.indexOf("#{") >= 0) break
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Method,

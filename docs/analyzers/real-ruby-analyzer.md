@@ -43,16 +43,16 @@ rather than keep a second copy that can drift.
 
 | Construct | Symbol | AST source |
 | --- | --- | --- |
-| `class Name < Base` | `class` | `class` name field, reopen-normalised to leaf + `A::B` owner (`fqn` in metadata) |
+| `class Name < Base` | `class` | `class` name field, reopen-normalised to **leaf** with the prefix resolved **relative to the enclosing owner** (`fqn` in metadata) |
 | `module Name` | `module` | `module` name field, same reopen normalisation |
+| `K = Class.new` / `Struct.new` / `Data.define` | `class` (`definedBy: classFactory`) | factory RHS |
+| `K = Module.new` | `module` (`definedBy: Module.new`) | factory RHS |
 | `def method(...)` | `method` (top-level: `function`) | `method` name field |
 | `def self.method(...)` | `method`, `isStatic` | `singleton_method` name field |
 | `class << self` methods | `method`, `isStatic` | `singleton_class` > `method` |
 | `attr_reader` / `attr_writer` / `attr_accessor` | `property` | `simple_symbol` **or `string`** arguments |
 | class-body `CONSTANT = value` | `constant` | `assignment` > `constant` |
-| `K = Class.new` / `Struct.new` / `Data.define` | `class` (`definedBy: classFactory`) | factory RHS |
-| `M = Module.new` | `module` (`definedBy: Module.new`) | factory RHS |
-| `define_method(:name)` | `method` (`isDynamicMethod`) | `simple_symbol` argument |
+| `define_method(:name)` | `method` (`isDynamicMethod`) | `simple_symbol` or `string` argument; a name containing `#{}` is a **template, not a name**, and is skipped |
 | `has_many` / `belongs_to` / `has_one` / `has_and_belongs_to_many` | `property` (`associationType`) | `simple_symbol`, `string` or `identifier` argument |
 | `scope` / `default_scope` | `method` (`scopeType`) | first `simple_symbol` argument |
 
@@ -80,10 +80,20 @@ The enum has 11 distinct values. This is what the analyzer does with **each** of
 | `exports` | **never emitted, and correctly so.** Ruby has no module-level export construct — every constant and method in a module is public unless `private_constant` / `private` says otherwise — so there is nothing for an `exports` edge to name. Minority construct: 3 of 14, and of the OO lanes only java emits it, at one site. |
 | `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
 
-**Which of those the differential actually audits for ruby:** `extends`, `implements`, `instantiates`,
-`overrides`, `calls`, `uses`. **`contains` and `references` are NOT audited** — they are emitted correctly
-and no gate compares them, and together they are ~40% of the rails edge count. A percentage computed over
-the audited set is a statement about the remainder, not about the file.
+**All 8 of the emitted types now have an independent oracle derivation.** `contains` and `references`
+were in no audited set and had no derivation at all — ~34% of the payload, correct as emitted and verified
+by nothing. Both are now derived (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`) and
+audited, which is what made the two identity defects below findable at all: both are *containment* facts.
+
+**Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the staged oracle mirrors):
+
+| reading | value |
+|---|---|
+| outside the audited set | **0%** (was 34%) |
+| MISSING | **63 (0.025%)** — `contains` 59, `instantiates` 3, `calls` 1 |
+| UNEXPLAINED | **507 (0.177%)** — `contains` 451, `calls` 31, `uses` 18, `overrides` 5, `instantiates` 2 |
+
+The first number in this lane's history taken over the whole corpus rather than a stride.
 
 ## Scope rules that are easy to get wrong
 
@@ -135,6 +145,9 @@ single post-pass. No nested symbol/relationship scan is used for ordinary extrac
 - **`module_function` copies are not modelled.** Instance-to-module copies are beyond static scope.
 - **`Class.new(Base)` superclass edges are not emitted.** The *symbol* is the core fix; the extends edge
   for a factory base is still owed.
+- **A symbol is created inside a dynamic or `class_eval` block** — `Class.new do … def m; end end` and
+  `class_eval { def m }` — and the graph has no way to say which class owns it. This is the bulk of the
+  `contains` share of the full-corpus residual.
 - **Cross-file override precision requires the optional project companion index.** Absent that context the
   analyzer stays deterministic and uses in-file declarations, downgrading to a declared 0.5
   first-parent guess rather than dropping the edge.
