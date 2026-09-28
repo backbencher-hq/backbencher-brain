@@ -128,7 +128,7 @@ grammar, which is correct — TOML v1.0.0 restricts bare keys to `A-Za-z0-9_-`.
 | a value as a symbol | ruled out — data, not identity |
 | an inline table's keys as symbols | ruled out — one value expression; recorded on the key instead |
 | implied parent tables as symbols | ruled out — never written, so inventing one is a guess |
-| `ERROR` / `MISSING` recovery nodes | **never occur** for this grammar. Twelve deliberately malformed documents and tree-sitter-toml either recovered or rejected the input as invalid TOML without producing either node. A malformed document that *is* accepted still yields a module and whatever sections parsed, so degradation is partial. Pinned by `toml/malformed-and-rejected`, which places the error **between** two keys so a walk that stopped at the recovery node would lose everything after it |
+| `ERROR` / `MISSING` recovery nodes | `ERROR` **does occur** — see below. `MISSING` does not. Twelve deliberately malformed documents and tree-sitter-toml either recovered or rejected the input as invalid TOML without producing either node. A malformed document that *is* accepted still yields a module and whatever sections parsed, so degradation is partial. Pinned by `toml/malformed-and-rejected`, which places the error **between** two keys so a walk that stopped at the recovery node would lose everything after it |
 | `"" = 1` (empty key) | parses, produces no symbol — an identity needs a name. Pinned by the same fixture |
 | external references of any kind | no TOML construct produces one |
 
@@ -282,11 +282,11 @@ both lanes never noticed. Nothing in `deriveTomlEdges` prevents that class of er
 | Gate | State |
 |---|---|
 | F3 fixtures | **6/6** — `identity-and-paths`, `arrays-and-values`, `module-name-collision`, `dotted-and-quoted-paths`, `store-seam-probe`, `malformed-and-rejected` |
-| F4 mutation | **8/8 caught** (entered with 0) |
+| F4 mutation | **9/9 caught** (entered with 0) |
 | M12 differential | **precision 1.000, recall 1.000** — TP=41, FP=0, FN=0, `earliestFailingLayer=none`, against a **hand-audited** 41-fact truth |
 | M14.0.TOML-CENSUS | **PASS** — 21 declared node types all accounted for (7 claimed, 13 ruled silent with a reason, 1 not-seen) over 835 files / 68 repos, plus 6 ruled non-carrier shapes. Consults **neither** the analyzer nor the oracle |
 | M14.0.PIPE | **9 store assertions** green through the real CLI against `brain.db` |
-| F6 fixture coverage | **PASS** — 17 handled, 29 fixture types, 0 uncovered, 0 dead literals |
+| F6 fixture coverage | **PASS** — 18 handled, 29 fixture types, 0 uncovered, 0 dead literals |
 | F5 differential | **100% / MISSING=0 / unexplained=0** on both corpora, and **5,515/5,515 at 657-file depth** |
 | SPEC #419 | **A, B, C, G pass**; 21/21 rows, gap list empty. **D red** (one tier, justified in the spec); **E/F** await the canonical baseline pin |
 | regex census | **0** |
@@ -346,6 +346,58 @@ The M12 audit finding nothing is the weaker result and is recorded as such. html
 hand audit found two places the analyzer was wrong; this one found none, because the
 oracle got there first. Writing "0 found" without that context would read as a
 stronger claim than it is.
+
+## Error recovery — and a claim that was false
+
+An earlier version of this page, and the completeness spec beside it, said `ERROR`
+and `MISSING` **never occur** for this grammar. That was measured against **twelve
+hand-made malformed documents** and never against the corpus. Measuring the corpus
+contradicted it: **2 of 743 files (0.27%) carry an `ERROR` node** —
+`cargo/tests/testsuite/cargo_add/invalid_manifest/{in,out}/Cargo.toml`, cargo's own
+deliberately-invalid manifest fixtures, where `key = invalid-value` is a bare word
+where TOML requires a value. Two synthetic documents and 743 real ones disagreed,
+and the real ones were right. `MISSING` holds: **zero** across the whole pool.
+
+The lane's own corpus census had been reporting "2 parse errors" the entire time.
+That number was sitting in the evidence and the spec contradicted it; nobody
+reconciled the two.
+
+`ERROR` is therefore classified `handled_verified`, and the analyzer now walks for
+recovery nodes itself. It had been pushing **no diagnostics at all**, so the
+"reported" half of the three-part contract was entirely the engine's — a contract
+resting on a caller, which is the same blindness the svelte lane had in the opposite
+direction. The walk uses `children`, not `namedChild`, because a `MISSING` node's
+expected token can be anonymous.
+
+Two consequences are declared rather than repaired, each with its blast radius:
+
+- **A key whose value fails to parse is not published.** The whole
+  `key = invalid-value` pair sits inside the `ERROR` and the walk does not descend
+  into one, so `invalid-section.key` is absent from a document whose table and every
+  earlier key are present. This costs exactly **2 symbols in 2 files**, both
+  cargo's invalid-manifest fixtures. Recovering it would mean inferring table scope
+  from *position* inside a region the parser marked unreadable — the `ERROR` sits at
+  document level, so ownership would have to come from "the last header before this
+  offset", and a wrong guess attaches a real key to the wrong table. Not worth it
+  for two symbols in two intentionally-broken files, and it is not silence: the file
+  is reported with a parse error at the key's own line.
+- **An unterminated header** such as `[bad` is recovered by the grammar into a real
+  `table` node whose header children include an `ERROR`, with a following genuine
+  header nested inside it. Read naively the analyzer would publish the invented
+  table and lose the real one. Measured across all 743 files this shape occurs
+  **zero** times, so no behaviour changes on the strength of a synthetic input — the
+  same discipline that removed the values-as-symbols mutant rather than fixing it,
+  because the measured enter state is stronger evidence than a stand-in. It is
+  recorded so a future corpus containing the shape inherits the decision.
+
+Pinned by `toml/malformed-and-rejected`, which asserts the analyzer's own message
+**verbatim** alongside the engine's — the only way to require the analyzer's half of
+the contract, since both report the same line — plus the mutants
+`toml/error-node-becomes-symbol` and `toml/own-error-report-dropped`.
+
+The whole-pool differential is unchanged by the error pass: **835 files, 7,906 truth
+edges, 100%, `MISSING=0`, `unexplained=0`**, so the addition is diagnostics only and
+no symbol or relationship moved.
 
 ## Not closed
 

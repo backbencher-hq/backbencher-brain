@@ -338,6 +338,38 @@ export class RealTomlAnalyzer implements ASTEngine.LanguageAnalyzer {
       endIndex: node.endIndex,
     })
 
+
+    // --- Error collection ----------------------------------------------------
+    // The error-recovery contract is REPORTED / BYPASSED / KEEP PUBLISHING, and
+    // this analyzer was honouring only the middle and last of those on its own:
+    // it pushed no diagnostics at all, so the "reported" half was entirely the
+    // ENGINE's, reached through `children` rather than anything this file does.
+    // That is a contract resting on a caller — the same blindness the svelte lane
+    // had, in the opposite direction. Measured over the whole 743-file pool, 2
+    // files (0.27%) carry an ERROR node, and the spec claimed neither ERROR nor
+    // MISSING ever occurred here, from twelve hand-made malformed documents. The
+    // corpus says otherwise, so this walks the tree itself and reports each
+    // recovery node at its OWN span, matching what the engine will also say.
+    // `children`, not `namedChild`: the expected token of a MISSING node can be
+    // anonymous, and a named-only walk is blind to exactly the case it exists for.
+    if (rootNode.hasError) {
+      const errStack: Node[] = [rootNode]
+      while (errStack.length > 0) {
+        const n = errStack.pop()!
+        if (n.type === "ERROR" || n.isMissing) {
+          errors.push({
+            message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
+            range: range(n),
+            severity: "warning",
+          })
+        }
+        for (let i = n.childCount - 1; i >= 0; i--) {
+          const child = n.child(i)
+          if (child) errStack.push(child)
+        }
+      }
+    }
+
     // The file is the module. A TOML document is one root table, and without a
     // module every top-level key is parentless and the file has no identity.
     symbols.push({
