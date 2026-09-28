@@ -57,6 +57,13 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 # scanner is now load-bearing for CSS exactly as it is for cpp. Found while
 # vendoring tree-sitter-css for the CSS lane's url(../..) parse class.
 !grammars/tree-sitter-css/src/scanner.c
+# Fourth grammar, same trap: tree-sitter-scss's external scanner implements the
+# `CONCAT` token, which is what `_concatenated_identifier` is built from — SCSS
+# interpolation such as `#{$a}-suffix`. Without this negation the file is silently
+# untracked, the grammar still generates (scanner.c is regenerated? no — it is NOT
+# generated, it is hand-written, and its ABSENCE makes the build fail at link time
+# with an undefined `_concat` rather than at parse time), and the lane looks vendored.
+!grammars/tree-sitter-scss/src/scanner.c
 
 # Grammar registry network cache (M60). Raw npm/GitHub answers, ~3.6 MB,
 # regenerable with `bun run grammar:registry:refresh`, and deliberately NOT
