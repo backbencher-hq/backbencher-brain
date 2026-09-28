@@ -124,16 +124,25 @@ Edges: 14410 references, 11973 contains, 7581 calls, 1157 imports, 265 extends,
 
 M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
 
-M14.0.F5: **100 % on both corpora**, edge for edge — `P3D-Legacy` 544/544 truth
-edges covered, `DISMTools` 1908/1908, with **0 missing, 0 unexplained, 0
-heuristic** on each, and `analyzer-edges` equal to `tree-truth` exactly. Audited
-labels: `calls`, `contains`, `imports`, `extends`, `implements`. `references` is
-deliberately excluded because the oracle does not derive it.
+M14.0.F5: **100 % edge for edge, on a 120-file draw** — `P3D-Legacy` 60 of 1,880
+files, 627/627 truth edges covered; `DISMTools` 60 of 483, 1,966/1,966; **0
+missing, 0 unexplained, 0 heuristic** on each, with `analyzer-edges` equal to
+`tree-truth` exactly. Audited labels: `calls`, `contains`, `imports`, `extends`,
+`implements`; `references` is deliberately excluded because the oracle does not
+derive it. **That is 4.5 % of the corpus**, drawn by a rotation that prefers
+never-sampled files, and 48 % of the corpus carries a syntax error the
+differential has never been run against — so this is not a whole-corpus claim
+and the full sweep is the outstanding measurement.
 
 The differential is what found the three defects a corpus-wide count could not,
 because in each case the count stayed healthy while a class of output was missing
 or wrong:
 
+- **a construction with arguments was not a call** — `New Box(1, 2)` is an
+  `array_creation_expression` with a `type` field and no `function` field, so
+  reading the callee from `function` dropped 15,577 call edges across 1,718 of
+  2,660 files. Found NOT by the differential, which read 100 % with the defect
+  live because the oracle made the same assumption; found by writing the fixture.
 - **constructors were absent entirely** — `Public Sub New()` has no `name` field
   (`New` is an anonymous token), so the "declaration without a name" guard
   returned *before* the naming contract was reached. 12,549 symbols contained

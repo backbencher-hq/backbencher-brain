@@ -43,20 +43,28 @@ resolution, analyzer dispatch and the wasm load are all exercised.
 | unknown symbol kinds | **0** |
 | **relationships without a site line** | **0** of 35,442 |
 
-### The analyzer's own differential (F5) — 100 % on both corpora
+### The analyzer's own differential (F5) — 100 % on a 120-file draw
 
 A tree-derived oracle, written to diverge from the analyzer on every axis that
 could hide a shared mistake (flat cursor sweep vs recursive walk, ownership by
 byte range vs a push/pop stack, callee by document-order leaf vs the `function`
 field), compared edge for edge against analyzer output.
 
-| corpus | truth edges | covered | missing | unexplained | heuristic |
-|---|---:|---:|---:|---:|---:|
-| `P3D-Legacy` (primary) | 544 | **544 (100 %)** | 0 | **0** | 0 |
-| `DISMTools` (second corpus) | 1,908 | **1,908 (100 %)** | 0 | **0** | 0 |
+| corpus | files drawn | truth edges | covered | missing | unexplained | heuristic |
+|---|---:|---:|---:|---:|---:|---:|
+| `P3D-Legacy` (primary) | 60 of 1,880 | 627 | **627 (100 %)** | 0 | **0** | 0 |
+| `DISMTools` (second corpus) | 60 of 483 | 1,966 | **1,966 (100 %)** | 0 | **0** | 0 |
 
 `analyzer-edges` equals `tree-truth` exactly on both, so the agreement is
 edge-for-edge rather than a percentage that hides a compensating pair.
+
+**Read that as 120 files, not 2,660.** It is 4.5 % of the corpus, and it was
+drawn by the cold-pool rotation, which prefers files never sampled before — so
+it is a fresh sample, not a representative one, and nothing here should be read
+as a whole-corpus claim. The gap that matters: **48 % of the corpus carries a
+syntax error** (the profile below), and the differential has never been run
+against an errored file, because the draw is dominated by clean ones. A full
+sweep is the outstanding measurement and its number is expected to be lower.
 
 The audited labels are `calls`, `contains`, `imports`, `extends` and
 `implements`. `references` is deliberately **not** audited: the oracle does not
@@ -94,7 +102,17 @@ healthy while a class of output was absent or wrong:
    nothing walked to it, so containment navigation stopped at the class. It is
    emitted once in `pushSymbol` now — the fix that cannot recur, because there is
    no longer a visitor that can forget.
-4. Five defects were in the **oracle**, not the analyzer, and each is recorded at
+4. **A construction with arguments was not a call at all.** `New Box()` is an
+   `invocation_expression`; `New Box(1, 2)` is an `array_creation_expression`
+   with a `type` field and no `function` field. The callee was read from
+   `function`, so every construction with arguments published no edge — **15,577
+   occurrences across 1,718 of 2,660 files**. The way this was found is the
+   point: **F5 read 100 % with the defect live**, because the oracle derived
+   `calls` from `invocation_expression` too. Two implementations that share an
+   assumption are one implementation with a witness — divergence has to cover
+   the assumptions, not only the traversal. The fixture and its mutant are what
+   catch what the differential structurally cannot.
+5. Five defects were in the **oracle**, not the analyzer, and each is recorded at
    the line that earned it: a field's unit is the `variable_declarator`, not the
    `field_declaration` (`Dim X, Y, width As Integer` is three members); a
    namespace is a declaration that contains its types; a dotted base type is ONE
