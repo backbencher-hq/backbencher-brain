@@ -121,9 +121,12 @@ single post-pass. No nested symbol/relationship scan is used for ordinary extrac
   `metadata.classAndGlobalVarsSkipped`.
 - **`def` inside a method body declares no symbol.** `walkBody` walks nested defs' bodies for calls but
   does not declare them, because Ruby defines them when the outer method runs.
-- **A compound write to a multiple ivar target is published as a read.** `@a, @b = 1, 2` parses with the
-  ivars under a `right_assignment_list`, which the write-guard does not name (482 nodes in the corpus
-  sweep). Open — see the review, §3.5.
+- **A bare write target in a multiple assignment is published as a read.** `@a, @b = 1, 2` parses with the
+  ivars under a `left_assignment_list`, so the write-guard's `parent is assignment` test is false and each
+  target emits a `uses` read. Compound assignment (`@n ||= v`) *is* handled under SCD1, so the gap is the
+  multiple form only. **66 edges in 23 files across 1,200 sampled.** Deliberately unfixed: the read
+  oracle derives the same reads as truth, and fixing the analyzer alone would turn two of them into F5
+  `MISSING` for a strictly-more-correct change — see the review, §3.5.
 - **`element_reference` targets spell as `[]`.** `params[:tag]` emits `calls:[]`, a target that names no
   resolvable method. Flagged, not ruled.
 - **`module_function` copies are not modelled.** Instance-to-module copies are beyond static scope.
