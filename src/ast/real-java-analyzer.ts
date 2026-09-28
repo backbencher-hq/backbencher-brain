@@ -842,6 +842,46 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { nodeType: type },
           })
         }
+        // JD-J15 (M60 java deep review, 2026-09-27): this branch created the
+        // Constant SYMBOL and stored the field's type on it as `returnType` —
+        // but emitted no References edge for that type, so the GRAPH could not
+        // see it. An interface's constants are part of its public surface
+        // (JLS 9.3: public static final by definition), so
+        //   interface I { String IDENTITY = "id"; }
+        // published no reference to `String` at all, while every neighbouring
+        // position fired: a class field, an enum's `static final` field, a
+        // record component and an annotation element all publish their type.
+        //
+        // The symbol carrying a type the relationship graph omits is the same
+        // disagreement the M59 #825 line work exists to prevent, one level up:
+        // hover on the constant could report a type that no edge supports.
+        //
+        // The fix belongs HERE and not in the `field_declaration` branch below:
+        // this branch claims `constant_declaration` first, so adding the node
+        // type there is dead code — the first attempt at this fix changed nothing
+        // for exactly that reason, and a fix that provably does nothing needs
+        // explaining before it needs fixing.
+        //
+        // Found by the DIFFERENTIAL, which is worth recording: after nine
+        // defects in the four oracles this review wrote, the oracle is finally
+        // catching an analyzer defect rather than the other way round. It
+        // surfaced as the last two MISSING rows at 400 files
+        // (GormProperties.java -> String, clojure/asm/Opcodes.java -> Integer) —
+        // both ubiquitous types, both interface constants.
+        const constTypeNode = node.childForFieldName("type")
+        if (constTypeNode && parentContext) {
+          for (const { name: t, line } of this.collectJavaTypeNames(constTypeNode)) {
+            relationships.push({
+              source: parentContext.name,
+              target: t,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              // M59 (#825): the line the constant's TYPE is named on.
+              line_number: line,
+              metadata: { relationshipType: "declared_type", declaredOn: type },
+            })
+          }
+        }
       }
       else if (type === "field_declaration") {
         const modifiers = this.getJavaModifiers(node)
