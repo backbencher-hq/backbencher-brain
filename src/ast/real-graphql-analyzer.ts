@@ -109,8 +109,62 @@ interface DirectiveApplication {
   line: number
 }
 
+/**
+ * The `Directive` node each application came from, in a side table.
+ *
+ * The emitter needs the node to reach a directive argument's VALUE, because a
+ * directive argument may name an enum member and that is a reference. Storing the
+ * node on the application itself would be simpler and wrong: these objects are
+ * handed to `metadata.graphqlDirectives` on every symbol they decorate, and a
+ * tree-sitter `Node` in stored metadata is an AST handle in a row the store
+ * serialises. A WeakMap keeps the association without putting anything in the
+ * metadata, and lets the node be collected with the tree.
+ */
+const DIRECTIVE_NODE = new WeakMap<DirectiveApplication, Node>()
+
 export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * `node.type` memoised per node id, for the duration of one `analyze` call.
+   *
+   * `type` is a marshalling getter — every read crosses into WASM and copies a
+   * string out — and the analyzer reads it far more often than there are nodes:
+   * measured on the 20,368-line GitHub public schema, **103,531 reads of 31,491
+   * distinct nodes, so 69.6% were redundant.** `node.id`, by contrast, is a plain
+   * own property set in the binding's constructor, so keying a `Map` on it costs
+   * nothing and turns every read after the first into a hash lookup.
+   *
+   * It is an instance field only because the readers are instance methods, and it
+   * is REASSIGNED at the top of every `analyze` call, which is what makes it safe:
+   * a `Node` id is only unique within one tree, and the binding documents that a
+   * node reused from an older tree keeps its id, so a cache that outlived a call
+   * could answer with the previous tree's type. Reassigning makes that impossible
+   * rather than merely unlikely.
+   */
+  private typeCache: Map<number, string> = new Map()
+
+  /** `node.type`, read through the per-call memo. */
+  private typeOf(node: Node): string {
+    // The key must be a real id. A node whose `id` is not a number — the binding's
+    // sentinel for "no node" carries none — would otherwise share the single key
+    // `undefined` with every other such node and be answered with the FIRST one's
+    // type. That is not hypothetical: routing a plain object's `.type` string
+    // through here did exactly that, cached `ID` under `undefined`, and then
+    // reported `ID` as the type of an argument declared `Role`. A string field and
+    // a node property look identical to a regex, which is how it got in.
+    const id = (node as unknown as { id?: number }).id
+    if (typeof id !== "number") return node.type
+    const hit = this.typeCache.get(id)
+    if (hit !== undefined) return hit
+    const t = node.type
+    this.typeCache.set(id, t)
+    return t
+  }
+
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    // A fresh memo per call: a `Node` id is unique only within one tree, and the
+    // binding reuses ids for nodes carried over from an older tree, so a cache
+    // that outlived the call could return the PREVIOUS tree's type for this one.
+    this.typeCache = new Map()
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -306,7 +360,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Federation v2 declares itself, so the application is a real reference
         // to the `@link` directive like any other.
         this.emitDirectiveApplications(node, directivesOf(node), "schema", sel, addRelationship, t === "SchemaExtension")
-        pushChildren(node, { name: "schema", kind: ASTEngine.SymbolKind.Namespace }, sel, inExtension, (c) => c.type === "OperationTypeDefinition")
+        pushChildren(node, { name: "schema", kind: ASTEngine.SymbolKind.Namespace }, sel, inExtension, (c) => this.typeOf(c) === "OperationTypeDefinition")
         continue
       }
 
@@ -436,7 +490,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const name = this.nameOf(node)
         if (name) {
           const argsNode = this.firstChildOfType(node, "ArgumentsDefinition")
-          const repeatable = this.hasChild(node, (n) => n.type === "repeatable")
+          const repeatable = this.hasChild(node, (n) => this.typeOf(n) === "repeatable")
           const locations = this.firstChildOfType(node, "DirectiveLocations")
           const locationNames = locations
             ? this.collectDirectiveLocations(locations).map((l) => l.name)
@@ -458,6 +512,21 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(this.directiveMetadata(directivesOf(node))),
             },
           })
+          // A directive definition's ARGUMENT TYPE is a type reference, and this
+          // branch emitted none at all — while the `FieldDefinition` branch below
+          // emits `field_argument_type` for the identical construct. So
+          // `directive @auth(requires: Role = ADMIN)` said nothing about `Role`,
+          // and a directive's argument type was the only declared type in the
+          // language with no edge to it. The role is its own name rather than a
+          // reuse of `field_argument_type`, because "field" is simply untrue here
+          // and a misleading role name hides the finding in the data.
+          if (argsNode) {
+            for (const arg of this.argumentPairs(argsNode)) {
+              if (!arg.type || !arg.typeNode) continue
+              addRelationship(`@${name}`, arg.type, ASTEngine.RelationshipType.Uses, this.lineOf(arg.typeNode), "directive_argument_type", { argument: arg.name })
+              if (arg.name) this.emitEnumValueReferences(`@${name}`, arg.defaultNode, arg.type, addRelationship, { declaration: "directive_argument_default", argument: arg.name })
+            }
+          }
         }
         continue
       }
@@ -514,6 +583,12 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
                 argument: arg.name,
                 ...(inExtension ? { extension: true } : {}),
               })
+              // `role: Color = RED` on an argument definition: the argument
+              // declares the type, so the enum value resolves without guessing.
+              // An argument is a PARAMETER, not a symbol, so it has no identity to
+              // be the source of an edge. The field does, and `argument` says which
+              // argument — exactly as `field_argument_type` above already does.
+              if (arg.name) this.emitEnumValueReferences(ownerSymbol, arg.defaultNode, arg.type, addRelationship, { declaration: "argument_default", argument: arg.name })
             }
           }
           this.emitDirectiveApplications(node, directivesOf(node), ownerSymbol, sel, addRelationship, inExtension)
@@ -542,7 +617,10 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
               graphqlRole: "input_field",
               ...(typeNode && typeNode.text ? { rawType: typeNode.text } : {}),
               ...(fieldType ? { nullable: !this.isNonNullType(typeNode!) } : {}),
-              ...(this.defaultValueOf(node) !== undefined ? { defaultValue: this.defaultValueOf(node) } : {}),
+              // Called ONCE. The conditional form below ran it twice per input
+              // field — a `firstChildOfType` walk each time — to test a value it
+              // then computed again, and this is the per-node hot path.
+              ...(() => { const dv = this.defaultValueOf(node); return dv !== undefined ? { defaultValue: dv } : {} })(),
               ...(inExtension ? { inExtension: true } : {}),
               ...(this.directiveMetadata(directivesOf(node))),
             },
@@ -550,6 +628,15 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           addRelationship(owner.name, ownerSymbol, ASTEngine.RelationshipType.Contains, this.lineOf(this.firstChildOfType(node, "Name") ?? node), "contains", {
             ...(inExtension ? { extension: true } : {}),
           })
+          // `color: Color = RED` — the node states its own type, so the value's
+          // enum is not a guess.
+          // The source is the field's QUALIFIED identity (`Filter.color`), not the
+          // bare `color`: the bare name is not a symbol, so an edge from it has no
+          // source to resolve to. This is the same identity the `contains` and
+          // `input_field_type` edges already use, and the corpus sweep only ever
+          // measured unresolved TARGETS, so a bad source here would have been
+          // invisible to it.
+          this.emitEnumValueReferences(ownerSymbol, this.firstChildOfType(node, "DefaultValue"), fieldType, addRelationship, { declaration: "input_field_default" })
           // Same guard as a field's return type, for the same reason.
           if (fieldType) {
             addRelationship(ownerSymbol, fieldType, ASTEngine.RelationshipType.Uses, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "input_field_type", {
@@ -596,6 +683,19 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
             const typeNode = this.firstChildOfType(varDef, "Type")
             const varType = typeNode ? this.namedTypeName(typeNode) : undefined
             if (!varName) continue
+            // `$c: Color` is a type reference of exactly the same class as a
+            // field's return type, an argument's type and an input field's type —
+            // and those three all emit one. This one did not, so a variable was
+            // the only declared type in the language with no edge to it, and
+            // `returnType`/`rawType` were carrying the fact as a string where
+            // every sibling fact is a relationship.
+            if (varType) {
+              addRelationship(`$${varName}`, varType, ASTEngine.RelationshipType.Uses, this.lineOf(this.namedTypeNode(typeNode!) ?? typeNode!), "variable_type", {
+                operation: opName,
+              })
+            }
+            // `$c: Color = RED` states its own type, so the value resolves.
+            this.emitEnumValueReferences(`$${varName}`, this.firstChildOfType(varDef, "DefaultValue"), varType, addRelationship, { declaration: "variable_default" })
             symbols.push({
               name: `$${varName}`,
               kind: ASTEngine.SymbolKind.Variable,
@@ -622,7 +722,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           // own outside one.
           this.emitDirectiveApplications(varsNode, directivesOf(varsNode), opName, sel, addRelationship, false)
         }
-        pushChildren(node, { name: opName, kind: ASTEngine.SymbolKind.Method }, { root: opName, path: [] }, inExtension, (c) => c.type === "VariableDefinition")
+        pushChildren(node, { name: opName, kind: ASTEngine.SymbolKind.Method }, { root: opName, path: [] }, inExtension, (c) => this.typeOf(c) === "VariableDefinition")
         continue
       }
 
@@ -673,6 +773,14 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const qualified = sel.enclosingType ? `${sel.enclosingType}.${fieldName}` : fieldName
           const path = [...sel.path, fieldName].join(".")
           const argsNode = this.firstChildOfType(node, "Arguments")
+          // `item(c: RED)`: an executable document does not carry the argument's
+          // type, so the enum member is named bare and the store's unique-name
+          // strategy decides it. Naming a type here would be a fabrication.
+          if (argsNode && sel.root) {
+            for (const arg of this.childrenOfType(argsNode, "Argument")) {
+              this.emitEnumValueReferences(sel.root, this.firstChildOfType(arg, "Value"), undefined, addRelationship, { declaration: "field_argument" })
+            }
+          }
           addRelationship(sel.root, qualified, ASTEngine.RelationshipType.Uses, this.lineOf(nameNode), "field_selection", {
             ...(alias ? { alias } : {}),
             ...(argsNode ? { arguments: this.argumentNames(argsNode) } : {}),
@@ -684,7 +792,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         const childPath = [...sel.path, fieldName ?? "?"]
         // A field's own selection set belongs to the field's return type, which
         // is unknown here, so the enclosing type does NOT propagate into it.
-        pushChildren(node, { name: fieldName, kind: ASTEngine.SymbolKind.Property }, { root: sel.root, enclosingType: undefined, path: childPath }, inExtension, (c) => c.type === "Name" || c.type === "Alias")
+        pushChildren(node, { name: fieldName, kind: ASTEngine.SymbolKind.Property }, { root: sel.root, enclosingType: undefined, path: childPath }, inExtension, (c) => this.typeOf(c) === "Name" || this.typeOf(c) === "Alias")
         continue
       }
 
@@ -713,7 +821,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.emitDirectiveApplications(node, directivesOf(node), sel.root ?? "", sel, addRelationship, false)
         // The type condition is optional; without one the selections stay on
         // whatever type encloses them.
-        pushChildren(node, { name: onType, kind: ASTEngine.SymbolKind.Type }, { root: sel.root, enclosingType: onType ?? sel.enclosingType, path: [...sel.path] }, inExtension, (c) => c.type === "TypeCondition")
+        pushChildren(node, { name: onType, kind: ASTEngine.SymbolKind.Type }, { root: sel.root, enclosingType: onType ?? sel.enclosingType, path: [...sel.path] }, inExtension, (c) => this.typeOf(c) === "TypeCondition")
         continue
       }
 
@@ -787,7 +895,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const def of this.topLevelDefinitions(rootNode)) {
       const inner = this.innermostNamed(def)
       if (!inner) continue
-      if (inner.type === "OperationDefinition" || inner.type === "FragmentDefinition") hasExecutable = true
+      if (this.typeOf(inner) === "OperationDefinition" || this.typeOf(inner) === "FragmentDefinition") hasExecutable = true
       else hasTypeSystem = true
     }
     if (hasTypeSystem && hasExecutable) return "mixed"
@@ -837,7 +945,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const def of this.topLevelDefinitions(rootNode)) {
       const inner = this.innermostNamed(def)
       if (!inner || !inner.type.endsWith("Extension")) continue
-      if (inner.type === "SchemaExtension") {
+      if (this.typeOf(inner) === "SchemaExtension") {
         out.push({ name: "schema", symbolKind: ASTEngine.SymbolKind.Namespace })
         continue
       }
@@ -891,7 +999,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private innermostNamed(node: Node): Node | null {
     let cur: Node = node
     for (;;) {
-      if (!RealGraphqlAnalyzer.DEFINITION_WRAPPERS.has(cur.type)) return cur
+      if (!RealGraphqlAnalyzer.DEFINITION_WRAPPERS.has(this.typeOf(cur))) return cur
       const next = this.onlyNamedChild(cur)
       if (!next) return cur
       cur = next
@@ -914,8 +1022,8 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * X` (a duplicate identity in the index).
    */
   private topLevelDefinitions(rootNode: Node): Node[] {
-    if (rootNode.type === "Definition") return [rootNode]
-    if (rootNode.type === "Document") return this.childrenOfType(rootNode, "Definition")
+    if (this.typeOf(rootNode) === "Definition") return [rootNode]
+    if (this.typeOf(rootNode) === "Document") return this.childrenOfType(rootNode, "Definition")
     const document = this.firstChildOfType(rootNode, "Document")
     if (document) return this.childrenOfType(document, "Definition")
     return this.childrenOfType(rootNode, "Definition")
@@ -924,7 +1032,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private childrenOfType(node: Node, type: string): Node[] {
     const out: Node[] = []
     for (const c of node.namedChildren) {
-      if (c && c.type === type) out.push(c)
+      if (c && this.typeOf(c) === type) out.push(c)
     }
     return out
   }
@@ -994,6 +1102,21 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(sel.root && sel.root !== owner ? { within: sel.root } : {}),
         ...(inExtension ? { extension: true } : {}),
       })
+      // `@auth(role: RED)` — a directive argument may name an enum member, and
+      // that is a reference. The directive's own declaration may be in another
+      // file, so exactly as with an executable field argument the member is named
+      // BARE and the store's unique-name strategy decides it. Naming a type here
+      // would be a fabrication.
+      const dnode = DIRECTIVE_NODE.get(app)
+      const dargs = dnode ? this.firstChildOfType(dnode, "Arguments") : null
+      if (dargs) {
+        for (const arg of this.childrenOfType(dargs, "Argument")) {
+          this.emitEnumValueReferences(owner, this.firstChildOfType(arg, "Value"), undefined, addRelationship, {
+            declaration: "directive_argument",
+            directive: `@${app.name}`,
+          })
+        }
+      }
     }
   }
 
@@ -1022,6 +1145,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       list.push({ name: nameNode.text, ...(Object.keys(args).length ? { arguments: args } : {}), line: this.lineOf(nameNode) })
+      DIRECTIVE_NODE.set(list[list.length - 1], d)
     }
     return list.length ? list : null
   }
@@ -1046,8 +1170,8 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectDirectiveLocations(node: Node): Array<{ name: string; node: Node }> {
     const out: Array<{ name: string; node: Node }> = []
     const walk = (n: Node) => {
-      if (n.type === "DirectiveLocation") {
-        const inner = this.findChild(n, (c) => c.type === "ExecutableDirectiveLocation" || c.type === "TypeSystemDirectiveLocation")
+      if (this.typeOf(n) === "DirectiveLocation") {
+        const inner = this.findChild(n, (c) => this.typeOf(c) === "ExecutableDirectiveLocation" || this.typeOf(c) === "TypeSystemDirectiveLocation")
         const leaf = inner ? (inner.namedChild(0) ?? inner) : n
         out.push({ name: leaf.text, node: leaf })
         return
@@ -1075,7 +1199,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const out: Array<{ name: string; node: Node }> = []
     const seen = new Set<string>()
     const walk = (n: Node) => {
-      if (n.type === "NamedType") {
+      if (this.typeOf(n) === "NamedType") {
         const name = this.nameOf(n)
         if (name && !seen.has(name)) {
           seen.add(name)
@@ -1092,7 +1216,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private namedTypeNode(typeNode: Node): Node | null {
-    return this.findDescendant(typeNode, (n) => n.type === "NamedType")
+    return this.findDescendant(typeNode, (n) => this.typeOf(n) === "NamedType")
   }
 
   /** Resolve a `Type`/`TypeCondition` node to its base named type name. */
@@ -1120,20 +1244,75 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return value?.text
   }
 
+  /**
+   * Every `EnumValue` in a VALUE position — a reference — with its line.
+   *
+   * The grammar puts an `EnumValue` node in two different places, and conflating
+   * them is the whole bug: `EnumValueDefinition > EnumValue` is a DECLARATION
+   * (already a symbol, with a `contains` edge from its enum), while
+   * `Value > EnumValue` is a REFERENCE to one. Only the second is a relationship,
+   * and the test is the parent, never the node type alone. Values nest
+   * (`ListValue > Value`, `ObjectField > Value`), so this descends rather than
+   * looking at direct children.
+   */
+  private enumValueReferences(valueNode: Node | null | undefined): Array<{ name: string; line: number }> {
+    const out: Array<{ name: string; line: number }> = []
+    if (!valueNode) return out
+    const walk = (n: Node): void => {
+      if (this.typeOf(n) === "EnumValue" && n.parent?.type === "Value") {
+        const name = this.nameOf(n)
+        if (name) out.push({ name, line: this.lineOf(n) })
+        return
+      }
+      for (const c of n.namedChildren) {
+        if (c) walk(c)
+      }
+    }
+    walk(valueNode)
+    return out
+  }
+
+  /**
+   * Emit `uses` edges for the enum values a value position names.
+   *
+   * `enumType` is supplied ONLY where the document itself states which enum the
+   * value belongs to — an `InputValueDefinition` or `VariableDefinition` carries
+   * its own `Type` sibling, so `color: Color = RED` proves `RED` is `Color.RED`.
+   * An executable field argument does not: `item(filter: { color: RED })` names
+   * the INPUT OBJECT, and reaching `Color` would need that object's declaration,
+   * which is in another file. So there the target stays the bare member name and
+   * the store's own unique-name strategy decides it — the same rule the analyzer
+   * already applies to a field selection.
+   */
+  private emitEnumValueReferences(
+    source: string,
+    valueNode: Node | null | undefined,
+    enumType: string | undefined,
+    addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, line: number, role: string, metadata?: Record<string, any>) => void,
+    metadata: Record<string, any> = {},
+  ): void {
+    if (!source) return
+    for (const ref of this.enumValueReferences(valueNode)) {
+      const target = enumType ? `${enumType}.${ref.name}` : ref.name
+      addRelationship(source, target, ASTEngine.RelationshipType.Uses, ref.line, "enum_value_reference", { ...metadata, ...(enumType ? { enumType } : {}) })
+    }
+  }
+
   private argumentNames(argsNode: Node): string[] {
     return this.childrenOfType(argsNode, "Argument")
       .map((a) => this.nameOf(a))
       .filter((n): n is string => !!n)
   }
 
-  private argumentPairs(argsNode: Node): Array<{ name?: string; type?: string; typeNode?: Node }> {
-    const pairs: Array<{ name?: string; type?: string; typeNode?: Node }> = []
+  private argumentPairs(argsNode: Node): Array<{ name?: string; type?: string; typeNode?: Node; defaultNode?: Node }> {
+    const pairs: Array<{ name?: string; type?: string; typeNode?: Node; defaultNode?: Node }> = []
     for (const arg of this.childrenOfType(argsNode, "InputValueDefinition")) {
       const typeNode = this.firstChildOfType(arg, "Type")
       pairs.push({
         name: this.nameOf(arg),
         type: typeNode ? this.namedTypeName(typeNode) : undefined,
         typeNode: typeNode ?? undefined,
+        defaultNode: this.firstChildOfType(arg, "DefaultValue") ?? undefined,
       })
     }
     return pairs
@@ -1304,7 +1483,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // nor its own name.
     let anchor: Node = node
     const firstChild = node.child(0)
-    if (firstChild && firstChild.type === "Description") {
+    if (firstChild && this.typeOf(firstChild) === "Description") {
       const afterDescription = node.child(1)
       if (afterDescription) anchor = afterDescription
     }
@@ -1348,7 +1527,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private isAnyOf(node: Node, ...types: string[]): boolean {
-    return types.includes(node.type)
+    return types.includes(this.typeOf(node))
   }
 
   /**
@@ -1379,7 +1558,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The first NAMED child of `type`, or null — with no closure and no per-index
    * wasm call.
    *
-   * `findChild(node, n => n.type === "X")` is the idiomatic spelling and it was
+   * `findChild(node, n => this.typeOf(n) === "X")` is the idiomatic spelling and it was
    * used 40 times here, so it allocated 40 closures PER SYMBOL and reached `.type`
    * through a call frame for every child it examined. The comparison is a string
    * equality; the closure buys nothing. This is the same shape the SQL analyzer
@@ -1391,7 +1570,7 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private firstChildOfType(node: Node | null, type: string): Node | null {
     if (!node) return null
     for (const child of node.namedChildren) {
-      if (child !== null && child.type === type) return child
+      if (child !== null && this.typeOf(child) === type) return child
     }
     return null
   }
