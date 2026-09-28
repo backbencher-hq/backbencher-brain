@@ -38,10 +38,12 @@ grammar limits** on this lane; see `reviews/m60-powershell-grammar-0264-refused.
 | Calls | cmdlets and functions emit `calls` (source = enclosing owner or `global`); flow keywords (`break`, `continue`, `return`, …) excluded; `$obj.Method()` → `calls` with `methodCall`; `[Type]::Static()` → `calls` to `Type::Static`; `. ./file.ps1` and `& ./file.ps1` → `calls` with the invocation operator recorded |
 | Instantiates | `[Type]::new(...)` → `instantiates` to the type |
 | Imports | `Import-Module` (bare and `-Name` forms), `using module` / `using namespace`, and `#requires -Module` comment directives populate the import table and emit `references` edges (char/index scanning only — comments are opaque to the grammar) |
-| Extends / Implements | class header `: Base, IFoo, IBar` → `extends` + `implements` edges |
+| Extends / Implements | class header `: Base, IFoo, IBar` → `extends` to the FIRST base and `implements` to the rest. PowerShell's header cannot say which base is a class and which are interfaces — the language resolves that at runtime — so the grammar's positional shape is the only information there is, and this row pins the rule rather than a guess. Gated by `class-inherit-psa2` and three mutants |
+| Overrides | a subclass member whose name matches a member of its resolved base emits `overrides` carrying `meta.overridesMember` = the member name. PowerShell class methods are virtual by default, so there is no `override` keyword to key on — the match is by name against the base's declared member set. Gated by `class-inherit-psa2` (3 rows + a count, so a "base has a member of any name" rule fails) and `drop-class-overrides` |
+| Interfaces | PowerShell 5.0 `interface IShape { [string] Describe() }`. The GRAMMAR has no node for it, so it parses as a `command` named `interface`; the analyzer declares `IShape` as an `interface` symbol from that structure and does not publish it as a call. Known gap: the interface's method signatures are bodiless, so they are not `class_method_definition` nodes and an interface is declared with no members |
 | Patterns | `CmdletBinding`/`Parameter`/`Validate*` attributes, DSC, Azure/Exchange/SharePoint/AD/VM frameworks, REST/I-O/service patterns — string checks on AST nodes, never source text |
 | Errors | syntax errors are engine-owned (engine.ts merges `treeErrors`); the analyzer never duplicates them |
-| Regex | **zero** regex usages (census 10 → 0) |
+| Regex | **zero regexes decide anything.** No symbol, relationship, or type is extracted by matching source text — every decision reads the AST. 8 regexes remain, all normalizing a string that is already AST-derived or reading comment text; they are inventoried below, including the one that is a genuine heuristic. This row previously read "zero regex usages (census 10 → 0)" and both halves were wrong: there is no powershell regex census, and there are 8 |
 
 ## Complexity envelope
 
@@ -65,12 +67,49 @@ production `.ps1`/`.psm1` files, one production `parseFile` pass each):
 
 ## Regex inventory
 
-**None.** The 10 baseline regex usages were replaced:
+**No regex decides anything. Eight regexes remain, and this section used to claim
+there were none.**
+
+The original claim was "**zero** regex usages (census 10 → 0)". Both halves were wrong,
+and an audit for a different question is what caught it. There is no powershell regex
+census — the phrase cites an instrument that was never written, which is the more
+serious half, because a number attributed to a census reads as measured. And the count
+is 8, because later waves put regexes back after the original 10 were removed.
+
+**What the original 10 were replaced with, and that work stands:**
 
 - `$` stripping → char-code check (`text.charCodeAt(0) === 36`) on `variable` nodes (the grammar keeps `$` in the node text)
 - type bracket stripping → `type_literal → type_spec` child text
 - `[Type]::new()` bracket stripping → `invokation_expression` with `type_literal` + `member_name` children
 - `#requires -Module` extraction → index-based token scan of the comment text
+
+**The 8 that are here now, by what they operate on.** The distinction that matters is
+not "regex vs not" but "does this match decide a fact, or normalize a string whose fact
+was already decided by the tree":
+
+| line | operates on | decides? |
+| --- | --- | --- |
+| 231 | a declared type's own text — strips trailing `[]` array/generic suffixes before the accelerator lookup | no — normalizes; the edge still carries the original text |
+| 768 | an invocation-operator target — decides path-call vs command-call, *after* `startsWith("$")` has already separated variables | **partly** — see below |
+| 1524, 1737, 1741 | a flag/parameter name — strips one leading `-` so `-ErrorAction` and `ErrorAction` compare equal | no — normalizes for comparison |
+| 1656 | the FILE PATH, not source — Windows separator normalization | no — not source text at all |
+| 1892, 1908 | comment text — `<#`/`#>` delimiters and a leading `#` | no — unavoidable, comments are opaque to the grammar |
+
+**The one that is a real heuristic is line 768**, and it is called out rather than buried
+because the honest reading is that it can be wrong. It matches a token as a path if it
+contains a separator or ends in something that looks like an extension. That test is
+sound for its one live use (`& ./run.ps1` vs `& SomeCommand`, with `$`-prefixed tokens
+already diverted) and its own docstring records that it was **deliberately removed from
+the `Import-Module` path** for a measured reason: an installed module is named by a bare
+name, so `Import-Module PoshRSJob` matched nothing while `Import-Module Az.Accounts`
+matched only because a dotted name looks like a file extension. Distinguishing a module
+name from a switch-argument VALUE is the switch-value set's job, and that is PS7's rule.
+
+So the accurate summary is: **0 regexes extract a fact from source text; 1 makes a
+judgement call on a token's shape, in a position where that judgement is sound and where
+the alternative was measured and rejected.** That is a weaker claim than "zero" and a
+stronger one than "8 regexes, therefore the AST is bypassed" — which is what a reader
+counting `.test(` calls would have concluded.
 
 ## Supported constructs
 
