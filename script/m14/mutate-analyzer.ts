@@ -11268,6 +11268,265 @@ export const MUTANTS: Mutant[] = [
     }) }),
   },
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // EX-A8/EX-A9/EX-A10 — the classes the oracle-blind deep audit found and this
+  // lane's gates could not see: F3 pins symbols by name+kind (a range was
+  // unpinnable until the Vue V1 wave added expectSymbolRanges) and F5 compares
+  // EDGES, site-agnostically. Four mutants, one per class, each re-injecting the
+  // pre-fix state the fixture pins contradict.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/merged-head-range-first-clause",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A8 regression: a MERGED multi-clause definition's range is truncated back to its FIRST clause (the pre-fix payload: `heads: 2` with a one-clause extent, measured 2,321 merged groups in 559 elixir@024beb1b files). Re-injected as a range rewrite on every multi-head symbol, which is exactly the shape the fixture's expectSymbolRanges endLine/endColumn/endIndex pins state.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const cr = s.metadata?.clauseRanges
+        if (typeof s.metadata?.heads !== "number" || s.metadata.heads < 2 || !Array.isArray(cr) || cr.length < 2) return s
+        return { ...s, range: { ...s.range, ...cr[0] } }
+      }),
+    }),
+  },
+  {
+    id: "elixir/merged-head-clause-ranges-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A8 regression: metadata.clauseRanges is stripped, so the one range a merged definition can carry (first..last) is the ONLY record of where the other clauses are — and 8.4% of merged groups have other declarations between their first and last clause, so the span alone cannot recover them. Caught by the fixture's meta.clauseRanges pin (array compare), which no relationship-side gate can reach.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("clauseRanges" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.clauseRanges
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/raise-no-instantiates",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A9 regression: `raise Mod` / `reraise Mod, stack` stops constructing the exception struct, so the edge class the lane emits for struct/2 and %Mod{} disappears for the exception path (pre-fix: 401 alias-named raise sites in 200 elixir@024beb1b files with no dependency edge). Re-injected as the dropped rows, which are absent from the pre-fix output by definition.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && String(x.target).endsWith("Missing"))),
+    }),
+  },
+  {
+    id: "elixir/nested-module-ownerless",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A10 regression: a nested defmodule/defprotocol loses ownerName/ownerKind again, the pre-fix payload that contradicted this lane's own symbol contract ('nested modules owned by the parent') and the M14 ledger ruling that ownerName is the innermost enclosing declaration (#867). Caught by the fixture's ownerName pin on the module symbol — a pin no edge-side gate carries.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if ((s.kind !== "module" && s.kind !== "interface") || !s.ownerName) return s
+        const y: any = { ...s }
+        delete y.ownerName
+        delete y.ownerKind
+        return y
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-PAYLOAD WAVE — the suite's coverage of the elixir PAYLOAD surface, asked
+  // as a measurement rather than assumed. The mutants above all target
+  // relationship shape and symbol IDENTITY; this batch targets the fields a
+  // consumer reads and no edge-side gate can see: visibility, guards, OTP
+  // callback/behavior metadata, the ruled `docstring` channel, the type/struct/
+  // protocol/defimpl markers, the send/spawn markers, and the three
+  // file-level payloads (imports / exports / patterns) plus the `scope` field
+  // the store binds to brain_symbol.scope_kind (#837).
+  //
+  // A SURVIVOR here is a hole in this lane's own suite, not a mutant problem:
+  // the suite would stay green with that field silently gone. Measured: 9 of the
+  // 15 below SURVIVED the first run (2026-09-28) and every one now has a pin.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/defp-visibility-public",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: `defp`/`defmacrop`/`defguardp` lose private visibility and read public — the pre-visibility state. Caught only by a visibility pin; this was a SURVIVOR before ex2-scope-identity gained one.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.visibility === "private" ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "elixir/guard-list-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.guards is stripped from every symbol — the `when` expression text is differential-invisible, and the guard-skips fixture's own note CLAIMED the text was captured with no pin behind the claim. SURVIVOR before that claim was pinned.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("guards" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.guards
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-metadata-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the OTP behavior markers on the module symbol (isGenServer / isSupervisor / otpBehavior) are stripped — the EX2-U3 root-segment detection's only surviving evidence, since the `use X` edge alone does not say which root segment matched.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isGenServer
+        delete m.isSupervisor
+        delete m.otpBehavior
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-callback-flag-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the per-function OTP callback markers (isGenServerCallback / isSupervisorCallback) are stripped, so a GenServer's init/1 and handle_call/3 stop being identifiable as callbacks.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isGenServerCallback
+        delete m.isSupervisorCallback
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/docstring-channel-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the `docstring` channel is stripped while `comments` survives — the exact mirror of the M60 ruling that carried the elixir half of the doc payload, and the failure mode a future reader would see (docs present in the comments path, absent from the docstring column bb_doc reads). SURVIVOR before doc-forms pinned the channel.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const y = { ...s }; delete y.docstring; return y }) }),
+  },
+  {
+    id: "elixir/type-spec-marker-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.isTypeSpec is stripped from @type/@typep/@opaque symbols, so a Type symbol becomes indistinguishable from any other type the analyzer could emit. SURVIVOR before ex2-generic-types pinned it.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata?.isTypeSpec) return s
+        const m = { ...s.metadata }
+        delete m.isTypeSpec
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/protocol-metadata-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: isProtocol / isProtocolImplementation markers are stripped, so a defprotocol module and a defimpl class stop saying which side of a protocol they are (the Implements edge names the pair, not the roles). SURVIVOR before protocol-forms pinned them.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isProtocol
+        delete m.isProtocolImplementation
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/defimpl-fortype-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the defimpl symbol's `forType` (the type an implementation covers, W23's multi-type shape, EX-A12's resolved value) is stripped, so an implementation no longer records what it implements FOR. SURVIVOR before defimpl-target-forms pinned it — and it also covers the pre-EX-A12 state, which held the placeholder literal \"Unknown\".",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("forType" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.forType
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/struct-field-marker-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the isStruct / isStructField markers are stripped, so a defstruct field is indistinguishable from any other property the analyzer emits (this is also the field a member-read consumer would need).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isStruct
+        delete m.isStructField
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-send-spawn-markers-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the isProcessSpawn edge marker is stripped, so the qualified spawn forms (Task.async/Agent.start — the only ones that CAN carry a marker, since Kernel send/spawn are excluded by EX-D2) stop being distinguishable from any other call edge. SURVIVOR until the otp-messaging fixture was written; the message-passing half of the class was DEAD (EX-A13).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = x.metadata
+        if (!md || !("isProcessSpawn" in md)) return x
+        const m = { ...md }
+        delete m.isProcessSpawn
+        return { ...x, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/imports-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: result.imports is emptied — the use/import/alias/require dependency RECORDS, a payload the relationship `references` edge does not carry (the edge says the dependency exists; imports says what was named and with what source). SURVIVOR before import-only-forms pinned it.",
+    transform: r => ({ ...r, imports: [] }),
+  },
+  {
+    id: "elixir/exports-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: result.exports is emptied — the public module surface, which no relationship edge carries and which the EX-A10 ownerName change could have demoted without any edge-side consequence.",
+    transform: r => ({ ...r, exports: [] }),
+  },
+  {
+    id: "elixir/patterns-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.patterns is emptied (Pattern Matching / Actor Model (OTP) / Message Passing / Process Spawning / Typespecs / Behaviours / Documentation / Closures / Pipe Operator / Functional Programming), the file-level idiom summary bb_patterns reports.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), patterns: [] } }),
+  },
+  {
+    id: "elixir/symbol-scope-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the symbol `scope` field is stripped — the value bound to brain_symbol.scope_kind (#837). Every scope-derived behaviour in the store (ownership fallbacks, member resolution) reads it, and it is not derivable from ownerName for a file-level declaration. SURVIVOR before ex2-scope-identity pinned it.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const y = { ...s }; delete y.scope; return y }) }),
+  },
+  {
+    id: "elixir/symbol-arity-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.arity is stripped — the same function's two arities (`count/0` and `count/1`) become one indistinguishable symbol in any consumer that does not read the merge key.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("arity" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.arity
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
   // M59.A7 (#825): the csharp lane's line round. Four mutants, one per defect
   // class the round's own measurements exposed — the pre-fix state (no line at
   // all), the construct-start line (receiver / `new` / `:` / wrapped head), the

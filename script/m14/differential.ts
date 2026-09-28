@@ -9635,9 +9635,19 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
               if (toMod) push("calls", innerOf(stack), `${resolveAliasO(toMod)}.${asName || nm}`)
             }
           }
-        } else if ((target === "struct" || target === "struct!") && !isAttr(n) && !isHead(n)) {
+        } else if ((target === "struct" || target === "struct!" || target === "raise" || target === "reraise") && !isAttr(n) && !isHead(n)) {
           // ELXD19 mirror: struct(User, attrs) constructs the named type;
-          // dynamic first args stay silent. (Quote already excluded above.)
+          // EX-A9 mirror: `raise Mod` / `reraise Mod, stack` is the SAME
+          // construction through Kernel.raise's exception entry point
+          // (`Mod.exception([])` builds `%Mod{}`), so it emits the same
+          // instantiates edge — 401 alias-named sites in 200 files of
+          // elixir@024beb1b carried no edge before the fix, and this oracle is
+          // the only thing that can say so: without the arm the analyzer's
+          // (correct) edges surfaced as 48 UNEXPLAINED across the 120-file
+          // ecto + ecto_sql slices, measured 2026-09-28. A bare `raise "msg"` or
+          // a bound exception names no type, and `raise` stays in the SPECIAL
+          // set so it never becomes a call. Dynamic first args stay silent.
+          // (Quote already excluded above.)
           const structArgs = find(n, (c: any) => c.type === "arguments")
           const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
           if (first?.type === "alias") push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(first.text))

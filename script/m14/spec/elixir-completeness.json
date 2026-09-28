@@ -57,7 +57,7 @@
     ]
   },
   "gap": {
-    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5. The original 'no open gaps' claim was falsified at EX-F5 certification (2026-09-19): the F5 corpus differential found the Registry.Supervisor implied-alias non-edge — EX-L5 registered the last-segment alias at module ENTRY, so `use Supervisor` inside Registry.Supervisor self-resolved and was dropped; the fix moves registration to module EXIT (fixture implied-alias-scope + mutant elixir/implied-alias-entry-time) and both corpora re-measure 100%/0/0. The claim was falsified AGAIN by the independent adversarial review (EX-ADV, 2026-09-19): 13 defect classes, every one on the gate's blind side (mirrored rules, last-segment masking, gate-invisible labels) — fixed and pinned; full record in reviews/elixir/adversarial-2026-09-19.md. The gap list resumes empty WITH both falsifications on record; the census classification (2026-09-18) predates EX2/EX3/EX-F5/EX-ADV — re-classification is registered, not silent.",
+    "_description": "Confirmed missing emissions the analyzer does not model (declared limitations, each a tracked work item). EX-G1 (quoted_keyword struct fields) closed fixture-first 2026-09-18 as ELXD5. The original 'no open gaps' claim was falsified at EX-F5 certification (2026-09-19): the F5 corpus differential found the Registry.Supervisor implied-alias non-edge — EX-L5 registered the last-segment alias at module ENTRY, so `use Supervisor` inside Registry.Supervisor self-resolved and was dropped; the fix moves registration to module EXIT (fixture implied-alias-scope + mutant elixir/implied-alias-entry-time) and both corpora re-measure 100%/0/0. The claim was falsified AGAIN by the independent adversarial review (EX-ADV, 2026-09-19): 13 defect classes, every one on the gate's blind side (mirrored rules, last-segment masking, gate-invisible labels) — fixed and pinned; full record in reviews/elixir/adversarial-2026-09-19.md. The gap list resumes empty WITH both falsifications on record; the census classification (2026-09-18) predates EX2/EX3/EX-F5/EX-ADV — re-classification is registered, not silent. A THIRD falsification arrived on 2026-09-28, and it came from the only instrument that is not a mirror: the oracle-blind deep audit (`script/m14/tmp/elixir-deep-audit.ts`), which checks containment, identity and range arithmetic instead of re-deriving the rules. It found three defect classes on a lane every other gate called clean — the merged-head extent (EX-D16), the `raise` construction (EX-D17) and the nested-module owner (EX-D18) — plus a spec-side measurement: 116 distinct node types over 697 files of six corpora, ZERO named types unclassified (`script/m14/tmp/elixir-spec-census.ts`), one classified type (`charlist`) with no live site in that sample. The lesson is the one the adversarial wave already paid for: a differential against a second implementation of the same rules certifies CONSISTENCY, and this lane's newest classes were all invisible to it.",
     "gaps": []
   },
   "design_decision": {
@@ -167,6 +167,41 @@
         "status": "RULED",
         "question": "X13/X12: do arity-distinct same-line sites both survive, and which line do multi-line alias members carry?",
         "resolution": "RULED (adversarial): callArity joins the dedupe identity key — `{f(1), f(2, 3)}` keeps both edges (EX-L2's name+arity contract, completed); and each member of a multi-line alias list carries its OWN name-bearing line. Fixtures same-line-arity/alias-members-lines + mutants elixir/same-line-arity-collapse, elixir/alias-member-line."
+      },
+      {
+        "id": "EX-D16",
+        "node_type": "call (multi-clause heads)",
+        "status": "RULED",
+        "question": "EX-A8: a MERGED multi-clause definition (one `def f/1` symbol, `heads: N`) carried only its FIRST clause's range, so the payload claimed seven clauses and located one. What is a merged definition's extent?",
+        "resolution": "RULED (2026-09-28): first clause start .. LAST CLAUSE end, with the start (the declaration site every id and name-line consumer is built on) untouched — the rule real-clean-analyzer.ts already applies to a multi-clause `f x = ...`. The exact per-clause ranges ride `metadata.clauseRanges`, because the span alone cannot recover them: measured on elixir@024beb1b, 195 of 2,321 merged groups (8.4%) carry OTHER declarations between their first and last clause (`Date.to_string/1` spans 335..1170 and swallows 54 defs). Measured before the fix: 184 clause-span violations in a 60-file ecto_sql slice (`def loaders/2` heads=7, range 211..211). Fixture merged-clause-extent pins range endLine/endColumn/endIndex + meta.clauseRanges; mutants elixir/merged-head-range-first-clause and elixir/merged-head-clause-ranges-dropped CAUGHT. Finding instrument: script/m14/tmp/elixir-deep-audit.ts (A8, measured off the TREE, not off the analyzer's own merge bookkeeping)."
+      },
+      {
+        "id": "EX-D17",
+        "node_type": "call (raise/reraise)",
+        "status": "RULED",
+        "question": "EX-A9: `raise Mod` / `raise Mod, msg` / `reraise Mod, stack` is `Mod.exception([])`, which BUILDS `%Mod{}` — the same construction the lane already emits an `instantiates` edge for at `struct(User, attrs)` (ELXD19) and a `%Mod{}` literal. It emitted nothing, because `raise` is a special form.",
+        "resolution": "RULED (2026-09-28): `raise`/`reraise` emit an instantiates edge to a statically NAMED first argument (an `alias`, alias-resolved, or `__MODULE__`) and never a call (both stay in SPECIAL_FORMS). A bare `raise \"msg\"`, a bound exception, or a computed module name no type and stays silent — unnameable, not dropped. Measured: 401 alias-named raise sites in 200 files of elixir@024beb1b carried no dependency edge, while the defexception struct symbols they construct already existed. Fixture merged-clause-extent pins both directions; mutant elixir/raise-no-instantiates CAUGHT; oracle mirror landed in the same commit (deriveElixirEdges)."
+      },
+      {
+        "id": "EX-D18",
+        "node_type": "defmodule / defprotocol",
+        "status": "RULED",
+        "question": "EX-A10: what is the `ownerName` of a module NESTED inside another module? The lane's own symbol contract says 'nested modules owned by the parent' and the M14 ledger ruling (#867) says `ownerName` is the innermost enclosing declaration — but the code wrote only `scope`.",
+        "resolution": "RULED (2026-09-28): the enclosing declaration, exactly like every function/struct/field in the same file. Measured: 100% of nested-module symbols on the 60-file ecto_sql slice had ownerName undefined, and only the indexer's `ownerName || scope` fallback kept the graph right — the CONTRACT did not, and any consumer reading ownerName alone (src/ast/override-context.ts, src/ast/framework-intelligence.ts both do) saw a parentless module. The export surface is unaffected: a module is a public entry point whatever its nesting, so the export rule is now module-kind aware rather than owner-absence driven. Fixture merged-clause-extent + implied-alias-scope pin ownerName; mutant elixir/nested-module-ownerless CAUGHT."
+      },
+      {
+        "id": "EX-D19",
+        "node_type": "call (Kernel send/spawn)",
+        "status": "RULED",
+        "question": "EX-A13: the `isMessagePass`/`isSend` edge markers were built for `send`/`send_after`, but those are Kernel auto-imports, so EX-D2 drops them before any edge exists. Was the marker live?",
+        "resolution": "RULED (2026-09-28): DEAD, and measured rather than assumed — a probe with `send(pid, :hi)` emits ZERO relationships, while the QUALIFIED spawn forms (`Task.async/1`, `Agent.start_link/1`, ...), which are ordinary module calls, do emit `isProcessSpawn`. The dead store is deleted rather than left to read as a payload; message passing survives as the file-level `Message Passing` idiom flag, and the reachable `isProcessSpawn` marker is pinned (fixture otp-messaging, new in this wave). A dead store that looks like a payload is the X11/EX-ADV prototype class in a new dress."
+      },
+      {
+        "id": "EX-D20",
+        "node_type": "defimpl (metadata)",
+        "status": "RULED",
+        "question": "EX-A12: the single-argument `defimpl P do` form recorded `forType: \"Unknown\"` — a placeholder literal, the same literal this lane forbids as a SYMBOL name — while the implementation's own name held the real answer (the enclosing module).",
+        "resolution": "RULED (2026-09-28): `forType` records the type the implementation is for, resolved: the `for:` keyword's alias, the multi-type list, or the enclosing module for the single-argument form. When no type is derivable at all the field is ABSENT — absence is what 'unknown' is allowed to look like in a payload. Pinned by meta.forType in defimpl-target-forms and protocol-forms; mutant elixir/defimpl-fortype-dropped CAUGHT."
       }
     ]
   }
