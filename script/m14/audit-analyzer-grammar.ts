@@ -45,6 +45,13 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "cpp", wasm: "tree-sitter-cpp.wasm", analyzer: "real-cpp-analyzer.ts" },
   { language: "csharp", wasm: "tree-sitter-c_sharp.wasm", analyzer: "real-csharp-analyzer.ts" },
   { language: "css", wasm: "tree-sitter-css.wasm", analyzer: "real-css-analyzer.ts" },
+  // scss joins F1 with its own wasm and its own analyzer. F1 asks whether the
+  // analyzer's node-type NAMES and FIELD names all exist in the wired grammar — the
+  // class where a case is renamed upstream and the extractor silently matches nothing.
+  // It could not be checked while `.scss` was routed to the CSS analyzer, because the
+  // check would have compared `real-scss-analyzer`'s vocabulary against the CSS
+  // grammar, which is a different question and would have been a false pass.
+  { language: "scss", wasm: "tree-sitter-scss.wasm", analyzer: "real-scss-analyzer.ts" },
   { language: "dart", wasm: "tree-sitter-dart.wasm", analyzer: "real-dart-analyzer.ts" },
   { language: "elixir", wasm: "tree-sitter-elixir.wasm", analyzer: "real-elixir-analyzer.ts" },
   { language: "erlang", wasm: "tree-sitter-erlang.wasm", analyzer: "real-erlang-analyzer.ts" },
@@ -100,6 +107,25 @@ const EXTRA_GRAMMARS: Record<string, string[]> = {
   svelte: ["tree-sitter-typescript.wasm", "tree-sitter-javascript.wasm"],
   typescript: ["tree-sitter-tsx.wasm", "tree-sitter-javascript.wasm"],
   html: ["tree-sitter-javascript.wasm"],
+  // M14 #290 (markdown). tree-sitter-markdown is split into a BLOCK grammar and a
+  // COMPANION INLINE grammar, and the engine pre-parses every `inline` node with
+  // the companion before handing the trees to the analyzer (`engine.ts` markdown
+  // branch, the vue/svelte SFC pattern). So this lane's real oracle is the union of
+  // the two — exactly as vue/svelte/typescript above.
+  //
+  // It was absent, and the absence was load-bearing in the worst way: the two
+  // literals the analyzer names from the inline grammar (`uri_autolink`,
+  // `email_autolink`, at real-markdown-analyzer.ts:253) were reported as DEAD
+  // BRANCHES — "unknown node type, can never match" — when both are live NAMED
+  // types of the inline grammar (ids 37 and 38). They sat in the v2 dead-literal
+  // record with the repayment written down: "either load
+  // tree-sitter-markdown_inline into the oracle for this lane (EXTRA_GRAMMARS) or
+  // delete the branch." This is that repayment: the branch stays, the oracle was
+  // wrong, and the record's two entries are retired rather than tolerated.
+  //
+  // A gate that reports a live branch as dead is worse than a gate that reports
+  // nothing, because the natural response to its output is to DELETE the branch.
+  markdown: ["tree-sitter-markdown_inline.wasm"],
 }
 
 interface Finding { literal: string; line: number; context: string }
