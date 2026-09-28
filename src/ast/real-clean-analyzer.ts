@@ -2119,7 +2119,12 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `calls` and anything a later ruling adds. A qualified or quoted target
           // is identified by its SPELLING, which is the reference_qualified claim;
           // a bare in-file name is a usage of a known binding.
-          md.evidenceClass = target.includes(".") || /'/.test(target) ? "reference_qualified" : "usage_contextual"
+          // `includes`, not a regex: the single-quoted qualified form is `'Data.Error'.Ok`,
+          // so a quote character in the target is the marker. A `/'/.test(target)` was
+          // here first and it was the analyzer's ONLY regex literal — which is exactly
+          // the kind of thing the zero-regex claim exists to prevent, and it is why the
+          // claim is checked by the TypeScript scanner on every run rather than trusted.
+          md.evidenceClass = target.includes(".") || target.includes("'") ? "reference_qualified" : "usage_contextual"
       }
     }
   }
