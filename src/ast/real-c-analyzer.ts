@@ -1968,7 +1968,37 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // only error recovery produces the bare child, and reading it as a
           // value use fabricated `uses Mem3Global` sourced at the phantom
           // function itself.
-          node.parent?.type !== "function_definition" &&
+          // #935: CGD34's gate, NARROWED to the node types it was written for.
+          // The rule was "a bare `identifier` DIRECTLY under a function_definition
+          // is the NAME of a phantom function recovered from a macro-mangled
+          // declaration", but the predicate tested only the PARENT, so it
+          // suppressed every direct child -- and a function_definition's direct
+          // children include its RETURN TYPE:
+          //
+          //   function_definition
+          //     type_identifier        <- the return type, e.g. `Color f(void)`
+          //     function_declarator    <- the name and parameters
+          //     compound_statement
+          //
+          // A return type spelled with a TYPEDEF name is a `type_identifier` in
+          // exactly that position, so every function declared with a typedef
+          // return type -- the most common C declaration idiom there is -- lost
+          // its `references` edge. Measured: 2,903 return types pass through this
+          // gate across 326 corpus files, of which 37 name a type the analyzer
+          // can resolve, so **37 real edges were missing** (31 in redis: e.g.
+          // `defragModuleGlobals() returns doneStatus`; 4 in curl, 2 in libgit2).
+          // The pinned M12 ground truth expects exactly this edge --
+          // `rel:Negative.c:references:pick_color:Color` -- and the drift probe
+          // found it as the one genuinely-lost row among six.
+          //
+          // Narrowing is SAFE for CGD34's own subject: the phantom's NAME parses
+          // as a bare `identifier` (still suppressed below), and the
+          // `type_identifier` sibling in that same phantom shape is a MACRO
+          // (`SQLITE_WSD`), which `isResolvableUseTarget` refuses for a
+          // `type_identifier` because no such type is declared in the file. The
+          // `cgd31-37-regressions` fixture pins both halves.
+          (node.parent?.type !== "function_definition" ||
+            (node.type !== "identifier" && node.type !== "field_identifier")) &&
           // CGD31 (M37 #601, measured os_kv.c): a `field_identifier` LEAF
           // under a callee-position field_expression
           // (`sqlite3KvvfsMethods.xRcrdRead(...)`) fired a redundant `uses`

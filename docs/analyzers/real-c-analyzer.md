@@ -83,7 +83,7 @@ both are the family contract with cpp rather than an omission.
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. | 1.0 |
-| references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, incl. bare return types). Never both references+uses for the same pair. | 0.8 |
+| references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, **including a function's return type, whether spelled with a tag or with a typedef name**). Never both references+uses for the same pair. | 0.8 |
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
 | imports | ✅ | `#include <path>` / `#include "path"` → module name (pure-String `stripIncludeChars` unwrap of the `path` field / `string_literal` / `system_lib_string`). A macro-composed include argument is a `call_expression` and is refused — C-D2. | 1.0 |
@@ -299,11 +299,31 @@ it was unbounded and crashed).
 - Ground truth: `validation/m12/ground-truth/c.json`
   (authority: `manual_audit`; 92 facts: 46 symbols + 46 relationships)
 - Result: `validation/m12/results/c-differential.json`
-- The M12 differential pins the four `validation/m12/fixtures/c/` files. **This
-  wave did not re-baseline it**, because the field-leaf dedup change (one edge per
-  occurrence instead of two) is expected to move those counts and the re-baseline
-  has to be a reviewed diff rather than a regeneration. See
-  `reviews/c/master-review.md` for the open item.
+- **That artifact is 13 rows stale, and the drift is measured.** The lane's
+  truth-drift probe (`script/m14/tmp/c-audit/m12-truth-drift.ts` →
+  `validation/m12/results/c-truth-drift.json`) compares every pinned fact against
+  the live analyzer on the four M12 fixtures. Of 92: **80 still produced, 7
+  produced under another type, 5 not produced.** Twelve of the thirteen are the
+  ARTIFACT's fault — 6 include rows that became the first-class `imports` kind in
+  M60/#910, 1 `instantiates` row the allocator branch deliberately removed, and 5
+  assignment-LHS rows that the SCD1/CGD1 ruling says are writes rather than reads
+  (there is no `writes` relationship type, so the fact is representable nowhere) —
+  and a reviewed re-baseline is the owner's call, not this lane's. The
+  thirteenth was a **real missing edge**: `rel:Negative.c:references:pick_color:Color`,
+  a function's typedef-spelled return type, which CGD34's parent-only gate had
+  been suppressing for every such function. Fixed (#935); the probe now reports 80.
+- **The artifact cannot be regenerated in this checkout.** The F5 harness reads
+  `CORPUS_ROOT = $HOME/fixtures/repositories` (overridable with
+  `BB_CORPUS_ROOT`), that path does not exist here, and the run aborts on the first
+  pinned repo. No script in the tree writes `c-differential.json` by that name, so
+  the artifact's producer is not present either. **The M12 differential is a
+  FIXTURE differential, though**, which is why the drift is measurable here at all
+  — and that is the argument for keeping the fixture-based probe as the lane's
+  standing check on its own pinned truth.
+- **This wave's change is byte-identical on the M12 fixtures**: the previous
+  commit's analyzer and this one produce identical relationship sets on
+  `Module.c`, `Module.h`, `Negative.c` and `module_config.h`, so none of the
+  drift above is attributable to it.
 
 ## Corpus validation
 
@@ -333,10 +353,10 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **23/23 pass** (18 pre-existing + 5 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **24/24 pass** (18 pre-existing + 6 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 57 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **13 properties, 21/21 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 22/22 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
 
@@ -385,7 +405,7 @@ A member-name bug that keeps the name and corrupts the ownership needs an
 
 ## Evidence pointers
 
-- Lane fixtures: `validation/m14/fixtures/c/` (23 pairs, 5 added this wave)
+- Lane fixtures: `validation/m14/fixtures/c/` (24 pairs, 6 added this wave)
 - Lane gate: `script/m14/tmp/c-audit/verify-c-lane.ts` + `p13-baseline.json`
 - Lane probes (all re-runnable): `script/m14/tmp/c-audit/` —
   `census.ts` (the 2,498-file census), `duplicate-classes.ts` (provable vs
