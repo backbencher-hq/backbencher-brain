@@ -287,7 +287,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
               value: body?.text?.trim() || undefined,
             })
             patterns.push("Make macros")
-            addRel(module, ASTEngine.RelationshipType.Contains, name, line, { role: "declaration" })
+            addRel(module, ASTEngine.RelationshipType.Contains, name, line, { role: "declaration", evidenceClass: "declared_in_file" })
             childOwner = name
           }
           break
@@ -351,7 +351,16 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (!raw) continue
               const { name } = normaliseExpression(raw)
               if (!name || KEYWORDS.has(name)) continue
-              for (const t of literalTargets) {
+              // A rule whose target is an EXPRESSION declares no literal name, so
+              // there is no target to hang the dependency on — and the pre-fix
+              // code iterated `literalTargets`, which is EMPTY for
+              // `$(BIN): $(OBJS) | builddir`, so such a rule published NO
+              // prerequisite edges at all. Found by the M12 contract probe, which
+              // had never been run for this lane. The module is the best owner
+              // available: the dependency is real information and dropping it
+              // loses it, while attributing it to the file that declares the rule
+              // is not a claim the tree contradicts.
+              for (const t of (literalTargets.length ? literalTargets : [module])) {
                 staged.push({ source: t, target: name, line: prereq.startPosition.row + 1, intent: "ref", role: "prerequisite", node: prereq })
               }
             }
@@ -486,8 +495,13 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "ifdef_directive":
         case "ifndef_directive":
         case "else_directive":
-        case "elsif_directive":
-        case "endif_directive": {
+        case "elsif_directive": {
+          // `endif_directive` was a case here until
+          // `script/m12/make-node-types-compare.ts` flagged it: the grammar does
+          // NOT declare that node type, so the branch could never run. A branch
+          // for a type that cannot exist reads as coverage and is not, which is
+          // the precise thing that gate exists to catch. `endif` is not a node at
+          // all in tree-sitter-make 1.1.1 — the conditional simply ends.
           conditionals++
           break
         }
@@ -697,10 +711,31 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
     return p ? String(p.type) : ""
   }
 
+  /**
+   * The module symbol's name: the file's own name.
+   *
+   * The path is split by CHARACTER CODE, not by a pattern. This function used
+   * to end in a `String.prototype.split` on a two-character regular expression,
+   * which was the only regex literal in the file, and
+   * `script/m12/make-contract-probe.ts`'s "analyzer source has no regex
+   * literals" check found it — a gate that existed, ran, and had simply never
+   * been executed for this lane. A rule that is never run is not a rule.
+   *
+   * (The comment above used to quote the old expression verbatim, which made the
+   * detector fire on the COMMENT. The detector only exempts `//` line comments,
+   * and that strictness is correct: a regex quoted in a doc comment reads to the
+   * next maintainer as a regex in the file.)
+   */
   private moduleName(filePath: string): string {
     if (!filePath) return "makefile"
-    const parts = filePath.split(/[\\/]/)
-    return parts[parts.length - 1] || "makefile"
+    let end = filePath.length
+    while (end > 0) {
+      const c = filePath.charCodeAt(end - 1)
+      // 47 '/' and 92 '\\'
+      if (c === 47 || c === 92) break
+      end--
+    }
+    return filePath.slice(end) || "makefile"
   }
 
   private isPlainIdentifier(s: string): boolean {

@@ -41,7 +41,8 @@
     "runtimeTypesObserved": [
       "ERROR"
     ],
-    "filesWithParseError": 3
+    "filesWithParseError": 3,
+    "_errorNote": "Three of the corpus's 99 files produce a parse error, and the three are NOT the same thing. boundary/Makefile (8 ERROR nodes) and vault/Makefile (1) are real grammar gaps — MAKE-G3 and MAKE-G4. torrentinim/Makefile reports hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token web-tree-sitter does not surface, so the engine emits its generic warning (engine.ts:1264). That file parses into the CORRECT tree and the analyzer's output for it is correct, so it is not a file error. Counting it as one would have hidden the two real gaps behind a third phantom."
   },
   "handled_verified": {
     "_rule": "The analyzer produces a SYMBOL or an EDGE from this node type, and the behaviour is pinned by a fixture in validation/m14/fixtures/make/ or measured over the corpus. A type is not in this bucket on the strength of the grammar declaring it.",
@@ -143,7 +144,7 @@
     ]
   },
   "gap": {
-    "_description": "Two declared grammar features are neither modeled nor exercised, and one real loss is caused by the grammar rather than the analyzer. All three are recorded here rather than left for a reader to discover.",
+    "_description": "Four findings, all recorded here rather than left for a reader to discover: two grammar limitations the vendored tree-sitter-make 1.1.1 cannot parse (MAKE-G3, MAKE-G4) and two declared grammar features that are unmodelled and unexercised (MAKE-G1, MAKE-G2). Both grammar limitations are pinned as a RESIDUAL in script/m12/make-corpus-errors.ts and make-corpus-measure.ts, so those gates are green while the residual matches this ruling and go RED the moment it grows.",
     "gaps": [
       {
         "id": "MAKE-G1",
@@ -162,6 +163,12 @@
         "node_type": null,
         "status": "OPEN",
         "description": "GRAMMAR limitation, not an analyzer defect, and deliberately NOT patched. The target-scoped form `target: export VAR = value` — 10 lines across 2 of 99 files (boundary/Makefile, tf-aws-components/.../runner/Makefile) — is not parsed by tree-sitter-make 1.1.1: the line becomes an ERROR node, and 5 distinct variable names (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_VERSION_FILE, UI_DEFAULT_BRANCH, AWS_PROFILE) are therefore not extracted. The loss is VISIBLE, not silent: the engine's tree-error collector reports 8 and 2 errors for those two files, and `pattern_list` appears in the tree only as the grammar's partial recovery on exactly these lines. Patching the grammar was considered and refused: it would trade a clean source<->wasm identity proof (0 missing, 0 extra, both directions, re-checkable offline) for 10 lines in 2 files, and the SQL lane's patch is not a precedent that scales down to a loss this small. Fixing it upstream, or re-measuring when a grammar release covers it, is the honest route."
+      },
+      {
+        "id": "MAKE-G4",
+        "node_type": null,
+        "status": "OPEN",
+        "description": "SECOND grammar limitation, found by the same gate run and likewise not patched. `MAIN_PACKAGES=$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` in vault/Makefile line 5 — a shell command inside an escaped-dollar expansion that itself contains a nested `$(...)` reference — is not parsed by tree-sitter-make 1.1.1 and becomes one ERROR node. It is a real loss: MAIN_PACKAGES is not extracted, and any reference to it downstream dangles. Distinct from MAKE-G3, which is the target-scoped `target: export VAR = value` form. Patching was refused for the same reason: the source<->wasm identity proof is worth more than 1 node in 1 file, and the loss is VISIBLE (the engine reports it, and make-corpus-errors pins it)."
       }
     ]
   },
