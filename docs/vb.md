@@ -35,13 +35,13 @@ resolution, analyzer dispatch and the wasm load are all exercised.
 | | |
 |---|---:|
 | symbols | **12,834** |
-| relationships | **35,442** |
+| relationships | **38,432** |
 | imports | **1,157** |
 | crash files | **0** |
 | pipeline mismatches | **0** |
 | empty symbol names | **0** |
 | unknown symbol kinds | **0** |
-| **relationships without a site line** | **0** of 35,442 |
+| **relationships without a site line** | **0** of 38,432 |
 
 ### The analyzer's own differential (F5) — 100 % on a 120-file draw
 
@@ -67,62 +67,82 @@ The draw above is 120 files, so the sweep was re-run over **the whole of
 |---|---:|---:|---:|---:|---:|---:|
 | `DISMTools` (full) | **483 of 483** | 13,689 | **13,666 (99.8 %)** | **23** | **0** | 0 |
 
-**99.8 %, not 100 %** — which is the whole reason the full sweep was worth
-running. The 23 are not noise, and they are two defects, not one:
+**99.8 % on the first pass, and the 5 rows that remain are all one grammar
+defect.** The first full run found 23 missing. Eighteen were the analyzer's and
+are fixed; the surviving 5 are a single root cause that a lane cannot fix.
 
-**17 × `implements Initialize -> Initialize` — an oracle defect.** A method and
-the interface member it implements share a name, so the oracle emitted a
-**self-edge**: source and target are the same symbol. The analyzer drops
-self-edges, correctly — an edge from a symbol to itself is not navigable and is
-noise a consumer has to filter. The oracle has to agree, so this is a harness
-fix.
+### What the 23 were, and what they actually were
 
-**6 × lost call edges — and this one is a grammar defect with a large blast
-radius.** `DISMTools/Panels/ISOFiles/NewTestingEnv.vb` publishes 4 calls where
-the oracle derives 10. The parse error sits at `11:20-35`, and columns 20–35
-are *inside* the identifier `NewTestingEnv_Load`. The cause:
+I first read the 17 majority as an *oracle* defect — a self-edge, where a method
+and the interface member share a name. That was half right, and the half that was
+wrong mattered. `Public Sub Refresh() Implements IThing.Refresh` produced **no
+edge at all**, for `Refresh` as much as for `Initialize`: `visitHeritage` was
+called from exactly one place, the *type* visitor, so **no member's heritage
+clause was ever read** — the whole member-level form, on every member in the
+language. The oracle was right that a relationship exists; it was wrong about its
+*shape*, because last-segment reduction turns `IThing.Refresh` into `Refresh`,
+which is the method's own name, and the edge collapses onto itself.
 
-> `_identifier_token` is declared `token(prec(-1, /\p{L}_[\p{L}\p{Nd}_]*/))`
-> while the keywords are `prec(0)`. tree-sitter picks a token by **(1)
-> precedence, then (2) match length**, so precedence is decided *before* length
-> ever runs. The three-letter keyword `New` therefore beats the thirteen-letter
-> identifier `NewForm_Load`, the method's name is destroyed, its declaration node
-> closes at the signature, and **its body falls outside that node** — so
-> `collectCalls` walks a node that does not contain the method and drops every
-> call inside it.
+So both sides were wrong in different ways, which is the case a differential is
+for. The fix, on both sides:
 
-Six lines reproduce it, with no `Handles` clause and no Windows Forms involved:
+- the analyzer collects member-level clauses, and their target **keeps its
+  qualifier** — `implements Refresh -> IThing.Refresh`, not `-> Refresh`. This is
+  the one place the last-segment naming rule does not apply, because the member is
+  identified *by* its interface; reduced to a segment, the edge is a symbol
+  pointing at itself and cannot answer "where is `IThing.Refresh` implemented?".
+- the oracle derives the same qualified target.
 
-```vb
-Public Class F
-    Private Sub NewForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        DoWork()
-    End Sub
-End Class
+Corpus-wide through `parseFile`, 435 files: `implements` **56 → 176**,
+relationships 38,312 → **38,432**, symbols unchanged, 0 crashes. The full-corpus
+figure is now **13,684 / 13,689 = 99.96 %, 0 unexplained**.
+
+### The 5 that remain, and why a lane cannot fix them
+
+All five are `calls` edges inside a method whose *name begins with `New`*:
+
+| file | missing |
+|---|---|
+| `Panels/ISOFiles/NewTestingEnv.vb` | `calls … -> SetColors`, `-> Clear`, `-> Beep` |
+| `Panels/Prj_Ops/NewProj.vb` | `calls … -> SetColors` |
+| `Panels/Unattend_Files/…/NewUnattendWiz.vb` | `calls … -> PostInstallScript` |
+
+The grammar mis-lexes any `Sub New*`. The trigger is exact, and five controls
+pin it down — all of these parse **CLEAN** on the unmodified grammar:
+
+```
+Public NewItem As Integer        (a field)          CLEAN
+Dim NewItem As Integer           (a local)          CLEAN
+Public Function NewGet()         (a Function)       CLEAN
+Public Sub New()                 (a real ctor)      CLEAN
+Public Sub Load() Handles …      (no New prefix)    CLEAN
+Public Sub NewForm_Load()        (a Sub)            BROKEN
 ```
 
-`DoWork()` is not published. The blast radius is **127 distinct `New*`
-identifiers, 2,823 occurrences**, and the pattern is *contagious* in exactly the
-codebase this corpus is: Windows Forms names event handlers `<Form>_<Event>`, so
-a form called `NewForm` loses the body of **every** handler it has — silently,
-with the file's symbol count still looking plausible.
+Only `Sub New*` breaks, because `Sub` is the single thing that can be followed by
+the constructor form. `constructor_declaration` is `prec(100, seq(ci("Sub"),
+ci("New"), …))` against `method_declaration`'s `prec(1)`, so the parser commits to
+the constructor branch, and the member's body ends up outside the declaration
+node — which is why the *calls* go missing rather than the method.
 
-Two fixes were built and neither is safe to land, so the grammar is unchanged:
+**127 distinct `New*` identifiers, 2,823 occurrences** in the corpus, and the
+pattern is contagious in exactly the code this corpus is made of: Windows Forms
+names handlers `<Form>_<Event>`, so a form called `NewForm` loses the body of
+**every** handler it has — silently, with the file's symbol count still plausible.
 
-- **Append `\b` to the `ci()` helper** so a keyword cannot match an identifier
-  prefix. This is the textbook fix and it is *illegal*: `\b` is a zero-width
-  assertion, and a tree-sitter token may not contain one — `Grammar error:
-  Unexpected rule ExpandRegex(Assertion)`.
-- **Drop `prec(-1)` from the identifier** so the length tiebreak runs. The
-  generator accepts it (and reports *fewer* necessary conflicts, which suggests
-  it does reduce ambiguity) but the lexer still picks `New`, so the change is not
-  the fix it looks like.
+Four fixes were built and none lands safely, which is itself the useful result:
 
-The correct repair is keyword extraction or a restructure of how keywords are
-declared, which is a grammar project rather than a one-line patch, and it
-belongs to whoever owns `grammar.js` — not to a lane that has to re-pin a
-digest-verified artefact. Both attempts were reverted; `grammars/` and the wasm
-are byte-identical to HEAD and the pin gate is green.
+| attempt | outcome |
+|---|---|
+| append `\b` to the `ci()` keyword helper | **illegal** — a tree-sitter token may not contain a zero-width assertion (`Unexpected rule ExpandRegex(Assertion)`) |
+| identifier `prec(-1)` → tie, let length decide | generator accepts it; the lexer still picks `New` |
+| identifier → `prec(1)`, outrank the keywords | **worse** — `Handles MyBase.Load` breaks too, and `New*` still fails |
+| `constructor_declaration` `prec(100)` → `prec(1)` | generator accepts it, still fails; and it would have put the two rules in tension for no gain |
+
+All four reverted. `grammars/` and the wasm are byte-identical to HEAD and the pin
+gate is green. The real repair is keyword extraction — teaching the grammar that
+`New` is a *word* and not a prefix — which is a grammar project for whoever owns
+`grammar.js`, not a change a lane should make to a digest-verified artefact.
 
 **Read the 120-file draw as 120 files, not 2,660.** It is 4.5 % of the corpus,
 drawn by a rotation that *prefers* never-sampled files, so it is fresh rather
@@ -258,7 +278,7 @@ header form `Class C : Inherits B, Implements I` / `Interface I : IDisposable`.
 
 **Every edge carries a 1-based site line** on the node that names the thing, so a
 call split across three lines is navigable to the line its callee name is
-written on. This is enforced, not asserted: **0 of 35,442** published
+written on. This is enforced, not asserted: **0 of 38,432** published
 relationships lack one.
 
 **A constructor is published as `constructor`**, with the class in `ownerName` —
