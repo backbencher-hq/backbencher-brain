@@ -26,8 +26,8 @@
 | --- | --- | --- |
 | name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` preserves the local declaration — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `rstrip`; `as:` names the remote target, not the declaration); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `atom` elements of the bare list (`[:id, :name]`, colon-stripped) and `pair > keyword` for the keyword form; `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
 | kind | ✅ | `defmodule` → `module`; `defprotocol` → `interface`; `defimpl` → `class` (named by for-type, `implements` edge to protocol); `defstruct` → `struct` + field `property`s; `def`/`defp`/`defdelegate` → `function` (or `method` when inside a protocol/impl scope); `defmacro`/`defmacrop`/`defguard`/`defguardp` → `macro`; `@type` → `type` |
-| qualified/container name | ✅ | `ownerName` = enclosing module (functions, types, struct, fields); protocol/impl members owned by their protocol/class; nested modules owned by the parent (`contains MyApp -> MyApp.User`) |
-| range (start/end line + column) | ✅ | the declaration node |
+| qualified/container name | ✅ | `ownerName` = the innermost enclosing DECLARATION (M14 ledger #867 ruling) for **every** nested symbol: functions, types, struct, fields, protocol/impl members — and, since EX-A10, nested `defmodule`/`defprotocol` themselves, which previously carried only `scope` (`contains MyApp -> MyApp.User` was emitted, the symbol field was not) |
+| range (start/end line + column) | ✅ | the declaration node; for a MERGED multi-clause head the extent runs to the **last clause's end** (EX-D16 — the same rule real-clean-analyzer.ts applies to a multi-clause `f x = …`) and every clause's exact range is published as `metadata.clauseRanges`, because a span cannot be discontiguous: 195 of 2,321 merged groups in elixir@024beb1b carry other declarations between their first and last clause |
 | parameters | ✅ (metadata only) | `def` signature `arguments` children; `name = default` collapses to the name |
 | visibility | ✅ | `defp`/`defmacrop` → `private`, else `public` |
 
@@ -38,7 +38,7 @@
 | contains | ✅ | real ownership only: module → its types/struct/fields/functions/macros (`contains MyApp.User -> new`), protocol/class → their methods, parent module → nested module. The struct is a distinct symbol contained by its module (`contains MyApp.User -> MyApp.User`). Never `global contains X`. | 1.0 |
 | implements | ✅ | `defimpl` → `implements forType -> protocol`; `@behaviour`/`@behavior` attribute → `implements module -> behaviour` | 0.9–1.0 |
 | calls | ✅ | `call` nodes in body position with function sources. Alias-resolved qualified module calls (`Repo.get` with `alias MyApp.Repo` → `MyApp.Repo.get`); same-module calls stay leaf (`add_bid`); pipelines (`|>`) call the piped target. Resolution rules: qualified calls emit when the receiver is capitalized (a module/alias) — lowercase receivers are dynamic dispatch (`module.manifests()`) and emit nothing; unqualified calls emit ONLY when the target is declared in the enclosing module/class (checked post-walk against the full declaration set, so forward references resolve) — Kernel builtins (`length`, `is_*`, `function_exported?`) and imported functions are not local symbols and produce no edge. Exclusions: special forms (case/cond/quote/unquote/...), def signature heads, module attributes, member access (`order.side`), quoted code. Self-recursion IS emitted (Rust `calls find -> find` analog) | 1.0 |
-| instantiates | ✅ | `%Struct{...}` literals in body position only (`instantiates new -> MyApp.User`). Never for `Map.put`-style module calls; never for pattern-position structs in def heads; `%{}` plain maps and `%__MODULE__{}` emit nothing | 0.9 |
+| instantiates | ✅ | (a) `%Struct{...}` literals in body position (`instantiates new -> MyApp.User`) — never for `Map.put`-style module calls, never for pattern-position structs in a def head; plain `%{}` emits nothing. (b) `struct(User, attrs)` (ELXD19). (c) **`raise Mod` / `raise Mod, msg` / `reraise Mod, stack` (EX-D17)** — the same construction through `Kernel.raise`'s exception entry point, so it is an `instantiates` edge and never a call; 401 alias-named sites in 200 files of elixir@024beb1b carried no edge before the fix. A `__MODULE__` first argument resolves to the enclosing module; a bare `raise "msg"`, a bound exception, or a computed module name is **silent** (no static target to name). Self-construction (`raise __MODULE__` in the module's own body) is suppressed with the rest of the X class | 0.9 |
 | references | ✅ | module dependencies only: `use`/`import`/`alias`/`require` → `references module -> dep` (the FP-family module-dep contract, Clojure ns → required libs). Body identifiers emit NOTHING (the old 47-edge references flood is removed) | 0.9 |
 | uses | ❌ | member access on structs (`user.id`) is a field read — no edge (fields already have `contains` ownership) | — |
 
@@ -62,11 +62,14 @@
 
 ## Export contract
 
-- The export list is the module's importable units: ownerless Module/Function/
-  Interface/Struct symbols only (`!s.ownerName`). An owned `defstruct` Struct
-  symbol is never re-exported under its module's name — the pre-ELXD3 export
-  pass (`ownerName === name`) produced two exports named `StructFields` for one
-  module, which the F3 export-uniqueness invariant rejects.
+- The export list is the module's importable units: Module/Interface symbols
+  (whatever their nesting — a nested module is addressable from outside its
+  file, which is why EX-A10's `ownerName` cannot demote it) plus ownerless
+  Function/Struct symbols (`!s.ownerName`, the `.exs` script shape). An owned
+  `defstruct` Struct symbol is never re-exported under its module's name — the
+  pre-ELXD3 export pass (`ownerName === name`) produced two exports named
+  `StructFields` for one module, which the F3 export-uniqueness invariant
+  rejects.
 
 ## Complexity model (live, verified against emitted shapes)
 
@@ -111,6 +114,25 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 - All loops single-pass over per-file structures. Owner lookups (GenServer/
   Supervisor marking) use an O(1) `symbolByName` map — no per-def O(n) scans.
 
+## Verification state (2026-09-28, `reviews/elixir/deep-review-2026-09-28.md`)
+
+| gate | result |
+| --- | --- |
+| F3 fixtures | **58/58 PASS** |
+| F4 mutants | **77/77 CAUGHT** (a 15-mutant payload wave found **9 survivors** — holes in this lane's own suite — and all 9 are now pinned) |
+| F5 differential | 6 corpora, 400 files, **8,911 oracle edges: coverage 100.0%, MISSING 0, unexplained 0**; the same-sample A/B is **161 MISSING before → 0 after** |
+| M12 differential | re-emitted **69/69, precision 1.000, recall 1.000** |
+| Deep audit (oracle-blind) | line contract, source attribution, contains integrity, symbol sanity, edge surface and complexity: **CLEAN** on the 60-file ecto_sql slice (3,846 edges) |
+| Spec census | 697 files / 6 corpora: **116 node types, 0 parse-error files, 0 unclassified named types** |
+| Perf | ms/def **flat** 2.22–4.25 from N=1,000 to N=4,000 on two synthetic ladders — no O(n²) term |
+
+The six corpora are elixir@024beb1b, phoenix@0e02edbe, ecto@94d69279,
+ecto_sql@44f561b8, ash@e3f9c80a and wallaby@13e1394d, run through
+`script/m14/tmp/elixir-lane-diff.ts` — a fixed-sample, per-file, error-visible
+re-run of this lane's F5 comparison, because the shared harness silently
+converts an analyzer exception into a coverage collapse (R4 in the review) and
+draws a different sample per run unless its pool is frozen.
+
 ## Corpus validation
 
 `validation/m12/results/elixir-differential.json` (via
@@ -127,13 +149,19 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 ## Supported / unsupported constructs
 
-Supported: modules (nested), functions (def/defp/defdelegate preserving local
-names independently of remote `as:` targets, multi-clause heads merged), macros (defmacro/defmacrop/defguard/
+Supported: modules (nested, and OWNED by the parent since EX-A10), functions
+(def/defp/defdelegate preserving local
+names independently of remote `as:` targets, multi-clause heads merged with the
+whole-function extent and per-clause ranges), macros (defmacro/defmacrop/defguard/
 defguardp), protocols (defprotocol), protocol impls (defimpl), structs
 (defstruct, bare and list forms), type aliases (@type/@typep/@opaque),
 behaviours (@behaviour), directives (use/import/alias/require, `as:` aliases),
-pipelines, struct literal instantiation, OTP pattern detection
-(GenServer/Supervisor/Task/Agent metadata).
+pipelines, struct literal instantiation, exception construction
+(`raise`/`reraise`, EX-D17), OTP pattern detection
+(GenServer/Supervisor/Task/Agent metadata — `use GenServer` is a `references`
+edge plus `otpBehavior`, NOT an `implements` edge: the injected `@behaviour` is
+a macro expansion, EX-D8; registered, with the reasoning, in
+`reviews/elixir/deep-review-2026-09-28.md` R3).
 
 Not modeled (deliberately): quoted-code contents (macro AST is data), anonymous
 function internals (closure boundary), member access on structs (no edge),
