@@ -669,12 +669,43 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
+  // FNV-1a to turn the seed STRING into a 32-bit state. As a hash this is fine.
   let h = 2166136261
   for (const c of seedStr) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) }
+
+  // ...and mulberry32 to DRIVE the shuffle, because using the hash state itself
+  // as the shuffle's randomness has almost no avalanche. `h = imul(h ^ (h + i))`
+  // perturbs only the low bits of `h` and then spreads them upward, so two
+  // completely different seeds converge: measured over 1,880 items, the
+  // permutations for two seeds differed in NINE positions out of 1,880, and the
+  // first 60 were IDENTICAL every time.
+  //
+  // That is not a subtle loss of variety, it is the #760 guarantee failing
+  // outright. The cold-pool rotation is documented as "each lane prefers files
+  // never sampled before, deterministically seeded per rotation counter", and
+  // that holds only while there are never-sampled files to prefer. Once the
+  // pool saturates -- which it did, after full-corpus sweeps -- every "wave"
+  // drew the SAME 60 files, and a rotation that draws the same files every wave
+  // is not a rotation. A whole-kind defect could sit in the 1,871 untouched
+  // files and no amount of re-running would have found it.
+  //
+  // The only reason this was caught is that a frozen A/B run and an unfrozen one
+  // reported the same sample hash while the truth counts differed, which should
+  // have been impossible. Same seed, same draw -- until the seed was not reaching
+  // the draw at all.
+  let a = h >>> 0
+  const next = (): number => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+
   const idx = items.map((_, i) => i)
   for (let i = idx.length - 1; i > 0; i--) {
-    h = Math.imul(h ^ (h + i), 2246822519)
-    const j = Math.abs(h) % (i + 1); [idx[i], idx[j]] = [idx[j], idx[i]]
+    const j = Math.floor(next() * (i + 1))
+    ;[idx[i], idx[j]] = [idx[j], idx[i]]
   }
   return idx.slice(0, n).map(i => items[i])
 }
@@ -722,9 +753,25 @@ function coldPoolPick<T>(items: T[], n: number, laneKey: string, poolKey?: (it: 
   // the sample hash changed every run (74a3b425 -> 0c3b2d53 -> 09c70a41 ->
   // 11611103) and coverage appeared to move 98.4% -> 92.4% with no code change in
   // between. Freeze the pool to compare; leave it off for a coverage run.
-  const freeze = process.env.BB_F5_FREEZE_POOL === "1"
+  // BB_F5_FREEZE_POOL pins the rotation to an EXPLICIT number.
+  //
+  // It used to mean "replay the CURRENT rotation", which is not a freeze at all:
+  // the rotation counter is shared state, so any OTHER lane's unscoped sweep
+  // advanced it between two of my runs and the pinned wave moved underneath me.
+  // That is not theoretical. Two runs minutes apart, both with the freeze set,
+  // drew different waves and reported 911/911 and then 930/34, and the second
+  // would have been read as a regression caused by whatever had just changed. It
+  // was not -- it was a different set of files. Every A/B number taken under the
+  // old flag was therefore comparing two file sets and calling it a comparison.
+  //
+  // So the value IS the rotation number, and the same number always draws the
+  // same wave whatever anyone else does: `BB_F5_FREEZE_POOL=7` is reproducible.
+  const freezeRaw = process.env.BB_F5_FREEZE_POOL
+  const freeze = freezeRaw !== undefined && freezeRaw !== ""
   const seen = new Set<string>(state.seen[laneKey] ?? [])
-  const rotation = freeze ? (state.rotations[laneKey] ?? 1) : (state.rotations[laneKey] ?? 0) + 1
+  const rotation = freeze
+    ? (parseInt(freezeRaw as string, 10) || 1)
+    : (state.rotations[laneKey] ?? 0) + 1
   const paths = items.map((it) => poolKey
     ? poolKey(it)
     : String((it as any).path ?? (it as any).filePath ?? (it as any).file ?? it))
@@ -9907,8 +9954,14 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
     if (n.type === "method_call_expression") {
       const m = byType(n, "method")
       const method = m?.text ?? ""
+      // Hoisted out of the `new` branch: a receiver that NAMES A CLASS makes
+      // the method's OWNER derivable, and that is true of `Mojo::IOLoop->stream`
+      // as much as of `Mojo::IOLoop->new`. Left inside the branch it is a
+      // ReferenceError in the else-branch below, which the BUNDLER does not
+      // catch — bundling is not scope analysis — so the file built clean and the
+      // lane failed at run time instead.
+      const invocant = fieldAll(n, "invocant").find((c) => c.isNamed)
       if (method === "new") {
-        const invocant = fieldAll(n, "invocant").find((c) => c.isNamed)
         const t = invocant?.text ?? ""
         if (MAGIC.has(t)) {
           // `__PACKAGE__->new` constructs the CURRENT package; with a package in
@@ -9927,7 +9980,7 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           // MOCKING it.
           push("instantiates", src(), `${leaf(t)}.constructor`)
         }
-      } else if (method && !PERL_BUILTINS.has(method)) {
+      } else if (method) {
         // A receiver that NAMES A CLASS makes the method's OWNER derivable, so
         // the target is `Receiver.method` and not a bare leaf. Without this the
         // oracle agreed with the analyzer on dropping it — the THIRD time this
@@ -9940,11 +9993,20 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
         // `instantiates` guard: one rule, two labels, and the same leaf
         // convention both already used (`Mojo::Util->f` is `Util.f`, exactly as
         // the analyzer's `instantiates` path already emitted `Util.constructor`).
-        const recv = invocant ? (invocant.text ?? "") : ""
-        if (invocant && namesAClass(invocant) && recv && !recv.includes("$") && !recv.includes("->")) {
-          push("calls", src(), `${leaf(recv)}.${method}`)
-        } else {
-          push("calls", src(), leaf(method))
+        // Two corrections, both found by the differential the moment this
+        // landed (18 unexplained on mojo):
+        //  - the builtin test must run against the METHOD. `reset` is a perl
+        //    builtin, and testing the QUALIFIED target `IOLoop.reset` missed it,
+        //    so `Mojo::IOLoop->reset` stopped being suppressed.
+        //  - a bare bareword is not a class. `app->log->level('fatal')` qualified
+        //    to `app.log`, inventing a class for a lexical holding a server. The
+        //    grammar types `app` and `Mojo::IOLoop` both as `bareword`, so only
+        //    the `::` distinguishes them.
+        const recv = invocant?.text ?? ""
+        const provable = invocant != null && namesAClass(invocant) && (invocant.type === "package" || recv.includes("::")) && !recv.includes("$") && !recv.includes("->")
+        if (!PERL_BUILTINS.has(method)) {
+          if (provable) push("calls", src(), `${leaf(recv)}.${method}`)
+          else push("calls", src(), leaf(method))
         }
       }
     } else if (inSub && (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression")) {
@@ -12947,21 +13009,38 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       "declare_statement", "interface_method_declaration",
       "interface_property_declaration", "interface_event_declaration",
     ])
-    /** Every `as_clause` at or under `n`, including inside its parameter list. */
-    const asClausesIn = (n: any): any[] => {
+    /**
+     * The `as_clause`s of a declaration's SIGNATURE -- its own, plus one per
+     * parameter -- and nothing else.
+     *
+     * The first version walked the whole subtree for `as_clause` nodes, which
+     * reads the BODY as well, so every `Dim p As Pokemon` local inside a method
+     * became a `references` edge from that METHOD to `Pokemon`. The signature
+     * ends at the `)` and the body is a different thing with a different owner:
+     * locals are deliberately not project-symbol-table members, and the family
+     * agrees on that (java emits their TYPE references rather than Variable-kind
+     * symbols, per the kotlin spec's K23 note).
+     *
+     * Measured on P3D's BulletSeed.vb, whose `GetTimesToAttack(own As Boolean,
+     * BattleScreen As BattleScreen) As Integer` is followed by
+     * `Dim p As Pokemon = ...` and `Dim op As Pokemon = ...`: the walk derived
+     * `references GetTimesToAttack -> Pokemon`, 27 such rows across a fresh draw,
+     * and no analyzer can satisfy them because there is nothing to satisfy -- the
+     * method's signature names three types and not one of them is `Pokemon`.
+     */
+    const signatureAsClauses = (n: any): any[] => {
       const out: any[] = []
-      const walk = (x: any, depth: number): void => {
-        if (depth > 8) return
-        for (let i = 0; i < x.childCount; i++) {
-          const c = x.child(i)
-          if (!c) continue
-          if (c.type === "as_clause") { out.push(c); continue }
-          // a nested declaration owns its own types; do not walk into it
-          if (TYPE_POSITIONS.has(c.type)) continue
-          walk(c, depth + 1)
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (!c) continue
+        if (c.type === "as_clause") { out.push(c); continue }
+        if (c.type === "parameter_list" || c.type === "parameter") {
+          for (let j = 0; j < c.childCount; j++) {
+            const p = c.child(j)
+            if (p && p.type === "as_clause") out.push(p)
+          }
         }
       }
-      walk(n, 0)
       return out
     }
     const fileDeclares = new Set<string>()
@@ -12975,7 +13054,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       for (const src of fieldUnits(d)) {
         const srcName = contractName(src)
         if (srcName.length === 0) continue
-        for (const ac of asClausesIn(src)) {
+        for (const ac of signatureAsClauses(src)) {
           const ty = ac.childForFieldName?.("declared_type") ?? ac.namedChild?.(0)
           if (!ty) continue
           const leaf = lastIdent(ty)

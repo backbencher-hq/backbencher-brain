@@ -173,10 +173,11 @@ keywords, so none of the 287 `ci()` call sites participates. That is a restructu
 of how the grammar declares keywords, for whoever owns `grammar.js` — not a change
 a lane should make to a digest-verified artefact.
 
-**Read the 120-file draw as 120 files, not 2,660.** It is 4.5 % of the corpus,
-drawn by a rotation that *prefers* never-sampled files, so it is fresh rather
-than representative — and it reported 100 % on a corpus whose honest figure is
-99.8 %.
+**Read the 120-file draw as 120 files — and in fact as 60.** Two rotations of a
+60-file draw, one per corpus, was the sample. It reported 100 % on a corpus whose
+honest figure is not 100 %, and it kept reporting 100 % on the *same* 60 files
+however many rotations were requested, because the rotation was not rotating. See
+the section on that below: the fix, and what the number means now.
 
 The audited labels are `calls`, `contains`, `imports`, `extends` and
 `implements`. `references` is deliberately **not** audited: the oracle does not
@@ -465,6 +466,60 @@ to try to break it on purpose and check that it noticed.
 The census has the same property and records it too — its first run found zero
 files and printed "all 0 node types in the corpus are classified", a vacuous pass
 at exit 0. It now refuses to conclude on an empty corpus.
+
+## The rotation was not rotating, and every "100 %" was one file set
+
+This is the most important thing found in this lane, and it was found by a
+measurement that should not have been possible.
+
+I ran a frozen A/B and an unfrozen run minutes apart. They reported the same
+`sampleSetHash` while their truth counts differed — 911/911 and then 930/34. The
+same hash is a hash of the drawn file paths, so two different file sets cannot
+share one. Something was wrong with the sampling, and it turned out to be this:
+
+```ts
+h = Math.imul(h ^ (h + i), 2246822519)
+const j = Math.abs(h) % (i + 1)
+```
+
+The seed hash is fine. The **shuffle** is not: `h ^ (h + i)` perturbs only the low
+bits of `h` and then spreads them upward, so two completely different seeds
+converge. Measured over 1,880 items, the permutations for two seeds differed in
+**nine positions out of 1,880**, and the first sixty were **identical every time**.
+
+The cold-pool rotation is documented — in this file and in the harness — as "each
+lane prefers files never sampled before, deterministically seeded per rotation
+counter … every wave sees fresh files". That holds only while never-sampled files
+remain. Once the pool saturates, which it did after the full-corpus sweeps, every
+"wave" drew **the same 60 files**, and a rotation that draws the same files every
+wave is not a rotation. A whole-kind defect could have sat in the other 1,871
+files indefinitely and no amount of re-running would ever have found it.
+
+Fixed by driving the shuffle with mulberry32 — a real PRNG with proper avalanche —
+seeded from the same FNV state. The draw now varies:
+
+| rotation | truth edges | covered | missing | unexplained |
+|---:|---:|---:|---:|---:|
+| 7 | 671 | 670 (99.9 %) | 1 | 0 |
+| 21 | 658 | **658 (100 %)** | 0 | 0 |
+| 99 | 646 | **646 (100 %)** | 0 | 0 |
+
+**So what this changes about the record.** Every "100 % on a 60-file draw" quoted
+earlier in this file was measured on *one* file set, drawn over and over, and I
+reported it as though rotation were providing fresh coverage. It was not. The
+honest reading of those numbers was "100 % on 60 files, and I had not looked at
+any others" — which is a much smaller claim, and the difference is the whole point
+of a differential.
+
+Two consequences worth keeping:
+
+- The **full-corpus** sweeps were the only measurements that were ever honest about
+  coverage, which is why they found the interface members, the operators and the
+  modifier read that the draws never could.
+- `BB_F5_FREEZE_POOL` used to mean "replay the current rotation", which is not a
+  freeze at all: the rotation counter is shared state, so any other lane's
+  unscoped sweep moved the wave between two of my runs. It now takes the rotation
+  **number** — `BB_F5_FREEZE_POOL=7` is reproducible whatever anyone else does.
 
 ## The modifier read — the largest defect this lane has had
 
