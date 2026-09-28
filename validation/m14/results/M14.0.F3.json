@@ -38,7 +38,7 @@
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "71/71 fixtures pass",
+      "detail": "73/73 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
@@ -62,31 +62,31 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "19/19 fixtures pass",
+      "detail": "22/22 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "14/14 fixtures pass",
+      "detail": "18/18 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "3/3 fixtures pass",
+      "detail": "4/4 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
     },
@@ -98,25 +98,25 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "7/7 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "16/16 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -149,11 +149,17 @@
       "detail": "0/9 fixtures pass",
       "id": "fixtures-erlang",
       "status": "fail"
+    },
+    {
+      "description": "clean adversarial fixtures",
+      "detail": "5/5 fixtures pass",
+      "id": "fixtures-clean",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
-  "committedAt": "2026-09-23T17:47:16-04:00",
+  "commit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "committedAt": "2026-09-26T18:12:46-04:00",
   "data": {
     "details": [
       {
@@ -1557,6 +1563,11 @@
         "problems": []
       },
       {
+        "fixture": "groovy/anonymous-body-overrides",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "groovy/anonymous-field-member",
         "ok": true,
         "problems": []
@@ -1758,6 +1769,11 @@
       },
       {
         "fixture": "groovy/keyword-named-args-841",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "groovy/lambda-expression",
         "ok": true,
         "problems": []
       },
@@ -2507,6 +2523,11 @@
         "problems": []
       },
       {
+        "fixture": "cpp/declaration-vs-definition-612",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/include-name-924",
         "ok": true,
         "problems": []
@@ -2567,7 +2588,17 @@
         "problems": []
       },
       {
+        "fixture": "cpp/template-declarator-name-612",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "cpp/virtual-override-resolution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "cpp/wrapped-declarator-names-612",
         "ok": true,
         "problems": []
       },
@@ -2592,12 +2623,22 @@
         "problems": []
       },
       {
+        "fixture": "rust/declaration-vs-definition-612",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/declared-type-refs",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "rust/error-file-payload",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "rust/impl-target-name-surface-798",
         "ok": true,
         "problems": []
       },
@@ -2632,6 +2673,11 @@
         "problems": []
       },
       {
+        "fixture": "rust/tuple-struct-field-types",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "rust/union-and-associated-type",
         "ok": true,
         "problems": []
@@ -2642,7 +2688,27 @@
         "problems": []
       },
       {
+        "fixture": "rust/where-clause-bounds-798",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/base-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/callee-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "python/decorator-column-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "python/dupdef-last-wins",
         "ok": true,
         "problems": []
       },
@@ -2682,6 +2748,11 @@
         "problems": []
       },
       {
+        "fixture": "go/error-region-callee-descend-799",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/framework-detection",
         "ok": true,
         "problems": []
@@ -2692,7 +2763,22 @@
         "problems": []
       },
       {
+        "fixture": "go/grammar-error-not-a-construction-889",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/grouped-and-embedded-fields-889",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "go/implements-params",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "go/implements-signature-914",
         "ok": true,
         "problems": []
       },
@@ -2718,6 +2804,11 @@
       },
       {
         "fixture": "zig/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "zig/declaration-vs-definition-612",
         "ok": true,
         "problems": []
       },
@@ -2802,7 +2893,27 @@
         "problems": []
       },
       {
+        "fixture": "dart/callsite-lines-825",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "dart/dedup-and-attribution",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/dup-decl-last-wins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/enum-constant-decls",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "dart/extension-type",
         "ok": true,
         "problems": []
       },
@@ -2832,12 +2943,32 @@
         "problems": []
       },
       {
+        "fixture": "swift/attributed-enum-case",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/bare-member-read-uses",
         "ok": true,
         "problems": []
       },
       {
+        "fixture": "swift/case-pattern-recovery",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/edges-and-patterns",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/enum-construction-splice",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "swift/error-recovery-nominal",
         "ok": true,
         "problems": []
       },
@@ -2882,6 +3013,11 @@
         "problems": []
       },
       {
+        "fixture": "swift/unwrap-write-gate",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "swift/write-gate",
         "ok": true,
         "problems": []
@@ -2898,6 +3034,11 @@
       },
       {
         "fixture": "objc/framework-surface-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "objc/macro-prefixed-declaration",
         "ok": true,
         "problems": []
       },
@@ -2947,12 +3088,32 @@
         "problems": []
       },
       {
+        "fixture": "php/framework-app-root",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/framework-order",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/framework-surface-pins",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "php/header-reads",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "php/include-paths",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "php/line-contract",
         "ok": true,
         "problems": []
       },
@@ -3451,6 +3612,31 @@
           "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"SERVER_HEADER\",\"meta.context\":\"macro use\",\"line_number\":22,\"note\":\"undefined macro: the use is still emitted; unresolved targets land as externals - honest\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
           "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"TIMEOUT\",\"meta.context\":\"macro use\",\"line_number\":24}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1"
         ]
+      },
+      {
+        "fixture": "clean/definition-module-interface",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clean/expression-shapes",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clean/import-modules-alias-884",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clean/instance-target-name-collision",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clean/signature-definition-merge",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -3458,13 +3644,17 @@
         "fail": 0,
         "pass": 18
       },
+      "clean": {
+        "fail": 0,
+        "pass": 5
+      },
       "clojure": {
         "fail": 0,
         "pass": 36
       },
       "cpp": {
         "fail": 0,
-        "pass": 19
+        "pass": 22
       },
       "csharp": {
         "fail": 0,
@@ -3472,7 +3662,7 @@
       },
       "dart": {
         "fail": 0,
-        "pass": 7
+        "pass": 11
       },
       "elixir": {
         "fail": 0,
@@ -3484,11 +3674,11 @@
       },
       "go": {
         "fail": 0,
-        "pass": 8
+        "pass": 12
       },
       "groovy": {
         "fail": 0,
-        "pass": 71
+        "pass": 73
       },
       "haskell": {
         "fail": 0,
@@ -3508,15 +3698,15 @@
       },
       "objc": {
         "fail": 0,
-        "pass": 7
+        "pass": 8
       },
       "php": {
         "fail": 0,
-        "pass": 12
+        "pass": 16
       },
       "python": {
         "fail": 0,
-        "pass": 5
+        "pass": 8
       },
       "ruby": {
         "fail": 0,
@@ -3524,7 +3714,7 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 14
+        "pass": 18
       },
       "scala": {
         "fail": 0,
@@ -3536,7 +3726,7 @@
       },
       "swift": {
         "fail": 0,
-        "pass": 11
+        "pass": 16
       },
       "typescript": {
         "fail": 0,
@@ -3552,7 +3742,7 @@
       },
       "zig": {
         "fail": 0,
-        "pass": 3
+        "pass": 4
       }
     }
   },
@@ -3569,14 +3759,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-23T22:03:49.845Z",
-  "regeneratedAtCommit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
+  "regeneratedAt": "2026-09-27T02:57:24.308Z",
+  "regeneratedAtCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Adversarial fixture corpus",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.305Z",
-    "contentSha256": "65c5b78a567f49680a5a27e4df4fd669ba725f8904098135c75a016a6c781a16"
-  }
+  "title": "Adversarial fixture corpus"
 }
