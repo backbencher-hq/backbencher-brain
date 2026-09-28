@@ -16005,6 +16005,28 @@ async function main() {
       // (resampled — triage). See sampleSetHash().
       sampleSetHash: sampleSetHash(sample.map((f: any) => path.relative(repoDir, f))),
       samples,
+      // JD-J1 (M60 java deep review, 2026-09-27): the HEURISTIC bucket's rows.
+      //
+      // `samplesHeuristic` has been collected at the split point since the
+      // evidence-tier split was introduced — capped at 100, tagged
+      // `dir: "HEURISTIC"`, filed by source file — and has never been read by
+      // anything. Not printed, not in the artifact, not in any gate. So
+      // `heuristicUnexplained` has always been published as a bare COUNT: for
+      // java that is 82-130 edges per draw, from a population (low-confidence
+      // `overrides`) that the allowlist DOES admit into the comparison, which
+      // means the lane's `fabricationPct: 0` is computed over a set that had
+      // members moved aside and then made invisible.
+      //
+      // A count with no rows behind it is not evidence, and this bucket is
+      // where declared suspicion is supposed to become either a truth gap (the
+      // oracle is silent) or a real fabrication. Neither adjudication was
+      // possible, because the rows were thrown away at the end of the file.
+      //
+      // Gated on BB_F5_SHOW_SAMPLES for the same reason the `strict` block
+      // above is gated on BB_F5_STRICT: a canonical run's artifact must stay
+      // byte-identical to what the gate compares, and this is triage evidence,
+      // not a scored dimension.
+      ...(process.env.BB_F5_SHOW_SAMPLES ? { heuristicSamples: samplesHeuristic } : {}),
       // BB_F5_STRICT only, so a canonical run's artifact stays byte-identical to
       // what the gate compares.
       ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
@@ -16072,6 +16094,16 @@ async function main() {
         console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.line ? ` (line ${s.line})` : ""}`)
       }
       if (row.samples.length > 40) console.log(`    … +${row.samples.length - 40} more diff sample(s)`)
+    }
+    // JD-J1: the heuristic bucket's own rows. Printed under the same flag, and
+    // called out separately from UNEXPLAINED so the two are never confused: a
+    // HEURISTIC row is declared suspicion (confidence < 0.7), not a counted
+    // fabrication.
+    if (process.env.BB_F5_SHOW_SAMPLES && (row as any).heuristicSamples?.length > 0) {
+      for (const s of (row as any).heuristicSamples.slice(0, 40)) {
+        console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.confidence !== undefined ? ` (conf ${s.confidence})` : ""}${s.line ? ` (line ${s.line})` : ""}`)
+      }
+      if ((row as any).heuristicSamples.length > 40) console.log(`    … +${(row as any).heuristicSamples.length - 40} more HEURISTIC sample(s)`)
     }
 
     // M37.21 #610 operational lesson (web-tree-sitter WASM heap aborts kill
