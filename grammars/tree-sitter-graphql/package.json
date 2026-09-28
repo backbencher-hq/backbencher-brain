@@ -1,0 +1,25 @@
+{
+  "name": "tree-sitter-graphql",
+  "version": "0.0.1",
+  "description": "GraphQL grammar for tree-sitter (vendored from github.com/bkegley/tree-sitter-graphql and patched; see README.md)",
+  "main": "grammar.js",
+  "license": "MIT",
+  "author": {
+    "name": "Bryan Kegley",
+    "email": "hi@bryankegley.me"
+  },
+  "files": [
+    "grammar.js",
+    "grammar.upstream.js",
+    "port.py",
+    "tree-sitter.json",
+    "src/**"
+  ],
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "build:wasm": "tree-sitter generate && tree-sitter build --wasm -o ../../wasm/tree-sitter-graphql.wasm"
+  },
+  "devDependencies": {
+    "tree-sitter-cli": "^0.25.1"
+  }
+}

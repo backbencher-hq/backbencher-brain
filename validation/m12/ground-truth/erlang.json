@@ -1,0 +1,766 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/erlang/ (Service.erl, Negative.erl) — hand-audited against Erlang semantics: -module→module, -define→constant, -type/-typep/-opaque→type, -record→struct + field properties (fields owned by the record), functions (multi-clause fun_decl merged); relationships: contains (module owns types/constants/records/functions, record owns fields), implements (-behaviour any behaviour, incl. custom), calls (function-leaf sources; remote calls qualified Module:Function; local calls only when the callee is declared in the file — BIFs length/self/element/hd and imported functions excluded; forward references resolve), instantiates (#Record{} constructions in body position only — head patterns and record updates/accesses excluded), references (-import/-include/-include_lib module deps).",
+  "facts": [
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 1,
+      "attributes": {
+        "name": "service",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 10,
+      "attributes": {
+        "name": "MAX_JOBS",
+        "symbolKind": "constant"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 11,
+      "attributes": {
+        "name": "DEFAULT_TIMEOUT",
+        "symbolKind": "constant"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 13,
+      "attributes": {
+        "name": "job_id",
+        "symbolKind": "type"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 14,
+      "attributes": {
+        "name": "job",
+        "symbolKind": "type"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 15,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 15,
+      "attributes": {
+        "name": "kind",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 15,
+      "attributes": {
+        "name": "payload",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 15,
+      "attributes": {
+        "name": "job",
+        "symbolKind": "struct"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 16,
+      "attributes": {
+        "name": "queue",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 16,
+      "attributes": {
+        "name": "running",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 16,
+      "attributes": {
+        "name": "state",
+        "symbolKind": "struct"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 19,
+      "attributes": {
+        "name": "start_link",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 23,
+      "attributes": {
+        "name": "submit",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 26,
+      "attributes": {
+        "name": "stop",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 29,
+      "attributes": {
+        "name": "init",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 32,
+      "attributes": {
+        "name": "handle_call",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 35,
+      "attributes": {
+        "name": "handle_cast",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 43,
+      "attributes": {
+        "name": "count_jobs",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 46,
+      "attributes": {
+        "name": "sweep",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 49,
+      "attributes": {
+        "name": "is_stale",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.erl",
+      "line": 52,
+      "attributes": {
+        "name": "make_payload",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "gen_server",
+      "attributes": {
+        "type": "implements"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "my_behaviour",
+      "attributes": {
+        "type": "implements"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "lists",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "service.hrl",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "kernel/include/logger.hrl",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "start_link",
+      "targetId": "gen_server:start_link",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "submit",
+      "targetId": "gen_server:cast",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "submit",
+      "targetId": "make_payload",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "submit",
+      "targetId": "job",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "stop",
+      "targetId": "gen_server:cast",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "init",
+      "targetId": "state",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "handle_call",
+      "targetId": "lists:sublist",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "sweep",
+      "targetId": "lists:filter",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "MAX_JOBS",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "DEFAULT_TIMEOUT",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "job_id",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "job",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "job",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "job",
+      "targetId": "kind",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "job",
+      "targetId": "payload",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "state",
+      "targetId": "queue",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "state",
+      "targetId": "running",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "state",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "start_link",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "submit",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "stop",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "init",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "handle_call",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "handle_cast",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "count_jobs",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "sweep",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "is_stale",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.erl",
+      "sourceId": "service",
+      "targetId": "make_payload",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 1,
+      "attributes": {
+        "name": "negative",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 5,
+      "attributes": {
+        "name": "builtin_only",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 11,
+      "attributes": {
+        "name": "member_access",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 15,
+      "attributes": {
+        "name": "head_pattern",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 18,
+      "attributes": {
+        "name": "sends",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 21,
+      "attributes": {
+        "name": "spawns",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.erl",
+      "line": 25,
+      "attributes": {
+        "name": "uses_import",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "lists",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "builtin_only",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "member_access",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "head_pattern",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "sends",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "spawns",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.erl",
+      "sourceId": "negative",
+      "targetId": "uses_import",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    }
+  ]
+}

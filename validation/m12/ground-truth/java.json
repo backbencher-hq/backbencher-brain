@@ -1,0 +1,1748 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/java (BaseService.java, Repository.java, UserService.java) hand-audited from source; symbol truth cross-checked against M11 validation/m11/ground-truth/jvm-symbols.json",
+  "facts": [
+    {
+      "id": "sym:BaseService.java:6:class:BaseService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 6,
+      "attributes": {
+        "name": "BaseService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract class BaseService<T extends BaseService.Entity> implements Repository<T>"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:7:property:prefix",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 7,
+      "attributes": {
+        "name": "prefix",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "protected final String prefix = \"base\";"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:9:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 9,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract String format(String value);"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:11:method:findAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 11,
+      "attributes": {
+        "name": "findAll",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public List<T> findAll()"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:15:method:findByFilter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 15,
+      "attributes": {
+        "name": "findByFilter",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private List<T> findByFilter(String filter)"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:19:interface:Entity",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 19,
+      "attributes": {
+        "name": "Entity",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface Entity"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:20:method:getId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 20,
+      "attributes": {
+        "name": "getId",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "String getId();"
+      }
+    },
+    {
+      "id": "sym:BaseService.java:21:method:getName",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.java",
+      "line": 21,
+      "attributes": {
+        "name": "getName",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "String getName();"
+      }
+    },
+    {
+      "id": "sym:Repository.java:6:interface:Repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.java",
+      "line": 6,
+      "attributes": {
+        "name": "Repository",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface Repository<T extends BaseService.Entity>"
+      }
+    },
+    {
+      "id": "sym:Repository.java:7:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.java",
+      "line": 7,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "CompletableFuture<T> save(T value);"
+      }
+    },
+    {
+      "id": "sym:Repository.java:8:method:findAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.java",
+      "line": 8,
+      "attributes": {
+        "name": "findAll",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "List<T> findAll();"
+      }
+    },
+    {
+      "id": "sym:UserService.java:9:class:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 9,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class UserService extends BaseService<UserService.User> implements Repository<UserService.User>"
+      }
+    },
+    {
+      "id": "sym:UserService.java:11:property:store",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 11,
+      "attributes": {
+        "name": "store",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final Map<String, User> store = new HashMap<>();"
+      }
+    },
+    {
+      "id": "sym:UserService.java:13:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 13,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public UserService() {}"
+      }
+    },
+    {
+      "id": "sym:UserService.java:16:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 16,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public String format(String value)"
+      }
+    },
+    {
+      "id": "sym:UserService.java:21:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 21,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public CompletableFuture<User> save(User value)"
+      }
+    },
+    {
+      "id": "sym:UserService.java:27:class:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 27,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static class User implements BaseService.Entity"
+      }
+    },
+    {
+      "id": "sym:UserService.java:28:property:id",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 28,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final String id;"
+      }
+    },
+    {
+      "id": "sym:UserService.java:29:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 29,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final String name;"
+      }
+    },
+    {
+      "id": "sym:UserService.java:31:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 31,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public User(String id, String name)"
+      }
+    },
+    {
+      "id": "sym:UserService.java:36:method:getId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 36,
+      "attributes": {
+        "name": "getId",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public String getId() { return id; }"
+      }
+    },
+    {
+      "id": "sym:UserService.java:39:method:getName",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.java",
+      "line": 39,
+      "attributes": {
+        "name": "getName",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public String getName() { return name; }"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:BaseService:prefix",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "prefix",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "field declared inside class body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:BaseService:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:BaseService:findAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "findAll",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:BaseService:findByFilter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "findByFilter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:BaseService:Entity",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "Entity",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "nested interface declared inside class body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:Entity:getId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "Entity",
+      "targetId": "getId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside interface body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:contains:Entity:getName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "Entity",
+      "targetId": "getName",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside interface body"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:implements:BaseService:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract class BaseService ... implements Repository<T>"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:calls:findAll:findByFilter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "findAll",
+      "targetId": "findByFilter",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return findByFilter(null);"
+      }
+    },
+    {
+      "id": "rel:Repository.java:contains:Repository:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.java",
+      "sourceId": "Repository",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside interface body"
+      }
+    },
+    {
+      "id": "rel:Repository.java:contains:Repository:findAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.java",
+      "sourceId": "Repository",
+      "targetId": "findAll",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside interface body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:UserService:store",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "store",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "field declared inside class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:UserService:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor declared inside class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:UserService:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:UserService:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:UserService:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "User",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "nested class declared inside class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:User:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "field declared inside nested class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "field declared inside nested class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:User:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor declared inside nested class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:User:getId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "getId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside nested class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:contains:User:getName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "getName",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside nested class body"
+      }
+    },
+    {
+      "id": "rel:UserService.java:extends:UserService:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class UserService extends BaseService<UserService.User>"
+      }
+    },
+    {
+      "id": "rel:UserService.java:implements:UserService:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "implements Repository<UserService.User>"
+      }
+    },
+    {
+      "id": "rel:UserService.java:implements:User:BaseService.Entity",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "BaseService.Entity",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static class User implements BaseService.Entity"
+      }
+    },
+    {
+      "id": "rel:UserService.java:calls:format:trim",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "format",
+      "targetId": "trim",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return prefix + \":\" + value.trim();"
+      }
+    },
+    {
+      "id": "rel:UserService.java:calls:save:put",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "save",
+      "targetId": "put",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "store.put(value.getId(), value);"
+      }
+    },
+    {
+      "id": "rel:UserService.java:calls:save:getId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "save",
+      "targetId": "getId",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "store.put(value.getId(), value);"
+      }
+    },
+    {
+      "id": "rel:UserService.java:calls:save:completedFuture",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "save",
+      "targetId": "completedFuture",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return CompletableFuture.completedFuture(value);"
+      }
+    },
+    {
+      "id": "rel:UserService.java:overrides:UserService.format:BaseService.format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService.format",
+      "targetId": "BaseService.format",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@Override public String format(String value)"
+      }
+    },
+    {
+      "id": "rel:UserService.java:overrides:UserService.save:Repository.save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService.save",
+      "targetId": "Repository.save",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@Override public CompletableFuture<User> save(User value)"
+      }
+    },
+    {
+      "id": "rel:UserService.java:overrides:User.getId:Entity.getId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User.getId",
+      "targetId": "Entity.getId",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@Override public String getId()"
+      }
+    },
+    {
+      "id": "rel:UserService.java:overrides:User.getName:Entity.getName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User.getName",
+      "targetId": "Entity.getName",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@Override public String getName()"
+      }
+    },
+    {
+      "id": "rel:UserService.java:uses:User:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "id",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "getId() returns field id of the enclosing User instance"
+      }
+    },
+    {
+      "id": "rel:UserService.java:uses:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "getName() returns field name of the enclosing User instance"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:references:BaseService:java.util.List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "java.util.List",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.List;"
+      }
+    },
+    {
+      "id": "rel:BaseService.java:references:BaseService:java.util.Optional",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.java",
+      "sourceId": "BaseService",
+      "targetId": "java.util.Optional",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.Optional;"
+      }
+    },
+    {
+      "id": "rel:Repository.java:references:Repository:java.util.List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.java",
+      "sourceId": "Repository",
+      "targetId": "java.util.List",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.List;"
+      }
+    },
+    {
+      "id": "rel:Repository.java:references:Repository:java.util.concurrent.CompletableFuture",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.java",
+      "sourceId": "Repository",
+      "targetId": "java.util.concurrent.CompletableFuture",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.concurrent.CompletableFuture;"
+      }
+    },
+    {
+      "id": "rel:UserService.java:references:UserService:com.example.base.BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "com.example.base.BaseService",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import com.example.base.BaseService;"
+      }
+    },
+    {
+      "id": "rel:UserService.java:references:UserService:com.example.base.Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "com.example.base.Repository",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import com.example.base.Repository;"
+      }
+    },
+    {
+      "id": "rel:UserService.java:references:UserService:java.util.HashMap",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "java.util.HashMap",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.HashMap;"
+      }
+    },
+    {
+      "id": "rel:UserService.java:references:UserService:java.util.Map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "java.util.Map",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.Map;"
+      }
+    },
+    {
+      "id": "rel:UserService.java:references:UserService:java.util.concurrent.CompletableFuture",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "java.util.concurrent.CompletableFuture",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.concurrent.CompletableFuture;"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:10:class:AdvancedFeatures",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 10,
+      "attributes": {
+        "name": "AdvancedFeatures",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class AdvancedFeatures<T extends Number>"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:13:class:Point",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 13,
+      "attributes": {
+        "name": "Point",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record Point(int x, int y)"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:14:method:distance",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 14,
+      "attributes": {
+        "name": "distance",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public double distance()"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:19:enum:Status",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 19,
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public enum Status { ACTIVE, INACTIVE, PENDING }"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:19:enum_member:ACTIVE",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 19,
+      "attributes": {
+        "name": "ACTIVE",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:19:enum_member:INACTIVE",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 19,
+      "attributes": {
+        "name": "INACTIVE",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:19:enum_member:PENDING",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 19,
+      "attributes": {
+        "name": "PENDING",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:21:interface:Mapper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 21,
+      "attributes": {
+        "name": "Mapper",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface Mapper<A, B>"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:23:method:map",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 23,
+      "attributes": {
+        "name": "map",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "B map(A value);"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:26:property:points",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 26,
+      "attributes": {
+        "name": "points",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final List<Point> points"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:28:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 28,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public AdvancedFeatures()"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:31:method:getStatus",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 31,
+      "attributes": {
+        "name": "getStatus",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public Status getStatus(String key)"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:35:method:overload",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 35,
+      "attributes": {
+        "name": "overload",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public int overload(int value)"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:39:method:overload",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 39,
+      "attributes": {
+        "name": "overload",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public String overload(String value)"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:43:method:totalDistance",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 43,
+      "attributes": {
+        "name": "totalDistance",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public double totalDistance()"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:47:method:mapFirst",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 47,
+      "attributes": {
+        "name": "mapFirst",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public <R> R mapFirst(Function<Point, R> fn)"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:51:method:mapXs",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 51,
+      "attributes": {
+        "name": "mapXs",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public List<Integer> mapXs()"
+      }
+    },
+    {
+      "id": "sym:AdvancedFeatures.java:55:method:genericBound",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "AdvancedFeatures.java",
+      "line": 55,
+      "attributes": {
+        "name": "genericBound",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public int genericBound(T value)"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Point",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "Point",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:Point:distance",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Point",
+      "targetId": "distance",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside record body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "Status",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:Status:ACTIVE",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Status",
+      "targetId": "ACTIVE",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:Status:INACTIVE",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Status",
+      "targetId": "INACTIVE",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:Status:PENDING",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Status",
+      "targetId": "PENDING",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum constant"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:Mapper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "Mapper",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:Mapper:map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Mapper",
+      "targetId": "map",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside interface body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:points",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "points",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "field declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:getStatus",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "getStatus",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:overload",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "overload",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "overloads declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:totalDistance",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "totalDistance",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:mapFirst",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "mapFirst",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:mapXs",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "mapXs",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:contains:AdvancedFeatures:genericBound",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "genericBound",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method declared inside class body"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "java.util.List",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.List;"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.function.Function",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "java.util.function.Function",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.function.Function;"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:references:AdvancedFeatures:java.util.stream.Collectors",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "java.util.stream.Collectors",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "import java.util.stream.Collectors;"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:instantiates:AdvancedFeatures:Point",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "AdvancedFeatures",
+      "targetId": "Point",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "new Point(1, 2), new Point(3, 4) in field initializer"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:totalDistance:stream",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "totalDistance",
+      "targetId": "stream",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "points.stream()"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:totalDistance:mapToDouble",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "totalDistance",
+      "targetId": "mapToDouble",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".mapToDouble(Point::distance)"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:totalDistance:sum",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "totalDistance",
+      "targetId": "sum",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".sum()"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapFirst:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapFirst",
+      "targetId": "get",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "points.get(0)"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapFirst:apply",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapFirst",
+      "targetId": "apply",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "fn.apply(...)"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapXs:stream",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapXs",
+      "targetId": "stream",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "points.stream()"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapXs:map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapXs",
+      "targetId": "map",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".map((p) -> p.x())"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapXs:x",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapXs",
+      "targetId": "x",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "p.x()"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:mapXs:collect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "mapXs",
+      "targetId": "collect",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".collect(Collectors.toList())"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:calls:genericBound:intValue",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "genericBound",
+      "targetId": "intValue",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "value.intValue()"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:uses:Status:ACTIVE",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Status",
+      "targetId": "ACTIVE",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Status.ACTIVE in getStatus"
+      }
+    },
+    {
+      "id": "rel:AdvancedFeatures.java:uses:Status:PENDING",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "AdvancedFeatures.java",
+      "sourceId": "Status",
+      "targetId": "PENDING",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Status.PENDING in getStatus"
+      }
+    },
+    {
+      "id": "rel:UserService.java:instantiates:UserService:HashMap",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.java",
+      "sourceId": "UserService",
+      "targetId": "HashMap",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "expectedState": "resolved",
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private final Map<String, User> store = new HashMap<>();"
+      }
+    }
+  ]
+}

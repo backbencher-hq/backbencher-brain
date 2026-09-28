@@ -1,0 +1,91 @@
+{
+  "probe": "M59.O3",
+  "at": "2026-09-19T03:14:36.081Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
+  "repo": "$HOME/fixtures/repositories/cats-effect",
+  "tempDataDir": "/tmp/m59-data-0y5qqw",
+  "indexStats": {
+    "files": 404,
+    "symbols": 7675,
+    "relationships": 33929,
+    "imports": 1369,
+    "errorFiles": 0
+  },
+  "db": {
+    "total": 33929,
+    "withLine": 32645,
+    "zero": 0,
+    "null": 1284
+  },
+  "byType": [
+    {
+      "rt": "references",
+      "n": 13589
+    },
+    {
+      "rt": "calls",
+      "n": 7861
+    },
+    {
+      "rt": "contains",
+      "n": 6635
+    },
+    {
+      "rt": "instantiates",
+      "n": 1680
+    },
+    {
+      "rt": "uses",
+      "n": 1229
+    },
+    {
+      "rt": "overrides",
+      "n": 959
+    },
+    {
+      "rt": "extends",
+      "n": 638
+    },
+    {
+      "rt": "implements",
+      "n": 54
+    }
+  ],
+  "byLanguage": [
+    {
+      "lang": "scala",
+      "n": 32352
+    },
+    {
+      "lang": "java",
+      "n": 242
+    },
+    {
+      "lang": "markdown",
+      "n": 35
+    },
+    {
+      "lang": "yaml",
+      "n": 12
+    }
+  ],
+  "sourceCheck": {
+    "checked": 32641,
+    "consistent": 31730,
+    "inconsistent": 0,
+    "notCheckable": 911,
+    "targetUnresolved": 0,
+    "failures": [],
+    "boundarySelfTest": {
+      "interpolationMatches": true,
+      "interpolationAfterWordCharMatches": true,
+      "plainIdentifierMatches": true,
+      "subwordStillFails": true,
+      "suffixOfLongerWordFails": true,
+      "wrongLineStillFails": true,
+      "syntheticIsNotCheckable": true
+    }
+  },
+  "before": "every pre-existing index on this machine: 0 rows with line_number > 0 (189,499 of 189,499 were 0)"
+}

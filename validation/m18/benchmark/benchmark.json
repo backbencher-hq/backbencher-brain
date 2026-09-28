@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "governance": "Every expected answer was verified against the actual indexed symbol (name + file + line) on 2026-08-24 with the production indexer. Provenance: why the symbol is the correct answer to the query.",
+  "analyzerGapsFound": [ "lodash groupBy is NOT in the fresh index (symbols assigned via createAggregator factory are not indexed by the TS analyzer) — routed to the analyzer milestone, not hidden. The content gold was replaced with chunk which resolves." ],
+  "corpora": [
+    { "tag": "rake", "source": "$HOME/fixtures/repositories/rake", "languages": ["ruby"], "note": "Dependency manager source, 779 symbols" },
+    { "tag": "lodash", "source": "$HOME/fixtures/repositories/lodash", "languages": ["javascript"], "note": "Utility library source, 1048 symbols (indexed)" },
+    { "tag": "element-plus", "source": "$HOME/fixtures/repositories/element-plus", "languages": ["typescript", "vue"], "note": "Vue component library, 26k symbols — slowest corpus" }
+  ],
+  "queries": [
+    { "id": "rake-a1", "corpus": "rake", "mode": "ask", "query": "how do I define a new task", "expected": { "symbol": "task", "file": "lib/rake/dsl_definition.rb", "line": 59, "why": "task() in dsl_definition is the public DSL method that defines a Rake task." } },
+    { "id": "rake-a2", "corpus": "rake", "mode": "ask", "query": "the main application entry point of rake", "expected": { "symbol": "Application", "file": "lib/rake/application.rb", "line": 20, "why": "Rake::Application orchestrates the CLI run." } },
+    { "id": "rake-a3", "corpus": "rake", "mode": "ask", "query": "arguments passed to a task", "expected": { "symbol": "TaskArguments", "file": "lib/rake/task_arguments.rb", "line": 7, "why": "TaskArguments models the argument list bound to a task invocation." } },
+    { "id": "rake-s1", "corpus": "rake", "mode": "symbol", "query": "TaskArguments", "expected": { "symbol": "TaskArguments", "file": "lib/rake/task_arguments.rb", "line": 7, "why": "Exact public class name." } },
+    { "id": "rake-s2", "corpus": "rake", "mode": "symbol", "query": "FileTask", "expected": { "symbol": "FileTask", "file": "lib/rake/file_task.rb", "line": 12, "why": "Exact public class name for file-based tasks." } },{"id":"rake-n1","corpus":"rake","mode":"ask","query":"render html to canvas","negative":true,"expected":null,"why":"No such capability in rake (not a browser lib) — expect honest empty/unknown, not a fabricated raké symbol."},
+    { "id": "lodash-a1", "corpus": "lodash", "mode": "ask", "query": "deep clone an object", "expected": { "symbol": "cloneDeep", "file": "lodash.js", "line": 11186, "why": "cloneDeep is lodash's public deep-clone entry point." } },
+    { "id": "lodash-a2", "corpus": "lodash", "mode": "ask", "query": "delay calling a function until calls stop", "expected": { "symbol": "debounce", "file": "lodash.js", "line": 10403, "why": "debounce wraps a function so it fires after a quiet period." } },
+    { "id": "lodash-a3", "corpus": "lodash", "mode": "ask", "query": "limit how often a function can run", "expected": { "symbol": "throttle", "file": "lodash.js", "line": 10996, "why": "throttle caps invocation frequency." } },
+    { "id": "lodash-a4", "corpus": "lodash", "mode": "ask", "query": "split an array into smaller chunks", "expected": { "symbol": "chunk", "file": "lodash.js", "line": 6934, "why": "chunk splits an array into groups of n." } },
+    { "id": "lodash-a5", "corpus": "lodash", "mode": "ask", "query": "check if two values are deeply equal", "expected": { "symbol": "isEqual", "file": "lodash.js", "line": 11630, "why": "isEqual performs deep equality." } },
+    { "id": "lodash-s1", "corpus": "lodash", "mode": "symbol", "query": "trimStart", "expected": { "symbol": "trimStart", "file": "lodash.js", "line": 15145, "why": "Exact public function name." } },
+    { "id": "lodash-c1", "corpus": "lodash", "mode": "content", "query": "Creates an array of elements split into groups the length of size", "expected": { "symbol": "chunk", "file": "lodash.js", "line": 6914, "why": "chunk's documented description (docstring at line 6914)." } },
+    { "id": "lodash-n1", "corpus": "lodash", "mode": "ask", "query": "render html canvas and play video", "negative": true, "expected": null, "why": "no such capability in lodash — negative." },
+    { "id": "ep-a1", "corpus": "element-plus", "mode": "ask", "query": "tree component data model", "expected": { "symbol": "TreeStore", "file": "packages/components/tree/src/model/tree-store.ts", "line": 19, "why": "TreeStore manages the tree component's node state." } },
+    { "id": "ep-s1", "corpus": "element-plus", "mode": "symbol", "query": "ElCheckboxButton", "expected": { "symbol": "ElCheckboxButton", "file": "packages/components/checkbox/index.ts", "line": 17, "why": "Exact exported component constant." } },
+    { "id": "ep-n1", "corpus": "element-plus", "mode": "ask", "query": "quantum lattice simulation", "negative": true, "expected": null, "why": "no such thing here — negative." }
+  ]
+}

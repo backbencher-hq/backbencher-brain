@@ -1,0 +1,351 @@
+{
+  "language": "xml",
+  "grammar": "tree-sitter-xml.wasm",
+  "grammarPin": {
+    "upstream": "tree-sitter-grammars/tree-sitter-xml",
+    "rev": "5000ae8f22d11fbe93939b05c1e37cf21117162d",
+    "version": "0.7.0",
+    "patched": true,
+    "patches": [
+      "REPAIR 1 (common/scanner.h, scan_pi_content): the trailing `advance_if_eq(lexer, chr)` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(); else return false`, so its `else` ABORTED a token whose value the test could not affect — the statements run past `mark_end`, so they are pure lookahead. A processing instruction WITH CONTENT therefore produced no `_pi_content` token at all, the construct could not complete, and the parser wrapped it in an ERROR node; with no XMLDecl the enclosing `prolog` was destroyed too, taking any DOCTYPE in it. Isolated to the byte by a 19-shape battery: the construct parses iff the byte after `?>` is a newline.",
+      "REPAIR 2 (xml/grammar.js, _intSubset): `repeat(choice($._markupdecl, $.conditionalSect, $._DeclSep))` over a named `_intSubsetItem`, plus a `conditionalSect` rule. Upstream could not reach a conditional section from an internal subset at ANY version measured — 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0 does not declare it in the `xml` grammar at all. The failure wrapped the `doctypedecl` in an ERROR, the parser took a LATER `Name` as the DTD's name, and the analyzer published a Type symbol literally called `INCLUDE`."
+    ],
+    "patchAdmissibility": "8,888 corpus files / 6.69M nodes, ERROR and MISSING counted per file: 31 files repaired, 2 moved, 8,855 unchanged, corpus MISSING nodes 32 -> 10. BOTH movements are adjudicated by measurement in fixtures/xml/out/regression-adjudication.json: one is a standalone `.dtd` (root ERROR under every build, so never in the wired surface; upstream's separate `dtd` grammar parses it with 0 ERROR nodes) and the other is libxml2's own fuzzer-regression directory, kept by the project precisely because those files must not parse.",
+    "wiredSha256": "2425a26e77dce87d7157f89b2e39920c67436a672263827dea3516210f93b1c8",
+    "vendoredSource": "grammars/tree-sitter-xml",
+    "gate": "bun script/m14/verify-grammar-pins.ts (lane xml)",
+    "sourceVsWasm": "all 56 declared names present (5 supertypes hidden by design), 51 wasm-named types all declared, 0 built-in extras — re-measured by the gate on every run",
+    "pinRecord": "grammars/tree-sitter-xml/PIN.md"
+  },
+  "corpus": {
+    "_note": "The named types the 8,888-file corpus never produced are listed below with the reason. `ERROR` is tree-sitter's runtime node, absent from node-types.json by design, and is observed on 177 routed files.",
+    "differentialFiles": 7975,
+    "differentialNodes": 5899555,
+    "censusFiles": 8888,
+    "repos": 6,
+    "grammarNamedTypes": 51,
+    "grammarTypesObserved": 51,
+    "grammarTypesNotObserved": [
+      "PublicID"
+    ],
+    "runtimeTypesObserved": [
+      "ERROR"
+    ],
+    "errorFiles": 177,
+    "missingNodes": 9,
+    "routedFileTypesExercised": [
+      "xml",
+      "xsd",
+      "dtd",
+      "xsl",
+      "xslt",
+      "svg",
+      "rng"
+    ],
+    "routedButDeclaredNegative": "dtd — exercised through 4 declared negative controls, because a standalone `.dtd` is not representable by the xml grammar (see grammarPin.patchAdmissibility and the notApplicable entry below).",
+    "manifest": "fixtures/xml/repositories/MANIFEST.json"
+  },
+  "handled_verified": {
+    "_rule": "the analyzer reads this node to produce a symbol, a relationship, an import, or a metadata value; each is pinned by a fixture in validation/m14/fixtures/xml, except where corpus.grammarTypesNotObserved says no corpus example exists",
+    "types": [
+      "AttDef",
+      "AttlistDecl",
+      "Attribute",
+      "EmptyElemTag",
+      "ExternalID",
+      "GEDecl",
+      "NDataDecl",
+      "Name",
+      "NotationDecl",
+      "NotationType",
+      "PEDecl",
+      "PI",
+      "PITarget",
+      "PseudoAtt",
+      "PseudoAttValue",
+      "PubidLiteral",
+      "PublicID",
+      "STag",
+      "StyleSheetPI",
+      "SystemLiteral",
+      "XmlModelPI",
+      "contentspec",
+      "doctypedecl",
+      "document",
+      "element",
+      "elementdecl",
+      "prolog"
+    ],
+    "reasons": {
+      "AttDef": "a Property symbol plus a `contains` edge from the element it is declared for",
+      "AttlistDecl": "the element whose attributes are declared here",
+      "Attribute": "a property of its element, and the source of `references` / `imports` edges for its value",
+      "EmptyElemTag": "empty tag: carries the element Name and the Attribute list",
+      "ExternalID": "a file reference on a doctypedecl, entity or notation",
+      "GEDecl": "a general entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+      "NDataDecl": "the notation an unparsed entity points at: a `contains` edge",
+      "Name": "the name-bearing leaf for tags, attributes, PIs, DTD declarations and notations",
+      "NotationDecl": "a notation declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+      "NotationType": "the notations an attribute may carry: each Name leaf becomes a `contains` edge",
+      "PEDecl": "a parameter entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+      "PI": "a processing instruction: a Module symbol owned by its enclosing element",
+      "PITarget": "the name-bearing leaf of a PI",
+      "PseudoAtt": "a pseudo-attribute of a StyleSheetPI / XmlModelPI",
+      "PseudoAttValue": "the value of a pseudo-attribute; `href` is a file path",
+      "PubidLiteral": "the public identifier inside a PUBLIC ExternalID",
+      "PublicID": "a file reference on a NotationDecl",
+      "STag": "start tag: carries the element Name and the Attribute list",
+      "StyleSheetPI": "a file reference: the PI spelling the `xml-stylesheet` external token produces",
+      "SystemLiteral": "the file path inside a SYSTEM ExternalID",
+      "XmlModelPI": "a file reference: the PI spelling the `xml-model` external token produces",
+      "contentspec": "the content model of an element declaration; each Name leaf becomes a `contains` edge",
+      "doctypedecl": "a Type symbol naming the DTD, plus its ExternalID import",
+      "document": "walk root; the root element is reached through the walk",
+      "element": "the document's structural unit: a symbol plus a `contains` edge from its parent element",
+      "elementdecl": "a Type symbol for a DTD element declaration; its contentspec is the content model",
+      "prolog": "container: XMLDecl, doctypedecl and the misc PIs/comments under it are dispatched from here"
+    }
+  },
+  "pass_through_classified": {
+    "_rule": "walked THROUGH deliberately, each with the reason, so a pass-through is a decision on record and not a shrug",
+    "types": [
+      "AttValue",
+      "CDSect",
+      "CDStart",
+      "CData",
+      "CharData",
+      "CharRef",
+      "Comment",
+      "DefaultDecl",
+      "ETag",
+      "EncName",
+      "EntityRef",
+      "EntityValue",
+      "Enumeration",
+      "Mixed",
+      "Nmtoken",
+      "PEReference",
+      "StringType",
+      "TokenizedType",
+      "URI",
+      "VersionNum",
+      "XMLDecl",
+      "_intSubsetItem",
+      "children",
+      "conditionalSect",
+      "content"
+    ],
+    "reasons": {
+      "AttValue": "read by the Attribute branch",
+      "CDSect": "wrapper around CData",
+      "CDStart": "wrapper for `<![CDATA[`",
+      "CData": "text, not a declaration",
+      "CharData": "text, not a declaration",
+      "CharRef": "a numeric character reference, not a name",
+      "Comment": "not a declaration",
+      "DefaultDecl": "the literal #REQUIRED / #IMPLIED / #FIXED value, not a name",
+      "ETag": "the repaired grammar rejects a mismatched end name, so the name adds nothing",
+      "EncName": "the encoding pseudo-attribute literal inside an XMLDecl, not a name",
+      "EntityRef": "a USE; the declaration is GEDecl / PEDecl",
+      "EntityValue": "an entity's replacement text, not a name",
+      "Enumeration": "wrapper over the Nmtokens of a DTD attribute type",
+      "Mixed": "`(#PCDATA|a|b)*` — the names are read from the Name leaves, not the wrapper",
+      "Nmtoken": "an enumeration member is a token, not a name",
+      "PEReference": "inside an internal subset a PEReference is a DeclSep — a separator, not a use",
+      "StringType": "the literal CDATA, not a name",
+      "TokenizedType": "the literal ID / IDREF / … token, not a name",
+      "URI": "the aliased body of a SystemLiteral; the edge target is the enclosing literal, and the LITERAL carries the edge line",
+      "VersionNum": "the version pseudo-attribute literal inside an XMLDecl, not a name",
+      "XMLDecl": "`xml` is reserved; version and encoding are not declarations",
+      "_intSubsetItem": "hidden rule; the repeat that carries a subset's declarations and conditional sections",
+      "children": "the element content model; its Name leaves are the declarations that matter",
+      "conditionalSect": "an INCLUDE/IGNORE section inside an internal subset; walked through so the declarations it guards are reached",
+      "content": "an element's child sequence: walked through so each child element is reached; nothing on it is a name"
+    }
+  },
+  "internal_silent": {
+    "_rule": "The gate has exactly FOUR buckets — handled_verified, internal_silent, gap, and a design_decision carrying a node_type — so `internal_silent` is the UNION of 'walked through with no output' and 'walked through to read a child'. A pass-through is a member of it. Derived from the analyzer's own PASSTHROUGH_LITERALS plus the hidden rules, so it cannot drift; the FIRST version of this file listed only the former and the gate reported `Mixed` and `children` as in NO bucket, which is the gate being right and this file being behind.",
+    "types": [
+      "AttValue",
+      "CDSect",
+      "CDStart",
+      "CData",
+      "CharData",
+      "CharRef",
+      "Comment",
+      "DefaultDecl",
+      "ETag",
+      "EncName",
+      "EntityRef",
+      "EntityValue",
+      "Enumeration",
+      "Mixed",
+      "Nmtoken",
+      "PEReference",
+      "StringType",
+      "TokenizedType",
+      "URI",
+      "VersionNum",
+      "XMLDecl",
+      "children",
+      "conditionalSect",
+      "content"
+    ]
+  },
+  "gap": {
+    "_rule": "an observed node type in NO bucket. xml's list is EMPTY by construction and that is the claim worth gating: the analyzer declares a vocabulary, the corpus census is measured against it, and `script/m12/xml-node-types-compare.ts` check B fails on the first unclassified type. The list is emitted from the gate's own result, so it cannot be quietly emptied.",
+    "gaps": [],
+    "gapCount": 0,
+    "evidence": "validation/m12/results/xml-shape-safety.json — check B, `every node type seen in fixtures, probes and the corpus is classified`, green over 49 observed named types"
+  },
+  "design_decision": {
+    "_rule": "the relationship ontology and the refusals, each RULED on a measurement. A record with no node_type documents a resolved defect or a whole-concept refusal and classifies nothing.",
+    "decisions": [
+      {
+        "concept": "contains",
+        "relationship": "contains",
+        "ruling": "structural containment read off the tree, and every contains TARGET is a published symbol in the same file",
+        "measured": "177,890 contains edges over the corpus; the target-resolves invariant is pinned by xml/dtd-declarations",
+        "node_type": ""
+      },
+      {
+        "concept": "references",
+        "relationship": "references",
+        "ruling": "a NAME, never a written value: the target is the LOCAL NAME and the prefix rides in metadata",
+        "measured": "11,117 resolvable QName references; 1,319 values refused because they resolve to nothing in the document",
+        "node_type": ""
+      },
+      {
+        "concept": "imports",
+        "relationship": "imports",
+        "ruling": "a FILE PATH, the one case where a value is the right target",
+        "measured": "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix",
+        "node_type": ""
+      },
+      {
+        "concept": "declared name",
+        "ruling": "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName",
+        "measured": "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched",
+        "node_type": ""
+      },
+      {
+        "concept": "self edge",
+        "ruling": "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations",
+        "measured": "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section",
+        "node_type": ""
+      },
+      {
+        "concept": "PEReference",
+        "ruling": "inside an internal subset it is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing",
+        "measured": "24 corpus occurrences, 0 edges; the parameter entity it would name is declared by the PEDecl and IS published",
+        "node_type": "PEReference"
+      },
+      {
+        "concept": "xmlns with an empty prefix",
+        "ruling": "declares nothing publishable",
+        "measured": "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe",
+        "node_type": "Attribute"
+      }
+    ]
+  },
+  "notApplicable": [
+    {
+      "concept": "calls",
+      "measured": "XML declares no procedure. A DTD entity carries an EntityValue or an ExternalID, never a parameter list, and no corpus file contains anything a call edge could name. The closest construct — an XSLT `call-template` — names a template DECLARATION, and it is emitted as `references`, which is what it is."
+    },
+    {
+      "concept": "extends / implements / overrides / instantiates",
+      "measured": "no type system. An XSD names a type by an ATTRIBUTE VALUE and links to it with a `references` edge: 11,117 resolvable QName references over 511 files. A `complexType` is not a subclass of another, it REFERENCES one by `base` — and publishing that as `extends` would be a category error the M60.R10 class of finding is about."
+    },
+    {
+      "concept": "exports",
+      "measured": "an XML document has no public surface to export. The whole file is the surface and the document element is already a symbol."
+    },
+    {
+      "concept": "PEReference as a use",
+      "measured": "inside an internal subset a PEReference is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing. The parameter entity it would name is declared by the PEDecl instead, and that IS published (85 parameter-entity declarations, 10 with a real file import)."
+    },
+    {
+      "concept": "standalone .dtd documents",
+      "measured": "routed (`.dtd` is in EXTENSION_LANGUAGE) but NOT representable: the xml grammar's `document` rule requires a document element, so a standalone DTD's root node type is ERROR. Measured: `cond_sect1.dtd` 11 ERROR nodes, `cond_sect2.dtd` 8, the W3C `XMLSchema.dtd` 170 — while upstream's SEPARATE `dtd` grammar parses all of them with 0. Filed as owed, with its measurement, in grammars/tree-sitter-xml/PIN.md; the corpus files are declared negative controls rather than excluded by a glob."
+    }
+  ],
+  "requiredKinds": [
+    "contains",
+    "references",
+    "imports"
+  ],
+  "kindRulings": {
+    "contains": "structural containment read straight off the tree: element->element, element->attribute, element->namespace, DTD->declaration, declaration->content-model member, declaration->notation, PI->target. Every contains TARGET is a published symbol in the same file — enforced structurally, not by convention, and pinned by `xml/dtd-declarations` (`every contains target resolves to a symbol in the same file`).",
+    "references": "a NAME, never a written value. The target of an XSD/RelaxNG/XSLT reference is the LOCAL NAME and the prefix rides in metadata, because a prefix in a target is a value where a name belongs (M60.R10). An edge is emitted only when the target resolves in the document or is a specification built-in — 1,319 unresolved values are REFUSED rather than published.",
+    "imports": "a FILE PATH, which is the one case where a value IS the right target: a DOCTYPE's ExternalID, a DTD entity's or notation's ExternalID, a StyleSheetPI/XmlModelPI `href`, and an XSD `schemaLocation` URI. 630 distinct schemaLocation targets and 11 external-ID imports were emitted where the pre-fix lane emitted 0."
+  },
+  "payloads": {
+    "line": {
+      "key": "line_number",
+      "note": "every relationship carries a line, and 100% of them are on the line the TARGET NAME is written on (M59.A7 / #825). Pre-fix: the external-ID edge took the ExternalID node's line, so a multi-line PUBLIC doctype pointed at the keyword — 310 wrong-line edges, now 18. Pinned by all 8 fixtures, and by the multi-line doctype in `xml/dtd-declarations`, which is the shape that makes the keyword-line mutant non-vacuous."
+    },
+    "occurrences": {
+      "key": "meta.occurrences",
+      "note": "edge collapse is COUNTED, not hidden. Edge identity is `source|type|target`, so N declarations of one pair necessarily share one edge — 492,774 occurrences on 45,297 edges. The edge keeps the EARLIEST line the name is written on, not the first the LIFO walk reached. Pinned by `xml/edge-collapse`."
+    },
+    "syntaxErrors": {
+      "key": "meta.syntaxErrors",
+      "note": "a symbol or edge from a file the analyzer reports as erroneous says so. Pre-fix: 27,228 symbols over 177 files, unlabelled, and the shipped 'creates no recovery symbols' check was a FIXTURE ACCIDENT. Suppressing them would be wrong (177 of 177 are `##` Maven-archetype templates), so they are labelled. Pinned by `xml/recovery-labelling`, including the negative half — a clean file carries no label, so the flag cannot become noise."
+    },
+    "declaredName": {
+      "key": "meta.declaredName",
+      "note": "in a declaration vocabulary the DECLARED name is an attribute VALUE, and the tag name is kept as `meta.tagName` so the structural reading is carried rather than overwritten. Gated on the element's EFFECTIVE NAMESPACE: 29,196 `name` attributes outside any declaration vocabulary are DATA and must not be renamed, which is why the rule is not tag-gated. Recall 0.045 -> 0.696 over 26,578 in-vocabulary declarations."
+    },
+    "resolvable": {
+      "key": "meta.resolvable",
+      "note": "a `references` edge records whether its target resolves `in-document` or is a specification `builtin`, so a consumer can tell a resolved edge from a built-in one without re-deriving the namespace bindings."
+    }
+  },
+  "routing": {
+    "grammarDeclares": [
+      "xml",
+      "svg",
+      "xsd",
+      "xslt",
+      "xsl",
+      "rng"
+    ],
+    "routerWires": [
+      "xml",
+      "xsd",
+      "dtd",
+      "svg",
+      "xsl",
+      "xslt",
+      "rng"
+    ],
+    "routedByThisWave": "svg, xsl, xslt, rng — taken from the grammar's own `tree-sitter.json` `file-types`, which the router had been narrower than.",
+    "unroutedAndWhy": "`.wsdl` (805), `.pom` (693), `.xhtml` (36) and extensionless build files (4) are XML-shaped but the grammar does not declare them, so routing them would be a claim the grammar does not back. The M60 #913 ruling is to refuse rather than to claim. 1,538 files, visible debt."
+  },
+  "gates": {
+    "contract": "script/m12/xml-contract-probe.ts (90 checks, was 14)",
+    "completeness": "script/m12/xml-node-types-compare.ts (9 checks + a self-test that catches 9 of 9 mutations; its predecessor scraped the analyzer's source with a regular expression and was satisfied by an EMPTY list)",
+    "fixtures": "bun script/m14/run-fixtures.ts --lang xml (8, was 1)",
+    "mutants": "bun script/m14/mutate-analyzer.ts (9, all caught, was 0)",
+    "corpusErrors": "script/m12/xml-corpus-errors.ts (revision-pinned manifest + declared negative controls)",
+    "corpusMeasure": "script/m12/xml-corpus-measure.ts (same manifest; the two gates previously disagreed on the same files)",
+    "referenceAgreement": "fixtures/xml/probes/grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own)",
+    "reproducibility": "bash fixtures/xml/run-all.sh [--full]"
+  },
+  "knownGateGaps": [
+    {
+      "sections": [
+        "section-e-differential",
+        "section-f-perf-budget"
+      ],
+      "status": "FAIL, and left failing",
+      "why": "Both read a `grails-core:xml` row out of validation/m14/differential-baseline.json, and `script/m14/differential.ts` has NO xml lane: not in LANGS, not in LANG_REPOS, not in corpusPins. Each lane there carries a HAND-WRITTEN oracle — there is no generic fallback — so producing an honest row means writing the xml oracle inside a 15,000-line shared instrument that another lane is actively editing, not a configuration change.",
+      "notDone": "An invented row. `missing: 0, unexplained: 0, avgMsPerFile: <n>` would satisfy both sections and be a fabrication, which is the defect class this lane's whole review exists to remove.",
+      "whatStandsInForIt": "fixtures/xml/probes/corpus-differential.mts — the same CLASS of instrument (an independent tree-derived oracle over a real corpus, compared class by class) measured over 7,975 files / 5.90M nodes / 28.0 MiB rather than a 60-file sample, with its per-class recall/precision written to fixtures/xml/out/corpus-differential.json and its per-file symbol/relationship counts to validation/m12/results/xml-corpus-complexity.json (2,439 cxf files, 184,388 symbols, 76,455 relationships, 10 files/s).",
+      "owed": "Add xml to differential.ts's LANGS / LANG_REPOS / corpusPins with a hand-written xml oracle, then pin the row from a real run. That is a lane-sized change and it belongs to whoever owns that file next."
+    }
+  ],
+  "review": "reviews/xml/master-review.md",
+  "artifacts": "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json"
+}

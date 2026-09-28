@@ -1,0 +1,24 @@
+{
+  "wave": 2,
+  "approvedBy": "owner (ishaq2321)",
+  "approvedAt": "2026-09-14",
+  "languages": [
+    "groovy",
+    "zig",
+    "go",
+    "rust",
+    "c",
+    "cpp",
+    "vue",
+    "svelte"
+  ],
+  "ownerStatement": "Owner approval in session: onboard the JVM languages (java, kotlin, groovy, scala), the web languages (ts/js/vue/svelte), and system languages (c/cpp/rust/go/zig). Java, kotlin, scala, typescript, javascript already carry wave-1 evidence; wave 2 is the eight new languages: groovy, zig, go, rust, c, cpp, vue, svelte. Each language's leg is judged honestly — a language whose analyzer is not ready records a failed/blocked leg, never a claim.",
+  "authority": "Owner message in the working session: 'we can onboard the jvm languages like java, kotlin, groovy, scala, and the web languages like the ts/js/vue/svelte and then few system languages as well like c/cpp/rust/go/zig'",
+  "evidenceRule": "The R2 verifier executes exactly this set and nothing else; any language not in this list that attempts a wave leg fails the verifier. A leg's freshness includes the language's OWN analyzer (wave-2 relevance rule): a changed analyzer re-runs the leg.",
+  "notes": "Fixture packs authored fixture-first under script/m29/wave-fixtures/<lang>/ (main.<ext> + expectations.json). All eight passed S1-S4 at approval time (S4 real-index counts recorded in validation/m29/results/ramp-<lang>.json on execution).",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.435Z",
+    "contentSha256": "3db6d8d439b22f994e64a1f865e60713f65b670485845ada7ecad153fc6d9c13"
+  }
+}

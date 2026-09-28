@@ -1,0 +1,289 @@
+{
+ "language": "svelte",
+ "grammar": "tree-sitter-svelte.wasm",
+ "handled_verified": {
+  "types": [
+   "attribute",
+   "attribute_name",
+   "attribute_value",
+   "await_statement",
+   "catch_block",
+   "comment",
+   "const_tag",
+   "debug_tag",
+   "document",
+   "each_statement",
+   "element",
+   "else_block",
+   "else_if_block",
+   "end_tag",
+   "expression",
+   "expression_tag",
+   "html_tag",
+   "if_statement",
+   "key_statement",
+   "quoted_attribute_value",
+   "raw_text",
+   "render_tag",
+   "script_element",
+   "self_closing_tag",
+   "snippet_name",
+   "snippet_statement",
+   "start_tag",
+   "style_element",
+   "svelte_raw_text",
+   "tag_name",
+   "text",
+   "then_block"
+  ]
+ },
+ "internal_silent": {
+  "types": [
+   "await_end",
+   "await_start",
+   "block_end_tag",
+   "block_start_tag",
+   "block_tag",
+   "catch_start",
+   "doctype",
+   "each_end",
+   "each_start",
+   "else_if_start",
+   "else_start",
+   "entity",
+   "erroneous_end_tag",
+   "erroneous_end_tag_name",
+   "if_end",
+   "if_start",
+   "key_end",
+   "key_start",
+   "snippet_end",
+   "snippet_start",
+   "then_start"
+  ]
+ },
+ "gap": {
+  "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+  "gaps": [
+   {
+    "id": "S1",
+    "node_type": "expression,attribute (template expressions)",
+    "severity": "high",
+    "missing": "template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
+    "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) emit Uses edges (isTemplateExpression) to member symbols. Scope collision coverage is extended by S5: each-loop and declaration-order-aware {@const} shadowing is separately pinned by svelte/each-shadow-collision."
+   },
+   {
+    "id": "S2",
+    "node_type": "$props() destructure",
+    "severity": "medium",
+    "missing": "let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
+    "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/rune-props-dedupe expectSymbolCount == 1) + mutant svelte/reduplicate-rune-props CAUGHT (2026-08-27). $props() destructured bindings (let { a, b, c = 5 } = $props()) are now declared EXACTLY once as component-owned Properties; the JS sub-analyzer's parallel destructured Variables are dropped during the merge."
+   },
+   {
+    "id": "S5",
+    "node_type": "each_statement, const_tag",
+    "severity": "high",
+    "missing": "template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
+    "evidence": "probe + fixture: members row/item/total colliding with {#each rows as row}, nested {#each ... as item}, and {@const total = ...}; pre-fix emitted false uses -> row/item/total; post-fix svelte/each-shadow-collision passes and the scope-order probe preserves a legitimate use before the const declaration while suppressing later local reads",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/each-shadow-collision) + focused mutant svelte/reemit-shadowed-member-uses CAUGHT. Lexical template scopes now share state among siblings for declaration-order-aware {@const} bindings, isolate nested blocks, and register each-loop variables; no false member Uses remain for the tested collision shapes."
+   },
+   {
+    "id": "S6",
+    "node_type": "labeled_statement ($: reactive declaration)",
+    "severity": "medium",
+    "missing": "the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment.",
+    "evidence": "probe + fixture: reactive-dedupe pre-fix emitted doubled three times and total twice; post-fix expectSymbolCount equals 1 for doubled, total, and count",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/reactive-dedupe) + focused mutant svelte/reduplicate-reactive-targets CAUGHT. Reactive targets are deduplicated within Svelte extraction and the sub-analyzer copy is dropped in favor of the component-owned reactive symbol."
+   },
+   {
+    "id": "H1",
+    "node_type": "attribute (shorthand {value})",
+    "severity": "high",
+    "missing": "shorthand attributes `<Comp {value} />` parse as attribute with the whole `{value}` as the NAME (no expression child), so no walk ever visited them — the most idiomatic Svelte 5 prop-passing shape emitted no use.",
+    "evidence": "probe S-shorthand-attr: pre-fix uses=[] for member value; post-fix uses=value. Rejected-shape guard: named attributes WITH an expression child stay on the generic expression path (no double collection).",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects uses value) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Attribute-name scan collects {value} into templateExprNames for the same member-resolved Uses emission as every other template read."
+   },
+   {
+    "id": "H2",
+    "node_type": "attribute (this= on svelte:component/svelte:element)",
+    "severity": "high",
+    "missing": "bare `this={X}` values were never read, so dynamic component targets were invisible. Member-bound targets (this={fn}) already flowed through the generic expression path as Uses; import-bound targets had no edge at all.",
+    "evidence": "probe S-dynamic-this: pre-fix zero edges to imported Comp; post-fix instantiates Comp. Member-bound this={currentView} keeps exactly one Uses edge (no double emission) per the attr probe.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects instantiates DynComp + uses currentView, forbids instantiates currentView) + mutant svelte/drop-dynamic-this-instantiates CAUGHT (2026-09-11). Import-bound bare identifiers in component position resolve post-merge to instantiates (static-<Comp/> semantics); member-resolved targets keep their 3c Uses only."
+   },
+   {
+    "id": "H3",
+    "node_type": "attribute (spread {...props})",
+    "severity": "high",
+    "missing": "`<Comp {...props} />` carries the whole spread expression in the attribute NAME with no expression child — member use for props was never emitted. Full key expansion would be constant evaluation (out of scope); the spread argument reads as one use.",
+    "evidence": "probe S-spread-attr: pre-fix uses=[] for member props; post-fix uses=props.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects uses props) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Spread arguments are stripped of `...` and collected through the same char-walk tokenizer as every other template read."
+   },
+   {
+    "id": "H4",
+    "node_type": "script_element subtree ranges (symbols, imports, errors)",
+    "severity": "high",
+    "missing": "script-derived ranges were half-mapped: symbols shifted lines (columns only when starting on the script's first line, indices never); imports shifted lines only; exports and errors were pushed fully raw. Same disease class as Vue H2/H3, wider (all three dimensions on errors).",
+    "evidence": "probe S-script-ranges: pre-fix helper range startIndex script-relative (1); post-fix SFC-absolute (20) with SFC line/column. Engine already supplied sfcScriptStartIndex (Vue wave); the analyzer now consumes it.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/script-range-coherence pins work startLine 4/startColumn 1/startIndex 50/endIndex 86 via expectSymbolRanges, the first user of that gate class) + mutant svelte/script-relative-indices CAUGHT (2026-09-11). offsetRange mirrors the Vue contract (single-line endColumn rule, guarded index shifts); sub-symbol/import/error loops shift lines + first-line columns + byte indices."
+   },
+   {
+    "id": "M1",
+    "node_type": "await_statement (then/catch shadow seeding)",
+    "severity": "medium",
+    "missing": "the then/catch seeding appended a phantom literal entry shadowing identifier x in EVERY await block subtree, so a real member x read inside any await block emitted nothing — over-shadowing by hardcoded hack.",
+    "evidence": "probe S-await-x-shadow / S2-await-block-x: pre-fix member x suppressed; post-fix uses x alongside promise. Empty blocks already collect nothing, so the hack was pure harm.",
+    "status": "CLOSED",
+    "closure": "CLOSED — phantom entry deleted; fixture-gated (svelte/await-inline-shadow expects uses x read inside the await block alongside the M4 pins) + mutant svelte/readd-phantom-x-shadow CAUGHT (2026-09-11). Empty blocks already collect nothing, so the hack was pure harm."
+   },
+   {
+    "id": "M2",
+    "node_type": "expression text scan (string contents)",
+    "severity": "medium",
+    "missing": "the flat identifier regex read string contents as member reads: f(\"a=b\") emitted Uses(a) + Uses(b) alongside the real f (Vue D1 analog, unshared code).",
+    "evidence": "probe S2-string-contents / S-const-eq-string: pre-fix a+b emitted for f(\"a=b\")/f(\"x\"); post-fix only f. Backtick ${...} re-enters code (brace-tracked); backslash escapes honored.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-string-safety expects uses f, forbids uses a/b with same-named members present) + mutant svelte/reemit-string-content-uses CAUGHT (2026-09-11). Char-walk tokenizer with quote states implements the Vue D1/M1 contract locally."
+   },
+   {
+    "id": "M3",
+    "node_type": "expression text scan (member chains)",
+    "severity": "medium",
+    "missing": "member-chain leaves misattributed: user.name emitted Uses(name) alongside Uses(user) when a member shared the leaf name (Vue M1 analog). Dotted callee leaves and ?./#-preceded tokens skipped as receivers.",
+    "evidence": "probe S2-member-chain: pre-fix name emitted for {user.name} with member name present; post-fix only user.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-string-safety expects uses user, forbids uses name with member name present) + mutant svelte/reemit-chain-leaf-uses CAUGHT (2026-09-11). Receiver-only emission inside the same char-walk as M2."
+   },
+   {
+    "id": "M4",
+    "node_type": "await_statement (inline then/as vars)",
+    "severity": "medium",
+    "missing": "`{#await promise then value}` / `as d` (no explicit block node) never registered the inline vars as template-locals, so {value}/{d} leaked as false member uses — companion to M1 (block form over-shadowed, inline form under-shadowed).",
+    "evidence": "probe S3-inline-await-value: pre-fix uses value leaked (and the malformed-probe incident — missing {/await} parses with no await_statement at all, fixed in the probe, documented in #736); post-fix uses promise only. Both then and as spellings covered.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/await-inline-shadow expects uses promise+data, forbids uses value+d with same-named members present, both then and as spellings) + mutant svelte/reemit-inline-await-uses CAUGHT (2026-09-11; the value half additionally covered by svelte/reemit-shadowed-uses)."
+   },
+   {
+    "id": "D1",
+    "node_type": "script context=module export ranges",
+    "severity": "high",
+    "missing": "module-block exports were pushed raw with script-relative ranges — the H4 wave shifted symbols/imports/errors but missed the export push. Same disease, one loop.",
+    "evidence": "probe D1-module-export-ranges: pre-fix VERSION at startLine 2/startIndex 14 (script-relative); post-fix SFC line 3/index 50.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/module-block-exports gains expectExportRanges pinning VERSION at SFC line 2/columns 14-21/indices 39-46, the first user of that new gate class) + mutant svelte/script-relative-export-ranges CAUGHT (2026-09-11)."
+   },
+   {
+    "id": "D3",
+    "node_type": "expression text scan (comments)",
+    "severity": "medium",
+    "missing": "the template char-walk had no comment states: `{f(a) /* b */}` read member b, multi-line `{url // pick}` read member pick. D2 (aliased this=) probed clean in the same battery — items carry local names.",
+    "evidence": "probes D3-comment-contents / D3-line-comment: pre-fix uses b/pick alongside real reads; post-fix only real reads. Comment skipping runs in code context only, so '//' inside string literals stays literal.",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-comment-safety: block + line comments with adversarial same-named members) + mutant svelte/reemit-comment-uses CAUGHT (2026-09-11). Family follow-up flagged: Vue's twin machine has the same hole, fixed here where probe-proven."
+   },
+   {
+    "id": "D4",
+    "node_type": "render_tag (dotted targets)",
+    "severity": "medium",
+    "missing": "`{@render helpers.row(it)}` resolved to the FIRST segment (calls helpers — a namespace object, never callable) while on: dotted handlers resolve to the LAST (`box.open` -> open). Same shape, opposite answers.",
+    "evidence": "probe D4-render-dotted: pre-fix calls helpers; post-fix calls row with children?.() fallback intact. F5 oracle mirror updated in lockstep (M37.21 protocol).",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-calls gains the dotted render case: expects row, forbids helpers) + mutant svelte/render-first-segment-calls CAUGHT (2026-09-11). Callable leaf = last all-identifier segment; non-conforming shapes keep the leading-identifier fallback."
+   },
+   {
+    "id": "D5",
+    "node_type": "if_start / else_if_start / key_start (conditions)",
+    "severity": "high",
+    "missing": "{#if cond}, {:else if cond} and {#key exp} heads carry opaque svelte_raw_text with no `expression` node — nothing ever collected them. Every earlier fixture masked the hole because each condition member was ALSO read elsewhere; isolated conditions emitted zero edges.",
+    "evidence": "probes D5-if-only / D5-else-if-key-only + MECH dump (if_start->[block_start_tag, svelte_raw_text]): pre-fix uses=[] for condition-only members; post-fix all read. Pure reads, no bindings (unlike each/await).",
+    "status": "CLOSED",
+    "closure": "CLOSED — fixture-gated fix (svelte/template-condition-uses: if-only, else-if and key-only reads) + mutant svelte/drop-condition-uses CAUGHT (2026-09-11)."
+   }
+  ]
+ },
+ "design_decision": {
+  "decisions": [
+   {
+    "id": "D1",
+    "node_type": "style_element",
+    "status": "RULED",
+    "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script) — same ruling as vue D1.",
+    "resolution": "RULED — DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script (same as vue D1)."
+   },
+   {
+    "id": "D2",
+    "node_type": "erroneous_end_tag,erroneous_end_tag_name",
+    "status": "RULED",
+    "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling, same as vue D3).",
+    "resolution": "RULED — INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed (same as vue D3)."
+   },
+   {
+    "id": "D3",
+    "node_type": "entity,doctype",
+    "status": "RULED",
+    "question": "HTML entities and doctype declarations are document structure, not code — recommend INTERNAL SILENT.",
+    "resolution": "RULED — INTERNAL SILENT (2026-08-27): entity and doctype are HTML document structure, not code symbols; no extraction."
+   },
+   {
+    "id": "D4",
+    "node_type": "block_start_tag,block_tag,block_end_tag",
+    "status": "RULED",
+    "question": "the {#...}/{:...}/{/...} brace markers are grammar scaffolding around the real block statements — recommend INTERNAL SILENT (structure-only; the statements themselves are handled).",
+    "resolution": "RULED — INTERNAL SILENT (2026-08-27): block_start_tag/block_tag/block_end_tag are the {#}/{:}/{/} brace scaffolding markers; the block statements themselves (if/each/await/key/snippet) are handled_verified."
+   },
+   {
+    "id": "D5",
+    "node_type": "typeParameters",
+    "status": "RULED",
+    "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level (same as vue D4).",
+    "resolution": "RULED — DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the svelte Matrix (family contract)."
+   },
+   {
+    "id": "D6",
+    "node_type": "apiContract",
+    "status": "RULED",
+    "question": "apiContract payload: Svelte has no framework API-contract concept (like groovy/JS/vue) — recommend DECLARED N/A.",
+    "resolution": "RULED — DECLARED N/A (2026-08-27): Svelte has no framework API-contract concept (like groovy/JS/vue); the apiContract payload row is omitted from the svelte Matrix."
+   },
+   {
+    "id": "D7",
+    "node_type": "member rune calls ($derived.by(fn), $effect.pre(fn))",
+    "status": "FIXED",
+    "question": "Are member-call runes call edges?",
+    "ruling": "NO — language keywords. The analyzer gates on isRuneCallee(FULL callee text): $-prefixed callees whose leaf is in RUNE_LEAF_SEGMENTS are suppressed. The F5 oracle previously matched only the bare LEAF target so $derived.by surfaced as fake MISSING 'by'/'pre' (4 in the svelte repo lane); the oracle now mirrors isRuneCallee on the carried fullCallee text. fixture: rune-call-filter (forbids by/root/state)."
+   },
+   {
+    "id": "D8",
+    "node_type": "template-side calls: on:click={inc}, on:submit={() => save()}, on:click={box.open}, {@render row(it)}",
+    "status": "PINNED",
+    "question": "Do template event handlers and render tags produce call relationships?",
+    "ruling": "YES (0.85 usage_contextual) — the template pass emits them via pure-String scanning of opaque svelte_raw_text attribute values (bare identifier / first ident-then-paren / dotted callable leaf) and render_tag opaque-text scan (0.9). The embedded-JS oracle cannot see template constructs; the F5 oracle now derives the SAME truth from the template tree. fixture: template-calls (pins inc/save/open/row)."
+   },
+   {
+    "id": "D9",
+    "node_type": "HTML builtin tag set drift (analyzer vs F5 oracle)",
+    "status": "FIXED",
+    "question": "Can <search> (2023 HTML element) or camelCase SVG tags surface as component instantiates?",
+    "ruling": "NO — HTML_BUILTIN_TAGS covers all 134 modern-HTML + SVG tags; the F5 oracle's ORACLE_HTML_TAGS drifted (126 tags, missing search + 7 SVG camelCase) and faked a MISSING instantiates->search in vue-element-admin. Lesson (family-wide): parallel builtin lists on analyzer and oracle sides must be diffed by a set-comparison probe, not trusted. fixture: vue/modern-html-svg-builtin-tags (forbids search + 7 SVG tags)."
+   },
+   {
+     "id": "D10",
+     "node_type": "svelte:component / svelte:element `this={X}` (F5 ORACLE contract)",
+     "status": "FIXED",
+     "question": "M49 W13 (W12 residual): the analyzer's H2 rule emits `instantiates X` when a `<svelte:component this={X}/>` target is an import-bound bare identifier, but the oracle's component-usage walk skipped `svelte:component` as a builtin tag - and the dynamic target is named by an ATTRIBUTE, so the tag-name walk never saw it either. The analyzer's correct edge therefore surfaced as the one unexplained edge W12's 400-file svelte measurement left open (corpus file: packages/svelte/tests/runtime-legacy/samples/event-handler-shorthand-dynamic-component/main.svelte).",
+     "decision": "RULED - the oracle mirrors the analyzer's gate and nothing more: `deriveSvelteComponentUsages(root, importBindings)` emits `instantiates` for a bare-identifier `this={X}` when X is an import binding. The analyzer's second gate (skip a target that resolves to a declared member, which carries a `uses` edge instead) is deliberately NOT mirrored: an ES module cannot both import and declare the same name, so an import-bound name can never trip it and a non-import name is rejected by the import gate. Measured: the bindings are NOT available from the embedded-script truth (probed - `deriveTreeEdges(st, \"javascript\")` emits zero edges for `import Widget from './Widget.svelte'`), so they are walked off the JS-parsed script tree, mirroring the analyzer's `imports[].items`. Per-file parity on the real corpus file: analyzer `instantiates|Widget` vs oracle `instantiates|Widget`, 0 missing / 0 unexplained; lane re-run at 60 files svelte 100%/0/0, javascript 744/744, typescript 100%, baseline gate no regressions. Pinned by F9-PROBE-SVELTE-DYNAMIC-COMPONENT (both directions asserted, so the mirror cannot trade an unexplained edge for a fabricated one) and proven load-bearing by revert; the analyzer side was already pinned by fixture svelte/relationship-kinds.",
+     "date": "2026-09-13"
+   }
+  ]
+ }
+}

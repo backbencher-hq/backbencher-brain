@@ -1,0 +1,13 @@
+src/
+tests/
+docs/
+.github/
+.git/
+.gitignore
+.npmignore
+tsconfig.json
+vitest.config.ts
+*.db
+*.db-wal
+*.db-shm
+node_modules/

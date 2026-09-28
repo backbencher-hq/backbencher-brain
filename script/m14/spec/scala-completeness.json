@@ -1,0 +1,403 @@
+{
+  "language": "scala",
+  "grammar": "tree-sitter-scala.wasm",
+  "handled_verified": {
+    "types": [
+      "access_modifier",
+      "access_qualifier",
+      "annotated_type",
+      "annotation",
+      "arguments",
+      "arrow_renamed_identifier",
+      "as_renamed_identifier",
+      "ascription_expression",
+      "assignment_expression",
+      "block",
+      "block_comment",
+      "boolean_literal",
+      "call_expression",
+      "case_block",
+      "case_clause",
+      "catch_clause",
+      "character_literal",
+      "class_definition",
+      "class_parameter",
+      "class_parameters",
+      "colon_argument",
+      "comment",
+      "compilation_unit",
+      "compound_type",
+      "consume_modifier",
+      "context_bound",
+      "contravariant_type_parameter",
+      "covariant_type_parameter",
+      "derives_clause",
+      "do_while_expression",
+      "end_marker",
+      "enum_body",
+      "enum_case_definitions",
+      "enum_definition",
+      "enumerator",
+      "enumerators",
+      "erased_modifier",
+      "export_declaration",
+      "extends_clause",
+      "extension_definition",
+      "field_expression",
+      "finally_clause",
+      "floating_point_literal",
+      "for_expression",
+      "full_enum_case",
+      "function_declaration",
+      "function_definition",
+      "function_type",
+      "generic_function",
+      "generic_type",
+      "given_definition",
+      "guard",
+      "identifier",
+      "if_expression",
+      "import_declaration",
+      "indented_block",
+      "indented_cases",
+      "infix_expression",
+      "infix_modifier",
+      "infix_type",
+      "inline_modifier",
+      "instance_expression",
+      "integer_literal",
+      "interpolated_string",
+      "interpolated_string_expression",
+      "interpolation",
+      "lambda_expression",
+      "literal_type",
+      "lower_bound",
+      "match_expression",
+      "match_type",
+      "modifiers",
+      "name_and_type",
+      "named_tuple_type",
+      "namespace_selectors",
+      "namespace_wildcard",
+      "null_literal",
+      "object_definition",
+      "opaque_modifier",
+      "open_modifier",
+      "operator_identifier",
+      "package_clause",
+      "package_identifier",
+      "package_object",
+      "parameter",
+      "parameter_types",
+      "parameters",
+      "parenthesized_expression",
+      "postfix_expression",
+      "prefix_expression",
+      "projected_type",
+      "refinement",
+      "repeated_parameter_type",
+      "return_expression",
+      "self_type",
+      "simple_enum_case",
+      "singleton_type",
+      "stable_identifier",
+      "stable_type_identifier",
+      "string",
+      "structural_type",
+      "template_body",
+      "throw_expression",
+      "tracked_modifier",
+      "trait_definition",
+      "transparent_modifier",
+      "try_expression",
+      "tuple_expression",
+      "tuple_type",
+      "type_arguments",
+      "type_case_clause",
+      "type_definition",
+      "type_identifier",
+      "type_lambda",
+      "type_parameters",
+      "unit",
+      "upper_bound",
+      "val_declaration",
+      "val_definition",
+      "var_declaration",
+      "var_definition",
+      "view_bound",
+      "wildcard",
+      "with_template_body",
+      "xml_attribute",
+      "xml_cdata",
+      "xml_comment",
+      "xml_element",
+      "xml_expression",
+      "xml_name",
+      "xml_pattern",
+      "xml_processing_instruction",
+      "xml_string",
+      "xml_text"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "alternative_pattern",
+      "capture_pattern",
+      "escape_sequence",
+      "given_pattern",
+      "named_pattern",
+      "named_tuple_pattern",
+      "repeat_pattern",
+      "tuple_pattern"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified: the analyzer emits nothing where the spec table requires an emission)",
+    "gaps": [
+      {
+        "id": "G1",
+        "node_type": "import_declaration",
+        "severity": "high",
+        "missing": "import edges mislabeled reference_qualified (the tier classifier hardcodes reference_qualified for references, ignoring isImportDep — the JVM-family finding from java's pass) AND the edge source stays the 'root' placeholder (kotlin rewrites to the file's primary type; scala does not — family inconsistency)",
+        "evidence": "probe: import java.util.List in class Importer -> 'root->java.util.List [references]/reference_qualified'",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/import-edges) + mutants scala/reclassify-import-tier and scala/drop-import-source-rewrite CAUGHT (2026-08-27). Import edges now carry isImportDep/import_based tier and the source rewrites to the file's primary type, matching kotlin."
+      },
+      {
+        "id": "G2",
+        "node_type": "typed_pattern,case_class_pattern,infix_pattern",
+        "severity": "high",
+        "missing": "pattern type references lost — case p: Point, case Point(a, b), case s: String emit NO reference to Point/String",
+        "evidence": "probe: match { case p: Point => ... } emits only declared_type Int (case-class params) — no reference to Point",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/pattern-refs) + mutant scala/drop-pattern-refs CAUGHT (2026-08-27). typed_pattern and case_class_pattern now emit pattern_type references (infix_pattern is a binding pattern with no type_identifier — ruled out by probe)."
+      },
+      {
+        "id": "G3",
+        "node_type": "method_value",
+        "severity": "medium",
+        "missing": "Foo.bar method values emit no reference to Foo (the callable-reference analog of kotlin K3)",
+        "evidence": "probe: xs.map(Foo.bar) emits only apply->map calls",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/method-value-refs) + mutant scala/drop-method-value-refs CAUGHT (2026-08-27). Foo.bar method values now emit a method_value reference to Foo."
+      },
+      {
+        "id": "G4",
+        "node_type": "interpolated_string_expression,interpolation",
+        "severity": "medium",
+        "missing": "string interpolation s\"hi $name\" emits no Uses on name (kotlin K4 analog)",
+        "evidence": "probe: s\"hi $name x${n + 1}\" emits no uses edge",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/interp-uses) + mutant scala/drop-expression-uses CAUGHT (2026-08-27). s\"hi $name\" now emits Uses on name."
+      },
+      {
+        "id": "G5",
+        "node_type": "tuple_type",
+        "severity": "medium",
+        "missing": "tuple-typed returns (Int, String) emit no type references (the return-type collector only matches generic_type/type_identifier/functional_type — tuple_type and compound/structural types are missed)",
+        "evidence": "probe: def pair(): (Int, String) emits NO references to Int/String",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/tuple-refs) + mutant scala/drop-tuple-refs CAUGHT (2026-08-27). tuple_type return positions now emit return_type references to the element types."
+      },
+      {
+        "id": "G6",
+        "node_type": "derives_clause",
+        "severity": "medium",
+        "missing": "derives Show, Hashing emits no references to the derived types",
+        "evidence": "probe: case class Person(name: String) derives Show emits no Person->Show reference",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/derives-refs) + mutant scala/drop-derives-refs CAUGHT (2026-08-27). derives Show, Hashing now emits derives_type references."
+      },
+      {
+        "id": "G7",
+        "node_type": "type_definition",
+        "severity": "medium",
+        "missing": "type alias RHS references lost — type Fn = (Int) => String emits the Fn symbol (works) but NO references to Int/String from the alias's own definition",
+        "evidence": "probe: type Fn = (Int) => String emits Fn[type] but no Fn->Int / Fn->String",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/type-alias-refs) + mutant scala/drop-type-alias-refs CAUGHT (2026-08-27). type Fn = ... now emits type_alias references to the RHS types."
+      },
+      {
+        "id": "G8",
+        "node_type": "field_expression",
+        "severity": "medium",
+        "missing": "field accesses h.value (reads AND writes) emit no Uses on the receiver — scala has no field-access uses collector (only extension methods emit Uses); family gap vs java/groovy/kotlin",
+        "evidence": "probe: h.value = h.value + 1 and read(h) = h.value emit zero uses",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/field-uses) + mutant scala/drop-expression-uses CAUGHT (2026-08-27). Field-expression reads AND writes now emit Uses on the receiver (nullary access folded per D3)."
+      },
+      {
+        "id": "G9",
+        "node_type": "self_type",
+        "severity": "low",
+        "missing": "self-type references lost — trait Logging { self: Service => } emits no reference to Service",
+        "evidence": "probe: self: Service => emits no reference",
+        "status": "CLOSED",
+        "closure": "CLOSED — fixture-gated fix (scala/self-type-ref) + mutant scala/drop-self-type-ref CAUGHT (2026-08-27). self: Service => now emits a self_type reference to Service."
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "infix_expression,operator_identifier",
+        "status": "RULED",
+        "question": "a + b infix operator calls: Scala desugars to a.+(b) — a real method call. But operators are overwhelmingly stdlib/primitive (+, *, ::, map...) and there is no symbol table to filter user operators. Recommend: DECLARED LIMITATION (operator calls not emitted as Calls edges).",
+        "resolution": "DECLARED LIMITATION (2026-08-27): infix operator calls are not emitted as Calls edges. Operators are overwhelmingly stdlib/primitive and there is no symbol table to filter user operators — emitting them would flood the graph with noise."
+      },
+      {
+        "id": "D2",
+        "node_type": "export_declaration",
+        "status": "RULED",
+        "question": "export scala.concurrent.duration.* — the export relationship kind is NOT EMITTED (pattern flag only). Recommend: DECLARED LIMITATION (consistent with kotlin S5 / groovy S3).",
+        "resolution": "DECLARED LIMITATION (2026-08-27): export declarations are NOT EMITTED as export relationships (pattern flag only) — consistent with kotlin S5 / groovy S3."
+      },
+      {
+        "id": "D3",
+        "node_type": "field_expression",
+        "status": "RULED",
+        "question": "Parameterless method access without parens (xs.length, s.x) parses as field_expression — method vs field is indistinguishable without a symbol table. Recommend: fold into G8 — emit Uses on the RECEIVER only, never guess the selector kind.",
+        "resolution": "RULED (2026-08-27): parameterless/nullary access (xs.length) folds into G8 — emit Uses on the RECEIVER only; the selector kind (method vs field) is never guessed without a symbol table."
+      },
+      {
+        "id": "D4",
+        "node_type": "xml_expression,xml_element,xml_attribute,xml_pattern,xml_name,xml_string,xml_text,xml_comment,xml_cdata,xml_processing_instruction",
+        "status": "RULED",
+        "question": "XML literals: the grammar declares them but the analyzer ignores them entirely. Recommend: internal_silent (XML literal bodies are out of scope; embedding them would fabricate symbols).",
+        "resolution": "INTERNAL SILENT (2026-08-27): XML literals are out of scope; the grammar declares them but the analyzer ignores them — embedding would fabricate symbols."
+      },
+      {
+        "id": "D5",
+        "node_type": "tuple_expression",
+        "status": "RULED",
+        "question": "(1, \"a\") tuple literal: an expression, not a declaration. Recommend: internal_silent (destructured locals are not symbols — consistent with kotlin S3).",
+        "resolution": "INTERNAL SILENT (2026-08-27): tuple literals and destructured locals are not symbols — consistent with kotlin S3."
+      },
+      {
+        "id": "D6",
+        "node_type": "quote_expression,splice_expression,macro_body",
+        "status": "RULED",
+        "question": "Scala 3 macros: quote/splice expressions — handleCall already skips callees starting with a quote char (dotty-corpus fix). Recommend: internal_silent (macro AST manipulation is out of scope).",
+        "resolution": "INTERNAL SILENT (2026-08-27): Scala 3 macros (quote/splice) — handleCall already skips quoted callees; macro expansion is out of scope."
+      },
+      {
+        "id": "F6.GI.SCALA",
+        "node_type": "applied_constructor_type, binding, bindings, capture_ref, capture_set, capture_variable, capturing_type, early_defs, error_sentinel, existential_type, given_conditional, identifiers, into_modifier, lazy_parameter_type, named_type_argument, update_modifier, uses_clause, using_directive, using_directive_key, using_directive_value, vararg, while_expression",
+        "status": "RULED",
+        "question": "F6 fixture-coverage gate: these handled_verified entries have no fixture coverage.",
+        "resolution": "Probe-verified against the pinned tree-sitter-scala grammar (2026-09-02): no legal Scala source produces these node types — they are grammar-internal supertypes/intermediate nodes (e.g. bindings, identifiers, capture_set/ref/variable, using_directive*, vararg, early_defs, existential_type, given_conditional, error_sentinel, *_bound variants reachable only via wildcard _* splices, update/into/uses modifier forms the grammar never emits). The analyzer contains no literal reference to any of them (grep-verified), so no dead-code risk exists; they are reclassified out of handled_verified."
+      },
+      {
+        "id": "ScalaD-A",
+        "node_type": "function_declaration/abstract member (keywordless implementation)",
+        "status": "RULED",
+        "question": "Implementing an ABSTRACT member needs no `override` keyword in Scala (required only for CONCRETE base members). The analyzer's override post-pass was keyworded-only — keywordless abstract implementations emitted nothing. Are they overrides?",
+        "resolution": "Yes. Two-corpus gate wave 2026-09 (cats-effect Semaphore/Queue/AtomicCell): keywordless exact-signature implementations of in-file abstract members are verified overrides @1.0/exact-in-file. The oracle additionally had to start counting abstract `function_declaration` members (the shared member-variable guard was swallowing them). No guessing tier for implicit pairs — overloads must never pair."
+      },
+      {
+        "id": "ScalaD-B",
+        "node_type": "override resolution (declaring ancestor)",
+        "status": "RULED",
+        "question": "Keyworded overrides without a companion index guessed the FIRST supertype (ConcurrentImpl.get -> CommonImpl.get @0.5) even when the real declaring ancestor (AtomicCell) is in-file and an intermediate (CommonImpl) does not declare the method. Resolve the true ancestor?",
+        "resolution": "Yes. Two-corpus gate wave 2026-09: keyworded methods now first resolve the verified in-file declaring ancestor by exact name+parameter-type signature BFS (emit @1.0/exact-in-file); the companion/first-supertype guess tiers run only when no in-file ancestor declares it."
+      },
+      {
+        "id": "ScalaD-C",
+        "node_type": "access_modifier scope qualifier (private[scope])",
+        "status": "RULED",
+        "question": "`private[effect] def tag` parsed as plain `private` — hiding it from exports AND making the analyzer treat the member as non-overridable (26 keywordless IO subclasses implement IO.tag). Correct handling?",
+        "resolution": "Scope-qualified private/protected (private[pkg], protected[pkg]) is visible and overridable within its scope — modeled as package-scoped visibility (never exported, still inheritable). Bare private stays private. Two-corpus gate wave 2026-09 (cats-effect IO.scala: 26 tag implementations)."
+      },
+      {
+        "id": "ScalaD-D",
+        "node_type": "anonymous class body (new Runnable { ... } — instance_expression + template_body)",
+        "status": "FIXED",
+        "question": "M37.21 #610 JD18 family lesson (java finding, scala shares the gap): methods inside anonymous bodies attributed to the enclosing class (run -> Service) with no anonymous symbol — the contains graph leaked the body's members into the enclosing type.",
+        "resolution": "Mirror the kotlin/java family convention: anonymous_<SuperName> Class symbol (generic supertypes collapse to the head name, bracketed args stripped; noise name, never leaks into the index) owned by the enclosing type, pushed as the walk parent so body members attribute to the anonymous type (contains anonymous_Runnable -> run). Oracle mirror: deriveTreeEdges registers the synthetic anonymous declaration (methods + supertype parent) so scala overrides truth covers anonymous-body members (cats-effect 91 -> 8 unexplained; the remaining 8 are the documented ~>/compound-instantiates shapes). Fixture pins in java/anonymous-and-multihop-overrides; scala fixture pending in the scala wave."
+      },
+      {
+        "id": "ScalaD-E",
+        "node_type": "override pairing where a signature carries a GENERIC TYPE VARIABLE (trait def to(t: T) vs impl def to(t: AABB))",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 byname-implicits-13: textual sig equality rejected genuine generic-substitution overrides (oracle side, sigCompatible)",
+        "resolution": "sigCompatible falls back to name-only pairing when either sig contains a type-variable token (hasTypeVar: single-capital identifier, possibly compound H :: T). Concrete-vs-concrete mismatches keep the strict overload guard.",
+        "evidence": "scala3 lane 19 unexplained -> 0; probe scala-eq-probe9"
+      },
+      {
+        "id": "ScalaD-F",
+        "node_type": "companion object + class sharing a NAME (object SetNode + sealed abstract class SetNode)",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 HashSet.scala: oracle collectDecl first-wins guard dropped the class's 19 abstract methods (companion registered first) — every BitmapIndexedSetNode override surfaced as unexplained",
+        "resolution": "collectDecl always ensures the decl entry exists and MERGES members across every same-named declaration (companion union semantics, mirroring the analyzer's methodSigsByOwner).",
+        "evidence": "HashSet.scala oracle overrides 0 -> 35; scala3 lane 18 unexplained -> 0"
+      },
+      {
+        "id": "ScalaD-G",
+        "node_type": "override owner lookup when a companion MODULE shadows the CLASS in typeIndex (object Setup + class Setup)",
+        "status": "FIXED",
+        "question": "M37.21 #610 scala3 Setup.scala: typeIndex first-wins let the module shadow the class; ownerSym.metadata.superTypes undefined; BFS died at hop 0; Setup.isPreCC -> SetupAPI.isPreCC never emitted (analyzer side)",
+        "resolution": "ownerKind stamped on every symbol at walk time (createSymbol); typeIndexByKind indexes first-seen per KIND; resolveOwner() resolves exact-kind first with legacy first-wins fallback. Both lookup sites (findDeclaringAncestor, keyworded tier) route through resolveOwner.",
+        "evidence": "scala3 lane 10 missing -> 2; Setup.isPreCC/setupUnit/postCheck emit at conf 1.0"
+      },
+      {
+        "id": "ScalaD-H",
+        "node_type": "analyzer-side generic-substitution override pairing (mirror of ScalaD-E)",
+        "status": "FIXED",
+        "question": "M37.21 #610 byname-implicits-13 (Generic.to) + spec-example1 (@specialized C.m): analyzer findDeclaringAncestor exact-sig check rejected substituted implementations — MISSING overrides",
+        "resolution": "hasTypeVar fallback in findDeclaringAncestor: parent declares member under a type-variable sig (or child is substituted) -> name-only pairing, non-private guard preserved. Private-only members still never pair.",
+        "evidence": "scala3 lane missing 2 -> 0 (100%/0/0); fixture scala/generic-substitution-overrides pins 4 Codec overrides + forbids Overloads.f self-pair"
+      },
+      {
+        "id": "ScalaD-I",
+        "node_type": "oracle instantiates normalization for instance_expression targets with bracketed type args + `with` compound shapes",
+        "status": "FIXED",
+        "question": "M37.21 #610 cats-effect SecureRandomCompanionPlatform: oracle pushed raw text ScalaRandom[F](...) with SecureRandom[F] while the analyzer strips brackets iteratively — pairs never matched (10 MISSING)",
+        "resolution": "deriveTreeEdges instance_expression push applies the analyzer's iterative bracket-strip (square + angle) to the target.",
+        "evidence": "cats-effect lane 10 missing -> 0 (100%/0/0)"
+      },
+      {
+        "id": "ScalaD-J",
+        "node_type": "oracle call_expressions whose callee parses as generic_function (scala3 dotted/typed callees)",
+        "status": "FIXED",
+        "question": "scala3 parses `Comparator.reverseOrder()` / `CC.ff() + CC.ff(...)` callees as generic_function — deriveTreeEdges checked only navigation_expression/field_expression and fell back to RAW callee text, fabricating junk truth (instantiates with target `CC.ff()\\n + CC.ff(\"abc\")\\n + CC.ff`, `Comparator.reverseOrder`): 9 MISSING @200 on scala3. Shared-blind-spot class: deriveScalaEdges had the S1.10 leaf handler but the LIVE sweep path (deriveTreeEdges) kept the stale fallback — no differential could flag truth vs truth.",
+        "resolution": "deriveTreeEdges scala branch mirrors deriveScalaEdges's S1.10 handler: generic_function callees resolve to the LAST identifier leaf before the bracket strip. Analyzer was already correct — oracle-only fix, verified junk-free on the three real files.",
+        "evidence": "scala3 lane 9 missing -> 0; probe s1-junk-which.ts (dedicated vs generic oracle comparison); probe s1-junkshape.ts (callee shape = field_expression with identifier children; leaf-extraction contract)."
+      },
+      {
+        "id": "ScalaD-K",
+        "node_type": "oracle override emission when same-named companions pool into one decls entry (scala)",
+        "status": "FIXED",
+        "question": "cats-effect IsEq.scala: decls['IsEq'] unions the trait's methods (declares toProp) with the object's parents (extends IsEqLowPriorityImplicits which also declares toProp) — pooled emission fabricated `IsEq.toProp -> IsEqLowPriorityImplicits.toProp`, an override that exists on NEITHER real type (analyzer resolves per-symbol and emits nothing). 1 unexplained @200.",
+        "resolution": "Per-occurrence provenance for scala: every declaration registers its OWN method set + its OWN extends_clause parents (occMethods/occSigs/occParents); scala override emission walks occurrence keys exactly (no name fallback — a name fallback would reintroduce the conflation). Transitive BFS depth-10 and sigCompatible (hasTypeVar bracket-aware) preserved. Companion-union pooling stays truth for every other family.",
+        "evidence": "cats-effect lane 1 unexplained -> 0 (100/0/0 @200); probe s1-companion-verify.ts (fabricated pair gone, transitive Leaf.handle -> Base.handle through non-declaring Mid preserved, no Cfg fabrication)."
+      },
+      {
+        "id": "ScalaD-L",
+        "node_type": "enum_definition heritage (enum X extends Y)",
+        "status": "FIXED",
+        "question": "enum Color(val hex: Int) extends Serializable emitted ZERO extends on BOTH analyzer and oracle — deriveTreeEdges's heritage walk didn't admit enum_definition, so no differential could ever flag it (the J3 shared-blind-spot class, found by independent audit beyond the review).",
+        "resolution": "Analyzer handleEnum reads the declaration's own extends_clause (all supertypes are extends — an enum cannot extend a class in Scala 3); oracle admits enum_definition with isEnumDecl forcing extends. Mutant scala/enum-heritage-drop pins it.",
+        "evidence": "fixture scala/heritage-and-qualified-construction (Color -> Serializable pin); probe s1-probe3 found the zero-heritage shape on both sides."
+      },
+      {
+        "id": "ScalaD-M",
+        "node_type": "companion-qualified construction targets (new TrieMapLike.MangledHashing[Int])",
+        "status": "FIXED",
+        "question": "The analyzer already emitted dotted instantiates targets (bracket-stripped); during the junk-truth cleanup the question arose whether dotted targets were the fabrication class. Verdict: NO — the junk was the oracle's generic_function fallback (ScalaD-J), not the analyzer's dotted-construction contract. Dropping qualified constructions would lose real edges (scala3 TrieMap.scala: new TrieMap.MangledHashing[K]).",
+        "resolution": "handleInstantiation keeps qualified bracket-stripped targets; mutant scala/drop-companion-qualified-instantiates must die on the fixture pin.",
+        "evidence": "fixture scala/heritage-and-qualified-construction (User instantiates TrieMapLike.MangledHashing); scala3 + cats-effect lanes 100/0/0 @200."
+      },
+      {
+        "id": "ScalaD-N",
+        "node_type": "framework detection from import roots (Spring/Jackson/jsoniter/sttp)",
+        "status": "FIXED",
+        "question": "M49 #741 CONV-S-1 (family-wide blind-spot sweep, C7 class): did scala detect Spring? Probe at HEAD measured detectedFrameworks=[] for a Spring Boot import while java (\"spring\"), kotlin (\"Spring Boot\"/\"Spring Framework\") and groovy (\"spring\") all detected it — scala was the only JVM language blind to the dominant enterprise ecosystem. Root cause: the S1.23 root-prefix list was sound but incomplete (Play, Akka, Spark, Cats Effect, ZIO, http4s, Slick, FS2, ScalaTest only).",
+        "resolution": "Added root-prefix entries org.springframework.boot -> \"Spring Boot\", org.springframework -> \"Spring Framework\", plus the JSON/HTTP libraries a mixed JVM shop actually imports: com.fasterxml.jackson -> \"Jackson\", com.github.plokhotnyuk.jsoniter_scala -> \"jsoniter-scala\", com.softwaremill.sttp -> \"sttp\". Matching stays root-prefix, so user code that merely contains a framework root (com.mycompany.springframework.*, mycats.*, org.springlike.*) still detects nothing. Naming follows kotlin's for the same ecosystem and scala's own Title-Case list style.",
+        "evidence": "fixture scala/framework-detection (5 expects + 9 forbids); mutants scala/spring-detection-loss and scala/framework-substring-fabrication must each die on that fixture alone; reproduction + negative control in script/m14/tmp/sc-frameworks-probe.ts.",
+        "familyDivergence": "RECORDED, NOT RESOLVED: java and groovy emit the lowercase key \"spring\" for the same ecosystem while kotlin and scala emit \"Spring Boot\"/\"Spring Framework\". One analyzer must not unilaterally rename a consumer-visible family payload, so scala matches kotlin and the divergence is left for a family ruling (the family-parity gate's construct set does not currently cover framework names).",
+        "runFixturesGap": "FIXED IN THE SAME WAVE: `expectFrameworks` is a must-include list, so a detector that over-matches passed every framework fixture — the go fixture's header already CLAIMED an \"exact detected set\" the runner could not check. run-fixtures.ts now supports `forbidFrameworks`, which is what makes the negative direction of this fixture (and the substring mutant) load-bearing."
+      }
+    ]
+  }
+}

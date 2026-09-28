@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "python_corpus_tracked_complexity",
+  "corpus": "cython",
+  "revision": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+  "trackedPythonFiles": 243,
+  "measurement": {
+    "name": "python-corpus-tracked",
+    "wallTimeMs": 41630.401818,
+    "userCpuMs": 41755.618,
+    "systemCpuMs": 3628.275,
+    "peakRssBytes": 509218816,
+    "rssDeltaBytes": 325550080,
+    "databaseBytes": null,
+    "files": 243,
+    "symbols": 15558,
+    "relationships": 30901,
+    "filesPerSecond": 5.837080340044486,
+    "symbolsPerSecond": 373.71726720334203,
+    "relationshipsPerSecond": 742.2700394556159,
+    "parseErrors": 64
+  },
+  "note": "Tracked .py files at or above 1 KiB only; production pool-worker parseFile path; no generated, untracked, Cython-only, or non-Python files included.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.956Z",
+    "contentSha256": "a1a479eb651adc1a71abd736bcd5fbd6a48d05f7d3708cca637f768377a08f30"
+  }
+}

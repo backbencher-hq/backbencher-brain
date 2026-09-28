@@ -1,0 +1,847 @@
+{
+ "schemaVersion": 1,
+ "truthSource": "manual_audit",
+ "source": "Independent hand audit of validation/m12/fixtures/vue/*.vue against Vue 3 semantics and the TS/JS family contract (M12.09/M12.10): SFC component -> class (file-level, L1); <script setup> top-level const -> constant, let/var -> variable, function -> function; Options API: props -> property, emits -> event, data/computed->property, methods/lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content analyzed by the real JavaScript analyzer (family consistency, whether or not lang=ts); template pass emits instantiates only for capitalized PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives (vue:ref, ./Card.vue:Card); calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit '$'-prefixed target (pool-worker $ denylist removed in M12.12); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only.",
+ "facts": [
+  {
+   "id": "sym:Button.vue:1:class:Button",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.vue",
+   "line": 1,
+   "attributes": {
+    "name": "Button",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Button"
+   }
+  },
+  {
+   "id": "sym:Button.vue:10:constant:count",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.vue",
+   "line": 10,
+   "attributes": {
+    "name": "count",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const count = ref(0)"
+   }
+  },
+  {
+   "id": "sym:Button.vue:11:constant:isActive",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.vue",
+   "line": 11,
+   "attributes": {
+    "name": "isActive",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const isActive = computed(...)"
+   }
+  },
+  {
+   "id": "sym:Button.vue:13:function:onHit",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.vue",
+   "line": 13,
+   "attributes": {
+    "name": "onHit",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function onHit(amount)"
+   }
+  },
+  {
+   "id": "rel:Button.vue:imports:Button:vue:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.vue",
+   "sourceId": "Button",
+   "targetId": "vue:ref",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { ref, computed } from 'vue'"
+   }
+  },
+  {
+   "id": "rel:Button.vue:imports:Button:vue:computed",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.vue",
+   "sourceId": "Button",
+   "targetId": "vue:computed",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { ref, computed } from 'vue'"
+   }
+  },
+  {
+   "id": "rel:Button.vue:calls:Button:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.vue",
+   "sourceId": "Button",
+   "targetId": "ref",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "count = ref(0) at setup scope"
+   }
+  },
+  {
+   "id": "rel:Button.vue:calls:Button:computed",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.vue",
+   "sourceId": "Button",
+   "targetId": "computed",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "isActive = computed(...) at setup scope"
+   }
+  },
+  {
+   "id": "sym:Card.vue:1:class:Card",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 1,
+   "attributes": {
+    "name": "Card",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Card (name: 'Card')"
+   }
+  },
+  {
+   "id": "sym:Card.vue:11:property:title",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 11,
+   "attributes": {
+    "name": "title",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "props.title"
+   }
+  },
+  {
+   "id": "sym:Card.vue:11:property:body",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 11,
+   "attributes": {
+    "name": "body",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "props.body"
+   }
+  },
+  {
+   "id": "sym:Card.vue:15:event:select",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 15,
+   "attributes": {
+    "name": "select",
+    "symbolKind": "event"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "emits: ['select']"
+   }
+  },
+  {
+   "id": "sym:Card.vue:16:method:data",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 16,
+   "attributes": {
+    "name": "data",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "data() {}"
+   }
+  },
+  {
+   "id": "sym:Card.vue:22:property:summary",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 22,
+   "attributes": {
+    "name": "summary",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "computed.summary"
+   }
+  },
+  {
+   "id": "sym:Card.vue:27:method:toggle",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 27,
+   "attributes": {
+    "name": "toggle",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "methods.toggle"
+   }
+  },
+  {
+   "id": "sym:Card.vue:30:method:handleSelect",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 30,
+   "attributes": {
+    "name": "handleSelect",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "methods.handleSelect"
+   }
+  },
+  {
+   "id": "sym:Card.vue:34:method:mounted",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 34,
+   "attributes": {
+    "name": "mounted",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "mounted() lifecycle hook"
+   }
+  },
+  {
+   "id": "rel:Card.vue:calls:summary:slice",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "summary",
+   "targetId": "slice",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "this.title.slice(0, 10)"
+   }
+  },
+  {
+   "id": "rel:Card.vue:calls:handleSelect:$emit",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "handleSelect",
+   "targetId": "$emit",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "this.$emit('select', this.title)"
+   }
+  },
+  {
+   "id": "rel:Card.vue:calls:mounted:toggle",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "mounted",
+   "targetId": "toggle",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "this.toggle()"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:title",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "title",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:body",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "body",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:select",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "select",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "event owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:data",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "data",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:summary",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "summary",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "computed owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:toggle",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "toggle",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:handleSelect",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "handleSelect",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:mounted",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "mounted",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "hook owned by component"
+   }
+  },
+  {
+   "id": "sym:UserList.vue:1:class:UserList",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.vue",
+   "line": 1,
+   "attributes": {
+    "name": "UserList",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component UserList"
+   }
+  },
+  {
+   "id": "sym:UserList.vue:18:constant:users",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.vue",
+   "line": 18,
+   "attributes": {
+    "name": "users",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const users = ref<...>([])"
+   }
+  },
+  {
+   "id": "sym:UserList.vue:20:function:loadMore",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.vue",
+   "line": 20,
+   "attributes": {
+    "name": "loadMore",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "async function loadMore()"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:instantiates:UserList:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "Card",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<Card .../> template component"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:instantiates:UserList:Button",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "Button",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<Button .../> template component"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:imports:UserList:vue:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "vue:ref",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { ref } from 'vue'"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:imports:UserList:./Card.vue:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "./Card.vue:Card",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import Card from './Card.vue'"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:imports:UserList:./Button.vue:Button",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "./Button.vue:Button",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import Button from './Button.vue'"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:calls:UserList:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "UserList",
+   "targetId": "ref",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "users = ref<Array<...>>([]) at setup scope (generic call, requires the TS sub-parse the engine's lang detection now provides)"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:calls:loadMore:fetch",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "loadMore",
+   "targetId": "fetch",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "await fetch('/api/users')"
+   }
+  },
+  {
+   "id": "rel:UserList.vue:calls:loadMore:json",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.vue",
+   "sourceId": "loadMore",
+   "targetId": "json",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "more.json()"
+   }
+  },
+  {
+   "id": "sym:App.vue:1:class:App",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "App.vue",
+   "line": 1,
+   "attributes": {
+    "name": "App",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component App"
+   }
+  },
+  {
+   "id": "rel:App.vue:instantiates:App:router-link",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.vue",
+   "sourceId": "App",
+   "targetId": "router-link",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<router-link to=...> template tag"
+   }
+  },
+  {
+   "id": "rel:App.vue:instantiates:App:router-view",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.vue",
+   "sourceId": "App",
+   "targetId": "router-view",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<router-view /> template tag"
+   }
+  },
+  {
+   "id": "rel:App.vue:imports:App:vue-router:RouterLink",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.vue",
+   "sourceId": "App",
+   "targetId": "vue-router:RouterLink",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { RouterLink, RouterView } from 'vue-router'"
+   }
+  },
+  {
+   "id": "rel:App.vue:imports:App:vue-router:RouterView",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.vue",
+   "sourceId": "App",
+   "targetId": "vue-router:RouterView",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { RouterLink, RouterView } from 'vue-router'"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:1:class:Negative",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 1,
+   "attributes": {
+    "name": "Negative",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Negative"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:13:constant:user",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 13,
+   "attributes": {
+    "name": "user",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const user = ref(...)"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:14:constant:visible",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 14,
+   "attributes": {
+    "name": "visible",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const visible = ref(true)"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:15:constant:query",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 15,
+   "attributes": {
+    "name": "query",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const query = ref('')"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:16:constant:options",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 16,
+   "attributes": {
+    "name": "options",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const options = ['a', 'b']"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:17:constant:cls",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 17,
+   "attributes": {
+    "name": "cls",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const cls = 'x'"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:18:variable:message",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 18,
+   "attributes": {
+    "name": "message",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let message = 'hello'"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:19:variable:legacy",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 19,
+   "attributes": {
+    "name": "legacy",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "var legacy = 1"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:21:function:onInput",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 21,
+   "attributes": {
+    "name": "onInput",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function onInput(e: Event)"
+   }
+  },
+  {
+   "id": "sym:Negative.vue:25:function:localOnly",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.vue",
+   "line": 25,
+   "attributes": {
+    "name": "localOnly",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function localOnly()"
+   }
+  },
+  {
+   "id": "rel:Negative.vue:imports:Negative:vue:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.vue",
+   "sourceId": "Negative",
+   "targetId": "vue:ref",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { ref } from 'vue'"
+   }
+  },
+  {
+   "id": "rel:Negative.vue:calls:Negative:ref",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.vue",
+   "sourceId": "Negative",
+   "targetId": "ref",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "ref(...) at setup scope (user/visible/query)"
+   }
+  }
+ ]
+}

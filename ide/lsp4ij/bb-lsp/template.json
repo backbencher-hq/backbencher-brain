@@ -1,0 +1,26 @@
+{
+  "id": "bb-lsp",
+  "name": "Backbencher Brain Language Server",
+  "programArgs": {
+    "default": "node BB_ROOT/dist/lsp/server.js --dir $WORKSPACE_DIR$",
+    "windows": "node BB_ROOT\\dist\\lsp\\server.js --dir $WORKSPACE_DIR$"
+  },
+  "fileTypeMappings": [
+    {
+      "fileType": { "name": "TypeScript", "patterns": ["*.ts"] },
+      "languageId": "typescript"
+    },
+    {
+      "fileType": { "name": "JavaScript", "patterns": ["*.js"] },
+      "languageId": "javascript"
+    },
+    {
+      "fileType": { "name": "Java" },
+      "languageId": "java"
+    },
+    {
+      "fileType": { "name": "Scala", "patterns": ["*.scala"] },
+      "languageId": "scala"
+    }
+  ]
+}

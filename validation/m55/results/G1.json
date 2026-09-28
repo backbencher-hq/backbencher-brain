@@ -1,0 +1,64 @@
+{
+  "issue": "M55.G1",
+  "code": "G1",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 16,
+  "passed": 16,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 8,
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-governance.ts",
+  "evidenceFile": "G1.json",
+  "generatedAt": "2026-09-20T02:31:49.653Z",
+  "ledger": {
+    "issues": 9,
+    "verified": [
+      "G1",
+      "T1",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "P1",
+      "V1",
+      "X1"
+    ],
+    "planned": [],
+    "partial": [],
+    "ledgerStatus": "closed"
+  },
+  "contract": {
+    "section15": "docs/IDE-HONESTY-CONTRACT.md",
+    "rules": 6
+  },
+  "bar": {
+    "status": "verified",
+    "reason": "",
+    "ladder": [
+      {
+        "gate": "m53-ladder",
+        "exit": 0,
+        "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/R1.json"
+      },
+      {
+        "gate": "m53-closure",
+        "exit": 0,
+        "lastLine": "Evidence: $HOME/backbencher-brain/validation/m53/results/X1.json"
+      }
+    ]
+  },
+  "failures": [],
+  "limitations": [
+    "The bar re-audit runs the M53 R1 ladder (m24->m44 gate chain, including both closures) as subprocesses; under heavy machine load those gates' latency budgets can miss, which this gate reports as a failed bar rather than retrying silently.",
+    "Relevance-based staleness mirrors M24.G1: a file not listed for an issue does not invalidate its evidence. The list is maintained here; a new component must be added to it when its issue lands.",
+    "The in-editor legs (V1's frames) are out of this gate's reach: it can only assert that the ledger points at evidence files, never that a frame was read by a human."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:31:49.653Z",
+    "contentSha256": "ea1a181592119cb399dd4d3d517b4fd9dbc46d727c3506ca6ee5ff6f800ae6b1"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:objective-c",
+  "fixtureDir": "validation/m12/fixtures/objective-c",
+  "corpusDir": "/tmp/objc-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:objective-c",
+        "wallTimeMs": 310.448368,
+        "userCpuMs": 293.429,
+        "systemCpuMs": 201.259,
+        "peakRssBytes": 262692864,
+        "rssDeltaBytes": 220782592,
+        "databaseBytes": null,
+        "files": 4,
+        "symbols": 34,
+        "relationships": 39,
+        "filesPerSecond": 12.884590200197154,
+        "symbolsPerSecond": 109.51901670167581,
+        "relationshipsPerSecond": 125.62475445192224
+      },
+      "symbols": 34,
+      "relationships": 39
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:objective-c",
+        "wallTimeMs": 208.312258,
+        "userCpuMs": 994.839,
+        "systemCpuMs": 79.029,
+        "peakRssBytes": 332472320,
+        "rssDeltaBytes": 69779456,
+        "databaseBytes": null,
+        "files": 7,
+        "symbols": 100,
+        "relationships": 333,
+        "filesPerSecond": 33.60339937364607,
+        "symbolsPerSecond": 480.0485624806582,
+        "relationshipsPerSecond": 1598.5617130605917
+      },
+      "symbols": 100,
+      "relationships": 333
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.941Z",
+    "contentSha256": "9cdd2bad99d742e2265cb7be54961db0387c31a9283520274f28dc167d93dce3"
+  }
+}

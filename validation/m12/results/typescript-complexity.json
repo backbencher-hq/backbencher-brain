@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:typescript",
+  "fixtureDir": "validation/m12/fixtures/typescript",
+  "corpusDir": "/tmp/bb-ts-sample-dir",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:typescript",
+        "wallTimeMs": 228.148528,
+        "userCpuMs": 382.726,
+        "systemCpuMs": 117.767,
+        "peakRssBytes": 235954176,
+        "rssDeltaBytes": 194240512,
+        "databaseBytes": null,
+        "files": 5,
+        "symbols": 67,
+        "relationships": 105,
+        "filesPerSecond": 21.915547927620203,
+        "symbolsPerSecond": 293.66834223011074,
+        "relationshipsPerSecond": 460.2265064800243
+      },
+      "symbols": 67,
+      "relationships": 105
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:typescript",
+        "wallTimeMs": 32206.068353,
+        "userCpuMs": 46877.749,
+        "systemCpuMs": 2708.748,
+        "peakRssBytes": 789700608,
+        "rssDeltaBytes": 340852736,
+        "databaseBytes": null,
+        "files": 399,
+        "symbols": 26513,
+        "relationships": 100594,
+        "filesPerSecond": 12.38896954532586,
+        "symbolsPerSecond": 823.2299487599613,
+        "relationshipsPerSecond": 3123.448627675463
+      },
+      "symbols": 26513,
+      "relationships": 100594
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.111Z",
+    "contentSha256": "a666dc7ecf56a6c1b532c2a183c18e82060292aad942134d5139465ef40f4369"
+  }
+}

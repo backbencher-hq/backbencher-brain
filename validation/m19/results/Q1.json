@@ -1,0 +1,48 @@
+{
+  "issue": "M19.Q1",
+  "code": "Q1",
+  "tool": "search + semantic retrieval at scale",
+  "title": "retrieval at scale - latency budgets + scan-cap honesty on giant index",
+  "verified": true,
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "measured": {
+    "repo": "intellij-community",
+    "symbols": 1071964,
+    "machine": {
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+      "ramGb": 15.5
+    },
+    "symbolSearchMs": {
+      "median": 433,
+      "p95": 682,
+      "runs": 25
+    },
+    "contentSearchMatchedMs": {
+      "median": 59,
+      "p95": 1982,
+      "runs": 5
+    },
+    "contentSearchMissMs": 161,
+    "semanticFallback": {
+      "method": "keyword-fallback",
+      "reason": "no-matching-model-embeddings",
+      "ms": 1441
+    }
+  },
+  "negatives": [
+    "Latency is this machine's number; not portable.",
+    "Semantic vector mode has 0 embeddings on this index (S3 bounded them off); the fallback path is what Q1 verifies, real vector recall at scale is Q2-with-embeddings scope.",
+    "Top-hit presence is asserted for verified names, not full-repo behavioral recall.",
+    "Content search on a giant corpus bounds substring phases at PHASE_CAP=2000 candidates; a no-match text query is a single bounded full scan (~6-7s on 1M symbols, measured) and is recorded honestly rather than hidden."
+  ],
+  "generatedAt": "2026-08-26T17:11:51.149Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.365Z",
+    "contentSha256": "8600a7b147db4358ddacdb247ac1f9271e72073c0d2a8838b77b5a8eb9a633d9"
+  }
+}

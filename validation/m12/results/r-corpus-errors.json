@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_corpus_parse_errors",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-r.wasm",
+    "sha256": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6"
+  },
+  "repos": [
+    {
+      "repo": "testthat",
+      "revision": "09dcd88",
+      "trackedRFiles": 266,
+      "linesOfCode": 21932,
+      "symbols": 1625,
+      "relationships": 5913,
+      "filesWithParseError": 1
+    },
+    {
+      "repo": "Matrix",
+      "revision": "d598862",
+      "trackedRFiles": 80,
+      "linesOfCode": 29334,
+      "symbols": 3716,
+      "relationships": 8217,
+      "filesWithParseError": 0
+    },
+    {
+      "repo": "dplyr",
+      "revision": "d5e94e7",
+      "trackedRFiles": 195,
+      "linesOfCode": 39535,
+      "symbols": 3517,
+      "relationships": 6891,
+      "filesWithParseError": 0
+    },
+    {
+      "repo": "shiny",
+      "revision": "8184460",
+      "trackedRFiles": 276,
+      "linesOfCode": 50497,
+      "symbols": 3484,
+      "relationships": 10099,
+      "filesWithParseError": 1
+    },
+    {
+      "repo": "ggplot2",
+      "revision": "313d090",
+      "trackedRFiles": 357,
+      "linesOfCode": 65252,
+      "symbols": 3963,
+      "relationships": 9891,
+      "filesWithParseError": 0
+    }
+  ],
+  "totals": {
+    "trackedRFiles": 1174,
+    "symbols": 16305,
+    "relationships": 41011,
+    "filesWithParseError": 2
+  },
+  "note": "Every tracked .R/.r file of every pinned corpus repo, parsed with the shipped grammar. The two remaining parse-error files are CORRECT failures, not defects: shiny/inst/app_template/app.R is a Go text/template file that ships inside the shiny package and is not R, and testthat's tests/.../test-error-1.R is a deliberate syntax-error fixture. Before the hex-float grammar fix Matrix reported 12 error nodes across 4 files.",
+  "currentCommit": "0dc5d2f5424cba39266faa983973550a84fc3624",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T00:34:45.279Z",
+    "contentSha256": "5e72b07c45608c9974a5ec985a2f11a6f8ee24f25a11c1b6ece0ea4748b2e517"
+  }
+}

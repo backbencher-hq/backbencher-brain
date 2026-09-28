@@ -1,0 +1,123 @@
+.TH BB 1 "September 2026" "bb 0.3.0" "User Commands"
+.SH NAME
+bb \- Backbencher Brain, universal code intelligence for 40+ languages
+.SH SYNOPSIS
+.B bb
+[\fIoptions\fR] [\fIcommand\fR]
+.SH DESCRIPTION
+.B bb
+indexes a codebase into a local knowledge base (AST, symbols, embeddings)
+and serves it to humans and AI agents: keyword and semantic search, question
+answering over the index, health reporting, and an MCP server that editors
+and agent hosts can connect to.
+.PP
+Embedding vectors make semantic search (\fIbb_search\fR, \fIbb_ask\fR) much
+more precise. Without a configured embedding provider, semantic search falls
+back to local word vectors, which are deliberately weaker; both kinds of
+vectors are stored separately, labeled by producing model, and never compared
+across vector spaces.
+.SH COMMANDS
+.TP
+.B tool
+Run one of the public tools with JSON arguments (the MCP surface, also usable
+from scripts).
+.TP
+.BI index " dir"
+Index a project. The first interactive run offers embedding setup when no
+provider is configured yet; the wizard prompts only once (an explicit skip is
+remembered). Re-run with
+.B \-\-force
+after changing the embedding model so stored vectors are rebuilt.
+.TP
+.B setup
+Configure the embedding provider interactively: pick a prefilled free
+provider or a custom OpenAI-compatible endpoint, paste the API key (input is
+hidden), the key is validated with one live /embeddings call before it is
+saved, and the config is written with permissions 0600.
+.TP
+.B setup show
+Print the effective embedding configuration: every precedence tier (env,
+global, project), the winning tier, and the key as a last-four fingerprint
+only. The full key is never displayed. Exits 1 when nothing is configured.
+.TP
+.B doctor
+Diagnose embedding setup and index consistency from real local state (config
+tiers, file permissions, and the models actually stored in the project
+index). Every finding names the exact fix command. Read-only. Exits 1 when a
+hard finding exists, for example a model mismatch between configuration and
+index.
+.TP
+.B doctor \-\-fix
+Repair config file permissions to 0600 only. This is the single mutating arm
+of doctor: every change is printed, and everything else (keys, config
+content, index) is never modified.
+.TP
+.BI search " query"
+Search the index (keyword and semantic modes).
+.TP
+.BI health " [dir]"
+Index health and freshness.
+.TP
+.BI onboard " [dir]"
+Write the bb tools guidance section into
+.I <dir>/AGENTS.md
+so an agent host discovers the bb tools without being told. The section is
+generated from the tool registry (it can never name a tool that does not
+exist), and writing is idempotent: only the block between the
+.B bb:onboard
+markers is replaced, everything else in the file is preserved.
+.B \-\-check
+reports drift or ghost tool names and exits 1 without writing;
+.B \-\-print
+shows the generated section; 
+.B \-\-file
+chooses another guide file.
+.TP
+.B mcp
+Start the MCP server over stdio for Claude Code, Cursor, VS Code, and other
+MCP hosts.
+.TP
+.B version
+Print the bb version (same as
+.B \-v
+and
+.B \-\-version
+).
+.TP
+.B help
+Show help for any command.
+.SH OPTIONS
+.TP
+.BR \-v ", " \-\-version
+Output the version number.
+.TP
+.BR \-h ", " \-\-help
+Display help for the command.
+.SH EMBEDDING SETUP
+Configuration precedence is: environment variables
+.RB ( BB_EMBEDDING_BASE_URL ,
+.BR BB_EMBEDDING_API_KEY ,
+.BR BB_EMBEDDING_MODEL ),
+then the global config
+.B ~/.bb/config.json
+(written by
+.BR bb\ setup ),
+then the project file
+.BR bb.json .
+The config file holds an API key, so it is written with permissions 0600; if
+it is ever more open, `bb doctor` warns and `bb doctor --fix` repairs the
+permissions. Free-tier providers are offered in the wizard (OpenRouter,
+NVIDIA NIM), and any OpenAI-compatible /embeddings endpoint can be used as a
+custom provider. After adding or changing a model, refresh stored vectors
+with `bb index --force`.
+.SH EXIT STATUS
+.TP
+.B 0
+Success, or doctor found only warnings (no hard finding).
+.TP
+.B 1
+Error, or a hard finding exists (for example: nothing configured, or the
+index was built with a different embedding model than the configuration).
+.SH SEE ALSO
+The repository README and EMBEDDINGS.md document setup, diagnostics, and the
+honesty rules in full.

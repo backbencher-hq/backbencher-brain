@@ -1,0 +1,2572 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/typescript/ \u2014 manual audit of the C#-family contract",
+  "facts": [
+    {
+      "id": "sym:base.ts:1:interface:Repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 1,
+      "attributes": {
+        "name": "Repository",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Repository"
+      }
+    },
+    {
+      "id": "sym:base.ts:2:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 2,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method save"
+      }
+    },
+    {
+      "id": "sym:base.ts:5:class:BaseService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 5,
+      "attributes": {
+        "name": "BaseService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService"
+      }
+    },
+    {
+      "id": "sym:base.ts:6:property:prefix",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 6,
+      "attributes": {
+        "name": "prefix",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property prefix"
+      }
+    },
+    {
+      "id": "sym:base.ts:8:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 8,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method format"
+      }
+    },
+    {
+      "id": "sym:base.ts:11:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.ts",
+      "line": 11,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function helper"
+      }
+    },
+    {
+      "id": "rel:base.ts:calls:helper:trim",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "helper",
+      "targetId": "trim",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls helper -> trim"
+      }
+    },
+    {
+      "id": "rel:base.ts:exports:base:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "base",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports base -> Repository"
+      }
+    },
+    {
+      "id": "rel:base.ts:exports:base:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "base",
+      "targetId": "helper",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports base -> helper"
+      }
+    },
+    {
+      "id": "rel:base.ts:contains:Repository:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "Repository",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> save"
+      }
+    },
+    {
+      "id": "rel:base.ts:contains:BaseService:prefix",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "BaseService",
+      "targetId": "prefix",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains BaseService -> prefix"
+      }
+    },
+    {
+      "id": "rel:base.ts:contains:BaseService:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.ts",
+      "sourceId": "BaseService",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains BaseService -> format"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:1:namespace:Example.Domain",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 1,
+      "attributes": {
+        "name": "Example.Domain",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Domain"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:2:enum:Status",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 2,
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:3:enum_member:None",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 3,
+      "attributes": {
+        "name": "None",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum_member None"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:4:enum_member:Active",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 4,
+      "attributes": {
+        "name": "Active",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum_member Active"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:5:enum_member:Inactive",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 5,
+      "attributes": {
+        "name": "Inactive",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum_member Inactive"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:8:interface:Repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 8,
+      "attributes": {
+        "name": "Repository",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Repository"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:9:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 9,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method save"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:10:method:findAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 10,
+      "attributes": {
+        "name": "findAll",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method findAll"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:13:type:UserId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 13,
+      "attributes": {
+        "name": "UserId",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "type UserId"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:16:class:Customer",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 16,
+      "attributes": {
+        "name": "Customer",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Customer"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:17:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 17,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:17:property:id",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 17,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property id"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:17:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 17,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property name"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:20:method:describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 20,
+      "attributes": {
+        "name": "describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method describe"
+      }
+    },
+    {
+      "id": "sym:Domain.ts:25:function:findById",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.ts",
+      "line": 25,
+      "attributes": {
+        "name": "findById",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function findById"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:calls:findById:findAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "findById",
+      "targetId": "findAll",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls findById -> findAll"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:calls:findById:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "findById",
+      "targetId": "find",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls findById -> find"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:exports:Domain:Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Domain",
+      "targetId": "Status",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Status"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:exports:Domain:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Domain",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Repository"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:exports:Domain:UserId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Domain",
+      "targetId": "UserId",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> UserId"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:exports:Domain:Customer",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Domain",
+      "targetId": "Customer",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Customer"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:exports:Domain:findById",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Domain",
+      "targetId": "findById",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> findById"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Example.Domain:Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Example.Domain",
+      "targetId": "Status",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Domain -> Status"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Status:None",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Status",
+      "targetId": "None",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Status -> None"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Status:Active",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Status",
+      "targetId": "Active",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Status -> Active"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Status:Inactive",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Status",
+      "targetId": "Inactive",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Status -> Inactive"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Example.Domain:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Example.Domain",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Domain -> Repository"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Repository:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Repository",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> save"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Repository:findAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Repository",
+      "targetId": "findAll",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> findAll"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Example.Domain:UserId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Example.Domain",
+      "targetId": "UserId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Domain -> UserId"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Example.Domain:Customer",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Example.Domain",
+      "targetId": "Customer",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Domain -> Customer"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Customer:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Customer",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> constructor"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Customer:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Customer",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> id"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Customer:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Customer",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> name"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Customer:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Customer",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> describe"
+      }
+    },
+    {
+      "id": "rel:Domain.ts:contains:Example.Domain:findById",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.ts",
+      "sourceId": "Example.Domain",
+      "targetId": "findById",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Domain -> findById"
+      }
+    },
+    {
+      "id": "sym:Features.ts:5:type:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 5,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "type User"
+      }
+    },
+    {
+      "id": "sym:Features.ts:5:property:id",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 5,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property id"
+      }
+    },
+    {
+      "id": "sym:Features.ts:5:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 5,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property name"
+      }
+    },
+    {
+      "id": "sym:Features.ts:6:enum:Role",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 6,
+      "attributes": {
+        "name": "Role",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Role"
+      }
+    },
+    {
+      "id": "sym:Features.ts:6:enum_member:Admin",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 6,
+      "attributes": {
+        "name": "Admin",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum_member Admin"
+      }
+    },
+    {
+      "id": "sym:Features.ts:6:enum_member:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 6,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum_member User"
+      }
+    },
+    {
+      "id": "sym:Features.ts:8:namespace:Models",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 8,
+      "attributes": {
+        "name": "Models",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Models"
+      }
+    },
+    {
+      "id": "sym:Features.ts:9:interface:Audited",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 9,
+      "attributes": {
+        "name": "Audited",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Audited"
+      }
+    },
+    {
+      "id": "sym:Features.ts:9:property:updatedAt",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 9,
+      "attributes": {
+        "name": "updatedAt",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property updatedAt"
+      }
+    },
+    {
+      "id": "sym:Features.ts:12:function:sealed",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 12,
+      "attributes": {
+        "name": "sealed",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function sealed"
+      }
+    },
+    {
+      "id": "sym:Features.ts:16:class:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 16,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService"
+      }
+    },
+    {
+      "id": "sym:Features.ts:18:property:pattern",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 18,
+      "attributes": {
+        "name": "pattern",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property pattern"
+      }
+    },
+    {
+      "id": "sym:Features.ts:20:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 20,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Features.ts:20:property:store",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 20,
+      "attributes": {
+        "name": "store",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property store"
+      }
+    },
+    {
+      "id": "sym:Features.ts:24:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 24,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method format"
+      }
+    },
+    {
+      "id": "sym:Features.ts:28:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 28,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method save"
+      }
+    },
+    {
+      "id": "sym:Features.ts:34:method:matches",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 34,
+      "attributes": {
+        "name": "matches",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method matches"
+      }
+    },
+    {
+      "id": "sym:Features.ts:39:function:createService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.ts",
+      "line": 39,
+      "attributes": {
+        "name": "createService",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function createService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:extends:UserService:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "extends UserService -> BaseService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:calls:format:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "format",
+      "targetId": "helper",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls format -> helper"
+      }
+    },
+    {
+      "id": "rel:Features.ts:calls:save:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "save",
+      "targetId": "set",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls save -> set"
+      }
+    },
+    {
+      "id": "rel:Features.ts:calls:save:resolve",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "save",
+      "targetId": "resolve",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls save -> resolve"
+      }
+    },
+    {
+      "id": "rel:Features.ts:calls:matches:test",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "matches",
+      "targetId": "test",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls matches -> test"
+      }
+    },
+    {
+      "id": "rel:Features.ts:instantiates:createService:Map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "createService",
+      "targetId": "Map",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates createService -> Map"
+      }
+    },
+    {
+      "id": "rel:Features.ts:instantiates:createService:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "createService",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates createService -> UserService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:overrides:UserService.format:BaseService.format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService.format",
+      "targetId": "BaseService.format",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "overrides UserService.format -> BaseService.format"
+      }
+    },
+    {
+      "id": "rel:Features.ts:imports:Features:./base:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "./base:BaseService",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Features -> ./base:BaseService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:imports:Features:./base:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "./base:helper",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Features -> ./base:helper"
+      }
+    },
+    {
+      "id": "rel:Features.ts:imports:Features:./base:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "./base:Repository",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Features -> ./base:Repository"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:normalize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "normalize",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> normalize"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "User",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> User"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:Role",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "Role",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> Role"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:Audited",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "Audited",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> Audited"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> UserService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:exports:Features:createService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Features",
+      "targetId": "createService",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> createService"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:User:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "User",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> id"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> name"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:Role:Admin",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Role",
+      "targetId": "Admin",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Role -> Admin"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:Role:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Role",
+      "targetId": "User",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Role -> User"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:Models:Audited",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Models",
+      "targetId": "Audited",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Models -> Audited"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:Audited:updatedAt",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "Audited",
+      "targetId": "updatedAt",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Audited -> updatedAt"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:pattern",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "pattern",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> pattern"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> constructor"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:store",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "store",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> store"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> format"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> save"
+      }
+    },
+    {
+      "id": "rel:Features.ts:contains:UserService:matches",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.ts",
+      "sourceId": "UserService",
+      "targetId": "matches",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserService -> matches"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:1:namespace:Example.Negative",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 1,
+      "attributes": {
+        "name": "Example.Negative",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Negative"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:2:class:Counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 2,
+      "attributes": {
+        "name": "Counter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Counter"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:3:property:value",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 3,
+      "attributes": {
+        "name": "value",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property value"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:5:method:increment",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 5,
+      "attributes": {
+        "name": "increment",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method increment"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:9:property:current",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 9,
+      "attributes": {
+        "name": "current",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property current"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:14:function:LocalsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 14,
+      "attributes": {
+        "name": "LocalsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:21:function:ParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 21,
+      "attributes": {
+        "name": "ParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:26:function:BuiltinsAreFiltered",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 26,
+      "attributes": {
+        "name": "BuiltinsAreFiltered",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:36:function:LambdaParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 36,
+      "attributes": {
+        "name": "LambdaParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:43:function:DestructuredParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 43,
+      "attributes": {
+        "name": "DestructuredParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function DestructuredParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.ts:47:function:TemplateStringsAreNotCallTargets",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ts",
+      "line": 47,
+      "attributes": {
+        "name": "TemplateStringsAreNotCallTargets",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function TemplateStringsAreNotCallTargets"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:calls:LambdaParamsAreNotSymbols:map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "map",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> map"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:calls:LambdaParamsAreNotSymbols:join",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "join",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> join"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:calls:LambdaParamsAreNotSymbols:toFixed",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "toFixed",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> toFixed"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:calls:TemplateStringsAreNotCallTargets:LocalsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "TemplateStringsAreNotCallTargets",
+      "targetId": "LocalsAreNotSymbols",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls TemplateStringsAreNotCallTargets -> LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:Counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "Counter",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> Counter"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:LocalsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "LocalsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:ParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "ParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:BuiltinsAreFiltered",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "BuiltinsAreFiltered",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:LambdaParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "LambdaParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:DestructuredParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "DestructuredParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> DestructuredParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:exports:Negative:TemplateStringsAreNotCallTargets",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Negative",
+      "targetId": "TemplateStringsAreNotCallTargets",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> TemplateStringsAreNotCallTargets"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:Counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "Counter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> Counter"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Counter:value",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Counter",
+      "targetId": "value",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Counter -> value"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Counter:increment",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Counter",
+      "targetId": "increment",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Counter -> increment"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Counter:current",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Counter",
+      "targetId": "current",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Counter -> current"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:LocalsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "LocalsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:ParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "ParamsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:BuiltinsAreFiltered",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "BuiltinsAreFiltered",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:LambdaParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "LambdaParamsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:DestructuredParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "DestructuredParamsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> DestructuredParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.ts:contains:Example.Negative:TemplateStringsAreNotCallTargets",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ts",
+      "sourceId": "Example.Negative",
+      "targetId": "TemplateStringsAreNotCallTargets",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Negative -> TemplateStringsAreNotCallTargets"
+      }
+    },
+    {
+      "id": "sym:Services.ts:1:namespace:Example.Service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 1,
+      "attributes": {
+        "name": "Example.Service",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Service"
+      }
+    },
+    {
+      "id": "sym:Services.ts:2:interface:ILogger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 2,
+      "attributes": {
+        "name": "ILogger",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface ILogger"
+      }
+    },
+    {
+      "id": "sym:Services.ts:3:method:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 3,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method log"
+      }
+    },
+    {
+      "id": "sym:Services.ts:6:interface:IRepository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 6,
+      "attributes": {
+        "name": "IRepository",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface IRepository"
+      }
+    },
+    {
+      "id": "sym:Services.ts:7:method:get",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 7,
+      "attributes": {
+        "name": "get",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method get"
+      }
+    },
+    {
+      "id": "sym:Services.ts:8:method:set",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 8,
+      "attributes": {
+        "name": "set",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method set"
+      }
+    },
+    {
+      "id": "sym:Services.ts:11:class:FileLogger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 11,
+      "attributes": {
+        "name": "FileLogger",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class FileLogger"
+      }
+    },
+    {
+      "id": "sym:Services.ts:12:method:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 12,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method log"
+      }
+    },
+    {
+      "id": "sym:Services.ts:17:class:CompositeLogger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 17,
+      "attributes": {
+        "name": "CompositeLogger",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class CompositeLogger"
+      }
+    },
+    {
+      "id": "sym:Services.ts:18:property:loggers",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 18,
+      "attributes": {
+        "name": "loggers",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property loggers"
+      }
+    },
+    {
+      "id": "sym:Services.ts:20:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 20,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Services.ts:24:method:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 24,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method log"
+      }
+    },
+    {
+      "id": "sym:Services.ts:31:class:Service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 31,
+      "attributes": {
+        "name": "Service",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Service"
+      }
+    },
+    {
+      "id": "sym:Services.ts:32:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 32,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Services.ts:32:property:logger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 32,
+      "attributes": {
+        "name": "logger",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property logger"
+      }
+    },
+    {
+      "id": "sym:Services.ts:34:method:get",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 34,
+      "attributes": {
+        "name": "get",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method get"
+      }
+    },
+    {
+      "id": "sym:Services.ts:39:method:set",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.ts",
+      "line": 39,
+      "attributes": {
+        "name": "set",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method set"
+      }
+    },
+    {
+      "id": "rel:Services.ts:implements:FileLogger:ILogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "FileLogger",
+      "targetId": "ILogger",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "implements FileLogger -> ILogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:implements:CompositeLogger:ILogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "CompositeLogger",
+      "targetId": "ILogger",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "implements CompositeLogger -> ILogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:implements:Service:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Service",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "implements Service -> IRepository"
+      }
+    },
+    {
+      "id": "rel:Services.ts:calls:log:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "log",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls log -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:calls:get:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "get",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls get -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:calls:set:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "set",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls set -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:exports:Services:ILogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Services",
+      "targetId": "ILogger",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> ILogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:exports:Services:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Services",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> IRepository"
+      }
+    },
+    {
+      "id": "rel:Services.ts:exports:Services:FileLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Services",
+      "targetId": "FileLogger",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> FileLogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:exports:Services:CompositeLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Services",
+      "targetId": "CompositeLogger",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> CompositeLogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:exports:Services:Service",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Services",
+      "targetId": "Service",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> Service"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Example.Service:ILogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Example.Service",
+      "targetId": "ILogger",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Service -> ILogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:ILogger:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "ILogger",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains ILogger -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Example.Service:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Example.Service",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Service -> IRepository"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:IRepository:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "IRepository",
+      "targetId": "get",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains IRepository -> get"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:IRepository:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "IRepository",
+      "targetId": "set",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains IRepository -> set"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Example.Service:FileLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Example.Service",
+      "targetId": "FileLogger",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Service -> FileLogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:FileLogger:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "FileLogger",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains FileLogger -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Example.Service:CompositeLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Example.Service",
+      "targetId": "CompositeLogger",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Service -> CompositeLogger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:CompositeLogger:loggers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "CompositeLogger",
+      "targetId": "loggers",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains CompositeLogger -> loggers"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:CompositeLogger:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "CompositeLogger",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains CompositeLogger -> constructor"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:CompositeLogger:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "CompositeLogger",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains CompositeLogger -> log"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Example.Service:Service",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Example.Service",
+      "targetId": "Service",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Example.Service -> Service"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Service:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Service",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> constructor"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Service:logger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Service",
+      "targetId": "logger",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> logger"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Service:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Service",
+      "targetId": "get",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> get"
+      }
+    },
+    {
+      "id": "rel:Services.ts:contains:Service:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.ts",
+      "sourceId": "Service",
+      "targetId": "set",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> set"
+      }
+    }
+  ]
+}

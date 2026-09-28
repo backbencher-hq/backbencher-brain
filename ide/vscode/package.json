@@ -1,0 +1,160 @@
+{
+  "name": "bb-lsp-vscode",
+  "displayName": "Backbencher Brain (bb_lsp)",
+  "description": "Honest code navigation from the Backbencher index: hover with evidence tier and staleness, definition, references, symbols, call hierarchy. A complement to your editor's own language servers \u2014 graph, navigation, and evidence only.",
+  "version": "0.1.0",
+  "publisher": "backbencher",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backbencher-hq/backbencher-brain"
+  },
+  "homepage": "https://github.com/backbencher-hq/backbencher-brain/tree/main/ide/vscode",
+  "bugs": "https://github.com/backbencher-hq/backbencher-brain/issues",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:java",
+    "onLanguage:groovy",
+    "onLanguage:kotlin",
+    "onLanguage:scala",
+    "onLanguage:typescript",
+    "onLanguage:javascript",
+    "onLanguage:python"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Backbencher Brain",
+      "properties": {
+        "bbLsp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Explicit path to the bb_lsp server entry (dist/lsp/server.js). Empty = auto-resolve from the workspace's backbencher-brain checkout, then the bundled copy."
+        },
+        "bbLsp.sourceMode": {
+          "type": "string",
+          "enum": [
+            "dist",
+            "source-bun",
+            "auto"
+          ],
+          "default": "auto",
+          "description": "How to launch the server: compiled dist (preferred), from source via bun (declared fallback), or auto (dist if resolvable, else bun source)."
+        },
+        "bbLsp.minServerVersion": {
+          "type": "string",
+          "default": "0.3.0",
+          "description": "Minimum bb_lsp server version this extension accepts (version-compatibility matrix, contract \u00a72 honesty)."
+        },
+        "bbLsp.activationBudgetMs": {
+          "type": "number",
+          "default": 150,
+          "description": "Declared activation budget in milliseconds (contract \u00a77.3). Measured activate()-to-ready time is recorded; a budget miss is a failed gate."
+        },
+        "bbLsp.autoIndexMode": {
+          "type": "string",
+          "enum": [
+            "ask",
+            "never"
+          ],
+          "enumDescriptions": [
+            "Ask for consent before building an index (scale estimate shown first).",
+            "Never index automatically; features stay off until an index exists."
+          ],
+          "default": "ask",
+          "description": "Auto-index behavior on workspace open (issue #500). Indexing never starts without explicit consent."
+        },
+        "bb.panelPlacement": {
+          "type": "string",
+          "enum": [
+            "activeGroup",
+            "beside",
+            "panel",
+            "secondarySidebar"
+          ],
+          "enumDescriptions": [
+            "Open hub/impact/graph panels as a tab in the current editor group, no split (default; the owner's decision).",
+            "Open panels beside the current editor, splitting the group (the pre-M55 behaviour).",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing.",
+            "Not implemented for webview panels: resolves to activeGroup and says so rather than silently doing nothing."
+          ],
+          "default": "activeGroup",
+          "description": "Where Backbencher hub, impact and graph panels open (issue #776). Panels are reused, never duplicated, and informational panels never move the cursor."
+        },
+        "bbLsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "scope": "window"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "bbLsp.restartServer",
+        "title": "Restart bb_lsp server",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.showGraph",
+        "title": "Show graph for symbol",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.showStatusPanel",
+        "title": "Show status (evidence levels, staleness)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.indexNow",
+        "title": "Index this workspace now",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bbLsp.showServerStatus",
+        "title": "Show server status",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.openGraph",
+        "title": "Open in Graph (hover action)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.openImpact",
+        "title": "Impact Analysis (hover action)",
+        "category": "Backbencher"
+      },
+      {
+        "command": "bb.showCallHierarchy",
+        "title": "Show Call Hierarchy (hover action)",
+        "category": "Backbencher"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node ./esbuild-extension.mjs && node ./collect-server-deps.mjs",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.21.5",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "vscode-languageclient": "^9.0.1"
+  }
+}

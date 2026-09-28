@@ -1,0 +1,13 @@
+#!/usr/bin/env node
+// Global `bb` binary — runs the compiled CLI (plain Node, no tsx needed).
+import { runCli } from "../dist/cli/index.js"
+
+try {
+  await runCli(process.argv.slice(2))
+} catch (error) {
+  // Keep CLI failures machine-readable and symmetric with MCP tool errors.
+  // Commander/handler stack traces are implementation detail, not API output.
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`error: ${message}`)
+  process.exitCode = 1
+}

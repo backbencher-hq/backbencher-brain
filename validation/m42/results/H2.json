@@ -1,0 +1,79 @@
+{
+  "issue": "650",
+  "code": "H2",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "ok": true
+  },
+  "negatives": {
+    "planned": 6
+  },
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "files": [
+      "src/main/java/com/demo/App.java",
+      "src/main/java/com/demo/Main2.java"
+    ],
+    "expectations": {
+      "render": {
+        "file": "src/main/java/com/demo/App.java",
+        "declLine": 6,
+        "declText": "public String render()",
+        "callerNames": [
+          "main",
+          "main"
+        ],
+        "callerFiles": [
+          "src/main/java/com/demo/App.java",
+          "src/main/java/com/demo/Main2.java"
+        ],
+        "callerLines": [
+          12,
+          3
+        ],
+        "containerName": "Greeter",
+        "containerLine": 5
+      },
+      "greeter": {
+        "file": "src/main/java/com/demo/App.java",
+        "declLine": 5,
+        "implementsName": "Named",
+        "implementsLine": 2,
+        "instantiatorNames": [
+          "main",
+          "main"
+        ]
+      },
+      "renderDefFile": "src/main/java/com/demo/App.java",
+      "renderDefLine": 6,
+      "greeterDefLine": 5,
+      "differentialFile": "src/main/java/com/demo/App.java"
+    }
+  },
+  "budgets": {
+    "hoverP95Ms": 50
+  },
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
+  "evidenceFile": "H2.json",
+  "generatedAt": "2026-09-20T02:50:20.458Z",
+  "limitations": [
+    "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly.",
+    "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
+    "Warm-budget check uses mean-over-40 as a p95 proxy; the E5 editor leg re-measures with the shared harness.",
+    "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:20.458Z",
+    "contentSha256": "976002aa573fc531f8584bdc8b37293200834fdf68515c19a93a1dc40541e2cf"
+  }
+}

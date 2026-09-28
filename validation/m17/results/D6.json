@@ -1,0 +1,19 @@
+{
+  "issue": "M17.D6",
+  "code": "D6",
+  "tool": "docs",
+  "title": "docs truth: recordRun/history semantics for the website",
+  "verified": true,
+  "checks": 5,
+  "passed": 5,
+  "failed": 0,
+  "negatives": 2,
+  "negativePassed": 2,
+  "generatedAt": "2026-08-24T21:25:09.419Z",
+  "negativeLine": "Checks doc-vs-implementation agreement; does not prove docs describe every analyzer detail.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.354Z",
+    "contentSha256": "347b6cda5621995703d6cdb394794541c97e38efa9ce1924e692ce54bc91c6a3"
+  }
+}

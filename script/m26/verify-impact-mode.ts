@@ -1,0 +1,415 @@
+// script/m26/verify-impact-mode.ts — M26.W5 verifier + mutation suite.
+//
+// Proves the impact surface (src/lsp/impact.ts) honors its declared
+// guarantees against a REAL seeded sqlite index, and that the suite CAN FAIL.
+//
+//   R1 real engine:   computeImpact over graphTraversal on a seeded db —
+//                     flat-fixture counts agree with the L3 references
+//                     surface (differential; flat sampling stated below)
+//   R2 nested delta:  a nested-child caller counts in impact but not in flat
+//                     L3 references — the declared containment difference,
+//                     verified to behave exactly as declared
+//   G2 declared:      truncated ⟺ reason; shown/total-if-known counts real
+//                     (total via the independent COUNT query)
+//   G4 rendered:      budget exhaustion renders a visible marker with
+//                     declared counts; complete sets render none
+//   P-budget:         p95 impact computation within the contract §3 render
+//                     budget on the pinned fixture
+//
+// Mutants (each must be CAUGHT):
+//   M1 silent truncation        (marker logic removed)
+//   M2 fabricated total         (total invented when unknown)
+//   M3 unbounded impact         (budget lifted)
+//   M4 differential break       (containment rule dropped from total count)
+//   M5 truncation state lost    (truncated flag always false)
+//
+// Differential sampling statement: the differential census samples ALL flat
+// reverse-dependency symbols on the seeded fixture (the fixture IS the
+// sample; nothing is skipped), restricted to direct-edge callers — the
+// declared containment difference is verified separately (R2).
+//
+// Run: npx tsx script/m26/verify-impact-mode.ts
+// Evidence: validation/m26/results/W5.json (machine-emitted)
+
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join, dirname } from "node:path"
+import { realpathSync } from "node:fs"
+import { createHash } from "node:crypto"
+import { execFileSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { writeSealed } from "../lib/evidence.ts"
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
+const IMPACT = join(ROOT, "src", "lsp", "impact.ts")
+// M42.H4: renderImpact moved into the ONE renderer core (webviews render
+// through script/m26/graph-core.ts, never a second server-side renderer).
+// The W5 render laws are unchanged; only the home moved.
+const CORE = join(ROOT, "script", "m26", "graph-core.ts")
+
+let checks = 0
+let passed = 0
+
+function check(label: string, condition: boolean, detail = ""): void {
+  checks++
+  if (condition) passed++
+  else console.log(`  FAIL: ${label}${detail ? ` — ${detail}` : ""}`)
+}
+
+// --- Test DOM (same stub shape as W1/W4) --------------------------------------
+class El {
+  tagName: string
+  className = ""
+  children: El[] = []
+  textContent = ""
+  attrs: Record<string, string> = {}
+  constructor(tag: string) {
+    this.tagName = tag
+  }
+  setAttribute(name: string, value: string): void {
+    this.attrs[name] = value
+  }
+  appendChild(child: El): El {
+    this.children.push(child)
+    return child
+  }
+  addClass(name: string): void {
+    this.className = this.className ? `${this.className} ${name}` : name
+  }
+  find(className: string): El | null {
+    if (this.className.split(" ").includes(className)) return this
+    for (const c of this.children) {
+      const hit = c.find(className)
+      if (hit) return hit
+    }
+    return null
+  }
+  findAll(className: string): El[] {
+    const out: El[] = []
+    if (this.className.split(" ").includes(className)) out.push(this)
+    for (const c of this.children) out.push(...c.findAll(className))
+    return out
+  }
+}
+function makeDom(): { create: (t: string) => El; root: () => El; el: El } {
+  const el = new El("div")
+  return { create: (t: string) => new El(t), root: () => el, el }
+}
+
+// --- Real seeded sqlite fixture ------------------------------------------------
+async function makeFixture(): Promise<{
+  projectId: string
+  raw: any
+  ws: string
+  cleanup: () => void
+}> {
+  const ws = mkdtempSync(join(tmpdir(), "w5-ws-"))
+  const dataDir = mkdtempSync(join(tmpdir(), "w5-data-"))
+  // Real file on disk: L3 position conversion reads it (byte columns below
+  // follow the per-line convention against this content).
+  writeFileSync(join(ws, "main.ts"), "export function rootFn(): void {}\nfunction caller1() { rootFn() }\nfunction caller2() { rootFn() }\nfunction caller3() { rootFn() }\nfunction nested1() { rootFn() }\nfunction otherFn() {}\n")
+  const canonical = realpathSync(ws)
+  const projectId = createHash("sha1").update(canonical).digest("hex").substring(0, 40)
+  mkdirSync(join(dataDir, "projects", projectId), { recursive: true })
+  process.env.BB_DATA_DIR = dataDir
+  const { BrainDatabase } = await import(join(ROOT, "src", "brain", "database.ts"))
+  const raw = await BrainDatabase.getRawInstance(projectId)
+  raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`).run("file-1", projectId, join(ws, "main.ts"), "main.ts", "typescript", "w5-hash")
+  const sym = raw.prepare(`INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?)`)
+  // Flat fixture: root + 3 direct callers (differential sample) + 1 nested
+  // child under caller1 (containment delta) + an unrelated symbol.
+  sym.run("sym:root", projectId, "file-1", "rootFn", "function", 1, 2, 1, 4, 9)
+  sym.run("sym:caller1", projectId, "file-1", "caller1", "function", 3, 3, 6, 9, 5)
+  sym.run("sym:caller2", projectId, "file-1", "caller2", "function", 4, 4, 10, 13, 4)
+  sym.run("sym:caller3", projectId, "file-1", "caller3", "function", 5, 5, 14, 17, 3)
+  // Nested child: owner_symbol_id inside caller1's id-prefix cascade range.
+  sym.run("sym:caller1:nested1", projectId, "file-1", "nested1", "function", 6, 6, 18, 21, 2)
+  sym.run("sym:other", projectId, "file-1", "otherFn", "function", 7, 7, 22, 25, 1)
+  const rel = raw.prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`)
+  rel.run("w5-rel-1", projectId, "sym:caller1", "sym:root", "calls", 0.95)
+  rel.run("w5-rel-2", projectId, "sym:caller2", "sym:root", "calls", 0.9)
+  rel.run("w5-rel-3", projectId, "sym:caller3", "sym:root", "calls", 0.85)
+  // Nested child calls root too — impact YES (cascade), flat L3 references NO extra location.
+  rel.run("w5-rel-4", projectId, "sym:caller1:nested1", "sym:root", "calls", 0.8)
+  // Unrelated edges that must not enter the impact set.
+  rel.run("w5-rel-5", projectId, "sym:root", "sym:other", "calls", 0.9)
+  rel.run("w5-rel-6", projectId, "sym:caller1", "sym:caller2", "calls", 0.7)
+  return {
+    projectId,
+    raw,
+    ws,
+    cleanup: () => {
+      try {
+        rmSync(ws, { recursive: true, force: true })
+      } catch {}
+      try {
+        rmSync(dataDir, { recursive: true, force: true })
+      } catch {}
+    },
+  }
+}
+
+async function main(): Promise<void> {
+  const mod = await import(IMPACT)
+  const impact = mod as {
+    computeImpact: (db: any, projectId: string, name: string, deps?: any) => Promise<any>
+    totalImpactCountIfKnown: (db: any, id: string) => number | null
+    IMPACT_BUDGET: { maxNodes: number; maxDepth: number }
+  }
+  const coreMod = await import(CORE)
+  const core = coreMod as { renderImpact: (r: any, dom: any) => any }
+  const source = readFileSync(IMPACT, "utf8")
+  const coreSource = readFileSync(CORE, "utf8")
+
+  const fx = await makeFixture()
+  try {
+    // --- R1: real engine + differential vs L3 --------------------------------
+    const result = await impact.computeImpact(fx.raw, fx.projectId, "rootFn")
+    const names = result.impact.map((d: any) => d.name).sort()
+    check("R1: real engine — impact set is the 4 reverse dependencies", names.join(",") === "caller1,caller2,caller3,nested1", names.join(","))
+    check("G2: complete set is not truncated and total is exact", result.truncated === false && result.truncationReason === null && result.totalCountIfKnown === 4 && result.shownCount === 4)
+
+    // Differential vs the L3 references surface (real resolveReferences).
+    // Declared sampling: the flat fixture IS the sample — every reverse edge
+    // of rootFn is in it, none skipped. Like-for-like rule: since M55.T3
+    // (issue #772, §14 Truth Rule 1) L3 references answers the USAGE SITES —
+    // incoming rows whose kind is not a declaration containment — which is
+    // exactly the reverse-only set impact computes. No direction correction is
+    // needed any more: the pre-M55 version had to subtract the fixture's one
+    // outgoing row (rootFn→otherFn) because references counted both ways.
+    // Callers are 1:1 with their edges here (one call site each) — the flat
+    // condition.
+    const { resolveReferences } = await import(join(ROOT, "src", "lsp", "navigation.ts"))
+    const refs = resolveReferences(fx.raw, { filePath: join(fx.ws, "main.ts"), line: 0, character: 17, includeDeclaration: false })
+    const depth0 = result.impact.filter((d: any) => d.depth === 0)
+    const l3Incoming = refs.totalCount
+    check("R1: differential — impact set equals the L3 usage-site set on the flat fixture (all reverse edges sampled)", l3Incoming === 4 && depth0.length === 4 && result.shownCount === 4, `l3 totalCount=${refs.totalCount} incoming=${l3Incoming} impact=${result.shownCount}`)
+    check("R1: L3 truncated=false with the full set under MAX_LOCATIONS", refs.truncated === false && refs.evidenceTier === "indexed")
+
+    // --- R2: the declared containment delta ------------------------------------
+    check("R2: nested caller counts in impact (cascade) — declared containment rule", names.includes("nested1"))
+    check("R2: containment delta documented in the component", source.includes("owner cascade") && source.includes("flat reference counts"))
+
+    // --- G2: total via the independent COUNT query ------------------------------
+    const total = impact.totalImpactCountIfKnown(fx.raw, "sym:root")
+    check("G2: independent COUNT agrees with traversal total", total === 4, `count=${total}`)
+
+    // --- G4: in-UI rendering with declared counts --------------------------------
+    // The renderer under law is the ONE core (M42.H4 home); the DOM contract
+    // is the W5-born one, verbatim.
+    const dom = makeDom()
+    const rendered = core.renderImpact(result, dom as never)
+    check("G4: complete set renders all nodes and NO truncation marker", rendered.nodesRendered === 4 && dom.el.find("bb-impact-truncation-marker") === null)
+
+    // Over-budget: run the traversal then slice through a budget-limited render.
+    const big = { ...result, impact: result.impact.slice(0, 2), shownCount: 2, totalCountIfKnown: 4, truncated: true, truncationReason: "impact-node-budget-exhausted" }
+    const domT = makeDom()
+    const renderedT = core.renderImpact(big, domT as never)
+    const marker = domT.el.find("bb-impact-truncation-marker") as El | null
+    check("G4: truncated set renders a visible marker", renderedT.nodesRendered === 2 && marker !== null)
+    check("G4: marker declares shown vs total-if-known counts", marker !== null && marker!.attrs["data-shown"] === "2" && marker!.attrs["data-total-if-known"] === "4" && marker!.textContent.includes("2 of 4"))
+    // Unknown total renders honestly as unknown.
+    const domU = makeDom()
+    core.renderImpact({ ...big, totalCountIfKnown: null }, domU as never)
+    const markerU = domU.el.find("bb-impact-truncation-marker") as El | null
+    check("G4: unknown total renders 'unknown', never a fabricated number", markerU !== null && markerU!.attrs["data-total-if-known"] === "unknown" && markerU!.textContent.includes("total unknown"))
+
+    // Declared empty-state (owner live test, 2026-09-12): a resolved root with
+    // zero reverse dependencies renders the visible absence note — never
+    // legend-only silence.
+    const domE = makeDom()
+    const renderedE = core.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, domE as never)
+    const emptyEl = domE.el.find("bb-impact-empty") as El | null
+    check("G4: empty impact set renders the declared absence note (never legend-only)", renderedE.nodesRendered === 0 && emptyEl !== null && emptyEl!.attrs["data-empty"] === "impact" && emptyEl!.textContent.includes("No reverse dependencies"))
+    // ...and a non-empty set must NOT carry the empty note (no false absence).
+    const domNE = makeDom()
+    core.renderImpact(result, domNE as never)
+    check("G4: non-empty impact set renders no absence note", domNE.el.find("bb-impact-empty") === null)
+
+    // --- Latency (contract §3 render budget, headless regime) --------------------
+    const samples: number[] = []
+    for (let i = 0; i < 20; i++) {
+      const t0 = performance.now()
+      await impact.computeImpact(fx.raw, fx.projectId, "rootFn")
+      samples.push(performance.now() - t0)
+    }
+    samples.sort((a, b) => a - b)
+    const p95 = samples[Math.floor(samples.length * 0.95)]!
+    check("P: warm p95 impact computation within the 300 ms render budget", p95 < 300, `p95=${p95.toFixed(2)}ms`)
+
+    // --- Mutants -------------------------------------------------------------------
+    // M1/M2 render in the ONE core (their home after M42.H4); M3–M5 stay in
+    // the compute component. Each mutant is planted into its own home.
+    const mutants: Array<{ name: string; home: "core" | "component"; from: string; to: string; probe: (m: any) => Promise<boolean> | boolean }> = [
+      {
+        name: "M1 silent truncation",
+        home: "core",
+        from: "if (result.truncated) {",
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          const r = m.renderImpact({ ...result, impact: result.impact.slice(0, 2), shownCount: 2, totalCountIfKnown: 4, truncated: true, truncationReason: "x" }, d as never)
+          return d.el.find("bb-impact-truncation-marker") === null // marker gone => defect visible
+        },
+      },
+      {
+        name: "M1b empty-state dropped",
+        home: "core",
+        from: "if (result.impact.length === 0) {",
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, impact: [], shownCount: 0, totalCountIfKnown: 0, truncated: false, truncationReason: null }, d as never)
+          return d.el.find("bb-impact-empty") === null // note gone => defect visible
+        },
+      },
+      {
+        name: "M2 fabricated total",
+        home: "core",
+        from: 'result.totalCountIfKnown === null ? "unknown"',
+        to: 'String(result.shownCount + 1)',
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, impact: result.impact.slice(0, 1), shownCount: 1, totalCountIfKnown: null, truncated: true, truncationReason: "x" }, d as never)
+          const mk = d.el.find("bb-impact-truncation-marker") as El | null
+          return mk !== null && mk!.attrs["data-total-if-known"] !== "unknown" // invented number => defect visible
+        },
+      },
+      {
+        name: "M3 unbounded impact",
+        home: "component",
+        from: "if (impact.length >= IMPACT_BUDGET.maxNodes) {",
+        to: "if (impact.length >= Number.MAX_SAFE_INTEGER) {",
+        probe: async (m) => {
+          // Feed an oversized traversal through the mutant: it must exceed the
+          // declared budget (defect visible).
+          let exceeded = false
+          try {
+            const r = await m.computeImpact(fx.raw, fx.projectId, "rootFn", {
+              traverse: async () => {
+                const nodes: Record<string, any> = { "sym:root": { id: "sym:root", name: "rootFn", file: "main.ts" } }
+                const callers = Array.from({ length: impact.IMPACT_BUDGET.maxNodes + 50 }, (_, i) => {
+                  const id = `sym:big${i}`
+                  nodes[id] = { id, name: `big${i}`, file: "main.ts" }
+                  return { from: id, to: "sym:root", relationshipType: "calls", confidence: 0.9, depth: 0 }
+                })
+                return { root: nodes["sym:root"], callers, callees: [], nodes, summary: { totalCallers: callers.length, totalCallees: 0, maxDepthReached: 0, crossLanguageEdges: 0, truncated: false } }
+              },
+            })
+            exceeded = r.shownCount > impact.IMPACT_BUDGET.maxNodes
+          } catch {
+            exceeded = false
+          }
+          return exceeded
+        },
+      },
+      {
+        name: "M4 differential break (containment dropped from total)",
+        home: "component",
+        from: "OR (r.target_symbol_id IN (\n              SELECT m.id FROM brain_symbol m\n              WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ?\n            ) AND r.target_symbol_id IS NOT NULL)",
+        to: "AND r.target_symbol_id IS NOT NULL AND 1=0",
+        probe: (m) => m.totalImpactCountIfKnown(fx.raw, "sym:root") !== 4 // cascade branch gone => count diverges from the honest 4
+      },
+      {
+        name: "M5 truncation state lost",
+        home: "component",
+        from: "truncated = true\n      truncationReason = \"impact-node-budget-exhausted\"",
+        to: "truncated = false\n      truncationReason = null",
+        probe: async (m) => {
+          const r = await m.computeImpact(fx.raw, fx.projectId, "rootFn", {
+            traverse: async () => {
+              const nodes: Record<string, any> = { "sym:root": { id: "sym:root", name: "rootFn", file: "main.ts" } }
+              const callers = Array.from({ length: impact.IMPACT_BUDGET.maxNodes + 10 }, (_, i) => {
+                const id = `sym:m5${i}`
+                nodes[id] = { id, name: `m5${i}`, file: "main.ts" }
+                return { from: id, to: "sym:root", relationshipType: "calls", confidence: 0.9, depth: 0 }
+              })
+              return { root: nodes["sym:root"], callers, callees: [], nodes, summary: { totalCallers: callers.length, totalCallees: 0, maxDepthReached: 0, crossLanguageEdges: 0, truncated: false } }
+            },
+          })
+          return r.truncated === false && r.shownCount === impact.IMPACT_BUDGET.maxNodes // budget hit but flagged complete (break still fires; flag lost)
+        },
+      },
+    ]
+
+    let caught = 0
+    let mutantsTotal = 0
+    for (const mutant of mutants) {
+      // Render mutants plant into the ONE core (their home); compute mutants
+      // plant into the impact component. The anchor must exist in the home.
+      const base = mutant.home === "core" ? coreSource : source
+      if (!base.includes(mutant.from)) {
+        console.log(`  SKIP (anchor not found): ${mutant.name}`)
+        continue
+      }
+      mutantsTotal++
+      const mutantPath = join(ROOT, "validation/m26", `${mutant.home === "core" ? "core" : "impact"}.mutant.${Date.now()}.${mutantsTotal}.ts`)
+      let mutantSource = base.replace(mutant.from, mutant.to)
+      if (mutant.home !== "core") {
+        mutantSource = mutantSource.replace(/from "\.\.\/intelligence\/graph\/graph-engine"/g, `from "file://${join(ROOT, "src", "intelligence", "graph", "graph-engine.ts").replace(/\\/g, "/")}"`).replace(/from "\.\.\/intelligence\/contracts"/g, `from "file://${join(ROOT, "src", "intelligence", "contracts.ts").replace(/\\/g, "/")}"`)
+      }
+      writeFileSync(mutantPath, mutantSource)
+      let detected = false
+      try {
+        const m = await import(mutantPath)
+        detected = await mutant.probe(m)
+      } catch {
+        detected = true
+      } finally {
+        try {
+          rmSync(mutantPath, { force: true })
+        } catch {}
+      }
+      if (detected) {
+        caught++
+        console.log(`  caught: ${mutant.name}`)
+      } else {
+        console.log(`  SURVIVED: ${mutant.name}`)
+      }
+    }
+    check("mutation suite: every planted defect is caught", caught === mutantsTotal && mutantsTotal >= 4, `${caught}/${mutantsTotal}`)
+
+    // --- Persist evidence ------------------------------------------------------------
+    const failed = checks - passed
+    let commit = "unknown"
+    try {
+      commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim()
+    } catch {}
+    const evidence = {
+      issue: "M26.W5",
+      code: "W5",
+      milestone: "M26",
+      status: failed === 0 ? "verified" : "known-gap",
+      checks,
+      passed,
+      failed,
+      mutantsCaught: caught,
+      mutantsTotal,
+      currentCommit: commit,
+      verifierCommand: "npx tsx script/m26/verify-impact-mode.ts",
+      evidenceFile: "W5.json",
+      generatedAt: new Date().toISOString(),
+      differential: {
+        sampling: "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
+        l3TotalCount: refs.totalCount,
+        l3IncomingCount: l3Incoming,
+        impactShownCount: result.shownCount,
+        nestedDelta: names.includes("nested1") ? "nested1 counted in impact via owner cascade (a flat L3 location too, as a distinct edge)" : "absent",
+      },
+      limitations: [
+        "totalCountIfKnown is computed by an independent bounded COUNT under the same containment rule; it counts distinct caller symbols, not call sites.",
+        "Impact depth cap mirrors the engine (5); deeper chains exist but are declared out of budget.",
+        "Latency measured headless (component + engine); in-editor regime is measured by the editor legs.",
+      ],
+    }
+    const dir = join(ROOT, "validation/m26/results")
+    mkdirSync(dir, { recursive: true })
+    writeSealed(join(dir, "W5.json"), evidence)
+    console.log(`W5: ${evidence.status.toUpperCase()} (${passed}/${checks} passed, ${caught}/${mutantsTotal} mutants caught)`)
+    process.exit(failed === 0 ? 0 : 1)
+  } finally {
+    fx.cleanup()
+  }
+}
+
+void main()

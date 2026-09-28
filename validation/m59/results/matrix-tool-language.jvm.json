@@ -1,0 +1,820 @@
+{
+  "probe": "M59.MTX",
+  "at": "2026-09-19T02:31:08.461Z",
+  "command": "$HOME/.nvm/versions/node/v22.22.1/bin/node $HOME/mcp/backbencher-brain/script/m59/matrix-tool-language.ts --langs=java,scala,kotlin --files=150 --out=validation/m59/results/matrix-tool-language.jvm.json",
+  "commit": "e024766d02ad8c10e2552f3147e189dde5402520",
+  "scope": "bb_graph driven through the REAL MCP handler, on 150-file slices of real corpus repos; bb_analyze cells recorded as output-shape notes; predicate is a NECESSARY condition (lower bound), so \"consistent\" is never proof of correctness",
+  "predicateSelfTest": {
+    "declarationNotCounted": true,
+    "kotlinDeclarationNotCounted": true,
+    "callCounted": true,
+    "qualifiedCallCounted": true,
+    "subwordNotCounted": true,
+    "commentNotCounted": true,
+    "blockCommentNotCounted": true,
+    "mentionCountedByRawSearchButNotAsCall": true,
+    "scalaBraceCallCounted": true,
+    "kotlinBraceCallCounted": true,
+    "optionalCallCounted": true,
+    "keywordSubstringIsNotDeclaration": true,
+    "keywordPrefixedHeadDoesNotSpin": true,
+    "interfaceSubstringIsNotDeclaration": true,
+    "declarationWithCallOnSameLineIsACall": true,
+    "callInsideStringIsNotACall": true,
+    "scalaTypeAppliedBraceCallCounted": true,
+    "scalaTypeAppliedParenCallCounted": true,
+    "genericParenCallCounted": true,
+    "comparisonIsNotATypeArgument": true,
+    "lessThanWithoutSpaceIsNotACall": true,
+    "unterminatedLookingCommentInStringDoesNotSwallowTheFile": true,
+    "templateInterpolationCallCounted": true,
+    "gstringInterpolationCallCounted": true,
+    "commandFormRecognizedForClassification": true
+  },
+  "dataRoot": "/tmp/m59-mtx-data-Rxm21y",
+  "languages": [
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "sliceFingerprint": "f940856c1d252264a6ca416c1e3e5f6b71489f61",
+      "filesIndexed": 150,
+      "indexSeconds": 19,
+      "relationships": {
+        "total": 19053,
+        "zero": 0,
+        "nul": 0,
+        "real": 19053
+      },
+      "relationshipTypes": [
+        {
+          "t": "references",
+          "n": 8539
+        },
+        {
+          "t": "calls",
+          "n": 4331
+        },
+        {
+          "t": "contains",
+          "n": 3330
+        },
+        {
+          "t": "instantiates",
+          "n": 966
+        },
+        {
+          "t": "overrides",
+          "n": 708
+        },
+        {
+          "t": "uses",
+          "n": 695
+        }
+      ],
+      "mutation": {
+        "ran": true,
+        "callee": "liftF",
+        "calleeMultiplicity": 1,
+        "rowId": "1dc5a09a29e7bccaeabcf3a4fb8eac68131d1ba3:rel:1dc5a09a29e7bccaeabcf3a4fb8eac68131d1ba3:scalafix/v3_0_0/input/src/main/scala/fix/ResourceRewrites.scala:ResourceRewrites:11:liftF:calls:12",
+        "file": "scalafix/v3_0_0/input/src/main/scala/fix/ResourceRewrites.scala",
+        "originalLine": 12,
+        "consistentBefore": 116,
+        "consistentDuring": 115,
+        "consistentAfter": 116,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true,
+        "verdict": "caught"
+      },
+      "topCallees": 8
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "sliceFingerprint": "49fec5dcbb79e087ba5e21da45bbb74dcfce8cdc",
+      "filesIndexed": 150,
+      "indexSeconds": 15,
+      "relationships": {
+        "total": 10692,
+        "zero": 0,
+        "nul": 155,
+        "real": 10537
+      },
+      "relationshipTypes": [
+        {
+          "t": "references",
+          "n": 3801
+        },
+        {
+          "t": "calls",
+          "n": 3294
+        },
+        {
+          "t": "contains",
+          "n": 1656
+        },
+        {
+          "t": "uses",
+          "n": 1024
+        },
+        {
+          "t": "instantiates",
+          "n": 401
+        },
+        {
+          "t": "overrides",
+          "n": 373
+        }
+      ],
+      "mutation": {
+        "ran": true,
+        "callee": "current",
+        "calleeMultiplicity": 1,
+        "rowId": "aef61aa081b954211324c304abca621acaa3b27b:rel:aef61aa081b954211324c304abca621acaa3b27b:exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt:insertAndWait:40:current:calls:42",
+        "file": "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt",
+        "originalLine": 42,
+        "consistentBefore": 68,
+        "consistentDuring": 67,
+        "consistentAfter": 68,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true,
+        "verdict": "caught"
+      },
+      "topCallees": 8
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "sliceFingerprint": "51a2102029a3ef31c23d4f4abf7887d5107c55f6",
+      "filesIndexed": 150,
+      "indexSeconds": 25,
+      "relationships": {
+        "total": 37757,
+        "zero": 0,
+        "nul": 0,
+        "real": 37757
+      },
+      "relationshipTypes": [
+        {
+          "t": "calls",
+          "n": 15577
+        },
+        {
+          "t": "references",
+          "n": 11013
+        },
+        {
+          "t": "contains",
+          "n": 5823
+        },
+        {
+          "t": "uses",
+          "n": 3114
+        },
+        {
+          "t": "instantiates",
+          "n": 1260
+        },
+        {
+          "t": "overrides",
+          "n": 492
+        }
+      ],
+      "mutation": {
+        "ran": true,
+        "callee": "ret1",
+        "calleeMultiplicity": 2,
+        "rowId": "6900f1633cb285e717f9784feefbbf135b43a3a1:rel:6900f1633cb285e717f9784feefbbf135b43a3a1:src/jvm/clojure/lang/AFn.java:applyTo:143:ret1:calls:144",
+        "file": "src/jvm/clojure/lang/AFn.java",
+        "originalLine": 144,
+        "consistentBefore": 200,
+        "consistentDuring": 199,
+        "consistentAfter": 200,
+        "wrongBefore": 0,
+        "wrongDuring": 1,
+        "wrongAfter": 0,
+        "caught": true,
+        "verdict": "caught"
+      },
+      "topCallees": 8
+    }
+  ],
+  "cells": [
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "map",
+      "tool": "bb_graph",
+      "sites": 184,
+      "consistent": 184,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 8,
+      "missed": null,
+      "missedUpperBound": 86,
+      "grepMentions": 320,
+      "grepRealCalls": 270,
+      "grepOnlyNoise": 50,
+      "detail": "bb_analyze: nodes=176 callSite fields=320",
+      "missedSamples": [
+        "tests/jvm/src/main/scala/catseffect/examplesplatform.scala:54 — IO(Thread.currentThread().getId()).evalOn(MainThread) map {",
+        "testkit/shared/src/main/scala/cats/effect/testkit/TestConsole.scala:141 — Ref.empty[F, Chain[Op]].map { operationRef =>",
+        "std/shared/src/main/scala/cats/effect/std/Dequeue.scala:73 — F.ref(State.empty[F, A]).map(new BoundedDequeue(capacity, _))"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "flatMap",
+      "tool": "bb_graph",
+      "sites": 30,
+      "consistent": 30,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 17,
+      "missed": null,
+      "missedUpperBound": 235,
+      "grepMentions": 309,
+      "grepRealCalls": 265,
+      "grepOnlyNoise": 44,
+      "detail": "bb_analyze: nodes=74 callSite fields=168",
+      "missedSamples": [
+        "tests/shared/src/main/scala/catseffect/examples.scala:50 — .flatMap(_ => IO.println(\"sadness\"))",
+        "tests/shared/src/main/scala/catseffect/examples.scala:58 — IO(throw new OutOfMemoryError(\"Boom!\")).attempt.flatMap(_ => IO.println(\"sadness\"))",
+        "tests/shared/src/main/scala/catseffect/examples.scala:78 — }.attempt.flatMap(_ => IO.println(\"sadness (attempt)\"))"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "pure",
+      "tool": "bb_graph",
+      "sites": 35,
+      "consistent": 35,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 19,
+      "missed": null,
+      "missedUpperBound": 118,
+      "grepMentions": 227,
+      "grepRealCalls": 153,
+      "grepOnlyNoise": 74,
+      "detail": "bb_analyze: nodes=87 callSite fields=218",
+      "missedSamples": [
+        "tests/shared/src/main/scala/catseffect/examples.scala:150 — Console[IO].errorln(\"boom\").whenA(!r.eq(runtime)) >> IO.pure(ExitCode.Success)",
+        "tests/shared/src/main/scala/catseffect/examples.scala:167 — Console[IO].errorln(\"boom\").whenA(r.eq(runtime)) >> IO.pure(ExitCode.Success)",
+        "tests/js/src/main/scala/catseffect/examplesplatform.scala:110 — def run(args: List[String]): IO[ExitCode] = IO.pure(ExitCode.Success)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "f",
+      "tool": "bb_graph",
+      "sites": 137,
+      "consistent": 137,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 2,
+      "grepMentions": 601,
+      "grepRealCalls": 139,
+      "grepOnlyNoise": 462,
+      "detail": "bb_analyze: nodes=191 callSite fields=299",
+      "missedSamples": [
+        "scalafix/v3_3_0/output/src/main/scala/fix/InterruptibleRewrites.scala:14 — def f[F[_]](implicit F: Sync[F]): F[Unit] = Sync[F].interruptibleMany(IO.unit)",
+        "scalafix/v3_3_0/input/src/main/scala/fix/InterruptibleRewrites.scala:17 — def f[F[_]](implicit F: Sync[F]): F[Unit] = F.interruptible(true)(IO.unit)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "delay",
+      "tool": "bb_graph",
+      "sites": 72,
+      "consistent": 72,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 79,
+      "grepMentions": 178,
+      "grepRealCalls": 151,
+      "grepOnlyNoise": 27,
+      "detail": "bb_analyze: nodes=81 callSite fields=167",
+      "missedSamples": [
+        "std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:219 — F.delay {",
+        "std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:225 — F.delay {",
+        "std/shared/src/main/scala/cats/effect/std/AtomicCell.scala:232 — F.delay(cell).flatMap(f).flatMap {"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "liftF",
+      "tool": "bb_graph",
+      "sites": 116,
+      "consistent": 116,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 1,
+      "missedUpperBound": 1,
+      "grepMentions": 118,
+      "grepRealCalls": 117,
+      "grepOnlyNoise": 1,
+      "detail": "bb_analyze: nodes=87 callSite fields=233",
+      "missedSamples": [
+        "kernel-testkit/shared/src/main/scala/cats/effect/kernel/testkit/TimeT.scala:55 — def liftF[F[_], A](fa: F[A]): TimeT[F, A] ="
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "raiseError",
+      "tool": "bb_graph",
+      "sites": 11,
+      "consistent": 11,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 18,
+      "missed": null,
+      "missedUpperBound": 79,
+      "grepMentions": 99,
+      "grepRealCalls": 90,
+      "grepOnlyNoise": 9,
+      "detail": "bb_analyze: nodes=8 callSite fields=15",
+      "missedSamples": [
+        "tests/shared/src/main/scala/catseffect/examples.scala:96 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))",
+        "tests/shared/src/main/scala/catseffect/examples.scala:105 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))",
+        "tests/shared/src/main/scala/catseffect/examples.scala:114 — IO.raiseError[Unit](new OutOfMemoryError(\"Boom!\"))"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "scala",
+      "repo": "cats-effect",
+      "callee": "mapK",
+      "tool": "bb_graph",
+      "sites": 24,
+      "consistent": 24,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 28,
+      "missed": null,
+      "missedUpperBound": 79,
+      "grepMentions": 105,
+      "grepRealCalls": 103,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=83 callSite fields=146",
+      "missedSamples": [
+        "std/shared/src/main/scala/cats/effect/std/ConsoleCrossPlatform.scala:92 — def mapK[G[_]](f: F ~> G): Console[G]",
+        "std/shared/src/main/scala/cats/effect/std/ConsoleCrossPlatform.scala:124 — Console[F].mapK(EitherT.liftK)",
+        "std/shared/src/main/scala/cats/effect/std/ConsoleCrossPlatform.scala:131 — Console[F].mapK(Kleisli.liftK)"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "assertEquals",
+      "tool": "bb_graph",
+      "sites": 40,
+      "consistent": 40,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 4,
+      "missed": null,
+      "missedUpperBound": 40,
+      "grepMentions": 84,
+      "grepRealCalls": 80,
+      "grepOnlyNoise": 4,
+      "detail": "bb_analyze: nodes=6 callSite fields=45",
+      "missedSamples": [
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/shared/Assert.kt:17 — assertEquals(expected.size, collection.size, \"Count mismatch on ${currentDialectIfAvailabl",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/shared/Assert.kt:18 — assertEquals(expected.toSet(), collection.toSet())",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/shared/Assert.kt:50 — assertEquals(expected.size, actual.size, \"Count mismatch on ${currentDialectIfAvailableTes"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "current",
+      "tool": "bb_graph",
+      "sites": 68,
+      "consistent": 68,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 6,
+      "missedUpperBound": 6,
+      "grepMentions": 114,
+      "grepRealCalls": 74,
+      "grepOnlyNoise": 40,
+      "detail": "bb_analyze: nodes=121 callSite fields=212",
+      "missedSamples": [
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/TestUtils.kt:13 — val currentDialectTest: DatabaseDialect get() = TransactionManager.current().db.dialect",
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/TestUtils.kt:16 — get() = TransactionManager.current().db.dialectMetadata",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt:20 — val currentDialectTest: DatabaseDialect get() = TransactionManager.current().db.dialect"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "forEach",
+      "tool": "bb_graph",
+      "sites": 43,
+      "consistent": 43,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 1,
+      "missed": 3,
+      "missedUpperBound": 3,
+      "grepMentions": 46,
+      "grepRealCalls": 46,
+      "grepOnlyNoise": 0,
+      "detail": "bb_analyze: nodes=78 callSite fields=192",
+      "missedSamples": [
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt:80 — internal suspend fun Query.forEach(block: (ResultRow) -> Unit) {",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt:86 — forEach { block(index++, it) }",
+        "exposed-r2dbc/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/mappers/R2dbcTypeMapping.kt:81 — serviceLoaderMappers.forEach { registry.register(it) }"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "copy",
+      "tool": "bb_graph",
+      "sites": 30,
+      "consistent": 30,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 31,
+      "missed": null,
+      "missedUpperBound": 9,
+      "grepMentions": 62,
+      "grepRealCalls": 39,
+      "grepOnlyNoise": 23,
+      "detail": "bb_analyze: nodes=19 callSite fields=41",
+      "missedSamples": [
+        "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/user/UserService.kt:10 — return user.copy(id = id)",
+        "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/project/ProjectService.kt:10 — return project.copy(id = id)",
+        "samples/exposed-ktor-r2dbc/src/main/kotlin/domain/issue/IssuesTable.kt:69 — return issue.copy(commentCount = result[countExpression].toInt())"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "connection",
+      "tool": "bb_graph",
+      "sites": 8,
+      "consistent": 8,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 8,
+      "missed": null,
+      "missedUpperBound": 24,
+      "grepMentions": 141,
+      "grepRealCalls": 32,
+      "grepOnlyNoise": 109,
+      "detail": "bb_analyze: nodes=5 callSite fields=14",
+      "missedSamples": [
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/TestDB.kt:80 — { POSTGRESQL.connection().replace(\":postgresql:\", \":pgsql:\") },",
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/TestDB.kt:88 — ORACLE.connection(),",
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/TestDB.kt:139 — return Database.connect(connection(), databaseConfig = config, user = user, password = pas"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "execute",
+      "tool": "bb_graph",
+      "sites": 32,
+      "consistent": 32,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 0,
+      "grepMentions": 40,
+      "grepRealCalls": 32,
+      "grepOnlyNoise": 8,
+      "detail": "bb_analyze: nodes=74 callSite fields=131",
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "getString",
+      "tool": "bb_graph",
+      "sites": 29,
+      "consistent": 29,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 4,
+      "missed": null,
+      "missedUpperBound": 8,
+      "grepMentions": 39,
+      "grepRealCalls": 37,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=15 callSite fields=33",
+      "missedSamples": [
+        "samples/exposed-ktor-r2dbc/src/main/kotlin/plugins/Database.kt:19 — val dbName = config.property(\"name\").getString()",
+        "samples/exposed-ktor-r2dbc/src/main/kotlin/plugins/Database.kt:20 — val dbUser = config.property(\"user\").getString()",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/TestUtils.kt:47 — internal fun Row.getString(index: Int): String? = get(index - 1, java.lang.String::class.j"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "kotlin",
+      "repo": "Exposed",
+      "callee": "withConnection",
+      "tool": "bb_graph",
+      "sites": 20,
+      "consistent": 20,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 3,
+      "missed": null,
+      "missedUpperBound": 2,
+      "grepMentions": 25,
+      "grepRealCalls": 22,
+      "grepOnlyNoise": 3,
+      "detail": "bb_analyze: nodes=37 callSite fields=52",
+      "missedSamples": [
+        "exposed-tests/src/main/kotlin/org/jetbrains/exposed/v1/tests/DatabaseTestsBase.kt:102 — withConnection(dbSettings, configure) { database, _ ->",
+        "exposed-r2dbc-tests/src/main/kotlin/org/jetbrains/exposed/v1/r2dbc/tests/R2dbcDatabaseTestsBase.kt:104 — ) = withConnection(dbSettings, configure) { database, testDb ->"
+      ],
+      "truncated": false
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "ret1",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 2,
+      "missed": null,
+      "missedUpperBound": 3237,
+      "grepMentions": 3439,
+      "grepRealCalls": 3437,
+      "grepOnlyNoise": 2,
+      "detail": "bb_analyze: nodes=48 callSite fields=296",
+      "missedSamples": [
+        "src/jvm/clojure/lang/MultiFn.java:508 — Util.ret1(arg10,arg10=null),",
+        "src/jvm/clojure/lang/MultiFn.java:509 — Util.ret1(arg11,arg11=null),",
+        "src/jvm/clojure/lang/MultiFn.java:510 — Util.ret1(arg12,arg12=null),"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "next",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 78,
+      "missed": null,
+      "missedUpperBound": 453,
+      "grepMentions": 789,
+      "grepRealCalls": 653,
+      "grepOnlyNoise": 136,
+      "detail": "bb_analyze: nodes=196 callSite fields=787",
+      "missedSamples": [
+        "src/jvm/clojure/lang/AFn.java:157 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)",
+        "src/jvm/clojure/lang/AFn.java:161 — , (arglist = arglist.next()).first()",
+        "src/jvm/clojure/lang/AFn.java:162 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "first",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 36,
+      "missed": null,
+      "missedUpperBound": 442,
+      "grepMentions": 752,
+      "grepRealCalls": 642,
+      "grepOnlyNoise": 110,
+      "detail": "bb_analyze: nodes=193 callSite fields=787",
+      "missedSamples": [
+        "src/jvm/clojure/lang/AFn.java:154 — return ifn.invoke(Util.ret1(arglist.first(),arglist = null));",
+        "src/jvm/clojure/lang/AFn.java:156 — return ifn.invoke(arglist.first()",
+        "src/jvm/clojure/lang/AFn.java:157 — , Util.ret1((arglist = arglist.next()).first(),arglist = null)"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "intern",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 10,
+      "missed": null,
+      "missedUpperBound": 189,
+      "grepMentions": 435,
+      "grepRealCalls": 389,
+      "grepOnlyNoise": 46,
+      "detail": "bb_analyze: nodes=130 callSite fields=653",
+      "missedSamples": [
+        "src/jvm/clojure/main.java:19 — final static private Symbol CLOJURE_MAIN = Symbol.intern(\"clojure.main\");",
+        "src/jvm/clojure/lang/LispReader.java:1520 — final static public Keyword DEFAULT_FEATURE = Keyword.intern(null, \"default\");",
+        "src/jvm/clojure/lang/LispReader.java:1522 — RT.set(Keyword.intern(null, \"else\"), Keyword.intern(null, \"none\"));"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "invoke",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 225,
+      "missed": null,
+      "missedUpperBound": 154,
+      "grepMentions": 620,
+      "grepRealCalls": 354,
+      "grepOnlyNoise": 266,
+      "detail": "bb_analyze: nodes=241 callSite fields=524",
+      "missedSamples": [
+        "src/jvm/clojure/main.java:27 — REQUIRE.invoke(CLOJURE_MAIN);",
+        "src/jvm/clojure/main.java:28 — LEGACY_REPL.invoke(RT.seq(args));",
+        "src/jvm/clojure/main.java:33 — REQUIRE.invoke(CLOJURE_MAIN);"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "create",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 63,
+      "missed": null,
+      "missedUpperBound": 127,
+      "grepMentions": 422,
+      "grepRealCalls": 327,
+      "grepOnlyNoise": 95,
+      "detail": "bb_analyze: nodes=145 callSite fields=918",
+      "missedSamples": [
+        "src/jvm/clojure/lang/APersistentMap.java:175 — return create(seq.next());",
+        "src/jvm/clojure/lang/APersistentMap.java:243 — return create(seq.next());",
+        "src/jvm/clojure/lang/APersistentMap.java:278 — return MapEntry.create(key, val);"
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "doInvoke",
+      "tool": "bb_graph",
+      "sites": 200,
+      "consistent": 200,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 24,
+      "missed": null,
+      "missedUpperBound": 73,
+      "grepMentions": 299,
+      "grepRealCalls": 273,
+      "grepOnlyNoise": 26,
+      "detail": "bb_analyze: nodes=3 callSite fields=200",
+      "missedSamples": [
+        "src/jvm/clojure/lang/RestFn.java:2965 — return doInvoke(",
+        "src/jvm/clojure/lang/RestFn.java:2986 — return doInvoke(",
+        "src/jvm/clojure/lang/RestFn.java:3007 — return doInvoke("
+      ],
+      "truncated": true,
+      "truncationReason": "caller-site-limit"
+    },
+    {
+      "lang": "java",
+      "repo": "clojure",
+      "callee": "count",
+      "tool": "bb_graph",
+      "sites": 179,
+      "consistent": 179,
+      "wrongLine": 0,
+      "unknownLine": 0,
+      "notCheckable": 0,
+      "unmodelled": 0,
+      "nameMultiplicity": 47,
+      "missed": null,
+      "missedUpperBound": 89,
+      "grepMentions": 457,
+      "grepRealCalls": 268,
+      "grepOnlyNoise": 189,
+      "detail": "bb_analyze: nodes=138 callSite fields=472",
+      "missedSamples": [
+        "src/jvm/clojure/lang/APersistentSet.java:45 — return impl.count();",
+        "src/jvm/clojure/lang/APersistentSet.java:78 — if(m.size() != s1.count())",
+        "src/jvm/clojure/lang/APersistentSet.java:181 — return count();"
+      ],
+      "truncated": false
+    }
+  ],
+  "aggregate": {
+    "cells": 24,
+    "wrongLine": 0,
+    "missed": 10,
+    "missedUpperBound": 5535,
+    "ambiguousCells": 21,
+    "consistent": 2458,
+    "unknownLine": 0,
+    "grepMentions": 9721,
+    "grepRealCalls": 7993,
+    "grepOnlyNoise": 1728,
+    "unmodelled": 0,
+    "graphTimeouts": 0,
+    "languagesWithoutCallSurface": 0
+  }
+}

@@ -1,0 +1,1132 @@
+{
+ "schemaVersion": 1,
+ "truthSource": "haskell-observed-dump.ts (audited against fixtures + FP-family contract)",
+ "source": "validation/m12/fixtures/haskell/*.hs",
+ "facts": [
+  {
+   "id": "symbol:Negative.hs:1:module:Negative",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 1,
+   "attributes": {
+    "name": "Negative",
+    "symbolKind": "module"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "module Negative @ line 1"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:8:function:preludeOnly",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 8,
+   "attributes": {
+    "name": "preludeOnly",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function preludeOnly @ line 8"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:12:function:memberAccess",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 12,
+   "attributes": {
+    "name": "memberAccess",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function memberAccess @ line 12"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:16:function:matchOn",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 16,
+   "attributes": {
+    "name": "matchOn",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function matchOn @ line 16"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:20:function:helper",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 20,
+   "attributes": {
+    "name": "helper",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function helper @ line 20"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:27:function:runner",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 27,
+   "attributes": {
+    "name": "runner",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function runner @ line 27"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:34:function:compareOp",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 34,
+   "attributes": {
+    "name": "compareOp",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function compareOp @ line 34"
+   }
+  },
+  {
+   "id": "symbol:Negative.hs:38:function:isBid",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.hs",
+   "line": 38,
+   "attributes": {
+    "name": "isBid",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function isBid @ line 38"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:references:Negative:Data.Maybe",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "Data.Maybe",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "references Negative -> Data.Maybe"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:references:Negative:Data.List",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "Data.List",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "references Negative -> Data.List"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:preludeOnly",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "preludeOnly",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> preludeOnly"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:memberAccess",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "memberAccess",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> memberAccess"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:matchOn",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "matchOn",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> matchOn"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:helper",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "helper",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> helper"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:runner",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "runner",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> runner"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:compareOp",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "compareOp",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> compareOp"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:contains:Negative:isBid",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "Negative",
+   "targetId": "isBid",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Negative -> isBid"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:1:module:Service",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 1,
+   "attributes": {
+    "name": "Service",
+    "symbolKind": "module"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "module Service @ line 1"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:13:type:User",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 13,
+   "attributes": {
+    "name": "User",
+    "symbolKind": "type"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "type User @ line 13"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:13:constructor:User",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 13,
+   "attributes": {
+    "name": "User",
+    "symbolKind": "constructor"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "constructor User @ line 13"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:13:property:name",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 13,
+   "attributes": {
+    "name": "name",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "property name @ line 13"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:13:property:age",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 13,
+   "attributes": {
+    "name": "age",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "property age @ line 13"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:16:type:OrderBook",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 16,
+   "attributes": {
+    "name": "OrderBook",
+    "symbolKind": "type"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "type OrderBook @ line 16"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:16:constructor:OrderBook",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 16,
+   "attributes": {
+    "name": "OrderBook",
+    "symbolKind": "constructor"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "constructor OrderBook @ line 16"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:16:property:bids",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 16,
+   "attributes": {
+    "name": "bids",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "property bids @ line 16"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:16:property:asks",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 16,
+   "attributes": {
+    "name": "asks",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "property asks @ line 16"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:17:type:Side",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 17,
+   "attributes": {
+    "name": "Side",
+    "symbolKind": "type"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "type Side @ line 17"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:17:constructor:Bid",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 17,
+   "attributes": {
+    "name": "Bid",
+    "symbolKind": "constructor"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "constructor Bid @ line 17"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:17:constructor:Ask",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 17,
+   "attributes": {
+    "name": "Ask",
+    "symbolKind": "constructor"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "constructor Ask @ line 17"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:20:interface:Serializable",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 20,
+   "attributes": {
+    "name": "Serializable",
+    "symbolKind": "interface"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "interface Serializable @ line 20"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:21:method:serialize",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 21,
+   "attributes": {
+    "name": "serialize",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method serialize @ line 21"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:24:class:User",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 24,
+   "attributes": {
+    "name": "User",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "class User @ line 24"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:25:method:serialize",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 25,
+   "attributes": {
+    "name": "serialize",
+    "symbolKind": "method"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "method serialize @ line 25"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:29:function:addBid",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 29,
+   "attributes": {
+    "name": "addBid",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function addBid @ line 29"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:32:function:submitOrder",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 32,
+   "attributes": {
+    "name": "submitOrder",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function submitOrder @ line 32"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:35:function:lookupUser",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 35,
+   "attributes": {
+    "name": "lookupUser",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function lookupUser @ line 35"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:38:function:sumBids",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 38,
+   "attributes": {
+    "name": "sumBids",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function sumBids @ line 38"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:42:function:makeUser",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 42,
+   "attributes": {
+    "name": "makeUser",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function makeUser @ line 42"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:46:function:countDown",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 46,
+   "attributes": {
+    "name": "countDown",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function countDown @ line 46"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:49:function:mutualA",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 49,
+   "attributes": {
+    "name": "mutualA",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function mutualA @ line 49"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:52:function:mutualB",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 52,
+   "attributes": {
+    "name": "mutualB",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function mutualB @ line 52"
+   }
+  },
+  {
+   "id": "symbol:Service.hs:55:function:describe",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Service.hs",
+   "line": 55,
+   "attributes": {
+    "name": "describe",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function describe @ line 55"
+   }
+  },
+  {
+   "id": "rel:Service.hs:references:Service:Data.Map",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "Data.Map",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "references Service -> Data.Map"
+   }
+  },
+  {
+   "id": "rel:Service.hs:references:Service:Data.List",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "Data.List",
+   "attributes": {
+    "type": "references"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "references Service -> Data.List"
+   }
+  },
+  {
+   "id": "rel:Service.hs:implements:User:Show",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "Show",
+   "attributes": {
+    "type": "implements"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "implements User -> Show"
+   }
+  },
+  {
+   "id": "rel:Service.hs:implements:User:Eq",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "Eq",
+   "attributes": {
+    "type": "implements"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "implements User -> Eq"
+   }
+  },
+  {
+   "id": "rel:Service.hs:implements:User:Serializable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "Serializable",
+   "attributes": {
+    "type": "implements"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "implements User -> Serializable"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:submitOrder:describe",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "submitOrder",
+   "targetId": "describe",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls submitOrder -> describe"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:submitOrder:addBid",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "submitOrder",
+   "targetId": "addBid",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls submitOrder -> addBid"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:lookupUser:M.lookup",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "lookupUser",
+   "targetId": "M.lookup",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls lookupUser -> M.lookup"
+   }
+  },
+  {
+   "id": "rel:Service.hs:instantiates:makeUser:User",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "makeUser",
+   "targetId": "User",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "instantiates makeUser -> User"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:countDown:countDown",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "countDown",
+   "targetId": "countDown",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls countDown -> countDown"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:mutualA:mutualB",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "mutualA",
+   "targetId": "mutualB",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls mutualA -> mutualB"
+   }
+  },
+  {
+   "id": "rel:Service.hs:calls:mutualB:mutualA",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "mutualB",
+   "targetId": "mutualA",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls mutualB -> mutualA"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:User",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "User",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> User"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:User:name",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "name",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains User -> name"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:User:age",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "age",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains User -> age"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:OrderBook",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "OrderBook",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> OrderBook"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:OrderBook:bids",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "OrderBook",
+   "targetId": "bids",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains OrderBook -> bids"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:OrderBook:asks",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "OrderBook",
+   "targetId": "asks",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains OrderBook -> asks"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:Side",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "Side",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> Side"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Side:Bid",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Side",
+   "targetId": "Bid",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Side -> Bid"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Side:Ask",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Side",
+   "targetId": "Ask",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Side -> Ask"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:Serializable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "Serializable",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> Serializable"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Serializable:serialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Serializable",
+   "targetId": "serialize",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Serializable -> serialize"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:User:serialize",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "User",
+   "targetId": "serialize",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains User -> serialize"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:addBid",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "addBid",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> addBid"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:submitOrder",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "submitOrder",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> submitOrder"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:lookupUser",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "lookupUser",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> lookupUser"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:sumBids",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "sumBids",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> sumBids"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:makeUser",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "makeUser",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> makeUser"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:countDown",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "countDown",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> countDown"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:mutualA",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "mutualA",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> mutualA"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:mutualB",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "mutualB",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> mutualB"
+   }
+  },
+  {
+   "id": "rel:Service.hs:contains:Service:describe",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Service.hs",
+   "sourceId": "Service",
+   "targetId": "describe",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "contains Service -> describe"
+   }
+  }
+ ]
+}

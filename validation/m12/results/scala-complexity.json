@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:scala",
+  "fixtureDir": "validation/m12/fixtures/scala",
+  "corpusDir": "/tmp/bb-scala-sample-dir",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:scala",
+        "wallTimeMs": 236.010832,
+        "userCpuMs": 258.809,
+        "systemCpuMs": 143.188,
+        "peakRssBytes": 216866816,
+        "rssDeltaBytes": 173588480,
+        "databaseBytes": null,
+        "files": 6,
+        "symbols": 54,
+        "relationships": 57,
+        "filesPerSecond": 25.4225619610544,
+        "symbolsPerSecond": 228.80305764948957,
+        "relationshipsPerSecond": 241.51433863001677
+      },
+      "symbols": 54,
+      "relationships": 57
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:scala",
+        "wallTimeMs": 14951.662166,
+        "userCpuMs": 17931.281,
+        "systemCpuMs": 1295.861,
+        "peakRssBytes": 427888640,
+        "rssDeltaBytes": 16293888,
+        "databaseBytes": null,
+        "files": 400,
+        "symbols": 25008,
+        "relationships": 79260,
+        "filesPerSecond": 26.752878413050148,
+        "symbolsPerSecond": 1672.5899583838952,
+        "relationshipsPerSecond": 5301.082857545886
+      },
+      "symbols": 25008,
+      "relationships": 79260
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (scala3 400-file sample).",
+  "corpusProvenance": {
+    "repository": "scala3",
+    "revision": "18df09c0",
+    "selection": "first 400 tracked compiler/**/*.scala files sorted lexicographically (git ls-files) — deterministic at pinned revision",
+    "fileList": "validation/m12/results/scala-corpus-sample.txt",
+    "repoState": "clean",
+    "grammar": "tree-sitter-scala v0.26.2 (built with tree-sitter-cli 0.22.6 for web-tree-sitter env-import ABI)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.053Z",
+    "contentSha256": "95ea2331d42c40ade92583af37b86b748da95eb10fd229d77a29cf9e96ca138e"
+  }
+}

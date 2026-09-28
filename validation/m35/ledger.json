@@ -1,0 +1,255 @@
+[
+  {
+    "code": "G1",
+    "githubIssue": 579,
+    "tool": "governance",
+    "status": "verified",
+    "scope": "staleness ledger, gates wiring, mutation-based gate self-test",
+    "acceptanceCriteria": [
+      "ledger exists with all M35 issues, synced from evidence, zero fabricated entries",
+      "every M35 gate fails under its planted mutation",
+      "npm run verify runs all M35 gates (machine-checked against package.json)",
+      "evidence envelope persisted in validation/m35/results/"
+    ],
+    "closureRequirements": [
+      "persist G1 evidence with standard envelope",
+      "mutation self-test proves gates can fail",
+      "no auto-pass assertions in any M35 verifier"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-04T01:54:54.947Z",
+      "passed": 52,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "F1",
+    "githubIssue": 580,
+    "tool": "freshness-core",
+    "status": "verified",
+    "scope": "batch row-level staleness resolution for symbols and relationships (O(unique files), not O(rows))",
+    "acceptanceCriteria": [
+      "stale/missing/fresh/fast-path cases behaviorally correct on real fixtures",
+      "batch cost benchmark proves O(unique files) not O(rows)",
+      "gate fails under mutation (missing file marked fresh)"
+    ],
+    "closureRequirements": [
+      "persist F1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-freshness-core.ts",
+      "evidenceFile": "F1.json",
+      "generatedAt": "2026-09-04T01:49:36.076Z",
+      "passed": 29,
+      "failed": 0,
+      "negativeCases": 3
+    }
+  },
+  {
+    "code": "E1",
+    "githubIssue": 581,
+    "tool": "envelope-contract",
+    "status": "verified",
+    "scope": "standard freshness envelope block + per-item stale flag in contracts.ts and executable registry",
+    "acceptanceCriteria": [
+      "contract type + registry schema updated; contract-diff and tool-docs byte-gate green after regeneration",
+      "gate fails when a handler omits the block or remediation drifts from the registered constant",
+      "2+ mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist E1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-envelope-contract.ts",
+      "evidenceFile": "E1.json",
+      "generatedAt": "2026-09-04T01:49:42.208Z",
+      "passed": 37,
+      "failed": 0,
+      "negativeCases": 8
+    }
+  },
+  {
+    "code": "S1",
+    "githubIssue": 582,
+    "tool": "bb_search+bb_analyze",
+    "status": "verified",
+    "scope": "symbol mode and all bb_analyze read modes surface staleness (per-row flag + envelope)",
+    "acceptanceCriteria": [
+      "edit-after-index fixtures: every affected mode flags stale rows with correct envelope counts",
+      "gate fails under mutation (stale row reported fresh; counts wrong)",
+      "freshness resolution under 5% of handler latency, measured and recorded"
+    ],
+    "closureRequirements": [
+      "persist S1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-s1-read-paths.ts",
+      "evidenceFile": "S1.json",
+      "generatedAt": "2026-09-04T01:50:06.529Z",
+      "passed": 74,
+      "failed": 0,
+      "negativeCases": 5
+    }
+  },
+  {
+    "code": "S2",
+    "githubIssue": 583,
+    "tool": "bb_patterns+bb_security+bb_doc",
+    "status": "verified",
+    "scope": "derived findings (patterns, security/taint, doc) surface staleness per finding + envelope",
+    "acceptanceCriteria": [
+      "mutate-after-index fixtures: each tool flags affected findings with correct counts",
+      "gate fails under mutation (stale finding presented fresh)",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist S2 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-s2-derived.ts",
+      "evidenceFile": "S2.json",
+      "generatedAt": "2026-09-04T01:50:16.315Z",
+      "passed": 25,
+      "failed": 0,
+      "negativeCases": 5
+    }
+  },
+  {
+    "code": "S3",
+    "githubIssue": 584,
+    "tool": "bb_visualize+bb_migrate",
+    "status": "verified",
+    "scope": "graph nodes/links and migration steps surface staleness (links inherit worst-of-endpoints)",
+    "acceptanceCriteria": [
+      "stale nodes/links/steps flagged with correct counts in both tools",
+      "gate fails under mutation (stale step unflagged; link inherits wrong)",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist S3 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-s3-graph-migrate.ts",
+      "evidenceFile": "S3.json",
+      "generatedAt": "2026-09-04T01:50:20.171Z",
+      "passed": 23,
+      "failed": 0,
+      "negativeCases": 4
+    }
+  },
+  {
+    "code": "C1",
+    "githubIssue": 585,
+    "tool": "staleness-corpus",
+    "status": "verified",
+    "scope": "mutate-after-index observed-behavior corpus across 3+ language families, baseline-diffed on --check",
+    "acceptanceCriteria": [
+      "corpus proves freshness reporting on every read mode across 3+ languages with precision+recall on flagged rows",
+      "--check fails on any behavior drift; baseline tampering detected",
+      "mutations wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist C1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/staleness-corpus.ts --check",
+      "evidenceFile": "C1.json",
+      "generatedAt": "2026-09-04T01:50:33.769Z",
+      "passed": 99,
+      "failed": 0,
+      "negativeCases": 25
+    }
+  },
+  {
+    "code": "D1",
+    "githubIssue": 586,
+    "tool": "docs-staleness",
+    "status": "verified",
+    "scope": "staleness semantics documented per tool and machine-gated against the registry constant",
+    "acceptanceCriteria": [
+      "all 11 per-tool docs + TOOLS_OVERVIEW updated and passing ALL M31 gates unchanged",
+      "staleness-doc gate fails when a doc drifts from the remediation constant or claims an unimplemented mode",
+      "mutation wired into G1 self-test"
+    ],
+    "closureRequirements": [
+      "persist D1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "8b0f906c14af509ba0611240c4caadb5f45ec660",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-docs-staleness.ts",
+      "evidenceFile": "D1.json",
+      "generatedAt": "2026-09-04T01:50:21.358Z",
+      "passed": 71,
+      "failed": 0,
+      "negativeCases": 16
+    }
+  },
+  {
+    "code": "X1",
+    "githubIssue": 587,
+    "tool": "closure",
+    "status": "verified",
+    "scope": "closure gate: full staleness-truth audit at final HEAD, milestone closes via the gate",
+    "acceptanceCriteria": [
+      "closure fails when a subordinate gate is red, evidence is stale, or wiring is broken (proven by mutation)",
+      "chain green twice consecutively, zero working-tree residue",
+      "all M35 issues closed with evidence comments; milestone closed"
+    ],
+    "closureRequirements": [
+      "persist X1 evidence with standard envelope",
+      "negativeCases > 0",
+      "evidence stamped at commit containing final code"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "c32642d1c47cab7d36f396c2ab81e264484afdd5",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m35/verify-closure.ts",
+      "evidenceFile": "X1.json",
+      "generatedAt": "2026-09-04T01:35:02.789Z",
+      "passed": 68,
+      "failed": 0,
+      "negativeCases": 9
+    }
+  }
+]

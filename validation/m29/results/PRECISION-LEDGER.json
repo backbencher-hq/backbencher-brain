@@ -1,0 +1,351 @@
+{
+  "milestone": "M29.R4",
+  "issue": 539,
+  "generatedBy": "npx tsx script/m29/generate-precision-ledger.ts --write",
+  "inputsHash": "014640e8a0ec3edfb15d00629fc1c9d3c993504f",
+  "inputs": [
+    "validation/m29/results/wave-java.json",
+    "validation/m29/results/wave-python.json",
+    "validation/m29/results/wave-typescript.json",
+    "validation/m29/results/wave-javascript.json",
+    "validation/m29/results/wave-kotlin.json",
+    "validation/m29/results/wave-scala.json",
+    "validation/m29/results/wave-editor-java.json",
+    "validation/m29/results/wave-editor-python.json",
+    "validation/m29/results/wave-editor-typescript.json",
+    "validation/m29/results/wave-editor-javascript.json",
+    "validation/m29/results/wave-editor-kotlin.json",
+    "validation/m29/results/wave-editor-scala.json",
+    "validation/m14/results/M14.0.SPEC.json",
+    "validation/m29/results/wave-1-approval.json",
+    "validation/m29/results/R3.json",
+    "script/m29/wave-protocol.ts",
+    "script/m29/generate-precision-ledger.ts"
+  ],
+  "languages": [
+    {
+      "language": "java",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 8.57,
+          "definition": 0.95,
+          "references": 1.52,
+          "documentSymbol": 1.21,
+          "workspaceSymbol": 0.83,
+          "prepareCallHierarchy": 0.75
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "grails-core",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 2.6,
+        "evidenceTiersPinned": 2,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-java.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-java.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    },
+    {
+      "language": "python",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 6.77,
+          "definition": 0.89,
+          "references": 2.16,
+          "documentSymbol": 1.07,
+          "workspaceSymbol": 0.82,
+          "prepareCallHierarchy": 0.74
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "cython",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 35.2,
+        "evidenceTiersPinned": 5,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-python.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-python.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    },
+    {
+      "language": "typescript",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 9.67,
+          "definition": 1.89,
+          "references": 2.56,
+          "documentSymbol": 2.21,
+          "workspaceSymbol": 1.43,
+          "prepareCallHierarchy": 1.43
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "vue-core",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 46.9,
+        "evidenceTiersPinned": 3,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-typescript.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-typescript.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    },
+    {
+      "language": "javascript",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 8.98,
+          "definition": 1.16,
+          "references": 1.39,
+          "documentSymbol": 2.26,
+          "workspaceSymbol": 1.21,
+          "prepareCallHierarchy": 1.44
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "lodash",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 193.7,
+        "evidenceTiersPinned": 3,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-javascript.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-javascript.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    },
+    {
+      "language": "kotlin",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 8.31,
+          "definition": 1.07,
+          "references": 1.18,
+          "documentSymbol": 1.39,
+          "workspaceSymbol": 1.87,
+          "prepareCallHierarchy": 1.46
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "Exposed",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 39.3,
+        "evidenceTiersPinned": 3,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-kotlin.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-kotlin.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    },
+    {
+      "language": "scala",
+      "claim": "I3",
+      "conformance": {
+        "conformant": true,
+        "detail": "8/8 sections pass"
+      },
+      "features": {
+        "capabilities": true,
+        "hover": true,
+        "evidenceTier": true,
+        "definition": true,
+        "references": true,
+        "documentSymbols": true,
+        "workspaceSymbol": true,
+        "declaredAbsence": true,
+        "callHierarchy": true,
+        "latencyBudget": true
+      },
+      "latency": {
+        "warmP95Ms": {
+          "hover": 9.68,
+          "definition": 1.63,
+          "references": 2.02,
+          "documentSymbol": 2.57,
+          "workspaceSymbol": 1.83,
+          "prepareCallHierarchy": 1.82
+        },
+        "budgetViolations": []
+      },
+      "analyzerPrecision": {
+        "differentialFloor": "scala3",
+        "differentialMissing": 0,
+        "differentialUnexplained": 0,
+        "msPerFile": 12.8,
+        "evidenceTiersPinned": 3,
+        "source": "validation/m14/results/M14.0.SPEC.json (sections e/f/d — M14's evidence, published here)"
+      },
+      "evidence": {
+        "s5": {
+          "path": "validation/m29/results/wave-scala.json",
+          "status": "verified"
+        },
+        "s6": {
+          "path": "validation/m29/results/wave-editor-scala.json",
+          "status": "verified"
+        }
+      },
+      "limitations": []
+    }
+  ],
+  "giantScale": {
+    "present": true,
+    "corpus": {
+      "kind": "synthetic-deterministic",
+      "revision": "f7572f6229314400",
+      "files": 59000
+    },
+    "hoverP95Ms": 4.78,
+    "inEditorHoverP95Ms": 8.13,
+    "coldMedianMs": 882,
+    "tierRatio": {
+      "totalRelationships": 785954,
+      "inferredRatioBeforePct": 42.1,
+      "inferredRatioAfterPct": 0,
+      "fix": "hover honors stored metadata.evidenceClass + structural set at the W4 0.7 floor (script/m29/r5-tier-fixture.ts, mutant-gated)"
+    },
+    "evidence": "validation/m29/results/R3.json"
+  },
+  "stalenessPolicy": "This ledger is machine-regenerated. Any change to the SEMANTIC content of the input evidence (hash above) makes the artifacts stale; the drift gate (script/m29/verify-precision-ledger.ts) fails until regeneration. Declared volatile run metadata is excluded from the hash (commit, currentCommit, generatedAt, bbSeal, workingTreeRelevantChanges) because it changes on every re-run while the evidence itself does not — including it would make byte-identical regeneration un-passable. Hand edits fail byte-identical regeneration. Claim levels are computed by the R1 binding (computeCap) from recorded evidence — they cannot be edited up.",
+  "limitations": [
+    "Differential floors are M14's committed baselines (named repo per language), not the full ecosystem — the numbers are floors, not upper bounds.",
+    "Per-language warm p95 is measured over the wave fixture pack (real index, real server), not over giant-scale workspaces; the scale row (R3) covers the giant regime separately.",
+    "Wave-1 covers the six owner-approved languages; all other analyzers onboard in later waves after M37/M14 (owner decision recorded)."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "issue": "506",
+  "code": "D1-install",
+  "milestone": "M25",
+  "status": "verified",
+  "checks": 21,
+  "passed": 21,
+  "failed": 0,
+  "failures": [],
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "verifierCommand": "npx tsx script/m25/verify-install-docs.ts",
+  "evidenceFile": "D1-install.json",
+  "mutantsCaught": 3,
+  "mutantsTotal": 3,
+  "checksList": [
+    "ok: M: install doc naming a stale VSIX passes",
+    "ok: M: install doc launching without a clean profile passes",
+    "ok: M: install doc omitting the status command passes"
+  ],
+  "generatedAt": "2026-09-20T02:20:52.059Z",
+  "limitations": [
+    "S2/S3 use the pinned test host (same editor core as the documented GUI launch); the GUI variant needs a human at the palette and remains the owner spot-check.",
+    "Artifact identity (VSIX == built bits) is E4's verified gate; this script proves the documented steps execute on a clean profile.",
+    "Runs on this machine's Linux only; macOS/Windows install-doc execution is E7 scope."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:20:52.060Z",
+    "contentSha256": "a82026349100ad5533ac92b108d2fa833221e5d6d652ca825d0f0044f0f90e0f"
+  }
+}

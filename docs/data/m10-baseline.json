@@ -1,0 +1,567 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M10",
+  "issue": 116,
+  "packageVersion": "0.3.0",
+  "runtimeMcp": {
+    "toolNames": [
+      "bb_search",
+      "bb_ask",
+      "bb_health",
+      "bb_patterns",
+      "bb_security",
+      "bb_visualize",
+      "bb_migrate",
+      "bb_analyze",
+      "bb_doc",
+      "bb_edit",
+      "bb_index",
+      "bb_graph",
+      "bb_impact",
+      "bb_cross_language",
+      "bb_annotate",
+      "bb_annotations"
+    ],
+    "descriptors": {
+      "bb_search": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "symbols",
+          "content",
+          "symbol",
+          "file"
+        ],
+        "required": [],
+        "properties": [
+          "mode",
+          "query",
+          "symbolName",
+          "filePath",
+          "limit",
+          "language",
+          "symbolKind",
+          "includeContent",
+          "exact",
+          "caseSensitive",
+          "regex",
+          "offset",
+          "refresh"
+        ],
+        "defaults": {
+          "mode": "symbols",
+          "limit": 15,
+          "includeContent": false,
+          "exact": false,
+          "caseSensitive": false,
+          "regex": false,
+          "offset": 0
+        }
+      },
+      "bb_ask": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "answer"
+        ],
+        "required": [
+          "query"
+        ],
+        "properties": [
+          "query",
+          "limit"
+        ],
+        "defaults": {
+          "limit": 5
+        }
+      },
+      "bb_health": {
+        "mutability": "read",
+        "requiresIndex": false,
+        "modes": [
+          "status",
+          "refresh"
+        ],
+        "required": [],
+        "properties": [
+          "verbose",
+          "history",
+          "limit",
+          "refresh",
+          "force",
+          "wait",
+          "freshness",
+          "sampleSize",
+          "integrity",
+          "includeAnalysisRuns"
+        ],
+        "defaults": {
+          "verbose": false,
+          "history": false,
+          "limit": 20,
+          "refresh": false,
+          "force": false,
+          "wait": true,
+          "freshness": "sampled",
+          "sampleSize": 200,
+          "integrity": false,
+          "includeAnalysisRuns": false
+        }
+      },
+      "bb_patterns": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "orphaned",
+          "all"
+        ],
+        "required": [],
+        "properties": [
+          "scope",
+          "limit",
+          "includeOrphaned",
+          "includeFramework",
+          "includeAntiPatterns",
+          "confidenceThreshold",
+          "history",
+          "recordRun"
+        ],
+        "defaults": {
+          "scope": "all",
+          "limit": 20,
+          "includeOrphaned": true,
+          "includeFramework": true,
+          "includeAntiPatterns": true,
+          "confidenceThreshold": 0.6,
+          "history": false,
+          "recordRun": false
+        }
+      },
+      "bb_security": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "findings"
+        ],
+        "required": [],
+        "properties": [
+          "history",
+          "recordRun",
+          "limit"
+        ],
+        "defaults": {
+          "history": false,
+          "recordRun": false,
+          "limit": 20
+        }
+      },
+      "bb_visualize": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "project",
+          "file",
+          "module",
+          "symbol",
+          "feature"
+        ],
+        "required": [],
+        "properties": [
+          "scope",
+          "target",
+          "maxNodes",
+          "maxLinks",
+          "relationshipTypes",
+          "languages",
+          "format"
+        ],
+        "defaults": {
+          "scope": "project",
+          "maxNodes": 200,
+          "maxLinks": 5000,
+          "format": "text"
+        }
+      },
+      "bb_migrate": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "plan"
+        ],
+        "required": [
+          "targetLanguage"
+        ],
+        "properties": [
+          "symbolName",
+          "symbolNames",
+          "targetLanguage",
+          "format"
+        ],
+        "defaults": {
+          "format": "text"
+        }
+      },
+      "bb_analyze": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "callers",
+          "callees",
+          "trace",
+          "dependencies",
+          "stats",
+          "complexity",
+          "impact",
+          "test_mapping",
+          "test_gaps",
+          "test_impact",
+          "test_quality"
+        ],
+        "required": [
+          "mode"
+        ],
+        "properties": [
+          "mode",
+          "target",
+          "filePath",
+          "limit"
+        ],
+        "defaults": {
+          "limit": 20
+        }
+      },
+      "bb_doc": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "symbol",
+          "file",
+          "module",
+          "feature",
+          "api",
+          "project",
+          "coverage"
+        ],
+        "required": [
+          "mode"
+        ],
+        "properties": [
+          "mode",
+          "target",
+          "format",
+          "audience",
+          "detail",
+          "includeExamples",
+          "includeDiagrams",
+          "includeTests",
+          "limit",
+          "maxTokens"
+        ],
+        "defaults": {
+          "format": "markdown",
+          "audience": "developer",
+          "detail": "standard",
+          "includeExamples": false,
+          "includeDiagrams": false,
+          "includeTests": false,
+          "limit": 20,
+          "maxTokens": 4000
+        }
+      },
+      "bb_edit": {
+        "mutability": "write",
+        "requiresIndex": true,
+        "modes": [
+          "write",
+          "update",
+          "insert",
+          "delete",
+          "refactor"
+        ],
+        "required": [
+          "mode"
+        ],
+        "properties": [
+          "mode",
+          "dryRun",
+          "filePath",
+          "symbolName",
+          "lineStart",
+          "content",
+          "newContent",
+          "targetSymbolName",
+          "position",
+          "newName",
+          "force",
+          "format"
+        ],
+        "defaults": {
+          "dryRun": false,
+          "format": true,
+          "force": false
+        }
+      },
+      "bb_index": {
+        "mutability": "write",
+        "requiresIndex": false,
+        "modes": [
+          "auto",
+          "file",
+          "dir",
+          "post"
+        ],
+        "required": [
+          "path"
+        ],
+        "properties": [
+          "path",
+          "mode"
+        ],
+        "defaults": {
+          "mode": "auto"
+        }
+      },
+      "bb_graph": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "graph"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol",
+          "maxDepth"
+        ],
+        "defaults": {
+          "maxDepth": 3
+        }
+      },
+      "bb_impact": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "impact"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol"
+        ],
+        "defaults": {}
+      },
+      "bb_cross_language": {
+        "mutability": "read",
+        "requiresIndex": true,
+        "modes": [
+          "cross-language"
+        ],
+        "required": [
+          "symbol"
+        ],
+        "properties": [
+          "symbol"
+        ],
+        "defaults": {}
+      },
+      "bb_annotate": {
+        "mutability": "write",
+        "requiresIndex": false,
+        "modes": [
+          "annotate"
+        ],
+        "required": [
+          "symbol",
+          "body"
+        ],
+        "properties": [
+          "symbol",
+          "body",
+          "path",
+          "toolIdentity"
+        ],
+        "defaults": {}
+      },
+      "bb_annotations": {
+        "mutability": "read",
+        "requiresIndex": false,
+        "modes": [
+          "annotate"
+        ],
+        "required": [],
+        "properties": [
+          "symbol",
+          "limit"
+        ],
+        "defaults": {
+          "limit": 50
+        }
+      }
+    },
+    "postBaselineRepairs": {
+      "bb_index": "added M22 (8b71297) — was missing from this frozen baseline until repaired under M35.E1",
+      "bb_visualize.modes": "scope-only since M13.44 (859c0b0) — baseline had stale pre-M13.44 modes until repaired under M35.E1",
+      "aliases": "bb_reindex alias removed under M35.E1 (zero references, zero-alias policy)",
+      "M50.A5 re-freeze (#768)": "re-froze toolNames/descriptors/commands from the live registry so verify-contract-diff + verify-m10-baseline compare against the real surface (M28 graph/impact/cross-language/annotate tools and the M43 bb_search `refresh` option were missing)"
+    }
+  },
+  "cli": {
+    "commands": [
+      "tool",
+      "index",
+      "setup",
+      "show",
+      "doctor",
+      "stats",
+      "status",
+      "projects",
+      "search",
+      "health",
+      "onboard",
+      "mcp",
+      "version",
+      "--version"
+    ],
+    "contracts": {
+      "index": {
+        "required": [
+          "dir"
+        ],
+        "options": [
+          "force"
+        ]
+      },
+      "search": {
+        "required": [
+          "query"
+        ],
+        "options": [
+          "dir",
+          "limit",
+          "language"
+        ]
+      },
+      "health": {
+        "required": [],
+        "options": [
+          "dir",
+          "refresh",
+          "force",
+          "no-wait",
+          "complete",
+          "integrity",
+          "sample-size"
+        ]
+      },
+      "mcp": {
+        "required": [],
+        "options": [
+          "dir"
+        ]
+      },
+      "tool": {
+        "required": [
+          "name"
+        ],
+        "options": [
+          "dir",
+          "args"
+        ]
+      },
+      "--version": {
+        "required": [],
+        "options": []
+      }
+    }
+  },
+  "libraryExports": [
+    "BrainDatabase",
+    "BrainSchema",
+    "ProjectSchema",
+    "ProjectID",
+    "CoreStorage",
+    "ASTEngine",
+    "indexProjectParallel",
+    "BrainTools",
+    "SemanticEngine",
+    "checkFileFreshness",
+    "checkResultsFreshness",
+    "hashFileContent",
+    "getProjectId",
+    "BACKBENCHER_BRAIN_VERSION",
+    "TOOL_DESCRIPTORS",
+    "serializeToolMetadata",
+    "toMcpToolList",
+    "validateToolDescriptors",
+    "ToolDescriptor",
+    "ToolDocumentation",
+    "ToolInputSchema"
+  ],
+  "legacyInventory": {
+    "sentinelCommands": [
+      "status",
+      "patrol",
+      "report",
+      "verify",
+      "hotspots",
+      "traps",
+      "trap_summary",
+      "validate_api",
+      "coverage_summary",
+      "coverage_gaps",
+      "taint_scan",
+      "auth_gate_scan",
+      "pii_report",
+      "cve_report"
+    ],
+    "sentinelSymbols": [
+      "sentinel",
+      "sentinelStatus",
+      "sentinelPatrol",
+      "sentinelReport",
+      "sentinelVerify",
+      "sentinelHotspots",
+      "sentinelTraps",
+      "sentinelTrapSummary",
+      "sentinelValidateApi",
+      "sentinelCoverageSummary",
+      "sentinelCoverageGaps",
+      "sentinelTaintScan",
+      "sentinelAuthGateScan",
+      "sentinelPiiReport",
+      "sentinelCveReport"
+    ],
+    "legacyFacades": [
+      "TestIntelligenceBrainTools",
+      "revolutionaryArchitectureIntelligence",
+      "BrainTools.quickAnswer",
+      "PatternBrainTools.detectPatterns",
+      "CrossLanguageSecurityAnalysis",
+      "CrossLanguageMigrationAssistant"
+    ],
+    "obsoletePersistenceMarkers": [
+      "sentinel_runs",
+      "sentinel_findings",
+      "FROM symbols",
+      "FROM files",
+      "symbol_relationships"
+    ],
+    "claimsToReview": [
+      "WORLD’S FIRST",
+      "revolutionary",
+      "No other tool in the world"
+    ]
+  },
+  "verification": {
+    "requiredCommands": [
+      "npm run typecheck",
+      "npm run build",
+      "npm run docs:verify",
+      "npm run verify"
+    ],
+    "fixture": "script/fixtures/contract-fixture.ts",
+    "requiredVerifier": "script/verify-m10-baseline.ts"
+  }
+}

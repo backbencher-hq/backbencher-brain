@@ -1,0 +1,46 @@
+{
+  "issue": "M55.T2",
+  "code": "T2",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 39,
+  "passed": 39,
+  "failed": 0,
+  "realFailed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "505eaa6bd1709918876e1fa38055b95d9c317f1b",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-call-hierarchy.ts",
+  "evidenceFile": "T2.json",
+  "generatedAt": "2026-09-19T02:53:57.428Z",
+  "fixture": {
+    "root": "$HOME/backbencher-brain/validation/m55/fixtures/t2-workspace",
+    "files": [
+      "src/store.ts",
+      "src/loop.ts",
+      "src/mutual.ts",
+      "src/chain.ts",
+      "src/mid.ts",
+      "src/deep.ts",
+      "src/multi.ts"
+    ],
+    "shapes": [
+      "receiver-qualified same-name call (this.items.get inside Store.get) — artifact, must be dropped and declared",
+      "genuine recursion (loop → loop) — must be kept and labeled recursive",
+      "mutual pair (a ↔ b) — must not error",
+      "3-deep chain (top → mid → deep) — must expand without error",
+      "one caller with two call sites (many → deep ×2) — both ranges reported"
+    ]
+  },
+  "failures": [],
+  "limitations": [
+    "the analyzer stores relationship line_number = 0 for every row today; the call-site positions here are derived from the caller's own source, which is why they are exact. The stored-value path (a future analyzer change) is exercised only as a declared fallback.",
+    "invocation scanning is line-comment aware but not string-literal aware (declared in the component header); every result is bounded by the caller's own declaration range."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-19T02:53:57.430Z",
+    "contentSha256": "0c71cda0f65f441a747c1306440d92b968f5b384bae3721ce3ef66c05e1f0bc2"
+  }
+}

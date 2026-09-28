@@ -1,0 +1,62 @@
+{
+  "issue": "694",
+  "code": "X1",
+  "milestone": "M44",
+  "status": "verified",
+  "checks": 48,
+  "passed": 48,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 7,
+  "suiteExits": {
+    "E5": 0,
+    "E6": 0,
+    "M24": 0,
+    "M25": 0,
+    "M26": 0,
+    "M27": 0,
+    "M28": 0,
+    "M29": 0,
+    "M42-H1": 0,
+    "M42-H2": 0,
+    "M42-H3": 0,
+    "M42-H4": 0,
+    "M42-H5": 0,
+    "M42-H6": 0,
+    "M44-U1": 0,
+    "M44-U3": 0,
+    "M44-U4": 0,
+    "M44-U5": 0,
+    "M44-U6": 0
+  },
+  "editorLegs": {
+    "e5": "validation/m25/results/E5.json (re-run at this HEAD — full suite incl. the M44 hub legs)",
+    "e6": "validation/m25/results/F-CURSOR.json + F-ANTIGRAVITY.json (re-run at this HEAD, terminal gate 26→88); F-WINDSURF blocked-with-reason"
+  },
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "verifierCommand": "npx tsx script/m44/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "launchBar": {
+    "record": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows: EVIDENCE / OWNER / CI-PENDING)",
+    "osMatrix": "linux machine-verified (E7-linux.json); darwin/windows run native on GitHub-hosted runners via .github/workflows/os-matrix.yml; in-repo records blocked-by-design until persisted by owner/CI",
+    "openVsxPublish": "owner-required: OVSX_PAT is owner-held (validation/m25/results/E4-openvsx.json); recorded in LAUNCH-RECORD.md with reason",
+    "knownGapsInventory": "validation/m44/results/KNOWN-GAPS.json — machine-compiled from evidence limitations + closure-time items; every gap fixed or recorded with reason; the §8.5 verdict stays with the owner"
+  },
+  "ownerSpotCheck": {
+    "pack": "validation/m44/results/SPOT-CHECK-PACK.md",
+    "verdictOwner": "owner (ishaq2321)",
+    "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
+  },
+  "generatedAt": "2026-09-20T02:50:47.610Z",
+  "limitations": [
+    "Pass 0 deliberately deviates from the M42 pass order: this closure edits an m25-relevant file (run-fork-e2e.mts), so the editor legs re-run and re-stamp BEFORE the ladder freshness-judges them.",
+    "Pass 1 runs each milestone's governance gate (which re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped inside this single run — evidence re-pinned to the closure commit follow the standing U5/U6 sweep procedure.",
+    "The launch bar's owner-held items (OpenVSX publish token, Windsurf install decision, the §8.5 verdict, darwin/win CI persistence) are recorded with reasons — this gate machine-checks the record's honesty, it cannot execute owner-held credentials.",
+    "Co-agent lanes (M14/M37/M40/M41…) are outside this program's closure; their gates live in their own milestones."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:47.610Z",
+    "contentSha256": "38525d6b8a82a02d7514ce7a8f5642ee84f8a6df381ca2ef5362b5708901f81f"
+  }
+}

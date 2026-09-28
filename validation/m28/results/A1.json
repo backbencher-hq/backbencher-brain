@@ -1,0 +1,40 @@
+{
+  "issue": "M28.A1",
+  "code": "A1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 22,
+  "passed": 22,
+  "failed": 0,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "mutantRecords": [
+    {
+      "name": "A1 mutant: provenance-less write is refused by the schema (NOT NULL author_class)",
+      "caught": true
+    },
+    {
+      "name": "A1 mutant: a write whose claim diverges from storage is caught by the round-trip invariant",
+      "caught": true
+    },
+    {
+      "name": "A1 mutant: silently-truncating reader is caught by the write-claim equality",
+      "caught": true
+    },
+    {
+      "name": "A1 mutant: guessed annotation is caught by the declared-absence check",
+      "caught": true
+    }
+  ],
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
+  "evidenceFile": "A1.json",
+  "generatedAt": "2026-09-20T02:25:01.530Z",
+  "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
+  "failures": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:25:01.531Z",
+    "contentSha256": "01210ccd922a5ff19813a04412d03c1fe0b94ed6eea1f0ec0f72deb04ba66718"
+  }
+}

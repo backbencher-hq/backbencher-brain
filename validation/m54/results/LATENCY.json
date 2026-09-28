@@ -1,0 +1,38 @@
+{
+  "probe": "M54.latency-independent",
+  "milestone": "M54",
+  "at": "2026-09-11T02:31:01.374Z",
+  "commit": "1897a5bb4fd8072b4c48d6122a4c9f5261019ac3",
+  "method": "3 fresh `node bin/bb mcp` launches, strict request→response round-trips, default bb_health, real index",
+  "launches": [
+    {
+      "launch": 1,
+      "initMs": 903,
+      "warmupMs": 604,
+      "measuredMs": 388,
+      "ok": true
+    },
+    {
+      "launch": 2,
+      "initMs": 1002,
+      "warmupMs": 537,
+      "measuredMs": 413,
+      "ok": true
+    },
+    {
+      "launch": 3,
+      "initMs": 862,
+      "warmupMs": 527,
+      "measuredMs": 415,
+      "ok": true
+    }
+  ],
+  "medianMeasuredMs": 413,
+  "baseline": "~37,000ms per-call (user report, pre-M52)",
+  "status": "verified",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.577Z",
+    "contentSha256": "8884bf9ac2143fd4cdd4c97b93ffdbe5c14d785d5ecd99b4ffd6edb676530bae"
+  }
+}

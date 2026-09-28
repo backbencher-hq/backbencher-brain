@@ -1,0 +1,25 @@
+{
+  "issue": "M17.S1",
+  "code": "S1",
+  "tool": "bb_security",
+  "title": "source-only observations never become findings or history",
+  "verified": true,
+  "checks": 3,
+  "passed": 3,
+  "failed": 0,
+  "negatives": 2,
+  "negativePassed": 2,
+  "generatedAt": "2026-09-12T15:48:25.064Z",
+  "negativeLine": "Does NOT prove taint-detection correctness (phantom sinks are an analyzer-domain gap routed to the analyzer milestone); proves only the history/persistence axis.",
+  "measured": {
+    "liveFindings": 26,
+    "unresolvedSources": 35,
+    "histFindings": 26,
+    "badHistory": 0
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.355Z",
+    "contentSha256": "d73f136f848a794d0f9d106266457537f8701835acec673aa21412251b0a0960"
+  }
+}

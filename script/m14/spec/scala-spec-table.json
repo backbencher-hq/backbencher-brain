@@ -1,0 +1,130 @@
+{
+  "language": "scala",
+  "grammar": "tree-sitter-scala.wasm",
+  "declarations": {
+    "class_definition": {
+      "symbol": "class",
+      "heritage": ["extends (extends_clause), implements (with_template_body, trait mixin)"],
+      "payloads": ["typeParameters", "visibility", "annotations", "kdoc"]
+    },
+    "object_definition": {
+      "symbol": "module",
+      "heritage": ["extends", "implements (with_template_body)"],
+      "note": "object Foo {} singleton — symbol emitted (probe-verified)"
+    },
+    "trait_definition": {
+      "symbol": "interface",
+      "heritage": ["extends (interfaces mix via with_template_body)"]
+    },
+    "enum_definition": {
+      "symbol": "enum",
+      "members": "simple_enum_case / full_enum_case (enum_member symbols)"
+    },
+    "given_definition": {
+      "symbol": "constant",
+      "note": "given Ordering[Int] with { ... } — anonymous name given_N, contents attribute to it (probe-verified)"
+    },
+    "type_definition": {
+      "symbol": "type",
+      "note": "typealias Fn = (Int) => String — symbol emitted (probe-verified); RHS type references are gap G7"
+    },
+    "function_definition": {
+      "symbol": "method",
+      "payloads": ["complexity", "kdoc", "annotations", "visibility", "generics", "parameters", "qualified_calls"]
+    },
+    "function_declaration": {
+      "symbol": "method",
+      "note": "abstract trait signatures (def save(item: T): T) — symbol emitted (probe-verified)"
+    },
+    "val_definition": {
+      "symbol": "property"
+    },
+    "var_definition": {
+      "symbol": "variable"
+    },
+    "val_declaration": {
+      "symbol": "property",
+      "note": "abstract val in traits"
+    },
+    "var_declaration": {
+      "symbol": "variable",
+      "note": "abstract var in traits"
+    },
+    "class_parameter": {
+      "symbol": "property",
+      "note": "constructor params with val/var become properties (probe-verified)"
+    },
+    "extension_definition": {
+      "symbol": null,
+      "note": "extension (s: String) { ... } — wrapper is NOT a symbol; inner function_definitions emit as top-level (declared, probe-verified)"
+    },
+    "self_type": {
+      "symbol": null,
+      "note": "self: Service => — pattern flag only; type reference is gap G9"
+    }
+  },
+  "types": [
+    "type_identifier",
+    "stable_type_identifier",
+    "stable_identifier",
+    "generic_type",
+    "compound_type",
+    "infix_type",
+    "tuple_type",
+    "function_type",
+    "parameter_types",
+    "repeated_parameter_type",
+    "lazy_parameter_type",
+    "singleton_type",
+    "annotated_type",
+    "applied_constructor_type",
+    "existential_type",
+    "projected_type",
+    "literal_type",
+    "structural_type",
+    "capturing_type",
+    "match_type",
+    "type_lambda"
+  ],
+  "expressions_requiring_uses_or_calls": [
+    "call_expression",
+    "instance_expression",
+    "generic_function",
+    "field_expression",
+    "infix_expression",
+    "postfix_expression",
+    "prefix_expression",
+    "assignment_expression",
+    "ascription_expression",
+    "interpolated_string_expression",
+    "method_value",
+    "lambda_expression",
+    "tuple_expression",
+    "match_expression",
+    "if_expression",
+    "while_expression",
+    "do_while_expression",
+    "for_expression",
+    "try_expression",
+    "throw_expression",
+    "return_expression",
+    "quote_expression",
+    "splice_expression"
+  ],
+  "statements_affecting_complexity": [
+    "if_expression",
+    "while_expression",
+    "do_while_expression",
+    "match_expression",
+    "for_expression",
+    "try_expression",
+    "catch_clause",
+    "infix_expression (&& / || only)"
+  ],
+  "_notes": [
+    "Scala 3 grammar: enum/given/extension/export are first-class node types; interfaces parse as trait_definition.",
+    "Indexing xs(i) is an apply CALL in Scala (not array syntax) — captured by the call_expression walk (probe-verified).",
+    "Constructor delegation def this() = this(0) emits this->this Calls — the literal-keyword convention, matching java/kotlin.",
+    "Imports: single imports carry the full dotted target; the relationship source stays 'root' (gap G1 — kotlin rewrites to the primary type)."
+  ]
+}

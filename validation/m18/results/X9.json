@@ -1,0 +1,25 @@
+{
+  "issue": "M18.X9",
+  "code": "X9",
+  "tool": "governance",
+  "title": "closure gate: benchmark integrity + planted mutation (extends M17 pattern)",
+  "verified": true,
+  "checks": 7,
+  "passed": 7,
+  "failed": 0,
+  "generatedAt": "2026-08-25T18:59:25.570Z",
+  "measured": {
+    "baseline": "green",
+    "poisonedEvidence": "gate failed",
+    "hollowVerifier": "gate failed",
+    "hardcodedCount": "gate failed",
+    "coverageNeutered": "gate failed",
+    "restored": "green"
+  },
+  "negativeLine": "Proves the gate responds to tampering; does not prove the underlying analyzers are perfect. Coverage-presence check is on reporting-presence (machine-checkable), not a fixed % gate.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.364Z",
+    "contentSha256": "a27984ba2d6ef85e1cc58718adb136607b1438cd356a9bdbd861ec44374c7ea5"
+  }
+}

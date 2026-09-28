@@ -1,0 +1,527 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:kotlin",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "df286a99659c4f14faffaecc6370da8b5bf9dd6809a10e2ad397253b65e58fc9",
+        "bytes": 74072
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "c04f986e25fcafc51b3e6e0a23a9df18974b3dd0adddb4ac16dc8dbb4c10be9d",
+        "bytes": 40095
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "0813b36368eda40195bc61a146ab8a081438e81eb2293dfd18d7ff9fd78daf58",
+        "bytes": 4948
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "8795b053d9d2b9199221263170cbb64bb6b598b645a29e269f9ca029cbfc4aeb",
+        "bytes": 4363
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "804302cf964b52530a11f0d3b1e566d6df7519daa73c3bcc97e84fcc5d86d8fb",
+        "bytes": 106664
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
+        "bytes": 90257
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "77d6732f951502841928fd1be42639acbc6e1aca2ef5f6c778bf7dc485e9b931",
+        "bytes": 120796
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
+        "bytes": 102001
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "f6a242fad3ae91b51567b6ec64ac1aadc1efb1c6cd411e8034c225303eed7498",
+        "bytes": 147431
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
+        "bytes": 119797
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
+        "bytes": 54878
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "95c0f695ba799b7b0da97fc4be20df2faf7672814e862ec050b2ab6b4899ecfe",
+        "bytes": 140683
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "2cf3348934d5e4c950542e6d2cfe0e8c014befd1f45884299ff3c6649fd2b29a",
+        "bytes": 61621
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "684339cfc5e53d4cee9aae44feee0f9225e0b0e3445ce1d0cf900eb64fad6b8b",
+        "bytes": 83171
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
+        "bytes": 49950
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "64a3209636df0cfedd61d155f46ef91466ed405c09d7e0431ef24e2e93c0d506",
+        "bytes": 74260
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "08ad117ce4008609bbdfbf64a9eca45a2b99ea906c5655b197f9a8f92b359370",
+        "bytes": 87903
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
+        "bytes": 82717
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "25ac06734eaab0dbc753963cc40e2e55645a67137a79be7d362316e80b579580",
+        "bytes": 57574
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
+      },
+      "src/brain/database.ts": {
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/kotlin/Extensions.kt": {
+        "sha256": "3a415c8adfa00d8610e74b967e054f7bce46330f7e791c3858d94f546df9241f",
+        "bytes": 981
+      },
+      "validation/m12/fixtures/kotlin/Models.kt": {
+        "sha256": "307b1ba056d93887b144b3e2d1484ebeb8b38bb8bab73567236f27b3364969a3",
+        "bytes": 655
+      },
+      "validation/m12/fixtures/kotlin/UserService.kt": {
+        "sha256": "e40b5d644e6b73c2c4836d993c9f0aa8452b8499955d80456375af9e1082befd",
+        "bytes": 632
+      },
+      "validation/m12/ground-truth/kotlin.json": {
+        "sha256": "9b59083c3f60ca52a2f31a4820c66e948c1ed3ce84aa359148d14c8878101f8c",
+        "bytes": 26356
+      }
+    },
+    "digest": "b23e6d7dc85a1409abdbb270371fd6704f6b9650f6ab8474ae4ed7e78dc1fe62",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-kotlin_tree-sitter-kotlin.wasm",
+      "sha256": "abe1b9bdb746cbd8622250ec71e1a125e7cacda228a3ceb96fd4c24e60008bb9",
+      "bytes": 5837109
+    }
+  },
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/kotlin/ (Models.kt, UserService.kt, Extensions.kt) — hand-audited against Kotlin semantics",
+  "fixtureDir": "validation/m12/fixtures/kotlin",
+  "fixtures": [
+    "Extensions.kt",
+    "Models.kt",
+    "UserService.kt"
+  ],
+  "perFile": {
+    "Extensions.kt": {
+      "symbols": 6,
+      "relationships": 30
+    },
+    "Models.kt": {
+      "symbols": 37,
+      "relationships": 46
+    },
+    "UserService.kt": {
+      "symbols": 7,
+      "relationships": 28
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": false,
+    "metrics": {
+      "expected": 77,
+      "observedResolved": 141,
+      "truePositive": 66,
+      "falsePositive": 75,
+      "falseNegative": 11,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 0.46808510638297873,
+      "recall": 0.8571428571428571,
+      "falsePositiveRate": 0.5319148936170213,
+      "falseNegativeRate": 0.14285714285714285,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": "ast_extraction",
+    "truePositiveIds": [
+      "rel:Extensions.kt:calls:main:describe",
+      "rel:Extensions.kt:calls:main:shout",
+      "rel:Extensions.kt:instantiates:buildUsers:User",
+      "rel:Extensions.kt:instantiates:main:User",
+      "rel:Extensions.kt:instantiates:plus:User",
+      "rel:Extensions.kt:references:root:com.example.models.BaseService",
+      "rel:Extensions.kt:references:root:com.example.models.User",
+      "rel:Models.kt:contains:BaseService:Entity",
+      "rel:Models.kt:contains:BaseService:VERSION",
+      "rel:Models.kt:contains:BaseService:format",
+      "rel:Models.kt:contains:BaseService:prefix",
+      "rel:Models.kt:contains:Entity:id",
+      "rel:Models.kt:contains:Entity:name",
+      "rel:Models.kt:contains:Failure:error",
+      "rel:Models.kt:contains:Repository:save",
+      "rel:Models.kt:contains:Result:Failure",
+      "rel:Models.kt:contains:Result:Loading",
+      "rel:Models.kt:contains:Result:Success",
+      "rel:Models.kt:contains:Success:value",
+      "rel:Models.kt:contains:User:id",
+      "rel:Models.kt:contains:User:name",
+      "rel:Models.kt:extends:Failure:Result",
+      "rel:Models.kt:extends:Loading:Result",
+      "rel:Models.kt:extends:Success:Result",
+      "rel:Models.kt:references:User:com.example.base.BaseService",
+      "rel:UserService.kt:contains:UserService:_store",
+      "rel:UserService.kt:contains:UserService:find",
+      "rel:UserService.kt:contains:UserService:format",
+      "rel:UserService.kt:contains:UserService:save",
+      "rel:UserService.kt:extends:UserService:BaseService",
+      "rel:UserService.kt:implements:UserService:Repository",
+      "rel:UserService.kt:instantiates:createService:UserService",
+      "rel:UserService.kt:overrides:UserService.format:BaseService.format",
+      "rel:UserService.kt:overrides:UserService.save:Repository.save",
+      "rel:UserService.kt:references:UserService:com.example.base.BaseService",
+      "rel:UserService.kt:references:UserService:com.example.models.Repository",
+      "rel:UserService.kt:references:UserService:com.example.models.User",
+      "symbol:Extensions.kt:14:function:shout",
+      "symbol:Extensions.kt:18:function:plus",
+      "symbol:Extensions.kt:20:function:describe",
+      "symbol:Extensions.kt:27:function:buildUsers",
+      "symbol:Extensions.kt:37:function:main",
+      "symbol:Models.kt:11:class:BaseService",
+      "symbol:Models.kt:12:property:prefix",
+      "symbol:Models.kt:13:method:format",
+      "symbol:Models.kt:15:interface:Entity",
+      "symbol:Models.kt:16:property:id",
+      "symbol:Models.kt:17:property:name",
+      "symbol:Models.kt:21:property:VERSION",
+      "symbol:Models.kt:25:class:Result",
+      "symbol:Models.kt:26:class:Success",
+      "symbol:Models.kt:26:property:value",
+      "symbol:Models.kt:27:class:Failure",
+      "symbol:Models.kt:27:property:error",
+      "symbol:Models.kt:28:class:Loading",
+      "symbol:Models.kt:5:class:User",
+      "symbol:Models.kt:5:property:id",
+      "symbol:Models.kt:5:property:name",
+      "symbol:Models.kt:7:interface:Repository",
+      "symbol:Models.kt:8:method:save",
+      "symbol:UserService.kt:10:method:format",
+      "symbol:UserService.kt:12:method:save",
+      "symbol:UserService.kt:17:method:find",
+      "symbol:UserService.kt:20:function:createService",
+      "symbol:UserService.kt:7:class:UserService",
+      "symbol:UserService.kt:8:property:_store"
+    ],
+    "falsePositiveIds": [
+      "rel:Extensions.kt:calls:buildUsers:add",
+      "rel:Extensions.kt:calls:buildUsers:filter",
+      "rel:Extensions.kt:calls:buildUsers:map",
+      "rel:Extensions.kt:calls:buildUsers:startsWith",
+      "rel:Extensions.kt:calls:buildUsers:uppercase",
+      "rel:Extensions.kt:calls:shout:repeat",
+      "rel:Extensions.kt:calls:shout:uppercase",
+      "rel:Extensions.kt:references:Global:Int",
+      "rel:Extensions.kt:references:buildUsers:List",
+      "rel:Extensions.kt:references:buildUsers:User",
+      "rel:Extensions.kt:references:describe:String",
+      "rel:Extensions.kt:references:describe:User",
+      "rel:Extensions.kt:references:plus:User",
+      "rel:Extensions.kt:references:shout:Int",
+      "rel:Extensions.kt:references:shout:String",
+      "rel:Extensions.kt:uses:plus:User",
+      "rel:Extensions.kt:uses:shout:String",
+      "rel:Models.kt:contains:Failure:Failure",
+      "rel:Models.kt:contains:Failure:component1",
+      "rel:Models.kt:contains:Failure:copy",
+      "rel:Models.kt:contains:Failure:equals",
+      "rel:Models.kt:contains:Failure:hashCode",
+      "rel:Models.kt:contains:Failure:toString",
+      "rel:Models.kt:contains:Success:Success",
+      "rel:Models.kt:contains:Success:component1",
+      "rel:Models.kt:contains:Success:copy",
+      "rel:Models.kt:contains:Success:equals",
+      "rel:Models.kt:contains:Success:hashCode",
+      "rel:Models.kt:contains:Success:toString",
+      "rel:Models.kt:contains:User:User",
+      "rel:Models.kt:contains:User:component1",
+      "rel:Models.kt:contains:User:component2",
+      "rel:Models.kt:contains:User:copy",
+      "rel:Models.kt:contains:User:equals",
+      "rel:Models.kt:contains:User:hashCode",
+      "rel:Models.kt:contains:User:toString",
+      "rel:Models.kt:references:BaseService:String",
+      "rel:Models.kt:references:Entity:String",
+      "rel:Models.kt:references:Failure:Throwable",
+      "rel:Models.kt:references:Success:T",
+      "rel:Models.kt:references:User:String",
+      "rel:Models.kt:references:format:String",
+      "rel:Models.kt:references:save:T",
+      "rel:UserService.kt:contains:UserService:UserService",
+      "rel:UserService.kt:references:UserService:MutableMap",
+      "rel:UserService.kt:references:UserService:String",
+      "rel:UserService.kt:references:UserService:User",
+      "rel:UserService.kt:references:createService:UserService",
+      "rel:UserService.kt:references:find:String",
+      "rel:UserService.kt:references:find:User",
+      "rel:UserService.kt:references:format:String",
+      "rel:UserService.kt:references:save:User",
+      "rel:UserService.kt:uses:find:_store",
+      "rel:UserService.kt:uses:format:value",
+      "symbol:Extensions.kt:12:property:DEFAULT_SCALE",
+      "symbol:Models.kt:26:constructor:Success",
+      "symbol:Models.kt:26:method:component1",
+      "symbol:Models.kt:26:method:copy",
+      "symbol:Models.kt:26:method:equals",
+      "symbol:Models.kt:26:method:hashCode",
+      "symbol:Models.kt:26:method:toString",
+      "symbol:Models.kt:27:constructor:Failure",
+      "symbol:Models.kt:27:method:component1",
+      "symbol:Models.kt:27:method:copy",
+      "symbol:Models.kt:27:method:equals",
+      "symbol:Models.kt:27:method:hashCode",
+      "symbol:Models.kt:27:method:toString",
+      "symbol:Models.kt:5:constructor:User",
+      "symbol:Models.kt:5:method:component1",
+      "symbol:Models.kt:5:method:component2",
+      "symbol:Models.kt:5:method:copy",
+      "symbol:Models.kt:5:method:equals",
+      "symbol:Models.kt:5:method:hashCode",
+      "symbol:Models.kt:5:method:toString",
+      "symbol:UserService.kt:7:constructor:UserService"
+    ],
+    "falseNegativeIds": [
+      "rel:Extensions.kt:extends:plus:User",
+      "rel:Extensions.kt:extends:shout:String",
+      "rel:Models.kt:contains:Failure:constructor",
+      "rel:Models.kt:contains:Success:constructor",
+      "rel:Models.kt:contains:User:constructor",
+      "rel:UserService.kt:contains:UserService:constructor",
+      "symbol:Extensions.kt:11:property:DEFAULT_SCALE",
+      "symbol:Models.kt:26:constructor:constructor",
+      "symbol:Models.kt:27:constructor:constructor",
+      "symbol:Models.kt:5:constructor:constructor",
+      "symbol:UserService.kt:7:constructor:constructor"
+    ],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "symbol:Extensions.kt:11:property:DEFAULT_SCALE",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Extensions.kt",
+          "line": 11,
+          "attributes": {
+            "name": "DEFAULT_SCALE",
+            "symbolKind": "property"
+          },
+          "expectedState": "resolved",
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "val DEFAULT_SCALE: Int = 5 (use-site @field:JvmField)"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "symbol:Extensions.kt:12:property:DEFAULT_SCALE",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Extensions.kt",
+          "line": 12,
+          "attributes": {
+            "name": "DEFAULT_SCALE",
+            "symbolKind": "property"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:kotlin",
+      "wallTimeMs": 48.598421,
+      "userCpuMs": 138.506,
+      "systemCpuMs": 15.502,
+      "peakRssBytes": 266653696,
+      "rssDeltaBytes": 4849664,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for kotlin. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.919Z",
+    "contentSha256": "abd4d77ed95ed2c0aa4ffc5cc3134a42547a97abe82c66f6ed42da041ff08173"
+  }
+}
