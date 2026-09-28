@@ -2086,9 +2086,33 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ANONYMOUS default declarations (`export default function () {}`)
         // have no name node — previously dropped entirely, losing the
         // module's main export. Record under the family sentinel "default".
+        //
+        // JD-J14 (M60, 2026-09-27): a NAMED default declaration's export name is
+        // `default`, never the declaration's own name. ECMAScript exports
+        // `export default function fragment(){}` UNDER THE NAME `default`;
+        // `fragment` is a local binding that importers cannot reach, and nothing
+        // named `fragment` is exported at all. Publishing `fragment` therefore
+        // invented a public name that does not exist — and because the local name
+        // IS what a default importer writes (`import fragment from "./fragment.js"`
+        // publishes the leaf `fragment`), the two errors cancelled in the corpus
+        // and the lane read clean. The failure only appears when a consumer asks
+        // the question a graph tool asks: does this module export `fragment`? It
+        // does not, and the analyzer said it did.
+        //
+        // Measured on svelte: 8 rows in one 300-file audit where the target's
+        // exports are (for example) `[fragment]` while the importer is a DEFAULT
+        // import of that module — `export default function fragment()` published
+        // as `fragment` instead of `default`. The local name is kept in metadata
+        // so nothing is lost, exactly as `export { x as default }` already does
+        // with `localName`.
         const n = child.childForFieldName("name")
         foundNamed = true
-        exports.push({ name: n?.text ?? "default", isDefault, range: this.nodeToRange(child) })
+        exports.push({
+          name: isDefault ? "default" : n?.text ?? "default",
+          isDefault,
+          range: this.nodeToRange(child),
+          ...(isDefault && n?.text ? { metadata: { viaDefaultDeclaration: true, localName: n.text } } : {}),
+        })
       } else if (child.type === "lexical_declaration" || child.type === "variable_declaration") {
         for (let j = 0; j < child.namedChildCount; j++) {
           const decl = child.namedChild(j)
