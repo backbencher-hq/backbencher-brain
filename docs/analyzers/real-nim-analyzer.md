@@ -325,10 +325,26 @@ comparable across grammar versions.
 
   | Residual | Count | Adjudication |
   | --- | --- | --- |
-  | `imports` spelling on exotic forms | 4 | **oracle** imprecision: `compiler/[nimblecmd]`, `m9627 / [a, b]` (spaces around the separator), `include … as …`. The analyzer's targets are right in all three; the oracle keeps a raw node's text where the module identity is shorter. Recorded, not fixed — tightening the oracle is worth doing, and it is oracle work |
-  | `uses` for a nested destructuring binding | 1 | **oracle** imprecision: `let (a, (b, c)): (int, (int, int))` binds `a`/`b`/`c` through a NESTED `tuple_deconstruct_declaration`, which the oracle's shadow tracking does not recurse into. The analyzer correctly emits no edge for a local read |
+  | `uses` for a binding form the oracle does not track | 5 | **oracle** imprecision, and now precisely characterised: `tconcepts.nim`/`twrapconcept.nim` (a concept's formal parameter), `templatesinconcepts.nim` (a template parameter), `tstatic_constrained.nim`/`ttupleunpack.nim` (a NESTED destructuring `let (a, (b, c))`). The analyzer suppresses every one of them because the binding is in scope — a concept is a scope frame with its formals shadowing, and a nested `tuple_deconstruct_declaration` binds recursively. The oracle's shadow tracking covers procs and simple declarations only, so it publishes a read of a local. Five instances of one gap |
   | `references -> Rgba8` | 1 | **genuinely ambiguous, unresolved.** `BlenderRgb[Rgba8]` reads as a type argument and the analyzer treats it as one; the enclosing test suggests a value index. Resolving it needs a decision about bracket positions in a non-generic call, not a patch, so it is recorded rather than guessed |
 
+  The import family is now CLEAN over all 3,914 files. Getting there took four
+  corrections, and three of them were the oracle's fault rather than the
+  analyzer's — which is the point of a sweep that reports per-file target sets
+  instead of aggregate counts:
+
+  | Spelling | Oracle published | Analyzer published | Who was right |
+  | --- | --- | --- | --- |
+  | `from std/uri {.all.} as uri2` | `std/uri {.all.} as uri2` | `std/uri` | analyzer — a qualifier and an alias are not part of a module's name |
+  | `import ./m1 {.all.}` | `./m1 {.all.}` | `./m1` | analyzer |
+  | `import m9627 / [a, b]` | `m9627 / [a, b]` | `m9627/a`, `m9627/b` | analyzer — a module LIST is one edge per element |
+  | `include foobar as foo` | `foobar as foo` | `foobar` | analyzer |
+
+  All four shared one cause: an arm of the oracle calling the raw-text reader
+  where it needed the path reader. Three of the four were the SAME arm — the
+  `from`-form, then the `include` form — and the second was only visible after
+  the first was fixed. An aggregate count would have shown "16 import
+  mismatches" and left every one of them unadjudicated.
   A rotation-only lane would have reported 0% unexplained through all of the above
   except by luck. That is the single most important methodological finding in this
   lane, and it is why the sweep is a tool in `fixtures/nim/probes/` rather than a

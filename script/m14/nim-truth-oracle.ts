@@ -431,7 +431,14 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       for (const mp of fromPaths) emitImport(mp)
     } else if (n.type === "include_statement") {
       const list = firstOfType(n, "expression_list")
-      for (const operand of list ? named(list) : []) emitImport(modulePathOf(operand))
+      // modulePaths, NOT modulePathOf — the same correction the from-import arm
+      // needed, for the same reason. `include` takes a module LIST and an
+      // ALIAS, and modulePathOf returns the node's raw text, so the oracle
+      // published `m9627 / [a, b]` as one module and `foobar as foo` as another.
+      // Both are wrong: the first names a module list as a single module, and
+      // the second folds a local ALIAS into the dependency's name. The analyzer
+      // published `m9627/a` and `m9627/b`, and `foobar`.
+      for (const operand of list ? named(list) : []) for (const mp of modulePaths(operand)) emitImport(mp)
     }
   }
 
