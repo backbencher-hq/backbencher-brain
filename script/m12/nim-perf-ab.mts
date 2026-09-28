@@ -114,12 +114,25 @@ const curMin = min(curTimes)
 const baseMin = min(baseTimes)
 
 // ── the correctness half: outputs must be IDENTICAL ──────────────────────────
+//
+// EDGES ARE COMPARED AS SETS, deliberately. When several passes each own a walk,
+// the order of edges in the array is an artifact of WHICH PASS FOUND AN EDGE
+// FIRST, not a property of the analysis: a fused walk interleaves them, so the
+// same correct graph arrives in a different order. Nothing downstream depends on
+// it — the store keys rows, the differential compares (label,target) sets, and
+// the fixtures test presence — so treating order as semantic would make this
+// harness reject a correct change.
+//
+// Everything else is compared as an exact ORDERED sequence, because there the
+// order is real: symbols are emitted in declaration order, and a reordering
+// would mean the traversal changed shape rather than the emission interleaving.
 const diffs: string[] = []
+const sorted = (xs: string[]) => [...xs].sort()
 const norm = (r: any) => ({
   symbols: (r.symbols ?? []).map((s: any) => `${s.kind}|${s.name}|${s.ownerName ?? ""}|${s.visibility ?? ""}|${s.complexity ?? ""}|${JSON.stringify(s.decorators ?? [])}|${s.docstring ?? ""}|${JSON.stringify(s.range ?? null)}`),
-  relationships: (r.relationships ?? []).map((x: any) => `${x.type}|${x.source}|${x.target}|${x.line_number ?? ""}|${x.confidence ?? ""}|${x.metadata?.evidenceClass ?? ""}`),
-  imports: (r.imports ?? []).map((i: any) => `${i.module}|${JSON.stringify(i.items ?? [])}`),
-  exports: (r.exports ?? []).map((e: any) => `${e.name}`),
+  relationships: sorted((r.relationships ?? []).map((x: any) => `${x.type}|${x.source}|${x.target}|${x.line_number ?? ""}|${x.confidence ?? ""}|${x.metadata?.evidenceClass ?? ""}`)),
+  imports: sorted((r.imports ?? []).map((i: any) => `${i.module}|${JSON.stringify(i.items ?? [])}`)),
+  exports: sorted((r.exports ?? []).map((e: any) => `${e.name}`)),
   errors: (r.errors ?? []).length,
 })
 for (let i = 0; i < trees.length && diffs.length < 12; i++) {

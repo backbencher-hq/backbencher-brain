@@ -170,21 +170,3 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-graphql/src/tree_sitter/parser.h
 !grammars/tree-sitter-graphql/src/tree_sitter/alloc.h
 !grammars/tree-sitter-graphql/src/tree_sitter/array.h
-
-# M60 Make wave (2026-09-27). tree-sitter-make vendors `src/parser.c` (928 KB)
-# and the same hermeticity argument as the lanes above applies with EXTRA force
-# here: this lane's central claim IS the source<->wasm identity proof, and that
-# proof is not checkable without the generated source. `src/parser.c` is
-# `#include "tree_sitter/parser.h"`, so committing parser.c without the headers
-# leaves the tracked set internally inconsistent — a fresh clone would not build
-# it and the pin could not be re-derived. The DIRECTORY must be re-included
-# before its contents can be: git does not descend into an excluded directory, so
-# negating the headers alone is silently a no-op.
-!grammars/tree-sitter-make/src/
-!grammars/tree-sitter-make/src/grammar.json
-!grammars/tree-sitter-make/src/node-types.json
-!grammars/tree-sitter-make/src/parser.c
-!grammars/tree-sitter-make/src/tree_sitter/
-!grammars/tree-sitter-make/src/tree_sitter/parser.h
-!grammars/tree-sitter-make/src/tree_sitter/alloc.h
-!grammars/tree-sitter-make/src/tree_sitter/array.h
