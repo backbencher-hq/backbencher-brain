@@ -26,6 +26,13 @@ import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
 import { deriveNimEdges } from "./nim-truth-oracle"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
+// Z14 (zig lane): the declared-type BUILTIN vocabulary is imported from the
+// analyzer, never re-typed (the #916 rule: one set, one answer — two copies
+// that cancel out of every count is how a self-agreeing edge survives a year of
+// gates). Every POSITION and every LEAF below is re-derived from the tree. The
+// canonical text of the oracle is kept as a reviewable probe at
+// script/m14/tmp/zigw-oracle.ts.
+import { ZIG_DECLARED_TYPE_BUILTINS } from "../../src/ast/real-zig-analyzer"
 // M14.6 perl wave: the builtin set and the reason-code vocabulary are IMPORTED
 // from the analyzer, never re-typed here — one rule for both sides, so a
 // builtin added to the analyzer cannot read as a phantom call on the truth
@@ -10918,6 +10925,211 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
   return edges
 }
 
+/** Z15 mirror (zig lane, 2026-09-28): does this node carry the anonymous `=`
+ *  token? A plain assignment is a pure write; every compound operator (`+=`,
+ *  `|=`, `*%=`, `<<=`, …) is a distinct token type in this grammar, so the
+ *  operator is the discriminator the tree already carries. Mirrors
+ *  `RealZigAnalyzer.isPlainAssignment`. */
+function zigPlainAssignment(n: any): boolean {
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i)
+    if (c && !c.isNamed && c.type === "=") return true
+  }
+  return false
+}
+
+/**
+ * ZIG WAVE 2 — the `references` ORACLE source, kept as a probe so the text
+ * survives a /tmp cleaner: the canonical copy lives in
+ * `script/m14/differential.ts` as `deriveZigReferenceEdges`, and this file is
+ * what was spliced in. Kept because the oracle is the lane's only second
+ * opinion for its largest emitted class, and an oracle that exists only in a
+ * patch is an oracle nobody can review.
+ *
+ * WHY THIS EXISTS. Until now the zig lane's differential derived `calls` and
+ * `uses` and nothing else, so the `references` class — declared-type
+ * dependencies and import edges, the largest emitted class on the zig corpora —
+ * was compared against NOTHING. The allowlist that keeps the comparison honest
+ * dropped the analyzer's own `references` edges from the compared side, so a
+ * fabricated declared-type reference, a lost one, and a corrupted one were all
+ * invisible: the lane reported 100% coverage with a phantom type reference in
+ * the graph.
+ *
+ * The three measured defects this oracle now audits, all of which the class's
+ * own gates could not see:
+ *   - the default VALUE was the declared type (`size: Size = .byte` published
+ *     `-> byte`);
+ *   - a type that names nothing published its FIELD name or its error member;
+ *   - the local annotation position was absent from the collector.
+ *
+ * INDEPENDENCE. Every POSITION and every LEAF is re-derived here with its own
+ * traversal. The one shared object with the analyzer is
+ * `ZIG_DECLARED_TYPE_BUILTINS`, the type-name vocabulary, IMPORTED rather than
+ * re-typed (the #916 lesson: a second copy of a name set is a second answer,
+ * and two copies that cancel out of every count is how a self-agreeing edge
+ * survives a year of gates). The leaf rules below MIRROR the analyzer's rather
+ * than importing them, so the two implementations can disagree — and the
+ * red-team in `zigw-oracle-check.ts` is what proves they do.
+ */
+export function deriveZigReferenceEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string, from: string) => {
+    const t = String(target ?? "")
+    if (!t) return
+    if (ZIG_DECLARED_TYPE_BUILTINS.has(t)) return
+    // the analyzer's digit-head refusal (`123abc`-style heads are not types)
+    const c0 = t.charCodeAt(0)
+    if (c0 >= 48 && c0 <= 57) return
+    const key = "references:" + t
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ label: "references", from, target: t })
+  }
+
+  const direct = (p: any, type: string): any | null => {
+    if (!p) return null
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (c && c.type === type) return c
+    }
+    return null
+  }
+  const fieldOf = (n: any, name: string): any | null =>
+    n && typeof n.childForFieldName === "function" ? n.childForFieldName(name) ?? null : null
+
+  // ── imports: `@import("x")` as a declaration RHS, or a usingnamespace ──────
+  // The module path is a `string` under `arguments`; the quotes are stripped
+  // because the published target is a module NAME. A builtin inside an ERROR
+  // node is not a direct child, so the error-recovered
+  // `const x = usingnamespace @import("y.zig")` (invalid in current Zig) yields
+  // no import on EITHER side — which is the analyzer's own rule, mirrored.
+  const importTarget = (callOrBuiltin: any): string | null => {
+    const bi = direct(callOrBuiltin, "builtin_identifier")
+    if (!bi || (bi.text !== "@import" && bi.text !== "@cImport")) return null
+    const args = direct(callOrBuiltin, "arguments")
+    const str = args ? direct(args, "string") ?? direct(args, "string_content") : null
+    if (!str) return null
+    const raw = String(str.text ?? "")
+    if (raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))) {
+      return raw.slice(1, -1)
+    }
+    return raw
+  }
+
+  // ── declared types: the grammar's `type` FIELD, never a walk ───────────────
+  // Mirrors the analyzer's `leafOfTypeNode`:
+  //   - a container literal in a type position is ANONYMOUS (fields, no name);
+  //   - an `error_type` is an unnamed set;
+  //   - `!T` keeps its dependency in the `ok` half;
+  //   - a labeled_type_expression names nothing knowable without its block;
+  //   - otherwise the last `identifier` at or under the type node.
+  const leaf = (t: any, depth = 0): string | null => {
+    if (!t || depth > 6) return null
+    if (t.type === "identifier") return String(t.text ?? "")
+    if (t.type === "error_union_type") {
+      const ok = fieldOf(t, "ok")
+      return ok ? leaf(ok, depth + 1) : null
+    }
+    if (t.type === "error_type" || t.type === "labeled_type_expression") return null
+    if (t.type === "struct_declaration" || t.type === "union_declaration" || t.type === "enum_declaration" || t.type === "error_set_declaration") return null
+    let found: string | null = null
+    const stack: any[] = [t]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200) {
+      const n = stack.pop()!
+      if (n.type === "identifier") found = String(n.text ?? "")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return found
+  }
+  const typeLeafFor = (decl: any): string | null => {
+    const tf = fieldOf(decl, "type")
+    if (tf) return leaf(tf)
+    if (decl.type === "container_field" || decl.type === "variable_declaration") return null
+    // parameter: a fn-TYPE parameter has no name and its child is the type; a
+    // NAMED parameter with no type field is a recovered shape, where the type is
+    // the first identifier after the name.
+    const nameF = fieldOf(decl, "name")
+    if (!nameF) return leaf(decl)
+    const stack: any[] = []
+    for (let i = decl.namedChildCount - 1; i >= 0; i--) {
+      const c = decl.namedChild(i)
+      if (c && c.id !== nameF.id) stack.push(c)
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier") return String(n.text ?? "")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "function_declaration" || t === "function_signature") {
+      const params = direct(n, "parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (p && p.type === "parameter") push(typeLeafFor(p), "(declared-type)")
+        }
+      }
+      // the return type is the grammar's `type` field (37,129 of 37,129 corpus
+      // functions carry one); the positional fallback mirrors the analyzer's
+      const ret = fieldOf(n, "type")
+      if (ret) {
+        push(leaf(ret), "(declared-type)")
+      } else {
+        const kids: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) kids.push(c)
+        }
+        for (let i = kids.length - 1; i >= 0; i--) {
+          const c = kids[i]
+          if (c.type === "block" || c.type === "parameters" || c.type === "block_expression") continue
+          if (i === 0 && c.type === "identifier") continue
+          if (c.type === "calling_convention") continue
+          push(leaf(c), "(declared-type)")
+          break
+        }
+      }
+    } else if (t === "container_field" || t === "variable_declaration") {
+      push(typeLeafFor(n), "(declared-type)")
+    }
+    if (t === "variable_declaration") {
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) kids.push(c)
+      }
+      const rhs = kids.length > 0 ? kids[kids.length - 1] : null
+      if (rhs && (rhs.type === "call_expression" || rhs.type === "builtin_function")) {
+        const target = importTarget(rhs)
+        if (target) push(target, "(global)")
+      }
+    }
+    if (t === "using_namespace_declaration") {
+      const target = importTarget(direct(n, "builtin_function"))
+      if (target) push(target, "(global)")
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -10956,7 +11168,21 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
       const isEnumLiteral = n.namedChildCount < 2
       // ZGD1: zig assignments parse as variable_declaration, LHS = first
       // named child (probe-verified). An assignment LHS is a WRITE.
-      const isAssignLhs = !!parent && parent.type === "variable_declaration" && parent.namedChild(0)?.id === n.id
+      // ZGD1: zig assignments parse as variable_declaration, LHS = first
+      // named child (probe-verified). An assignment LHS is a WRITE.
+      // Z15 mirror (2026-09-28): the gate tests the OPERATOR and the assignment
+      // node type too. A plain `=` writes without reading; `+=`/`|=`/`*%=` read
+      // their left side as well, and `while (i < n) : (i += 1)` is Zig's own
+      // idiom for it; an `assignment_expression` LHS is the `.field = value` key
+      // of a struct literal, which is a write as well. Without this mirror the
+      // oracle and the analyzer disagreed about exactly those two shapes — a
+      // 200-file draw read 28 MISSING and 3 UNEXPLAINED before the mirror and
+      // 6,866/6,866 covered after it.
+      const isAssignLhs =
+        !!parent &&
+        (parent.type === "variable_declaration" || parent.type === "assignment_expression") &&
+        parent.namedChild(0)?.id === n.id &&
+        zigPlainAssignment(parent)
       // ZGD5b: type-annotation positions are declared-type facts, not reads.
       const isTypePos = !!parent && TYPE_POSITIONS.has(parent.type)
       if (!isCallee && !isEnumLiteral && !isAssignLhs && !isTypePos) {
@@ -11032,13 +11258,14 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
     if (!p) return false
     // Error sets declare EVERY direct member (mirrors the analyzer).
     if (p.type === "error_set_declaration" && n.type === "identifier") return true
-    if (p.type === "variable_declaration") {
+      // Z15 mirror (2026-09-28): a COMPOUND assignment is a read-modify-write,
+      // not a definition — `counter += 1` reads the file-scope `counter` before
+      // writing it. A plain `=` stays a definition.
+      if (!zigPlainAssignment(p)) return false
       for (let i = 0; i < p.namedChildCount; i++) {
         const c = p.namedChild(i)
         if (c && c.type === "identifier") return c.startIndex === n.startIndex && c.endIndex === n.endIndex
       }
-      return false
-    }
     if (
       p.type === "function_declaration" || p.type === "test_declaration" ||
       p.type === "struct_item" || p.type === "enum_item" ||
@@ -14568,6 +14795,17 @@ async function main() {
         for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // Z14 (zig deep review): the `references` class joins the audited set.
+        // It was the analyzer's largest emitted class on this lane's corpora and
+        // had NO truth derivation at all, so a phantom type reference
+        // (`size: Size = .byte` publishing the enum member `byte`), a lost one,
+        // and a corrupted one (`@"zig lib"` -> `@"ziglib"`) were all invisible to
+        // a lane reporting 100% coverage. Same shape as the nim lane's join, and
+        // the same rule: a label is compared only once the truth side derives it,
+        // never before.
+        for (const e of deriveZigReferenceEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "csharp") {
         // C923 (#923) + 2026-09-28: `overrides` JOINS the compared set. Both sides carried a
@@ -14843,7 +15081,8 @@ async function main() {
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
           // #910 (c imports) and G7 (groovy uses) notes below record.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
+
           // hcl joins the USES-audited set only, and `calls` is excluded on
           // measurement rather than assumption. HCL declares no function, class or
           // type of any kind — 0 of its 64 named node types — and across 12,977
