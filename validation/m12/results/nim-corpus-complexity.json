@@ -1,0 +1,273 @@
+{
+  "schemaVersion": 1,
+  "kind": "nim_corpus_tracked_complexity",
+  "measurementPath": "direct-single-parser",
+  "corpora": [
+    {
+      "name": "nim",
+      "revision": "bb85d2dda5"
+    },
+    {
+      "name": "nimble",
+      "revision": "33a6bc8e50"
+    },
+    {
+      "name": "arraymancer",
+      "revision": "d3b67712a3"
+    },
+    {
+      "name": "prologue",
+      "revision": "2956ef2b2d"
+    },
+    {
+      "name": "pixie",
+      "revision": "30bb510877"
+    },
+    {
+      "name": "nitter",
+      "revision": "376f14908e"
+    },
+    {
+      "name": "nimterop",
+      "revision": "2532ce0d3c"
+    },
+    {
+      "name": "nigui",
+      "revision": "8a1bb04bfb"
+    },
+    {
+      "name": "jester",
+      "revision": "8a491a8e28"
+    },
+    {
+      "name": "nimtest",
+      "revision": "ce88334735"
+    },
+    {
+      "name": "torrentinim",
+      "revision": "8a0f2294c7"
+    },
+    {
+      "name": "mosdepth",
+      "revision": "3211a79388"
+    }
+  ],
+  "trackedNimFiles": 5056,
+  "measurement": {
+    "name": "nim-corpus-tracked",
+    "wallTimeMs": 620712.366268,
+    "userCpuMs": 229201.007,
+    "systemCpuMs": 4619.925,
+    "peakRssBytes": 902995968,
+    "rssDeltaBytes": 634839040,
+    "databaseBytes": null,
+    "files": 5056,
+    "symbols": 91079,
+    "relationships": 203410,
+    "filesPerSecond": 8.145479733872438,
+    "symbolsPerSecond": 146.73301991324522,
+    "relationshipsPerSecond": 327.70412038508556,
+    "parseErrors": 119
+  },
+  "yield": {
+    "symbolsPerFile": 18.01,
+    "relationshipsPerFile": 40.23,
+    "perCorpus": {
+      "nim": {
+        "files": 3949,
+        "symbols": 73992,
+        "relationships": 156331,
+        "errors": 87
+      },
+      "nimble": {
+        "files": 290,
+        "symbols": 4006,
+        "relationships": 11832,
+        "errors": 24
+      },
+      "arraymancer": {
+        "files": 317,
+        "symbols": 3420,
+        "relationships": 9646,
+        "errors": 0
+      },
+      "prologue": {
+        "files": 194,
+        "symbols": 1489,
+        "relationships": 4218,
+        "errors": 0
+      },
+      "pixie": {
+        "files": 111,
+        "symbols": 2876,
+        "relationships": 8015,
+        "errors": 0
+      },
+      "nitter": {
+        "files": 73,
+        "symbols": 1347,
+        "relationships": 4565,
+        "errors": 0
+      },
+      "nimterop": {
+        "files": 44,
+        "symbols": 790,
+        "relationships": 2617,
+        "errors": 0
+      },
+      "nigui": {
+        "files": 31,
+        "symbols": 2553,
+        "relationships": 3758,
+        "errors": 0
+      },
+      "jester": {
+        "files": 18,
+        "symbols": 235,
+        "relationships": 1010,
+        "errors": 0
+      },
+      "nimtest": {
+        "files": 12,
+        "symbols": 212,
+        "relationships": 742,
+        "errors": 0
+      },
+      "torrentinim": {
+        "files": 12,
+        "symbols": 45,
+        "relationships": 296,
+        "errors": 8
+      },
+      "mosdepth": {
+        "files": 5,
+        "symbols": 114,
+        "relationships": 380,
+        "errors": 0
+      }
+    }
+  },
+  "kinds": {
+    "function": 31816,
+    "property": 13836,
+    "variable": 13213,
+    "constant": 9639,
+    "enum_member": 8471,
+    "struct": 4284,
+    "macro": 3792,
+    "type": 2881,
+    "method": 989,
+    "class": 972,
+    "enum": 968,
+    "interface": 218
+  },
+  "relationshipKinds": {
+    "calls": 87244,
+    "references": 44545,
+    "uses": 34937,
+    "contains": 21784,
+    "imports": 12090,
+    "instantiates": 2085,
+    "extends": 657,
+    "overrides": 68
+  },
+  "complexity": {
+    "note": "The analyzer's own cyclomatic measure (nimCyclomaticComplexity), per symbol. `worstFiles` is the per-file maximum so the number is anchored to real code.",
+    "filesWithSymbols": 4487,
+    "meanAcrossFiles": 1.82,
+    "maxAcrossFiles": 1460,
+    "worstFiles": [
+      {
+        "file": "$HOME/fixtures/repositories/nim/lib/pure/htmlparser.nim",
+        "max": 1460,
+        "mean": 11.89,
+        "count": 151
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/vm.nim",
+        "max": 747,
+        "mean": 15.14,
+        "count": 69
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/sigmatch.nim",
+        "max": 542,
+        "mean": 8.8,
+        "count": 169
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/commands.nim",
+        "max": 327,
+        "mean": 10.44,
+        "count": 66
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/renderer.nim",
+        "max": 313,
+        "mean": 6.75,
+        "count": 169
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/ic/enum2nif.nim",
+        "max": 281,
+        "mean": 65.46,
+        "count": 26
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/nifgen.nim",
+        "max": 280,
+        "mean": 12.83,
+        "count": 72
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/pragmas.nim",
+        "max": 265,
+        "mean": 7.97,
+        "count": 92
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/vmgen.nim",
+        "max": 226,
+        "mean": 7.53,
+        "count": 137
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/semexprs.nim",
+        "max": 196,
+        "mean": 11.58,
+        "count": 134
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/semgnrc.nim",
+        "max": 175,
+        "mean": 12.12,
+        "count": 25
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/semtypes.nim",
+        "max": 171,
+        "mean": 10.68,
+        "count": 114
+      },
+      {
+        "file": "$HOME/fixtures/repositories/pixie/src/pixie/fileformats/tiff.nim",
+        "max": 160,
+        "mean": 6.72,
+        "count": 36
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/vmdeps.nim",
+        "max": 158,
+        "mean": 17.9,
+        "count": 10
+      },
+      {
+        "file": "$HOME/fixtures/repositories/nim/compiler/injectdestructors.nim",
+        "max": 157,
+        "mean": 7.11,
+        "count": 88
+      }
+    ]
+  },
+  "note": "Tracked .nim/.nims files only, via the production pool-worker parseFile path; no generated or untracked files included. Revisions are the pinned checkouts under $HOME/fixtures/repositories."
+}
