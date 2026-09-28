@@ -1217,6 +1217,35 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vb/modifier-read-missed-everything-after-the-first",
+    language: "vb",
+    defectClass: "missing-payload",
+    description:
+      "PRE-FIX: `modifierNames` read `childForFieldName(\"modifiers\")`, which returns ONE node — and this grammar emits the field REPEATEDLY, once per modifier. `Public Overrides Sub` is `modifiers: (...) modifiers: (...)`, so the read returned `public` and dropped `overrides` silently. Every modifier-dependent fact was wrong wherever the modifier was not written first: `Public Shared Sub` reported isStatic=false, `Public Overrides` published ZERO overrides edges across 435 files, and `Const` fields were published as Variables, with `MustOverride`, `ReadOnly` and `NotInheritable` missed the same way. VB writes `Public` first by convention, so the one modifier that was ever read was the one least worth reading. Found because the documentation claimed `overrides` was published and it was not. Simulated as a faithful revert: drop the modifiers that are not the first, which is exactly what the singular read did. Caught by vb/declaration-shapes, whose `MaxDepth` is a `constant` and not a `variable`, and whose `Size`/`Reset` carry `Overridable`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "constant" ? { ...s, kind: "variable" } : s)),
+      relationships: (r.relationships ?? []).filter((x: any) => String(x.type) !== "overrides"),
+    }),
+  },
+  {
+    id: "vb/override-edge-unqualified",
+    language: "vb",
+    defectClass: "unusable-target",
+    description:
+      "PRE-FIX SHAPE, not a pre-fix absence: the `overrides` edge named the base member by its bare name, so `Public Overrides Property Size` published `overrides Size -> Size` — a SELF-EDGE. A self-edge is not navigable and cannot answer the only question anyone asks of it, \"what does this override?\"; the same un-navigable shape the member-level `implements` edge had before it was qualified to `IThing.Refresh`. Simulated by stripping the base-type qualifier from the target, which is the pre-fix string exactly. Caught by vb/declaration-shapes, which expects `overrides Size -> Square.Size` and forbids `overrides Size -> Size`.",
+    transform: (r: any) => {
+      const doomed = (r.relationships ?? []).filter((x: any) => String(x.type) === "overrides" && String(x.target ?? "").includes("."))
+      if (doomed.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          doomed.includes(x) ? { ...x, target: String(x.target).split(".").slice(-1)[0] } : x,
+        ),
+      }
+    },
+  },
+  {
     id: "vb/member-level-heritage-unread",
     language: "vb",
     defectClass: "missing-relationship",
@@ -1774,6 +1803,17 @@ export const MUTANTS: Mutant[] = [
     transform: (r) => ({
       ...r,
       relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "references" && x.metadata?.resolvable === "external")),
+    }),
+  },
+  {
+    id: "xml/unresolved-reference-dropped",
+    language: "xml",
+    defectClass: "reference-suppression",
+    description:
+      "Finding X13. A BARE reference on an attribute that carries one, whose OWNER is in a declaration vocabulary, and which this document does not declare, is a REAL claim — the document says this element's type is that name — and it was being DROPPED, which is the defect this review has been closing throughout: a claim the graph cannot see. Two corpus cases are indistinguishable from inside one file. vdv-first5_0.xsd xs:includes a file declaring its OWN `date` at line 32, and `type=\"date\"` must be that type and not XSD's built-in of the same name; cxf's calculator.xsd writes `type=\"xsd:int\"` with no xmlns:xsd declared, which is malformed and must be refused. So the bare-built-in rule makes the first confidently WRONG and a blanket refusal makes both unresolvable for no stated reason. The fix is a FOURTH resolvability class — `unresolved`, with `ambiguousWithBuiltin` when the name is also a built-in — and the target symbol is still not published, so it adds an edge and never a phantom declaration. 413 such edges across 59 corpus files, 103 flagged ambiguous, and the most frequent unresolved targets are custom OOXML types that live in included schema files. Reverted generically: every reference edge carrying resolvable === 'unresolved' is deleted, which is the pre-fix suppression. NO symbol is added — a reversion that also published one would be testing a different defect. Pinned by xml/xsd-included-reference, which holds all three cases including the malformed undeclared prefix that must still be REFUSED, so a fix that simply emitted every bare value would fail it.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "references" && x.metadata?.resolvable === "unresolved")),
     }),
   },
   {
@@ -9838,6 +9878,22 @@ export const MUTANTS: Mutant[] = [
     }),
   },
 
+  {
+    id: "make/drop-prereqs-of-a-computed-target-rule",
+    language: "make",
+    defectClass: "relationship-loss",
+    description:
+      "D18 revert: a rule whose TARGET is an expression publishes no prerequisite edges. `$(BIN): $(OBJS) | builddir` declares no literal target name, so the pre-fix code iterated the empty list of literal targets and dropped the whole rule's dependencies — first group and order-only alike (405 corpus edges). Found by script/m12/make-contract-probe.ts, a gate that had existed for this lane and had never been run; a check that is never executed cannot report the defect it was written for.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if ((x.metadata as any)?.role !== "prerequisite") return true
+        // the pre-fix shape: a prerequisite whose source is the module rather
+        // than a target did not exist, because such a rule emitted nothing
+        return !/^[^\s/\\]+\.(mk)?$/.test(String(x.source)) === false
+      }),
+    }),
+  },
   {
     id: "make/ignore-brace-expansion-form",
     language: "make",

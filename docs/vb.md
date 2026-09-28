@@ -35,13 +35,13 @@ resolution, analyzer dispatch and the wasm load are all exercised.
 | | |
 |---|---:|
 | symbols | **12,834** |
-| relationships | **38,619** |
+| relationships | **39,125** |
 | imports | **1,157** |
 | crash files | **0** |
 | pipeline mismatches | **0** |
 | empty symbol names | **0** |
 | unknown symbol kinds | **0** |
-| **relationships without a site line** | **0** of 38,619 |
+| **relationships without a site line** | **0** of 39,125 |
 
 ### The analyzer's own differential (F5) — 100 % on a 120-file draw
 
@@ -307,7 +307,7 @@ header form `Class C : Inherits B, Implements I` / `Interface I : IDisposable`.
 
 **Every edge carries a 1-based site line** on the node that names the thing, so a
 call split across three lines is navigable to the line its callee name is
-written on. This is enforced, not asserted: **0 of 38,619** published
+written on. This is enforced, not asserted: **0 of 39,125** published
 relationships lack one.
 
 **A constructor is published as `constructor`**, with the class in `ownerName` —
@@ -398,6 +398,55 @@ measured nothing. A gate that can pass by measuring nothing is worse than no gat
 ```sh
 bun run script/m14/vb-node-type-census.ts
 ```
+
+## The modifier read — the largest defect this lane has had
+
+`modifierNames` read `childForFieldName("modifiers")`. That returns **one** node,
+and this grammar emits the field **repeatedly**, once per modifier:
+`Public Overrides Sub Go()` is `modifiers: (member_modifier) modifiers:
+(member_modifier)`. So the read returned `public` and silently dropped
+`overrides` — and the same for every modifier written after the first.
+
+VB writes `Public` first by convention, so **the one modifier that was ever read
+was the one least worth reading.** Everything modifier-dependent was wrong:
+
+| written | read | consequence |
+|---|---|---|
+| `Public Shared Sub A()` | `public` | `isStatic: false` on every shared member |
+| `Public Overrides Sub/Property` | `public` | **zero** `overrides` edges across 435 files |
+| `Public Const F As Integer` | `public` | published as a `Variable`, not a `Constant` |
+| `MustOverride`, `ReadOnly`, `NotInheritable` | — | all missed |
+
+**It was found because the documentation claimed `overrides` was published and it
+was not.** That is the only kind of false claim that reliably gets checked, and
+it is worth being explicit that the claim was ours.
+
+Fixed by reading every `member_modifier` node rather than a field that appears N
+times. The consequences, corpus-wide over 435 files:
+
+- `isStatic` now true for every `Shared` member;
+- `Const` fields are `Constant`, not `Variable`;
+- **480 `overrides` edges**, from zero.
+
+And the edge shape was fixed at the same time. It was `overrides Go -> Go` — a
+**self-edge**, the same un-navigable shape the member-level `implements` edge had.
+The base type was available all along: the owning type's `Inherits` clause had
+already been read to publish `extends`. So the edge is now
+`overrides Description -> Item.Description`, and it is read on **properties and
+events** as well as methods — `Public Overrides Property` is how P3D's entire `Item`
+hierarchy is written, and it published nothing.
+
+The harness noticed the other half of this. `overrides` is in the default audited
+label set, so the moment the analyzer began emitting it, **42 of its edges came
+back UNEXPLAINED (5.1 % of audited output)** because the oracle had no opinion.
+That is the #910 lesson in its purest form: a label the analyzer publishes and the
+oracle cannot derive is a manufactured red, and a label neither derives is a
+manufactured green. The oracle now derives `overrides` from the modifier and the
+owning type's `Inherits`, reading the base structurally rather than by scraping
+text.
+
+Two mutants pin it: one reverts the modifier read, one unqualifies the override
+target. Eight VB mutants, all caught.
 
 ## What is not done
 

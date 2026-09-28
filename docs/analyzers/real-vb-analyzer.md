@@ -109,7 +109,7 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 | | |
 |---|---:|
 | symbols | 12,930 |
-| relationships | 38,619 |
+| relationships | 39,125 |
 | imports | 1,157 |
 | crash files | 0 |
 | empty names / unknown kinds | 0 / 0 |
@@ -155,6 +155,13 @@ or wrong:
   reading the callee from `function` dropped 15,577 call edges across 1,718 of
   2,660 files. Found NOT by the differential, which read 100 % with the defect
   live because the oracle made the same assumption; found by writing the fixture.
+- **every modifier after the first was invisible** — `modifierNames` read
+  `childForFieldName("modifiers")`, which returns one node, but this grammar emits
+  the field once per modifier. `Public Shared` reported `isStatic: false`,
+  `Public Overrides` published zero `overrides` edges across 435 files, and `Const`
+  fields were published as `Variable`. VB writes `Public` first, so the one
+  modifier that was read was the one least worth reading. Found because the docs
+  claimed `overrides` was published and it was not.
 - **an interface's members were never visited** — three node types in neither the
   declaration set nor the silent set, so nothing dispatched them and every
   interface was published as a name with no members while the implementing class
