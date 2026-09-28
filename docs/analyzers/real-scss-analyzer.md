@@ -23,7 +23,7 @@ ERROR nodes. It now has its own grammar, its own analyzer and its own fixtures.
 | `contains` both-ends resolve | 2,225 / 2,225 (100%) |
 | `uses` both-ends resolve | 41 / 41 (100%) |
 | fixtures | 5 / 5 |
-| mutants | 14 / 14 caught |
+| mutants | 15 / 15 caught |
 
 Per corpus, because an aggregate that averages a hard corpus with an easy one is how a
 lane looks healthier than it is:
@@ -137,10 +137,10 @@ per read would be publishing a use as a declaration.
 - **grammar**: `script/m14/verify-grammar-pins.ts` — source↔wasm exact on all 84 declared
   names; A/B at `validation/m14/results/scss-grammar-ab.json` (76 fixed, 0 regressed,
   3 regression controls unchanged-clean).
-- **fixtures**: 5 / 5 in `run-fixtures.ts`. Expectations are authored from the rulings,
+- **fixtures**: 6 / 6 in `run-fixtures.ts`. Expectations are authored from the rulings,
   never transcribed from analyzer output — which is the only reason three of them could
   fail, and they did.
-- **mutants**: 14 / 14 in `script/m60/scss-mutants.ts`. Four survived the first run and
+- **mutants**: 15 / 15 in `script/m60/scss-mutants.ts`. Four survived the first run and
   all four were gaps in the suite: two were **bugs in the mutants** (one rewrote only
   already-resolved sources, so it was a no-op; one wrote `{...s, ...rest}` after
   destructuring `parameters` out, which **restores** the key), and two were missing pins
@@ -182,17 +182,55 @@ is how an extractor silently stops matching, and the name is *plausible*.
    combinator forms and `nesting_selector` — and a bare element selector is a
    `plain_value`. So `@extend p` found nothing while `@extend .btn` worked.
 
-### The differential, measured and not green
+### The differential: no fabrication, and the residue is characterised
 
-`cov=366/480 (76.3%)`, `MISSING=114`, `unexplained=21 (11%)`. The remaining divergence
-is characterised rather than summarised: it is the declared `var()` class (this lane's
-own `references` are 223/223 = 100%) plus rule-ownership differences where a nested
-`&` crossed a mixin boundary — 224 rules in 160 files, where the referent is a call
-site outside the file and no name is derivable.
+```
+CSS    svelte      100%  MISSING=0  unexplained=0 (0%)
+       grails-core 100%  MISSING=0  unexplained=0 (0%)
+SCSS   element-plus  95.6%  MISSING=32  unexplained=0 (0%)
+```
 
-**The CSS lane is 100% / 0 unexplained on both corpora throughout**, which is the
-point of the exercise: registering a second lane against a shared oracle found four
-defects in that oracle, none of which its own corpora could see.
+**`unexplained=0` is the number that matters.** It is the fabrication direction: every
+edge the analyzer emits is accounted for by an independent derivation. It went 21 → 0,
+and getting there exposed three defects in the analyzer that the fixtures and the
+mutants had both missed.
+
+What the residue is, rather than a percentage — from
+`script/m14/tmp/scss-diff-classify.ts`, which is read-only and prints a row it cannot
+label instead of dropping it:
+
+| class | direction | what it is |
+| --- | --- | --- |
+| unresolvable custom property | unexplained | the DECLARED `var()` class (SCSS-L6); this lane's own `$var` reads are 223/223 |
+| interpolated-`&` naming | both | one naming disagreement in two error-free files, needing grammar-level reading of `&` inside a `#{…}` selector |
+| `common/var.scss` | both | 1,716 lines with over 400 disjoint ERROR spans; the truth is unreliable there by construction |
+
+### Three analyzer defects the differential found and the fixtures had not
+
+1. **Two identically-named control-flow scopes collapsed into one.** `checkbox.scss`
+   has two `@each $size in (large, small)` (L76 and L266). The identity rule is right for
+   a `$variable` — one thing assigned in several places — and wrong for a *scope*: two
+   loops in two nesting contexts are two constructs at two places in the file. Collapsing
+   them lost the second scope, and with it the owner of everything inside it, so every
+   `$var` read in the second loop emitted no edge. 7 MISSING rows that were the analyzer
+   losing information. Now disambiguated the way the dart lane already does
+   (`root.child` / `root.child#2`), pinned by `identically-named-scopes-are-distinct`
+   and reverted by mutant S10.
+2. **A `$var` read inside a `@return` emitted nothing.** The `return_statement` case was
+   removed when the self-edge was fixed, and the read scan went with it because the two
+   shared a case. A function published its own body variables and nothing recorded that
+   it consumed them.
+3. **The truth was blind where the grammar fails.** The oracle stopped at the first
+   `ERROR` node while the analyzer recovers through them. `common/var.scss` is 1,716
+   lines with over 400 disjoint ERROR spans, and the oracle saw almost none of it.
+
+### The CSS lane, throughout
+
+100% / 0 unexplained on both corpora, at every step. That is the result worth having:
+registering a second lane against a shared oracle found **four defects in that oracle**
+— comma-group unit resolution, the missing cross-product, the `&`-as-name class, and the
+unquoted `url()` branch — none of which its own corpora could see. A fixed sample
+proves the sample.
 
 ### Not yet verified
 
