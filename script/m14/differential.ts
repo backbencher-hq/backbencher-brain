@@ -47,7 +47,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
+import { extendsTargetName, isCppSpelledName, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -2043,10 +2043,16 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
               // expression: all source text, never a name).
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
-                // #924 mirror: a builtin TYPE keyword is not a function name —
-                // the grammar classifies `unsigned(x)` as an `identifier`
-                // callee, and the analyzer refuses it, so truth must too.
-                if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return ""
+                // #924 + D1 mirror: a name C++ cannot spell is not a function
+                // name — the grammar classifies `unsigned(x)` and
+                // `static_cast<int>(x)` as an `identifier` callee, and the
+                // analyzer refuses them, so truth must too. The analyzer's own
+                // set is imported and applied (`isCppSpelledName`) rather than
+                // copied here: #916's lesson is that a second copy of the rule
+                // is a second answer to the same question, and the two sides
+                // cancelling out of every count is how the CPPD15 self-agreeing
+                // `uses num_bits` survived a year of gates.
+                if (t === "identifier" && !isCppSpelledName(cur.text)) return ""
                 return cur.text
               }
               return ""
@@ -2106,7 +2112,13 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   const leftmostId = (n: any): string | null => {
     let cur: any = n
     while (cur) {
-      if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+      // D1 (#957) MIRROR: the analyzer's `leftmostId` refuses a keyword terminal,
+      // and this copy did not — so the oracle's roster admitted names the
+      // analyzer's never could and derived `uses` rows for them. The membership
+      // test is the analyzer's, imported, for #916's reason.
+      if (cur.type === "identifier" || cur.type === "field_identifier") {
+        return isCppSpelledName(cur.text) ? cur.text : null
+      }
       cur = cur.childForFieldName?.("declarator") ?? cur.namedChild(0)
     }
     return null
@@ -2138,6 +2150,12 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
       const { n, ns, inFn, inClass } = pre.pop()!
       const t = n.type
       const addValue = (name: string, nss: string[], cls: string | null): void => {
+        // D1 (#957) MIRROR: the analyzer's roster gate, applied here with the
+        // analyzer's own predicate. A keyword names no value, so it never enters
+        // a roster that bare reads resolve against — and a roster the oracle
+        // builds with a different rule than the analyzer's is a second answer to
+        // "what is a name in this file".
+        if (!isCppSpelledName(name)) return
         if (!name) return
         if (cls) {
           let s = classMembers.get(cls)
@@ -2250,8 +2268,16 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
           }
         }
         if (nm && !nm.startsWith("~") && !nm.startsWith("operator") && !isMacroShape) {
-          if (sc) pendingQualified.push({ name: nm, scope: sc })
-          else if (!inFn) addValue(nm, ns, inClass)
+          // D5 (#961) ROSTER MIRROR: a CONSTRUCTOR is not a callable value, so it
+          // does not enter the roster — the same test the analyzer applies (the
+          // name against the class it is declared in, which is what a constructor
+          // is). Without it truth believed `Handle` was a readable value and
+          // derived `uses compute -> Handle` for `Handle parent_handle(7);`.
+          const isCtor = (inClass !== null && nm === inClass) || (sc !== undefined && nm === sc)
+          if (!isCtor) {
+            if (sc) pendingQualified.push({ name: nm, scope: sc })
+            else if (!inFn) addValue(nm, ns, inClass)
+          }
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) pre.push({ n: c, ns, inFn: true, inClass }) }
         continue
@@ -12593,10 +12619,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           const typeNode =
             c.childForFieldName?.("name") ??
             c.namedChildren.find((x: any) => /type_identifier|qualified_identifier|template_type/.test(x.type)) ?? c
-          let baseName = typeNode.text
-          const lt2 = baseName.indexOf("<")
-          if (lt2 !== -1) baseName = baseName.slice(0, lt2)
-          baseName = lastSegment(baseName)
+          // D2 (#958) MIRROR: the analyzer's own `extendsTargetName` is imported
+          // and applied, so the leaf clean AND the self-base refusal are ONE
+          // rule. The previous local sequence (strip `<`, `lastSegment`, emit)
+          // had the leaf clean but not the refusal, so truth derived
+          // `char_traits extends char_traits` for `vendor::char_traits :
+          // std::char_traits<T>` — 18 such rows surfaced as MISSING when the
+          // analyzer was fixed. A second copy of the clean is a second answer
+          // about the same question, and it is how the two sides drift.
+          const baseName = extendsTargetName(typeNode.text, clsName)
           if (baseName && /^[A-Za-z_]/.test(baseName)) {
             edges.push({ label: "extends", from: clsName, target: baseName })
           }
