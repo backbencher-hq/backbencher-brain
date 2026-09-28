@@ -297,12 +297,42 @@ and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The exp
 was corrected to match R, not the analyzer** — and the reason is recorded in the ground
 truth's own notes.
 
-### An unresolved defect: `byteIndex` is not a byte index
+### An unresolved defect: `startIndex` is not a byte index
 
-For a file containing non-ASCII, the reported `startIndex`/`endIndex` are **code-unit**
-offsets. In `shiny/R/shiny.R`, R places `cache` at byte **39407**; the analyzer reports
-**39395**, and the difference is exactly the 12 surplus bytes from non-ASCII characters
-earlier in the file. **15 of 1,174** R files are affected.
+**Proven.** For a file containing non-ASCII, the reported `startIndex`/`endIndex` are
+**UTF-16 code units**, not bytes. A file mixing 2-, 3- and 4-byte characters, read through
+this parser and the same one upstream, gives:
+
+| name | reported | bytes | UTF-16 |
+|---|---|---|---|
+| `b` | 28 | 29 | 28 |
+| `c` | 54 | 57 | 54 |
+| `zzz` | 82 | 87 | 82 |
+
+UTF-16 every time, and `startPosition.column` agrees with it. `src/types/
+web-tree-sitter.d.ts` declares `startIndex: number` and **says nothing about the unit**,
+while upstream tree-sitter reports bytes. Every analyzer in this repository passes the
+value straight through, so this is one library's behaviour inherited by roughly fifteen
+lanes, and the missing unit is why it went unnoticed.
+
+The corpus effect is bounded and measured: **7 symbols, in the 15 of 1,155 compared files
+that contain non-ASCII**. In `shiny/R/shiny.R`, R places `cache` at byte **39407** and the
+analyzer reports **39395** — exactly the 12 surplus UTF-8 bytes earlier in the file.
+
+**A hypothesis I tested and threw away.** The tempting move is to claim the (line, column)
+pair is sound and only the range is in the wrong unit, so the fix is a conversion. I
+measured it, and it is **false**: (line, column) locates **14,964 of 16,290** symbols,
+against **16,283** for the byte range. Line/column is *worse*, because 1,326 symbol ranges
+do not start at the name for reasons that have nothing to do with units — an S4 class
+range begins at the `setClass` call, for instance. So (line, column) cannot stand in for
+a byte offset, and a remedy has to convert the range itself. The number is in the evidence
+record under `unitFinding.REFUTED`, because a refuted hypothesis with a number attached is
+worth more than a plausible story, and it is what stopped the wrong fix being proposed.
+
+**Not fixed here.** The remedy is additive — `byteStart`/`byteEnd` alongside the existing
+fields, or one conversion at the engine boundary — and that touches a shared contract that
+~15 lanes and every downstream consumer read while other lanes are actively being worked
+on. It is a cross-lane decision, not this lane's to take alone.
 
 The existing range audit cannot see this: it recomputes offsets in the same unit the
 analyzer reports, so it is self-consistent by construction. **Two harnesses sharing a
