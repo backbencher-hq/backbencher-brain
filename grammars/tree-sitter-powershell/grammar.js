@@ -36,6 +36,15 @@ export default grammar({
     // `param_block`/`_statement` pairing the first attempt declared, which it
     // reported UNNECESSARY because the two forms there are separable on the text.
     [$.param_block, $._bare_param_block],
+    // G9 (M60 #278): `array_type_name` and `generic_type_name` are BOTH
+    // `seq($.type_name, '[')` — identical prefixes, separated only by what follows
+    // the bracket — so `[Dictionary[[string],[int]]]` is a genuine LR ambiguity and
+    // the automaton resolved it to the ARRAY route deterministically and wrongly:
+    // the tree is `ERROR(array_type_name(Dictionary[))` and the rest of the line
+    // falls out as a separate expression. Declared here so GLR explores both and
+    // keeps the ERROR-FREE parse, which is the same lesson the G6 comma element
+    // taught: when the grammar can choose and its choice is wrong, reprioritising
+    // is not enough — the competing route has to stay alive long enough to lose.
     // G1 (M60 #278) needed NO entry here, and that is worth recording rather than
     // leaving as a lucky accident: a `param_block` that is the first statement is
     // reachable both as a direct child of `program` (the shape this grammar has
@@ -1589,8 +1598,36 @@ export default grammar({
 
     dimension: ($) => repeat1(','),
 
+    // G9 (M60 #278): a generic ARGUMENT may be a bracketed type, which is how
+    // PowerShell and C# both write an array-of-X type argument:
+    // `Dictionary[[string],[int]]`.
+    //
+    // The gap is structural rather than a missing alternative, which is why three
+    // earlier attempts failed and two of them failed silently. `generic_type_arguments`
+    // took a `type_spec`, and a `type_spec` can only express the SUFFIX array form
+    // (`string[]`, via `array_type_name`) — the leading `[` of a `type_literal` has
+    // nowhere to go. So `[Dictionary[[string],[int]]]` had no derivation at all, and
+    // the parser reached for the only route it had (`array_type_name` on
+    // `Dictionary[`) and then failed, producing
+    // `ERROR(array_type_name(Dictionary[))` with the rest of the line falling out as
+    // a separate expression.
+    //
+    // Adding `type_literal` as an argument is additive and does not overlap the
+    // existing form: the two are disjoint on the FIRST token of the argument, since
+    // `type_literal` opens with `[` and a bare `type_spec` does not. That is the same
+    // disjointness argument that made the admitted G6 and G7 forms safe, and it is
+    // why no conflict declaration is needed — tree-sitter confirms none is.
+    //
+    // Measured before patching: `[Dictionary[[string],[int]]]` 2 ERROR,
+    // `[Dictionary[[string]]]` 1 MISSING, and every control already clean
+    // (`[Dictionary[string[]]]`, `[List[string]]`, `[Dictionary[string,int]]::new()`,
+    // `[System.Environment+SpecialFolder]`). Corpus footprint: 28 sites in 5 files in
+    // `powershell` and 10 in 3 in `ansible`.
     generic_type_arguments: ($) =>
-      seq($.type_spec, repeat(seq(',', $.type_spec))),
+      seq(
+        choice($.type_spec, $.type_literal),
+        repeat(seq(',', choice($.type_spec, $.type_literal))),
+      ),
 
     // Attributes
     attribute_list: ($) => repeat1($.attribute),
