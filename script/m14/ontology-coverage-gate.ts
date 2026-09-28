@@ -83,7 +83,7 @@ type Ruled = {
   describe: string
 }
 
-const RULED: Ruled[] = [
+const BASH_RULED: Ruled[] = [
   {
     type: "extends",
     instrument: "A:grammar-inventory",
@@ -126,6 +126,67 @@ const RULED: Ruled[] = [
     describe: "a SECOND declaration of a name already declared in the same file — it replaces the prior one",
   },
 ]
+
+/**
+ * json's seven non-emitted types, each with the construct it would need.
+ *
+ * The bash table above is unchanged and still bash's. The two lanes disagree in the
+ * most informative way available: bash emits 7 of 10 and rules 3 on a grammar
+ * inventory of 164 node types, while json emits 3 of 10 and rules 7 on an inventory of
+ * 26 — and the difference between the two is exactly what each language has. Same
+ * ontology, same gate, opposite verdicts, and neither is arbitrary.
+ */
+const JSON_RULED: Ruled[] = [
+  { type: "extends", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["class_declaration", "class_specifier", "interface_declaration", "struct_declaration"], describe: "a type declaration another type could extend" },
+  { type: "implements", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["implements_clause", "extends_clause", "superclass"], describe: "a supertype clause" },
+  { type: "instantiates", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["new_expression", "object_creation_expression", "constructor_invocation"], describe: "a constructor call" },
+  { type: "overrides", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["redefinition", "override_specifier"], describe: "a second declaration replacing a prior one" },
+  // `calls` and `exports` are here for completeness but are NOT grammar questions:
+  // json has no functions to call and no export mechanism, so no node type could
+  // carry either. They are listed so the gate reports on all ten.
+  { type: "calls", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["function_definition", "method_definition", "call_expression"], describe: "a function definition or call" },
+  { type: "exports", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["export_statement", "export_clause"], describe: "an export declaration" },
+  {
+    // `imports` is the one that is NOT settled by the grammar, and it is worth
+    // stating why. The grammar has no import node, but that is the wrong question:
+    // an EXTERNAL $ref to another file on disk is a file dependency whatever the
+    // grammar calls it, and the grammar cannot see it because it is a STRING.
+    // So this was measured instead: across the whole 3,334-file corpus, 0 of the
+    // external $refs point at another file — 38 name a URL (a JSON-Schema draft
+    // identifier, i.e. a vocabulary reference) and 12 name something else. There is
+    // no file-to-file $ref to import, so the type has nothing to carry.
+    type: "imports",
+    instrument: "B:parse-tree-count",
+    countOnTree: (root, fileLabel, hits) => {
+      // ONLY the value of a `$ref` key. The first version scanned every `string` in
+      // the document, and it reported the construct 2,651 times across 103 files — of
+      // which the examples were `MANIFEST.json: FILES.json`, a filename sitting in a
+      // `files` array. That is not a $ref, it is a list of files a collection ships,
+      // and the gate correctly refused to accept my measurement: it said the ruling
+      // was falsified by evidence I had manufactured. A probe that matches a SHAPE
+      // rather than a ROLE produces a number, and the number is worth nothing.
+      const visit = (n: any) => {
+        if (n.type === "pair") {
+          const k = n.childForFieldName?.("key")
+          const keyText = String(k?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
+          if (keyText === "$ref") {
+            const v = n.childForFieldName?.("value")
+            const inner = String(v?.text ?? "").replace(/^["']|["']$/g, "")
+            if (!/^https?:\/\//.test(inner) && /\.(json|jsonc|json5|ya?ml|avsc|avdl|proto)(#[^"']*)?$/.test(inner)) {
+              hits.push(`${fileLabel}: ${inner.slice(0, 60)}`)
+            }
+          }
+        }
+        for (let i = 0; i < n.childCount; i++) visit(n.child(i))
+      }
+      visit(root)
+    },
+    describe: "a $ref naming another FILE on disk — a file-to-file dependency",
+  },
+]
+
+const RULED_BY_LANG: Record<string, Ruled[]> = { bash: BASH_RULED, json: JSON_RULED }
+const RULED: Ruled[] = RULED_BY_LANG[LANG] ?? []
 
 // ---------------------------------------------------------------- corpus
 const files: { repo: string; dir: string; rel: string; abs: string; text: string }[] = []
@@ -221,6 +282,13 @@ function rulingFor(t: Type): { reason: string; src: string } | null {
 
 // ---------------------------------------------------------------- verdict
 type Row = { type: Type; status: "EMITTED" | "RULED-SOUND" | "FALSIFIED" | "RULED-UNJUSTIFIED"; detail: string }
+if (RULED_BY_LANG[LANG] === undefined) {
+  console.log(`\nontology coverage gate — no RULING TABLE for ${LANG}.`)
+  console.log(`Refusing to report: a gate with an empty table would call every un-emitted type`)
+  console.log(`RULED-UNJUSTIFIED and that is a verdict about the TABLE, not about the lane.`)
+  process.exit(2)
+}
+
 const rows: Row[] = []
 for (const t of ALL_TYPES) {
   const obs = observed.get(t)

@@ -211,6 +211,20 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // possible names. A pointer into a document cannot be answered with a name,
   // because nothing guarantees the name is unique; a location can. The analyzer was
   // right and the oracle was under-specified.
+  // A `$ref` naming another FILE is a dependency. Decided from the JSON Schema
+  // document shape, not from the analyzer's `isFileNamingRef`, so the two agreeing
+  // means something. 58 occurrences across 12 files in the corpus.
+  const DOCUMENT_EXTENSIONS = ["json", "jsonc", "json5", "yaml", "yml", "avsc", "avdl", "proto"]
+  for (const r of refs) {
+    if (r.refPath.length === 0 || r.refPath.startsWith("#/") || r.refPath.startsWith("http://") || r.refPath.startsWith("https://")) continue
+    const withoutFragment = r.refPath.split("#")[0]
+    const dot = withoutFragment.lastIndexOf(".")
+    if (dot < 0) continue
+    if (!DOCUMENT_EXTENSIONS.includes(withoutFragment.slice(dot + 1))) continue
+    if (!withoutFragment.includes("/") && !withoutFragment.startsWith(".")) continue
+    edges.push({ label: "imports", from: r.from, target: r.refPath })
+  }
+
   for (const r of refs) {
     if (!r.refPath.startsWith("#/")) continue
     // A JSON Pointer is RELATIVE TO THE DOCUMENT ROOT, so `#/components/schemas/X`
