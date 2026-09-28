@@ -85,6 +85,13 @@ export interface LaneDecision {
     | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
     | { kind: "local-rebuild-from-vendored-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string }
     | { kind: "local-rebuild-from-upstream-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string; chain: string }
+    // scss is neither: its grammar.js is `grammar(require("tree-sitter-css/grammar"), {...})`,
+    // so the base is an npm DEPENDENCY of the package rather than source this repo
+    // vendors, and the build is NOT self-contained — `tree-sitter generate` needs that
+    // dependency installed. Recording it as `local-rebuild-from-vendored-source` would
+    // have been a lie about where the base came from, and recording it as
+    // byte-identical-to-npm-tarball would have been a lie about the bytes.
+    | { kind: "local-rebuild-from-npm-dependency"; base: { package: string; version: string; pinnedExactly: boolean; depOf: { package: string; version: string } }; patches: string[]; patchEvidence: string; buildRequires: string[] }
     | { kind: "unnamed-build-sha-only"; chain: string }
   source:
     | { state: "vendored"; dir: string; note: string }
@@ -138,6 +145,85 @@ export const LANES: Record<string, LaneDecision> = {
   // identical behaviour on all 533 corpus files (script/m14/tmp/css-grammar-ab.ts).
   // So this lane's proof is the source↔wasm check (every name the vendored source
   // declares exists in the wired wasm and vice versa), NOT a hash comparison.
+  scss: {
+    wired: "wasm/tree-sitter-scss.wasm",
+    provenance: {
+      kind: "local-rebuild-from-npm-dependency",
+      base: {
+        package: "tree-sitter-scss",
+        version: "1.0.0",
+        // the package declares `tree-sitter-css: ^0.20.0`, a RANGE. Left as a range,
+        // a rebuild is not a rebuild: any 0.20.x would satisfy it and the generated
+        // parser would differ. The exact version is pinned here and in the note below
+        // precisely so that this is a decision and not an accident of a lockfile
+        // nobody reads.
+        pinnedExactly: true,
+        depOf: { package: "tree-sitter-css", version: "0.20.0" },
+      },
+      patches: [
+        "use_statement / forward_statement: Sass's module system has optional clauses these rules never allowed — `as <namespace>`, `as *`, `with (<config>)`, and `show`/`hide <members>` on @forward. As written each rule was `seq('@use', $._value, ';')`, so every `as` clause was an ERROR: `@use 'sass:map';` parsed and `@use 'sass:map' as map;` — the form Sass documents — did not. Measured over 244 .scss files this was the single largest residual class, the bare token `as` at 277 error spans. Two sub-fixes were needed and the first attempt at each was wrong in an instructive way. (a) `with (<config>)` was first written to allow only `$._value`, so `with ($a: 1)` matched the `$a` and then reported `(UNEXPECTED '1')` — which reads like a value problem and is actually a missing `:` separator, because Sass's clause is a list of `$name: value` PAIRS. (b) the `as` clause was first written with `$._value`, which admits `binary_expression` and collided with the dashed-prefix form. The `as` target is therefore `choice($.identifier, $.variable, $._concatenated_identifier)`, and the whole clause is modelled in the grammar's OWN loose style (the `$._value, repeat(seq(optional(','), $._value))` pattern already at lines 86-87) rather than with a strict grammar for Sass config objects: a strict model is a second research project, and the analyzer reads these clauses by SLICING node.text, never by naming a node type, because slicing text cannot fall behind a grammar change (M60 R10). Repro: @use 'sass:map' as map;",
+        "declaration + parameter: Sass's `!default` / `!global` flag. The declaration rule allowed `optional($.important)` and nothing else, so `$a: 1 !default;` — the most common line in a Sass variable file, and the entire point of a configurable default — was an ERROR, at 210 occurrences across the corpus. Applied at BOTH sites: a variable declaration and a mixin/function parameter default, which is where Sass puts it most often (`@mixin button($bg: $grey !default)`). Repro: $x: 1 !default;",
+        "DECLARED, NOT PATCHED: `@forward 'x' as prefix-*;`, the PREFIX form of the `as` clause. It requires `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression` (a `$._value` can itself be `a - b`). It occurs ZERO times in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. The A/B carries it as `forward-as-dashed-prefix` with verdict `unchanged-broken` rather than omitting it, so the unsupported form is named in the evidence instead of absent from it. A grammar conflict taken on for a construct with no evidence is a risk incurred on somebody else's behalf.",
+      ],
+      patchEvidence:
+        "validation/m14/results/scss-grammar-ab.json — an A/B over the 244 non-empty .scss files in 4 corpora (element-plus, phpmyadmin, vue-core, vue-element-admin), instrument script/m14/tmp/scss-grammar-ab.ts. Both patches together: 73 -> 149 files parsing clean (29.9% -> 61.1%), 76 FIXED, 0 REGRESSED, ERROR nodes 5,624 -> 3,900, and all 3 regression controls (`!important`, mixin+include, `#{$p}` interpolation) unchanged-clean; and the byte-reproducibility check that the locally generated parser matches the package's own shipped src/parser.c exactly (73/244 and 5,624 ERROR nodes on both) — which is the measurement that identifies the base dependency version rather than assuming it. Per corpus: element-plus 16 -> 90, phpmyadmin 50 -> 52, vue-core 1 -> 1, vue-element-admin 6 -> 6, which is why the instrument reports per-repo rather than an aggregate — 17.6% average is element-plus at 16/160 and phpmyadmin at 50/74 wearing the same number. This is the FIRST grammar lane whose win is measured on a corpus the grammar was not written for: 0.20.0 is the version the package declares, not one chosen for the corpus.",
+      buildRequires: [
+        "`npm install --no-save tree-sitter-css@0.20.0` inside grammars/tree-sitter-scss/ before `tree-sitter generate`. grammar.js line 9 is `const CSS = require('tree-sitter-css/grammar')`, so the build is NOT self-contained and fails with `Cannot find module 'tree-sitter-css/grammar'` without it.",
+        "tree-sitter.json is REQUIRED for ABI 15 and is NOT in the npm tarball. Without it `tree-sitter generate` warns and silently emits ABI 14. It was authored here, and the wired bytes are ABI 15.",
+      ],
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-scss",
+      note:
+        "grammar.js (upstream 1.0.0 byte-for-byte except the two marked LOCAL PATCH hunks) + src/scanner.c + package.json + README.md, from the npm tarball tree-sitter-scss@1.0.0, PLUS an authored tree-sitter.json. The external scanner is REQUIRED, not optional: its TokenType enum is exactly CONCAT, which backs `_concatenated_identifier` and therefore SCSS interpolation such as `#{$a}-suffix`. It is the fourth grammar in this repo whose hand-written scanner needed an explicit `.gitignore` negation, because the blanket `grammars/tree-sitter-*/src/*` rule silently untracks it. The GENERATED src/parser.c is deliberately not vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs. THERE IS NO LICENSE FILE IN THE TARBALL — the only evidence of the licence is package.json's `\"license\": \"MIT\"` field, which is a claim by the publisher rather than a licence text. That is recorded here rather than papered over with a substituted file.",
+    },
+    decision:
+      "Pin the local patched rebuild, and require the source↔wasm proof rather than a hash. The alternative was to leave .scss on the CSS grammar, which is where it was routed: 43 of 244 files parsed clean (17.6%) with 30,767 ERROR nodes, because the CSS grammar has no `$variables`, no `@mixin`/`@include`, no `@use`/`@forward` and no interpolation. The stock SCSS grammar was NOT sufficient on its own and was measured before being adopted: 73/244 (29.9%), i.e. better than CSS but still leaving 171 files failing, which is why two patches were written rather than the package being wired as shipped. The trade is recorded rather than hidden: the wired bytes are ours, they are an ABI 15 build of a dependency-based grammar, and 96 of 244 corpus files still fail and are DECLARED rather than claimed.",
+    alternatives: [
+      {
+        option: "leave .scss routed to the CSS lane and declare the dialect unsupported",
+        measured:
+          "Rejected on measurement: 43/244 clean (17.6%) and 30,767 ERROR nodes, and the lane would carry a routing claim for a dialect its grammar cannot read. This is the status quo and it is the thing the SCSS lane exists to replace.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+      {
+        option: "wire tree-sitter-scss@1.0.0's shipped src/parser.c as-is, unpatched",
+        measured:
+          "Rejected on measurement: 73/244 clean (29.9%). It is 1.4x better than the CSS grammar and still leaves 171 files failing, dominated by the `as` clause at 277 error spans. Its value was as the BASE — and it did establish something worth keeping, since the locally generated parser reproduces its shipped parser.c exactly (73/244, 5,624 ERROR nodes both), which is how the 0.20.0 dependency was identified rather than assumed.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+      {
+        option: "rebuild SCSS on top of this repo's patched tree-sitter-css 0.25.0 instead of the 0.20.0 it declares",
+        measured:
+          "NOT POSSIBLE as written, and worth recording because it was the more attractive option — it would have inherited all four CSS patches for free. tree-sitter-scss 1.0.0 is CommonJS (`module.exports = grammar(require('tree-sitter-css/grammar'), {...})`) and tree-sitter-css 0.25.0 ships an ES-module grammar.js, so `require` of it fails with `ReferenceError: grammar is not defined` under the CLI's loader. Bridging it needs either a CJS shim that re-exports the ESM grammar or a port of the SCSS extension to ESM, and the port would also have to reconcile rule-name drift between 0.20 and 0.25 across the ~20 rules the extension overrides. That is a real project with a real risk of silent shape change, and it was declined in favour of two measured patches. The cost of declining is that SCSS does not inherit the CSS lane's `url(../)`, float-keyframe, IE-`progid:` or at-rule-ident fixes; measured cost is unquantified, which is itself the honest statement.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+    ],
+    evidence: [
+      "validation/m14/results/scss-grammar-ab.json",
+      "validation/m14/results/wasm-provenance-census.json",
+      "reviews/m49-css-review.md",
+    ],
+    // Deliberately EMPTY, and that is a fact rather than an omission. Every other
+    // vendored lane lists a copy of the same wasm elsewhere on this machine so the
+    // pin can prove the wired bytes are the ones that were compared. tree-sitter-scss
+    // 1.0.0 ships NO prebuilt wasm at all (its `prebuilds/` are native node
+    // bindings), so there is nothing to compare against and a path that resolves to
+    // nothing would render as `absent` in the census — a row that looks like a
+    // finding and is really just a wrong assumption in this file. The equivalent
+    // proof is behavioural and lives in the A/B: the locally generated parser
+    // reproduces the package's shipped src/parser.c exactly.
+    copies: [],
+    notVendored: [
+      { path: "prebuilds/, bindings/, binding.gyp", why: "native node bindings for 4 platforms; not parser source, and the engine loads the wasm" },
+      { path: "src/parser.c, src/grammar.json, src/node-types.json, src/tree_sitter/", why: "generated by `tree-sitter generate`; the source↔wasm proof runs on the generated JSONs instead" },
+      { path: "queries/", why: "syntax highlighting queries; no consumer in this repo reads them" },
+      { path: "LICENSE", why: "NOT PRESENT IN THE TARBALL. tree-sitter-scss@1.0.0 ships no licence file; package.json declares `license: MIT` and nothing more. Recorded as absent rather than substituted." },
+      { path: "node_modules/ (tree-sitter-css@0.20.0)", why: "a build-time dependency, not source. The exact version is recorded in provenance.base.depOf and in buildRequires, because the package's own range is `^0.20.0` and a range is not a pin." },
+    ],
+  },
+
   css: {
     wired: "wasm/tree-sitter-css.wasm",
     provenance: {
