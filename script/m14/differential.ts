@@ -1228,11 +1228,44 @@ function isKotlinStdlibCall(call: string): boolean {
   if (!call.includes(".") && KOTLIN_BUILTIN_EXTRAS.has(call)) return true
   return false
 }
+/**
+ * M60 (#924): quoting syntax is not part of an identifier's NAME — a backticked
+ * identifier is named by its CONTENT (kotlin/scala), exactly as the analyzer
+ * strips it at its publish boundary (RealKotlinAnalyzer.stripKotlinQuoting,
+ * and the swift half's stripNameQuoting). Every COMPLETE run is quoting, wherever
+ * it sits in a qualified string; an unmatched backtick is not a run. The oracle
+ * must publish the same spelling the analyzer does, or F5 reads the repair as a
+ * mask instead of an agreement.
+ */
+function stripNameQuoting(text: string): string {
+  if (!text.includes("`")) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 96) {
+      const close = text.indexOf("`", i + 1)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 1, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
 export function deriveKotlinEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const push = (label: string, target: string) => {
     if (!target) return
+    // M60 (#924, kotlin half): quoting syntax is not part of the published name.
+    // Mirrors RealKotlinAnalyzer.canonicalizePublishedNames; F5 compares this
+    // oracle's leaf against the analyzer's, so both sides must strip together.      target = stripNameQuoting(target)
     const k = label + "|" + target
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
@@ -1301,6 +1334,25 @@ export function deriveKotlinEdges(root: any): { label: string; from: string; tar
 // emits, wrapper doesn't), field_expression leaf extraction, bracketed
 // type-arg stripping, and the MEASURED companion-apply rule (bare PascalCase
 // callee = instantiates; qualified obj.Method() = calls).
+/**
+ * M60 (#924, scala E): the head TYPE NAME of a scala type node — the same collapse the
+ * generic_type path already performed, applied to every type shape by descending the head
+ * position. Mirrors RealScalaAnalyzer.scalaTypeHeadName: this oracle publishes the
+ * `instantiates` target the analyzer is compared against, and it synthesizes the
+ * anonymous-class name, so both sides must name the same type.
+ */
+function scalaHeadTypeName(typeNode: any): string {
+  let n: any = typeNode
+  for (let guard = 0; n && guard < 8; guard++) {
+    if (n.type === "type_identifier") return n.text
+    if (n.type === "compound_type") n = (typeof n.childForFieldName === "function" ? n.childForFieldName("base") : null) ?? n.namedChild(0)
+    else if (n.type === "applied_constructor_type") n = n.namedChild(0)
+    else if (n.type === "generic_type") n = n.namedChild(0)
+    else break
+  }
+  return String(typeNode.text).replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+}
+
 export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -1369,11 +1421,11 @@ export function deriveScalaEdges(root: any): { label: string; from: string; targ
       }
     } else if (t === "instance_expression") {
       // `new X` / `new X(...)` / `new X[T](...)` — mirror handleInstantiation:
-      // generic supertypes collapse to the head, bracketed args stripped.
+      // (#924: the type node's text carries the CONSTRUCTOR ARGUMENTS, so the head
+      // type is read, not the text).
       const tn = n.namedChild(0)
       if (tn) {
-        let name = tn.text
-        if (tn.type === "generic_type" && tn.namedChildCount > 0) name = tn.namedChild(0).text
+        let name = scalaHeadTypeName(tn)
         let prevName: string | undefined
         do {
           prevName = name
@@ -9369,6 +9421,36 @@ function isPatternPos(node: any): boolean {
 // (references/implements); pass 2 emits calls/instantiates with the same
 // resolution rule (unqualified calls keep only when declared in the enclosing
 // module — or unconditionally at top level, where there is no scope).
+/**
+ * M60 (#924, elixir E): a binary_operator's parts read relative to its operator TOKEN,
+ * never by absolute child index — the mirror of RealElixirAnalyzer.binaryPart. The oracle's
+ * declName names the function the analyzer's declaration is compared against, so a comment
+ * between the head and its `when` guard must not become a name on either side.
+ */
+function elixirBinaryPart(node: any, part: "operator" | "left" | "right"): any {
+  let opIdx = -1
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && !c.isNamed) { opIdx = i; break }
+  }
+  if (opIdx === -1) return null
+  if (part === "operator") return node.child(opIdx)
+  // A COMMENT is not an operand (mirrors the analyzer's binaryPart, trivia skipped).
+  const isTrivia = (c: any) => c.type === "comment"
+  if (part === "left") {
+    for (let i = opIdx - 1; i >= 0; i--) {
+      const c = node.child(i)
+      if (c && c.isNamed && !isTrivia(c)) return c
+    }
+    return null
+  }
+  for (let i = opIdx + 1; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && c.isNamed && !isTrivia(c)) return c
+  }
+  return null
+}
+
 export function deriveElixirEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -9477,13 +9559,15 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (sig && sig.type === "arguments" && sig.namedChildCount > 0) sig = sig.namedChild(0)
     if (!sig) return ""
     let actual: any = sig
-    if (sig.type === "binary_operator" && sig.childCount > 1 && sig.child(1)?.text === "when") {
-      actual = sig.childCount > 0 ? sig.child(0) : undefined
+    // M60 (#924, elixir E): the mirror of the analyzer's binaryPart reads — a comment
+    // between the head and its `when` guard sits at index 1.
+    if (sig.type === "binary_operator" && elixirBinaryPart(sig, "operator")?.text === "when") {
+      actual = elixirBinaryPart(sig, "left") ?? undefined
     }
     if (!actual) return ""
     if (actual.type === "call") return find(actual, (c) => c.type === "identifier")?.text ?? ""
     if (actual.type === "identifier") return actual.text
-    if (actual.type === "binary_operator") return actual.childCount > 1 ? actual.child(1)?.text ?? "" : ""
+    if (actual.type === "binary_operator") return elixirBinaryPart(actual, "operator")?.text ?? ""
     if (actual.type === "unary_operator") {
       // ELXD24 mirror: the name is the anonymous operator token.
       for (let i = 0; i < actual.childCount; i++) {
@@ -9706,6 +9790,25 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
             // Dependency targets: exactly one module, except multi-alias
             // (`alias Foo.{Bar, Baz}`) which expands per member (ELXD20).
             let depModules: string[] = [moduleName]
+            // M60 (#924, elixir E): the mirror of the analyzer's group expansion — the
+            // group form is a dependency shape for every directive, and its members are
+            // the module NAMES.
+            if (target !== "alias") {
+              const groupDot = find(args, (c) => c.type === "dot" && !!find(c, (d) => d.type === "tuple"))
+              const groupTuple = groupDot ? find(groupDot, (c) => c.type === "tuple") : undefined
+              if (groupDot && groupTuple) {
+                depModules = []
+                const rawPrefix = find(groupDot, (c: any) => c.type === "alias")?.text
+                  ?? find(groupDot, (c: any) => c.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
+                const prefix = resolveAliasO(resolveSelfO(rawPrefix))
+                for (let i = 0; i < groupTuple.namedChildCount; i++) {
+                  const kid = groupTuple.namedChild(i)
+                  if (!kid || (kid.type !== "alias" && kid.type !== "dot")) continue
+                  const full = prefix ? `${prefix}.${kid.text}` : kid.text
+                  if (full) depModules.push(full)
+                }
+              }
+            }
             if (target === "alias") {
               const multiDot = find(args, (c) => c.type === "dot" && !!find(c, (d) => d.type === "tuple"))
               const tuple = multiDot ? find(multiDot, (c) => c.type === "tuple") : undefined
@@ -11440,6 +11543,37 @@ export function deriveFsharpEdges(root: any): { label: string; from: string; tar
   return edges
 }
 
+/**
+ * M60 (#924, zig half): `@"…"` is quoting, so the published name is the content
+ * of the identifier — mirrors RealZigAnalyzer.stripZigQuoting. Six reads in this
+ * file need it: deriveZigEdges' callee and member leaves, and deriveZigBareUses'
+ * binding, scope and target reads. The last group matters most: that oracle builds
+ * its file-scope inventory from the ANALYZER's symbols (canonical after the fix)
+ * while every other read comes from the tree, so without stripping the two sides
+ * would spell one name two ways and the shadowing gate would read a phantom.
+ * Z6's `_` and index comparisons are unaffected (they never compare text).
+ */
+function stripZigQuoting(text: string): string {
+  if (!text.includes('@"')) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 64 && text[i + 1] === '"') {
+      const close = text.indexOf('"', i + 2)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 2, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -11452,7 +11586,7 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
   const leafOf = (fe: any): string | undefined => {
     if (!fe) return undefined
     const last = fe.namedChildCount > 0 ? fe.namedChild(fe.namedChildCount - 1) : null
-    if (last && last.type === "identifier") return last.text
+    if (last && last.type === "identifier") return stripZigQuoting(last.text)
     return undefined
   }
   const stack: any[] = [root]
@@ -11461,7 +11595,7 @@ export function deriveZigEdges(root: any): { label: string; from: string; target
     if (n.type === "call_expression") {
       const callee = n.namedChildCount > 0 ? n.namedChild(0) : null
       let leaf: string | undefined
-      if (callee && callee.type === "identifier") leaf = callee.text
+      if (callee && callee.type === "identifier") leaf = stripZigQuoting(callee.text)
       else if (callee && callee.type === "field_expression") leaf = leafOf(callee)
       // ZGD4 mirror: usingnamespace is an import operator, not a user symbol.
       if (leaf === "usingnamespace") leaf = undefined
@@ -11535,7 +11669,7 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
     while (w.length > 0) {
       const m = w.pop()!
       if (m !== node && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal" || m.type === "block" || m.type === "block_expression")) continue
-      if (m.type === "identifier" && m.text !== "_") out.add(m.text)
+      if (m.type === "identifier" && m.text !== "_") out.add(stripZigQuoting(m.text))
       for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
     }
   }
@@ -11544,7 +11678,7 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (c && c.type === "identifier") {
-        if (c.text !== "_") out.add(c.text)
+        if (c.text !== "_") out.add(stripZigQuoting(c.text))
         return
       }
     }
@@ -11635,14 +11769,14 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
           const c = n.namedChild(i)
           if (!c) continue
           if (c.type === "identifier") {
-            if (c.text !== "_") scopes[scopes.length - 1].add(c.text)
+            if (c.text !== "_") scopes[scopes.length - 1].add(stripZigQuoting(c.text))
             break
           }
           break
         }
       }
     } else if (t === "identifier") {
-      const name = n.text
+      const name = stripZigQuoting(n.text)
       const p = n.parent
       let inError = false
       if (p && p.type === "error_type" && p.namedChildCount > 0) {
@@ -12785,9 +12919,11 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     if (t === "instance_expression") {
       const tn = n.namedChild(0)
       if (tn) {
-        let name = tn.text
-        if (tn.type === "generic_type" && tn.namedChildCount > 0) name = tn.namedChild(0).text
-        // ScalaD-I (M37.21 #610, cats-effect SecureRandomCompanionPlatform):
+        // M60 (#924, scala E): the head type NAME. The old read published the type
+        // node's whole text and this comment recorded WHY that was tolerated
+        // ("truth must normalize identically or the pair never matches") — the
+        // normalization matched two sides spelling the same EXPRESSION.
+        let name = scalaHeadTypeName(tn)
         // the analyzer strips bracketed type args ITERATIVELY from the raw
         // constructor text (`ScalaRandom[F](Applicative[F].pure(random)) with
         // SecureRandom[F]` -> `ScalaRandom(Applicative.pure(random)) with
@@ -13252,9 +13388,8 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     if (!body) return
     const tn = n.namedChild(0)
     if (!tn) return
-    let superName = tn.text
-    if (tn.type === "generic_type" && tn.namedChildCount > 0) superName = tn.namedChild(0).text
-    superName = superName.replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
+    // M60 (#924, scala E): the synthetic name is built from the head type NAME.
+    let superName = scalaHeadTypeName(tn)
     if (!superName) return
     const anonName = `anonymous_${superName}`
     if (!decls[anonName]) {
