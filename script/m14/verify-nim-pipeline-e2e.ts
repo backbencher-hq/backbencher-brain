@@ -115,6 +115,35 @@ proc useAll*() =
 `,
   )
 
+  // The CROSS-FILE override pair. `Painter` and its `{.base.} paint` live here;
+  // `GlossPainter` and the method that overrides `paint` live in a SIBLING module
+  // that never sees this file's symbols. The `overrides` edge between them is
+  // only derivable from the project's override companion index, which is why this
+  // is the one family no single-file fixture can express.
+  fs.writeFileSync(
+    path.join(TMP, "src", "painter.nim"),
+    `type
+  Painter* = ref object of RootObj
+    canvas*: string
+
+method paint*(p: Painter): string {.base.} =
+  p.canvas
+`,
+  )
+
+  fs.writeFileSync(
+    path.join(TMP, "src", "gloss.nim"),
+    `import ./painter
+
+type
+  GlossPainter* = ref object of Painter
+    sheen*: int
+
+method paint*(g: GlossPainter): string =
+  $paint(g) & "!" & $g.sheen
+`,
+  )
+
   fs.writeFileSync(
     path.join(TMP, "shapes.nimble"),
     `version       = "0.1.0"
