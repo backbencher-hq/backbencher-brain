@@ -94,8 +94,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       target: string,
       metadata: Record<string, unknown>,
       line?: number,
+      // The two ends name DIFFERENT sites even when they spell the same string.
+      // See the call site below for why a name cannot answer that question here.
+      distinctSites = false,
     ) => {
-      if (!source || !target || source === target) return
+      if (!source || !target) return
+      if (source === target && !distinctSites) return
       const at = typeof line === "number" && line > 0 ? line : 0
       const id = `${source}\u0000${type}\u0000${target}\u0000${at}`
       if (relIds.has(id)) return
@@ -184,7 +188,17 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           const { id, target, repeat } = siteId(base, name)
           const range = this.nodeToRange(node)
           symbols.push({
-            name,
+            // The site's RESOLVED spelling, which is the bare text for a first
+            // occurrence and `Text#n` for a repeat. It has to be this and not the
+            // bare text: the edge below already says `target`, the store resolves
+            // an endpoint by symbol NAME, and publishing the bare text while the
+            // edge says `Text#2` is a name nothing declares. Measured on this lane's
+            // own corpus, 120 scala3 markdown files: 529 of 1,843 relationships
+            // (28.7%) named a symbol that did not exist, every one of them a
+            // repeated site. A first occurrence is unchanged, which is why
+            // `heading-identity` and `code-block-site-identity` still read as they
+            // always did and this went unmeasured for a full review cycle.
+            name: target,
             kind: ASTEngine.SymbolKind.Type,
             id,
             qualifiedName: id,
@@ -205,9 +219,30 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // The edge's SOURCE is the parent's contract spelling and its TARGET is the
           // child's identity, so a repeated child is addressable while a first
           // occurrence reads exactly as it always did.
-          if (owner) addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "heading_hierarchy" }, range.startLine)
-          headingStack.push({ name, id, level })
-          currentOwner = name
+          //
+          // A child whose TEXT equals its parent's is a real containment between two
+          // different sections — `# Changelog` over `## Changelog`, `# Setup` over
+          // `## Setup` — and it used to publish NOTHING, because both ends spell
+          // `Changelog` and `addRel` drops a self-edge. Found by the differential, not
+          // by the read: the tree oracle derives the edge from the grammar and the
+          // analyzer did not have it, so one corpus file
+          // (`vendor/github.com/google/uuid/CHANGELOG.md`, kubernetes) read MISSING=1
+          // in about one draw in nine, which is exactly the rate at which a reader
+          // would have written it off as noise.
+          //
+          // `ownerId !== id` is not a hopeful check: a child's id is
+          // `${ownerId}.${name}` (or that with a `#n` site suffix), so for any
+          // non-empty `name` it can never equal `ownerId`. `if (name)` above already
+          // excludes the empty case. The two symbols are therefore distinct by
+          // construction, and the self-edge filter — which exists to stop a symbol
+          // referring to itself — has nothing to stop here.
+          if (owner) addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "heading_hierarchy" }, range.startLine, ownerId !== id)
+          // The stack carries the RESOLVED spelling, so a child of a repeated parent
+          // names the parent the way the parent is published and the way the parent's
+          // own incoming edge names it. Three spellings of one thing would be the
+          // defect this fixes, not a reason to keep the bare one here.
+          headingStack.push({ name: target, id, level })
+          currentOwner = target
           currentOwnerId = id
         }
         patterns.push("Markdown headings")
@@ -236,7 +271,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const { id, target, repeat } = siteId(base, name)
         const range = this.nodeToRange(node)
         symbols.push({
-          name,
+          name: target,
           kind: ASTEngine.SymbolKind.Class,
           id,
           qualifiedName: id,
@@ -262,7 +297,33 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
               // A column is a site too, and a table's columns are addressed by the
               // table's OWN disambiguated id so two same-header tables never share
               // a column endpoint.
-              if (col) addRel(target, ASTEngine.RelationshipType.Contains, col, { role: "table_column" }, range.startLine)
+              if (!col) continue
+              // The SYMBOL is what makes that edge resolvable, and it is the half
+              // that was missing: the comment above said columns are sites, the edge
+              // was emitted for every column of every table, and no column symbol was
+              // ever declared — so the edge named something the file did not contain.
+              // Measured after the repeat-site fix above, over 120 scala3 markdown
+              // files, 31 endpoints still named no symbol and every one of them was
+              // a column. A table column is a member of its table, so it publishes as
+              // one: the header cell's own range, so a reader can navigate to it.
+              const cSite = siteId(`${id}.${col}`, col)
+              symbols.push({
+                name: cSite.target,
+                kind: ASTEngine.SymbolKind.Property,
+                id: cSite.id,
+                qualifiedName: cSite.id,
+                range: this.nodeToRange(cell),
+                visibility: "public",
+                ownerName: target,
+                ownerKind: ASTEngine.SymbolKind.Class,
+                scope: target,
+                metadata: {
+                  nodeType: "pipe_table_cell",
+                  isMarkdownTableColumn: true,
+                  isRepeatedSite: cSite.repeat || undefined,
+                },
+              })
+              addRel(target, ASTEngine.RelationshipType.Contains, cSite.target, { role: "table_column" }, range.startLine, cSite.id !== id)
             }
           }
         }
@@ -281,7 +342,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const { id, target, repeat } = siteId(base, name)
         const range = this.nodeToRange(node)
         symbols.push({
-          name,
+          name: target,
           kind: ASTEngine.SymbolKind.Function,
           id,
           qualifiedName: id,
@@ -308,7 +369,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const { id, target, repeat } = siteId(`${owner}.${name}`, name)
         const range = this.nodeToRange(node)
         symbols.push({
-          name,
+          // Same rule as every other site: the published name is the RESOLVED
+          // spelling, so a document with two front-matter blocks publishes
+          // `front_matter` and `front_matter#2` and any edge naming the second
+          // resolves. A first occurrence — every document until the second block
+          // exists — is byte-identical to what it always was.
+          name: target,
           kind: ASTEngine.SymbolKind.Namespace,
           id,
           qualifiedName: id,

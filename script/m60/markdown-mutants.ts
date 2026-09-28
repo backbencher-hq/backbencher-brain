@@ -27,6 +27,9 @@
  *   `markdown/empty-heading-published`   a `contains` chain named `#` -> `##` -> `###`
  *   `markdown/setext-multiline-joined`   a name containing a newline
  *   `markdown/code-span-link-emitted`    a link inside backticks published as a link
+ *   `markdown/repeat-site-name-collapsed`   28.7% of relationships named a symbol the file did not declare
+ *   `markdown/parent-name-collision-dropped` a heading under an identically-named parent published no edge
+ *   `markdown/table-column-symbol-dropped`  every table-column edge named a symbol that was never declared
  *
  * The last one is the most interesting, and it inverts the usual shape. Every other
  * mutant REMOVES a fact; that one ADDS one, by descending into `code_span` children that
@@ -301,5 +304,69 @@ export const MARKDOWN_MUTANTS = [
       }
       return { ...r, relationships: rels }
     },
+  },
+  // ---------------------------------------------------------------- endpoint resolvability
+  {
+    id: "markdown/repeat-site-name-collapsed",
+    language: "markdown",
+    defectClass: "dangling-endpoint",
+    description:
+      "REVERT: a repeated site publishes the BARE name again while its edge keeps the suffixed " +
+      "spelling, i.e. the state this round measured at 529 of 1,843 relationships (28.7%) over 120 " +
+      "scala3 markdown files naming a symbol the file did not declare. The store keys a " +
+      "relationship by (source, type, target, line) and checks the target name against a denylist " +
+      "rather than for existence, so an unsatisfiable name does not fail loudly -- it writes a row " +
+      "referencing a symbol id no symbol row has. The diff could not see it: the independent " +
+      "oracle derives the same suffixed spelling, so both sides agreed on a name neither " +
+      "published, and two implementations sharing a convention is not evidence that the " +
+      "convention resolves. Caught by markdown/code-block-site-identity's " +
+      "`expectSymbolCount { name: code_block.scala#2, equals: 1 }` and by " +
+      "markdown/table-structure's `forbidSymbols { Name/Meaning#2 }`.",
+    transform: (r: MutantResult) => {
+      const bare = (n: unknown) => (typeof n === "string" ? String(n).replace(/#\d+$/, "") : n)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => ({ ...s, name: bare(s.name) })),
+        relationships: (r.relationships ?? []).map((x: any) => ({ ...x, target: bare(x.target) })),
+      }
+    },
+  },
+  {
+    id: "markdown/parent-name-collision-dropped",
+    language: "markdown",
+    defectClass: "relationship-loss",
+    description:
+      "REVERT: the heading-hierarchy edge is dropped whenever the two ends spell the same string, " +
+      "i.e. the self-edge filter is asked about NAMES rather than about identity. A `## Changelog` " +
+      "under a `# Changelog` is two distinct sites -- the child's id is qualified by its parent's -- " +
+      "so the containment is real and the edge must be published. Found by the differential rather " +
+      "than by the read, and found quietly: the tree oracle derives the edge from the grammar, the " +
+      "analyzer did not have it, and the kubernetes draw read MISSING=1 in about one draw in nine " +
+      "(`vendor/github.com/google/uuid/CHANGELOG.md`), which is the rate at which a reader writes " +
+      "a count off as sampling noise. Caught by markdown/heading-parent-name-collision, whose two " +
+      "`Changelog -> Changelog` rows and `Setup -> Setup` row cannot be satisfied by a name-keyed filter.",
+    transform: (r: MutantResult) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata?.role === "heading_hierarchy" && x.source === x.target),
+      ),
+    }),
+  },
+  {
+    id: "markdown/table-column-symbol-dropped",
+    language: "markdown",
+    defectClass: "dangling-endpoint",
+    description:
+      "REVERT: a table column declares no symbol, while its `table_column` edge is still emitted -- " +
+      "the state in which the analyzer's own comment said 'a column is a site too' and the site " +
+      "never shipped. Measured after the repeat-site fix, over the same 120 files, 31 endpoints " +
+      "still named no symbol and every remaining one was a column. The edges survive this mutant " +
+      "on purpose: that is what made the defect invisible, because a count of relationships cannot " +
+      "tell an edge to nothing from an edge to something. Caught by markdown/table-structure's " +
+      "`isMarkdownTableColumn` assertions and its `Reading -> Reading` column edge.",
+    transform: (r: MutantResult) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.isMarkdownTableColumn),
+    }),
   },
 ]
