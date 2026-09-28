@@ -259,7 +259,51 @@ const dropLoopVariables = (r: any) => ({
   }),
 })
 
+/**
+ * S10 REVERT — identically-named scopes collapse back into one.
+ *
+ * Identity is `(kind, resolved name)`, which is right for a `$variable` and wrong for a
+ * scope: two `@each $size in (large, small)` in two nesting contexts are two constructs
+ * at two places in the file. Collapsing them loses the second scope AND the owner of
+ * everything inside it, so every `$var` read in the second loop emits no edge.
+ *
+ * Measured on `element-plus/packages/theme-chalk/src/checkbox.scss`: two
+ * `each_statement`s (L76, L266) with identical text collapsed into one, and the
+ * differential reported 7 MISSING rows that were the ANALYZER losing information.
+ *
+ * A mutant for a defect the DIFFERENTIAL found rather than a fixture, which is the
+ * first time that has happened in this lane and the reason the differential earns its
+ * maintenance cost.
+ */
+const collapseIdenticallyNamedScopes = (r: any) => {
+  const byName = new Map<string, any[]>()
+  const out: any[] = []
+  for (const s of r.symbols ?? []) {
+    if (!s.metadata?.isScssControlFlow) {
+      out.push(s)
+      continue
+    }
+    // the disambiguated name with its `#N` suffix stripped, so a collision reads as one
+    const base = String(s.name).split("#")[0]
+    if (!byName.has(base)) byName.set(base, [])
+    byName.get(base)!.push(s)
+  }
+  for (const members of byName.values()) {
+    // keep the FIRST and drop the rest — the pre-fix behaviour
+    out.push(members[0])
+  }
+  return { ...r, symbols: out }
+}
+
 export const SCSS_MUTANTS = [
+  {
+    id: "scss/identically-named-scopes-collapsed",
+    language: "scss",
+    defectClass: "unresolvable-identity",
+    description:
+      "S10 REVERT: two control-flow scopes with identical text collapse back into one symbol, so the second publishes nothing and the owner of everything inside it disappears. Identity by (kind, name) is CORRECT for a $variable — one thing assigned in several places — and wrong for a scope. Measured: two each_statements (L76, L266) in checkbox.scss, and 7 MISSING differential rows that were the analyzer losing information rather than the truth being wrong. Caught by identically-named-scopes-are-distinct, which pins BOTH the plain name and the #2 disambiguation.",
+    transform: collapseIdenticallyNamedScopes,
+  },
   {
     id: "scss/variable-identity-collapsed",
     language: "scss",

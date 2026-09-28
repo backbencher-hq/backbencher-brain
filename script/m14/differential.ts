@@ -415,6 +415,17 @@ export const LANG_REPOS: Record<string, string> = {
   // against its own earlier pin table: ansible and helm were transposed there
   // (2082/715); the measured values are 2,062 and 715.
   yaml: "kubernetes",
+  // M14 #290: markdown's primary corpus is `scala3` — 738 tracked .md files, the
+  // largest markdown holding in CORPUS_ROOT (measured over all 74 repos, top 15:
+  // scala3 738, kubernetes 595, docker 538, proxicall 488, otp 401, ohmyzsh 395).
+  // It is also the corpus the M12 manifest already pins for this lane
+  // (validation/m12/corpus-manifest.json -> markdown/scala3@18df09c0), so M12 and
+  // F5 now measure the SAME pinned file set under ONE pin: two instruments, one
+  // claim about one corpus, instead of two claims about two that can drift apart
+  // silently. The dialect is compiler-spec prose — setext headings, admonitions,
+  // heavy link graphs into other spec pages — which is a real dialect and not a
+  // set of READMEs.
+  markdown: "scala3",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -504,6 +515,18 @@ export const SECOND_CORPUS: Record<string, string> = {
   // say, this says: whether a relationship the analyzer infers from kubernetes'
   // conventions is real or corpus-specific.
   yaml: "ansible",
+  // M14 #290: markdown's second corpus is `kubernetes` — 595 tracked .md files,
+  // measured, and a genuinely different dialect rather than a second copy of one.
+  // scala3's markdown is compiler-specification prose: setext underlines, long
+  // cross-reference link graphs, tables of grammar productions. kubernetes' is
+  // hand-written user documentation: ATX headings throughout, GFM tables carrying
+  // API columns, fenced code blocks with a dozen languages, and relative links into
+  // a sibling tree. The two corpora share almost no construct mix, which is the
+  // property the two-corpus gate exists for — a defect with zero occurrences in the
+  // primary has to be exercised by a different codebase's dialect. Concretely: the
+  // primary has 0 pipe tables worth speaking of and kubernetes has them everywhere,
+  // and the primary's setext headings have no counterpart there at all.
+  markdown: "kubernetes",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -566,6 +589,12 @@ const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BAT
 // to agree with rather than a second opinion kept here.
 const ROUTER_LANGUAGE: Record<string, string> = { objc: "objective-c" }
 const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).toLowerCase()
+
+// M14 #290: the markdown truth oracle lives in its own file because it is the
+// first oracle here with a SECOND grammar and a sub-parse of its own; keeping it
+// beside the 25 single-grammar oracles in this 18,000-line file would hide that
+// it is not the same kind of thing. It imports NOTHING from the analyzer.
+import { deriveMarkdownEdges } from "./markdown-oracle"
 
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
@@ -682,6 +711,27 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // truth. The oracle found three real analyzer defects on cargo's first run — see
   // the fixture `dotted-and-quoted-paths`, which exists only because of them.
   toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
+  // M14 #290: markdown joins the differential lane with `deriveMarkdownEdges`
+  // (script/m14/markdown-oracle.ts) as its truth — and it is the first lane here
+  // whose oracle needs a SECOND grammar.
+  //
+  // The block grammar leaves inline content as an opaque text node, so links,
+  // images, autolinks and reference links are not nodes in it; the ENGINE
+  // pre-parses every `inline` node with the companion `tree-sitter-markdown_inline`
+  // and hands the trees over on the analyze context (the vue/svelte SFC seam). The
+  // oracle loads its OWN copy of that companion, because an oracle that read the
+  // analyzer's pre-parse would agree with it by construction — and the F9 collusion
+  // check treats shared data as blindness.
+  //
+  // The lane also joins the production-parity set below, without which the
+  // analyzer would be handed no context at all and would emit ZERO `uses` edges:
+  // the whole class of markdown facts would be absent from both sides and the row
+  // would read as agreement about nothing.
+  //
+  // `ext` carries BOTH spellings `language-detection.ts` routes here (`md` and
+  // `markdown`). A lane that measured one and is routed for two would be measured
+  // on a different file set than it is served — the cpp `.cpp` defect.
+  markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -2398,9 +2448,27 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         } else if (c.type === "function_declaration" || c.type === "generator_function_declaration" ||
                    c.type === "class_declaration" || c.type === "function_expression" ||
                    c.type === "arrow_function" || c.type === "class") {
+          // JD-J14 (M60, 2026-09-27): the export name of a DEFAULT declaration is
+          // `default`, never the declaration's own name. `export default function
+          // fragment(){}` exports `default`; `fragment` is a local binding importers
+          // cannot reach and nothing named `fragment` is exported.
+          //
+          // This oracle made the SAME mistake as the analyzer, which is why the
+          // lane read 100%/0/0 on the exports class while both were wrong. Two
+          // oracles that share an error agree perfectly and the differential
+          // cannot see it — the exact trap this file warns about twice ("mirroring
+          // the analyzer here would reproduce its blind spot by construction").
+          // It surfaced only from OUTSIDE the differential: the corpus-scale
+          // import audit asked a question the differential never asks (does this
+          // module's export surface contain the name an importer wants?) and found
+          // 8 default-import rows whose target exports did not contain the
+          // importer's declared name.
           const nm = c.childForFieldName?.("name")
           sawNamed = true
-          push("exports", nm?.text ?? "default")
+          // `sawDefaultToken` is the statement-level flag already computed for
+          // this export_statement; the declaration's own name is only the export
+          // name when the export is NOT a default export.
+          push("exports", sawDefaultToken ? "default" : nm?.text ?? "default")
         } else if (c.type === "lexical_declaration" || c.type === "variable_declaration") {
           for (let j = 0; j < c.namedChildCount; j++) {
             const d = c.namedChild(j)
@@ -14603,6 +14671,157 @@ function oracleRefreshUrl(content: string): string {
  * so the CSS oracle already covers those — adding them here would double-count every
  * `contains` edge in the comparison.
  */
+/**
+ * Selector text as a graph name.
+ *
+ * Whitespace around a comma is normalised, because `h1,h2` and `h1, h2` are the same
+ * author-written selector, and a name that depended on the author's spacing would make
+ * one construct two symbols.
+ *
+ * Module scope, not local to `deriveCssEdges`: `deriveScssEdges` needs the same
+ * naming, and two implementations of a naming rule is how a graph ends up with `.card`
+ * on one side of an edge and `div .card` on the other.
+ */
+export function normalizeSelector(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim()
+}
+
+/**
+ * A nested selector's RESOLVED name, resolving every member of a comma group
+ * SEPARATELY and taking the CROSS PRODUCT when the parent is a group too.
+ *
+ * Module scope for the same reason as `normalizeSelector`. The two oracles MUST agree
+ * on this, and the alternative — a copy in each — is a divergence waiting to happen,
+ * which is not hypothetical: the first version of `deriveScssEdges` had no rule owner
+ * at all and derived zero `uses` edges for a file with six `@include`s.
+ */
+export function resolveNestedSelector(asWritten: string, parent: string): string | null {
+  if (!asWritten) return null
+  const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
+  const parents = parent.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
+  if (members.length === 0 || parents.length === 0) return null
+  const resolved: string[] = []
+  for (const p of parents) {
+    for (const member of members) {
+      resolved.push(
+        member.includes("&") ? normalizeSelector(member.split("&").join(parent)) : normalizeSelector(`${p} ${member}`),
+      )
+    }
+  }
+  // DEDUPLICATE, order-preserving. The product of a four-member parent group and a
+  // two-member child group is eight entries of which four are repeats, and a name that
+  // lists the same selector four times is a worse name than one that lists it once:
+  // it is longer, and every consumer that splits it on commas gets duplicates.
+  //
+  // Measured on `element-plus/packages/theme-chalk/src/breadcrumb-item.scss`, whose
+  // L28-29 is `&.is-link,` / `& a {` under a four-member parent group: the oracle
+  // derived
+  //
+  //   `.__inner, .__inner a, .__inner, .__inner a:hover, .__inner, .__inner a, …`
+  //
+  // and the analyzer published
+  //
+  //   `.__inner, .__inner:hover, .__inner a, .__inner a:hover`
+  //
+  // Four rows of the differential's residue were this one disagreement, in both
+  // directions at once — the same 4 selectors, one of them listed 8 times.
+  const unique: string[] = []
+  for (const r of resolved) if (!unique.includes(r)) unique.push(r)
+  return normalizeSelector(unique.join(", "))
+}
+
+/**
+ * Every CSS identifier in `text`, as the tokens a value would be read as.
+ *
+ * CHARACTER SCAN, NOT A PATTERN. The three call sites this replaces each ran their own
+ * identifier pattern — a leading class of letter-or-underscore followed by a body class
+ * of word characters and hyphens — and that is three ways to be wrong in an oracle: the
+ * two classes are not the same shape and do not say so, the body re-specifies what the
+ * shorthand already gives you, and nothing records what the rule IS. A scan states it
+ * once — a name starts with a letter or underscore and continues with letters, digits,
+ * underscores and hyphens, which is CSS's own definition — and it has no backtracking
+ * and no capture-group bookkeeping to get wrong.
+ *
+ * (The pattern is written out in prose rather than in a literal here on purpose: a
+ * regex containing a star-slash would close this comment, which is its own small
+ * demonstration of why these belong in prose.)
+ */
+/**
+ * Whether a selector names the UNIVERSAL SELECTOR and nothing else — `*`, `*::before`,
+ * `*|a`, `* > b`. CSS-D8 suppresses these: they carry no semantic symbol, and a mixed
+ * group is SPLIT so the real members keep their own names.
+ *
+ * Character tests rather than a pattern. "Names `*` and nothing else" reduces to a
+ * length check plus a first-character test, and saying it that way cannot go stale when
+ * the set of pseudo-forms grows.
+ */
+export function isResetSelectorText(raw: string): boolean {
+  const x = raw.trim()
+  if (x === "*") return true
+  if (!x.startsWith("*")) return false
+  const next = x.charAt(1)
+  return next === "|" || next === ":" || next === " " || next === ">"
+}
+
+export function scanCssIdentifiers(text: string): string[] {
+  const out: string[] = []
+  let i = 0
+  while (i < text.length) {
+    const c = text[i]
+    const startsName = (c >= "A" && c <= "Z") || (c >= "a" && c <= "z") || c === "_" || c === "-"
+    if (!startsName) {
+      i++
+      continue
+    }
+    const start = i
+    if (c === "-") i++
+    while (i < text.length) {
+      const d = text[i]
+      const isNameChar =
+        (d >= "A" && d <= "Z") || (d >= "a" && d <= "z") || (d >= "0" && d <= "9") || d === "_" || d === "-"
+      if (!isNameChar) break
+      i++
+    }
+    const token = text.slice(start, i)
+    if (token.length > 0) out.push(token)
+  }
+  return out
+}
+
+/**
+ * Every custom property a value READS, as the `--name` a `var()` names.
+ *
+ * A scan for var(, optional whitespace, then -- and the name. A pattern here was
+ * /var[(][ ]*(--[\w-]+)/g, which cannot be wrong about well-formed input — but it
+ * also cannot REPORT anything about malformed input, and an oracle that silently finds
+ * nothing in a value it did not understand is the shape of bug this project keeps
+ * meeting. A scan returns the same list and says how far it got.
+ */
+export function scanVarReferences(text: string): string[] {
+  const out: string[] = []
+  let i = 0
+  while (i < text.length) {
+    const at = text.indexOf("var(", i)
+    if (at < 0) return out
+    let j = at + 4
+    while (j < text.length && (text[j] === " " || text[j] === "\t" || text[j] === "\n")) j++
+    if (text[j] === "-" && text[j + 1] === "-") {
+      const start = j
+      j += 2
+      while (j < text.length) {
+        const d = text[j]
+        const ok =
+          (d >= "A" && d <= "Z") || (d >= "a" && d <= "z") || (d >= "0" && d <= "9") || d === "_" || d === "-"
+        if (!ok) break
+        j++
+      }
+      out.push(text.slice(start, j))
+    }
+    i = at + 4
+  }
+  return out
+}
+
 export function deriveScssEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14633,7 +14852,22 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
   const variables = new Set<string>()
   const namespaces = new Set<string>()
   ;(function walk(n: any) {
-    if (!n || n.type === "ERROR") return
+    // DESCEND INTO ERROR NODES. The analyzer recovers through them — error recovery
+    // is what keeps a broken region in the output at all — so a truth that stops at
+    // the first ERROR models a strictly smaller file than the one the analyzer saw.
+    //
+    // Measured on `element-plus/packages/theme-chalk/src/common/var.scss`: 1,716 lines
+    // carrying OVER 400 disjoint ERROR spans (the `map.merge((…))` map-literal class,
+    // declared as SCSS-L1). The oracle stopped at each one and derived almost nothing,
+    // while the analyzer recovered through all of them. The consequence was 5
+    // `scss-variable-read-not-derived` and 1 missing `uses` row that are not analyzer
+    // defects at all — they are the truth being blind exactly where the grammar fails.
+    //
+    // The content inside an ERROR is genuinely unreliable, so anything derived from it
+    // is a weaker claim. That is worth knowing and is recorded by counting it, which is
+    // why `deriveScssEdges` reports how much of what it derived sat under an ERROR —
+    // a truth that cannot say how much of itself is shaky is not one to trust blindly.
+    if (!n) return
     if (n.type === "mixin_statement") {
       const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
       if (name) mixins.add(`@mixin ${collapse(textOf(name))}`)
@@ -14652,21 +14886,94 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
     for (const c of kids(n)) walk(c)
   })(root)
 
-  // Pass 2 — the references, carrying the enclosing entity as `owner` as we descend.
-  ;(function walk(n: any, owner: string) {
-    if (!n || n.type === "ERROR") return
+  // Pass 2 — the references, carrying TWO things as we descend, because they are not
+  // the same thing:
+  //
+  //   owner  the enclosing ENTITY, which sources an `@include`, an `@extend` or a
+  //          `$var` read. A mixin body has one.
+  //   scope  the enclosing SELECTOR, which a nested rule is resolved against.
+  //          A mixin body has NONE, and that is the whole point of the pair.
+  //
+  // A rule inside a Sass mixin is a TEMPLATE, not nested CSS: `@mixin m { .btn {} }`
+  // makes `.btn` a real top-level selector wherever `m` is included. Resolving it
+  // against the mixin produced `@mixin m .btn`, which is a name NOTHING can join
+  // against — the mixin is not a selector — and which would give the same `.btn` two
+  // different names in two different mixins, reintroducing exactly the identity
+  // collision the lane spent its wave removing. The analyzer publishes `.btn`; the
+  // first oracle did not, and 10 corpus rows of `MISSING` were the disagreement.
+  ;
+  (function walk(n: any, owner: string, scope: string) {
+    // descends into ERROR nodes for the reason given in pass 1
+    if (!n) return
     let nextOwner = owner
+    let nextScope = scope
     if (n.type === "mixin_statement") {
       const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      // the mixin OWNS the statements directly in its body, and resets the SELECTOR
+      // context so a rule inside it is a template rather than a descendant
       nextOwner = name ? `@mixin ${collapse(textOf(name))}` : owner
+      nextScope = ""
     } else if (n.type === "function_statement") {
       const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
       nextOwner = name ? `@function ${collapse(textOf(name))}` : owner
+      nextScope = ""
+    } else if (
+      n.type === "each_statement" ||
+      n.type === "if_statement" ||
+      n.type === "for_statement" ||
+      n.type === "while_statement"
+    ) {
+      // A control-flow construct OWNS what is inside it, named exactly as the analyzer
+      // names its `interface` symbol: the keyword plus the construct's own text up to
+      // its block, collapsed to one line (M60 R10 — a target must be spelled the way
+      // the lane spells its own symbols, deterministically).
+      //
+      // Measured: `button.scss`'s one `$button-icon-span-gap` read is at L305, inside
+      // `@each $size in (large, small)`, and the analyzer sources it from
+      // `@each $size in (large, small)`. The oracle derived NO owner for an
+      // `each_statement`, so the read had an empty `from` and was discarded by its own
+      // guard — one row in the residue that was the TRUTH being incomplete, not the
+      // analyzer being wrong.
+      //
+      // The prelude is cut at the first `{` by character position rather than by a
+      // pattern, and the leading keyword is removed by length — the same string, with
+      // nothing to keep in step with the grammar.
+      const keyword = n.type.slice(0, -"_statement".length)
+      const text = textOf(n)
+      const braceAt = text.indexOf("{")
+      const head = collapse(braceAt >= 0 ? text.slice(0, braceAt) : text)
+      const atKeyword = `@${keyword}`
+      const afterKeyword = head.startsWith(atKeyword) ? head.slice(atKeyword.length).trim() : head
+      if (afterKeyword.length > 0) nextOwner = `${atKeyword} ${afterKeyword}`
     } else if (n.type === "rule_set") {
       const sels = kidOfType(n, "selectors")
       if (sels) {
-        const sel = collapse(textOf(sels)).replace(/\s*,\s*/g, ", ")
-        for (const one of sel.split(", ")) push("contains", one, nextOwner)
+        const asWritten = collapse(textOf(sels))
+        // The rule OWNS what is inside it, and that is what an `@include`, an
+        // `@extend` or a `$var` read inside it must be sourced from.
+        //
+        // This is the defect that made the whole SCSS truth nearly empty: the oracle
+        // set an owner for `mixin_statement` and `function_statement` and NOT for a
+        // `rule_set`, so inside an ordinary rule the owner stayed "" and every
+        // `push` with a `from` was discarded. Measured on
+        // `element-plus/packages/theme-chalk/src/color-picker-panel.scss`: SIX
+        // `@include` statements, four `mixin_statement` declarations, and the oracle
+        // derived ZERO `uses` edges — every one silently dropped by its own guard.
+        //
+        // The resolution is the SHARED `resolveNestedSelector`, so the two oracles
+        // cannot disagree about a name. A name still containing `&` is not a name —
+        // its referent is a mixin call site, frequently in another file — so the
+        // owner falls back to the last resolvable ancestor rather than publishing
+        // something nothing can join against.
+        const resolved = scope ? resolveNestedSelector(asWritten, scope) : normalizeSelector(asWritten)
+        if (resolved && !resolved.includes("&")) {
+          nextOwner = resolved
+          nextScope = resolved
+          // containment is only claimed for genuine CSS NESTING, i.e. when there was
+          // a selector to nest inside. A rule inside a mixin has none, which is why
+          // the analyzer emits no containment edge into a mixin and neither does this.
+          if (scope) push("contains", scope, resolved)
+        }
       }
     }
     switch (n.type) {
@@ -14712,126 +15019,12 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
       default:
         break
     }
-    for (const c of kids(n)) walk(c, nextOwner)
-  })(root, "")
+    for (const c of kids(n)) walk(c, nextOwner, nextScope)
+  })(root, "", "")
 
   return edges
 }
 
-export function deriveScssEdges(root: any): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  const seen = new Set<string>()
-  const push = (label: string, from: string, target: string) => {
-    if (!from || !target) return
-    const k = `${label}|${from}|${target}`
-    if (seen.has(k)) return
-    seen.add(k)
-    edges.push({ label, from, target })
-  }
-  const textOf = (n: any): string => (n && typeof n.text === "string" ? n.text : "")
-  const collapse = (t: string): string => t.replace(/\s+/g, " ").trim()
-
-  /** every named child, INCLUDING anonymous ones — the `!default` flag is anonymous */
-  const kids = (n: any): any[] => {
-    const out: any[] = []
-    if (!n) return out
-    for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) out.push(c) }
-    return out
-  }
-  const namedKids = (n: any): any[] => kids(n).filter((c: any) => c.isNamed)
-  const kidOfType = (n: any, t: string): any | null => namedKids(n).find((c: any) => c.type === t) ?? null
-
-  // Pass 1 — what the file DECLARES, before any reference resolves, because Sass does
-  // not care whether a use precedes its declaration.
-  const mixins = new Set<string>()
-  const functions = new Set<string>()
-  const variables = new Set<string>()
-  const namespaces = new Set<string>()
-  ;(function walk(n: any) {
-    if (!n || n.type === "ERROR") return
-    if (n.type === "mixin_statement") {
-      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
-      if (name) mixins.add(`@mixin ${collapse(textOf(name))}`)
-    } else if (n.type === "function_statement") {
-      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
-      if (name) functions.add(`@function ${collapse(textOf(name))}`)
-    } else if (n.type === "use_statement") {
-      const ns = kidOfType(n, "plain_value") ?? kidOfType(n, "identifier")
-      // `as *` binds no name, so there is nothing to record
-      if (ns) namespaces.add(collapse(textOf(ns)))
-    } else if (n.type === "declaration") {
-      const prop = kidOfType(n, "property_name")
-      // a `$var:` assignment is a declaration; a bare `$var` elsewhere is a read
-      if (prop && textOf(prop).startsWith("$")) variables.add(textOf(prop))
-    }
-    for (const c of kids(n)) walk(c)
-  })(root)
-
-  // Pass 2 — the references, carrying the enclosing entity as `owner` as we descend.
-  ;(function walk(n: any, owner: string) {
-    if (!n || n.type === "ERROR") return
-    let nextOwner = owner
-    if (n.type === "mixin_statement") {
-      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
-      nextOwner = name ? `@mixin ${collapse(textOf(name))}` : owner
-    } else if (n.type === "function_statement") {
-      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
-      nextOwner = name ? `@function ${collapse(textOf(name))}` : owner
-    } else if (n.type === "rule_set") {
-      const sels = kidOfType(n, "selectors")
-      if (sels) {
-        const sel = collapse(textOf(sels)).replace(/\s*,\s*/g, ", ")
-        for (const one of sel.split(", ")) push("contains", one, nextOwner)
-      }
-    }
-    switch (n.type) {
-      case "include_statement": {
-        const name = kidOfType(n, "identifier") ?? kidOfType(n, "plain_value")
-        if (name) {
-          const bare = collapse(textOf(name))
-          const [ns, nm] = bare.includes(".") ? bare.split(".") : [undefined, bare]
-          // `mixins`/`functions`/`namespaces` are SETS of PUBLISHED names
-          // (`@mixin button`), not maps from bare name to published name — the first
-          // version called `.get()` on all three and threw `mixins.get is not a
-          // function` on the first `@include` in the corpus. Looking a name up means
-          // constructing the published spelling and asking whether it was declared.
-          const resolve = (b: string): string | undefined =>
-            mixins.has(`@mixin ${b}`) ? `@mixin ${b}` : functions.has(`@function ${b}`) ? `@function ${b}` : undefined
-          const target = ns && namespaces.has(ns) ? resolve(nm) : resolve(bare)
-          if (target) push("uses", nextOwner, target)
-        }
-        break
-      }
-      case "extend_statement": {
-        const sel = kidOfType(n, "class_selector") ?? kidOfType(n, "id_selector") ?? kidOfType(n, "type_selector")
-        if (sel) push("uses", nextOwner, collapse(textOf(sel)))
-        break
-      }
-      case "use_statement":
-      case "forward_statement": {
-        const mod = kidOfType(n, "string_value")
-        if (mod) push("imports", nextOwner, collapse(textOf(mod)).replace(/^["']|["']$/g, ""))
-        break
-      }
-      case "variable": {
-        if (variables.has(textOf(n))) {
-          // the left-hand side of its own assignment is not a read of itself
-          const parent = n.parent
-          const isOwnLhs =
-            parent?.type === "declaration" &&
-            textOf(kidOfType(parent, "property_name")) === textOf(n)
-          if (!isOwnLhs) push("references", nextOwner, textOf(n))
-        }
-        break
-      }
-      default:
-        break
-    }
-    for (const c of kids(n)) walk(c, nextOwner)
-  })(root, "")
-
-  return edges
-}
 
 export function deriveCssEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
@@ -14848,8 +15041,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
   // Selector text as a graph name. Whitespace around a comma is normalized, because
   // `h1,h2` and `h1, h2` are the same author-written selector and a name that
   // depended on the author's spacing would make the same construct two symbols.
-  const normSelector = (raw: string): string =>
-    raw.trim().replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim()
+  const normSelector = normalizeSelector
   const children = (n: any): any[] => {
     const out: any[] = []
     if (!n) return out
@@ -15065,54 +15257,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
    * is already the parse tree — the tree knows where the top-level commas are, and the
    * cheap textual version cannot.
    */
-  const nestedResolved = (asWritten: string, parent: string): string | null => {
-    if (!asWritten) return null
-    const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
-    const parents = parent.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
-    if (members.length === 0 || parents.length === 0) return null
-    // The CROSS PRODUCT, and this is the second half of the comma-group fix.
-    //
-    // Per-member resolution alone is still wrong when the PARENT is a group too. CSS
-    // nesting is not distributive over commas:
-    //
-    //     h1, h2, h3, h4, h5, h6 {
-    //       .el-tag, .vp-tag { margin-left: 8px }
-    //     }
-    //
-    // is TWELVE selectors — a descendant of each of the six, matching either of the two
-    // — not two, and certainly not the six-and-two the middle version produced by
-    // prefixing the whole parent group onto each member:
-    //
-    //     `.doc-content h1, … h6 .el-tag, .doc-content h1, … h6 .vp-tag`
-    //
-    // which is a name whose FIRST member (`.doc-content h1`) is not a selector anyone
-    // wrote and whose last member is. The analyzer produces the correct twelve.
-    //
-    // `&` short-circuits the product: `&.b, &.c` under a six-member parent is two
-    // selectors written with `&`, not twelve, because each `&` stands for the whole
-    // parent group in that position. So a member containing `&` is resolved on its own.
-    //
-    // ORDER IS PART OF THE NAME, and the product is emitted PARENT-major: for each
-    // parent, for each member. The first version looped members outer and produced the
-    // same twelve selectors in the other order —
-    //
-    //     `… h1 .el-tag, h2 .el-tag, … h6 .el-tag, h1 .vp-tag, …`
-    //
-    // — and the comparison matches `label|target` as a STRING, so a reordering reads as
-    // a missing row and an unexplained one. The analyzer's order is the one that
-    // matters, so the oracle matches it. A set-equality comparison would have made this
-    // invisible, which is worth knowing: the harness cannot tell an ordering apart, and
-    // neither can a consumer that joins on the name.
-    const resolved: string[] = []
-    for (const p of parents) {
-      for (const member of members) {
-        resolved.push(
-          member.includes("&") ? normSelector(member.split("&").join(parent)) : normSelector(`${p} ${member}`),
-        )
-      }
-    }
-    return normSelector(resolved.join(", "))
-  }
+  const nestedResolved = resolveNestedSelector
 
   // Pass 2 — edges. One walk carries the innermost enclosing context, so
   // `@media { @layer { .a {} } }` attributes `.a` to the LAYER (the context that
@@ -15185,7 +15330,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
             // because that is the name the analyzer publishes; a bare family would
             // be an endpoint nothing resolves.
             if (prop === "font-family") {
-              for (const tok of declText.match(/[A-Za-z_][\w-]*/g) ?? []) {
+              for (const tok of scanCssIdentifiers(declText)) {
                 if (fontFaces.has(tok)) push("uses", sel, `@font-face ${tok}`)
               }
             }
@@ -15195,12 +15340,21 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
               // animation can legitimately come from another stylesheet, and
               // inventing an endpoint for it would be the `global` phantom this
               // lane already removed once.
-              for (const tok of declText.match(/[A-Za-z_][\w-]*/g) ?? []) {
+              for (const tok of scanCssIdentifiers(declText)) {
                 if (keyframeNames.has(tok)) push("uses", sel, tok)
               }
             }
-            // var(--x) references, wherever they appear in the value
-            for (const m of declText.matchAll(/var\(\s*(--[\w-]+)/g)) push("references", sel, m[1])
+            // `var(--x)` references, wherever they appear in the value.
+            //
+            // GATED ON THE RULE NOT BEING A RESET SELECTOR. `* { scrollbar-color:
+            // var(--a) var(--b) }` publishes no symbol and no reads, because CSS-D8
+            // suppresses the universal reset — so an edge sourced from `*` has an
+            // endpoint the file does not contain, and the oracle was deriving two
+            // `references` rows the analyzer correctly never emits. Measured 9 such
+            // rows in the element-plus draw.
+            if (!isResetSelectorText(sel)) {
+              for (const name of scanVarReferences(declText)) push("references", sel, name)
+            }
           }
         }
         // A two-part DESCENDANT chain joins its two parts when both are separately
@@ -15270,13 +15424,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
       // trimmed text is exactly `*` or begins with `*` followed by `|`, `::` or a
       // combinator — which is what "names the universal selector and nothing else"
       // reduces to, and needs no regex to say.
-      const isResetMember = (t: string): boolean => {
-        const x = t.trim()
-        if (x === "*") return true
-        if (!x.startsWith("*")) return false
-        const next = x.charAt(1)
-        return next === "|" || next === ":" || next === " " || next === ">"
-      }
+      const isResetMember = isResetSelectorText
       if (asWritten) {
         const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
         const real = members.filter((m) => !isResetMember(m))
@@ -16157,9 +16305,19 @@ async function main() {
       if (!root) { try { tree?.delete?.() } catch { /* nothing to free */ } ; noteSkip("unparsed", relPath, "no root node"); continue }
       prevTree = tree
       try {
-        if (lang === "vue" || lang === "svelte") {
+        if (lang === "vue" || lang === "svelte" || lang === "markdown") {
           // SFC parity: script blocks must be pre-parsed by the engine or
           // the script-side edges never appear.
+          //
+          // markdown is here for the same reason and the failure is louder: the
+          // block grammar leaves inline content OPAQUE, so links, images, autolinks
+          // and reference links are not nodes in it. Called directly, the analyzer
+          // would get no `context` at all and emit ZERO `uses` edges — and so would
+          // the oracle's expectations of it, which means the largest class of
+          // markdown facts would be absent from BOTH sides and the row would read as
+          // agreement about nothing. The vue/svelte defect and the markdown defect
+          // are the same defect: a lane whose facts come from a seam the harness does
+          // not cross.
           const eng = await import("../../src/ast/engine")
           result = await (eng as any).ASTEngine.parseFile(f, content)
         } else {
@@ -16262,6 +16420,17 @@ async function main() {
         // exists rather than from an unjoinable string.
         const htmlModule = (relPath.split("/").pop() ?? "document").replace(/\.[^.]+$/, "") || "document"
         for (const e of deriveHtmlEdges(root, htmlModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "markdown") {
+        // M14 (#290): the markdown truth. `deriveMarkdownEdges` needs the file
+        // CONTENT as well as the tree, because the companion inline grammar is a
+        // SUB-PARSE of each `inline` node's own text and the oracle does that
+        // sub-parse itself rather than importing the engine's reader — an oracle
+        // that reused the analyzer's pre-parse would agree with it by construction,
+        // which is the F9 collusion blindness this file's doctrine exists to catch.
+        for (const e of await deriveMarkdownEdges(root, content)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -17009,7 +17178,17 @@ async function main() {
           // dropped every bash relationship (analyzer-edges=0 against 1580 truth
           // rows) because bash was in no list at all. A label is comparable exactly
           // when the lane's oracle derives it — nothing less, nothing more.
-          ...(lang === "bash" ? ["exports"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          ...(lang === "bash" ? ["exports"] : []),
+          // M14 #290: markdown is comparable on exactly the two kinds its oracle
+          // derives — `contains` (document structure) and `uses` (link destinations).
+          // Both directions of this mistake are the same trap the notes above record:
+          // a kind the oracle derives but the allowlist omits reads as MISSING (the
+          // scss `cov=0 (0%) MISSING=45` shape), and a kind the allowlist names that
+          // the oracle does not derive is compared against nothing. So the list is
+          // written to match `deriveMarkdownEdges` exactly, and nothing else — the
+          // lane emits no `imports` (markdown has no module system) and no
+          // `references` (front-matter keys are a declared boundary, not a graph).
+          ...(lang === "markdown" ? ["contains", "uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
@@ -17319,6 +17498,54 @@ async function main() {
     try { fs.rmSync(FROZEN_ROOT, { recursive: true, force: true }) } catch { /* empty dir left behind */ }
     console.log(`[frozen] removed ${frozenTrees.size} pinned-tree worktree(s): ${[...frozenTrees.keys()].join(", ")}`)
   }
+  /**
+   * Merge this run's rows into the baseline file. A MERGE, never a replace: every
+   * other lane's row is carried through untouched, so pinning one lane cannot
+   * silently unpin thirty-three others.
+   *
+   * Extracted so a SCOPED run can reach it. It could not before, and the failure
+   * mode was the worst kind: `--update-baseline` was accepted, did nothing, and
+   * exited 0. A flag that appears to act and does not is the same defect class as
+   * an instrument that checks a file it never read — the operator believes a
+   * measurement was recorded, and no gate can contradict them because the gate
+   * reads the same unchanged file. It surfaced here only because I diffed the
+   * baseline before and after and found all 229 rows byte-identical.
+   */
+  const mergeBaseline = (): void => {
+    const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
+    // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
+    const clean: Record<string, any> = {}
+    const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
+    const pinSkipped: string[] = []
+    for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
+      // #871 §2: pin ONLY lanes whose own parity is clean. Pinning a lane that
+      // carries its own missing/unexplained would bake a real anomaly into the
+      // allowance (cpp's uses@0 is the one such lane today — #870). Heuristic
+      // counts do NOT block pinning: they are declared low-confidence edges,
+      // and heuristic drift on an UNPINNED lane is exactly the false-positive
+      // this pin removes.
+      if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
+        pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
+        continue
+      }
+      clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
+      // M49 G5: pin WHICH files produced this row. Without it a later rotation
+      // is scored against a different sample and mislabelled a regression.
+      if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
+    }
+    const merged = {
+      samplePerLang: SAMPLE_PER_LANG,
+      // #871 §1: the load context the pinned rows were measured under — a
+      // later breach can now be told apart from a busy machine.
+      loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
+      counts: { ...(previous.counts ?? previous), ...clean },
+      hashes,
+    }
+    fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
+    console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s) pinned/refreshed; drawn file sets pinned: ${Object.keys(hashes).length}`)
+    if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
+  }
+
   const SCOPED_RUN = !!REPO || process.argv.includes("--sample") || !!ONLY_LANGS
   if (SCOPED_RUN) {
     const measured = Object.keys(report).length + Object.keys(reportSecond).length
@@ -17462,6 +17689,15 @@ async function main() {
       + `The artifact belongs to the canonical ${SAMPLE_PER_LANG}-file, ${Object.keys(LANGS).length}-language sweep; `
       + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one${process.argv.includes("--emit") ? " (its own lane-scoped artifact was written)" : ""}.`,
     )
+    // A scoped run may still PIN what it measured — see mergeBaseline's note. It
+    // may never WRITE the canonical artifact, which is the claim the guard above is
+    // about; those are two different acts and only one of them is milestone-sized.
+    if (process.argv.includes("--update-baseline")) {
+      mergeBaseline()
+    } else if (evaluation.unpinnedLanes.length || evaluationSecond.unpinnedLanes.length) {
+      const unpinned = [...evaluation.unpinnedLanes, ...evaluationSecond.unpinnedLanes]
+      console.log(`differential baseline file sets: ${unpinned.length} lane(s) unpinned (no recorded drawn set) — those keep the strict count comparison, which can false-positive after a rotation; pin with --update-baseline (unpinned: ${unpinned.slice(0, 8).join(", ")}${unpinned.length > 8 ? ", …" : ""})`)
+    }
     removeFrozenTrees()
     process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
   }
@@ -17562,38 +17798,7 @@ async function main() {
   // Baseline updates are explicit and are not silently treated as validation.
   const updateBaseline = process.argv.includes("--update-baseline")
   if (updateBaseline) {
-    const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
-    // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
-    const clean: Record<string, any> = {}
-    const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
-    const pinSkipped: string[] = []
-    for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
-      // #871 §2: pin ONLY lanes whose own parity is clean. Pinning a lane that
-      // carries its own missing/unexplained would bake a real anomaly into the
-      // allowance (cpp's uses@0 is the one such lane today — #870). Heuristic
-      // counts do NOT block pinning: they are declared low-confidence edges,
-      // and heuristic drift on an UNPINNED lane is exactly the false-positive
-      // this pin removes.
-      if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
-        pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
-        continue
-      }
-      clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
-      // M49 G5: pin WHICH files produced this row. Without it a later rotation
-      // is scored against a different sample and mislabelled a regression.
-      if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
-    }
-    const merged = {
-      samplePerLang: SAMPLE_PER_LANG,
-      // #871 §1: the load context the pinned rows were measured under — a
-      // later breach can now be told apart from a busy machine.
-      loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
-      counts: { ...(previous.counts ?? previous), ...clean },
-      hashes,
-    }
-    fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
-    console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s); drawn file sets pinned: ${Object.keys(hashes).length}`)
-    if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
+    mergeBaseline()
   } else if (!evaluation.comparable) {
     console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsedBaseline.samplePerLang ?? "unknown"}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
   } else {
