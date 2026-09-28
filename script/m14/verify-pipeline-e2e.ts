@@ -145,6 +145,30 @@ inline = { x = 1, y = "two" }
   // analyzer's RETURN VALUE; nothing before this asked whether those rows survive
   // emit -> worker -> store, which is exactly the gap that kept brain_import empty
   // for every language for months.
+  // SVELTE — added because the lane had NO leg here at all, which is the exact
+  // state html was in when every payload a rewrite introduced was verified only
+  // against the analyzer's return value. Exercised here: a component module
+  // symbol, an `export let` PROP surviving as a Property, a `$props()` rune
+  // binding, a `$:` reactive target, a template COMPONENT usage (instantiates),
+  // a template EVENT HANDLER (calls, the D8 ruling), a RUNE INVOCATION
+  // (calls, the D7 ruling), and a store auto-subscription read. Props and rune
+  // invocations are the two newest emissions in this lane, so they are the two
+  // most likely to be lost between the analyzer and the row.
+  fs.writeFileSync(path.join(TMP, "src", "Seam.svelte"), `<script>
+  import Child from "./Child.svelte"
+  import { tick, onTick } from "./tick.js"
+
+  export let headline = "hi"
+  let counter = $state(0)
+  let { viaRunes } = $props()
+  $: doubled = counter * 2
+
+  $effect(tick)
+</script>
+
+<Child on:click={onTick} />
+<p>{headline} {doubled} {$store} {viaRunes}</p>
+`)
   fs.writeFileSync(path.join(TMP, "src", "seam.html"), `<!doctype html>
 <html lang="en">
   <head>
@@ -383,6 +407,73 @@ async function main() {
   const tomlValueNode = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name = 'name = "seam"'`)
   expect(tomlValueNode === 0, `toml never publishes a pair's SOURCE TEXT as a name (got ${tomlValueNode}, want 0)`)
   const tomlInlineKey = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.toml' AND name IN ('x','y')`)
+
+  // --- svelte store seam -------------------------------------------------
+  const svelteSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte'`)
+  expect(svelteSymbols > 0, `svelte symbols persisted (got ${svelteSymbols}, want >0)`)
+  // The component is a module-kind symbol named from the STEM, not the filename.
+  // kind `class`, not `module`: `Class` is this codebase's structural bucket
+  // (`Table`/`Service`/`Resource`/`Object` are all aliases for it), and the
+  // component is published as one. Asserting `module` would have tested a kind
+  // this lane never claimed to emit.
+  const svModule = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'Seam' AND symbol_type = 'class'`)
+  expect(svModule === 1, `svelte component named from the STEM (got ${svModule}, want 1: 'Seam', not 'Seam.svelte')`)
+  const svFileName = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'Seam.svelte'`)
+  expect(svFileName === 0, `svelte component is not named with the filename (got ${svFileName}, want 0)`)
+  // An `export let` PROP is the component's public surface: it must be a Property
+  // owned by the component, not a bare variable.
+  const svProp = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'headline' AND symbol_type = 'property'`)
+  expect(svProp === 1, `svelte export-let prop persisted as a Property (got ${svProp}, want 1)`)
+  // A $props() rune binding is declared EXACTLY ONCE. S2 fixed the double
+  // declaration, and a store is the place a duplicate would actually land.
+  const svRuneProp = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'viaRunes'`)
+  expect(svRuneProp === 1, `svelte $props() binding declared once (got ${svRuneProp}, want 1)`)
+  // A $: reactive target is component state.
+  const svReactive = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name = 'doubled'`)
+  expect(svReactive >= 1, `svelte $: reactive target persisted (got ${svReactive}, want >=1)`)
+  // instantiates: a template component usage.
+  const svInstantiates = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.relationship_type = 'instantiates'`)
+  expect(svInstantiates >= 1, `svelte template component usage persisted as instantiates (got ${svInstantiates}, want >=1)`)
+  // calls: BOTH new call sources must survive the seam — the D8 template event
+  // handler and the D7 rune invocation. They are the same relationship_type, so
+  // they cannot be told apart by kind alone; the line is what separates them, and
+  // a seam that dropped either would still show calls >= 1.
+  const svCalls = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.relationship_type = 'calls'`)
+  expect(svCalls >= 2, `svelte calls edges persisted for BOTH the D8 handler and the D7 rune (got ${svCalls}, want >=2)`)
+  // Both callees are IMPORTED and the imported module is not part of this project,
+  // so each edge resolves to an EXTERNAL target rather than a symbol row. A
+  // target-NAME column does not exist on brain_relationship; filtering on one would
+  // have thrown rather than matched nothing, and the same two cases the html leg
+  // distinguishes are the ones that matter here.
+  const svRuneCall = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.relationship_type = 'calls' AND r.target_external = 'tick'`)
+  expect(svRuneCall >= 1, `svelte D7 rune invocation persisted (got ${svRuneCall}, want >=1: $effect(tick) -> calls tick)`)
+  // The D8 handler gets its OWN target, so the two emissions are told apart by
+  // target rather than by line. Sharing one callee would have let a dedupe on
+  // (source, target, type) collapse them into a single row, and the seam would
+  // have passed with one of the two lost.
+  const svHandlerCall = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.relationship_type = 'calls' AND r.target_external = 'onTick'`)
+  expect(svHandlerCall >= 1, `svelte D8 template handler persisted (got ${svHandlerCall}, want >=1: on:click={onTick} -> calls onTick)`)
+  // No svelte edge may reach the store with a NULL or non-positive line.
+  const svNullLine = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.line_number IS NULL`)
+  expect(svNullLine === 0, `every svelte edge kept its line (got ${svNullLine} NULL, want 0)`)
+  const svBadLine = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id WHERE f.path LIKE '%.svelte' AND r.line_number IS NOT NULL AND r.line_number <= 0`)
+  expect(svBadLine === 0, `no svelte edge has a line <= 0 (got ${svBadLine}, want 0)`)
+  // A prop's VALUE is data, not an identity: the source text of a default must
+  // never become a symbol name.
+  const svValueNode = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.svelte' AND name LIKE '%= "hi"%'`)
+  expect(svValueNode === 0, `a prop default value is never a symbol name (got ${svValueNode}, want 0)`)
   expect(tomlInlineKey === 0, `an inline table's keys are not file symbols (got ${tomlInlineKey}, want 0: they ride on metadata.inlineKeys)`)
 
   // cross-language edge flagged with bridge
