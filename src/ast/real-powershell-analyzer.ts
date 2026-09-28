@@ -468,6 +468,38 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * that line is part of the identity, so two sites of one callee are two
      * rows.
      */
+    /**
+     * The EVIDENCE TIER of an edge: how it was derived, which is analyzer knowledge
+     * and therefore the analyzer's to emit. The same shape as bash's `evidenceClassFor`
+     * and applied centrally so no call site can forget it; a caller may override it in
+     * its own metadata, which is why the spread puts `metadata` LAST.
+     *
+     * The tiers are the graph engine's, not invented here. `structural` means the tree
+     * states the fact — a container holds a declared child, a class header literally
+     * lists its base. `usage_contextual` means the edge comes from a node's POSITION
+     * rather than a named field: a variable read has no field saying "this is read
+     * here", and a `New-Object` target is read out of a flag's VALUE.
+     * `import_based` is for an import edge. `inferred` is reserved for a fact this
+     * analyzer derives by matching rather than reading, and exactly one relationship
+     * in this lane is that: `overrides`, which matches a subclass member's name
+     * against the base's declared member set because PowerShell has no `override`
+     * keyword. Calling that `structural` would overstate it.
+     */
+    const evidenceClassFor = (type: ASTEngine.RelationshipType, isImport = false): string => {
+      if (isImport) return "import_based"
+      switch (type) {
+        case ASTEngine.RelationshipType.Contains:
+        case ASTEngine.RelationshipType.Extends:
+        case ASTEngine.RelationshipType.Implements:
+        case ASTEngine.RelationshipType.Exports:
+          return "structural"
+        case ASTEngine.RelationshipType.References:
+          return "import_based"
+        default:
+          return "usage_contextual"
+      }
+    }
+
     const addRel = (
       source: string,
       target: string,
@@ -480,7 +512,18 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const key = `${source}\u0000${type}\u0000${target}\u0000${line}`
       if (relKeys.has(key)) return
       relKeys.add(key)
-      relationships.push({ source, target, type, confidence, line_number: line, metadata })
+      const isImport = (metadata as { import?: boolean }).import === true
+      relationships.push({
+        source,
+        target,
+        type,
+        confidence,
+        line_number: line,
+        // The caller's metadata comes LAST so an explicit `evidenceClass` at a call
+        // site wins over the default — that is how the `overrides` edges say `inferred`
+        // without every other call site having to repeat the reasoning.
+        metadata: { evidenceClass: evidenceClassFor(type, isImport), ...metadata },
+      })
     }
 
     // F9 (M60 #278): a BRACED variable — `${a}` — is the SAME variable as `$a`, and
@@ -729,7 +772,28 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // which matches neither form on its own. Without the second check a
           // `${env:FOO}` read would be published as a project variable — trading one
           // gap for a worse one, since the whole point of PS8 was to suppress these.
-          if (!name || isQualified(n.text) || isQualified(`$${name}`) || isAutomatic(name)) continue
+          // F9, the scope-qualified READ. A scope-qualified name is still not a
+          // DECLARATION — PS8 stands, and `$env:PATH = 'x'` declares nothing, pinned
+          // by suppression-and-params-psb7. But a READ of one is a real dependency on
+          // something outside the file, and the read path was reusing the DECLARATION
+          // guard, so `Write-Host $env:Temp` published nothing at all.
+          //
+          // The independent F5 oracle expects these (`uses Sign-Package -> env:Temp`,
+          // 7 rows in the non-test sample, all from one file), and the reasoning
+          // agrees with it: the graph already records external dependencies — a
+          // `calls -> Write-Host` target is equally unresolvable — so `$env:WINDIR`
+          // is a dependency of exactly the same kind, and dropping it loses a fact
+          // about what the script needs from its environment.
+          //
+          // The qualified name is KEPT (`env:Temp`, not `Temp`), so the target can
+          // never be confused with a project variable: nothing this lane declares
+          // carries a colon, and a scope prefix is the only thing that produces one.
+          // AUTOMATIC variables stay suppressed — those are the engine's own bindings
+          // (`$_`, `$args`, `$PSVersionTable`), which is the subject PS8 actually
+          // ruled on, and no oracle asks for them.
+          const isScoped = isQualified(n.text) || isQualified(`$${name}`)
+          if (!name || isAutomatic(name)) continue
+          if (isScoped && name.indexOf(":") < 0) continue
           // The LINE must skip the leading break too, not just the name. A
           // here-string interpolation's node starts at the END of the previous line
           // (the grammar reports `variable [6,8]-[7,8]` for a `$message` written on
@@ -747,6 +811,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             n.startPosition.row + 1 + skippedLines, {
             powershellSpecific: true, isVariableReference: true,
             ...(marker ? { [marker]: true } : {}),
+            ...(isScoped ? { isScopedEnvironmentRead: true } : {}),
             // A read written in the BRACED spelling. The marker's job is to make the
             // normalization independently revertible: once `${a}` and `$a` are the
             // same string in the result, nothing distinguishes them, so a mutant for
@@ -2011,6 +2076,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (inherited && inherited.has(cand.memberName)) {
           addRel(cand.className, base, ASTEngine.RelationshipType.Overrides, 0.9, cand.line, {
             powershellSpecific: true, overridesMember: cand.memberName,
+            // The one edge in this lane that is INFERRED rather than read: PowerShell
+            // has no `override` keyword, so this is a name match between a subclass
+            // member and the base's declared member set. Calling it `structural` would
+            // overstate the evidence, and the tier is the whole point of emitting one.
+            evidenceClass: "inferred",
           })
           break
         }

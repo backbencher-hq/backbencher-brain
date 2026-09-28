@@ -904,4 +904,23 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).map((x: any) =>
         x.metadata?.isCounterUpdate && x.metadata?.isPostfix === true ? { ...x, metadata: { ...x.metadata, isPostfix: false } } : x),
     }),  },
+  {
+    id: "powershell/scoped-read-suppressed-again",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT, the RULING half: a scope-qualified READ is suppressed again, because the read path reuses PS8's DECLARATION guard. Measured on the F5 non-test sample: 7 rows from Sign-Package.ps1 expecting `uses -> env:Temp` and `uses -> {env:ProgramFiles(x86)}`, with the analyzer publishing nothing for either.\n\nThis reverses part of an existing ruling, which is why it is pinned as a decision and not as a defect fix. PS8's own text is about declarations — \"a scope-qualified name (`$global:x`) is never a local declaration\" — and that still stands: `$env:FOO = 'x'` declares no symbol, which the fixture pins as a forbidSymbol. What changed is only that a READ is a dependency on something outside the file, of the same kind as a `calls -> Write-Host` target, which is equally unresolvable. The scope prefix is KEPT on the target so it can never collide with a project variable.\n\nNeeds owner confirmation: it is a change to a standing lane ruling, taken on the evidence of an independent oracle plus the reasoning, and recorded as a decision for that reason.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isScopedEnvironmentRead === true),
+  },
+  {
+    id: "powershell/evidence-tier-downgraded",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A4 REVERT: every relationship's EVIDENCE TIER is dropped, and `overrides` is relabelled `structural`. The tier is how the edge was derived, which is analyzer knowledge, and the one relationship in this lane that is genuinely INFERRED is `overrides` — PowerShell has no `override` keyword, so it is a name match between a subclass member and the base's declared member set. Calling it `structural` overstates the evidence, which is the whole reason a tier exists.\n\nEmitted centrally in `addRel` rather than per call site, so no call site can forget it, with the caller's metadata spread LAST so a call site may still override. The SPEC gate's section D requires two DISTINCT tiers pinned, so collapsing them all to one is caught there as well as here.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: x.metadata?.overridesMember ? "structural" : "usage_contextual" } })),
+    }),  },
 ]
