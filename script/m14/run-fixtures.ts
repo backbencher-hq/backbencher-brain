@@ -238,6 +238,35 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   } else {
     const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
     analyzer = new mod[cfg.className]()
+    // Hand the analyzer the grammar it re-parses damaged regions with.
+    //
+    // This lane calls `analyzer.analyze(...)` DIRECTLY (below) rather than
+    // going through `ASTEngine.parseFile`, so the engine's own `setGrammar`
+    // handoff in `parseRaw` never runs for it — and `analyze` is synchronous
+    // while `Language.load` is not, so the analyzer cannot build that parser
+    // itself. The consequence was that every recovery pass was INERT in the
+    // fixture lane: the SQL declaration-resync and the EXECUTE-literal pass both
+    // saw no grammar, took the `acquireParser()` failure branch, and were
+    // skipped. That is not a theoretical gap — it is why the resync could not be
+    // pinned by any synthetic fixture and needed its own corpus gate
+    // (script/m60/verify-sql-resync.ts, which does call `setGrammar`), and it is
+    // why a mutant that deletes the EXECUTE pass would have "passed" by never
+    // running. The engine's comment on the handoff asserts "the pass is exercised
+    // by the fixture lane and not only in production"; that was true only for
+    // the engine path, and this is the line that makes it true for this one.
+    // `setGrammar` is STATIC, so it lives on the constructor and not on the
+    // instance — reaching for `analyzer.setGrammar` finds nothing and the handoff
+    // silently does not happen, which is the same inertness under a different
+    // name.
+    const ctor: any = analyzer?.constructor
+    if (typeof ctor?.setGrammar === "function") {
+      try {
+        ctor.setGrammar((parser as any).language, (parser as any).constructor)
+      } catch {
+        // No grammar available: the analyzer keeps its main pass only and says
+        // so in its ambiguity counters. Same contract as the engine path.
+      }
+    }
   }
 
   const exts = cfg.ext.split(",")
