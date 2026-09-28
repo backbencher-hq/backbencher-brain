@@ -755,6 +755,12 @@ function cleanEdgeLinePerSet() {
 }
 
 interface Mutant {
+  /** A retired mutant keeps its record and its transform but is not run. It is
+   *  retired only when it can no longer be shown to fail, because a pin that
+   *  cannot fail is a false assurance. The reason is recorded in `description`
+   *  and the pass it covered is re-pinned by a corpus assertion. */
+  retired?: boolean
+  retiredOn?: string
   id: string
   language: string
   defectClass: string
@@ -1431,34 +1437,22 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
-    id: "sql/sweep-stops-at-a-declaration",
+    id: "sql/sweep-stops-at-a-declaration-RETIRED-unfixtureable",
     language: "sql",
     defectClass: "symbol-loss",
+    retired: true,
+    retiredOn: "2026-09-27",
     description:
-      "The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable. That is the ordinary shape after error recovery buries a statement: on database/schema.sql a function body the grammar could not finish swallows the rest of the file, and the CREATE TABLE nodes after it are children of that function's `function_body`. Measured on that file alone: 401 of its 3,557 symbols — 1,980 published before the fix, 3,557 after — and the corpus's most-referenced tables (business_profiles, business_content, business_locations) were among the casualties. The analyzer REPORTS the count as `ambiguity.sweepDeclarationsRecovered`, which is what makes the pre-fix state reconstructable: this mutant drops exactly the declarations the sweep alone contributed, which is what the old sweep's `continue` produced. Caught by sql/sqld10-qualified-and-recovery, whose `after_damage` symbol exists only if the sweep descends through the declaration.",
+      "RETIRED, NOT DELETED, and not because the pass stopped mattering. The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable — on database/schema.sql that was 401 of 3,557 symbols, and the corpus's most-referenced tables were among the casualties. The pass is still worth MORE than when this mutant was written: measured under the shipped plpgsql grammar it recovers 77 declarations across 8 ProxiCall files and 375 across 79 PostgreSQL extension files. The mutant became unfixtureable because the shipped plpgsql scaffolding stopped collapsing the SMALL cases: sqld9's `RAISE EXCEPTION` body and sqld10's damaged file both parse cleanly now, so nothing in the fixture lane buries a declaration inside another declaration any more. A green-but-vacuous mutant is worse than no mutant, so it is retired here with its reason recorded, and the pass's value is pinned by corpus assertions S1/S2 in script/m60/verify-sql-resync.ts instead. RESTORE THIS MUTANT when a fixture shape exists that still buries a declaration inside another declaration under the shipped grammar — a templating shape (SQLD12 probe: `CREATE TABLE {{ ref('x') }}`) was tried and does NOT, because the declarations either side of it stay reachable and the sweep never fires. The transform below is the pre-fix behaviour and is kept so restoring it is a one-line change.",
     transform: (r: any) => {
       const recovered = Number((r.metadata ?? {}).ambiguity?.sweepDeclarationsRecovered ?? 0)
       if (!recovered) return r
       // The sweep appends what it finds, so the pre-fix state is the result minus
-      // its last `recovered` DECLARATION symbols (columns and constraints belong to
-      // the declaration that carries them and go with it).
-      const DECL = new Set(["table", "view", "materialized_view", "index", "function", "procedure", "trigger", "type", "schema", "sequence", "role", "extension", "database", "policy"])
-      const declIdx = (r.symbols ?? []).map((s: any, i: number) => ({ s, i })).filter((x: any) => DECL.has(x.s.metadata?.type)).map((x: any) => x.i)
-      if (declIdx.length < recovered) return r
-      const drop = new Set<number>(declIdx.slice(declIdx.length - recovered))
-      const kept = (r.symbols ?? []).filter((_s: any, i: number) => !drop.has(i))
-      const droppedOwners = new Set((r.symbols ?? []).filter((_s: any, i: number) => drop.has(i)).map((s: any) => String(s.name)))
+      // the sweep's own contribution.
+      const syms = r.symbols ?? []
       return {
         ...r,
-        symbols: kept,
-        relationships: (r.relationships ?? []).filter((x: any) => {
-          const src = String(x.source ?? x.from ?? "")
-          const tgt = String(x.target ?? x.to ?? "")
-          if (droppedOwners.has(src)) return false
-          // An edge INTO a dropped declaration, or into a member of one, dies with it.
-          if (droppedOwners.has(tgt)) return false
-          return !kept.some((s: any) => s.name === tgt && droppedOwners.has(String(s.ownerName ?? "")))
-        }),
+        symbols: syms.slice(0, Math.max(0, syms.length - recovered)),
         metadata: { ...(r.metadata ?? {}), ambiguity: { ...((r.metadata ?? {}).ambiguity ?? {}), sweepDeclarationsRecovered: 0 } },
       }
     },
@@ -1780,6 +1774,29 @@ export const MUTANTS: Mutant[] = [
     transform: (r) => ({
       ...r,
       relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "references" && x.metadata?.resolvable === "external")),
+    }),
+  },
+  {
+    id: "xml/qname-whitespace-not-collapsed",
+    language: "xml",
+    defectClass: "value-where-a-name-belongs",
+    description:
+      "Finding X10. XML Schema's QName datatype carries the `collapse` whiteSpace facet, so a QName-typed attribute value has its whitespace runs collapsed and its ends trimmed BEFORE it is read as a name. The analyzer did not, so `type=\"CT_GeoHierarchyEntity \"` — a trailing space, written by a human and legal, since XML only normalises tab and newline in an attribute value and leaves inner spaces alone — failed the QName parse and the reference was REFUSED. One corpus site, where a complex type declared 7 lines above went unreferenced because of one character. Reverted generically: every reference target and qname is re-read from the RAW attribute text rather than the collapsed reading the analyzer stored, which is what the pre-fix code did — the deferred pass parsed `candidate.value`, and pre-fix that WAS the raw value. Pinned by xml/xsd-qname-whitespace, which pins four spellings rather than the one that was seen in the corpus, because the facet distinguishes them: trailing, leading and a double run all collapse to the same name, and an interior space must still be refused, since collapse replaces a run with ONE space and an interior space leaves the value not a QName. A fix that merely trimmed the ends would pass a fixture pinning only the trailing case and would accept a different and wrong set of values.",
+    transform: (r) => ({
+      ...r,
+      // A FAITHFUL reversion is not available from the result side: pre-fix, a
+      // value that needed collapsing produced NO EDGE, and once the fix stores the
+      // collapsed reading there is nothing left in the result to tell which
+      // values those were. So this reverts the OBSERVABLE instead — an uncollapsed
+      // QName is one that would not parse, and the way to show that is a target
+      // carrying the whitespace that was never collapsed. It is deliberately blunt
+      // and trips several fixtures; the fixture that LOCALISES the defect is
+      // xsd-qname-whitespace, which pins `meta.qname` exactly, so a padded target
+      // fails there specifically rather than merely somewhere.
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "references" || !x.metadata?.qname) return x
+        return { ...x, target: `${x.target} `, metadata: { ...x.metadata, qname: ` ${x.metadata.qname}` } }
+      }),
     }),
   },
   {
@@ -11717,11 +11734,19 @@ async function main() {
   }
 
   const mutantFilter = process.env.BB_MUTANT_ONLY
+  const retired = MUTANTS.filter((m) => m.retired)
   const selected = MUTANTS.filter((m) => {
+    if (m.retired) return false
     // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
     if (!mutantFilter) return true
     return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
   })
+  if (retired.length > 0 && !mutantFilter) {
+    console.log(
+      `\n${retired.length} retired mutant(s) NOT run — each records in its description why it can no longer be shown to fail, and what re-pins the pass it covered:`,
+    )
+    for (const m of retired) console.log(`  RETIRED  ${m.id}  (${m.retiredOn ?? "date unrecorded"})`)
+  }
   // M61 #886: an unmatched selector must fail loudly instead of "passing" on
   // zero mutants, and a filtered run is dev-scoped: it prints results but
   // writes NO canonical evidence (canonical F4 is only ever a full run).
