@@ -65,6 +65,13 @@ interface CallAttribution {
 }
 
 export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * UTF-16 code-unit index -> byte offset, set for the duration of an `analyze` call and
+   * cleared on return, so that every `getRange` call populates `byteStart`/`byteEnd`
+   * without each of them having to be handed the source text.
+   */
+  private byteOffsetOf: ((utf16Index: number) => number) | null = null
+
   analyze(
     rootNode: Node,
     content: string,
@@ -88,6 +95,50 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (!rootNode) return { symbols, imports, errors: [] }
+
+    // UTF-16 index -> byte offset, for `byteStart`/`byteEnd` on every range.
+    //
+    // web-tree-sitter reports startIndex/endIndex as UTF-16 CODE UNITS, while upstream
+    // tree-sitter reports BYTES and `range.startIndex` is widely read as a byte offset. The
+    // two agree for ASCII and diverge by the surplus UTF-8 bytes before the position, so on
+    // a file with an accented character at byte 0 a byte-index consumer slices the wrong
+    // span. The existing fields are left exactly as they are -- changing them would break
+    // every lane that already reads them -- and the byte offsets are added ALONGSIDE.
+    //
+    // The index stores only the positions where a character is not one ASCII byte, which for
+    // nearly all source files means it is empty and `byteOffset` is the identity. The
+    // alternative, a table with one entry per character, would cost memory proportional to
+    // file size on every parse to serve a case that is rare.
+    const nonAscii: number[] = []   // UTF-16 index of each non-ASCII character
+    const surplus: number[] = []    // surplus bytes accumulated BEFORE that index
+    for (let i = 0, extra = 0; i < content.length; i++) {
+      const c = content.charCodeAt(i)
+      if (c < 128) continue
+      // Surrogate pairs are two UTF-16 units for one character; count the character once.
+      const cp = c >= 0xd800 && c <= 0xdbff ? content.codePointAt(i)! : c
+      const units = cp > 0xffff ? 2 : 1
+      const bytes = cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4
+      nonAscii.push(i)
+      surplus.push(extra)
+      extra += bytes - units
+      if (units === 2) i++
+    }
+    /** UTF-16 code-unit index -> byte offset, by counting surplus bytes before it. */
+    const byteOffset = (utf16Index: number): number => {
+      if (nonAscii.length === 0) return utf16Index
+      let lo = 0
+      let hi = nonAscii.length - 1
+      let lastBefore = -1
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1
+        if (nonAscii[mid] <= utf16Index) { lastBefore = mid; lo = mid + 1 } else { hi = mid - 1 }
+      }
+      return lastBefore < 0 ? utf16Index : utf16Index + surplus[lastBefore]
+    }
+    // Held as analyzer state for the rest of this call rather than threaded through the 23
+    // `getRange` call sites: a parameter would be noise at every one of them, and omitting
+    // it at a site would silently leave the byte fields absent instead of failing.
+    this.byteOffsetOf = byteOffset
 
     /** name -> the line the NAME is written on, so an edge that names the symbol
      *  points at the name rather than at the start of a multi-line declaration. */
@@ -344,6 +395,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       unnameableCallee: ambiguity.callsToUnnameableCallee ?? 0,
     }
 
+    this.byteOffsetOf = null
     return {
       symbols,
       imports: uniqueImports,
@@ -2363,7 +2415,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * silently omits the name.
    */
   private getDeclarationRange(nameNode: Node, valueNode: Node) {
-    return {
+    const r: ASTEngine.UniversalSymbol["range"] = {
       startLine: nameNode.startPosition.row + 1,
       startColumn: nameNode.startPosition.column + 1,
       endLine: valueNode.endPosition.row + 1,
@@ -2371,10 +2423,29 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       startIndex: nameNode.startIndex,
       endIndex: valueNode.endIndex,
     }
+    // The byte fields from the same analyzer state `getRange` uses, so a member range is
+    // not the one kind of range that quietly lacks them.
+    const toBytes = this.byteOffsetOf
+    if (toBytes) {
+      r.byteStart = toBytes(nameNode.startIndex)
+      r.byteEnd = toBytes(valueNode.endIndex)
+    }
+    return r
   }
 
-  private getRange(node: Node) {
-    return {
+  /**
+   * The range of a node.
+   *
+   * `startIndex`/`endIndex` are whatever the parser reported -- UTF-16 code units, for
+   * web-tree-sitter -- and are passed through unchanged so nothing that already reads them
+   * moves. `byteStart`/`byteEnd` are the same positions in BYTES, added alongside, which is
+   * what a consumer slicing a Buffer needs. `byteOffset` is supplied by `analyze`, which is
+   * the only place that has the source text; a node range built outside an analyze call
+   * simply omits the byte fields rather than reporting a wrong one.
+   */
+  private getRange(node: Node, byteOffset?: (i: number) => number) {
+    const toBytes = byteOffset ?? this.byteOffsetOf
+    const r: ASTEngine.UniversalSymbol["range"] = {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
@@ -2382,5 +2453,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }
+    if (toBytes) {
+      r.byteStart = toBytes(node.startIndex)
+      r.byteEnd = toBytes(node.endIndex)
+    }
+    return r
   }
 }
