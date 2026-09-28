@@ -80,6 +80,27 @@ const BUILTIN_WASM_SYMBOLS = new Set(["error_sentinel"])
 // ---------------------------------------------------------------------------
 export interface LaneDecision {
   wired: string
+  /**
+   * Additional grammars the SAME analyzer loads at runtime, beyond `wired`.
+   *
+   * Added for markdown (M14 #290), the first two-grammar lane: tree-sitter-markdown
+   * ships a BLOCK grammar and a COMPANION INLINE grammar, and the engine pre-parses
+   * every `inline` node with the companion before the analyzer runs. The lane cannot
+   * work without it — every `uses` edge in the lane comes from it — and until this
+   * field existed the inline wasm had NO sha256 anywhere in the repository, so a
+   * rebuild of it would have changed what the analyzer emits with nothing able to
+   * notice. That is the class the M49 W16 sweep-state header narrates: grammar 4/5
+   * was rebuilt into `tree-sitter-css.wasm`, the CSS analyzer's behaviour changed
+   * while every hashed input stayed byte-identical, and the journal resumed and
+   * reported a clean pass — a cached verdict for a parser that no longer existed.
+   *
+   * A separate field rather than widening `wired`, because `wired` is a single
+   * string that the consistency gate (C2) compares against the survey's one
+   * `shipped.sha256` per lane, and because the union oracle in
+   * `audit-analyzer-grammar.ts` already spells multi-grammar lanes as a primary plus
+   * a list. One concept, one field, in both places.
+   */
+  companionWasm?: string[]
   provenance:
     | { kind: "byte-identical-to-npm-tarball"; package: string; version: string }
     | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
@@ -99,7 +120,20 @@ export interface LaneDecision {
   decision: string
   alternatives: Array<{ option: string; measured: string; artifact: string }>
   evidence: string[]
-  copies: Array<{ label: string; path: string }>
+  /**
+   * Local copies of the wired bytes, each compared against the grammar it MIRRORS.
+   *
+   * `of` names the wired file a copy is a copy of, and it must be either the lane's
+   * own `wired` or one of its `companionWasm` entries. It exists because comparing
+   * every copy to the PRIMARY sha is wrong the moment a lane has a companion:
+   * markdown's inline registry copy is byte-identical to the inline companion and
+   * necessarily differs from the block grammar, and the first measurement of this
+   * entry read it as `differs` — a record that reports a true copy as a broken one
+   * is worse than no copy list, because it sends a reader hunting a divergence that
+   * does not exist. Omitting `of` means the primary, which is every other lane's
+   * intent.
+   */
+  copies: Array<{ label: string; path: string; of?: string }>
   notVendored?: Array<{ path: string; why: string }>
 }
 
@@ -693,6 +727,115 @@ export const LANES: Record<string, LaneDecision> = {
       { path: "tree-sitter-powershell.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
     ],
   },
+  // M14 #290. The FIRST lane here with a COMPANION grammar, and the reason the
+  // `companionWasm` field exists at all.
+  //
+  // tree-sitter-markdown ships as two grammars: a BLOCK grammar and an INLINE
+  // grammar. The block grammar leaves inline content as an opaque text node, so
+  // links, images, autolinks and reference links are not nodes in it; the ENGINE
+  // pre-parses every `inline` node with the companion and hands the trees over on
+  // `context.mdInlineTrees` (the vue/svelte SFC seam). Every `uses` edge this lane
+  // emits therefore comes from the companion, and a document with no links would
+  // emit none.
+  //
+  // Until this entry the inline wasm had NO sha256 anywhere in the repository. That
+  // is the failure shape the M49 W16 sweep-state header narrates: grammar 4/5 was
+  // rebuilt into `tree-sitter-css.wasm`, the CSS analyzer's behaviour changed while
+  // every hashed input stayed byte-identical, the journal resumed and reported
+  // `cov=100% missing=0` — a cached verdict for a parser that no longer existed. It
+  // read as a pass. Both grammars are pinned here so that swap cannot be silent.
+  markdown: {
+    wired: "wasm/tree-sitter-markdown.wasm",
+    companionWasm: ["wasm/tree-sitter-markdown_inline.wasm"],
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
+        "NOT provenanced to a published version from inside this tree, and the lane says so rather than " +
+        "guessing. `docs/analyzers/real-markdown-analyzer.md` records that " +
+        "`script/m60/find-grammar-provenance.ts` matched the BLOCK wasm by exact sha256 against a published " +
+        "artifact of `@tree-sitter-grammars/tree-sitter-markdown@0.5.1` (3e13182f21373634…, 421,534 B), and that " +
+        "the match came from a GITHUB RELEASE ASSET rather than an npm tarball because the package's repository " +
+        "publishes a prebuilt wasm per release. That claim is INHERITED, not re-derived here: the artifact it " +
+        "cites (`validation/m60/results/G-PROVENANCE.json`) has no markdown row, and no local copy of the package " +
+        "is reachable offline, so neither the block nor the inline wasm could be re-hashed against a published " +
+        "one. INHERITING IT AS IF IT WERE MEASURED IS THE THING THIS RECORD EXISTS TO PREVENT, so it is " +
+        "recorded as a chain and the two things that WERE measured are recorded beside it.\n\n" +
+        "WHAT WAS ESTABLISHED, and it is the part that decides whether the analyzer is safe:\n" +
+        "  1. BOTH wasms are byte-identical to the copies the wasm registry serves " +
+        "(~/.bb/wasm/tree-sitter-markdown.wasm and ~/.bb/wasm/tree-sitter-markdown_inline.wasm). Measured by " +
+        "sha256 on both sides; recorded under `copies` so the gate fails if either stops matching. A dev run and " +
+        "a compiled run therefore see the same grammars.\n" +
+        "  2. Neither grammar is vendored (`grammars/` has no tree-sitter-markdown), so there is no grammar.js, " +
+        "no src/node-types.json and no scanner to diff against the wired bytes. The source<->wasm proof the " +
+        "haskell, elixir, css, fsharp, clojure, clean, yaml and powershell lanes run CANNOT run for this lane, and " +
+        "the pin rests on byte identity plus the fully enumerable surface instead.\n" +
+        "  3. The ANALYZER matches on node-type NAMES and never on a numeric id, so it is immune to the id-order " +
+        "divergence that separates two builds of one grammar source — the json lane documents that hazard at " +
+        "length. The id-order digest is recorded for both grammars anyway, because it is the only thing that would " +
+        "separate two builds of THIS source.\n\n" +
+        "WHAT IS NOT ESTABLISHED: that these bytes are the 0.5.1 release, for EITHER grammar. The block wasm's " +
+        "match is inherited from a doc; the inline wasm has no provenance claim at all, anywhere, and the pin makes " +
+        "none. Re-deriving both needs network access to the release assets and is owed.",
+    },
+    source: {
+      state: "not-obtainable-offline",
+      note:
+        "grammars/ has no tree-sitter-markdown directory, so there is no vendored grammar.js, no node-types.json " +
+        "and no scanner to diff against either wired wasm. The source<->wasm check cannot run for this lane in " +
+        "either direction, and the pin therefore rests on byte identity, the enumerable surface, and the " +
+        "name-not-id property of the analyzer. Stated rather than approximated.",
+    },
+    decision:
+      "Pin BOTH grammars by sha256 + full enumerable surface, list the registry copies as byte-identical for each, " +
+      "and declare the provenance class `unnamed-build-sha-only` rather than inheriting the doc's 0.5.1 claim as if " +
+      "it had been measured in this round. The claim is plausible and cited; it is not established, and the " +
+      "difference between those two is the whole subject of this record.",
+    alternatives: [
+      {
+        option: "record `byte-identical-to-npm-tarball` for @tree-sitter-grammars/tree-sitter-markdown@0.5.1, on the strength of the lane doc's existing claim",
+        measured:
+          "REFUSED as unsupported by this round. The census artifact the claim cites carries no markdown row, and " +
+          "the class asserts the bytes ARE the published tarball's, which is stronger than 'a published artifact " +
+          "hashes to these bytes' (a release asset is not the tarball). Recording the stronger class on the " +
+          "weaker evidence is how a pin becomes a decoration.",
+        artifact: "validation/m60/results/G-PROVENANCE.json (no markdown row); sha256 of both wasms vs the registry copies",
+      },
+      {
+        option: "pin only the block grammar, as the other ten lanes do",
+        measured:
+          "REFUSED, and it is the option this entry was written to close. The inline grammar supplies every `uses` " +
+          "edge the lane emits, so pinning the block grammar alone would leave the load-bearing input unpinned — " +
+          "and the F1 oracle had already been caught reading only the block grammar, which is how " +
+          "`uri_autolink` and `email_autolink` sat in the dead-literal record for 35 days as branches that " +
+          "'can never match' when both are live named types of the companion (ids 37, 38).",
+        artifact: "audit-analyzer-grammar.ts EXTRA_GRAMMARS; validation/m14/grammar-audit-baseline.json (markdown 2 -> 0, repayment recorded)",
+      },
+      {
+        option: "vendor the grammar source so the source<->wasm proof can run, as eight other lanes do",
+        measured:
+          "NOT TAKEN in this round, and named as owed rather than dismissed. The source class is a release asset, " +
+          "not an npm tarball, so 'vendoring the tarball tree' has no source tree to copy; obtaining the " +
+          "repository's grammar.js and regenerating from it would be a build-identity question this round did not " +
+          "answer.",
+        artifact: "grammars/ (12 lanes vendored, no tree-sitter-markdown)",
+      },
+    ],
+    evidence: [
+      "sha256 + size of both wired grammars, and of both registry copies, in this record",
+      "the enumerable surface (ids/named/anon/fieldCount + three digests) for both grammars, in this record",
+      "validation/m14/grammar-audit-baseline.json — markdown 2 -> 0, with the repayment that the F1 oracle was missing the companion",
+      "validation/m60/results/G-PROVENANCE.json — has NO markdown row, which is why the provenance class is unnamed-build",
+      "docs/analyzers/real-markdown-analyzer.md — the two-grammar design and the inherited 0.5.1 claim",
+    ],
+    copies: [
+      { label: "wasm registry copy of the block grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown.wasm") },
+      { label: "wasm registry copy of the INLINE companion grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown_inline.wasm"), of: "wasm/tree-sitter-markdown_inline.wasm" },
+    ],
+    notVendored: [
+      { path: "grammar.js / src/grammar.json / src/node-types.json", why: "not vendored; the package publishes a prebuilt per-release wasm, so there is no tarball source tree to copy byte-for-byte" },
+      { path: "tree-sitter-markdown_inline.wasm", why: "the wired companion bytes; they live at wasm/ and are pinned by sha here via companionWasm" },
+    ],
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -713,6 +856,8 @@ export interface Surface {
 
 export interface MeasuredLane {
   wired: { file: string; sha256: string; bytes: number }
+  /** Measured per companion grammar; `[]` for the single-grammar lanes. */
+  companions: Array<{ file: string; sha256: string; bytes: number; surface: Surface }>
   surface: Surface
   copies: Array<{ label: string; path: string; sha256: string | null; byteIdentical: boolean; absent?: boolean }>
   vendored:
@@ -782,12 +927,20 @@ export async function measureSurface(absWasm: string): Promise<{ surface: Surfac
   return { surface, namedUnique: [...new Set(named)].sort(), uniqueNames: [...new Set([...named, ...anon])].sort() }
 }
 
-export async function measureLane(file: string): Promise<MeasuredLane> {
+export async function measureLane(file: string, companionFiles: string[] = []): Promise<MeasuredLane> {
   const abs = path.join(ROOT, file)
   const buf = fs.readFileSync(abs)
   const { surface } = await measureSurface(abs)
+  const companions: MeasuredLane["companions"] = []
+  for (const cf of companionFiles) {
+    const cAbs = path.join(ROOT, cf)
+    const cBuf = fs.readFileSync(cAbs)
+    const { surface: cSurface } = await measureSurface(cAbs)
+    companions.push({ file: cf, sha256: sha256(cBuf), bytes: cBuf.length, surface: cSurface })
+  }
   return {
     wired: { file, sha256: sha256(buf), bytes: buf.length },
+    companions,
     surface,
     copies: [],
     vendored: { state: "not-obtainable-offline" },
@@ -795,11 +948,19 @@ export async function measureLane(file: string): Promise<MeasuredLane> {
   }
 }
 
-function measureCopies(lane: LaneDecision, wiredSha: string): MeasuredLane["copies"] {
+function measureCopies(lane: LaneDecision, shasByFile: Record<string, string>): MeasuredLane["copies"] {
   return lane.copies.map((c) => {
+    // Default to the lane's primary; a companion copy must say which grammar it mirrors.
+    const target = c.of ?? lane.wired
+    const want = shasByFile[target]
+    if (!want) {
+      // An `of` naming a grammar this lane does not wire is a RECORD error, not a
+      // silent false: the copy would be compared against nothing and read as broken.
+      throw new Error(`grammar-pins: copy "${c.label}" declares of="${target}", which is neither the lane's wired grammar nor one of its companionWasm entries`)
+    }
     if (!fs.existsSync(c.path)) return { label: c.label, path: c.path.replace(HOME, "~"), sha256: null, byteIdentical: false, absent: true }
     const sha = sha256(fs.readFileSync(c.path))
-    return { label: c.label, path: c.path.replace(HOME, "~"), sha256: sha, byteIdentical: sha === wiredSha }
+    return { label: c.label, path: c.path.replace(HOME, "~"), sha256: sha, byteIdentical: sha === want }
   })
 }
 
@@ -857,7 +1018,7 @@ export function sourceVsWasmFor(root: string, lane: LaneDecision, namedUnique: s
 // ---------------------------------------------------------------------------
 export interface PinRecord {
   schemaVersion: number
-  lanes: Record<string, { wired: { file: string; sha256: string; bytes: number }; surface: Surface; copies: MeasuredLane["copies"]; vendored: any; sourceVsWasm: any }>
+  lanes: Record<string, { wired: { file: string; sha256: string; bytes: number }; companions?: MeasuredLane["companions"]; surface: Surface; copies: MeasuredLane["copies"]; vendored: any; sourceVsWasm: any }>
   decisions: Record<string, unknown>
 }
 
@@ -885,6 +1046,37 @@ export function verifyPins(record: PinRecord, actual: Record<string, MeasuredLan
     }
     if (JSON.stringify(now.copies) !== JSON.stringify(rec.copies)) {
       failures.push({ lane: lang, check: "local copy list changed (a copy appeared, vanished, or no longer matches)", recorded: rec.copies, actual: now.copies })
+    }
+    // Companion grammars get the same treatment as the primary, in BOTH directions.
+    // A companion that appears, vanishes, or changes a single byte or a single
+    // node-type id is a failure, because a companion is not optional — it is a
+    // grammar the analyzer loads on every run. markdown is the first lane with one
+    // (tree-sitter-markdown_inline).
+    const recCompanions = rec.companions ?? []
+    const nowCompanions = now.companions ?? []
+    if (recCompanions.length !== nowCompanions.length) {
+      failures.push({
+        lane: lang,
+        check: "companion grammar set changed (a companion was added or removed without a record)",
+        recorded: recCompanions.map((c) => c.file),
+        actual: nowCompanions.map((c) => c.file),
+      })
+    } else {
+      for (let i = 0; i < nowCompanions.length; i++) {
+        const rc = recCompanions[i]
+        const nc = nowCompanions[i]
+        if (nc.file !== rc.file) {
+          failures.push({ lane: lang, check: "companion grammar order changed", recorded: rc.file, actual: nc.file })
+          continue
+        }
+        if (nc.sha256 !== rc.sha256) failures.push({ lane: lang, check: `companion wasm sha256 drifted: ${nc.file}`, recorded: rc.sha256, actual: nc.sha256 })
+        if (nc.bytes !== rc.bytes) failures.push({ lane: lang, check: `companion wasm byte length drifted: ${nc.file}`, recorded: rc.bytes, actual: nc.bytes })
+        for (const k of ["ids", "uniqueNames", "namedIds", "namedUnique", "anonIds", "anonUnique", "fieldCount", "idOrderDigest", "typeSetDigest", "fieldSetDigest"] as const) {
+          if ((nc.surface as any)[k] !== (rc.surface as any)[k]) {
+            failures.push({ lane: lang, check: `companion surface ${k} drifted: ${nc.file}`, recorded: (rc.surface as any)[k], actual: (nc.surface as any)[k] })
+          }
+        }
+      }
     }
     if (rec.vendored?.state === "vendored") {
       if (now.vendored.state !== "vendored") failures.push({ lane: lang, check: "vendored source tree vanished", recorded: rec.vendored.dir, actual: now.vendored.state })
@@ -937,6 +1129,9 @@ export function selfTestGate(): { passed: number; failures: string[] } {
   const base = (): { record: PinRecord; actual: Record<string, MeasuredLane> } => {
     const m: MeasuredLane = {
       wired: { file: "wasm/x.wasm", sha256: "deadbeef", bytes: 10 },
+      // markdown is the first two-grammar lane, so the self-test lane carries a
+      // companion too — a gate branch with no negative is a claim, not a check.
+      companions: [{ file: "wasm/x_inline.wasm", sha256: "c0ffee", bytes: 20, surface: { ...surface, ids: 12, idOrderDigest: "e" } }],
       surface: { ...surface },
       copies: [{ label: "mirror", path: "~/.bb/wasm/x.wasm", sha256: "deadbeef", byteIdentical: true }],
       vendored: { state: "vendored", dir: "grammars/x", files: { "grammar.js": { sha256: "f00d", bytes: 3 } }, digest: "d", fileCount: 1 },
@@ -956,6 +1151,7 @@ export function selfTestGate(): { passed: number; failures: string[] } {
       lanes: {
         x: {
           wired: { ...m.wired },
+          companions: JSON.parse(JSON.stringify(m.companions)),
           surface: { ...surface },
           copies: JSON.parse(JSON.stringify(m.copies)),
           vendored: JSON.parse(JSON.stringify(m.vendored)),
@@ -967,10 +1163,37 @@ export function selfTestGate(): { passed: number; failures: string[] } {
     return { record, actual: { x: m } }
   }
 
-  // 1. an intact record passes.
+  // 1. an intact record passes — INCLUDING a lane with a companion grammar, which is
+  //    the shape markdown has.
   {
     const { record, actual } = base()
     check("intact record passes", verifyPins(record, actual).length === 0)
+  }
+  // 1b. COMPANION negatives. Four ways a companion can change and the gate must say
+  //     so: different bytes, a different surface, a companion added without a
+  //     record, and a companion silently dropped. The last matters most — a dropped
+  //     companion is how tree-sitter-markdown's inline grammar would stop being
+  //     loaded while every primary-grammar hash stayed identical, which is the
+  //     exact shape of the M49 W16 CSS incident.
+  {
+    const { record, actual } = base()
+    actual.x.companions![0].sha256 = "deadc0de"
+    check("companion sha drift fails", verifyPins(record, actual).some((x) => /companion wasm sha256 drifted/.test(x.check)))
+  }
+  {
+    const { record, actual } = base()
+    actual.x.companions![0].surface.idOrderDigest = "zzz"
+    check("companion surface drift fails", verifyPins(record, actual).some((x) => /companion surface idOrderDigest drifted/.test(x.check)))
+  }
+  {
+    const { record, actual } = base()
+    actual.x.companions!.push({ file: "wasm/x_extra.wasm", sha256: "aa", bytes: 1, surface: { ...surface } })
+    check("companion added without a record fails", verifyPins(record, actual).some((x) => /companion grammar set changed/.test(x.check)))
+  }
+  {
+    const { record, actual } = base()
+    actual.x.companions = []
+    check("companion dropped fails", verifyPins(record, actual).some((x) => /companion grammar set changed/.test(x.check)))
   }
   // 2. a wasm byte change fails.
   {
@@ -1048,9 +1271,13 @@ async function main() {
 
   const measured: Record<string, MeasuredLane> = {}
   for (const [lang, lane] of Object.entries(LANES)) {
-    const m = await measureLane(lane.wired)
+    const m = await measureLane(lane.wired, lane.companionWasm ?? [])
     const { namedUnique, uniqueNames } = await measureSurface(path.join(ROOT, lane.wired))
-    m.copies = measureCopies(lane, m.wired.sha256)
+    // Every grammar this lane wires, keyed by path, so a copy can declare which one
+    // it mirrors. markdown's inline registry copy is a copy of the COMPANION.
+    const shasByFile: Record<string, string> = { [lane.wired]: m.wired.sha256 }
+    for (const c of m.companions ?? []) shasByFile[c.file] = c.sha256
+    m.copies = measureCopies(lane, shasByFile)
     m.vendored = measureVendored(ROOT, lane)
     m.sourceVsWasm = sourceVsWasmFor(ROOT, lane, namedUnique, uniqueNames)
     measured[lang] = m
@@ -1070,15 +1297,15 @@ async function main() {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
       commit: execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim(),
-      scope: "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
+      scope: "every lane with an entry in the LANES map of script/m14/verify-grammar-pins.ts (clean, clojure, css, elixir, erlang, fsharp, haskell, json, markdown, powershell, yaml — 11 lanes as of this write). The MAP is the authority and this string is only a reader's summary of it, which is exactly why it was wrong for months: it said \"the six functional-family lanes\" while the map held ten. A field that describes a list should not be a hand-maintained copy of that list, and the cheapest way to stop it drifting is to name the map as the source of truth rather than to re-type the members as prose.",
       rule:
-        "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+        "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. A lane that loads MORE THAN ONE grammar at runtime — markdown does: the block grammar plus the tree-sitter-markdown_inline companion the engine pre-parses every inline node with — records its companions under `companions` and is gated on them identically: bytes, length and all ten surface keys, in BOTH directions, so a companion that appears, vanishes, or changes a single node-type id fails. The companions exist because the alternative was measured: the inline grammar carried no sha256 anywhere in this repository while supplying every `uses` edge the lane emits, and the F1 grammar audit had already been fooled once by an oracle that read only the primary grammar. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
       lanes: {},
       decisions: {},
     }
     for (const [lang, lane] of Object.entries(LANES)) {
       const m = measured[lang]
-      record.lanes[lang] = { wired: m.wired, surface: m.surface, copies: m.copies, vendored: m.vendored, sourceVsWasm: m.sourceVsWasm }
+      record.lanes[lang] = { wired: m.wired, companions: m.companions, surface: m.surface, copies: m.copies, vendored: m.vendored, sourceVsWasm: m.sourceVsWasm }
       record.decisions[lang] = {
         provenance: lane.provenance,
         source: lane.source,
