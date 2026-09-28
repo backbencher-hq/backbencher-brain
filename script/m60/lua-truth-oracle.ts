@@ -569,6 +569,23 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     // Only the `name` FIELD of a member is read. A positional entry has none,
     // and publishing it would mean inventing a name, so the oracle refuses to
     // derive one for the same reason the analyzer does.
+    // M60 LUA-35: `return setmetatable(M, mt)` publishes M. The module's surface
+    // IS M; the metatable is an attribute OF M, not a second export. Without this
+    // on the truth side the three kong files that genuinely name M read as
+    // fabricated exports — the analyzer right and the oracle calling it a defect,
+    // which is the failure this lane keeps having to undo.
+    else if (first?.type === "function_call") {
+      let callNameNode: any = null
+      for (let i = 0; i < first.childCount; i++) {
+        const fn = typeof first.fieldNameForChild === "function" ? first.fieldNameForChild(i) : null
+        if (fn === "name") callNameNode = first.child(i)
+      }
+      if (callNameNode?.text === "setmetatable") {
+        const a0 = argAt(first, 0)
+        const named = nameBearing(a0)
+        if (named) w.edges.push({ label: "exports", from: "global", target: named, line: a0.startPosition.row + 1, rule: "return-setmetatable", rel })
+      }
+    }
     else if (first?.type === "table_constructor") {
       for (let i = 0; i < first.namedChildCount; i++) {
         const f = first.namedChild(i)
@@ -713,6 +730,7 @@ async function main(): Promise<void> {
   // payload, and `spurious` is the leg that catches a target the tree never
   // derived — which is precisely what a payload target is.
   let relTruth = 0, relHit = 0, relSpurious = 0, relFilesProbed = 0
+  let disclosureFiles = 0, disclosureCount = 0
   const relMissed: string[] = []
   const relExtra: string[] = []
   const directRelTruth = new Set<string>()
@@ -819,6 +837,15 @@ async function main(): Promise<void> {
       // script/m60/lua-export-census.ts makes, and having it here as well as there
       // was the duplication that let the two drift apart into a 218-edge
       // disagreement (LUA-24). One instrument, two paths, one truth.
+      // M60 LUA-35: the DISCLOSURE count. A nameless module surface is recorded
+      // rather than published, and nothing in this instrument could see whether
+      // that record existed — so the disclosure half of the fix was untestable and
+      // its mutant would have read as surviving. Counted here, per file, from the
+      // direct path, and reported. A disclosure is a claim about the file, so it
+      // has to be measured like one.
+      disclosureFiles++
+      disclosureCount += (direct.metadata?.unpublishedSurface ?? []).length
+
       const dExports = new Set<string>((direct.exports ?? []).map((e: any) => e.name))
       for (const e of deriveLuaTruth(tree.rootNode, rel)) {
         if (e.label !== "exports") continue
@@ -1075,6 +1102,11 @@ async function main(): Promise<void> {
         missedSample: exportMissed,
         spuriousSample: exportExtra,
       },
+      surfaceDisclosures: {
+        note: "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+        filesWithDisclosures: disclosureFiles,
+        totalDisclosures: disclosureCount,
+      },
       relationshipsDirectPath: {
         note: "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
         filesProbed: relFilesProbed,
@@ -1136,6 +1168,7 @@ async function main(): Promise<void> {
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
   console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
+  console.log(`disclosures (nameless surfaces): files=${disclosureFiles} total=${disclosureCount}`)
   console.log(`relationships (DIRECT path, ${relFilesProbed} files): truth=${relTruth} hit=${relHit} missed=${relTruth - relHit} SPURIOUS=${relSpurious} recall=${report.totals.relationshipsDirectPath.recall} precision=${report.totals.relationshipsDirectPath.precision}`)
   console.log("\nper label:")
   for (const L of LABELS) {
