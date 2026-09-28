@@ -175,6 +175,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -764,9 +768,21 @@
     "named": true,
     "fields": {
       "variable": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -781,6 +797,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -812,9 +832,21 @@
     "named": true,
     "fields": {
       "arg0": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -829,6 +861,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -854,9 +890,21 @@
         ]
       },
       "arg1": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -871,6 +919,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -902,9 +954,21 @@
     "named": true,
     "fields": {
       "variable": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -919,6 +983,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -950,9 +1018,21 @@
     "named": true,
     "fields": {
       "arg0": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -967,6 +1047,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -992,9 +1076,21 @@
         ]
       },
       "arg1": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -1009,6 +1105,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -1073,6 +1173,10 @@
         },
         {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "shell_command",
           "named": true
         },
         {
@@ -1222,6 +1326,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -1269,6 +1377,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -1313,6 +1425,10 @@
         },
         {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "shell_command",
           "named": true
         },
         {
@@ -1442,6 +1558,10 @@
       "required": true,
       "types": [
         {
+          "type": "export_directive",
+          "named": true
+        },
+        {
           "type": "recipe",
           "named": true
         },
@@ -1509,6 +1629,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -1570,6 +1694,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -1597,7 +1725,19 @@
             "named": false
           },
           {
+            "type": "$$",
+            "named": false
+          },
+          {
             "type": "'",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
             "named": false
           },
           {
@@ -1606,6 +1746,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -1629,9 +1773,21 @@
     "named": true,
     "fields": {
       "pattern": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -1646,6 +1802,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -1671,9 +1831,21 @@
         ]
       },
       "replacement": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -1688,6 +1860,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -1713,9 +1889,21 @@
         ]
       },
       "text": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
+          {
+            "type": "$$",
+            "named": false
+          },
+          {
+            "type": "(",
+            "named": false
+          },
+          {
+            "type": ")",
+            "named": false
+          },
           {
             "type": "archive",
             "named": true
@@ -1730,6 +1918,10 @@
           },
           {
             "type": "function_call",
+            "named": true
+          },
+          {
+            "type": "shell_command",
             "named": true
           },
           {
@@ -1781,6 +1973,10 @@
           "named": true
         },
         {
+          "type": "shell_command",
+          "named": true
+        },
+        {
           "type": "shell_function",
           "named": true
         },
@@ -1821,6 +2017,10 @@
         },
         {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "shell_command",
           "named": true
         },
         {
@@ -1954,6 +2154,10 @@
         },
         {
           "type": "function_call",
+          "named": true
+        },
+        {
+          "type": "shell_command",
           "named": true
         },
         {

@@ -57,10 +57,17 @@ for (const f of files) {
   }
 }
 
-const residualExpected = [
-  { repo: "boundary", file: "Makefile", errorNodes: 8 },
-  { repo: "vault", file: "Makefile", errorNodes: 1 },
-]
+// A PINNED residual, not a demand for zero. It is now empty, and the pin is what
+// says so rather than the constant having been quietly edited: this previously
+// read 2 files / 9 nodes, and the patched grammar took it to 0 — at which point
+// this gate went RED, because the recorded residual no longer matched the
+// measurement. A pin that can only report "no worse" is not a pin.
+//
+// Pre-patch (fixtures/make/out/grammar-ab.json): boundary/Makefile 8 ERROR nodes
+// (target-scoped `target: export VAR = value`, spec gap MAKE-G3) and vault/Makefile
+// 1 ERROR node (`$$($(GO_CMD) list … | grep -v vendor/)`, spec gap MAKE-G4). Both
+// are fixed by the two grammar patches in grammars/tree-sitter-make.
+const residualExpected: { repo: string; file: string; errorNodes: number }[] = []
 
 const result = {
   analyzer: "make",
@@ -86,10 +93,24 @@ const result = {
   // gate nobody reads.
   residual: {
     policy: "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
-    expected: [
-      { repo: "boundary", file: "Makefile", errorNodes: 8, cause: "target-scoped `target: export VAR = value`, which tree-sitter-make 1.1.1 does not parse — spec gap MAKE-G3" },
-      { repo: "vault", file: "Makefile", errorNodes: 1, cause: "`MAIN_PACKAGES=$$($(GO_CMD) list …)` — a shell command inside an escaped-dollar expansion with a nested reference" },
-    ],
+    // The residual is now EMPTY, and it is the pin that says so rather than the
+    // constant having been quietly edited: this expectation previously read 2
+    // files / 9 nodes, and the patched grammar took it to 0 — at which point
+    // this gate went RED, because the recorded residual no longer matched the
+    // measurement. A pin that can only report "no worse" is not a pin. This
+    // one failed on an improvement, which is the behaviour worth keeping.
+    //
+    // Pre-patch, for the record (fixtures/make/out/grammar-ab.json):
+    //   boundary/Makefile  8 ERROR nodes  target-scoped `target: export VAR = value`  (was spec gap MAKE-G3)
+    //   vault/Makefile     1 ERROR node   `$$($(GO_CMD) list … | grep -v vendor/)`      (was spec gap MAKE-G4)
+    // Both are FIXED by the two grammar patches in grammars/tree-sitter-make,
+    // which add no node type and no field, so the source<->wasm proof is
+    // unaffected. The 9 declarations the error recovery had hidden
+    // (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH,
+    // UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH, MAIN_PACKAGES) are now
+    // visible; the `?` and `BOUNDARY_INSTALL_BINARY=1` facts the recovery had
+    // invented are gone.
+    expected: [] as { repo: string; file: string; errorNodes: number; cause?: string }[],
     hasErrorNoNodeFiles: hasErrorNoNode.map((e) => `${e.repo}/${e.file}`),
     hasErrorNoNodeDetail: hasErrorNoNode,
     hasErrorNoNodeNote: "hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token that web-tree-sitter does not surface. The file parses into the correct tree and the analyzer's output for it is correct, so this is NOT a file error. It is the engine's conservative fallback (engine.ts:1264) doing its job.",
