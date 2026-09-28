@@ -9885,13 +9885,11 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           }
         } else if (
           target &&
-          // A `&`-sigil callee with no argument syntax is a code-slot REFERENCE,
-          // not an invocation: `defined &builtin::is_bool` is a definedness test
-          // and `new POSIX::SigSet &SIGINT` passes a handler reference as an
-          // argument. With argument syntax it is perl's explicit-call syntax and
-          // IS a call. This handler is the FILE-SCOPE one and the in-sub chain is
-          // a separate branch, so the rule has to be stated in both — stating it
-          // once cost a mojo row, which is how the duplication was found.
+          // Same rule as the in-sub chain below: a `&`-sigil callee with no
+          // argument syntax is a code-slot reference (`defined &builtin::is_bool`
+          // is a definedness test), not an invocation. This handler is the
+          // FILE-SCOPE one and the in-sub chain is a separate branch, so the
+          // rule has to be stated in both — stating it once cost a mojo row.
           !(target.startsWith("&") && !hasArgumentSyntax(n)) &&
           !PERL_BUILTINS.has(target) && target !== "use" && target !== "no"
         ) {
@@ -9952,13 +9950,15 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
         }
       } else if (
         target &&
-        // Same rule as the file-scope branch above. `argumentNodes` is the wrong
-        // probe for it: it keeps an argument only when the argument contributes a
-        // WORD, so `&foo($y)` and `&foo(@y)` — both real calls — come back empty
-        // and are indistinguishable from a bare `&SIGINT`. That mistake cost 243
-        // truth rows on perl5 before the grammar's own `arguments` field was used
-        // instead; `hasArgumentSyntax` is exported from the analyzer so the two
-        // sides cannot drift on the rule again.
+        // A `&`-sigil callee with NO argument syntax is a code-slot REFERENCE,
+        // not an invocation: `defined &DynaLoader::boot_DynaLoader` is a
+        // definedness test and `new POSIX::SigSet &SIGINT` passes a handler
+        // reference as an argument. With argument syntax it is perl's
+        // explicit-call syntax and IS a call. Two over-corrections got here —
+        // suppressing on the `&` alone, and then on `argumentNodes` being
+        // empty, each cost hundreds of truth rows on perl5, because
+        // `perlArgumentNodes` drops a `$y` that the grammar's own `arguments`
+        // field keeps.
         !(target.startsWith("&") && !hasArgumentSyntax(n)) &&
         !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends"
       ) {
@@ -12579,6 +12579,29 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // Class` rows the analyzer published and the oracle could not derive.
       t === "namespace_declaration"
 
+    // What counts as a NAME EXPRESSION, shared by the heritage edge and the
+    // overrides edge below so that "one edge per name" means the same thing in
+    // both. A dotted name is ONE name: `Inherits System.Windows.Forms.Form` says
+    // the class derives from one type, and the name a reader navigates to is its
+    // last segment.
+    const NAME_NODES = new Set(["simple_name", "qualified_name", "global_qualified_name",
+      "generic_name", "predefined_type", "type_identifier"])
+    const isNameNode = (x: any): boolean => NAME_NODES.has(x.type)
+    /** The name expressions directly under `n` (not nested in another name). */
+    const topLevelNames = (n: any): any[] => {
+      const out: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "type_argument_list") continue
+        if (isNameNode(c)) { out.push(c); continue }
+        // `Inherits C(a).B` nests a call; the names still count, so recurse
+        // into anything that is not itself a name.
+        if (!isNameNode(c)) out.push(...topLevelNames(c))
+      }
+      return out
+    }
+
     // ------------------------------------------------- ownership by RANGE
     // The nearest enclosing declaration, found by byte containment over the flat
     // list. The analyzer derives the same fact from a push/pop stack; if the two
@@ -12739,23 +12762,6 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       // A `(Of ...)` argument list is skipped for the same reason it is skipped
       // in `calls`: `Inherits List(Of Player)` makes `List(Of Player)` the base,
       // so `Player` is what it is parameterised over, not what it inherits.
-      const NAME_NODES = new Set(["simple_name", "qualified_name", "global_qualified_name",
-        "generic_name", "predefined_type", "type_identifier"])
-      const isNameNode = (x: any): boolean => NAME_NODES.has(x.type)
-      /** The name expressions directly under `n` (not nested in another name). */
-      const topLevelNames = (n: any): any[] => {
-        const out: any[] = []
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (!c) continue
-          if (c.type === "type_argument_list") continue
-          if (isNameNode(c)) { out.push(c); continue }
-          // `Inherits C(a).B` nests a call; the names still count, so recurse
-          // into anything that is not itself a name.
-          if (!isNameNode(c)) out.push(...topLevelNames(c))
-        }
-        return out
-      }
       // A MEMBER-LEVEL clause keeps the name WHOLE; a type-level one does not.
       //
       // `Public Sub Refresh() Implements IThing.Refresh` identifies the member BY
@@ -12824,6 +12830,56 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const fromName = contractName(from)
       if (fromName.length === 0) continue
       edges.push({ label: "calls", from: fromName, target: String(leaf.text).trim() })
+    }
+
+    // -------------------------------------------------------------- overrides
+    // `overrides` is in the harness's default audited-label set for vb, so the
+    // oracle owes it truth. It is independently derivable: a declaration carrying
+    // the `Overrides` modifier, whose OWNING TYPE's `Inherits` names the base.
+    //
+    // It was missing, and the harness said so plainly: the moment the analyzer's
+    // modifier read was fixed and it began emitting `overrides` at all, 42 of the
+    // analyzer's audited edges came back UNEXPLAINED (5.1 % of its output) purely
+    // because the truth side had no opinion. A label the analyzer publishes and
+    // the oracle cannot derive is a manufactured red, and a label neither derives
+    // is a manufactured green -- both are this harness's failure mode, and only
+    // the differential notices which is which.
+    for (const d of declNodes) {
+      if (d.type !== "method_declaration" && d.type !== "property_declaration" && d.type !== "event_declaration") continue
+      const nameNode = firstIdentOutside(d, "attribute_list")
+      if (!nameNode) continue
+      // The modifier is a keyword child of the declaration. Compared char-wise
+      // against a known word, not matched by a pattern.
+      let overrides = false
+      for (let ci = 0; ci < d.childCount; ci++) {
+        const ch = d.child(ci)
+        if (!ch) continue
+        if (String(ch.text).trim().toLowerCase() === "overrides") { overrides = true; break }
+      }
+      if (!overrides) continue
+      const member = String(nameNode.text).trim()
+      const owner = ownerOf(d)
+      if (!owner) continue
+      // The base type, read from the OWNING TYPE's own heritage -- the same
+      // structural read the heritage edge above uses, so the two agree for one
+      // reason rather than by coincidence.
+      let baseName = ""
+      for (let ci = 0; ci < owner.childCount; ci++) {
+        const ch = owner.child(ci)
+        if (!ch) continue
+        const t = ch.type
+        if (t !== "inherits_statement" && t !== "inherits_clause" && t !== "inherits_member_clause") continue
+        for (const nn of topLevelNames(ch)) {
+          const leaf = lastIdent(nn)
+          if (leaf) { baseName = String(leaf.text).trim(); break }
+        }
+        if (baseName.length > 0) break
+      }
+      edges.push({
+        label: "overrides",
+        from: member,
+        target: baseName.length > 0 ? `${baseName}.${member}` : member,
+      })
     }
 
     // -------------------------------------------------------------- imports
@@ -13015,7 +13071,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             }
           }
         }
-        // every `|`-separated prerequisite group, order-only included
+        // Every `|`-separated prerequisite group, order-only included. A rule
+        // whose target is an EXPRESSION declares no literal name, so the owner
+        // falls back to the module — the same fallback the analyzer makes. The
+        // M12 contract probe is what forced it: `$(BIN): $(OBJS) | builddir`
+        // published no prereq edge at all before, and had the oracle kept the
+        // same blind spot it would have reported that fix as spurious — which is
+        // what it did, 47 unexplained on consul and 4 on tf-aws-components,
+        // before this line existed.
+        const owners = lits.length ? lits : [mod]
         for (let i = 0; i < n.namedChildCount; i++) {
           const pr = n.namedChild(i)
           if (pr?.type !== "prerequisites") continue
@@ -13023,7 +13087,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
             const pc = pr.namedChild(j)
             const nm = delims(pc?.text ?? "")
             if (!nm || KW.has(nm)) continue
-            for (const t of lits) push(t, declared.has(nm) ? "references" : "uses", nm, pc.startPosition.row + 1)
+            for (const t of owners) push(t, declared.has(nm) ? "references" : "uses", nm, pc.startPosition.row + 1)
           }
         }
         if (lits.length) childOwner = lits[0]
