@@ -10516,6 +10516,253 @@ export const MUTANTS: Mutant[] = [
       }) }
     },
   },
+  // ==========================================================================
+  // ER3 (erlang wave, 2026-09-28). Every mutant below restores a behaviour the
+  // pre-ER3 analyzer lacked, and each is pinned by the fixture named in its
+  // description. The 16 erlang fixtures and these 28 mutants are the pair: the
+  // fixtures say what is true, the mutants say the fixtures would notice.
+  // ==========================================================================
+  {
+    id: "erlang/record-reads-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D24/ER-G4 regression: drops record member READS (record_field_expr / record_index_expr). patterns-er3 pins the guard read, the index read and the two body reads; record-ops pins the contract's origin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "record member read") }),
+  },
+  {
+    id: "erlang/record-update-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D24 regression: drops the per-field USES of a record UPDATE. patterns-er3 pins `uses body -> g` at the update's field line",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "record field update") }),
+  },
+  {
+    id: "erlang/generator-pattern-leak",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D28 regression: a comprehension generator's left side stops being a pattern, so `[N || #r{f = N} <- L]` fabricates a construction. patterns-er3 FORBIDS `instantiates gen -> r`; both the analyzer and the independent oracle first shared this wrong assumption, which is why the authored fixture is the only thing that can see it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "gen", target: "r", confidence: 1, line_number: 14, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/guard-read-silenced",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D28 regression: a `when` guard is treated as pattern position, so `X#r.f > 0` stops being a member read. patterns-er3 pins `uses guard_read -> r` and `-> f` at the guard's line",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "record member read" && x.source === "guard_read")) }),
+  },
+  {
+    id: "erlang/macro-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D9/ER-G1 regression: drops every ?MACRO use reference. macros-er3 pins the function-like use (whose name is an ATOM child), the object-like use and the macro-to-macro dependency",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "macro use") }),
+  },
+  {
+    id: "erlang/macro-body-calls-restored",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D11 regression: a macro BODY's call becomes an edge again. macros-er3 FORBIDS `calls DOUBLE -> helper`: ?DOUBLE(1) expands to helper(1) at the use site, the analyzer does not expand, and naming the template's line invents a call site",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "DOUBLE", target: "helper", confidence: 0.9, line_number: 10, metadata: { erlangSpecific: true, context: "remote function call", callArity: 1 } }] }),
+  },
+  {
+    id: "erlang/fun-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D10/ER-G2 regression: drops fun-VALUE references (fun lists:map/2, fun erlang:is_integer/1). dispatch-er3 pins both the qualified external fun and its callArity",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "fun value reference") }),
+  },
+  {
+    id: "erlang/dynamic-remote-named",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D23 regression: a dynamic remote (`M:dyn(1)`, `erlang:F(2)`) names its bare leaf as a callee. dispatch-er3 FORBIDS `calls run -> dyn` and `-> F`: the leaf alone conflates every module's dyn/1",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "run", target: "dyn", confidence: 0.9, line_number: 10, metadata: { erlangSpecific: true, context: "remote function call", callArity: 1 } }] }),
+  },
+  {
+    id: "erlang/macro-module-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D14/ER-D23 regression: ?MODULE:m() stops expanding, so the idiomatic self-dispatch resolves to nothing. dispatch-er3 pins `calls run -> dispatch_er3:m` with meta.macroModule",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).macroModule) }),
+  },
+  {
+    id: "erlang/type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D10/ER-G5 regression: a -type/-opaque/-nominal body stops naming types. types-er3 pins request->payload, token->binary and the rest of the type graph",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "type reference") }),
+  },
+  {
+    id: "erlang/callback-type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D27 regression: a -callback signature stops naming types, which hides the whole behaviour interface. types-er3 pins `references handle -> request`; the corpus census measured 65 such edges dropped in 60 files before the fix",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && (x.source === "handle" || x.source === "init"))) }),
+  },
+  {
+    id: "erlang/spec-type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D27 regression: a -spec stops naming types. types-er3 pins `references run -> request`; ER-D3 still holds (a spec declares no symbol), but the contract's type dependencies are real edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && x.source === "run")) }),
+  },
+  {
+    id: "erlang/opaque-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-G5 regression: -opaque is no longer distinguished from -type, so an opaque type's opacity is invisible. types-er3 pins meta.isOpaque on `token`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isOpaque ? { ...s, metadata: { ...s.metadata, isOpaque: false } } : s) }),
+  },
+  {
+    id: "erlang/nominal-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D19 regression: OTP 28's -nominal loses its flag. types-er3 pins meta.isNominal on `ident`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isNominal ? { ...s, metadata: { ...s.metadata, isNominal: false } } : s) }),
+  },
+  {
+    id: "erlang/type-self-ref-added",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "the declared type's own NAME is no longer skipped, so every type aliases itself. types-er3 FORBIDS `references handle -> handle` and `references request -> request`; the pre-ER3 span filter existed because a fresh-wrapper `child !== skip` comparison never matches, so the self-reference was real",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "request", target: "request", confidence: 0.9, line_number: 13, metadata: { erlangSpecific: true, context: "type reference" } }] }),
+  },
+  {
+    id: "erlang/recursive-type-self-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "the span filter is over-applied and a RECURSIVE type's legal self-reference is dropped. types-er3 pins `references tree -> tree` and `references recursive -> recursive`: removing the declaration's name is not the same as removing a genuine recursive dependency",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && x.target === x.source)) }),
+  },
+  {
+    id: "erlang/qualified-type-leaf",
+    language: "erlang",
+    defectClass: "relationship-target",
+    description: "ER-D31 regression: a qualified type reference keeps only its leaf. edge-cases-er3 pins `references opts -> cowboy_middleware:env`; over the 150-file census draw this defect produced 876 module names masquerading as types",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if ((x.metadata ?? {}).context !== "type reference") return x
+      const t = String(x.target ?? "")
+      const i = t.indexOf(":")
+      return i > 0 ? { ...x, target: t.slice(i + 1) } : x
+    }) }),
+  },
+  {
+    id: "erlang/callback-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-G3 regression: -callback emits no Method symbol, so a behaviour's contract is invisible. types-er3 pins `handle` and `init` as methods; attrs-er3 pins handle_info/2",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "method") }),
+  },
+  {
+    id: "erlang/callback-kind-order",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D30 regression: when a module both declares and defines a callback, document order decides the kind and the callback wins (it is written first), leaving a Method whose line is the `-callback` line. edge-cases-er3 pins kind=function, meta.definedHere and `contains -> logger` at the DEFINITION's line",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ((s.metadata ?? {}).definedHere ? { ...s, kind: "method" } : s)) }),
+  },
+  {
+    id: "erlang/nif-annotation-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D22 regression: -nifs/-on_load stop annotating the declared function. attrs-er3 pins meta.isNif on native/1 and native2/2 and meta.isOnLoad on boot/0; the pre-ER3 branch could not have fired (attr_name.text is `-nifs`, and the entries are binary_op_expr, not fa)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => {
+      const m = { ...(s.metadata ?? {}) }
+      if (m.isNif) delete m.isNif
+      if (m.isOnLoad) delete m.isOnLoad
+      return { ...s, metadata: m }
+    }) }),
+  },
+  {
+    id: "erlang/nif-duplicate-symbol",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D22 regression: each -nifs entry mints a SECOND Function symbol beside the declaration. attrs-er3 pins expectSymbolCount 1 for native, native2 and boot — a duplicate identity is what the pre-ER3 branch was written to do",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), ...(r.symbols ?? []).filter((s: any) => s.name === "native" || s.name === "boot").map((s: any) => ({ ...s, range: { ...s.range, startLine: 9 } }))] }),
+  },
+  {
+    id: "erlang/export-type-as-function",
+    language: "erlang",
+    defectClass: "relationship-identity",
+    description: "ER-D28 regression: -export_type entries are exported as FUNCTION exports, so a type export and a function export of the same name/arity become indistinguishable. types-er3 pins kind=type on handle/0 and tree/0",
+    transform: r => ({ ...r, exports: (r.exports ?? []).map((e: any) => (e.metadata ?? {}).isTypeExport ? { ...e, kind: "function", metadata: undefined } : e) }),
+  },
+  {
+    id: "erlang/import-external-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D20 regression: no import is classified external, so the file-dependency engine cannot keep an -import of an OTP module and an -include_lib of a code-path header out of internal resolution (M60/#910 is_external contract). attrs-er3 pins isExternal true for both and false for the project's own -include",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ({ ...i, isExternal: false })) }),
+  },
+  {
+    id: "erlang/compile-options-fabricated",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "-compile becomes a dependency, so `{inline, [helper/1]}` reads as a reference to a module named `inline`. attrs-er3 FORBIDS `references attrs_er3 -> inline` and `-> export_all`",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "attrs_er3", target: "inline", confidence: 1, line_number: 7, metadata: { erlangSpecific: true, isModuleImport: true } }] }),
+  },
+  {
+    id: "erlang/optional-callbacks-fabricated",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D28 regression: -optional_callbacks emits a reference edge. attrs-er3 FORBIDS `references attrs_er3 -> handle_info`; the attribute declares nothing — the names belong on the module symbol, which is the only place they are true",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "attrs_er3", target: "handle_info", confidence: 1, line_number: 11, metadata: { erlangSpecific: true, isModuleImport: true } }] }),
+  },
+  {
+    id: "erlang/maybe-arms-flattened",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D19 regression: OTP 28's `maybe … else … end` arms stop counting, which also silently flattens every case/receive/try arm. otp28-er3 pins pick at 3",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "pick" ? { ...s, complexity: 1 } : s)) }),
+  },
+  {
+    id: "erlang/comprehension-complexity-dropped",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D18 regression: a comprehension stops counting as a decision point. otp28-er3 pins walk at 2 and patterns-er3 pins comp at 2",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "walk" ? { ...s, complexity: 1 } : s)) }),
+  },
+  {
+    id: "erlang/short-circuit-branch-dropped",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D17 regression: andalso/orelse stop counting as branches. record-ops-er2 pins `guarded` at 4 (base 1 + two if-arms + one andalso)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "guarded" ? { ...s, complexity: 3 } : s)) }),
+  },
+  {
+    id: "erlang/clause-merge-dropped",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D26 regression: one symbol per fun_decl, which is what the pinned grammar's per-clause fun_decl shape invites. behaviour-otp pins handle_req/2 with clauseCount 2 as ONE symbol; the census measured 18,444 fun_decls for 18,409 clauses, i.e. the grammar gives every clause its own node",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "handle_req" || (s.metadata ?? {}).clauseCount !== 2) }),
+  },
+  {
+    id: "erlang/macro-head-unresolved",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D25 regression: `?MODULE() -> …` stops resolving to the module's own function, so 79 corpus function definitions disappear. edge-cases-er3 pins the edge_cases_er3/0 symbol, the `-export([?MODULE/0])` entry and `calls edge_cases_er3 -> logger`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isMacroHead) }),
+  },
+  {
+    id: "erlang/record-field-type-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "a record field's TYPE stops naming types, so `-record(r, {f :: token()})` loses `references r -> token`. types-er3 pins `references state -> token`; otp28-er3 pins `references box -> integer`",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && (x.source === "state" || x.source === "box"))) }),
+  },
+  {
+    id: "erlang/record-type-ref-becomes-instantiates",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D4/ER-D16 regression: a record named inside a TYPE is read as a construction. types-er3 FORBIDS `instantiates wrapped -> state`; the record's edge there is a type dependency",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "wrapped", target: "state", confidence: 1, line_number: 20, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/second-module-wins",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D15 regression: a second -module overwrites the first, so every module-scoped edge follows the wrong owner. Measured in the pre-ER3 code, where the attribute was assigned unconditionally",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module" || s.name !== "patterns_er3") }),
+  },
   {
     id: "elixir/lines-dropped",
     language: "elixir",

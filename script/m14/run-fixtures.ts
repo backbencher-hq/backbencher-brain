@@ -492,9 +492,11 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       }
     }
     for (const want of exp.expectExports ?? []) {
-      // Each constraint field must match >=1 export (unspecified fields wildcards).
+      // Each constraint field must match >=1 export (unspecified fields
+      // wildcards). ER3 (erlang wave): `note` is documentation here too — see the
+      // expectImports comment below for why the three matchers must agree.
       const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => e[k] === v),
+        Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true : e[k] === v)),
       )
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
@@ -515,9 +517,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Each constraint field must match >=1 import (unspecified fields are
       // wildcards; `comment` is documentation, never a constraint — mirrors
       // matchConstraints, unified 2026-09-05 by the rust RSD6 fixture).
+      // ER3 (erlang wave): `note` joins `comment` here. matchConstraints — which
+      // every symbol/relationship pin goes through — has skipped both since M14,
+      // but the exports/imports matchers treated a `note` as a constraint, so a
+      // documented pin failed with "expected export not found" naming a key that
+      // is documentation. No existing pin relied on that (all lanes pass before
+      // and after), so this only makes the three matchers agree.
       const hit = (result.imports ?? []).find((imp: any) =>
         Object.entries(want).every(([k, v]) => {
-          if (k === "comment") return true
+          if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
           return imp[k] === v
@@ -693,7 +701,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
       const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => e[k] === v),
+        Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true : e[k] === v)),
       )
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
