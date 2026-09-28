@@ -85,9 +85,16 @@ turned into phantom recovery symbols.
 
 Every `contains` target is a symbol published by this analyzer — that is a hard
 invariant, checked by a gate, because a `contains` edge pointing at a name that
-is not a symbol is a graph that cannot be walked. `references` targets are local
-names on the same document and are counted separately, because a name may be
-referenced before it is declared; those are marked `reference`, not `contains`.
+is not a symbol is a graph that cannot be walked.
+
+`references` targets are local names on the same document, **or** built-in XSD
+types, and the two are told apart in metadata rather than left to the reader. A
+local target is a symbol this analyzer published; a built-in target carries
+`metadata.resolvable: "builtin"` together with the full `qname`, `prefix` and
+`namespaceUri`, so `type="xs:string"` is recorded as a reference to the built-in
+`string` and never as a local symbol named `string`. On the corpus this is 367
+edges, and the distinction is the reason a `references` edge to `xs:string` is not
+a dangling name.
 
 Each relationship carries `metadata.evidenceClass`, assigned where the edge is
 written so a tier cannot drift from the rule that produced it:

@@ -243,7 +243,10 @@ writeSealed(path.join(OUT, "r-positions-oracle.json"), {
         why: "R places the name at a byte offset the analyzer does not report; the difference is the surplus UTF-8 bytes earlier in the file",
         scope: "15 of 1174 R files in the pinned corpora",
         note: "the range audit cannot see it: it recomputes offsets in the same unit, so two harnesses sharing a unit assumption agree with each other and are wrong together",
-        status: "OPEN - not patched here; the unit is a framework-wide contract",
+        proven: (positions?.unitFinding?.PROVEN ?? null),
+        refuted: (positions?.unitFinding?.REFUTED ?? null),
+        remedy: positions?.unitFinding?.remedy ?? null,
+        status: "OPEN - the unit is proven and the scope bounded; the remedy is additive but touches a shared contract used by ~15 lanes, so it is a cross-lane decision and is not applied unilaterally here",
       }]
     : [],
   currentCommit: commit,
