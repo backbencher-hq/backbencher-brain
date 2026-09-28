@@ -1511,7 +1511,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     // edges, which is why the A/B output diff is the gate on this change.
     const instantiated = new Set<string>()
     const typeRefEmitted = new Set<string>()
-    const typeRefHelpers = this.makeDeclaredTypeRefHelpers(relationships, ctx.fileTypes, ctx.genericParamNames, typeRefEmitted)
+    const typeRefHelpers = this.makeDeclaredTypeRefHelpers(
+      relationships, ctx.fileTypes, ctx.genericParamNames, ctx.fileValues, ctx.fileCallables, typeRefEmitted,
+    )
     const push = (source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, line: number, extra: Record<string, unknown>): void => {
       const key = `${source} ${type} ${target}`
       if (emitted.has(key)) return
@@ -1897,6 +1899,8 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     fileTypes: Set<string>,
     genericParamNames: Set<string>,
+    fileValues: Set<string>,
+    fileCallables: Set<string>,
     emitted: Set<string>,
   ): DeclaredTypeRefHelpers {
 
@@ -1963,12 +1967,31 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       return owner
     }
 
+    // A name that this file declares as a VALUE or as a CALLABLE is not a type,
+    // wherever it is written. The declared-type pass used to accept any
+    // identifier it found in a type position, which produced two fabrications
+    // the full-corpus oracle names exactly:
+    //
+    //   references -> fail   (tests/statictypes/tgenericcompiletimeproc.nim:29)
+    //       `type Foo = typeof(p(fail(123)))` — `fail` is `proc fail[T](x: T)`,
+    //       a callable used as a call, and `typeof(...)` of a call is not a
+    //       named type reference to the callee.
+    //   references -> false  (tests/objects/tinvalid_construction.nim:267)
+    //       `TNestedChoices(outerChoice: false, …)` — `false` is a literal VALUE
+    //       of a field named `outerChoice`, and it is not a type at all.
+    //
+    // Both resolved to real identifiers, so no dangling check could fire, and
+    // both are the kind of edge that survives every count-based gate.
+    const isValueNotType = (leaf: string): boolean =>
+      fileValues.has(leaf) || fileCallables.has(leaf) || NIM_LITERAL_KEYWORDS.indexOf(leaf) !== -1
+
     const push = (site: Node, relation: string, owner: { name: string; kind: string } | null): void => {
       if (site.type !== "identifier") return
       const leaf = site.text
       if (!leaf) return
       if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return
       if (genericParamNames.has(leaf)) return
+      if (isValueNotType(leaf)) return
       if (!owner) return
       // One edge per (owner, target) pair: the same type referenced by three
       // parameters of one proc is one dependency, and the line recorded is the
@@ -2687,6 +2710,10 @@ interface DeclaredTypeRefHelpers {
   collectFromTypeExpression: (te: Node | null, relation: string, owner: { name: string; kind: string } | null) => void
   push: (site: Node, relation: string, owner: { name: string; kind: string } | null) => void
 }
+
+/** Literal keywords that are values, never type names. `false` reached the
+ *  declared-type pass as a field's value in an object construction. */
+const NIM_LITERAL_KEYWORDS = ["true", "false", "nil", "void", "auto"]
 
 /** Grammar fields whose span is a TYPE position. */
 const TYPE_POSITION_FIELDS = ["type", "return_type", "inherits", "refines", "generic_parameters"]
