@@ -279,6 +279,26 @@ comparable across grammar versions.
 - **Grammar pin** (`bun run script/m14/verify-grammar-pins.ts`): 10 lanes match
   their record, including the NIM source<->wasm proof and the 72/72 conformance
   suite.
+- **Full-corpus oracle sweep** (the standing tool this lane needs): the
+  differential's 60-file rotation reported 0 unexplained on nearly every draw,
+  which is a COVERAGE limit, not a clean bill — two defect classes hid in files
+  the rotation simply did not sample. Running the oracle over all 3,914 tracked
+  `.nim` files of the Nim compiler (`fixtures/nim/probes/hunt-diff.ts`, per-file
+  truth-vs-analyzer target sets) found them immediately, and both are now fixed:
+  a `{.all.}` qualifier being published inside the module path, and the
+  declared-type pass accepting a callable or a boolean literal as a type name.
+  What remains after the fixes, on all 3,914 files:
+
+  | Residual | Count | Adjudication |
+  | --- | --- | --- |
+  | `imports` spelling on exotic forms | 4 | **oracle** imprecision: `compiler/[nimblecmd]`, `m9627 / [a, b]` (spaces around the separator), `include … as …`. The analyzer's targets are right in all three; the oracle keeps a raw node's text where the module identity is shorter. Recorded, not fixed — tightening the oracle is worth doing, and it is oracle work |
+  | `uses` for a nested destructuring binding | 1 | **oracle** imprecision: `let (a, (b, c)): (int, (int, int))` binds `a`/`b`/`c` through a NESTED `tuple_deconstruct_declaration`, which the oracle's shadow tracking does not recurse into. The analyzer correctly emits no edge for a local read |
+  | `references -> Rgba8` | 1 | **genuinely ambiguous, unresolved.** `BlenderRgb[Rgba8]` reads as a type argument and the analyzer treats it as one; the enclosing test suggests a value index. Resolving it needs a decision about bracket positions in a non-generic call, not a patch, so it is recorded rather than guessed |
+
+  A rotation-only lane would have reported 0% unexplained through all of the above
+  except by luck. That is the single most important methodological finding in this
+  lane, and it is why the sweep is a tool in `fixtures/nim/probes/` rather than a
+  thing to remember to run.
 - **Mutation** (`script/m14/mutate-analyzer.ts`, `BB_MUTANT_ONLY="nim/"`):
   **40 mutants, 40 caught, exit 0.** One per symbol kind, per relationship kind,
   per ruled rule in the table below, and per payload row — each a revert of a fix
