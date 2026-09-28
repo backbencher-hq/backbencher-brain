@@ -297,6 +297,44 @@ and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The exp
 was corrected to match R, not the analyzer** — and the reason is recorded in the ground
 truth's own notes.
 
+### The production path — the check every other harness here is blind to
+
+Every other R check constructs `new RealRAnalyzer()` and loads `wasm/tree-sitter-r.wasm`
+itself. That skips everything a user actually goes through: `ASTEngine.parseFile`, the
+analyzer registry, grammar resolution, and the temp copy the engine makes before handing
+bytes to web-tree-sitter.
+
+That gap is not theoretical. `resolveWasm("tree-sitter-r/tree-sitter-r.wasm")` searches
+four directories, and the data-dir cache `~/.bb/wasm` comes **before** the repository's own
+`wasm/`. A stale copy of the unpatched grammar sitting there would be loaded in preference
+to the shipped one — and every result in this lane would stay perfectly green while the
+product shipped a grammar that mis-parses `0x1p+53` and splits `..2dge` in half.
+
+**A green harness is not evidence that the product uses what the harness used.**
+
+So the production path is exercised end to end, and the bytes are compared by SHA-256
+rather than by path, because a path check passes happily while a cache shadows it:
+
+| assertion | result |
+|---|---|
+| bytes handed to the parser are the bytes in `wasm/tree-sitter-r.wasm` | **yes** |
+| patch 1 (hex float) reachable through `ASTEngine.parseFile` | **yes** |
+| patch 2 (`..2dge` is one identifier) reachable through it | **yes** |
+| an analyzer fix survives routing (S7 edge on the naming line) | **yes, line 5** |
+
+The harness is checked for teeth rather than assumed to have them: planting a stale
+grammar in the data-dir cache made it report the hazard and exit non-zero, and the planted
+copy was removed. It separates a **hazard** — a differing copy in a directory searched
+before the shipped one — from a **breach**, where the bytes actually loaded differ. The
+distinction earns its keep: the engine caches the grammar in `/tmp` and reuses it, so the
+file loaded can be correct while a stale shadow sits unused, and calling that a failure
+would teach people to ignore the gate.
+
+Worth recording because it was found by looking rather than by reasoning: the parse
+*succeeded* while the stale cache was planted. The `/tmp` copy from the previous run was
+still valid and got reused, so the hazard did not bite — this time. The check exists for
+the run where it does.
+
 ### An unresolved defect: `startIndex` is not a byte index
 
 **Proven.** For a file containing non-ASCII, the reported `startIndex`/`endIndex` are

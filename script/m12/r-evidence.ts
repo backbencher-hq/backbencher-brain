@@ -263,6 +263,47 @@ console.log(
 // everyone to ignore a red gate.
 if (positions?.vacuousPass) process.exitCode = 1
 
+// ---------------------------------------------------------------- 1a3. the production path
+// Every other check in this lane constructs RealRAnalyzer directly, which skips grammar
+// resolution, the analyzer registry and the temp copy the engine hands to web-tree-sitter.
+// A green harness is not evidence that the PRODUCT uses what the harness used.
+let production: any = null
+try {
+  production = JSON.parse(fs.readFileSync(
+    process.env.BB_R_PRODUCTION_RECORD ?? "$HOME/fixtures/census/r-production-path.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-production-path.json"), {
+  schemaVersion: 1,
+  kind: "r_production_path",
+  why: production?.why ?? "ASTEngine.parseFile -> analyzer registry -> grammar resolution -> shipped wasm",
+  present: production !== null,
+  shippedSha256: production?.shippedSha256 ?? null,
+  loadedSha256: production?.loadedSha256 ?? null,
+  loadedIsShippedArtifact: production?.loadedIsShippedArtifact ?? null,
+  patch1HexFloatReachable: production?.patch1HexFloatReachable ?? null,
+  patch2DotDotIdentifierReachable: production?.patch2DotDotIdentifierReachable ?? null,
+  s7BindingEdgeLine: production?.s7BindingEdgeLine ?? null,
+  // A differing copy in a directory SEARCHED BEFORE the shipped one is a hazard; only
+  // loadedIsShippedArtifact is a breach. Keeping them apart matters: the engine caches the
+  // grammar in /tmp and reuses it, so the file actually loaded can be right while a stale
+  // shadow sits unused, and reporting that as a failure would train people to ignore it.
+  shadowCandidates: production?.shadowCandidates ?? [],
+  symbolsFromPublicApi: production?.symbolsFromPublicApi ?? null,
+  relationshipsFromPublicApi: production?.relationshipsFromPublicApi ?? null,
+  problems: production?.problems ?? ["THE PRODUCTION PATH WAS NOT EXERCISED; run fixtures/corpus/r-production-path.mts"],
+  currentCommit: commit,
+})
+console.log(
+  production
+    ? `r-production-path.json       loadedShipped=${production.loadedIsShippedArtifact} ` +
+      `patch1=${production.patch1HexFloatReachable} patch2=${production.patch2DotDotIdentifierReachable} ` +
+      `s7Line=${production.s7BindingEdgeLine} problems=${production.problems.length}`
+    : `r-production-path.json       ABSENT - run fixtures/corpus/r-production-path.mts first`,
+)
+// A missing, breached or broken production path is a real failure: it means the shipped
+// product does not do what the rest of this lane measured.
+if (!production || production.problems.length) process.exitCode = 1
+
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not
 // "is a name this grammar produced". Both are re-derived here from the parse
