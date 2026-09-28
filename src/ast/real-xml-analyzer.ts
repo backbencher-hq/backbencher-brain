@@ -1048,7 +1048,63 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const imported = !resolvableInDocument && !isBuiltin && candidate.binding !== undefined
         ? importedNamespaces.get(candidate.binding)
         : undefined
-      if (!resolvableInDocument && !isBuiltin && !imported) continue
+      // X13: a BARE value, on an attribute that carries a reference, whose OWNER
+      // is in a declaration vocabulary, and which this document does not declare.
+      //
+      // The reference is REAL — the document says this element's type is that
+      // name — and it was being DROPPED, which is the same defect the review has
+      // been closing all along: a claim the graph cannot see. Two real cases in
+      // the corpus, and they are indistinguishable from one file:
+      //
+      //   cxf/…/calculator.xsd            `xmlns="…XMLSchema"`, `type="int"`
+      //     -> the XSD built-in
+      //   libxml2/…/vdv-first5_0.xsd     `xs:include`es vdv-simpleTypes.xsd,
+      //     `type="date"`                   which declares its OWN `date` at
+      //                                        line 32
+      //
+      // One is a built-in, one is an included custom type, and from inside this
+      // file they are the same three characters. Resolving either by rule is a
+      // guess: the bare-built-in rule makes the second confidently WRONG, and the
+      // refusal makes the first unresolvable for no stated reason.
+      //
+      // So the claim is EMITTED, with a fourth resolvability class:
+      //
+      //   in-document  declared here
+      //   builtin      an XML/XSD built-in
+      //   external     declared in a file this document imports, with the file
+      //   unresolved   a real reference this file does not satisfy  <- X13
+      //
+      // and `ambiguousWithBuiltin` is set when the name is ALSO a built-in, which
+      // is precisely the case where a consumer must not guess either way. The
+      // target symbol is still not published — the component is not in this file —
+      // so this adds an EDGE, never a phantom declaration.
+      //
+      // Restricted to a BARE value under a vocabulary owner. A PREFIXED value
+      // bound to a namespace this document neither declares nor imports is still
+      // REFUSED: there is no document anywhere that supports the name, and
+      // `xml/xsd-external-reference` pins that. Resolving includes for real needs
+      // the include GRAPH, which a per-file analyzer cannot see and which belongs
+      // to a project-level pass rather than here — that is a feature, not a gap
+      // in this function, and naming it as one would be a way of not doing it.
+      const ownerIsVocabulary = candidate.ownerNs !== undefined
+        && RealXmlAnalyzer.DECLARATION_VOCABULARIES[candidate.ownerNs] !== undefined
+      // "BARE" means the value carries NO PREFIX — tested on the PREFIX, not on
+      // `binding === undefined`. Those are not the same predicate: a PREFIXED
+      // value whose prefix is bound nowhere also has no binding, and using the
+      // proxy classified `type="xsd:int"` in cxf's calculator.xsd as an unresolved
+      // BARE reference to the built-in `int` when `xsd` is bound to the XSD
+      // namespace and the answer is plainly `builtin`. This is the same
+      // conflation that made the corpus oracle's bare-built-in test wrong — it
+      // asked whether the VALUE had a namespace instead of whether it had a
+      // prefix — and it is worth stating that the mistake survived being spotted
+      // once, in a different file, on the same question.
+      const isBareValue = qname.prefix.length === 0
+      const unresolvedBareReference = !resolvableInDocument && !isBuiltin && !imported
+        && isBareValue
+        && ownerIsVocabulary
+      if (!resolvableInDocument && !isBuiltin && !imported && !unresolvedBareReference) continue
+      const ambiguousWithBuiltin = unresolvedBareReference
+        && RealXmlAnalyzer.XSD_BUILTIN_TYPE_NAMES.has(qname.local)
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
       }
@@ -1058,7 +1114,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         qname: candidate.value,
         prefix: qname.prefix,
         namespaceUri: candidate.binding,
-        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : "external",
+        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBareReference ? "unresolved" : "external",
+        // X13: the name is also a built-in, and this file cannot say whether the
+        // document means the built-in or a same-named type an `xs:include` brought
+        // in. Recorded so a consumer can see the ambiguity instead of inheriting
+        // whichever reading the graph happened to take.
+        ...(ambiguousWithBuiltin ? { ambiguousWithBuiltin: true } : {}),
         // where the name actually lives, so a consumer can follow it rather than
         // having to guess from the namespace alone
         ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
