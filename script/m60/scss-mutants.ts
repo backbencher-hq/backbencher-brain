@@ -313,7 +313,7 @@ export const SCSS_MUTANTS = [
     language: "scss",
     defectClass: "metadata-loss",
     description:
-      "S6 REVERT: a `@mixin`/`@function` symbol loses its `parameters`, so a mixin's signature — the thing a call site is checked against — is absent while the symbol still looks complete. Caught by module-system-and-mixins' and functions-return-and-undeclared-uses' `expectParameters` rows.",
+      "S6 REVERT: a `@mixin`/`@function` symbol loses its `parameters`, so a mixin's signature — the thing a call site is checked against — is absent while the symbol still looks whole. Caught by module-system-and-mixins' and functions-return-and-undeclared-uses' `expectParameters` rows.",
     transform: dropCallableParameters,
   },
   {
@@ -337,7 +337,7 @@ export const SCSS_MUTANTS = [
     language: "scss",
     defectClass: "metadata-loss",
     description:
-      "S9 REVERT: a control-flow scope stops recording its `@each` key/value, `@for` from/through and `@if` condition, so the scope symbol looks complete while the only statement of intent the construct makes is gone. Caught by control-flow-and-extend's `meta.scssEachKey`/`scssEachValue`/`scssForFrom`/`scssForThrough` rows.",
+      "S9 REVERT: a control-flow scope stops recording its `@each` key/value, `@for` from/through and `@if` condition, so the scope symbol still looks whole while the only statement of intent the construct makes is gone. Caught by control-flow-and-extend's `meta.scssEachKey`/`scssEachValue`/`scssForFrom`/`scssForThrough` rows.",
     transform: dropLoopVariables,
   },
   {
