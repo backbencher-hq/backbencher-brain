@@ -109,7 +109,7 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 | | |
 |---|---:|
 | symbols | 12,834 |
-| relationships | 35,442 |
+| relationships | 38,432 |
 | imports | 1,157 |
 | crash files | 0 |
 | empty names / unknown kinds | 0 / 0 |
@@ -119,8 +119,8 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 Kinds: 5456 variable, 4370 method, 913 enum_member, 725 property, 481 class,
 **285 constructor**, 166 namespace, 137 interface, 118 enum, 99 struct, 63 module,
 11 type, 10 event.
-Edges: 14410 references, 11973 contains, 7581 calls, 1157 imports, 265 extends,
-56 implements.
+Edges: 14410 references, 11973 contains, 10451 calls, 1157 imports, 265 extends,
+176 implements.
 
 M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
 
@@ -143,6 +143,13 @@ or wrong:
   reading the callee from `function` dropped 15,577 call edges across 1,718 of
   2,660 files. Found NOT by the differential, which read 100 % with the defect
   live because the oracle made the same assumption; found by writing the fixture.
+- **member-level heritage was never collected** — `visitHeritage` was called from
+  exactly one place, the type visitor, so `Public Sub Refresh() Implements
+  IThing.Refresh` published nothing at all. Found by the full-corpus sweep (17 of
+  23 missing rows). The target keeps its qualifier, `IThing.Refresh`, because
+  last-segment reduction would make it `implements Refresh -> Refresh` — the
+  method is named `Refresh` *because* it implements `IThing.Refresh`, so the edge
+  would collapse onto itself.
 - **constructors were absent entirely** — `Public Sub New()` has no `name` field
   (`New` is an anonymous token), so the "declaration without a name" guard
   returned *before* the naming contract was reached. 12,549 symbols contained

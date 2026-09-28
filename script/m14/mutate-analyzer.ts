@@ -1173,6 +1173,22 @@ export const MUTANTS: Mutant[] = [
       return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !doomed.includes(x)) }
     },
   },
+  {
+    id: "vb/member-level-heritage-unread",
+    language: "vb",
+    defectClass: "missing-relationship",
+    description:
+      "PRE-FIX: `visitHeritage` was called from exactly one place -- the TYPE visitor -- so a member's own `Implements IThing.Refresh` clause was never read and the whole member-level heritage form published nothing, on every member in the language. Found by the FULL-CORPUS sweep, not by a fixture: 17 of 23 missing rows on a 483-file draw, and every one of them read as a self-edge (`implements Initialize -> Initialize`) because a member that implements `IThing.Refresh` is NAMED `Refresh` -- so last-segment reduction collapses the edge onto itself. Simulated as a faithful revert by dropping `implements`/`extends` edges whose metadata records the member heritage form. Caught by vb/declaration-shapes, which expects `implements Draw -> IShape.Draw` and forbids `implements Draw -> Draw`.",
+    transform: (r: any) => {
+      const doomed = (r.relationships ?? []).filter(
+        (x: any) =>
+          (String(x.type) === "implements" || String(x.type) === "extends") &&
+          x.metadata?.heritageForm === "member",
+      )
+      if (doomed.length === 0) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !doomed.includes(x)) }
+    },
+  },
   // ---------------------------------------------------------------- SQL wave
   // 2026-09-27. sql had NO mutants and NO fixture lane, while its m12
   // differential reported a 1.000 — 34 hand-audited facts over 63 lines of

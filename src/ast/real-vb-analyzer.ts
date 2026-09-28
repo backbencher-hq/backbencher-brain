@@ -776,6 +776,57 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
    * declares (an in-file base type is certain) and lower for one it does not,
    * because a cross-file target is a name, not a resolved symbol.
    */
+  /**
+   * A MEMBER-LEVEL heritage clause, read on the member that carries it.
+   *
+   * `Public Sub Refresh() Implements IThing.Refresh` is a real, separate
+   * relationship from the class's own `Implements IThing`, and it used to be
+   * dropped: `visitHeritage` was called from exactly one place -- the TYPE
+   * visitor -- so nothing ever read a member's clause. The whole member-level
+   * form was simply not collected, on every member in the language.
+   *
+   * The TARGET IS THE FULL QUALIFIED NAME, deliberately, and this is the one
+   * place the last-segment naming rule does not apply. Everywhere else a dotted
+   * name is reduced to its last segment, because that is the name a reader
+   * navigates to. Here the member is only identified BY its interface: the method
+   * is named `Refresh` precisely because it implements `IThing.Refresh`, so
+   * last-segment reduction yields `implements Refresh -> Refresh` -- an edge from
+   * a symbol to itself, which is not navigable and answers none of the questions
+   * anyone asks of it ("where is `IThing.Refresh` implemented?"). The full
+   * `IThing.Refresh` is what makes the edge mean something.
+   *
+   * Found by the full-corpus F5 sweep, not by a fixture: 17 of 23 missing rows on
+   * a 483-file draw were this, all of them reading as self-edges for exactly the
+   * reason above.
+   */
+  private visitMemberHeritage(node: Node, sym: ASTEngine.UniversalSymbol, context?: ASTEngine.AnalyzeContext): void {
+    for (const [clause, rel] of [
+      ["implements_member_clause", RelationshipType.Implements],
+      ["inherits_member_clause", RelationshipType.Extends],
+    ] as const) {
+      for (const st of this.namedChildrenOfType(node, clause)) {
+        for (const nameNode of this.nameReferencesOf(st)) {
+          const target = this.nameText(nameNode).trim()
+          if (target.length === 0) continue
+          this.relationships.push({
+            source: sym.name,
+            target,
+            type: rel,
+            // A member-level interface is a type this file may not declare, and
+            // the honest confidence for that is the unresolved-heritage one.
+            confidence: this.declaredNames.has(target) ? 1.0 : 0.7,
+            line_number: this.nodeLine(nameNode),
+            metadata: {
+              [rel === RelationshipType.Extends ? "baseType" : "interfaceName"]: target,
+              heritageForm: "member",
+              resolved: this.declaredNames.has(target),
+            },
+          })
+        }
+      }
+    }
+  }
+
   private pushHeritage(
     selfName: string,
     nameNode: Node,
@@ -1013,6 +1064,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     this.ownerStack.push(sym)
+    this.visitMemberHeritage(node, sym, context)
     this.collectCalls(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
@@ -1099,6 +1151,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const owner = this.currentOwner()
     this.ownerStack.push(sym)
+    this.visitMemberHeritage(node, sym, context)
     this.collectCalls(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
