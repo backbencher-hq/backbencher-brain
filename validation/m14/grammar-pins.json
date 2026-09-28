@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T17:36:07.210Z",
-  "commit": "6844268d4ec9683155a69bf62029bca668d96798",
+  "generatedAt": "2026-09-28T19:23:28.306Z",
+  "commit": "77f8950c017b34e474b399f1206682972a231a6c",
   "scope": "every lane with an entry in the LANES map of script/m14/verify-grammar-pins.ts (clean, clojure, css, elixir, erlang, fsharp, haskell, json, markdown, powershell, yaml — 11 lanes as of this write). The MAP is the authority and this string is only a reader's summary of it, which is exactly why it was wrong for months: it said \"the six functional-family lanes\" while the map held ten. A field that describes a list should not be a hand-maintained copy of that list, and the cheapest way to stop it drifting is to name the map as the source of truth rather than to re-type the members as prose.",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. A lane that loads MORE THAN ONE grammar at runtime — markdown does: the block grammar plus the tree-sitter-markdown_inline companion the engine pre-parses every inline node with — records its companions under `companions` and is gated on them identically: bytes, length and all ten surface keys, in BOTH directions, so a companion that appears, vanishes, or changes a single node-type id fails. The companions exist because the alternative was measured: the inline grammar carried no sha256 anywhere in this repository while supplying every `uses` edge the lane emits, and the F1 grammar audit had already been fooled once by an oracle that read only the primary grammar. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -823,30 +823,6 @@
             "sha256": "b1a96075a192a77cb88343314a965d90eac2a9e1a9d32a9380e490874517923a",
             "bytes": 62646
           },
-          "h4.ps1": {
-            "sha256": "69b1aab94f816be3105cc9f26f5f47b8566e00bbfbf44612b63df619e9ca82bd",
-            "bytes": 12
-          },
-          "h5.ps1": {
-            "sha256": "39632eb6bd4f87c47b2a603996982e9019fd051eb0869c44ae4abe89e6f0db44",
-            "bytes": 15
-          },
-          "h6.ps1": {
-            "sha256": "20f27ac75a988b7689f5f5a31227fd11fcc02b58013a7a2d57617062bd620a4f",
-            "bytes": 13
-          },
-          "h7.ps1": {
-            "sha256": "21e454abe4da88ac7b89701455388ffe4e23abf6f4a1d9d72f35620578595500",
-            "bytes": 15
-          },
-          "h8.ps1": {
-            "sha256": "28bac40f4ad393a1ed6ebd5fd2180a2b9ae04055712a23bb40957fedc79e1789",
-            "bytes": 13
-          },
-          "h9.ps1": {
-            "sha256": "4558790074dfbee40a9903cd05e8f3e782970b157ffe1bd1c9a7f26e20043e92",
-            "bytes": 11
-          },
           "LICENSE": {
             "sha256": "1fca8454c0d77a73f9922a52d39e1f7c339f5da5d03f2766eff66b859fa19477",
             "bytes": 1068
@@ -892,8 +868,8 @@
             "bytes": 855
           }
         },
-        "digest": "dfb311128ec84a386e7ee2d0b1bee75ac646e3a9a478177f1ac8690917d20529",
-        "fileCount": 18
+        "digest": "3108a3259e9c94e8482059a09f465821ba3ccaac1a1923434511691cdc977f06",
+        "fileCount": 12
       },
       "sourceVsWasm": {
         "nodeTypesJson": "grammars/tree-sitter-powershell/src/node-types.json",
