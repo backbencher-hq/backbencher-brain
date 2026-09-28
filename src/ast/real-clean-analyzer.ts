@@ -607,6 +607,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.attachFixities(ctx)
     this.emitContainsEdges(ctx)
     this.emitExports(ctx)
+    this.classifyEvidenceTier(ctx)
 
     const patterns: string[] = []
     for (const p in ctx.patterns) patterns.push(p)
@@ -1910,8 +1911,27 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = node.childForFieldName("name")
     if (!nameNode?.text) return
     const name = nameNode.text
+    ctx.patterns["Foreign Function Interface"] = true
+    const line = this.lineOf(node)
     const key = declarationKey(ctx.currentFrame, currentScope?.name, name)
-    if (ctx.functionSymbolIndex[key] !== undefined) return
+    // A `foreign export f` names the SAME entity as the signature and definition that
+    // follow it, so it merges — and the flag rides the merged symbol. But the merge is
+    // ORDER-SENSITIVE, and the first implementation was not: it returned early when a
+    // symbol of that name already existed, so a `foreign export` appearing AFTER its
+    // definition (legal in a `.dcl`, where the interface lists it separately) was
+    // dropped whole and the function lost its FFI marker. The FFI SITE is also a
+    // per-line fact like every other one the analyzer claims, and it was being lost:
+    // the merged symbol is anchored at the definition, three lines below the
+    // `foreign export` in the Clyde corpus, with no record that the export existed at
+    // all. Both are recorded here.
+    const existingIdx = ctx.functionSymbolIndex[key]
+    if (existingIdx !== undefined) {
+      const existing = ctx.symbols[existingIdx]
+      const md = existing.metadata ?? (existing.metadata = {})
+      md.isForeignExport = true
+      if (typeof md.foreignExportLine !== "number") md.foreignExportLine = line
+      return
+    }
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Function,
@@ -1920,11 +1940,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerName: currentScope?.name || ctx.currentModule,
       ownerKind: currentScope?.kind,
       visibility: "public",
-      metadata: { cleanSpecific: true, isForeignExport: true, isDeclaration: true },
+      metadata: { cleanSpecific: true, isForeignExport: true, foreignExportLine: line, isDeclaration: true },
     })
     this.attachComments(ctx.symbols[ctx.symbols.length - 1], node)
     ctx.functionSymbolIndex[key] = ctx.symbols.length - 1
-    ctx.patterns["Foreign Function Interface"] = true
   }
 
   /**
@@ -1957,6 +1976,73 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (s.name !== f.name) continue
         s.metadata = s.metadata ?? {}
         s.metadata.fixity = { associativity: f.associativity, precedence: f.precedence }
+      }
+    }
+  }
+
+  /**
+   * Evidence tiers on EVERY relationship, and the lane's own provenance bit.
+   *
+   * M14 section D requires at least two distinct `evidenceClass` values pinned by
+   * fixtures, and the family vocabulary is fixed: `structural`,
+   * `usage_contextual`, `import_based`, `reference_qualified`, `inferred` (the
+   * typescript and haskell classifiers are the precedents). Clean uses only those
+   * five, so the values mean what they mean in every other lane.
+   *
+   * | kind | tier | why |
+   * | --- | --- | --- |
+   * | `contains`, `exports` | `structural` | both endpoints are names this file publishes, and the store's own resolution proves it |
+   * | `imports` | `import_based` | the source spells the module and the item |
+   * | `instantiates`, `uses` | `structural` | in-file by construction — the target must be a `data_constructor`, record field or local this file declares, or no edge is emitted |
+   * | `implements` | `structural` in-file, `reference_qualified` external | an `instance C T` is a structural fact when `C` is declared here; when `C` is imported the edge names a class by reference, which is 322 of 782 corpus sites |
+   * | `references` | `reference_qualified` | the family rule: a type reference names its type |
+   * | `calls` | `usage_contextual`, or `reference_qualified` for a source-spelled qualified target | a call is usage evidence; a call to `'Data.Error'.Ok` or `M.lookup` is identified by the spelling in the source, not by a same-file binding |
+   *
+   * `evidenceClass` answers "how do we know this edge"; it cannot answer "could
+   * this file have known the target at all", which is Clean's actual signature
+   * property and the one the honesty gate measures. So `targetIsInFile` is
+   * emitted alongside: `true` when the target resolves to a name this file
+   * publishes (bare, `Owner.member`, or the leaf after the first `.` — the
+   * store's own three strategies), `false` when the target is external by nature.
+   * 7,777 of 9,568 corpus `references` and 322 of 782 `implements` are `false`,
+   * and a consumer that wants only provable edges can now say so without
+   * re-deriving it.
+   */
+  private classifyEvidenceTier(ctx: CleanContext): void {
+    const names = new Set<string>(ctx.symbols.map((s) => s.name))
+    const qNames = new Set<string>(ctx.symbols.map((s) => s.qualifiedName).filter(Boolean) as string[])
+    const resolves = (name: string): boolean => {
+      if (names.has(name) || qNames.has(name)) return true
+      const dot = name.indexOf(".")
+      return dot > 0 && (names.has(name.slice(dot + 1)) || qNames.has(name.slice(dot + 1)))
+    }
+    for (const r of ctx.relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      const t = String(r.type)
+      const target = String(r.target)
+      md.targetIsInFile = resolves(target)
+      if (md.evidenceClass) continue
+      switch (t) {
+        case "contains":
+        case "exports":
+        case "instantiates":
+        case "uses":
+          md.evidenceClass = "structural"
+          continue
+        case "imports":
+          md.evidenceClass = "import_based"
+          continue
+        case "references":
+          md.evidenceClass = "reference_qualified"
+          continue
+        case "implements":
+          md.evidenceClass = md.targetIsInFile ? "structural" : "reference_qualified"
+          continue
+        default:
+          // `calls` and anything a later ruling adds. A qualified or quoted target
+          // is identified by its SPELLING, which is the reference_qualified claim;
+          // a bare in-file name is a usage of a known binding.
+          md.evidenceClass = target.includes(".") || /'/.test(target) ? "reference_qualified" : "usage_contextual"
       }
     }
   }
