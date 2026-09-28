@@ -68,10 +68,44 @@ the same thing; `metadata.topLevel` marks a type-system declaration.
 - `contains` — type → field, enum → value, input → input field, `schema` → root
   operation type (qualified identities).
 - `implements` — object/interface → **every** implemented interface.
-- `uses` — type references: field return type, field argument type, input field
-  type, union member, root operation type, and **directive application**; plus
-  executable references: field selection, fragment spread, fragment and
-  inline-fragment type condition, and **variable reference**.
+- `uses` — type references: field return type, field argument type, **directive
+  argument type**, input field type, **variable type**, union member, root
+  operation type, and **directive application**; plus executable references: field
+  selection, fragment spread, fragment and inline-fragment type condition,
+  **variable reference**, and **enum value reference**.
+
+### The three families the final master review found missing
+
+A differential whose ground truth omits a family agrees *perfectly* with an
+analyzer that omits it, so counting relationships can never find a whole missing
+family — only asking "what does the specification make referenceable?" can. The
+final master review worked that way and found **three referenceable families**
+that were present in the fixtures and emitted nothing:
+
+| family | the gap | the fix |
+|---|---|---|
+| `variable_type` | a `VariableDefinition`'s declared type had **no** edge, while a field return type, an argument type and an input field type all had one — so a variable was the only declared type in the language with no relationship to it, and `returnType`/`rawType` carried the fact as a string where every sibling fact is an edge | emit `uses` from the variable, with the `Type` node's own line |
+| `enum_value_reference` | an enum member named in a **value position** — an input field default, an argument default, a variable default, an executable field argument, a directive argument — was recorded only as an opaque string in `defaultValue`, so the enum member was a declared symbol that **nothing ever referenced** | collect `EnumValue` nodes and emit `uses` |
+| `directive_argument_type` | the `DirectiveDefinition` branch emitted the `@name` symbol with `parameters` and then **no relationships at all**, so `directive @auth(requires: Role = ADMIN)` said nothing about `Role` — and a directive's argument type was the only declared type in the language with no edge to it | emit from the directive symbol, one per argument |
+
+Two details that are the whole correctness of the third family:
+
+- **A declaration is not a reference.** The grammar puts an `EnumValue` node in
+  both an `EnumValueDefinition` (a declaration, already a symbol with a `contains`
+  edge) and a `Value` (a reference). The test is the **parent**, never the node
+  type alone. All six call sites pass a `Value` or `DefaultValue` subtree, where
+  the test is therefore unobservable today — so the mutant that drops it is
+  declared **equivalent by construction**, with the structural reason recorded
+  rather than the mutant quietly deleted. It becomes load-bearing the moment a
+  call site passes anything wider.
+- **Qualify only where the document says so.** `color: Color = RED` proves `RED`
+  is `Color.RED`, because an `InputValueDefinition` and a `VariableDefinition`
+  each carry their own `Type` sibling; the target is qualified. But
+  `item(filter: { color: RED })` names the *input object*, and reaching `Color`
+  needs that object's declaration, which is in another file — so the target stays
+  the bare `RED` and the store's unique-name strategy decides it. This is the same
+  rule the analyzer already applies to a field selection, and naming a type in the
+  executable case would be a fabrication.
 
 `ImplementsInterfaces`, `UnionMemberTypes` and `DirectiveLocations` are
 **left-recursive**, so the tree nests (`I > I > I` for `A & B & C`). Every
@@ -121,18 +155,31 @@ schemas are routinely split across files, so the question is settled against the
 **project** symbol table, mirroring the store's own two strategies
 (`parallel-indexer.ts` `resolveRelationships`: strategy 1 qualified-name exact
 against `_res_qname`, strategy 2 bare name **only when it is unique**, `cnt = 1`,
-against `_res_name`). On the 47-file corpus, of 18,985 relationships:
+against `_res_name`). On the 47-file corpus, of 19,054 relationships:
 
 | how it resolves | count | share |
 |---|---|---|
-| a symbol of its own file | 4,958 | 26.12% |
-| a qualified name, `Type.field` (strategy 1) | 7,726 | 40.70% |
-| a **built-in scalar** — `Int Float String Boolean ID` | 4,395 | 23.15% |
+| a symbol of its own file | 4,961 | 26.04% |
+| a qualified name, `Type.field` (strategy 1) | 7,730 | 40.57% |
+| a **built-in scalar** — `Int Float String Boolean ID` | 4,412 | 23.15% |
 | a **spec meta-field** — `__typename __schema __type` | 333 | 1.75% |
-| a bare name that is unique project-wide (strategy 2) | 343 | 1.81% |
-| **project resolvable** | **17,755** | **93.52%** |
-| ambiguous bare — several owners, so undecidable **by the store's own rule** | 729 | 3.84% |
-| dangling — the name exists in no file of the project | 501 | 2.64% |
+| a bare name that is unique project-wide (strategy 2) | 357 | 1.87% |
+| **project resolvable** | **17,793** | **93.38%** |
+| ambiguous bare — several owners, so undecidable **by the store's own rule** | 747 | 3.92% |
+| dangling — the name exists in no file of the project | 514 | 2.70% |
+
+**Sources are checked too, and the check has a negative control.** A relationship
+whose *source* names nothing is a fact about nothing, and until the master review
+nothing measured that at all: the corpus sweep only ever counted unresolved
+*targets*. So the same probe now resolves every source by the store's own two
+strategies and reports **0 unresolved sources** across all 19,054 relationships.
+The first version of that check was **too lenient and its negative control failed
+to fail** — it accepted any bare name appearing on some symbol, so an edge from
+`role` (unique in this corpus, and so genuinely resolvable) and an edge from
+`no_such_symbol` both passed. It now judges a source exactly as it judges a
+target, and the control aimed at the corpus's dominant `field_argument` path
+reports **30 unresolved sources and exits non-zero**. A gate that cannot fail is
+not a gate.
 
 The load-bearing number is **0**: `resolvableQualified`, the class where the
 metadata names an enclosing type, `Type.field` exists in the project, and the
@@ -140,15 +187,15 @@ edge was still emitted bare. It is empty, so the analyzer qualifies everything i
 can prove — `fixtures/graphql/probe/project-resolution.mts` exits non-zero if it
 ever stops being empty, and that is gate 8b.
 
-The 729 are **not** a defect. `id` has 305 candidate owners and `slug` has 37
+The 747 are **not** a defect. `id` has 305 candidate owners and `slug` has 37
 across the corpus, and the store refuses a bare name that is not unique, so those
 edges are undecidable by design and the analyzer is right to leave them bare
-rather than guess an owner. The 501 dangling are 288 bare and 213 qualified
-against a type condition the project never defines (a selection inside
-`... on Test` where no file declares `Test`) — the analyzer qualified them from
-the only evidence the document itself carries, and the reference is genuinely
-absent. Both are recorded in `fixtures/graphql/out/project-resolution.json`
-rather than folded into a percentage.
+rather than guess an owner. The 514 dangling are bare names plus qualified ones
+whose type condition the project never defines (a selection inside `... on Test`
+where no file declares `Test`) — the analyzer qualified them from the only
+evidence the document itself carries, and the reference is genuinely absent. All
+of it is recorded in `fixtures/graphql/out/project-resolution.json` rather than
+folded into a percentage.
 
 Built-in scalars and introspection meta-fields are **specification vocabulary**:
 every schema answers them and no schema declares them, so no `brain_symbol` row
@@ -213,15 +260,15 @@ Every artifact below is regenerable; the commands are at the end of
 | `validation/m14/results/M14.0.F3.json` | the fixture-lane evidence | `graphql: 2/2 fixtures pass`, check `fixtures-graphql` |
 | `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, mirror byte-identical, source↔wasm proof **zero in both directions** |
 | `fixtures/graphql/out/contract-battery.json` | 52 hand-audited cases | **52/52** |
-| `fixtures/graphql/out/differential.json` | hand-derived ground truth, 7 fixtures, 8 channels | **284 facts, P=1.000, R=1.000** |
-| `fixtures/graphql/out/mutation.json` | 28 mutants, one per finding | **25 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 1 declared equivalent with its justification. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
+| `fixtures/graphql/out/differential.json` | hand-derived ground truth, 7 fixtures, 8 channels | **292 facts, P=1.000, R=1.000** |
+| `fixtures/graphql/out/mutation.json` | 33 mutants, one per finding | **29 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 2 declared equivalent, each with its structural justification. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
 | `fixtures/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
-| `fixtures/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 18,985 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
-| `fixtures/graphql/out/project-resolution.json` | every one of the 18,985 relationships decided at **project** scope against the store's own two strategies | **93.52% resolvable**; **0** provable-but-unqualified; 729 ambiguous by the store's own uniqueness rule; 501 genuinely absent |
+| `fixtures/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
+| `fixtures/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
 | `fixtures/graphql/out/extraction-ab.json` | the same analyzer under both grammars | **12 → 4** error files, **20 → 7** error nodes, **+4 symbols, +76 relationships**, every delta adjudicated in REVIEW.md §E |
 | `fixtures/graphql/out/source-guards.json` | zero-regex and no-structural-text-scan | **HOLDS / HOLDS**, with 2 negative controls |
 | `fixtures/graphql/out/perf-attribution.json` | a 2×2 attribution, one cell per process | parse ×1.55, analyze ×1.65; the cost is the code, not the grammar |
-| `fixtures/graphql/out/perf-accessors.json` | the machine-INDEPENDENT cost: counted tree-sitter accessor calls, and an A/B with both analyzers in one process, alternating | **338,432 → 208,297 accessor calls, 38.5% fewer**; `namedChildCount` 93,956 → **0**; facts byte-identical |
+| `fixtures/graphql/out/perf-accessors.json` | the machine-INDEPENDENT cost: counted tree-sitter accessor calls, and an A/B with both analyzers in one process, alternating | **338,432 → 151,488 accessor calls, 55.2% fewer**; `namedChildCount` 93,956 → **0**; `type` 99,735 → 41,558 |
 
 ## Complexity envelope
 
@@ -248,13 +295,40 @@ their predicates are not a single type — `DirectiveLocation` matches either of
 inner types, and `repeatable` is an *anonymous* token that a named-only walk
 cannot see.
 
+**And `node.type` is memoised per call.** `type` is a marshalling getter — every
+read crosses into WASM and copies a string back — and the analyzer read it far
+more often than there are nodes: **103,531 reads of 31,491 distinct nodes, so
+69.6% were redundant.** `node.id`, by contrast, is a plain own property set in the
+binding's constructor, so a `Map` keyed on it is nearly free and turns every read
+after the first into a hash lookup. It is an **instance field only because the
+readers are instance methods**, and it is **reassigned at the top of every
+`analyze` call** — which is what makes it safe, because a `Node` id is unique only
+within one tree and the binding documents that a node reused from an older tree
+keeps its id, so a cache outliving a call could answer with the *previous* tree's
+type. The key must also be a real number: the binding's "no node" sentinel carries
+none, and two such nodes would share the single key `undefined`.
+
+That last point was not hypothetical. Routing a plain object's `.type` **string
+field** through the memo cached `ID` under `undefined` and then reported `ID` as
+the type of an argument the source declares `Role` — caught by the differential,
+and a good illustration of why a string field and a node property must never meet
+in the same accessor. `typeOf` now refuses any node whose `id` is not a number.
+
 The cost of that shape is counted, not asserted. `namedChildCount` calls:
-**93,956 → 0**. `namedChild` calls: **92,276 → 3,311**. Total tree-sitter accessor
-calls on the 20,368-line GitHub public schema: **338,432 → 208,297, 38.5% fewer**,
-with **9,621 facts byte-identical** — the same file yields the same 9,621 symbols
-and relationships, and the differential still scores P=1.000, R=1.000 with 0 range
-failures. Gate 10b fails if `namedChildCount` ever becomes non-zero again, because
-a silent regression there is exactly what the wall clock is too noisy to catch.
+**93,956 → 0**. `namedChild` calls: **92,276 → 3,311**. `type` calls:
+**99,735 → 41,558**. Total tree-sitter accessor calls on the 20,368-line GitHub
+public schema: **338,432 → 151,488, 55.2% fewer**, with **9,622 facts** and the
+differential at P=1.000, R=1.000, 0 range failures.
+
+The count moved twice in this review and both directions are reported rather than
+the best one kept. It rose from 208,297 to 213,497 when the three new families
+landed, because they walk real subtrees to collect their facts — and the doc said
+so instead of quoting the older, rosier figure. It then fell to 151,488 when the
+`type` memo landed. The pinned claim is the count and the fact total, both
+machine-independent; the wall clock is not pinnable and is not pinned.
+
+Gate 10b fails if `namedChildCount` ever becomes non-zero again, because a
+silent regression there is exactly what the wall clock is too noisy to catch.
 
 **Throughput is a per-machine measurement, not a claim**: the same binary on the same
 47-file corpus read 26,345 and 36,013 parse lines/s on two runs of it, so no
@@ -266,8 +340,8 @@ reported 35% faster, 40%, 52%, and **13% slower**. That is not a measurement of 
 code; it is a measurement of the machine, so **no wall-clock figure is pinned for
 this change**. The probe prints the minimum (the better estimator under contention)
 and the median and gates on neither. What is pinned is the counted
-**338,432 → 208,297, 38.5% fewer accessor calls** with **9,621 facts
-byte-identical** — an exact, machine-independent fact. The 2×2 attribution (parse
+**338,432 → 213,497, 36.9% fewer accessor calls** with **9,622 facts** and
+P=1.000/R=1.000 — an exact, machine-independent fact. The 2×2 attribution (parse
 ×1.55, analyze ×1.65) remains valid because it is a ratio between two cells measured
 in the same process under the same conditions. See REVIEW.md §I and §I.1.
 
