@@ -190,6 +190,33 @@ export function perlArgumentNodes(node: Node): Node[] {
 }
 
 /**
+ * Does this call node carry an ARGUMENT LIST, by grammar rather than by content?
+ *
+ * `perlArgumentNodes` is the wrong probe here: it keeps an argument only when the
+ * argument contributes a WORD, so `&foo($y)` and `&foo(@y)` — both real calls —
+ * come back empty, indistinguishable from a bare `&SIGINT`. The `arguments` FIELD
+ * is the grammar's own statement of the same fact and does not filter:
+ *
+ *   &foo($y)   arguments=[scalar]                     -> a call
+ *   &foo(@y)   arguments=[array]                      -> a call
+ *   &Foo::bar("s") arguments=[interpolated_string]    -> a call
+ *   &foo()     arguments=[] but a `(` marker present  -> a call
+ *   &SIGINT    arguments=[] and no markers             -> a code-slot reference
+ *   defined &DynaLoader::boot  arguments=[], no markers -> a definedness test
+ *
+ * The marker test is what separates `&foo()` from `&SIGINT`: both have an empty
+ * `arguments` field, and only the first has parentheses.
+ */
+export function hasArgumentSyntax(node: Node): boolean {
+  if (node.childrenForFieldName("arguments").length > 0) return true
+  for (let i = 0; i < node.childCount; i++) {
+    const t = node.child(i)?.type
+    if (t === "(" || t === ")") return true
+  }
+  return false
+}
+
+/**
  * Perl extraction follows the stable AST contract, read entirely from the
  * pinned tree-sitter-perl grammar's own fields:
  *
@@ -350,8 +377,26 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       packageBases.set(owner, existing)
     }
 
-    const addCall = (target: string, state: WalkState, calleeNode: Node, dynamicReceiver: boolean) => {
+    // `calleeNode` is the node the LINE comes from — for a call that is the
+    // `function` field, which is NOT the call node. The `&`-argument test below
+    // needs the call node itself, so it is passed separately rather than
+    // guessed from the callee.
+    const addCall = (target: string, state: WalkState, calleeNode: Node, dynamicReceiver: boolean, callNode?: Node) => {
       if (!target || PERL_BUILTINS.has(target) || target === "use" || target === "no") return
+      // A callee whose name starts with `&` is a CODE-SLOT REFERENCE, not an
+      // invocation — UNLESS it carries an argument list, because `&foo(@args)`
+      // is perl's EXPLICIT-CALL syntax. The grammar gives both the same shape: a
+      // `function` field composed of an `&` token and a varname. So the `&` alone
+      // is not the discriminator; the argument list is. Two measured cases that
+      // reference rather than call, and both had no arguments:
+      //   new POSIX::SigSet &SIGINT   the `&SIGINT` is an ARGUMENT (a reference
+      //                                to the SIGINT handler slot); the call is
+      //                                the indirect-object `new` beside it;
+      //   defined &DynaLoader::boot_DynaLoader
+      //                               a DEFINEDNESS TEST on a code slot.
+      // Suppressing on the `&` alone cost 323 truth rows across perl5, so the
+      // narrower rule is the one that is actually right.
+      if (target.startsWith("&") && !hasArgumentSyntax(callNode ?? calleeNode)) return
       addRelationship(
         state.functionName || state.ownerName || state.packageName || "global",
         this.leafName(target),
@@ -726,7 +771,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             addRelationship(state.functionName || state.packageName || "global", instanceTarget, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, node)
           } else {
             if (indirectObjectClassNodes.has(nodeKey(node))) break
-            addCall(target, state, functionNode ?? node, false)
+            addCall(target, state, functionNode ?? node, false, node)
           }
           break
         }
@@ -766,7 +811,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `$obj->method` — the receiver is a runtime value, so the target is
             // a leaf-name match. The line is the METHOD node, which is where the
             // call is written (not the line the chain opened on).
-            addCall(method, state, methodNode ?? node, true)
+            addCall(method, state, methodNode ?? node, true, node)
           }
           break
         }
