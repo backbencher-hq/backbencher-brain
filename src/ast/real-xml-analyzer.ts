@@ -1092,7 +1092,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `schemaLocation` is defined as namespace/URI PAIRS, but a bare URI is
       // written just as often, so the pairing is decided by the token COUNT and
       // not assumed: an even count is pairs, an odd count is one bare URI.
-      const parts = value.split(/\s+/).filter(Boolean)
+      const parts = RealXmlAnalyzer.splitOnWhitespace(value)
       const paired = parts.length % 2 === 0 && parts.length >= 2
       let emitted = 0
       for (let i = paired ? 1 : 0; i < parts.length; i += paired ? 2 : 1) {
@@ -1242,6 +1242,34 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return value.length > 0 && value.length <= 256 ? { name: value, attribute } : null
     }
     return null
+  }
+
+  /**
+   * Splits on runs of whitespace as a CHAR WALK, never a regex.
+   *
+   * `schemaLocation` is the one attribute whose value is a token list rather than
+   * a single name, and tokenising it is the only place this analyzer needs to cut
+   * a value into words. `\s` was doing that job and it was the analyzer's last
+   * regex — which made this doc's "zero regex usages" claim false and left the
+   * machine census carrying that line as `needs_review` with an empty
+   * justification. The census and the doc disagreed and the census was right.
+   *
+   * The character set is spelled out rather than borrowed from `\s` so the
+   * behaviour is pinned to a stated set — space, tab, LF, CR, the XML `S`
+   * production — instead of to a regex dialect.
+   */
+  private static splitOnWhitespace(text: string): string[] {
+    const parts: string[] = []
+    let start = -1
+    for (let i = 0; i <= text.length; i++) {
+      const c = i < text.length ? text.charCodeAt(i) : 0x20
+      if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) {
+        if (start >= 0) { parts.push(text.slice(start, i)); start = -1 }
+      } else if (start < 0) {
+        start = i
+      }
+    }
+    return parts
   }
 
   private isSchemaConstruct(name: string): boolean {
