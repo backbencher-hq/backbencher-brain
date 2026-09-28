@@ -77,6 +77,34 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // script/m14/spec/bash-completeness.json and is READ by the F8 census, which
   // fails a gap with no written ruling and a ruling for a type that is no
   // longer a gap.
+  // M14 #277: powershell joins the SPEC gate. The lane was the largest analyzer
+  // tree in the repo by relationship count and the ONLY m14 lane with no
+  // completeness spec at all — 31 languages had one and powershell had none, so
+  // "is this analyzer complete over its language" had no answer beyond whatever
+  // the fixtures happened to touch. Writing the spec is what found the eight
+  // defects recorded in it: the question "which of the 152 named node types does
+  // the analyzer never NAME" had never been asked, and in every one of the eight
+  // the COMMON spelling worked and only a rarer one was dark, which is precisely
+  // the class no existing gate can see.
+  powershell: {
+    id: "powershell",
+    wasm: "tree-sitter-powershell.wasm",
+    classification: "powershell-completeness.json",
+    fixturesDir: "validation/m14/fixtures/powershell",
+    docs: ["docs/analyzers/real-powershell-analyzer.md"],
+    differentialCheck: "differential-powershell",
+    perfKey: "powershell:powershell",
+    // The ten the universal ontology declares. All ten are implemented and gated;
+    // `imports` is deliberately modelled as an import-annotated `references` edge
+    // (PSD/`addImport`), so it is not listed as required here — the exclusion is
+    // written down rather than left as a silence, and the annotation is pinned by
+    // module-surface-psb9's `expectImports` rows.
+    requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "powershell/reserved-words-psb4" },
+    },
+    title: "powershell wave (M14 #277, PS-G1..PS-G8, PSD1..PSD6)",
+  },
   bash: {
     id: "bash",
     wasm: "tree-sitter-bash.wasm",
