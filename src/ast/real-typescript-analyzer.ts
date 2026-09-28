@@ -2035,6 +2035,20 @@ class TypeScriptAnalysisRunner {
       switch (node.type) {
         case "function_declaration":
         case "generator_function_declaration":
+        // A bodyless function DECLARATION is a different node type, and the
+        // spec has carried `function_signature` as handled_verified since the
+        // lane was declared conformant while the analyzer had no reference to
+        // the type at all. It is what `declare function f(): void` parses to,
+        // and an ambient module body is nothing but these — so every exported
+        // function in a .d.ts was invisible: no symbol, no call edge, no
+        // complexity, no api-contract row. The class and interface paths
+        // already route `method_signature` and `abstract_method_signature` to
+        // their extractors; this is the statement-level counterpart, and the
+        // grammar distinction is only the absent body. extractFunction already
+        // tolerates that (`if (body)`), and for a signature the api-contract
+        // fields are exactly right: it IS a declaration of the API, with no
+        // implementation to confuse them.
+        case "function_signature":
           skipChildren = this.extractFunction(node, symbols, stack)
           break
 
@@ -2145,6 +2159,15 @@ class TypeScriptAnalysisRunner {
     if (!nameNode) return false
     const name = nameNode.text
     const modifiers = extractModifiersFromNode(node)
+    // An ambient declaration carries NO `declare` child of its own: the grammar
+    // puts the keyword on a wrapping `ambient_declaration`, verified by ancestry
+    // (`function_signature <- ambient_declaration <- [export_statement]`). So
+    // `extractModifiersFromNode` cannot see it, and a bodyless declaration would
+    // otherwise be indistinguishable from an implementation — which matters now
+    // that these symbols exist: there is no body, and nothing to have measured.
+    // Same reason `export` is not a child; that one is already covered by
+    // isNodeExported, which walks ancestors.
+    const isAmbientDeclaration = node.type === "function_signature" && node.parent?.type === "ambient_declaration"
     const exportStatus = isNodeExported(node)
     const params = this.extractParameters(node)
     const returnType = this.extractReturnType(node)
@@ -2181,7 +2204,9 @@ class TypeScriptAnalysisRunner {
         isGenerator: node.type === "generator_function_declaration",
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
-        isDeclare: modifiers.isDeclare,
+        // `|| isAmbientDeclaration`: a signature wrapped in ambient_declaration
+        // IS a declaration even though the keyword is not its own child.
+        isDeclare: modifiers.isDeclare || isAmbientDeclaration,
         complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
