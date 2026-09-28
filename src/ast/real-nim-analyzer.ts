@@ -119,8 +119,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       importQualifiers,
     })
-    this.collectInstantiations(rootNode, relationships, fileTypes, fileCallables)
-    this.collectDeclaredTypeRefs(rootNode, relationships, fileTypes, genericParamNames)
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -1435,6 +1433,22 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     },
   ): void {
     const emitted = new Set<string>()
+    // ── the two families that used to own their own full-tree walks ────────
+    // `instantiates` and the declared-type `references` are per-node families
+    // that were each written as a separate traversal of the same tree. They ride
+    // this walk now, which already tracks the enclosing callable — the thing both
+    // of them were maintaining a second copy of.
+    //
+    // Each keeps its OWN dedupe set, because each asks a different question and
+    // the keys are not comparable: `instantiates` dedupes per FILE on the bare
+    // type name (a type constructed in three places is ONE edge, at the first
+    // site), the declared-type family on `owner target` (does this routine
+    // depend on this type at all, not what is written at each site), and
+    // calls/uses on `source type target`. Sharing one set would silently drop
+    // edges, which is why the A/B output diff is the gate on this change.
+    const instantiated = new Set<string>()
+    const typeRefEmitted = new Set<string>()
+    const typeRefHelpers = this.makeDeclaredTypeRefHelpers(relationships, ctx.fileTypes, ctx.genericParamNames, typeRefEmitted)
     const push = (source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, line: number, extra: Record<string, unknown>): void => {
       const key = `${source} ${type} ${target}`
       if (emitted.has(key)) return
@@ -1485,6 +1499,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const type = node.type
       let pushedScope = false
+
+      // ── the two fused families, before the scope frame is pushed ─────────
+      // currentFn() is read BEFORE this node's own scope exists, which is what
+      // the old separate walks did: they attributed an edge to the callable
+      // ENCLOSING the construct, never to the callable the construct declares.
+      this.collectInstantiationAt(node, relationships, ctx.fileTypes, ctx.fileCallables, instantiated, currentFn())
+      this.collectDeclaredTypeRefAt(node, typeRefHelpers)
 
       // ── scope frames ───────────────────────────────────────────────────
       const callable = this.callableNodes[type]
@@ -1727,13 +1748,94 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Builtin type names, this file's own generic parameters, and the alias's own
    * name are excluded, so no edge can point at a name that is not a type.
    */
-  private collectDeclaredTypeRefs(
-    rootNode: Node,
+  /**
+   * The `instantiates` half of the fused edge walk, as a per-node handler.
+   *
+   * It used to own a full-tree walk with its own `{node, fn}` stack purely to
+   * learn the enclosing callable — which the fused walk already tracks for the
+   * shadow rules, so the second copy of that state was pure cost.
+   *
+   * `enclosing` arrives as the fused walk's `currentFn()`, which returns the
+   * sentinel "(global)" when no callable is in scope. The original produced
+   * `null` there and wrote `nextEnclosing ?? "(file)"`, so the sentinel is
+   * translated back rather than emitted: an instantiation at file scope has no
+   * callable to name, and the store resolves a relationship's source_symbol_id by
+   * matching the source name against a symbol, so "(global)" would resolve to
+   * nothing while "(file)" is the established spelling for this family.
+   */
+  private collectInstantiationAt(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    fileTypes: Set<string>,
+    fileCallables: Set<string>,
+    emitted: Set<string>,
+    enclosing: string,
+  ): void {
+    if (node.type !== "call") return
+    const source = enclosing === "(global)" ? "(file)" : enclosing
+    const fn = node.childForFieldName("function")
+    const leaf = fn ? this.calleeLeafNode(fn) : null
+    const leafText = leaf?.text
+    if (leafText && fileTypes.has(leafText) && !fileCallables.has(leafText)) {
+      const key = leafText
+      if (!emitted.has(key)) {
+        emitted.add(key)
+        relationships.push({
+          source,
+          target: leafText,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.9,
+          line_number: leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1,
+          metadata: { relationshipType: "nim_object_construction", callExpression: this.nodeText(node).slice(0, 60), isConstructor: true },
+        })
+      }
+    }
+    // `new(T)` / `new(result, T)` — the canonical allocation form, whose type
+    // argument is a bare identifier rather than a callee.
+    if (leafText === "new") {
+      const args = this.firstChildOfType(node, "argument_list")
+      if (args) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const a = args.namedChild(i)
+          if (!a) continue
+          const t = a.type === "identifier" ? a.text : null
+          if (t && fileTypes.has(t) && !fileCallables.has(t) && !emitted.has(`new:${t}`)) {
+            emitted.add(`new:${t}`)
+            relationships.push({
+              source,
+              target: t,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.9,
+              line_number: a.startPosition.row + 1,
+              metadata: { relationshipType: "nim_new_allocation", isConstructor: true },
+            })
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * The declared-type half's closures, built ONCE PER FILE.
+   *
+   * Hoisting these is the whole point of the factory. The first attempt at
+   * fusing this family kept the logic inline in the per-node handler, which meant
+   * `ownerOf` and the recursive `collectFromTypeExpression` were REBUILT ON EVERY
+   * NODE VISIT — they had been built once per file before that. The output was
+   * byte-identical and the change measured 5.5% SLOWER, in a walk that visits
+   * thousands of nodes per file.
+   *
+   * Same lesson as the rejected per-node `Map` memoization, arriving from the
+   * other direction: in a hot walk, allocating anything per node costs more than
+   * the traversal it rides on. So the rule for this walk is one stack, one local
+   * counter, and closures built once.
+   */
+  private makeDeclaredTypeRefHelpers(
     relationships: ASTEngine.UniversalRelationship[],
     fileTypes: Set<string>,
     genericParamNames: Set<string>,
-  ): void {
-    const emitted = new Set<string>()
+    emitted: Set<string>,
+  ): DeclaredTypeRefHelpers {
 
     /**
      * The DECLARATION a type reference belongs to — the same anchoring the go
@@ -1834,76 +1936,74 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      switch (n.type) {
-        case "parameter_declaration":
-        case "field_declaration":
-        case "variant_discriminator_declaration":
-        case "variable_declaration":
-        case "cast":
-        case "do_block": {
-          const t = n.childForFieldName("type")
-          if (t) collectFromTypeExpression(t, "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "proc_declaration":
-        case "func_declaration":
-        case "method_declaration":
-        case "iterator_declaration":
-        case "template_declaration":
-        case "macro_declaration":
-        case "converter_declaration": {
-          // A routine's own return type hangs off the declaration node's
-          // `return_type` field, not off a child's `type` field, so it needs
-          // its own arm — without it `proc f(): MyType` declared no dependency.
-          const ret = n.childForFieldName("return_type")
-          if (ret) collectFromTypeExpression(ret, "nim_return_type", ownerOf(n))
-          break
-        }
-        case "object_declaration": {
-          const inh = n.childForFieldName("inherits")
-          if (inh) collectFromTypeExpression(inh, "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "concept_declaration": {
-          const ref = n.childForFieldName("refines")
-          const list = ref ? this.firstChildOfType(ref, "refinement_list") : null
-          if (ref && list) for (let i = 0; i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "type_declaration": {
-          const symDecl = n.namedChildCount > 0 ? n.namedChild(0) : null
-          if (symDecl && symDecl.type === "type_symbol_declaration") {
-            const selfName = symDecl.childForFieldName("name")
-            const selfText = selfName ? this.readNameNode(selfName).name : ""
-            const owner = selfText ? { name: selfText, kind: "type" } : null
-            const rhs = this.typeDefinitionRhs(n)
-            if (rhs) {
-              // Skip the alias's own name in `type A = A`-shaped chains only;
-              // every other occurrence is a real dependency.
-              const ctor = this.typeConstructorLeaf(rhs)
-              if (ctor && ctor.text !== selfText) push(ctor, "nim_type_alias", owner)
-              for (const arg of this.typeArgumentNodes(rhs)) {
-                if (arg.type === "identifier") {
-                  if (arg.text !== selfText) push(arg, "nim_type_argument", owner)
-                } else {
-                  collectFromTypeExpression(arg, "nim_type_argument", owner)
-                }
-              }
+    return { relationships, fileTypes, genericParamNames, emitted, ownerOf, collectFromTypeExpression, push }
+  }
+
+  /** The per-node arm of the declared-type family, riding the fused edge walk. */
+  private collectDeclaredTypeRefAt(n: Node, helpers: DeclaredTypeRefHelpers): void {
+    const { fileTypes, genericParamNames, emitted, ownerOf, collectFromTypeExpression, push } = helpers
+  switch (n.type) {
+    case "parameter_declaration":
+    case "field_declaration":
+    case "variant_discriminator_declaration":
+    case "variable_declaration":
+    case "cast":
+    case "do_block": {
+      const t = n.childForFieldName("type")
+      if (t) collectFromTypeExpression(t, "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "proc_declaration":
+    case "func_declaration":
+    case "method_declaration":
+    case "iterator_declaration":
+    case "template_declaration":
+    case "macro_declaration":
+    case "converter_declaration": {
+      // A routine's own return type hangs off the declaration node's
+      // `return_type` field, not off a child's `type` field, so it needs
+      // its own arm — without it `proc f(): MyType` declared no dependency.
+      const ret = n.childForFieldName("return_type")
+      if (ret) collectFromTypeExpression(ret, "nim_return_type", ownerOf(n))
+      break
+    }
+    case "object_declaration": {
+      const inh = n.childForFieldName("inherits")
+      if (inh) collectFromTypeExpression(inh, "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "concept_declaration": {
+      const ref = n.childForFieldName("refines")
+      const list = ref ? this.firstChildOfType(ref, "refinement_list") : null
+      if (ref && list) for (let i = 0; i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "type_declaration": {
+      const symDecl = n.namedChildCount > 0 ? n.namedChild(0) : null
+      if (symDecl && symDecl.type === "type_symbol_declaration") {
+        const selfName = symDecl.childForFieldName("name")
+        const selfText = selfName ? this.readNameNode(selfName).name : ""
+        const owner = selfText ? { name: selfText, kind: "type" } : null
+        const rhs = this.typeDefinitionRhs(n)
+        if (rhs) {
+          // Skip the alias's own name in `type A = A`-shaped chains only;
+          // every other occurrence is a real dependency.
+          const ctor = this.typeConstructorLeaf(rhs)
+          if (ctor && ctor.text !== selfText) push(ctor, "nim_type_alias", owner)
+          for (const arg of this.typeArgumentNodes(rhs)) {
+            if (arg.type === "identifier") {
+              if (arg.text !== selfText) push(arg, "nim_type_argument", owner)
+            } else {
+              collectFromTypeExpression(arg, "nim_type_argument", owner)
             }
           }
-          break
         }
-        default:
-          break
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
+      break
     }
+    default:
+      break
+  }
   }
 
   /** #419-D evidence-tier classification (family standard: rust/c/cpp/go/zig
@@ -2510,6 +2610,19 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     return c
   }
+}
+
+/** The per-file closure bundle the declared-type family needs. Built once per
+ *  file and shared by every node visit — see makeDeclaredTypeRefHelpers for why
+ *  building it per node cost 5.5%. */
+interface DeclaredTypeRefHelpers {
+  relationships: ASTEngine.UniversalRelationship[]
+  fileTypes: Set<string>
+  genericParamNames: Set<string>
+  emitted: Set<string>
+  ownerOf: (start: Node) => { name: string; kind: string } | null
+  collectFromTypeExpression: (te: Node | null, relation: string, owner: { name: string; kind: string } | null) => void
+  push: (site: Node, relation: string, owner: { name: string; kind: string } | null) => void
 }
 
 /** Grammar fields whose span is a TYPE position. */

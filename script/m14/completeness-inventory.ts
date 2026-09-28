@@ -534,55 +534,6 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "svelte pass (#419)",
   },
-  // M60 Make wave (2026-09-27). The analyzer was advertised by the website
-  // through SUPPORTED_LANGUAGES and wired into engine.ts while being named by
-  // NO gate — the "looks absent rather than broken" shape. 44/44 grammar types
-  // classified in disjoint buckets, 5 fixtures, 17 mutants, and a corpus
-  // differential at 100 % / 0 missing / 0 unexplained on both corpora.
-  make: {
-    id: "make",
-    wasm: "tree-sitter-make.wasm",
-    classification: "make-completeness.json",
-    fixturesDir: "validation/m14/fixtures/make",
-    docs: ["docs/analyzers/real-makefile-analyzer.md"],
-    differentialCheck: "differential-make",
-    perfKey: "tf-aws-components:make",
-    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls"],
-    payloads: {},
-    title: "make build wave (M60, 2026-09-27)",
-  },
-  // RESTORED, not added. `hcl` was in GATED_LANGS from 2026-09-26 but its
-  // LANG_CONFIGS entry was NEVER COMMITTED — it lived only in a dirty worktree,
-  // and a concurrent `git checkout` of this file deleted it. The symptom was
-  // silent and total: `--lang hcl` began throwing `unknown language hcl` at
-  // line 788, so the lane the whole HCL wave had just closed could not be
-  // checked at all. This is recorded as a restoration because the alternative
-  // reading — "the entry never existed" — is not what the evidence says:
-  // `git log -S hcl-completeness -- script/m14/completeness-inventory.ts`
-  // returns nothing while the lane's spec, fixtures and 8/8 result all shipped.
-  // The values are reconstructed from that lane's own committed artifacts
-  // (script/m14/spec/hcl-completeness.json, validation/m14/fixtures/hcl/,
-  // docs/analyzers/real-hcl-analyzer.md, and the `terraform:hcl` /
-  // `tf-aws-components:hcl` rows this file's section E reads), and the hcl lane
-  // should confirm them.
-  hcl: {
-    id: "hcl",
-    wasm: "tree-sitter-hcl.wasm",
-    classification: "hcl-completeness.json",
-    fixturesDir: "validation/m14/fixtures/hcl",
-    docs: ["docs/analyzers/real-hcl-analyzer.md"],
-    differentialCheck: "differential-hcl",
-    perfKey: "terraform:hcl",
-    // NO `calls`: hcl RULES that kind not applicable on measurement (0 of its 64
-    // node types declare a function, and 0 of 12,977 corpus function_call nodes
-    // resolve to a declared symbol), so requiring it pinned would demand a
-    // fixture assert an edge the lane deliberately never emits. The restored
-    // entry listed it and section B failed on exactly that — recorded here
-    // because the failure is the reason the value is right.
-    requiredKinds: ["contains", "references", "uses", "imports", "exports"],
-    payloads: {},
-    title: "hcl/terraform data-config wave (M60, 2026-09-26; config entry restored 2026-09-27)",
-  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
@@ -598,7 +549,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // the gate NAMES" shape. The cost is not visible in the output: the gate prints
 // nothing for a lane it does not visit, so a lane with 8 section checks and 9
 // fixtures was reading as absent rather than as unchecked.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make"]
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
