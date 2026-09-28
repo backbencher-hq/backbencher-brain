@@ -130,6 +130,56 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // and inventing a fixture for a dialect with no corpus would be a pin with nothing
   // behind it.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  // M14 #290 (markdown): markdown joins the fixture lane, and it is the FIRST lane
+  // whose `wasm` field is only half the story — the two grammars are stated in the
+  // note below rather than smuggled into the field, because `wasm` is a single string
+  // in this map and the runner uses it to name the grammar the ANALYZER is loaded
+  // with. The companion is loaded by the engine, not by the runner.
+  //
+  // Why this lane existed at all, stated as the measurement that forced it. markdown
+  // shipped an M12 differential reading precision 1.000 / recall 1.000, a contract
+  // probe at 31/31, a shape census at 28 live / 0 dead, and a corpus claim of 734
+  // clean files with 0 crashes — and NO fixture, so nothing in the repository could
+  // convict a regression in any of it. That is the M14 #288 html finding repeated
+  // exactly: a lane whose only evidence is self-consistent. Worse, its whole
+  // measured surface was THREE hand-written files totalling 99 lines
+  // (validation/m12/fixtures/markdown/), containing zero reference-style links,
+  // zero footnotes, zero duplicate headings and zero duplicate code blocks — the
+  // four constructs where the lane is actually wrong.
+  //
+  // The defects these fixtures exist to pin, all measured against the lane's own
+  // pinned corpus (scala3@18df09c0, 738 tracked .md files) rather than argued:
+  //
+  //   1,584 of 3,742 fenced code blocks (42%) were ERASED. `code_block.<lang>` was
+  //     keyed by `owner + name`, so the second ``` block of a language under one
+  //     heading collapsed into the first, taking its `contains` edge with it. 406 of
+  //     738 files affected; worst case docs/_spec/05-classes-and-objects.md, 79
+  //     sites -> 24 symbols. A code block is a SITE, not a declaration.
+  //
+  //   671 reference-link sites (44 uses + 627 definitions, 66 files) emitted NOTHING.
+  //     The lane doc claimed "Links (inline and reference destinations)".
+  //
+  //   54 footnote and wiki-link sites emitted nothing, undeclared.
+  //
+  //   `line_number` was absent on every symbol and every relationship; 35 of 41
+  //     analyzers emit it, and `context.mdInlineLines` was computed by the engine
+  //     and read by nobody.
+  //
+  //   No `evidenceClass` on any edge, so the read-time derivation sent the 100%
+  //     structural heading hierarchy out as `inferred` — "a guess, never as fact".
+  //
+  //   Heading identity was the RAW INLINE SOURCE, not the rendered text: `# H #`
+  //     published a symbol named `H #`, and `## **bold** and [l](u)` published the
+  //     literal markdown. The inline tree was already parsed and in hand.
+  //
+  //   A multi-line setext heading published a name containing a NEWLINE, and an
+  //     empty heading published a symbol named `#` / `##` — the R7 class, a name
+  //     that is not a name.
+  //
+  // `ext` carries BOTH spellings the router accepts: language-detection.ts maps
+  // `md` AND `markdown` to this analyzer, and a lane that only claimed one would
+  // measure a different file set than it is routed for — the cpp `.cpp` defect.
+  markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
   // scss joins the fixture lane with its own wasm and its own analyzer. It is here
   // rather than folded into the css entry because the two dialects have genuinely
   // different contracts: a `$variable`, a `@mixin` and an `@use` namespace are entities
@@ -148,6 +198,16 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // reasoning preserved, and replaced by a derived gate). A fixture lane is
   // not a directory, it is a directory this map names.
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
+  // M14: json joins the fixture/mutant lane. It was the largest UNGATED lane of its
+  // kind: a committed wasm, a doc, a walk over all 9 real grammar node types — and
+  // no fixture, no mutant, no differential oracle and no completeness spec, while
+  // being offered on the website. The string `line_number` occurred ZERO times in the
+  // analyzer, so every json edge in the index carried a NULL line, and nothing was
+  // positioned to notice: the absence of a differential is why a missing payload
+  // field can survive indefinitely. `ext` is the three spellings the router accepts,
+  // because a lane measured on a different file set than it is routed for is measured
+  // on the wrong corpus.
+  json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
   // M60 (#278): powershell joins the fixture lane. It was the largest
   // UNGATED analyzer lane in the tree: an M12 corpus claim (34 acceptance
   // files of 553 tracked), a regex-census row, an F1 grammar PASS — and no
@@ -313,7 +373,14 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   }
 
   const exts = cfg.ext.split(",")
-  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)))
+  // `.expectation.json` files are excluded because for a lane whose extension IS
+  // `json` an expectation file ends in `.json` too, so it was picked up as a FIXTURE
+  // and then reported as a missing expectation of its own. Every existing lane dodged
+  // this by accident: bash expects `.sh`, typescript expects `.ts`, so the two
+  // extensions never collided. json is the first lane where they do, and the failure
+  // mode is six phantom "missing expectation file" rows that look like a lane problem
+  // and are a runner problem.
+  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
   let pass = 0, fail = 0
   const details: any[] = []
   for (const src of sources.sort()) {
@@ -342,7 +409,20 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // nothing able to see it, which is how a documented guarantee becomes a stale
     // sentence. Going through `parseFile` exercises the path real indexing takes
     // AND the diagnostics a consumer would actually receive.
-    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml") {
+    // markdown joins for the same reason html does, and the failure mode is the
+    // sharpest one in this file. The block grammar leaves inline content as an
+    // OPAQUE text node, so links, images and autolinks are not nodes until the
+    // ENGINE pre-parses every `inline` node with the companion
+    // tree-sitter-markdown_inline grammar and hands the trees over on
+    // `context.mdInlineTrees` / `mdInlineStarts` (the vue/svelte SFC seam).
+    // Calling `analyzer.analyze(tree.rootNode, content, path)` with no context
+    // leaves those arrays empty, `inlineByStart` empty, and EVERY `uses` edge in
+    // the lane disappears — a green fixture that asserts nothing, authored against
+    // a lane whose whole second grammar was silently switched off. This is not
+    // hypothetical for this lane: the reference-link and autolink contracts are
+    // exactly the pins that a context-free run cannot fail, because the nodes they
+    // name are not in the block grammar at all.
+    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml" || runLangLang === "markdown") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
       // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
