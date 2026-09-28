@@ -11240,6 +11240,33 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
   },
   {
+    id: "typescript/require-form-signal-drop",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "Restores the pre-fix signal scan, which read child_process only off an import_statement or an `import ... = require(...)` clause. A CommonJS `require(\"child_process\")` — a CALL, not an import — no longer arms the rule, so a bare exec-family call in such a file loses its command_injection sink and no flow into it can be reported: the false NEGATIVE direction, which costs a real vulnerability rather than adding noise. taint-sink-require-child-process kills it (a bare execFileSync whose only evidence is the require form). The transform is the exact inverse of the fix: a bare exec-family sink is kept when the file's import list already proves child_process, and stripped when the ONLY evidence was the call.",
+    transform: (r: any) => {
+      const mods = ((r as any).imports ?? []).map((i: any) => String(i.module ?? i.path ?? ""))
+      if (mods.some((m: string) => m === "child_process" || m === "node:child_process")) return r
+      const leaves = ["exec", "execSync", "execFile", "execFileSync", "spawn", "spawnSync", "fork"]
+      return {
+        ...r,
+        symbols: ((r as any).symbols ?? []).map((s: any) => {
+          const sinks = s.taintSinks ?? []
+          if (!Array.isArray(sinks) || sinks.length === 0) return s
+          // A BARE call has no receiver, so nothing but the file signal can
+          // justify it — exactly the sinks the dropped signal was carrying.
+          const kept = sinks.filter((t: any) => {
+            if (t?.vulnerability_type !== "command_injection") return true
+            const head = String(t.snippet ?? "").split("(")[0] ?? ""
+            const leaf = head.includes(".") ? (head.split(".").pop() ?? "") : head
+            return !leaves.includes(leaf)
+          })
+          return kept.length === sinks.length ? s : { ...s, taintSinks: kept }
+        }),
+      }
+    },
+  },
+  {
     id: "typescript/taint-sink-leaf-match",
     language: "typescript",
     defectClass: "noise-fabrication",

@@ -3549,6 +3549,26 @@ class TypeScriptAnalysisRunner {
   }
 
   private scanImportsAndFileSignals(node: Node, imports: ASTEngine.ImportInfo[]): void {
+        // `require("child_process")` and `await import("child_process")` are the
+        // CommonJS and dynamic-import spellings of the same fact, and both hide it
+        // in a CALL's argument: there is no import_statement and no
+        // import_require_clause, so neither the imports walk nor the signal scan
+        // that preceded it could see them. The consequence was a false NEGATIVE in
+        // the taint sink rule — `const { execSync } = require("child_process")`
+        // followed by a bare `execSync` produced no sink, because the rule's
+        // evidence that a bare exec is Node's own never arrived. The callee must be
+        // the bare `require` identifier or the `import` keyword; `foo.require(...)`
+        // is somebody else's method and is deliberately excluded.
+        if (node.type === "call_expression") {
+          const callee = node.childForFieldName("function")
+          if (callee && (callee.type === "import" || (callee.type === "identifier" && callee.text === "require"))) {
+            const firstArg = node.childForFieldName("arguments")?.namedChild(0)
+            if (firstArg && firstArg.type === "string") {
+              this.recordFileSignal(stringContent(firstArg))
+            }
+          }
+        }
+
     // JSX presence is the React signal the Rules-of-Hooks gate needs.
     if (node.type === "jsx_element" || node.type === "jsx_self_closing_element") {
       this._fileSignals.hasReact = true
