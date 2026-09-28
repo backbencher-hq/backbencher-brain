@@ -505,18 +505,34 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     return value
   }
 
+  /**
+   * The SYMBOL name for the array item at `itemPath` (`arr.objs[0]` -> `objs[0]`),
+   * and the name of the array that holds it (`objs`).
+   *
+   * Two identities were being confused here. The item's qualified PATH is
+   * `arr.objs[0]`, its SYMBOL name is the last dot-segment `objs[0]`, and the
+   * holding array's SYMBOL name is `objs`. Using the path where a name belonged
+   * produced a `contains` edge whose source (`arr.objs`) is not a symbol, so it
+   * resolved to nothing; and descending into an item with the ARRAY's name gave
+   * the item's own keys the wrong owner — `a` was reported as contained by `objs`
+   * when it lives inside `objs[0]`.
+   */
+  private arrayItemNames(itemPath: string, rootName: string): { item: string; holder: string } {
+    const bracket = itemPath.lastIndexOf("[")
+    const upToBracket = bracket > 0 ? itemPath.slice(0, bracket) : rootName
+    const lastDot = upToBracket.lastIndexOf(".")
+    return { item: itemPath.slice(lastDot + 1), holder: lastDot >= 0 ? upToBracket.slice(lastDot + 1) : upToBracket }
+  }
+
   private addArrayObjectSymbol(ctx: JsonContext, node: Node, path: string): void {
-    const bracket = path.lastIndexOf("[")
-    const ownerName = bracket > 0 ? path.slice(0, bracket) : ctx.rootName
-    const dot = path.lastIndexOf(".")
-    const name = dot >= 0 ? path.slice(dot + 1) : path
+    const { item: name, holder: ownerName } = this.arrayItemNames(path, ctx.rootName)
     this.addSymbol(ctx, {
       name,
       kind: ASTEngine.SymbolKind.Class,
       qualifiedName: path,
       range: this.nodeToRange(node),
       ownerName,
-      ownerKind: ASTEngine.SymbolKind.Variable,
+      ownerKind: ASTEngine.SymbolKind.Class,
       scope: ownerName,
       visibility: "public",
       returnType: "object",
@@ -541,10 +557,14 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       const child = node.namedChild(i)
       if (!child) continue
       const itemPath = `${parentPath}[${i}]`
+      // The frame's parentName is the ITEM's symbol name, so the keys inside an
+      // array element are owned by that element. Passing the array's name here is
+      // what made `a` a child of `objs` instead of `objs[0]`.
+      const { item } = this.arrayItemNames(itemPath, parentPath)
       stack.push({
         node: child,
         parentPath: itemPath,
-        parentName,
+        parentName: child.type === "object" ? item : parentName,
         emitObject: child.type === "object",
       })
     }
