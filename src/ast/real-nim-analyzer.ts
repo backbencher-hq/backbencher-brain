@@ -1583,6 +1583,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (const g of this.readGenericParameterNames(node)) frame.names.add(g)
         scopeStack.push(frame)
         pushedScope = true
+      } else if (type === "concept_declaration") {
+        // A CONCEPT is a scope frame like a callable: its formal parameters are
+        // bindings, and its body belongs to the concept rather than to the file.
+        //
+        // Without this frame, `type Addable = concept x` / `(x + x) is
+        // SomeNumber` published `uses (global) -> x` — the parameter was unbound,
+        // so the read fell through to the same-name rule and then attributed
+        // itself to file scope. Found by the M12 ground truth; the differential's
+        // oracle made the same omission, so the lane reported 0% unexplained with
+        // both implementations agreeing on an edge neither should have published.
+        const frame: Scope = { names: new Set<string>(), fnName: null }
+        // The concept's name lives on the enclosing type_declaration, not on the
+        // concept_declaration node.
+        const ownerDecl = node.parent && node.parent.type === "type_declaration" ? node.parent.namedChild(0) : null
+        if (ownerDecl) {
+          const n = ownerDecl.childForFieldName("name")
+          const info = n ? this.readNameNode(n) : null
+          frame.fnName = info?.name ?? null
+        }
+        const params = this.firstChildOfType(node, "parameter_list")
+        if (params) {
+          for (let i = 0; i < params.namedChildCount; i++) {
+            const c = params.namedChild(i)
+            if (c && (c.type === "identifier" || c.type === "accent_quoted") && c.text !== "_") frame.names.add(c.text)
+          }
+        }
+        scopeStack.push(frame)
+        pushedScope = true
       } else if (type === "statement_list" || type === "block" || type === "do_block" || type === "term_rewriting_pattern") {
         scopeStack.push({ names: new Set<string>(), fnName: null })
         pushedScope = true
@@ -1673,7 +1701,24 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         const leafText = leaf?.text
         const left = node.childForFieldName("left")
         const inCallCallee = this.isCallCallee(node)
-        if (leafText && leafText !== "_" && !inCallCallee && resolvable(leafText) && !isKeywordLike(leafText)) {
+        // A member leaf that names a CALLABLE this file declares is a PARENLESS
+        // UFCS CALL, not a field read: `r.describe` invokes `describe(r)`, and
+        // Nim writes it with no parentheses and no call node. The `calls` rule
+        // already admits "UFCS member calls"; this is the one call form it was
+        // not emitting, because the member-leaf pass had no callee branch at all
+        // — the whole shape fell through to `uses` or to nothing.
+        //
+        // Found by the M12 ground truth (a false negative: `calls
+        // exercise -> describe` for `r.describe` inside `echo s, …, r.describe`).
+        // Both the analyzer AND the differential oracle omitted it, so the lane
+        // reported 0% unexplained — the shape was invisible to every gate.
+        const callableName = leafText && (ctx.fileCallables.has(leafText)) ? leafText : null
+        if (callableName && !inCallCallee) {
+          push(currentFn(), callableName, ASTEngine.RelationshipType.Calls, 0.9, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
+            relationshipType: "nim_ufcs_member_call",
+            callExpression: this.nodeText(node).slice(0, 60),
+          })
+        } else if (leafText && leafText !== "_" && !inCallCallee && resolvable(leafText) && !isKeywordLike(leafText)) {
           const importBased = left ? this.isImportQualified(left, ctx.importQualifiers) : false
           push(currentFn(), leafText, ASTEngine.RelationshipType.Uses, 0.75, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
             relationshipType: "nim_member_access",
@@ -1692,6 +1737,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           resolvable(name) &&
           !isKeywordLike(name) &&
           !this.isDeclarationName(node) &&
+          !this.isConceptParameterPosition(node) &&
           !this.isCallCalleeSubtree(node) &&
           !this.isDotLeaf(node) &&
           !this.isInTypePosition(node) &&
@@ -2221,6 +2267,27 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * (types), `enum_field_declaration`, `variant_discriminator_declaration`,
    * and a `for` loop's `left` list.
    */
+  /**
+   * True for a CONCEPT's formal parameter: the `x` of `type Addable = concept x`.
+   *
+   * It is a binding, not a read, and it is the one formal parameter in Nim
+   * written without any of the syntax the other binders use — no
+   * `symbol_declaration` wrapper, no type annotation, nothing for
+   * `isDeclarationName` to match. The read pass therefore published
+   * `uses (global) -> x` at file scope.
+   *
+   * Found by the M12 ground truth, where it was the single false positive out of
+   * 105 observed facts (precision 0.990). Only an independent audit could catch
+   * it: the differential's oracle did not emit the edge either, so the lane
+   * reported 0% unexplained with two implementations agreeing on something
+   * neither should have published.
+   */
+  private isConceptParameterPosition(node: Node): boolean {
+    const parent = node.parent
+    if (!parent || parent.type !== "parameter_list") return false
+    return this.hasAncestorOfType(parent, "concept_declaration")
+  }
+
   private isDeclarationName(node: Node): boolean {
     const p = node.parent
     if (!p) return false
