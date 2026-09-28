@@ -302,6 +302,24 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       const child = node.namedChild(i)
       if (!child || this.isErrorNode(child)) continue
 
+      // `@content` has NO node type in this grammar. The rule list is
+      // at_root/charset/debug/each/error/extend/for/forward/function/if/import/
+      // include/keyframes/media/mixin/namespace/postcss/return/supports/use/warn/
+      // while — no `content_statement` — and the construct parses as a bare
+      // `at_rule > at_keyword`. The switch below therefore had a case for a type that
+      // cannot occur, so `scssForwardsContent` was set by nothing, ever.
+      //
+      // Found by F1 the moment the lane was registered, which is the gate's whole
+      // purpose: a type literal that names nothing is how an extractor silently stops
+      // matching, and reading the code does not reveal it because the name is
+      // plausible. Matched on the KEYWORD, which is what the tree actually offers.
+      if (child.type === "at_rule") {
+        const kw = this.findChild(child, (c) => c.type === "at_keyword")
+        const keyword = kw ? kw.text.trim().toLowerCase() : ""
+        if (keyword === "@content") ctx.sawContent = true
+        if (keyword === "@at-root") ctx.sawAtRoot = true
+      }
+
       switch (child.type) {
         case "use_statement":
         case "forward_statement":
@@ -315,7 +333,6 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processExtend(child, ctx)
           break
         case "at_root_statement":
-        case "content_statement":
         case "debug_statement":
         case "warn_statement":
         case "error_statement":
@@ -324,8 +341,8 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           // file DEFINES, and a symbol for one would be a name with no referent — the
           // placeholder-literal anti-pattern (M60 R7). The flags are what let a
           // consumer see that a stylesheet debugs, forwards content, or escapes scope.
+          // `@content` is handled above, by keyword, because it has no node type.
           if (child.type === "at_root_statement") ctx.sawAtRoot = true
-          else if (child.type === "content_statement") ctx.sawContent = true
           else ctx.sawDiagnostic = true
           break
         case "declaration":
@@ -551,7 +568,20 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `.btn` comes out as `.btn`, which is the class symbol the same file publishes.
    */
   private extendedSelectorName(node: Node): string | undefined {
-    const sel = this.findDescendant(node, (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "type_selector")
+    // `type_selector` DOES NOT EXIST in this grammar — the selector types are
+    // class_selector, id_selector, universal_selector, attribute_selector,
+    // pseudo_class_selector, pseudo_element_selector, nesting_selector,
+    // descendant/child/sibling/adjacent_sibling, namespace_selector and
+    // selector_query, and a bare ELEMENT selector (`@extend p`) is a `plain_value`.
+    // The old case list named a type that cannot occur, so `@extend p` found nothing.
+    //
+    // `class_selector` comes first because `@extend .btn` wraps its name in one, and
+    // the wrapper's own text is the same string — either would do, but the wrapper is
+    // the narrower node and cannot swallow a neighbouring selector.
+    const sel = this.findDescendant(
+      node,
+      (n) => n.type === "class_selector" || n.type === "id_selector" || n.type === "plain_value",
+    )
     if (!sel) return undefined
     const name = collapseWhitespace(sel.text)
     return name.length > 0 ? name : undefined
