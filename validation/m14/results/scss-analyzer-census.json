@@ -1,0 +1,93 @@
+{
+  "instrument": "script/m14/tmp/scss-analyzer-census.ts",
+  "purpose": "Does the SCSS lane's graph JOIN? Counts relationships whose BOTH endpoints are published symbols, split by the origin of the edge, because the aggregate alone cannot distinguish this lane's behaviour from the CSS behaviour it delegates to.",
+  "corpora": [
+    "element-plus",
+    "phpmyadmin",
+    "vue-core",
+    "vue-element-admin"
+  ],
+  "files": 244,
+  "filesWithAnalyzerReportedErrors": 97,
+  "symbols": 5170,
+  "relationships": 2829,
+  "imports": 714,
+  "bothEndsResolve": {
+    "resolved": 2503,
+    "total": 2829,
+    "pct": 88.5,
+    "srcOnly": 206,
+    "tgtOnly": 0,
+    "neither": 120
+  },
+  "byType": {
+    "references": {
+      "total": 443,
+      "resolved": 237,
+      "pct": 53.5
+    },
+    "contains": {
+      "total": 2225,
+      "resolved": 2225,
+      "pct": 100
+    },
+    "uses": {
+      "total": 41,
+      "resolved": 41,
+      "pct": 100
+    },
+    "imports": {
+      "total": 120,
+      "resolved": 0,
+      "pct": 0
+    }
+  },
+  "byEvidenceClass": {
+    "import_based": 340,
+    "structural": 2225,
+    "usage_contextual": 264
+  },
+  "referencesByOrigin": {
+    "CSS var() read (delegated to RealCssAnalyzer)": {
+      "total": 220,
+      "resolved": 14,
+      "pct": 6.4
+    },
+    "SCSS $var read (this lane)": {
+      "total": 223,
+      "resolved": 223,
+      "pct": 100
+    }
+  },
+  "unresolvableSample": [
+    "src? references html -> --font-family",
+    "src? references body -> --text-color",
+    "src? references body -> --bg-color",
+    "src? references body -> --el-transition-duration-fast",
+    "src? references a -> --brand-color",
+    "src? references a.header-anchor -> --brand-color",
+    "src? references .doc-content > div .vp-table > table -> --bg-color",
+    "src? references .doc-content > div .vp-table > table tr td:nth-child(2) -> --font-family",
+    "src? references .doc-content > div .vp-table > table th, .doc-content > div .vp-table > table td -> --border-color",
+    "src? references .doc-content > div .vp-table > table tbody tr td:first-child -> --font-family-mono",
+    "src? references blockquote -> --el-border-color",
+    "src? references blockquote -> --text-color-lighter",
+    "src? references #nprogress .bar -> --brand-color",
+    "src? references .custom-block.tip -> --block-tip-bg-color",
+    "src? references .custom-block.tip -> --el-color-primary",
+    "src? references .custom-block.warning -> --block-warning-bg-color",
+    "src? references .custom-block.warning -> --el-color-danger",
+    "src? references :root -> --el-fill-color-light",
+    "src? references pre, code, kbd, samp -> --code-font-family",
+    "src? references :not(pre) > code -> --el-fill-color-light",
+    "src? references .doc-content a > code -> --vp-code-link-color",
+    "src? references .doc-content a:hover > code -> --vp-code-link-hover-color",
+    "src? references .doc-content [class*='language-'] code -> --vp-code-font-size",
+    "src? references .doc-content [class*='language-'] code -> --vp-code-block-color",
+    "src? references .doc-content [class*='language-'] code .highlighted -> --vp-code-line-highlight-color"
+  ],
+  "declared": [
+    "`imports` edges resolve 0% by construction and that is correct: an import names another FILE, and that file is not a symbol in this one. The CSS lane's residual is the same shape.",
+    "Delegated CSS `var()` reads resolve 6% in this corpus (14/220) because Element Plus consumes theme tokens (`--el-color-primary` and friends) that are defined in a DIFFERENT file. The behaviour is the CSS lane's own — verified by running the same input through both lanes — and the SCSS code adds no unresolvable edge of its own: its own `$var` reads are 223/223."
+  ]
+}
