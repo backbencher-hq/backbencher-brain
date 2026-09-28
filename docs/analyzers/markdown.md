@@ -70,6 +70,18 @@ only the Nth repeat is ordinaled, with `id`/`qualifiedName` carrying the path an
 hand-audited M12 ground-truth facts and 31 contract checks name bare targets, and
 a fix is not allowed to break the evidence that could not see the defect.
 
+The repeat's ordinal is part of the published **name** as well as the id, because
+the store resolves a relationship endpoint by name and checks it against a denylist
+rather than for existence: with the bare name published and `code_block.scala#2`
+in the edge, **28.7% of the lane's relationships (529 of 1,843 over 120 corpus
+files) named a symbol the file did not declare**. A table's header cells publish
+as `property` sites for the same reason — the `table_column` edge existed for every
+column of every table while no column symbol was ever declared. Both are now 0.
+
+Numbering stays per owner, not per file: a name shared by several sites is
+separated by the relationship's line, and 44% of symbols sharing a name is the
+store's design rather than a defect to renumber away.
+
 ## Reference links, and the one place the lane deliberately emits nothing
 A reference link's destination lives in a block-level definition, so the whole
 form produced **no edge at all** before this round: 671 sites (44 uses + 627

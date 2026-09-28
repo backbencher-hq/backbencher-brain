@@ -102,9 +102,37 @@ Sites are now published per occurrence, on the same rule yaml uses for
 duplicate mapping keys (`uniquePath`): the FIRST occurrence keeps its exact
 previous spelling and only the Nth repeat is disambiguated, with `id` and
 `qualifiedName` carrying the ordinaled path and `isRepeatedSite` flagging the
-repeat. That split is what keeps the round additive — the 59 hand-audited M12
-ground-truth facts and 31 contract checks name bare targets, and a fix is not
-allowed to break the evidence that could not see the defect.
+repeat.
+
+**The published NAME is the disambiguated spelling too, and that was the half
+that was wrong.** A repeat's `contains` edge already said `code_block.scala#2`
+while the symbol published `code_block.scala`, so 28.7% of this lane's
+relationships named a symbol the file did not declare (529 of 1,843, over 120
+scala3 markdown files). The store keys a relationship by (source, type,
+target, line) and its storeable test is `storeableName(name, line)` — a
+denylist, not an existence check — so an unsatisfiable name is not rejected;
+it becomes a row whose target id no symbol row has. The differential could
+not see it, because the independent oracle derives the same suffixed spelling
+and the two therefore agreed on a name neither published.
+
+Two things are deliberately NOT changed, and both were measured first:
+
+- **Numbering stays per OWNER, not per file.** 44% of this lane's symbols share
+  a name with another symbol in the same file, and 57% of relationships have a
+  target name matching more than one symbol. That is by design: the line is what
+  separates two sites, so a per-file renumber would put a `#n` on 44% of symbols
+  forever to fix a collision the key already handles. A name that matches
+  several symbols is a working row; a name that matches none is a broken one.
+- **A table's own name still joins its headers with `/`** (`Name/Meaning`), so a
+  single-column table is named after that one column and its column publishes
+  the same string. That is a real containment between two distinct sites, and
+  the self-edge filter asks about identity — the column's id is qualified by the
+  table's — rather than about strings.
+
+A table's header cells publish as `property` sites under the table, addressed by
+the table's own disambiguated id, at the header cell's own range. Before this
+the loop above them said *"a column is a site too"*, the `table_column` edge was
+emitted for every column of every table, and no column symbol was ever declared.
 
 ## Relationship ontology
 
