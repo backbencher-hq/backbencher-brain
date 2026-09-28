@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { createHash } from "crypto"
+import { decodeSourceText } from "../util/source-text"
 import { createRequire } from "node:module"
 import path from "path"
 import fs from "fs"
@@ -456,14 +457,29 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     const buffer = Buffer.alloc(Math.min(sizeBytes, 256 * 1024))
     await fd.read(buffer, 0, buffer.length, 0)
     await fd.close()
-    const content = buffer.toString("utf-8")
+    // Decoded, not `toString("utf-8")` — see src/util/source-text.ts. A UTF-16
+    // file read as UTF-8 yields NUL-interleaved text that parses to nothing, and
+    // the read itself throws no error, so the loss is invisible here.
+    const content = decodeSourceText(buffer).text
     const hash = createHash("sha256").update(content).digest("hex").slice(0, 16)
     log(`Using structural extraction for large file: ${filePath} (${sizeBytes} bytes)`)
     return extractFallback(content, language, hash, sizeBytes, lastModified)
   }
 
-  const content = await import("fs/promises").then((fs) => fs.readFile(filePath, "utf-8"))
+  // M60 X12: the encoding is not known before the first four bytes are read, so
+  // the file is read as bytes and decoded by BOM. `readFile(path, "utf-8")` is
+  // correct for almost every file and silently destroys the rest — 24 files in
+  // the XML corpus, including 34 KB and 14 KB of ordinary WordprocessingML, were
+  // reaching the grammar as NUL-interleaved text and producing zero symbols.
+  const decoded = decodeSourceText(await import("fs/promises").then((fs) => fs.readFile(filePath)))
+  const content = decoded.text
   const hash = createHash("sha256").update(content).digest("hex").slice(0, 16)
+  if (decoded.encoding !== "utf8" || decoded.inferred) {
+    // Recorded rather than logged-and-dropped: a file this system had to GUESS
+    // the encoding of is weaker evidence than one that declared it, and the
+    // distinction has to survive into the index for a consumer to act on.
+    log(`Decoded ${filePath} as ${decoded.encoding}${decoded.inferred ? " (inferred from a NUL pattern, no BOM)" : decoded.hadBom ? " (BOM)" : ""}`)
+  }
 
   try {
     if (!engineModule) {
