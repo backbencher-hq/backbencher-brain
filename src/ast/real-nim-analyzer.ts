@@ -88,7 +88,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declaredSubtypes = new Map<string, Set<string>>() // base type → declared subtypes
     const docCommentByStartLine = new Map<number, string>() // decl start line → ## text
 
-    this.collectDocComments(rootNode, docCommentByStartLine)
+    // ONE traversal for doc comments + the module surface + the file's own
+    // complexity, replacing three separate full-tree walks. See
+    // collectDocModulesAndComplexity for why, and for why it must not allocate
+    // per node.
+    const fileComplexity = this.collectDocModulesAndComplexity(
+      rootNode, docCommentByStartLine, imports, exports, importQualifiers, relationships,
+    )
     this.collectDeclarations(rootNode, {
       symbols,
       errors,
@@ -101,7 +107,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       declaredSubtypes,
     })
-    this.collectModules(rootNode, imports, exports, importQualifiers, relationships, errors)
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
     this.collectOverrides(symbols, relationships, declaredSubtypes)
@@ -118,7 +123,6 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectDeclaredTypeRefs(rootNode, relationships, fileTypes, genericParamNames)
     this.classifyEvidenceTier(relationships)
 
-    const fileComplexity = this.nimCyclomaticComplexity(rootNode)
     return {
       language: "nim",
       symbols,
@@ -165,13 +169,51 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * grammar-structure facts, and both are indexed by the anchor node's start line
    * so attachment stays O(1) with no nearest-previous scan.
    */
-  private collectDocComments(rootNode: Node, out: Map<number, string>): void {
+  /**
+   * ONE traversal that does the work of three: file doc comments, the module
+   * surface (import / from-import / include / export), and the file's own
+   * cyclomatic complexity.
+   *
+   * These were three independent full-tree walks. They are three because they
+   * were written at three different times, not because they need three visits:
+   * all three are pure visitors over the same nodes with no shared state and no
+   * order dependency between them. Measured on a 200-file sample they were 5-9%,
+   * 8-19% and 4-19% of analyzer time, so the redundant traversal was a third of
+   * the budget spent re-reading the same tree.
+   *
+   * The fused walk keeps ONE plain local counter and pushes onto ONE stack. That
+   * is deliberate and it is the lesson from the rejected memoization: the win
+   * here is fewer node VISITS (a WASM boundary crossing each), and the moment a
+   * fused walk allocates per-node state — a Map keyed by node id, say — it costs
+   * more than the walks it replaced. Nothing here allocates per node.
+   *
+   * Named children only, for the reason the complexity counter needs it: an
+   * anonymous keyword token carries the same type string as the statement that
+   * owns it, so descending into anonymous children double-counts every branch.
+   */
+  private collectDocModulesAndComplexity(
+    rootNode: Node,
+    out: Map<number, string>,
+    imports: ASTEngine.ImportInfo[],
+    exports: ASTEngine.ExportInfo[],
+    qualifiers: Set<string>,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): number {
     const isDeclarationContainer = (n: Node): boolean =>
       !!this.callableNodes[n.type] || n.type === "type_declaration" || n.type === "variable_declaration" || n.type === "enum_field_declaration" || n.type === "field_declaration"
+    let complexity = 1
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "documentation_comment" || n.type === "block_documentation_comment") {
+      const t = n.type
+      // ── complexity ──
+      if (BRANCH_NODES.indexOf(t) !== -1) complexity++
+      else if (t === "infix_expression") {
+        const op = n.childForFieldName("operator")
+        if (op && !op.isNamed && (op.type === "and" || op.type === "or" || op.type === "xor")) complexity++
+      }
+      // ── doc comments ──
+      if (t === "documentation_comment" || t === "block_documentation_comment") {
         const text = this.docCommentText(n)
         if (text) {
           const parent = n.parent
@@ -180,11 +222,24 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         continue
       }
+      // ── the module surface ──
+      if (t === "import_statement") {
+        this.readImportStatement(n, imports, qualifiers, relationships)
+        // Still descend: an `import` has no nested declarations, but a malformed
+        // one can error-recover around them.
+      } else if (t === "import_from_statement") {
+        this.readImportFromStatement(n, imports, qualifiers, relationships)
+      } else if (t === "include_statement") {
+        this.readIncludeStatement(n, imports, relationships)
+      } else if (t === "export_statement") {
+        this.readExportStatement(n, exports)
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
+    return complexity
   }
 
   /**
@@ -964,87 +1019,84 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * ALIAS, not a module. `import ./rel` and `import ../parent` are relative
    * paths in the same infix shape. `import "file.nim"` is a string literal.
    */
-  private collectModules(
-    rootNode: Node,
+  /**
+   * `from M import a, b` — the from-form. Extracted from the old collectModules
+   * walk so the fused walk can call it as a handler; the body is unchanged, and
+   * the path reader is the SAME one `import` uses, so a module spelled `./x` in
+   * one statement and `x` in another is still one target.
+   */
+  private readImportFromStatement(
+    n: Node,
     imports: ASTEngine.ImportInfo[],
-    exports: ASTEngine.ExportInfo[],
     qualifiers: Set<string>,
     relationships: ASTEngine.UniversalRelationship[],
-    _errors: ASTEngine.ParseError[],
   ): void {
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "import_statement") {
-        this.readImportStatement(n, imports, qualifiers, relationships)
-        // Still descend: an `import` has no nested declarations, but a
-        // malformed one can error-recover around them.
-      } else if (n.type === "import_from_statement") {
-        const moduleNode = n.childForFieldName("module")
-        // The SAME reader as `import`, so a module spelled `./x` in one
-        // statement and `x` in another is still one target: the old helper
-        // recursed to identifier leaves and published `nativesettings` where
-        // `import ./configure` published `./configure`.
-        const modulePathsParsed = moduleNode ? this.parseModuleExpression(moduleNode) : null
-        const module = modulePathsParsed?.paths[0]?.path ?? ""
-        const list = this.firstChildOfType(n, "expression_list")
-        const items = this.identifierTextsIn(list)
-        if (module) {
-          imports.push({
-            module,
-            items,
-            isDefaultImport: false,
-            range: this.nodeRange(n),
-            metadata: { nimImport: true, nimFromImport: true },
-          })
-          for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
-          relationships.push({
-            source: "(global)",
-            target: module,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1,
-            line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-            metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
-          })
-        }
-      } else if (n.type === "include_statement") {
-        const list = this.firstChildOfType(n, "expression_list")
-        const includePaths: string[] = []
-        if (list) {
-          for (let i = 0; i < list.namedChildCount; i++) {
-            const c = list.namedChild(i)
-            if (!c) continue
-            const parsedInc = this.parseModuleExpression(c)
-            if (parsedInc) for (const pth of parsedInc.paths) includePaths.push(pth.path)
-          }
-        }
-        for (const text of includePaths) {
-          imports.push({
-            module: text,
-            isDefaultImport: false,
-            range: this.nodeRange(n),
-            metadata: { nimInclude: true },
-          })
-          relationships.push({
-            source: "(global)",
-            target: text,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1,
-            line_number: n.startPosition.row + 1,
-            metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
-          })
-        }
-      } else if (n.type === "export_statement") {
-        const list = this.firstChildOfType(n, "expression_list")
-        for (const text of this.identifierTextsIn(list)) {
-          if (!text) continue
-          exports.push({ name: text, metadata: { nimExport: true } })
-        }
+    const moduleNode = n.childForFieldName("module")
+    const modulePathsParsed = moduleNode ? this.parseModuleExpression(moduleNode) : null
+    const module = modulePathsParsed?.paths[0]?.path ?? ""
+    const list = this.firstChildOfType(n, "expression_list")
+    const items = this.identifierTextsIn(list)
+    if (module) {
+      imports.push({
+        module,
+        items,
+        isDefaultImport: false,
+        range: this.nodeRange(n),
+        metadata: { nimImport: true, nimFromImport: true },
+      })
+      for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
+      relationships.push({
+        source: "(global)",
+        target: module,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1,
+        line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
+        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
+      })
+    }
+  }
+
+  /** `include a, b, c` — one edge per operand, through the same path reader. */
+  private readIncludeStatement(
+    n: Node,
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const list = this.firstChildOfType(n, "expression_list")
+    const includePaths: string[] = []
+    if (list) {
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const c = list.namedChild(i)
+        if (!c) continue
+        const parsedInc = this.parseModuleExpression(c)
+        if (parsedInc) for (const pth of parsedInc.paths) includePaths.push(pth.path)
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
+    }
+    for (const text of includePaths) {
+      imports.push({
+        module: text,
+        isDefaultImport: false,
+        range: this.nodeRange(n),
+        metadata: { nimInclude: true },
+      })
+      relationships.push({
+        source: "(global)",
+        target: text,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1,
+        line_number: n.startPosition.row + 1,
+        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
+      })
+    }
+  }
+
+  /** `export a, b` — a re-export of imported names, so no relationship of its
+   *  own; the names land in the export list and nothing else. */
+  private readExportStatement(n: Node, exports: ASTEngine.ExportInfo[]): void {
+    const list = this.firstChildOfType(n, "expression_list")
+    for (const text of this.identifierTextsIn(list)) {
+      if (!text) continue
+      exports.push({ name: text, metadata: { nimExport: true } })
     }
   }
 
