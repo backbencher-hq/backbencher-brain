@@ -375,12 +375,12 @@
     {
       "name": "every declared name came from a NAMING attribute (name/id), never from a value",
       "passed": true,
-      "detail": "13 declaration(s) across the fixture set, all from name/id"
+      "detail": "16 declaration(s) across the fixture set, all from name/id"
     },
     {
       "name": "every reference edge declares HOW it resolves, and an external one names the file",
       "passed": true,
-      "detail": "10 reference edge(s), 2 external"
+      "detail": "12 reference edge(s), 2 external"
     },
     {
       "name": "a reference through a spec-bound implicit prefix resolves to its namespace",
@@ -391,6 +391,11 @@
       "name": "the fixture set exercises the implicit-prefix rule",
       "passed": true,
       "detail": "2 reference(s) through a spec-bound prefix"
+    },
+    {
+      "name": "the fixture set exercises the unresolved resolvability class",
+      "passed": true,
+      "detail": "2 unresolved reference(s) — X13's class must be reachable or it is untested"
     },
     {
       "name": "the fixture set exercises the external resolvability class",
@@ -415,11 +420,11 @@
     {
       "name": "the fixture set actually exercises the declared-name rule",
       "passed": true,
-      "detail": "13 vocabulary declaration(s) found — a rule that can never fire is not a rule"
+      "detail": "16 vocabulary declaration(s) found — a rule that can never fire is not a rule"
     }
   ],
   "passed": true,
-  "count": 100,
-  "passedCount": 100,
+  "count": 101,
+  "passedCount": 101,
   "failed": []
 }
