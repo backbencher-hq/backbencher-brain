@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, readdirSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
+import { decodeSourceText } from "../../src/util/source-text"
 
 /**
  * The XML contract, as an ASSERTION SET rather than a smoke test.
@@ -314,6 +315,51 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
 
   check("the fixture set exercises the external resolvability class", externalEdges > 0,
     `${externalEdges} external reference(s) — X7's class must be reachable or it is untested`)
+
+  // X12: a UTF-16 document, decoded from BYTES, must index. Synthesised in memory
+  // rather than shipped as a fixture file, because a fixture file is itself read
+  // as UTF-8 by the runner that opens it — the one file in the repository that
+  // could not exercise this would be the fixture.
+  //
+  // The consequence is gated rather than the utility: what matters is that a
+  // UTF-16 document produces its symbols, not that a BOM table has five rows.
+  // Before the fix these documents arrived at the grammar as NUL-interleaved text,
+  // produced an ERROR root, and the analyzer correctly published nothing — and
+  // the read threw no error, so the loss was invisible at the boundary and showed
+  // up only as an empty file. In the corpus that was 26 files including 34 KB and
+  // 14 KB of ordinary WordprocessingML.
+  {
+    const toUtf16le = (text: string, withBom: boolean): Buffer => {
+      const body = Buffer.from(text, "utf16le")
+      return withBom ? Buffer.concat([Buffer.from([0xff, 0xfe]), body]) : body
+    }
+    const swap16 = (b: Buffer): Buffer => {
+      const o = Buffer.from(b)
+      for (let i = 0; i + 1 < o.length; i += 2) { const t = o[i]; o[i] = o[i + 1]; o[i + 1] = t }
+      return o
+    }
+    const DOC = `<?xml version="1.0" encoding="UTF-16"?><catalog><entry id="1"/><entry id="2"/></catalog>`
+    const variants: [string, Buffer][] = [
+      ["utf16le + BOM", toUtf16le(DOC, true)],
+      ["utf16le, no BOM (inferred)", toUtf16le(DOC, false)],
+      ["utf16be + BOM", Buffer.concat([Buffer.from([0xfe, 0xff]), swap16(Buffer.from(DOC, "utf16le"))])],
+    ]
+    const decodedBad: string[] = []
+    const indexedBad: string[] = []
+    for (const [label, bytes] of variants) {
+      const d = decodeSourceText(bytes)
+      if (d.text !== DOC) { decodedBad.push(`${label}: decoded to ${JSON.stringify(d.text.slice(0, 24))}`); continue }
+      const viaBytes = await (await import("../../src/ast/engine")).ASTEngine.parseFile("utf16-probe.xml", d.text)
+      if ((viaBytes.symbols?.length ?? 0) < 3) indexedBad.push(`${label}: ${viaBytes.symbols?.length ?? 0} symbols`)
+    }
+    check("a UTF-16 document decodes to the same text in LE, LE-without-BOM, and BE", decodedBad.length === 0, decodedBad.join("; ") || `${variants.length} encodings round-trip`)
+    check("a UTF-16 document indexes its symbols once decoded", indexedBad.length === 0, indexedBad.join("; ") || "catalog + 2 entries + 2 id attributes in all three encodings")
+    // And the control: reading the same bytes as UTF-8 must NOT work, or the
+    // check above would pass for the wrong reason.
+    const raw = toUtf16le(DOC, true)
+    const wrong = await (await import("../../src/ast/engine")).ASTEngine.parseFile("utf16-control.xml", raw.toString("utf8"))
+    check("the same bytes read as UTF-8 do NOT index (so the check above is not vacuous)", (wrong.symbols?.length ?? 0) < 3, `${wrong.symbols?.length ?? 0} symbols from the misread`)
+  }
 
   check("the fixture set actually exercises the declared-name rule", declared.length > 0,
     `${declared.length} vocabulary declaration(s) found — a rule that can never fire is not a rule`)
