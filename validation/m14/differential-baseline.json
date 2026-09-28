@@ -1535,6 +1535,32 @@
         "loadAvg1": 41.52
       },
       "sampleSetHash": "2503e48eb336f10f"
+    },
+    "nim:nim": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 26.4,
+        "maxMsPerFile": 935.8,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 37.75
+      },
+      "sampleSetHash": "6743270c88c3d253"
+    },
+    "pixie:nim": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 155.1,
+        "maxMsPerFile": 2116.1,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 42.19
+      },
+      "sampleSetHash": "a896b7ba60b1b1e0"
     }
   },
   "hashes": {
@@ -1592,9 +1618,11 @@
     "consul:make": "abac0ebd75471c84",
     "grails-core:xml": "ca66a7bb0706a21a",
     "mojo:perl": "da4a4167f2b51e42",
-    "plack:perl": "2503e48eb336f10f"
+    "plack:perl": "2503e48eb336f10f",
+    "nim:nim": "6743270c88c3d253",
+    "pixie:nim": "a896b7ba60b1b1e0"
   },
   "pinProvenance": {
-    "scoped run (--pin-baseline)": "2026-09-28T18:58:31.203Z"
+    "scoped run (--pin-baseline)": "2026-09-28T19:20:06.096Z"
   }
 }
