@@ -448,3 +448,45 @@ typecheck clean.
 Remaining: `contains` (12.9%) — structurally self-agreeing, since it is derived from the same
 `ownerName` as the symbol table, so it cannot disagree with the symbols and is exactly why it is
 not independently checked — and the 617-row bare-identifier `uses` half.
+
+### `contains` — the last unoracled label, and it is clean
+
+12.9% of the output, 3,262 edges, and the class most likely to be wrong for a *structural*
+reason: the analyzer derives containment from `symbol.ownerName`, a field set during its own
+walk, so the class is **structurally self-agreeing** — it cannot disagree with the symbol table
+because it is built from it. An independent derivation walks the **tree** and rebuilds the owner
+chain from declaration nesting, never touching a symbol.
+
+**Ruled, not fixed: 2,442 / 2,442 over 200 roslyn files, 0 either way — on (owner, target)**,
+which is *stronger* than the harness's own label+target match, since a containment edge with a
+right member and a **wrong owner** is invisible to the gate and visible to this comparison.
+
+Six corpus rows arrived before the class was clean, and **all six were defects in the truth**,
+which is the point worth keeping: a new truth is not correct because it compiles. A nested type
+was attributed to the file's namespace instead of its outer type (the rule asked for "the nearest
+scope of the *other* kind"; the right rule is "the nearest scope of *any* kind"); an **enum** pushed
+no scope, so 53 of its members came out ownerless; a **record's positional parameters** were routed
+through the enclosing-scope rule instead of owned by the record; a record published its positionals
+but never its **own** containment edge; event-field names were not read from the declarator; and an
+**operator member's name** is written nowhere in the file (it comes from the grammar's `operator`
+field), which read as 6 UNEXPLAINED `operator ==` rows at 120-file depth. One row had the
+**analyzer** right for a reason the truth did not model: a file-scoped namespace covers the TYPE
+declarations that follow it as **siblings**, not a member — so a member-shaped declaration at the
+root is a fragment the grammar's error recovery flattened out of a class that failed to parse, and
+attributing 17 such members to the namespace was a wrong-owner claim.
+
+### Final oracle coverage
+
+| | |
+|---|---|
+| before this round | 60.3% of emitted edges had an independent corpus oracle |
+| after | **every label except one slice** |
+
+`calls` · `references` · `uses` (field-access) · `overrides` · `extends` · `implements` ·
+`instantiates` · `contains` — all compared, all 0 MISSING / 0 unexplained / 100% coverage at 120
+files on each of **roslyn (33,498), aspnetcore (6,603) and powershell (18,152)**.
+
+The one remaining slice is the **bare-identifier `uses` half** — 617 rows, 2.4% of output, marker
+`identifier_usage` — which needs lexical resolution to re-derive and is therefore still gated by
+its fixture and mutants alone, with that limit written into the allowlist rather than left to be
+discovered as unexplained rows. Lifting it is a one-line change once the derivation lands.
