@@ -956,6 +956,37 @@ export default grammar({
       prec.right(
         choice(
           $.command_parameter,
+          // G10 (M60 #278), THIRD design — and the first with no second TOKEN in it.
+          //
+          // Attempt 1 added a `_glued_command_parameter` token with `token(prec(1, …))`;
+          // F11 returned INADMISSIBLE with 274 clean files re-shaped, because
+          // tree-sitter resolves LEXICAL precedence BEFORE length, so the glued token
+          // beat `command_parameter` even when shorter and split `--flag=alnum` — clean
+          // today, since `command_parameter` matches it whole — into two children
+          // across the corpus. Attempt 2 dropped the precedence and cannot work either:
+          // two tokens matching the SAME text at the SAME length is unresolvable by
+          // precedence or by length, and `--a=1 --b=2` measured 2 ERROR where the
+          // pinned grammar had one SILENT MISSING.
+          //
+          // This is a PARSER rule, not a lexing one. `command_parameter` is untouched,
+          // which is the whole point: with no second token, `--flag=alnum` cannot change
+          // shape, because nothing about the lexer moved. The new alternative is
+          // `command_parameter` followed IMMEDIATELY by a value with no
+          // `command_argument_sep` — the one shape the existing argument path cannot
+          // express, because every value alternative in `_command_argument` begins with
+          // a separator and a glued value has none.
+          //
+          // Without it the value is STOLEN, not merely unparsed: `redirection` wins it
+          // and the tree becomes a fabricated redirection with a MISSING ">", which is
+          // invisible to every ERROR-keyed gate in the project. Every value kind listed
+          // here is currently DAMAGED that way, so the alternative can only fire where
+          // the tree is already wrong.
+          //
+          // Measured: 691 corpus files, 0 clean files changed shape, 7 newly clean, 0
+          // newly broken. `generic_token` is deliberately absent — `--flag=alnum` is
+          // CLEAN today because `command_parameter` matches the whole token, so
+          // admitting it as a glued value would split that clean node into two.
+          seq($.command_parameter, choice($._literal, $.variable)),
           seq($._command_argument, optional($.argument_list)),
           $.redirection,
           $.stop_parsing,

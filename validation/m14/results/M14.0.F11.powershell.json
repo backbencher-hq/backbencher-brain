@@ -2,76 +2,67 @@
   "checks": [
     {
       "description": "no file becomes newly damaged",
-      "detail": "fixed=3 newly=0 improved=1 worse=0",
+      "detail": "fixed=0 newly=0 improved=0 worse=0",
       "id": "F11.G1",
       "status": "pass"
     },
     {
       "description": "every file clean under the pinned grammar keeps a byte-identical s-expression",
-      "detail": "315 clean file(s) checked, 0 difference(s)",
+      "detail": "318 clean file(s) checked, 0 difference(s)",
       "id": "F11.G2",
       "status": "pass"
     },
     {
       "description": "the analyzer loses no declared symbol name, qualifier or (label,target) pair",
-      "detail": "residue=[symbols 0, qualifier-changed 0, pairs 2] raw=[vanished 0 lost 2] repaired=[moved 0, keyword 0, predefine 0, not-a-declaration 0, pairs-retired 0] added=[symbols 0, pairs 2]",
+      "detail": "residue=[symbols 0, qualifier-changed 0, pairs 0] raw=[vanished 0 lost 0] repaired=[moved 0, keyword 0, predefine 0, not-a-declaration 0, pairs-retired 0] added=[symbols 0, pairs 0]",
       "id": "F11.G3",
-      "status": "fail"
+      "status": "pass"
     }
   ],
   "claimLevel": "L3",
-  "commit": "8005524134e1e387491f61925de82d5257fdaf1e",
-  "committedAt": "2026-09-27T20:18:40-04:00",
+  "commit": "32e33c4c51054c73cfd944dcac59da39901e245c",
+  "committedAt": "2026-09-28T04:30:43-04:00",
   "corpusPins": {
     "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4"
   },
   "data": {
-    "admissible": false,
-    "candidate": "cand-g9.wasm",
+    "admissible": true,
+    "candidate": "cand-g10b.wasm",
     "g1": {
       "errorLinesCand": 3742,
-      "errorLinesPinned": 3748,
+      "errorLinesPinned": 3742,
       "filesCandDamaged": 82,
-      "filesPinnedDamaged": 85,
-      "fixed": 3,
-      "improved": 1,
+      "filesPinnedDamaged": 82,
+      "fixed": 0,
+      "improved": 0,
       "kindChange": 0,
       "missingCand": 71,
-      "missingPinned": 85,
+      "missingPinned": 71,
       "newlyDamaged": 0,
       "sitesCand": 560,
-      "sitesPinned": 580,
+      "sitesPinned": 560,
       "worse": 0
     },
     "g2": {
-      "cleanChecked": 315,
+      "cleanChecked": 318,
       "identityBreakFiles": [],
       "identityBreakFilesTruncated": 0,
       "identityBreaks": 0
     },
     "g3": {
-      "addedPairs": [
-        "powershell/test/powershell/Language/Parser/Conversions.Tests.ps1  493:uses:Conversions.Tests.ps1->Func[[E], [object]]#",
-        "powershell/test/powershell/Language/Scripting/Generics.Tests.ps1  44:calls:Generics.Tests.ps1->dictionary[[string], [int]]::New#"
-      ],
+      "addedPairs": [],
       "addedSymbols": [],
-      "filesChanged": 2,
-      "lost": 2,
-      "lostPairs": [
-        "powershell/test/powershell/Language/Parser/Conversions.Tests.ps1  493:uses:Conversions.Tests.ps1->object#",
-        "powershell/test/powershell/Language/Scripting/Generics.Tests.ps1  44:calls:Generics.Tests.ps1->int::New#"
-      ],
+      "filesChanged": 0,
+      "lost": 0,
+      "lostPairs": [],
       "lostPairsTruncated": 0,
-      "pairResidue": [
-        "powershell/test/powershell/Language/Parser/Conversions.Tests.ps1  493:uses:Conversions.Tests.ps1->object#",
-        "powershell/test/powershell/Language/Scripting/Generics.Tests.ps1  44:calls:Generics.Tests.ps1->int::New#"
-      ],
+      "pairResidue": [],
       "pairRetired": [],
-      "pairsAdded": 2,
-      "pairsRemoved": 2,
+      "pairsAdded": 0,
+      "pairsRemoved": 0,
       "qualifierChanged": 0,
       "qualifierChangedSymbols": [],
-      "rawLost": 2,
+      "rawLost": 0,
       "rawVanished": 0,
       "reAttributed": 0,
       "symAdded": 0,
@@ -86,9 +77,7 @@
       "vanishedSymbolsTruncated": 0
     },
     "lang": "powershell",
-    "reasons": [
-      "G3: 2 (label,target) pair(s) lost"
-    ],
+    "reasons": [],
     "repos": [
       "powershell"
     ],
@@ -111,9 +100,9 @@
       "justification": "separation of measurement from adoption"
     }
   ],
-  "regeneratedAt": "2026-09-28T00:20:00.677Z",
-  "regeneratedAtCommit": "8005524134e1e387491f61925de82d5257fdaf1e",
+  "regeneratedAt": "2026-09-28T08:58:59.648Z",
+  "regeneratedAtCommit": "32e33c4c51054c73cfd944dcac59da39901e245c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Grammar-leaf admissibility gate — powershell candidate cand-g9.wasm"
+  "title": "Grammar-leaf admissibility gate — powershell candidate cand-g10b.wasm"
 }
