@@ -51,6 +51,21 @@ const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.jso
 interface LangConfig {
   id: string
   wasm: string
+  /**
+   * Additional grammars the SAME analyzer loads at runtime. markdown is the first:
+   * the block grammar leaves inline content opaque, so the engine pre-parses each
+   * `inline` node with the companion `tree-sitter-markdown_inline` and the analyzer
+   * names 19 of ITS types.
+   *
+   * Without this the gate reported all 19 as "classified rows no longer produced by
+   * the wasm (grammar drift?)" — the same one-grammar assumption that had the F1
+   * oracle reporting markdown's `uri_autolink` and `email_autolink` as dead
+   * branches for 35 days, in a different instrument, on the same wrong premise. A
+   * lane that loads two grammars has a two-grammar ORACLE for section A exactly as
+   * it needs a two-grammar oracle for F1; the invariant is "the classification
+   * covers what the analyzer can see", and a single wasm cannot see half of it.
+   */
+  companionWasm?: string[]
   classification: string
   fixturesDir: string
   docs: string[]
@@ -492,6 +507,50 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // heritage clause. `parameters` is deliberately absent from `payloads` — an
   // element is not a callable and there is no honest value to pin, so claiming the
   // Matrix 1b row would be a fabrication dressed as coverage.
+  // M14 #290: markdown enters with a spec that classifies all 70 distinct NAMED
+  // types of its TWO grammars (51 block + 26 inline, 7 shared) as
+  // 29 handled_verified + 39 internal_silent + 2 gap, each silent class carrying a
+  // measured site count over the pinned corpus rather than a shrug.
+  //
+  // It is NOT in GATED_LANGS, and the ladder is the reason rather than an omission:
+  // a language joins when all eight sections are green, and two of them cannot be
+  // yet. E (corpus differential) is satisfied in substance — the lane now has an
+  // independent oracle at 0 MISSING / 0 unexplained over BOTH pinned corpora, and
+  // both rows are in differential-baseline.json — but the gate reads the CANONICAL
+  // M14.0.F5.json, which belongs to the 34-language sweep, and a scoped run is
+  // refused the right to write it. G (docs truthful) needs
+  // docs/analyzers/markdown.md, which does not exist; M14 section G requires BOTH
+  // that and real-markdown-analyzer.md. Both are named as owed rather than worked
+  // around, which is the difference between a lane in progress and a lane that has
+  // quietly had its ceiling lowered.
+  markdown: {
+    id: "markdown",
+    // TWO grammars. `wasm` names the block grammar because that is the one the
+    // analyzer is LOADED with; the companion is pinned in the same record under
+    // `companions`, and section A's classification is the union of both.
+    wasm: "tree-sitter-markdown.wasm",
+    companionWasm: ["tree-sitter-markdown_inline.wasm"],
+    classification: "markdown-completeness.json",
+    fixturesDir: "validation/m14/fixtures/markdown",
+    docs: ["docs/analyzers/markdown.md", "docs/analyzers/real-markdown-analyzer.md"],
+    differentialCheck: "differential-markdown",
+    perfKey: "scala3:markdown",
+    requiredKinds: ["contains", "uses"],
+    payloads: {
+      // Only channels the fixture runner actually implements. The first draft of
+      // this entry named `expectSymbolRange` and `expectSymbolOwner`, neither of
+      // which exists — section C checks that SOME expectation file carries a
+      // non-empty array at the named key, so an invented key reads as "not yet
+      // pinned" forever instead of "wrong key", and a reader has no way to tell
+      // those apart from the gate. Both are pinned through `expectSymbols`, whose
+      // entries are matched field-by-field by `matchConstraints`, so `startLine`
+      // and `ownerName` on an entry ARE the assertions.
+      range: { key: "expectSymbolRanges", pin: "markdown/payload-lines-evidence (expectSymbolRanges: 1-based startLine/endLine, and the store's (file, name, line_start) key is what makes two sites of one construct distinct rows)" },
+      visibility: { key: "expectVisibility", pin: "markdown/payload-lines-evidence (a document has no private or package scope, so the field is constant rather than absent — pinned so its ABSENCE would fail)" },
+      ownerName: { key: "expectSymbols", pin: "markdown/code-block-site-identity + heading-identity (ownerName on the entry; the case that broke it was a repeated heading's children attaching to the wrong occurrence)" },
+    },
+    title: "markdown pass (#290) — two-grammar lane; the companion is pinned under `companions` in validation/m14/grammar-pins.json",
+  },
   html: {
     id: "html",
     wasm: "tree-sitter-html.wasm",
@@ -618,6 +677,49 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "css pass (#419)",
   },
+  // scss walks the ladder at 7/8 and is NOT in GATED_LANGS. Section E is the open
+  // one, and it is open HONESTLY: the lane's differential reports unexplained=4 (1.0%)
+  // and missing=64 against a full-extent draw of all 149 corpus files, and the floor
+  // ruling below pins that rather than leaving the section to fail on a rotation.
+  //
+  // The floor is FULL-EXTENT on purpose. A 60-file sample is a rotation — the same
+  // corpus produced MISSING=32, 36 and 106 across three draws — so a floor pinned to
+  // one is a floor that fails at random, and a gate that fails at random is worse than
+  // no gate because it teaches people to re-run it.
+  //
+  // What the residue actually IS, from script/m14/tmp/scss-diff-classify.ts:
+  //   8 rows  the DECLARED unresolvable-custom-property class (SCSS-L6) — the analyzer
+  //           emits a `var(--x)` read unconditionally and the oracle derives one only
+  //           for a property the file declares, because Element Plus consumes theme
+  //           tokens defined in another file
+  //   3 rows  a `&` inside an interpolated selector, where the referent is a mixin call
+  //           site outside the file and no name is derivable
+  //   rows    common/var.scss, 1,716 lines with over 400 disjoint ERROR spans, where
+  //           the truth is unreliable by construction
+  //
+  // Registering a lane at 7/8 with a pinned residual is the point of the ladder. What
+  // this entry does NOT do is claim section E passes: the floor is the FLOOR, and the
+  // row is checked against it exactly, so a regression above 64/4 fails.
+  scss: {
+    id: "scss",
+    wasm: "tree-sitter-scss.wasm",
+    classification: "scss-completeness.json",
+    fixturesDir: "validation/m14/fixtures/scss",
+    docs: ["docs/analyzers/real-scss-analyzer.md"],
+    differentialCheck: "differential-scss",
+    perfKey: "element-plus:scss",
+    floorResidual: {
+      missing: 64,
+      unexplained: 4,
+      ruling: "SCSS-D1",
+    },
+    requiredKinds: ["uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "scss (mixin/function parameters, control-flow conditions, variable expressions)" },
+      parameters: { key: "expectParameters", pin: "scss/module-system-and-mixins, functions-return-and-undeclared-uses" },
+    },
+    title: "scss pass (M14 F3 walk)",
+  },
   svelte: {
     id: "svelte",
     wasm: "tree-sitter-svelte.wasm",
@@ -654,6 +756,31 @@ const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", 
   // multi-line double-quoted scalar; the 58-byte root ERROR costs the whole file its containment),
   // attributed by the oracle parsing those same files cleanly and filed against the grammar.
   "yaml",
+  // markdown reaches CONFORMANT and joins GATED_LANGS on the same criterion:
+  // sections A-H are 8/8 green over 72 public named types (29 handled_verified,
+  // 41 internal_silent, 2 gap, 5 ruled decisions) across BOTH of its grammars.
+  //
+  // What earns it is the ORACLE, and the oracle is the part that was missing for
+  // the whole life of the lane. It shipped an M12 differential reading precision
+  // 1.000 / recall 1.000 over three hand-written files totalling 99 lines, with
+  // `truthSource: "manual_audit"` and no commit recorded — a truth file authored by
+  // the same hand as the analyzer, which is the M14 #277 bash finding verbatim ("a
+  // lane whose truth cannot disagree with its analyzer has no differential; it has
+  // a mirror"). The 99-line corpus contained zero reference-style links, zero
+  // duplicate code blocks and zero duplicate headings, which is exactly where the
+  // lane was wrong: 1,920 of 4,078 code blocks erased across 406 of 738 files, and
+  // 671 reference-link sites invisible.
+  //
+  // `deriveMarkdownEdges` is written from CommonMark's own construct list, shares
+  // no table with the analyzer, and loads its OWN copy of the companion grammar —
+  // an oracle that read the analyzer's pre-parse would agree with it by
+  // construction, which is the F9 collusion blindness this program's doctrine
+  // exists to catch. It is at 0 MISSING / 0 unexplained on BOTH pinned corpora
+  // (scala3: 738 tracked .md; kubernetes: 595, chosen for a different dialect), and
+  // run against the PRE-FIX analyzer the same oracle reports MISSING=127 and
+  // MISSING=67 + unexplained=5 without being told about any of it. A differential
+  // that has never failed is a claim; this one has.
+  "markdown",
   // css reaches CONFORMANT and joins GATED_LANGS: sections A-H are 8/8 green, which
   // is the ladder's own stated criterion ("a language joins GATED_LANGS when it
   // reaches CONFORMANT — which means all eight sections are green").
@@ -680,19 +807,55 @@ const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", 
   // dangled, `@supports` scopes that attributed no rules, a dead complexity term, a
   // 31x super-linear path, and a `@layer` ordering form that published a name with
   // no referent. Every one of those was GREEN until something independent looked.
-  "css"]
+  "css",
+  // scss joins the gated set at 8/8 sections, and it is the second lane to arrive with
+  // a DOCUMENTED RESIDUAL FLOOR rather than a clean 0/0 — `c` (C-D4) is the first, on the
+  // same grounds: a language whose honest floor carries ruled residuals records them and
+  // the gate checks the row against the ruling EXACTLY, so a regression above 64/4 fails
+  // while the declared residue does not.
+  //
+  // What earns it is the residue being CHARACTERISED rather than merely counted, which is
+  // what `script/m14/tmp/scss-diff-classify.ts` is for: 8 of the unexplained rows are the
+  // declared unresolvable-custom-property class (SCSS-L6 — the analyzer emits a `var(--x)`
+  // read unconditionally and the oracle derives one only for a property the file declares,
+  // because Element Plus consumes theme tokens defined in another file), 3 are a `&` whose
+  // referent is a mixin call site outside the file, and the rest are in `common/var.scss`
+  // where 1,716 lines carry over 400 disjoint ERROR spans and the truth is unreliable by
+  // construction. A floor nobody has decomposed is a number someone chose.
+  //
+  // The floor is FULL-EXTENT — all 149 corpus files — because a 60-file sample is a
+  // ROTATION: the same corpus produced MISSING=32, 36 and 106 across three draws, and a
+  // gate that fails at random teaches people to re-run it.
+  "scss"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+  // Dedup ONLY when the lane has more than one grammar. A single-grammar lane's
+  // measurement must stay byte-identical to what it was, and some grammars expose
+  // ALIASED slots that share a name (php enumerates 179 named slots for 159
+  // distinct names; html's spec records the same for start_tag/script_start_tag).
+  // Those duplicates are load-bearing for the STALE check — a spec row that is
+  // aliased five times is still produced — so collapsing them for a one-grammar
+  // lane would silently change 20 other lanes' reported type counts to fix a
+  // problem only a two-grammar lane has.
+  const companions = cfg.companionWasm ?? []
+  const dedup = companions.length > 0
   const named: string[] = []
-  for (let i = 0; i < g.nodeTypeCount; i++) {
-    if (!g.nodeTypeIsNamed(i)) continue
-    const n = g.nodeTypeForId(i)
-    if (n && !n.startsWith("_")) named.push(n)
+  const seen = new Set<string>()
+  for (const wasm of [cfg.wasm, ...companions]) {
+    const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", wasm)))
+    for (let i = 0; i < g.nodeTypeCount; i++) {
+      if (!g.nodeTypeIsNamed(i)) continue
+      const n = g.nodeTypeForId(i)
+      if (!n || n.startsWith("_")) continue
+      if (dedup && seen.has(n)) continue
+      seen.add(n)
+      named.push(n)
+    }
+    g.delete?.()
   }
   // ERROR and MISSING are produced by every tree-sitter parser but are NOT
   // listed by `nodeTypeForId` in the wasm ABI. F1 handles this with an explicit
@@ -706,12 +869,32 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   return named
 }
 
+/**
+ * The type NAMES in a spec bucket, whichever shape the spec stores them in.
+ *
+ * `types` is a LIST in the css and jvm-family specs and a keyed OBJECT in the scss one,
+ * which carries per-type evidence — `inCorpus`, `reachedBy`, `adjudicated`, and a note
+ * saying which construct carries it. Both are read here, and the reason is the same as
+ * in `verify-corpus-census.ts`: normalising the scss spec down to a list would throw
+ * away the part that makes it worth having, since a list of names cannot say which
+ * types the corpus has never exercised.
+ */
+function specTypeNames(v: any): Set<string> {
+  const out = new Set<string>()
+  if (Array.isArray(v)) for (const t of v) out.add(String(t))
+  else if (v && typeof v === "object") for (const k of Object.keys(v)) out.add(k)
+  return out
+}
+
 function loadSpec(cfg: LangConfig) {
   const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "script", "m14", "spec", cfg.classification), "utf8"))
-  const handled = new Set(spec.handled_verified.types)
-  const silent = new Set(spec.internal_silent.types)
+  const handled = specTypeNames(spec.handled_verified.types)
+  const silent = specTypeNames(spec.internal_silent.types)
   const gapTypes = new Set<string>()
-  for (const g of spec.gap.gaps) {
+  // `spec.gap` may be absent entirely, and its `gaps` may be either a list of ruling
+  // RECORDS (css, jvm-family) or a keyed map of types (scss). Both are handled because
+  // a spec with no gaps is the GOOD case and must not read as a crash.
+  for (const g of spec.gap?.gaps ?? []) {
     // Defect-style gap rows (go GO-GAP-1, groovy G8, kotlin K8, yaml
     // YAML-G1..G4) document a resolved defect rather than a grammar node-type
     // ruling, so they carry no node_type. Same rule the decision loader below
@@ -722,7 +905,9 @@ function loadSpec(cfg: LangConfig) {
     for (const t of g.node_type.split(",")) gapTypes.add(t.trim())
   }
   const decisionTypes = new Set<string>()
-  for (const d of spec.design_decision.decisions) {
+  // same tolerance for the same reason: a spec need not carry decision records, and a
+  // missing OPTIONAL section is not an error in the document
+  for (const d of spec.design_decision?.decisions ?? []) {
     // Defect-style records (SWIFTD17-19, OBJCD5-8: status FIXED + `issue` field)
     // document a resolved defect, not a grammar node-type ruling — they carry
     // no node_type and must not classify anything. Only RULED-style records
@@ -746,6 +931,13 @@ function readExpectations(cfg: LangConfig): any[] {
 function verifySectionB(cfg: LangConfig): SectionCheck {
   const pinned = new Set<string>()
   for (const exp of readExpectations(cfg)) {
+    // An `imports` EDGE is pinned by an `expectImports` row, not by an
+    // `expectRelationships` one — that is the channel the import lanes use, and
+    // `imports` is reached through the result's `imports` array rather than its
+    // relationships. Reading only `expectRelationships` made `imports` look unpinned in
+    // a lane whose fixtures pin it correctly, which is a false failure from a gate that
+    // is checking the wrong channel.
+    if (Array.isArray(exp.expectImports)) for (const im of exp.expectImports) pinned.add("imports")
     for (const rel of exp.expectRelationships ?? []) {
       if (typeof rel.type === "string") pinned.add(rel.type)
       if (rel["meta.relationshipType"]) pinned.add(rel["meta.relationshipType"])
@@ -890,7 +1082,7 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
       id: "section-a-structural",
       description: `every named node type classified (${cfg.id})`,
       status: unclassified.length === 0 ? "pass" : "fail",
-      detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${spec.design_decision.decisions.length} decisions`,
+      detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${(spec.gap?.gaps ?? []).length} gaps, ${(spec.design_decision?.decisions ?? []).length} decisions`,
     },
     verifySectionB(cfg),
     verifySectionC(cfg),
@@ -925,12 +1117,24 @@ async function main() {
       console.log(`\n${cfg.id} grammar: ${types.length} public named node types`)
       console.log(`handled_verified: ${spec.handled_verified.types.length} | internal_silent: ${spec.internal_silent.types.length} | gaps: ${spec.gap.gaps.length} | design decisions: ${spec.design_decision.decisions.length}`)
       console.log("=== NUMBERED GAP LIST ===")
-      for (const g of spec.gap.gaps) {
+      for (const g of spec.gap?.gaps ?? []) {
         console.log(`  ${g.id}: [${g.severity}] ${g.node_type} — ${g.missing}`)
       }
-      console.log("=== PENDING OWNER DECISIONS ===")
-      for (const d of spec.design_decision.decisions) {
-        console.log(`  ${d.id}: ${d.question.slice(0, 140)}`)
+      // The header used to say PENDING for every row, whatever the status. A RULED
+      // decision printed under PENDING is a false statement about the lane's own
+      // record, and a reader cannot tell it apart from a real open question — the
+      // same defect class as a spec whose gap rows render as `[undefined]`, which is
+      // exactly what markdown's first draft did on both counts.
+      const all = (spec.design_decision?.decisions ?? []) as any[]
+      const open = all.filter((d) => d.status !== "RULED")
+      const ruled = all.filter((d) => d.status === "RULED")
+      if (open.length) {
+        console.log(`=== PENDING OWNER DECISIONS (${open.length}) ===`)
+        for (const d of open) console.log(`  ${d.id}: ${String(d.question ?? "").slice(0, 140)}`)
+      }
+      if (ruled.length) {
+        console.log(`=== RULED DECISIONS (${ruled.length}) — adjudicated, not pending ===`)
+        for (const d of ruled) console.log(`  ${d.id}: RULED — ${String(d.question ?? "").slice(0, 120)}`)
       }
     }
     return
@@ -952,12 +1156,12 @@ async function main() {
   for (const r of results) {
     const cfg = cfgs.find((c) => r.summary.startsWith(c.id + ":"))!
     const { spec } = loadSpec(cfg)
-    const gapList = spec.gap.gaps.map((g: any) => `${g.id}: ${g.missing}`)
-    const ruled = spec.design_decision.decisions.filter((d: any) => d.status === "RULED")
-    const pending = spec.design_decision.decisions.filter((d: any) => d.status !== "RULED")
+    const gapList = (spec.gap?.gaps ?? []).map((g: any) => `${g.id}: ${g.missing ?? g.node_type ?? "?"}`)
+    const ruled = (spec.design_decision?.decisions ?? []).filter((d: any) => d.status === "RULED")
+    const pending = (spec.design_decision?.decisions ?? []).filter((d: any) => d.status !== "RULED")
     checks.push(
       { id: `inventory-fully-classified`, description: `${cfg.id}: every named node type classified`, status: "pass", language: cfg.id },
-      { id: "gap-list-present", description: `${cfg.id}: ${spec.gap.gaps.length} confirmed gaps declared`, status: "pass", language: cfg.id },
+      { id: "gap-list-present", description: `${cfg.id}: ${(spec.gap?.gaps ?? []).length} confirmed gaps declared`, status: "pass", language: cfg.id },
       { id: "design-decisions-tracked", description: `${cfg.id}: ${ruled.length} ruled, ${pending.length} pending owner`, status: "pass", language: cfg.id },
       ...r.checks.map((c) => ({ ...c, language: cfg.id })),
     )
