@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:ruby",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "7f5e3f2ba578e276c6376751d3b6422466fa25b437b0ce5f12d1b93c18845059",
+        "bytes": 75193
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "7e7d75a8e0e3a7d1cadda72e1897b65b11e336fa3dfa6168fe01243fff13b481",
+        "bytes": 45000
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "0b0ffae2fcc14189d6507710dbb12dc639b737975b1c85bcd8334be29c3499f5",
+        "bytes": 119254
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
+        "bytes": 102001
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "fb1e509caa798ce5a9dd750b8c4b8276063edfec631ed5016d7ac00dc0e2c21d",
+        "bytes": 161744
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "df52f3a53ab76a1c2133c4faa037ee3a43b8d9ffb6ddcd1bae8bd4a9ef36449b",
+        "bytes": 125447
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
+        "bytes": 54878
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "168caf9cf6d3a8d8249e4933e77c11824498bdde16481779c640522899b5f794",
+        "bytes": 65722
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "9dfe33702e52bc2a2529d49e8bd41d42fe1f4ea6ffa92e15dc617ab2ba8df192",
+        "bytes": 60855
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "9b3beab78a85f835718a8d4ded9bc38f2921f7f6163a0010ce23db3c22182d2a",
+        "bytes": 107206
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "face98a78cf079d36fc98760b446966a3399b4fbe0d6926c3d4bdff4d16da90b",
+        "bytes": 85632
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "4667d50a6e106580980d82aac2f9a2dd3398d8da11ffe2538efca71676827d51",
+        "bytes": 61224
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
+      },
+      "src/brain/database.ts": {
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/ruby/BaseService.rb": {
+        "sha256": "97cbb010487d14e5ba73682743e87932edea95e527f6b6d2821cb98b3525f32e",
+        "bytes": 117
+      },
+      "validation/m12/fixtures/ruby/Negative.rb": {
+        "sha256": "97c920620ef78efb305787686fe1d4ed088a96f9396757b81897ca0950d417d2",
+        "bytes": 138
+      },
+      "validation/m12/fixtures/ruby/Service.rb": {
+        "sha256": "39b2f9f50d0c0495d7ba30f04c23d8ef09e97e36be55405ee3a891a200d87a00",
+        "bytes": 487
+      },
+      "validation/m12/ground-truth/ruby.json": {
+        "sha256": "c0b8c6704b234a93cdf2f9f56d37690338178b5f0eb83acdc1a95e8e49e9c4cb",
+        "bytes": 12813
+      }
+    },
+    "digest": "db6f80eca2f30c66592f905e8dc365e4476d9641004153f484217c6d49976e5d",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm",
+      "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
+      "bytes": 2106447
+    }
+  },
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/ruby/{BaseService,Service,Negative}.rb",
+  "fixtureDir": "validation/m12/fixtures/ruby",
+  "fixtures": [
+    "BaseService.rb",
+    "Negative.rb",
+    "Service.rb"
+  ],
+  "perFile": {
+    "BaseService.rb": {
+      "symbols": 3,
+      "relationships": 3
+    },
+    "Negative.rb": {
+      "symbols": 2,
+      "relationships": 1
+    },
+    "Service.rb": {
+      "symbols": 10,
+      "relationships": 18
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 37,
+      "observedResolved": 37,
+      "truePositive": 37,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:BaseService.rb:calls:save:persist",
+      "rel:BaseService.rb:contains:BaseService:initialize",
+      "rel:BaseService.rb:contains:BaseService:save",
+      "rel:Negative.rb:contains:Noise:run",
+      "rel:Service.rb:calls:audit:serialize",
+      "rel:Service.rb:calls:validate:valid?",
+      "rel:Service.rb:contains:Audited:audit",
+      "rel:Service.rb:contains:Billing:Audited",
+      "rel:Service.rb:contains:UserService:API_PREFIX",
+      "rel:Service.rb:contains:UserService:build",
+      "rel:Service.rb:contains:UserService:initialize",
+      "rel:Service.rb:contains:UserService:save",
+      "rel:Service.rb:contains:UserService:store",
+      "rel:Service.rb:contains:UserService:validate",
+      "rel:Service.rb:extends:UserService:BaseService",
+      "rel:Service.rb:implements:UserService:Audited",
+      "rel:Service.rb:instantiates:build:UserService",
+      "rel:Service.rb:instantiates:save:User",
+      "rel:Service.rb:overrides:UserService.initialize:BaseService.initialize",
+      "rel:Service.rb:overrides:UserService.save:BaseService.save",
+      "rel:Service.rb:references:Global:base",
+      "rel:Service.rb:references:Global:json",
+      "symbol:BaseService.rb:1:class:BaseService",
+      "symbol:BaseService.rb:2:method:initialize",
+      "symbol:BaseService.rb:6:method:save",
+      "symbol:Negative.rb:1:class:Noise",
+      "symbol:Negative.rb:2:method:run",
+      "symbol:Service.rb:12:class:UserService",
+      "symbol:Service.rb:14:property:store",
+      "symbol:Service.rb:15:constant:API_PREFIX",
+      "symbol:Service.rb:17:method:initialize",
+      "symbol:Service.rb:21:method:save",
+      "symbol:Service.rb:28:method:validate",
+      "symbol:Service.rb:33:method:build",
+      "symbol:Service.rb:4:module:Billing",
+      "symbol:Service.rb:5:module:Audited",
+      "symbol:Service.rb:6:method:audit"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:ruby",
+      "wallTimeMs": 13.580525,
+      "userCpuMs": 27.43,
+      "systemCpuMs": 7.719,
+      "peakRssBytes": 241106944,
+      "rssDeltaBytes": 3276800,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for ruby. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.963Z",
+    "contentSha256": "e4039826b610afac061a31eb984f5cc5d0cc3d5b850e214ab24ad29228b367ac"
+  }
+}

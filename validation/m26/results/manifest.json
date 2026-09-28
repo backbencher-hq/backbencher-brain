@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M26",
+  "githubMilestone": 26,
+  "title": "The Graph (IDE Program v2)",
+  "status": "closed",
+  "authority": "docs/m26/M26-MASTER-PLAN.md",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "updatedAt": "2026-09-03T00:00:00.000Z",
+  "evidencePolicy": {
+    "verifiedRequires": [
+      "currentCommit",
+      "sourceFingerprint",
+      "verifierCommand",
+      "evidenceFile",
+      "positiveAndNegativeChecks",
+      "freshTimestamp",
+      "limitations"
+    ],
+    "missingCorpusState": "blocked-or-known-gap",
+    "timeoutState": "blocked-or-known-gap",
+    "unexecutedState": "planned"
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 508,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "M26 ledger, closure gate, verify wiring; standing M25 completion-bar re-audit automated; contract vocabulary lint over M26 artifacts",
+      "acceptanceCriteria": [
+        "ledger + gate + verify wiring as in M24/M25 G1",
+        "M25 bar re-audit automated (not a manual claim)",
+        "contract vocabulary lint over M26 artifacts"
+      ],
+      "closureRequirements": [
+        "gate evidence persisted",
+        "mutation: ledger tamper fails",
+        "clean rerun recorded"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m26/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
+    },
+    {
+      "code": "W1",
+      "githubIssue": 509,
+      "tool": "webview-core",
+      "status": "verified",
+      "scope": "Single graph renderer (canvas/SVG) over the node/edge model: nodes (symbol, kind, file, external), edges (type, tier, confidence, call site), truncation state. One renderer reused across IDEs; per-IDE forks banned",
+      "acceptanceCriteria": [
+        "renders a fixture graph with all evidence tiers visually distinct",
+        "render budget: first render p95 within contract 3 (300ms warm / 1000ms cold on the pinned fixture)",
+        "budget-exhausted graphs render a visible truncation marker, never silent"
+      ],
+      "closureRequirements": [
+        "budget evidence recorded per machine",
+        "mutation: hidden truncation fails the suite",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W1.json",
+        "verifierCommand": "npx tsx script/m26/verify-webview-core.ts",
+        "evidenceFile": "W1.json",
+        "passed": 23,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 6,
+        "mutantsTotal": 6
+      }
+    },
+    {
+      "code": "W2",
+      "githubIssue": 510,
+      "tool": "lsp-transport",
+      "status": "verified",
+      "scope": "Declared, versioned custom LSP request carrying graph queries (root symbol to GraphTraversalResult) between server and webview; schema documented and version-pinned",
+      "acceptanceCriteria": [
+        "schema documented with version; server rejects mismatched versions loudly",
+        "every edge in a response traces to a brain_relationship row id",
+        "request honored only for indexed workspaces; otherwise a declared error"
+      ],
+      "closureRequirements": [
+        "protocol evidence with positive and negative cases",
+        "mutation: forged edge without row id fails",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W2.json",
+        "verifierCommand": "npx tsx script/m26/verify-graph-transport.ts",
+        "evidenceFile": "W2.json",
+        "passed": 24,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
+    },
+    {
+      "code": "W3",
+      "githubIssue": 511,
+      "tool": "cross-language-hover",
+      "status": "verified",
+      "scope": "Hover text includes cross-language facts where the index stores them (is_cross_language, bridge_mechanism), per-pair, evidence-backed from brain_relationship rows only",
+      "acceptanceCriteria": [
+        "at least one real cross-language fixture per stored pair among launch languages, each verified",
+        "pairs with no stored edges state nothing cross-language (absence declared in docs)",
+        "confidence and tier surfaced with declared evidence level"
+      ],
+      "closureRequirements": [
+        "per-pair evidence recorded",
+        "mutation: unbacked cross-language claim fails",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W3.json",
+        "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
+        "evidenceFile": "W3.json",
+        "passed": 17,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
+    },
+    {
+      "code": "W4",
+      "githubIssue": 512,
+      "tool": "evidence-badges",
+      "status": "verified",
+      "scope": "Edge badges from metadata.evidenceClass (structural / usage_contextual / import_based / reference_qualified / inferred) + confidence; inferred visually distinct; tier legend documented",
+      "acceptanceCriteria": [
+        "all tiers rendered distinctly; legend documented",
+        "mutation: inferred edge rendered as structural fails the suite",
+        "confidence threshold decisions documented in UI terms"
+      ],
+      "closureRequirements": [
+        "per-tier render evidence",
+        "mutation proof both directions",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W4.json",
+        "verifierCommand": "npx tsx script/m26/verify-evidence-badges.ts",
+        "evidenceFile": "W4.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
+    },
+    {
+      "code": "W5",
+      "githubIssue": 513,
+      "tool": "impact-mode",
+      "status": "verified",
+      "scope": "Reverse-dependency impact set from the graph engine (bounded, budgeted); truncation rendered in-UI with reason; counts consistent with references/call-hierarchy surfaces",
+      "acceptanceCriteria": [
+        "impact counts agree with L3 references for sampled symbols (differential, sampling stated)",
+        "budget exhaustion renders visible marker with declared counts (shown vs total-if-known)",
+        "latency within contract 3 render budget"
+      ],
+      "closureRequirements": [
+        "differential evidence recorded",
+        "mutation: silent truncation fails",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W5.json",
+        "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
+        "evidenceFile": "W5.json",
+        "passed": 13,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 5,
+        "mutantsTotal": 5
+      }
+    },
+    {
+      "code": "W6",
+      "githubIssue": 547,
+      "tool": "content-security",
+      "status": "verified",
+      "scope": "Webview content security: strict CSP (no inline script execution, no remote origins), systematic HTML-escaping of every repo-controlled string, adversarial fixtures (script tags, event-handler payloads, quote/unicode edge cases), mutation gate on un-escaped render",
+      "acceptanceCriteria": [
+        "strict CSP present in the webview HTML",
+        "every repo-controlled string escapes before render; adversarial fixtures render inert",
+        "mutation: a planted un-escaped render fails the verifier"
+      ],
+      "closureRequirements": [
+        "adversarial fixture evidence",
+        "mutation proof recorded",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see W6.json",
+        "verifierCommand": "npx tsx script/m26/verify-content-security.ts",
+        "evidenceFile": "W6.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
+      }
+    },
+    {
+      "code": "V1",
+      "githubIssue": 514,
+      "tool": "webview-harness",
+      "status": "verified",
+      "scope": "DOM-level headless render harness asserting node/edge/badge/truncation rendering; mutation set: fabricated edge, dropped edge, wrong tier label, wrong count, missing truncation marker",
+      "acceptanceCriteria": [
+        "harness can fail; positive and negative cases",
+        "all mutants caught, both directions proven",
+        "wired into verify"
+      ],
+      "closureRequirements": [
+        "evidence per mutant",
+        "budget evidence",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-webview-harness.ts",
+        "evidenceFile": "V1.json",
+        "passed": 17,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
+    },
+    {
+      "code": "D1",
+      "githubIssue": 515,
+      "tool": "graph-docs",
+      "status": "verified",
+      "scope": "Docs for the graph surface: what renders, per-pair cross-language reality generated from evidence, tier legend, truncation policy",
+      "acceptanceCriteria": [
+        "per-pair table generated from brain_relationship reality, drift-gated",
+        "vocabulary lint green",
+        "claim levels match ledger"
+      ],
+      "closureRequirements": [
+        "drift test byte-identical",
+        "evidence",
+        "limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-graph-docs.ts",
+        "evidenceFile": "D1.json",
+        "passed": 28,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 2
+      }
+    },
+    {
+      "code": "A1",
+      "issue": 615,
+      "title": "Polyglot end-to-end: cross-language write-path proven via real indexing",
+      "status": "verified",
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-polyglot-e2e.ts",
+        "evidenceFile": "A1.json",
+        "passed": 11,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 1
+      },
+      "githubIssue": 615,
+      "tool": "polyglot-e2e",
+      "scope": "Committed polyglot fixtures (java+scala insert-time path, ts+js late-resolution path) indexed via the REAL indexer; is_cross_language + bridge_mechanism asserted in the produced dbs; real hover component renders from the real db; normalization defect in resolveRelationships fixed (upgrade-only) and mutation-gated",
+      "acceptanceCriteria": [
+        "fixtures committed under test/fixtures/polyglot and indexed in-process with post-processing ON",
+        "both resolution paths flag rows with bridge name-resolution (java-scala 3, ts-js 2)",
+        "suite proves it CAN FAIL: suppressing the normalization drops ts-js to 0 flagged (mutant caught)"
+      ],
+      "closureRequirements": [
+        "A1.json machine-emitted with per-path counts and bridges",
+        "M26 gate green with A1 in the ledger and governance map",
+        "evidence pinned at closing HEAD"
+      ]
+    },
+    {
+      "code": "X1",
+      "githubIssue": 516,
+      "tool": "closure-gate",
+      "status": "verified",
+      "scope": "Full mutation set over the graph surface + v2 completion-bar audit at current HEAD; clean rerun",
+      "acceptanceCriteria": [
+        "per-mutant records",
+        "v2 bar audited: webview I3, at least one fork I4, per-pair evidence, tiers mutation-proven, impact bounded",
+        "clean rerun"
+      ],
+      "closureRequirements": [
+        "X1 evidence",
+        "owner spot-check scheduled",
+        "ledger clean"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m26/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 50,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.421Z",
+    "contentSha256": "01c97c775b561154e28ec0e695f0a594cfc92d6b506e741e77a62396042c5f7e"
+  }
+}

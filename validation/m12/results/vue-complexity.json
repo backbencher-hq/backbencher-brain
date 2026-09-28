@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:vue",
+  "fixtureDir": "validation/m12/fixtures/vue",
+  "corpusDir": "/tmp/vue-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:vue",
+        "wallTimeMs": 520.485936,
+        "userCpuMs": 460.722,
+        "systemCpuMs": 207.59,
+        "peakRssBytes": 221179904,
+        "rssDeltaBytes": 178839552,
+        "databaseBytes": null,
+        "files": 5,
+        "symbols": 27,
+        "relationships": 30,
+        "filesPerSecond": 9.606407501469933,
+        "symbolsPerSecond": 51.87460050793764,
+        "relationshipsPerSecond": 57.6384450088196
+      },
+      "symbols": 27,
+      "relationships": 30
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:vue",
+        "wallTimeMs": 7907.786319,
+        "userCpuMs": 12132.363,
+        "systemCpuMs": 961.662,
+        "peakRssBytes": 370053120,
+        "rssDeltaBytes": 14852096,
+        "databaseBytes": null,
+        "files": 400,
+        "symbols": 2033,
+        "relationships": 8532,
+        "filesPerSecond": 50.583056226357805,
+        "symbolsPerSecond": 257.08838327046357,
+        "relationshipsPerSecond": 1078.936589308212
+      },
+      "symbols": 2033,
+      "relationships": 8532
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.114Z",
+    "contentSha256": "01269579975703b0cac536d77c8f9088947eaea0d5889241def27e9a9289c21c"
+  }
+}

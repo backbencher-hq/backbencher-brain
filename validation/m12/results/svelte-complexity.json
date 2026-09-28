@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:svelte",
+  "fixtureDir": "validation/m12/fixtures/svelte",
+  "corpusDir": "/tmp/svelte-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:svelte",
+        "wallTimeMs": 481.174578,
+        "userCpuMs": 361.289,
+        "systemCpuMs": 184.519,
+        "peakRssBytes": 214134784,
+        "rssDeltaBytes": 177881088,
+        "databaseBytes": null,
+        "files": 5,
+        "symbols": 29,
+        "relationships": 35,
+        "filesPerSecond": 10.391238915369298,
+        "symbolsPerSecond": 60.26918570914193,
+        "relationshipsPerSecond": 72.73867240758509
+      },
+      "symbols": 29,
+      "relationships": 35
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:svelte",
+        "wallTimeMs": 2292.297411,
+        "userCpuMs": 2820.09,
+        "systemCpuMs": 343.023,
+        "peakRssBytes": 284385280,
+        "rssDeltaBytes": -2625536,
+        "databaseBytes": null,
+        "files": 396,
+        "symbols": 913,
+        "relationships": 655,
+        "filesPerSecond": 172.75245267028748,
+        "symbolsPerSecond": 398.29037698982944,
+        "relationshipsPerSecond": 285.7395366137331
+      },
+      "symbols": 913,
+      "relationships": 655
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.108Z",
+    "contentSha256": "5a81d0cc7a9c20ef662f1553787b12d71fd732f7a3af92ee76e3d73afac03f46"
+  }
+}

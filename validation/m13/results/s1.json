@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.18",
+  "code": "S1",
+  "tool": "bb_search",
+  "title": "bb_search: mode negatives + freshness on all modes",
+  "verifiedState": "known-gap",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "exact matches only the exact symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "default mode is tagged symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "prefix finds handleRequest",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "substring finds handleRequest",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "substring finds both duplicate symbols",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pagination returns distinct pages",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex matches by pattern",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex mode is tagged",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex reports truncation flag",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex non-match returns empty",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex:true routes through symbol dispatcher",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "content search finds documented symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "content mode is tagged",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "content results carry content matchType",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mode=content routes through dispatcher",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "language filter narrows results",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "language filter excludes other languages",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "symbolKind filter narrows results",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "public search rejects empty symbol query [negative: non-empty query]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "public file mode requires filePath [negative: requires filePath]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "invalid regex throws InvalidRegexError [negative: InvalidRegexError]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "public file mode returns a file envelope",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "public file mode returns source content",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "public file mode returns freshness metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "unmodified file mode reports fresh",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "public file mode rejects path escape [negative: escapes project root]",
+      "pass": false,
+      "negative": true,
+      "detail": "did not throw"
+    },
+    {
+      "name": "symbol search flags stale rows after modification",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "regex search flags stale rows after modification",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "content search flags stale rows after modification",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "file mode reports stale after modification",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 4,
+  "summary": {
+    "total": 30,
+    "passed": 29,
+    "failed": 1
+  },
+  "decisions": {
+    "fileModeContract": "mode=file returns a typed file envelope (path, content, language, freshness), not filtered symbol rows",
+    "freshness": "symbol, regex, content, and file modes all flag stale files (content freshness added in this issue)"
+  },
+  "limitations": [
+    "Search correctness is bounded by indexed analyzer symbols and file hashes.",
+    "This evidence does not establish analyzer completeness or semantic-answer quality.",
+    "S2 (e2e) and S3 (real-repo corpus) are separate M13 issues."
+  ],
+  "generatedAt": "2026-09-05T20:57:58.730Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.296Z",
+    "contentSha256": "aac49d2e91aeb13f46c3860e3991dfd2f07c0b36087e179454017ab691b36d0d"
+  }
+}

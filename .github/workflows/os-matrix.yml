@@ -1,0 +1,46 @@
+# M42.X1 launch bar (issue #655): the E7 OS-matrix legs on GitHub-hosted
+# runners. Each OS runs script/m25/verify-cross-platform.ts, which proves the
+# shared assertion core against the SHIPPED node-dist server on THIS OS
+# (budgets re-measured and gated per OS, contract §3/§10), machine-emits that
+# OS's evidence (E7-<os>.json) and honest blocked records for the other two.
+# Linux also re-verifies locally; darwin/windows have no other executable
+# home, which is the recorded CI-PENDING reason in docs/m42/LAUNCH-RECORD.md.
+name: OS matrix (M42.X1 E7 legs)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  os-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (shipped dist server)
+        run: npm run build
+
+      - name: Run the E7 cross-platform leg for ${{ matrix.os }}
+        run: npx tsx script/m25/verify-cross-platform.ts
+
+      - name: Upload E7 evidence artifacts for ${{ matrix.os }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e7-evidence-${{ matrix.os }}
+          path: validation/m25/results/E7-*.json
+          if-no-files-found: error

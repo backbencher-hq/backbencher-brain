@@ -1,0 +1,18 @@
+{
+  "gate": "M50.A5",
+  "issue": null,
+  "issueStatus": "unregistered — GitHub unreachable at delivery; text in docs/m50/A5-issue.md",
+  "milestone": "M50",
+  "at": "2026-09-12T19:07:30.811Z",
+  "commit": "85aeb59b27be55de551a3b129ae157ff896c157d",
+  "checks": 10,
+  "passed": 10,
+  "failed": 0,
+  "verifierCommand": "npx tsx script/m50/verify-a5-verify-chain.ts",
+  "status": "verified",
+  "method": "live re-runs of the two repaired chain gates + drift comparator, with a degraded baseline copy and a handler-leak mutant proving both checks can fail",
+  "preRepairEvidence": {
+    "verify-contract-diff": "13 failures at commit 15e4566a (11-tool frozen baseline vs 16 registered; stale category vocabulary)",
+    "verify-tool-registry": "1 failure at commit 15e4566a (substring 'handler' test defeated by bb_search's own description)"
+  }
+}

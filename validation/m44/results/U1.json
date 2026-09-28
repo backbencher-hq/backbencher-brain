@@ -1,0 +1,55 @@
+{
+  "issue": "M44.U1",
+  "code": "U1",
+  "milestone": "M44",
+  "status": "verified",
+  "checks": 20,
+  "passed": 20,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 6,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
+  "evidenceFile": "U1.json",
+  "generatedAt": "2026-09-20T02:50:34.502Z",
+  "schemaVersion": 2,
+  "laws": [
+    "L1 one-group-per-symbol",
+    "L2 declared multiplicity",
+    "L3 nothing-dropped differential",
+    "L4 labeled sections",
+    "L5 deterministic order",
+    "H header counts count groups"
+  ],
+  "fixture": {
+    "files": [
+      "widget.ts",
+      "make.ts",
+      "draw.ts",
+      "a.ts",
+      "b.ts",
+      "util.ts"
+    ],
+    "root": "Widget",
+    "callerRows": 5,
+    "callerGroups": 4,
+    "sameNameTrap": "two distinct 'main' symbols, distinct files",
+    "external": "push",
+    "fileLevel": [
+      "imports ./widget:Widget",
+      "exports ./widget:Widget"
+    ],
+    "noise": "draw→util (sibling callee, must never leak into Widget's usage set)"
+  },
+  "limitations": [
+    "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
+    "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:34.503Z",
+    "contentSha256": "4124e631f5a79558a524c7165020e5e43da58953ad09730bd6b8739dcbea6fcf"
+  }
+}

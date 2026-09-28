@@ -1,0 +1,348 @@
+{
+  "issue": "M19.S2",
+  "code": "S2",
+  "tool": "indexing pipeline (giant corpus)",
+  "title": "index aspnetcore and paperclip source subsets - explicit finalization scope + time/memory",
+  "verified": true,
+  "checks": 17,
+  "passed": 17,
+  "failed": 0,
+  "measured": {
+    "repo": "aspnetcore",
+    "path": "$HOME/aspnetcore",
+    "candidateFilesOnDisk": 11910,
+    "eligibleFilesOnDisk": 10431,
+    "files": 10431,
+    "symbols": 132744,
+    "rels": 268793,
+    "timing": {
+      "repo": "$HOME/aspnetcore",
+      "totalSlices": 4,
+      "machine": {
+        "platform": "linux",
+        "arch": "x64"
+      },
+      "slices": [
+        {
+          "ok": true,
+          "slice": 0,
+          "totalSlices": 4,
+          "candidateFiles": 2978,
+          "eligibleFiles": 2734,
+          "eligibleFilesBeforeOffset": 2734,
+          "offset": 0,
+          "filesInSlice": 2734,
+          "batchSize": 1000,
+          "batchCount": 3,
+          "batches": [
+            {
+              "batch": 0,
+              "files": 1000,
+              "wallMs": 57857,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 132716,
+              "errors": []
+            },
+            {
+              "batch": 1,
+              "files": 1000,
+              "wallMs": 62582,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 147832,
+              "errors": []
+            },
+            {
+              "batch": 2,
+              "files": 734,
+              "wallMs": 40795,
+              "successFiles": 734,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 147832,
+              "errors": []
+            }
+          ],
+          "wallMs": 161234,
+          "wallSec": 161,
+          "deferredFinalization": true,
+          "totalSymbols": 132744,
+          "totalRels": 256599,
+          "peakRssKb": 147832,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "slice": 1,
+          "totalSlices": 4,
+          "candidateFiles": 2978,
+          "eligibleFiles": 2947,
+          "eligibleFilesBeforeOffset": 2947,
+          "offset": 0,
+          "filesInSlice": 2947,
+          "batchSize": 1000,
+          "batchCount": 3,
+          "batches": [
+            {
+              "batch": 0,
+              "files": 1000,
+              "wallMs": 31591,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 148652,
+              "errors": []
+            },
+            {
+              "batch": 1,
+              "files": 1000,
+              "wallMs": 32387,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 168756,
+              "errors": []
+            },
+            {
+              "batch": 2,
+              "files": 947,
+              "wallMs": 27819,
+              "successFiles": 947,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 168756,
+              "errors": []
+            }
+          ],
+          "wallMs": 91797,
+          "wallSec": 92,
+          "deferredFinalization": true,
+          "totalSymbols": 132744,
+          "totalRels": 291001,
+          "peakRssKb": 168756,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "slice": 2,
+          "totalSlices": 4,
+          "candidateFiles": 2978,
+          "eligibleFiles": 2454,
+          "eligibleFilesBeforeOffset": 2454,
+          "offset": 0,
+          "filesInSlice": 2454,
+          "batchSize": 1000,
+          "batchCount": 3,
+          "batches": [
+            {
+              "batch": 0,
+              "files": 1000,
+              "wallMs": 23954,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 150528,
+              "errors": []
+            },
+            {
+              "batch": 1,
+              "files": 1000,
+              "wallMs": 37868,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 150528,
+              "errors": []
+            },
+            {
+              "batch": 2,
+              "files": 454,
+              "wallMs": 15673,
+              "successFiles": 454,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 150528,
+              "errors": []
+            }
+          ],
+          "wallMs": 77495,
+          "wallSec": 77,
+          "deferredFinalization": true,
+          "totalSymbols": 132744,
+          "totalRels": 271526,
+          "peakRssKb": 150528,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "slice": 3,
+          "totalSlices": 4,
+          "candidateFiles": 2976,
+          "eligibleFiles": 2296,
+          "eligibleFilesBeforeOffset": 2296,
+          "offset": 0,
+          "filesInSlice": 2296,
+          "batchSize": 1000,
+          "batchCount": 3,
+          "batches": [
+            {
+              "batch": 0,
+              "files": 1000,
+              "wallMs": 28456,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 133568,
+              "errors": []
+            },
+            {
+              "batch": 1,
+              "files": 1000,
+              "wallMs": 28215,
+              "successFiles": 1000,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 139312,
+              "errors": []
+            },
+            {
+              "batch": 2,
+              "files": 296,
+              "wallMs": 11657,
+              "successFiles": 296,
+              "skippedFiles": 0,
+              "timeoutFiles": 0,
+              "errorFiles": 0,
+              "peakRssKb": 139312,
+              "errors": []
+            }
+          ],
+          "wallMs": 68329,
+          "wallSec": 68,
+          "deferredFinalization": true,
+          "totalSymbols": 132744,
+          "totalRels": 268793,
+          "peakRssKb": 139312,
+          "errors": []
+        }
+      ],
+      "partialBatches": []
+    },
+    "peakRssKb": [
+      147832,
+      168756,
+      150528,
+      139312
+    ],
+    "fullFinalizationMeasured": true,
+    "timingErrors": [],
+    "paperclip": {
+      "repo": "paperclip",
+      "path": "$HOME/paperclip",
+      "candidateFilesOnDisk": 1325,
+      "eligibleFilesOnDisk": 676,
+      "indexedFiles": 676,
+      "symbols": 8054,
+      "rels": 22491,
+      "timing": {
+        "repo": "$HOME/paperclip",
+        "totalSlices": 1,
+        "machine": {
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "slices": [
+          {
+            "ok": true,
+            "slice": 0,
+            "totalSlices": 1,
+            "candidateFiles": 1325,
+            "eligibleFiles": 676,
+            "eligibleFilesBeforeOffset": 676,
+            "offset": 0,
+            "filesInSlice": 676,
+            "batchSize": 1000,
+            "batchCount": 1,
+            "batches": [
+              {
+                "batch": 0,
+                "files": 676,
+                "wallMs": 100906,
+                "successFiles": 676,
+                "skippedFiles": 0,
+                "timeoutFiles": 0,
+                "errorFiles": 0,
+                "peakRssKb": 150716,
+                "errors": []
+              }
+            ],
+            "wallMs": 100907,
+            "wallSec": 101,
+            "deferredFinalization": false,
+            "totalSymbols": 8054,
+            "totalRels": 22491,
+            "peakRssKb": 150716,
+            "externalPeakRssKb": 399164,
+            "externalPeakRssSource": "/usr/bin/time -v",
+            "errors": []
+          }
+        ],
+        "partialBatches": []
+      }
+    },
+    "languages": [
+      {
+        "l": "csharp",
+        "c": 10421
+      },
+      {
+        "l": "fsharp",
+        "c": 10
+      }
+    ],
+    "machine": {
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+      "ramGb": 15.5
+    },
+    "repositories": {
+      "aspnetcore": {
+        "head": "ab2bf32a9eb59e8aae2b907d499d70da263f5251",
+        "dirtyFiles": 1
+      },
+      "paperclip": {
+        "head": "bfaa4b4bdc36370b4063137edbfe4049a128ab41",
+        "dirtyFiles": 1
+      }
+    },
+    "note": "aspnetcore and paperclip inventories are derived at verify time; deferred-finalization ingestion timings exclude heavy relationship enrichment, taint, gravity, and health"
+  },
+  "negatives": [
+    "A completed index does not prove analyzer AST correctness (M14 lane).",
+    "The aspnetcore timing rows are rejected unless they include the current runtime inventory, per-batch outcomes, and zero timeout/error outcomes; legacy positive durations or partial failures are not promoted to proof.",
+    "Deferred-finalization timing excludes heavy relationship enrichment, taint, gravity, and health; no full end-to-end wall-time claim is made from these rows.",
+    "Peak RSS is required for ASP.NET slices; the separate Paperclip full-finalization control records both runner and /usr/bin/time RSS, but it does not substitute for missing ASP.NET slice RSS.",
+    "The DB lives in the local brain store for each project; counts are read at verify time, not hardcoded."
+  ],
+  "generatedAt": "2026-08-26T17:15:18.613Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.367Z",
+    "contentSha256": "89cef2cd28b6e91724cdf274fccbcffdc8f02b8f605fc597d1f15c77367df0bd"
+  }
+}

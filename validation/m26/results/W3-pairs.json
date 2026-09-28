@@ -1,0 +1,78 @@
+{
+  "status": "verified",
+  "checkedPairs": [
+    {
+      "source": "kotlin",
+      "target": "typescript",
+      "edgeCount": 1,
+      "sampleBridge": "kotlin-ts interop",
+      "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "kotlin",
+      "edgeCount": 1,
+      "sampleBridge": null,
+      "origin": "fixture (W3 suite, seeded)"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af",
+      "origin": "real project index"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
+      "origin": "real project index"
+    }
+  ],
+  "realPairRows": [
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af"
+    },
+    {
+      "source": "json",
+      "target": "typescript",
+      "edgeCount": 246,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 3,
+      "sampleBridge": "name-resolution",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
+    }
+  ],
+  "machineReality": {
+    "dir": "$HOME/.bb/projects",
+    "present": true,
+    "scanned": 125,
+    "skipped": 3
+  },
+  "generatedAt": "2026-09-20T02:23:15.224Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:23:15.226Z",
+    "contentSha256": "dd1ae0c99d2e5f066ed571644452263af81e2c2d7d2cde98272d7b4efa1d5b40"
+  }
+}

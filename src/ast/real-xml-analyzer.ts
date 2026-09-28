@@ -1,0 +1,1326 @@
+import type { Node } from "web-tree-sitter"
+import { ASTEngine } from "./engine"
+
+/**
+ * XML analyzer backed exclusively by the vendored tree-sitter-xml AST.
+ *
+ * The grammar exposes XML as a `document` containing `element` nodes. Element
+ * names and attributes are direct children of `STag` or `EmptyElemTag`; DTD
+ * declarations live below `prolog/doctypedecl`; processing instructions are
+ * `PI` nodes. No source-text search is used for declaration extraction.
+ *
+ * ── M60 XML lane ───────────────────────────────────────────────────────────
+ * Four properties this analyzer now holds, each pinned by a measurement recorded
+ * in `reviews/xml/master-review.md`:
+ *
+ * 1. DECLARED, NOT DISCOVERED. Every node type the analyzer acts on is
+ *    enumerated in `DECLARED`, and the completeness gate refuses any dispatch
+ *    site outside that set. Nothing is reached by a bare `else`, so a node type
+ *    that occurs in a real corpus and is neither declared nor classified as a
+ *    pass-through literal is a RED GATE, not a silent hole.
+ *
+ * 2. EVERY `contains` TARGET IS A PUBLISHED SYMBOL. The lane rule "no unknown
+ *    symbols" is enforced structurally: a `contains` edge may only name a symbol
+ *    this analyzer has already published, or one it publishes in the same pass.
+ *    That is why a DTD content-model member and a notation name get a symbol —
+ *    without it the edge would point at nothing. `references` and `imports` are
+ *    deliberately EXEMPT: a reference whose target lives in another document is
+ *    the normal case, and its metadata records whether the target resolves here.
+ *
+ * 3. THE LINE IS THE TARGET'S LINE (M59.A7 / #825). `addRelationship` takes the
+ *    node the TARGET NAME IS WRITTEN ON, never the node the construct starts
+ *    at. `<!DOCTYPE a PUBLIC "…" "…/a.dtd">` spans lines; the path is on the
+ *    last one, and the edge has to point there.
+ *
+ * 4. COLLAPSE IS COUNTED, NOT HIDDEN. Edge identity in this graph is
+ *    `source|type|target`, so N declarations of one pair necessarily share one
+ *    edge. The analyzer no longer lets the first line stand in for all of them:
+ *    the edge keeps the first line and carries `occurrences` and `lines`, so the
+ *    loss is countable instead of invisible.
+ */
+export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * Every node type this analyzer acts on, and why. The F8 completeness gate
+   * compares this against the analyzer's dispatch sites AND against the node
+   * types observed in a real corpus, so a type that appears in the corpus, is
+   * not declared here, and is not a pass-through literal is a red gate.
+   */
+  public static readonly DECLARED: Record<string, string> = {
+    document: "walk root; the root element is reached through the walk",
+    prolog: "container: XMLDecl, doctypedecl and the misc PIs/comments under it are dispatched from here",
+    element: "the document's structural unit: a symbol plus a `contains` edge from its parent element",
+    STag: "start tag: carries the element Name and the Attribute list",
+    EmptyElemTag: "empty tag: carries the element Name and the Attribute list",
+    Name: "the name-bearing leaf for tags, attributes, PIs, DTD declarations and notations",
+    Attribute: "a property of its element, and the source of `references` / `imports` edges for its value",
+    doctypedecl: "a Type symbol naming the DTD, plus its ExternalID import",
+    ExternalID: "a file reference on a doctypedecl, entity or notation",
+    SystemLiteral: "the file path inside a SYSTEM ExternalID",
+    PubidLiteral: "the public identifier inside a PUBLIC ExternalID",
+    elementdecl: "a Type symbol for a DTD element declaration; its contentspec is the content model",
+    AttlistDecl: "the element whose attributes are declared here",
+    AttDef: "a Property symbol plus a `contains` edge from the element it is declared for",
+    GEDecl: "a general entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+    PEDecl: "a parameter entity declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+    NotationDecl: "a notation declaration: a Type symbol owned by the DTD, plus its ExternalID import",
+    PublicID: "a file reference on a NotationDecl",
+    NDataDecl: "the notation an unparsed entity points at: a `contains` edge",
+    contentspec: "the content model of an element declaration; each Name leaf becomes a `contains` edge",
+    NotationType: "the notations an attribute may carry: each Name leaf becomes a `contains` edge",
+    PI: "a processing instruction: a Module symbol owned by its enclosing element",
+    PITarget: "the name-bearing leaf of a PI",
+    StyleSheetPI: "a file reference: the PI spelling the `xml-stylesheet` external token produces",
+    XmlModelPI: "a file reference: the PI spelling the `xml-model` external token produces",
+    PseudoAtt: "a pseudo-attribute of a StyleSheetPI / XmlModelPI",
+    PseudoAttValue: "the value of a pseudo-attribute; `href` is a file path",
+  }
+
+  /**
+   * Node types the walk deliberately walks THROUGH without acting on them. The
+   * F8 gate requires every observed named type to be in `DECLARED` or here; the
+   * value is the reason, so a pass-through is a decision on record and not a
+   * shrug.
+   */
+  public static readonly PASSTHROUGH_LITERALS: Record<string, string> = {
+    XMLDecl: "`xml` is reserved; version and encoding are not declarations",
+    Comment: "not a declaration",
+    CharData: "text, not a declaration",
+    CData: "text, not a declaration",
+    CDSect: "wrapper around CData",
+    CDStart: "wrapper for `<![CDATA[`",
+    CharRef: "a numeric character reference, not a name",
+    EntityRef: "a USE; the declaration is GEDecl / PEDecl",
+    PEReference: "inside an internal subset a PEReference is a DeclSep — a separator, not a use",
+    content: "an element's child sequence: walked through so each child element is reached; nothing on it is a name",
+    conditionalSect: "an INCLUDE/IGNORE section inside an internal subset; walked through so the declarations it guards are reached",
+    VersionNum: "the version pseudo-attribute literal inside an XMLDecl, not a name",
+    EncName: "the encoding pseudo-attribute literal inside an XMLDecl, not a name",
+    URI: "the aliased body of a SystemLiteral; the edge target is the enclosing literal, and the LITERAL carries the edge line",
+    _intSubsetItem: "hidden rule; the repeat that carries a subset's declarations and conditional sections",
+    ETag: "the repaired grammar rejects a mismatched end name, so the name adds nothing",
+    AttValue: "read by the Attribute branch",
+    Mixed: "`(#PCDATA|a|b)*` — the names are read from the Name leaves, not the wrapper",
+    children: "the element content model; its Name leaves are the declarations that matter",
+    Nmtoken: "an enumeration member is a token, not a name",
+    Enumeration: "wrapper over the Nmtokens of a DTD attribute type",
+    StringType: "the literal CDATA, not a name",
+    TokenizedType: "the literal ID / IDREF / … token, not a name",
+    DefaultDecl: "the literal #REQUIRED / #IMPLIED / #FIXED value, not a name",
+    EntityValue: "an entity's replacement text, not a name",
+  }
+
+  /**
+   * Namespaces whose members are specification built-ins rather than project
+   * symbols. A `type="xsd:string"` reference is real and is emitted, but it is
+   * marked `resolvable: "builtin"` and never published as a phantom symbol —
+   * recording a `string` symbol that no document in the corpus declares is the
+   * M60.R10 "a value where a name belongs" class of lie.
+   */
+  /**
+   * WHERE A DECLARATION'S NAME ACTUALLY LIVES, per vocabulary.
+   *
+   * In a schema language the DECLARED NAME of a construct is the VALUE of its
+   * `name` attribute, not its tag name: `<xs:complexType name="RootType">`
+   * declares the type `RootType`. An analyzer that publishes the tag name files
+   * every type in a project under one symbol — `xsd:element` alone appears 5,914
+   * times in this corpus — and makes the search a developer actually types,
+   * `bb_search("RootType")`, return nothing at all.
+   *
+   * The rule is gated on the element's EFFECTIVE NAMESPACE and on a DECLARED set
+   * of local names, and both halves are load-bearing:
+   *
+   *   · tag-only gating is wrong, and measurably so. Outside a declaration
+   *     vocabulary 29,196 elements carry a `name` attribute in this corpus and
+   *     nearly all of them are DATA: `<property name="wsdl.dir">`,
+   *     `<target name="client">`, a POM's `<name>` display label. Renaming those
+   *     would publish a data value as a graph symbol.
+   *   · `rng:ref name="…"` is a REFERENCE, not a declaration, so it is
+   *     deliberately absent from the RelaxNG set; and because the value carries
+   *     no prefix the QName pass cannot see it either. That gap is DECLARED here
+   *     rather than left silently open.
+   *
+   * XSLT's local bindings (`xsl:variable`, `xsl:param`, `xsl:with-param`) are
+   * included: they are named, they are scoped to the enclosing template, and the
+   * walk already carries that owner.
+   */
+  private static readonly DECLARATION_VOCABULARIES: Readonly<Record<string, ReadonlySet<string>>> = {
+    "http://www.w3.org/2001/XMLSchema": new Set([
+      "element", "attribute", "complexType", "simpleType", "group", "attributeGroup",
+      "notation", "key", "keyref", "unique",
+    ]),
+    "http://relaxng.org/ns/structure/1.0": new Set([
+      "grammar", "define", "element", "attribute", "group", "data", "value", "text",
+      "list", "div", "except", "name", "externalRef",
+    ]),
+    "http://www.w3.org/1999/XSL/Transform": new Set([
+      "template", "attribute-set", "key", "decimal-format", "character-map", "output",
+      "strip-space", "preserve-space", "variable", "param", "with-param", "function",
+    ]),
+    "http://schemas.xmlsoap.org/wsdl/": new Set([
+      "definitions", "binding", "portType", "message", "service", "port", "operation",
+    ]),
+  }
+
+  /**
+   * ATTRIBUTE NAMES whose unprefixed value names a declaration.
+   *
+   * A PREFIX is the primary signal and needs no table: a value written `tns:X`
+   * names a declaration, and the census over 3,000 corpus files puts 14,479 such
+   * occurrences on real naming attributes (`type` 7,770, `ref` 1,903, `base`
+   * 1,608, Spring's `serviceName` 1,526 and `endpointName` 1,516, …). A prefixed
+   * value is a reference wherever it appears.
+   *
+   * An UNPREFIXED value is not, and the first version of this rule treated it as
+   * one, which is the M60.R10 class in reverse: the census counted 9,391 bare
+   * `key="…"` values that are property names, 4,453 `use="optional|required"`,
+   * 1,404 `maxOccurs="unbounded"`, 14,023 `value="…"` and 2,157 `w:val="Normal"`,
+   * and the analyzer published references to names like `unbounded` and `Normal`
+   * that nothing declares as a type. So an unprefixed value is a reference only
+   * on an attribute in this set, and the set is the DECLARATION (this is the
+   * M60.R10 target-spelling register, per-vocabulary, with the census above as
+   * its evidence).
+   */
+  private static readonly REFERENCE_ATTRIBUTES: ReadonlySet<string> = new Set([
+    // XSD 1.0 §4.2 / §3.4.3 / §3.4.4 — the four attributes whose value is a type
+    // or element reference by definition.
+    "type", "base", "ref", "itemType", "memberTypes", "substitutionGroup", "refer",
+    // WSDL 1.1 §3.5 / §3.6, and the SOAP binding's own reference attributes.
+    "portType", "binding",
+    // RelaxNG: a `name` on a `ref` names another pattern, not this one. The
+    // DECLARING uses of `name` (`rng:element`, `rng:attribute`) are handled by
+    // the declared-name rule and must not also become references, which is why
+    // `name` is NOT in this set and `rng:ref` is named explicitly below.
+    "pattern",
+  ])
+
+  /**
+   * XSLT and RelaxNG name ONE construct by an attribute the generic set cannot
+   * carry, because the attribute is `name` and `name` is a DECLARATION on every
+   * sibling construct. Declared explicitly for that reason, and each is pinned by
+   * a fixture with its sibling case pinned the other way.
+   */
+  private static readonly NAMED_REFERENCE_ELEMENTS: Readonly<Record<string, ReadonlySet<string>>> = {
+    "http://www.w3.org/1999/XSL/Transform": new Set(["call-template", "apply-templates"]),
+    "http://relaxng.org/ns/structure/1.0": new Set(["ref"]),
+  }
+
+  /**
+   * XSLT names a template at its definition and calls it by that name, so `name`
+   * on these two is a REFERENCE to a declaration elsewhere in the same document.
+   * The QName pass cannot see it: the value carries no prefix, so it is not a
+   * QName. Declared explicitly, for the same reason.
+   */
+  private static readonly XSLT_NAMED_TEMPLATE_REFERENCES: ReadonlySet<string> = new Set([
+    "call-template", "apply-templates",
+  ])
+
+  /**
+   * The M14 Matrix 1d evidence tier for each edge CLASS, assigned where the edge
+   * is written so a tier cannot drift from the rule that produced it.
+   *
+   *   structural         the parent/child or declaration/member relation is READ
+   *                       off the tree — the fact needs nothing outside the file
+   *   import_based       the target is a FILE, taken from a path the document
+   *                       itself writes
+   *   reference_qualified the target is a NAME reached through a declared
+   *                       namespace prefix, or an XSLT named template reached by
+   *                       its declared name
+   *   usage_contextual   a containment the document states through an attribute
+   *                       rather than through nesting — the DTD content model and
+   *                       the NOTATION attribute type, which are the document
+   *                       saying what an element MAY contain
+   *   inferred           the edge is a reading the analyzer supplies and the
+   *                       document does not state outright
+   *
+   * XML emitted no tier at all before this, so the lane's Matrix 1d cell was
+   * silent; the completeness gate's section D now pins four of the five.
+   */
+  private static readonly EVIDENCE_TIER: Readonly<Record<string, string>> = {
+    xml_element: "structural",
+    xml_attribute: "structural",
+    xml_namespace: "structural",
+    dtd_element_declaration: "structural",
+    dtd_attribute_declaration: "structural",
+    dtd_content_model: "usage_contextual",
+    dtd_notation_reference: "usage_contextual",
+    dtd_ndata_notation: "structural",
+    dtd_entity_declaration: "structural",
+    dtd_parameter_entity_declaration: "structural",
+    dtd_notation_declaration: "structural",
+    processing_instruction: "structural",
+    pseudo_attribute: "structural",
+    doctype_external_id: "import_based",
+    entity_external_id: "import_based",
+    parameter_entity_external_id: "import_based",
+    notation_external_id: "import_based",
+    processing_instruction_href: "import_based",
+    schema_location: "import_based",
+    attribute_qname_reference: "reference_qualified",
+    xslt_named_template_reference: "reference_qualified",
+  }
+
+  private static readonly BUILTIN_NAMESPACE_URIS: ReadonlySet<string> = new Set([
+    "http://www.w3.org/2001/XMLSchema",
+    "http://www.w3.org/XML/1998/namespace",
+  ])
+
+  /**
+   * Transient per-attribute context, set by the element branch before its
+   * attributes run. `bareNameReference` — the element is one that NAMES another
+   * declaration rather than being one (XSLT `call-template`, RelaxNG `ref`).
+   * `bareNameDeclarationElement` — the element DECLARES through `name`
+   * (RelaxNG `element`, `attribute`), so its `name` is a declaration and must not
+   * also become a reference to itself.
+   */
+  private bareNameReference = false
+  private bareNameDeclarationElement = false
+
+  public analyze(rootNode: Node, content: string, _filePath: string): ASTEngine.ParseResult {
+    this.bareNameReference = false
+    this.bareNameDeclarationElement = false
+    const symbols: ASTEngine.UniversalSymbol[] = []
+    const relationships: ASTEngine.UniversalRelationship[] = []
+    const imports: ASTEngine.ImportInfo[] = []
+    const errors: ASTEngine.ParseError[] = []
+    const seenRelationships = new Map<string, ASTEngine.UniversalRelationship>()
+
+    /**
+     * Names already published, so a `contains` edge never points at a symbol that
+     * does not exist. Keyed `owner\u0000name` for members and `name` for top-level
+     * declarations, matching how the graph resolves an edge target.
+     */
+    const publishedNames = new Set<string>()
+
+    /**
+     * xmlns prefix -> URI, SCOPED. An `xmlns:p` on one element must not resolve a
+     * prefix on its sibling, so the map is snapshotted on the way DOWN an element
+     * and restored on the way out — a two-entry stack in a worklist, not a
+     * mutation that would leak a binding across a whole document.
+     */
+    const namespaceBindings = new Map<string, string>()
+    const bindingScopes: { outer: Map<string, string> }[] = []
+    /** Names this document declares, for `references` resolvability. */
+    const declaredNames = new Set<string>()
+
+    /**
+     * Attribute values that MAY name a declaration, held until the walk is over.
+     *
+     * The walk is a worklist, so it does not visit the document in reading
+     * order, and a forward reference is the normal case in an XSD:
+     * `<xs:element type="tns:RootType"/>` at line 12 names a `xs:complexType`
+     * declared at line 20. Resolving on the spot would drop every forward
+     * reference, which is most of them. So candidates are collected with the
+     * namespace binding IN SCOPE AT THE ATTRIBUTE (a prefix bound by a sibling
+     * element must not leak into this one) and decided after the last name is
+     * known.
+     */
+    type ReferenceCandidate = {
+      ownerName: string
+      attributeName: string
+      value: string
+      nameNode: Node
+      valueNode: Node
+      binding: string | undefined
+      bareNameReference?: boolean
+    }
+    const referenceCandidates: ReferenceCandidate[] = []
+
+    /**
+     * Names a `contains` edge is about to point at that this document may not
+     * declare anywhere else: a DTD content-model member, a notation an attribute
+     * may carry, the notation an unparsed entity points at.
+     *
+     * The edge is unconditional — the DTD really does say `a` admits `b` — but
+     * the SYMBOL that makes the edge resolvable is not: `<!ELEMENT doc (src|dest)*>`
+     * followed by `<!ELEMENT src EMPTY>` names `src` twice, and publishing the
+     * shadow on the spot produced two `Type src` symbols for one identity
+     * (measured on libxml2's `id3.xml`: three symbols for `(doc, src)`).
+     * So the shadow is decided in the deferred pass, once every name is known,
+     * and it is published only when nothing else already published that name.
+     */
+    type ShadowCandidate = {
+      name: string
+      ownerName: string | undefined
+      node: Node
+      metadata: Record<string, any>
+      edge: { source: string; role: string; dtdName: string | undefined }
+    }
+    const shadowCandidates: ShadowCandidate[] = []
+
+    let errorNodes = 0
+    let missingNodes = 0
+
+    const publish = (symbol: ASTEngine.UniversalSymbol, identity: string) => {
+      symbols.push(symbol)
+      if (identity) publishedNames.add(identity)
+      return symbol
+    }
+
+    const addRelationship = (
+      source: string,
+      target: string,
+      type: ASTEngine.RelationshipType,
+      metadata: Record<string, any>,
+      /** The node the TARGET NAME IS WRITTEN ON (M59.A7 / #825). */
+      targetNode?: Node | null,
+    ) => {
+      if (!source || !target) return
+      // A construct never REFERENCES or IMPORTS ITSELF. `<xs:element name="root">`
+      // carries the attribute `name="root"` — that attribute is the DECLARATION of
+      // `root`, not a use of it, and without this the analyzer published
+      // `references root -> root` and then invented a `type` symbol for the same
+      // name (measured: 3 self-edges and 3 phantom symbols in a 20-symbol XSD).
+      // A self-import is a defect in the document, not an edge to publish.
+      //
+      // `contains` is deliberately NOT covered, and the corpus says why: a DTD and
+      // an element it declares routinely share a name — `<!DOCTYPE catalog [<!ELEMENT
+      // catalog (entry+)>]>` is the ordinary spelling of "catalog is a catalog" —
+      // and those are TWO DISTINCT DECLARATIONS. The first version of this rule
+      // refused them too and lost the declaration entirely: the corpus fixture
+      // `xml/dtd-declarations` pins `contains catalog -> catalog` and
+      // `xml/conditional-section` pins it again at a different line, so a rule
+      // that reads as a blanket invariant and is not one is now caught by a gate.
+      if (type === ASTEngine.RelationshipType.References || type === ASTEngine.RelationshipType.Imports) {
+        if (source === target) return
+      }
+      const key = `${source}\u0000${type}\u0000${target}`
+      const line = targetNode ? targetNode.startPosition.row + 1 : undefined
+      const role = metadata.role as string | undefined
+      const existing = seenRelationships.get(key)
+      if (existing) {
+        // The graph's edge identity is the triple, so N declarations of the same
+        // pair share one edge. Count the collapse rather than losing it silently.
+        existing.metadata.occurrences = ((existing.metadata.occurrences as number | undefined) ?? 1) + 1
+        // Two RULES can produce one edge, and the collapse must not lose which.
+        // `<!ELEMENT catalog (entry+)>` (a content-model reading, so
+        // `usage_contextual`) and `<entry/>` (a nesting reading, so `structural`)
+        // are the same `contains catalog -> entry` pair, and the first one to fire
+        // used to erase the other. The extra roles ride on `alsoRoles` beside the
+        // extra lines, on the same principle: count the collapse, do not hide it.
+        if (role && role !== existing.metadata.role) {
+          const also = (existing.metadata.alsoRoles as string[] | undefined) ?? []
+          if (!also.includes(role)) also.push(role)
+          existing.metadata.alsoRoles = also
+        }
+        // Seed from the EDGE's own line_number, not from a metadata key: the
+        // relationship carries `line_number`, so reading `metadata.line` seeded
+        // the list empty and the first occurrence's line was dropped. Measured on
+        // a three-line fixture: occurrences 3, lines [3,4] — the line 2
+        // declaration was unreachable.
+        const lines = (existing.metadata.lines as number[] | undefined)
+          ?? (existing.line_number !== undefined ? [existing.line_number] : [])
+        if (line !== undefined) {
+          if (!lines.includes(line)) lines.push(line)
+          // The edge's own line is the EARLIEST line the target name is written
+          // on, not merely the first one the walk happened to reach. The walk is a
+          // LIFO worklist, so it does not visit a document in reading order, and a
+          // deferred declaration edge can name a pair an on-the-spot element edge
+          // already created: `<!ELEMENT catalog (entry+)>` on line 7 and
+          // `<entry/>` on line 10 are one edge, and the DECLARATION site is the
+          // better line to navigate to. Taking the first-processed line left this
+          // edge pointing at the use.
+          if (existing.line_number === undefined || line < existing.line_number) {
+            existing.line_number = line
+            existing.metadata.line = line
+          }
+        }
+        lines.sort((a, b) => a - b)
+        existing.metadata.lines = lines
+        return
+      }
+      const relationship: ASTEngine.UniversalRelationship = {
+        source,
+        target,
+        type,
+        confidence: 1,
+        line_number: line,
+        // M14 Matrix 1d: the tier is a property of the RULE that produced the
+        // edge, so it is stamped from a table keyed by that rule's role and an
+        // unrecognised role is `inferred` — which is the honest default, because
+        // a tier nobody can name is a reading the analyzer supplies rather than
+        // one the document states.
+        metadata: { ...metadata, occurrences: 1, evidenceClass: (role && RealXmlAnalyzer.EVIDENCE_TIER[role]) || "inferred" },
+      }
+      seenRelationships.set(key, relationship)
+      relationships.push(relationship)
+    }
+
+    /** Publishes a name a `contains` edge is about to point at, if it is new. */
+    const ensureTargetSymbol = (
+      name: string,
+      ownerName: string | undefined,
+      kind: ASTEngine.SymbolKind,
+      node: Node | null,
+      metadata: Record<string, any>,
+    ): string => {
+      if (!name || !node) return name
+      // If this document ALREADY published a symbol with this name — as a
+      // `class` element, a DTD entity, a notation, a content-model member — then
+      // the edge target already resolves, and publishing a second, unowned
+      // `type` symbol beside it is a duplicate, not a reference. Measured on a
+      // 20-symbol XSD: three such shadows, one per referenced type.
+      if (declaredNames.has(name)) return name
+      const identity = ownerName ? `${ownerName}\u0000${name}` : name
+      if (publishedNames.has(identity)) return name
+      publish(
+        {
+          name,
+          kind,
+          range: this.nodeToRange(node),
+          visibility: "public",
+          ownerName,
+          ownerKind: ownerName ? ASTEngine.SymbolKind.Type : undefined,
+          qualifiedName: ownerName ? `${ownerName}.${name}` : name,
+          metadata: { ...metadata, nodeType: node.type },
+        },
+        identity,
+      )
+      declaredNames.add(name)
+      return name
+    }
+
+    // Syntax errors are collected centrally by ASTEngine so the tree-level
+    // warning is emitted exactly once; this analyzer never duplicates it. It
+    // still COUNTS them, because a symbol published from a file the analyzer
+    // then reports as erroneous has to say so on the symbol.
+
+    type WorkItem = { node: Node; ownerName?: string; dtdName?: string; bindDepth?: number }
+    const work: WorkItem[] = [{ node: rootNode }]
+
+    while (work.length > 0) {
+      const { node, ownerName, dtdName, bindDepth } = work.pop()!
+      // Leaving an element's subtree: put the outer namespace map back.
+      while (bindingScopes.length > (bindDepth ?? 0)) {
+        const scope = bindingScopes.pop()!
+        namespaceBindings.clear()
+        for (const [k, v] of scope.outer) namespaceBindings.set(k, v)
+      }
+      if (node.isMissing) {
+        missingNodes++
+        continue
+      }
+      if (node.isError) errorNodes++
+
+      if (node.type === "element") {
+        const tagNode = this.findDirectChild(node, "STag") || this.findDirectChild(node, "EmptyElemTag")
+        const nameNode = tagNode ? this.findDirectChild(tagNode, "Name") : null
+        const name = nameNode?.text.trim()
+        if (name && tagNode) {
+          // Bind this element's own namespaces, resolve what THEY mean, and put
+          // the outer map back when this subtree is done.
+          bindingScopes.push({ outer: new Map(namespaceBindings) })
+          this.rememberNamespaces(tagNode, namespaceBindings)
+
+          const colon = name.indexOf(":")
+          const prefix = colon >= 0 ? name.slice(0, colon) : ""
+          const localName = colon >= 0 ? name.slice(colon + 1) : name
+          const effectiveNamespace = namespaceBindings.get(prefix) ?? (colon < 0 ? namespaceBindings.get("") : undefined)
+          const declaration = this.declaredNameOf(effectiveNamespace, localName, tagNode)
+          const declaredName = declaration?.name
+          const symbolName = declaredName ?? name
+
+          const elementSymbol: ASTEngine.UniversalSymbol = {
+            name: symbolName,
+            kind: ASTEngine.SymbolKind.Class,
+            range: this.nodeToRange(node),
+            visibility: "public",
+            ownerName,
+            ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
+            qualifiedName: ownerName ? `${ownerName}.${symbolName}` : symbolName,
+            metadata: {
+              nodeType: "element",
+              isXmlElement: true,
+              tagName: name,
+              isSchemaConstruct: this.isSchemaConstruct(name),
+              // The DECLARED name, when the vocabulary puts it in the `name`
+              // attribute. `tagName` stays the tag, so the structural reading is
+              // carried rather than overwritten.
+              ...(declaredName
+                ? { isVocabDeclaration: true, declaredName, declarationKind: localName, declaredByAttribute: declaration!.attribute, namespaceUri: effectiveNamespace }
+                : {}),
+            },
+          }
+          publish(elementSymbol, ownerName ? `${ownerName}\u0000${symbolName}` : symbolName)
+          declaredNames.add(symbolName)
+
+          if (ownerName) {
+            addRelationship(ownerName, symbolName, ASTEngine.RelationshipType.Contains, {
+              role: "xml_element",
+              ...(declaredName ? { tagName: name, declarationKind: localName } : {}),
+            }, node)
+          }
+
+          for (let i = 0; i < tagNode.namedChildCount; i++) {
+            const child = tagNode.namedChild(i)
+            if (!child || child.type !== "Attribute") continue
+            this.extractAttribute(
+              child,
+              symbolName,
+              symbols,
+              addRelationship,
+              publishedNames,
+              declaredNames,
+              namespaceBindings,
+              referenceCandidates,
+              ensureTargetSymbol,
+              localName,
+              effectiveNamespace,
+            )
+          }
+
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child && child !== tagNode) work.push({ node: child, ownerName: symbolName, dtdName, bindDepth: bindingScopes.length })
+          }
+          continue
+        }
+      }
+
+      if (node.type === "doctypedecl") {
+        const nameNode = this.findDirectChild(node, "Name")
+        const positionedName = this.isPositionedDeclarationName(node, nameNode) ? nameNode!.text.trim() : undefined
+        const currentDtdName = positionedName || dtdName
+        if (positionedName) {
+          publish(
+            {
+              name: positionedName,
+              kind: ASTEngine.SymbolKind.Type,
+              range: this.nodeToRange(node),
+              visibility: "public",
+              metadata: { nodeType: node.type, isDoctype: true, dtdName: positionedName },
+            },
+            positionedName,
+          )
+          declaredNames.add(positionedName)
+        }
+
+        const externalId = this.findDirectChild(node, "ExternalID")
+        if (externalId && currentDtdName) {
+          this.extractExternalId(externalId, currentDtdName, "doctype_external_id", addRelationship, imports)
+        }
+
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child && child !== nameNode && child !== externalId) work.push({ node: child, ownerName, dtdName: currentDtdName })
+        }
+        continue
+      }
+
+      if (node.type === "elementdecl") {
+        const nameNode = this.findDirectChild(node, "Name")
+        const name = nameNode?.text.trim()
+        if (name) {
+          publish(
+            {
+              name,
+              kind: ASTEngine.SymbolKind.Type,
+              range: this.nodeToRange(node),
+              visibility: "public",
+              ownerName: dtdName,
+              ownerKind: dtdName ? ASTEngine.SymbolKind.Type : undefined,
+              metadata: { nodeType: node.type, isDtdElementDeclaration: true, dtdName },
+            },
+            dtdName ? `${dtdName}\u0000${name}` : name,
+          )
+          declaredNames.add(name)
+          if (dtdName) addRelationship(dtdName, name, ASTEngine.RelationshipType.Contains, { role: "dtd_element_declaration" }, nameNode)
+
+          // The CONTENT MODEL. `<!ELEMENT a (b, (c|d)+)>` declares that `a`
+          // admits `b`, `c` and `d`. Every one of those names is in the tree;
+          // each gets a `contains` edge AND a symbol, so the edge resolves.
+          const contentSpec = this.findDirectChild(node, "contentspec")
+          if (contentSpec) {
+            for (const member of this.descendantsOfType(contentSpec, "Name")) {
+              const memberName = member.text.trim()
+              if (!memberName) continue
+              shadowCandidates.push({
+                name: memberName,
+                ownerName: dtdName,
+                node: member,
+                metadata: { isDtdContentModelMember: true, isDoctype: true, dtdName },
+                edge: { source: name, role: "dtd_content_model", dtdName },
+              })
+            }
+          }
+        }
+      }
+
+      if (node.type === "AttlistDecl") {
+        const elementName = this.findDirectChild(node, "Name")?.text.trim()
+        if (elementName) {
+          for (let i = 0; i < node.namedChildCount; i++) {
+            const attDef = node.namedChild(i)
+            if (!attDef || attDef.type !== "AttDef") continue
+            const attrNameNode = this.findDirectChild(attDef, "Name")
+            const attrName = attrNameNode?.text.trim()
+            if (!attrName) continue
+            const defaultDecl = this.findDirectChild(attDef, "DefaultDecl")
+            const attrType = attDef.namedChildCount > 0
+              ? this.findFirstNamedChild(attDef, new Set(["StringType", "TokenizedType", "Enumeration", "NotationType"]))
+              : null
+            publish(
+              {
+                name: attrName,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(attDef),
+                visibility: "public",
+                ownerName: elementName,
+                ownerKind: ASTEngine.SymbolKind.Type,
+                metadata: {
+                  nodeType: "AttDef",
+                  isDtdAttributeDeclaration: true,
+                  dtdElement: elementName,
+                  attributeType: attrType?.text,
+                  defaultDeclaration: defaultDecl?.text,
+                },
+              },
+              `${elementName}\u0000${attrName}`,
+            )
+            addRelationship(elementName, attrName, ASTEngine.RelationshipType.Contains, { role: "dtd_attribute_declaration" }, attrNameNode)
+
+            // `<!ATTLIST gif src NOTATION (gif|jpg) #IMPLIED>` declares a
+            // dependency on two NOTATIONS. Those names are declarations too.
+            for (const notation of this.descendantsOfType(attDef, "NotationType")) {
+              for (const notationName of this.descendantsOfType(notation, "Name")) {
+                const target = notationName.text.trim()
+                if (!target) continue
+                shadowCandidates.push({
+                  name: target,
+                  ownerName: dtdName,
+                  node: notationName,
+                  metadata: { isDtdNotation: true, dtdName },
+                  edge: { source: elementName, role: "dtd_notation_reference", dtdName },
+                })
+              }
+            }
+          }
+        }
+      }
+
+      // ── entity and notation declarations ─────────────────────────────────────
+      // `<!ENTITY e "v">`, `<!ENTITY % pe SYSTEM "common.dtd">` and
+      // `<!NOTATION gif SYSTEM "image/gif">` are first-class DTD declarations,
+      // and a parameter entity with an ExternalID is a real import of a file.
+      if (node.type === "GEDecl" || node.type === "PEDecl" || node.type === "NotationDecl") {
+        const nameNode = this.findDirectChild(node, "Name")
+        const name = nameNode?.text.trim()
+        const isParameter = node.type === "PEDecl"
+        const isNotation = node.type === "NotationDecl"
+        if (name) {
+          // NOTE: an entity, a notation and an element may legitimately share a
+          // name — libxml2's `id3.xml` has both `<!ELEMENT dest EMPTY>` and
+          // `<!ENTITY dest SYSTEM "dtds/destfoo.ent">` — and BOTH are real
+          // declarations, so this publishes unconditionally. The duplicate that
+          // genuinely had to go was the SHADOW from `NDATA`/`NOTATION`, where the
+          // same notation is named once as a declaration and once as a mention;
+          // that is decided in the deferred shadow pass, which publishes only
+          // when nothing else published the name.
+          {
+            publish(
+              {
+                name,
+                kind: ASTEngine.SymbolKind.Type,
+                range: this.nodeToRange(node),
+                visibility: "public",
+                ownerName: dtdName,
+                ownerKind: dtdName ? ASTEngine.SymbolKind.Type : undefined,
+                metadata: {
+                  nodeType: node.type,
+                  isDtdEntityDeclaration: true,
+                  isDtdParameterEntity: isParameter,
+                  isDtdNotationDeclaration: isNotation,
+                  dtdName,
+                },
+              },
+              dtdName ? `${dtdName}\u0000${name}` : name,
+            )
+          }
+          declaredNames.add(name)
+          if (dtdName) {
+            addRelationship(dtdName, name, ASTEngine.RelationshipType.Contains, {
+              role: isParameter ? "dtd_parameter_entity_declaration" : isNotation ? "dtd_notation_declaration" : "dtd_entity_declaration",
+              dtdName,
+            }, nameNode)
+          }
+
+          const externalId = this.findDirectChild(node, "ExternalID") || (isNotation ? this.findDirectChild(node, "PublicID") : null)
+          if (externalId) {
+            this.extractExternalId(
+              externalId,
+              name,
+              isParameter ? "parameter_entity_external_id" : isNotation ? "notation_external_id" : "entity_external_id",
+              addRelationship,
+              imports,
+            )
+          }
+
+          // `<!ENTITY logo SYSTEM "l.png" NDATA png>` points at a notation.
+          const ndata = this.findDirectChild(node, "NDataDecl")
+          const ndataName = ndata ? this.findDirectChild(ndata, "Name") : null
+          if (ndataName) {
+            const target = ndataName.text.trim()
+            if (target) {
+              shadowCandidates.push({
+                name: target,
+                ownerName: dtdName,
+                node: ndataName,
+                metadata: { isDtdNotation: true, dtdName },
+                edge: { source: name, role: "dtd_ndata_notation", dtdName },
+              })
+            }
+          }
+        }
+      }
+
+      if (node.type === "PI") {
+        const targetNode = this.findDirectChild(node, "PITarget")
+        const target = targetNode?.text.trim()
+        // `xml` is reserved: the grammar makes it an XMLDecl, and a PI target
+        // that lower-cases to it is a declaration, not an instruction.
+        if (target && target.toLowerCase() !== "xml") {
+          publish(
+            {
+              name: target,
+              kind: ASTEngine.SymbolKind.Module,
+              range: this.nodeToRange(node),
+              visibility: "public",
+              ownerName,
+              ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
+              metadata: { nodeType: node.type, isProcessingInstruction: true, target },
+            },
+            ownerName ? `${ownerName}\u0000${target}` : target,
+          )
+          if (ownerName) addRelationship(ownerName, target, ASTEngine.RelationshipType.Contains, { role: "processing_instruction" }, targetNode)
+        }
+      }
+
+      // ── `<?xml-stylesheet …?>` and `<?xml-model …?>` ────────────────────────
+      // The grammar's external scanner turns these into their own node types, so
+      // the `PI` branch above never sees them. `href` on either is a FILE
+      // reference: the XSLT / RelaxNG linkage between two files in a project.
+      if (node.type === "StyleSheetPI" || node.type === "XmlModelPI") {
+        const label = node.type === "StyleSheetPI" ? "xml-stylesheet" : "xml-model"
+        publish(
+          {
+            name: label,
+            kind: ASTEngine.SymbolKind.Module,
+            range: this.nodeToRange(node),
+            visibility: "public",
+            metadata: { nodeType: node.type, isProcessingInstruction: true, target: label, pseudoInstruction: true },
+          },
+          label,
+        )
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const pseudo = node.namedChild(i)
+          if (!pseudo || pseudo.type !== "PseudoAtt") continue
+          const pseudoNameNode = this.findDirectChild(pseudo, "Name")
+          const valueNode = this.findDirectChild(pseudo, "PseudoAttValue")
+          const attributeName = pseudoNameNode?.text.trim()
+          if (!attributeName) continue
+          const value = valueNode ? this.unquote(valueNode.text).trim() : undefined
+          if (attributeName === "href" && value) {
+            addRelationship(label, value, ASTEngine.RelationshipType.Imports, {
+              role: "processing_instruction_href",
+              attributeName,
+            }, valueNode)
+            imports.push({
+              module: value,
+              path: value,
+              importType: "xml-stylesheet",
+              range: this.nodeToRange(valueNode ?? pseudo),
+              metadata: { instruction: label, attributeName },
+            })
+          } else {
+            publish(
+              {
+                name: attributeName,
+                kind: ASTEngine.SymbolKind.Property,
+                range: this.nodeToRange(pseudo),
+                visibility: "public",
+                ownerName: label,
+                ownerKind: ASTEngine.SymbolKind.Module,
+                metadata: { nodeType: pseudo.type, isPseudoAttribute: true, value },
+              },
+              `${label}\u0000${attributeName}`,
+            )
+            addRelationship(label, attributeName, ASTEngine.RelationshipType.Contains, { role: "pseudo_attribute" }, pseudoNameNode)
+          }
+        }
+      }
+
+      const childDepth = bindDepth ?? 0
+      for (let i = node.namedChildCount - 1; i >= 0; i--) {
+        const child = node.namedChild(i)
+        if (child) work.push({ node: child, ownerName, dtdName, bindDepth: childDepth })
+      }
+    }
+
+    // ── the deferred shadow pass ─────────────────────────────────────────────
+    // Every name in the document is known, so a shadow is published only when
+    // nothing else published that name — the edge is still emitted either way,
+    // because the DTD's own statement does not depend on whether the member was
+    // separately declared.
+    for (const candidate of shadowCandidates) {
+      ensureTargetSymbol(candidate.name, candidate.ownerName, ASTEngine.SymbolKind.Type, candidate.node, candidate.metadata)
+      addRelationship(candidate.edge.source, candidate.name, ASTEngine.RelationshipType.Contains, {
+        role: candidate.edge.role,
+        dtdName: candidate.edge.dtdName,
+      }, candidate.node)
+    }
+
+    // ── the deferred reference pass ───────────────────────────────────────────
+    // Every name in the document is now known, so every candidate can be
+    // decided. A value that names nothing this document declares and is not a
+    // known built-in is REFUSED: recording it would put a name in the graph that
+    // no file in the corpus supports, which is the M60.R10 "a value where a name
+    // belongs" class of lie.
+    for (const candidate of referenceCandidates) {
+      if (candidate.bareNameReference) {
+        // A named-template call names a declaration in THIS document; if the
+        // document does not declare it, the edge would point at nothing, so it is
+        // refused exactly like an unresolved QName.
+        if (!declaredNames.has(candidate.value)) continue
+        addRelationship(candidate.ownerName, candidate.value, ASTEngine.RelationshipType.References, {
+          role: "xslt_named_template_reference",
+          attributeName: candidate.attributeName,
+          resolvable: "in-document",
+        }, candidate.valueNode)
+        continue
+      }
+      const qname = this.asQName(candidate.value)
+      if (!qname) continue
+      const resolvableInDocument = declaredNames.has(qname.local)
+      const isBuiltin = candidate.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(candidate.binding)
+      if (!resolvableInDocument && !isBuiltin) continue
+      if (resolvableInDocument) {
+        ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
+      }
+      addRelationship(candidate.ownerName, qname.local, ASTEngine.RelationshipType.References, {
+        role: "attribute_qname_reference",
+        attributeName: candidate.attributeName,
+        qname: candidate.value,
+        prefix: qname.prefix,
+        namespaceUri: candidate.binding,
+        resolvable: isBuiltin ? "builtin" : "in-document",
+      }, candidate.valueNode)
+    }
+
+    const hasSyntaxErrors = errorNodes > 0 || missingNodes > 0
+    if (hasSyntaxErrors) {
+      // Deliberately NOT suppressed: a 90 %-parseable vendor file must stay
+      // visible, and the errors are already reported by the engine. But every
+      // symbol and edge from such a file now says so, so nothing downstream can
+      // present a recovery-shaped reading as a clean one.
+      for (const symbol of symbols) symbol.metadata.syntaxErrors = true
+      for (const relationship of relationships) relationship.metadata.syntaxErrors = true
+    }
+
+    return {
+      language: "xml",
+      symbols,
+      relationships,
+      imports,
+      exports: [],
+      errors,
+      metadata: {
+        complexity: symbols.length + relationships.length,
+        linesOfCode: content.split("\n").length,
+        cyclomaticComplexity: 1,
+        patterns: [],
+        framework: "XML",
+        errorNodes,
+        missingNodes,
+        syntaxErrors: hasSyntaxErrors,
+      },
+    }
+  }
+
+  /**
+   * `<!DOCTYPE a PUBLIC "-//X//DTD A//EN" "a.dtd">` spans lines: `PUBLIC` and the
+   * public id are on one, the SYSTEM path on another. The edge target is the
+   * path, so the edge's line is the LITERAL's line (M59.A7 / #825) — passing the
+   * `ExternalID` node instead points the edge at the `SYSTEM` keyword's line,
+   * which is the line of no name in the edge.
+   */
+  private extractExternalId(
+    externalId: Node,
+    owner: string,
+    role: string,
+    addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>, node?: Node | null) => void,
+    imports: ASTEngine.ImportInfo[],
+  ): void {
+    const systemLiteral = this.findDirectChild(externalId, "SystemLiteral")
+    const pubidLiteral = this.findDirectChild(externalId, "PubidLiteral")
+    const literal = systemLiteral || pubidLiteral
+    if (!literal) return
+    const path = this.unquote(literal.text)
+    if (!path) return
+    imports.push({
+      module: path,
+      path,
+      importType: "xml-doctype",
+      range: this.nodeToRange(literal),
+      metadata: { isDtdExternalId: true, role, systemId: Boolean(systemLiteral) },
+    })
+    addRelationship(owner, path, ASTEngine.RelationshipType.Imports, {
+      role,
+      externalIdKind: systemLiteral ? "system" : "public",
+    }, literal)
+  }
+
+  /**
+   * A correctly-parsed declaration's name is its FIRST named child. If it is
+   * not, the node is a recovery shape and any `Name` beneath it may be a
+   * fragment of a construct the parser did not understand — publishing it would
+   * put a name in the graph that is not a declaration. The pre-repair grammar
+   * produced exactly this for a conditional section: the DTD's name came out as
+   * the literal text `INCLUDE`.
+   */
+  private isPositionedDeclarationName(node: Node, nameNode: Node | null): boolean {
+    if (!nameNode) return false
+    const firstNamed = node.namedChild(0)
+    return Boolean(firstNamed) && firstNamed!.id === nameNode.id
+  }
+
+  /** Reads the `xmlns` / `xmlns:prefix` attributes of a tag into the binding map. */
+  private rememberNamespaces(tagNode: Node, bindings: Map<string, string>): void {
+    for (let i = 0; i < tagNode.namedChildCount; i++) {
+      const child = tagNode.namedChild(i)
+      if (!child || child.type !== "Attribute") continue
+      const attributeName = this.findDirectChild(child, "Name")?.text.trim()
+      if (attributeName !== "xmlns" && !attributeName?.startsWith("xmlns:")) continue
+      const valueNode = this.findDirectChild(child, "AttValue")
+      if (!valueNode) continue
+      const prefix = attributeName === "xmlns" ? "" : attributeName!.slice(6)
+      if (attributeName !== "xmlns" && prefix.length === 0) continue
+      bindings.set(prefix, this.unquote(valueNode.text))
+    }
+  }
+
+  private extractAttribute(
+    node: Node,
+    ownerName: string,
+    symbols: ASTEngine.UniversalSymbol[],
+    addRelationship: (source: string, target: string, type: ASTEngine.RelationshipType, metadata: Record<string, any>, node?: Node | null) => void,
+    publishedNames: Set<string>,
+    declaredNames: Set<string>,
+    namespaceBindings: Map<string, string>,
+    referenceCandidates: { ownerName: string; attributeName: string; value: string; nameNode: Node; valueNode: Node; binding: string | undefined; bareNameReference?: boolean }[],
+    ensureTargetSymbol: (
+      name: string,
+      ownerName: string | undefined,
+      kind: ASTEngine.SymbolKind,
+      node: Node | null,
+      metadata: Record<string, any>,
+    ) => string,
+    ownerLocalName: string,
+    ownerNamespace: string | undefined,
+  ): void {
+    // Is this element one that NAMES another declaration rather than being one?
+    // `name` is the attribute in both cases, and the two readings are opposites,
+    // so the vocabulary — not the attribute name — decides which applies.
+    const namedRefs = ownerNamespace ? RealXmlAnalyzer.NAMED_REFERENCE_ELEMENTS[ownerNamespace] : undefined
+    this.bareNameReference = namedRefs ? namedRefs.has(ownerLocalName) : false
+    this.bareNameDeclarationElement =
+      ownerNamespace === "http://relaxng.org/ns/structure/1.0"
+      && (ownerLocalName === "element" || ownerLocalName === "attribute" || ownerLocalName === "define")
+    const nameNode = this.findDirectChild(node, "Name")
+    const valueNode = this.findDirectChild(node, "AttValue")
+    const attributeName = nameNode?.text.trim()
+    if (!attributeName) return
+
+    const value = valueNode ? this.unquote(valueNode.text) : undefined
+    const isNamespace = attributeName === "xmlns" || attributeName.startsWith("xmlns:")
+    const namespacePrefix = attributeName === "xmlns" ? "default" : attributeName.slice("xmlns:".length)
+    // `xmlns:` with an EMPTY prefix is not well-formed XML, but the grammar
+    // accepts it and the attribute name is read from the tree, so the branch is
+    // reached. Publishing it would put a symbol named "" in the graph — the one
+    // name that is guaranteed to collide with every other and to match no
+    // search. Measured on libxml2's `err_1.xml` and two libxslt fixtures.
+    if (!attributeName) return
+    if (isNamespace && namespacePrefix.length === 0) return
+    const name = isNamespace ? namespacePrefix : attributeName
+    const kind = isNamespace ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Property
+
+    symbols.push({
+      name,
+      kind,
+      range: this.nodeToRange(node),
+      visibility: "public",
+      ownerName,
+      ownerKind: ASTEngine.SymbolKind.Class,
+      metadata: {
+        nodeType: node.type,
+        isXmlAttribute: !isNamespace,
+        isXmlNamespace: isNamespace,
+        attributeName,
+        value,
+        namespacePrefix: isNamespace ? namespacePrefix : undefined,
+        namespaceUri: isNamespace ? value : undefined,
+      },
+    })
+    if (!publishedNames.has(`${ownerName}\u0000${name}`)) publishedNames.add(`${ownerName}\u0000${name}`)
+
+    addRelationship(ownerName, name, ASTEngine.RelationshipType.Contains, {
+      role: isNamespace ? "xml_namespace" : "xml_attribute",
+      value,
+      // M59 (#825): the name as WRITTEN. For `xmlns="…"` the edge's target is the
+      // synthesised element name `default` (the default namespace has no written
+      // prefix), which appears nowhere in the source — so a source check on the
+      // target is unfixable by construction. Carrying `xmlns` (or `xmlns:pfx`)
+      // lets the claim be checked against what is actually on the line.
+      attributeName,
+    }, nameNode)
+
+    if (isNamespace || value === undefined) return
+
+    // ── the cross-file / cross-type reference graph ───────────────────────────
+    // An XSD is a graph of files and of types, and its edges are written as
+    // attribute VALUES: `type="RootType"`, `base="xs:string"`, `ref="tns:item"`,
+    // `xsi:type="…"`, `schemaLocation="../shared/common.xsd"`. Without these the
+    // whole type graph of a project is invisible.
+    //
+    // The target is the LOCAL NAME, because that is the name a declaration in
+    // this document (or in a sibling document sharing the namespace) carries. A
+    // prefix never reaches the target, so an edge is not a VALUE published where
+    // a NAME belongs — the M60.R10 defect class.
+
+    if (attributeName === "schemaLocation") {
+      // schemaLocation is a W3C-defined list of namespace/URI PAIRS whose URIs
+      // are file paths. The attribute name is read from the tree; the split is
+      // on the attribute's own value, never on the source text.
+      // `schemaLocation` is defined as namespace/URI PAIRS, but a bare URI is
+      // written just as often, so the pairing is decided by the token COUNT and
+      // not assumed: an even count is pairs, an odd count is one bare URI.
+      const parts = value.split(/\s+/).filter(Boolean)
+      const paired = parts.length % 2 === 0 && parts.length >= 2
+      let emitted = 0
+      for (let i = paired ? 1 : 0; i < parts.length; i += paired ? 2 : 1) {
+        const target = parts[i]
+        if (!target || this.isRemoteUri(target)) continue
+        addRelationship(ownerName, target, ASTEngine.RelationshipType.Imports, {
+          role: "schema_location",
+          attributeName,
+          namespace: paired ? parts[i - 1] : undefined,
+        }, valueNode)
+        emitted++
+      }
+      if (emitted > 0) {
+        // ONE symbol for the attribute, with every target it names on its
+        // metadata. The first version pushed a symbol PER TARGET, so an
+        // `xs:include` with two schemaLocations published `schemaLocation` three
+        // times for one attribute (measured: 9,679 spurious symbols over the
+        // 7,975-file corpus, 8,580 of them edges).
+        const last = symbols[symbols.length - 1]
+        if (last && last.name === attributeName && last.ownerName === ownerName) {
+          last.metadata.schemaLocationTargets = parts.filter((_x, i) => paired ? i % 2 === 1 : true)
+        }
+        return
+      }
+    }
+
+    if (this.bareNameReference) {
+      // `<xsl:call-template name="render"/>` names a template declared elsewhere
+      // in the same document. Not a QName (no prefix), so the prefix rule below
+      // cannot see it; recorded as a bare-name reference and resolved in the
+      // deferred pass, where the whole document's names are known.
+      if (!nameNode || !valueNode) return
+      referenceCandidates.push({
+        ownerName,
+        attributeName,
+        value,
+        nameNode,
+        valueNode,
+        binding: undefined,
+        bareNameReference: true,
+      })
+    }
+
+    const qname = this.asQName(value)
+    if (!qname || !nameNode || !valueNode) return
+    // A PREFIX is the primary signal, and it is a signal the DOCUMENT supplies:
+    // `tns:X` names a declaration, and no list of attribute names is consulted.
+    // An UNPREFIXED value names a declaration only on an attribute declared to
+    // carry one — otherwise `maxOccurs="unbounded"`, `use="required"` and
+    // `w:val="Normal"` would each become a reference to a name that is not a
+    // type, which is the M60.R10 class in reverse.
+    if (!qname.prefix && !RealXmlAnalyzer.REFERENCE_ATTRIBUTES.has(attributeName)) return
+    if (!qname.prefix && this.bareNameDeclarationElement) return
+    referenceCandidates.push({
+      ownerName,
+      attributeName,
+      value,
+      nameNode,
+      valueNode,
+      binding: namespaceBindings.get(qname.prefix),
+    })
+  }
+
+  /**
+   * A QName is `NCName` or `NCName ':' NCName` with NOTHING else in the value.
+   * Written as a character scan rather than a regular expression: the lane's rule
+   * is that no regular expression does syntax work, and this is a syntax
+   * decision about an attribute value.
+   */
+  private asQName(value: string): { prefix: string; local: string } | null {
+    if (!value || value.length > 256) return null
+    let colon = -1
+    for (let i = 0; i < value.length; i++) {
+      if (value[i] === ":") {
+        if (colon >= 0) return null
+        colon = i
+      }
+    }
+    const prefix = colon < 0 ? "" : value.slice(0, colon)
+    const local = colon < 0 ? value : value.slice(colon + 1)
+    if (!this.isNcName(local)) return null
+    if (colon >= 0 && !this.isNcName(prefix)) return null
+    return { prefix, local }
+  }
+
+  /** XML `NCName` — the character set the grammar's own `Name` rule accepts. */
+  private isNcName(text: string): boolean {
+    if (text.length === 0) return false
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i]
+      const alpha = (c >= "A" && c <= "Z") || (c >= "a" && c <= "z")
+      const ok = i === 0
+        ? alpha || c === "_"
+        : alpha || (c >= "0" && c <= "9") || c === "_" || c === "." || c === "-" || c === ":"
+      if (!ok) return false
+    }
+    return true
+  }
+
+  /** A URI with a scheme or an authority is not a repository-relative file path. */
+  private isRemoteUri(target: string): boolean {
+    for (let i = 0; i < target.length; i++) {
+      const c = target[i]
+      if (c === "/" || c === "\\" || c === ".") return false
+      if (c === ":") return true
+    }
+    return false
+  }
+
+  /**
+   * WHICH ATTRIBUTE carries a declaration's name, where `name` is not it.
+   *
+   * XSLT 1.0 §7.1 gives `xsl:output` no `name` at all: the output method IS its
+   * name, written `method="html"`. That is the only such case measured across
+   * the four vocabularies, and it is a table rather than a branch so that the
+   * next one is a DECLARATION in the same place as the first, and so the
+   * completeness gate can see that the attribute vocabulary is not silently
+   * assumed to be `{name}`.
+   */
+  private static readonly DECLARATION_NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
+    output: "method",
+  }
+
+  /**
+   * The DECLARED NAME of an element, when its vocabulary puts the name in an
+   * attribute — and ONLY then.
+   *
+   * Returns null for every other element, which is the common case: a document's
+   * elements are named by their tag, and an attribute that happens to be spelled
+   * `name` is data. An ANONYMOUS inline declaration (`<xs:complexType>` with no
+   * `name` inside an `<xs:element>`) is also null, and correctly so: an inline
+   * type has no name, and publishing the tag for it is the honest reading.
+   */
+  private declaredNameOf(namespaceUri: string | undefined, localName: string, tagNode: Node): { name: string; attribute: string } | null {
+    if (!namespaceUri) return null
+    const declaring = RealXmlAnalyzer.DECLARATION_VOCABULARIES[namespaceUri]
+    if (!declaring || !declaring.has(localName)) return null
+    const attribute = RealXmlAnalyzer.DECLARATION_NAME_ATTRIBUTE[localName] ?? "name"
+    for (let i = 0; i < tagNode.namedChildCount; i++) {
+      const node = tagNode.namedChild(i)
+      if (node?.type !== "Attribute") continue
+      const nameNode = this.findDirectChild(node, "Name")
+      if (nameNode?.text.trim() !== attribute) continue
+      const valueNode = this.findDirectChild(node, "AttValue")
+      if (!valueNode) return null
+      const value = this.unquote(valueNode.text).trim()
+      return value.length > 0 && value.length <= 256 ? { name: value, attribute } : null
+    }
+    return null
+  }
+
+  private isSchemaConstruct(name: string): boolean {
+    const separator = name.lastIndexOf(":")
+    const localName = separator >= 0 ? name.slice(separator + 1) : name
+    switch (localName) {
+      case "schema":
+      case "element":
+      case "attribute":
+      case "complexType":
+      case "simpleType":
+      case "sequence":
+      case "choice":
+      case "all":
+      case "group":
+      case "attributeGroup":
+      case "notation":
+      case "import":
+      case "include":
+      case "redefine":
+      case "annotation":
+      case "documentation":
+      case "appinfo":
+      case "any":
+      case "anyAttribute":
+        return true
+      default:
+        return false
+    }
+  }
+
+  private findDirectChild(node: Node, type: string): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child?.type === type) return child
+    }
+    return null
+  }
+
+  private findFirstNamedChild(node: Node, types: Set<string>): Node | null {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && types.has(child.type)) return child
+    }
+    return null
+  }
+
+  private descendantsOfType(node: Node, type: string): Node[] {
+    const out: Node[] = []
+    const stack: Node[] = [node]
+    while (stack.length > 0) {
+      const current = stack.pop()!
+      for (let i = 0; i < current.namedChildCount; i++) {
+        const child = current.namedChild(i)
+        if (!child) continue
+        if (child.type === type) out.push(child)
+        stack.push(child)
+      }
+    }
+    return out
+  }
+
+  private unquote(text: string): string {
+    if (text.length >= 2) {
+      const first = text[0]
+      const last = text[text.length - 1]
+      if ((first === "\"" || first === "'") && first === last) return text.slice(1, -1)
+    }
+    return text
+  }
+
+  private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
+    return {
+      startLine: node.startPosition.row + 1,
+      startColumn: node.startPosition.column + 1,
+      endLine: node.endPosition.row + 1,
+      endColumn: node.endPosition.column + 1,
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
+    }
+  }
+}

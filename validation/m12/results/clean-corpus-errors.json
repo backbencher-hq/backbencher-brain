@@ -1,0 +1,68 @@
+{
+  "analyzer": "clean",
+  "corpus": "$HOME/fixtures/repositories/clean-stdlib",
+  "corpusRepo": "clean-stdlib",
+  "revision": "6971a8af309b2d7efd601cd3fa75dc8fcc4856ff",
+  "extensions": [
+    "*.icl",
+    "*.dcl"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 74,
+  "measuredFiles": 74,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 1,
+  "cleanFiles": 73,
+  "missingNodeFiles": 1,
+  "errorNodeFiles": 1,
+  "errorRates": {
+    "any": 1.4,
+    "missing": 1.4,
+    "error": 1.4
+  },
+  "grammarErrorFiles": 1,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 1699,
+  "missingTokens": {
+    ")": 1
+  },
+  "errorLineSignatures": {
+    "& [ID] = ID \\\\ ID <-: ID.ID & ID <- [0..]": 2,
+    "= (ID ID ID, ID)": 2,
+    "ID ID ID": 2,
+    "ID ID ID ID": 2,
+    "ID :: ID ID ID -> ID": 1,
+    "ID :: ID -> *ID": 1,
+    "| ID": 1,
+    "# ID": 1,
+    "ID & ID.[0] = ID": 1,
+    "|| ID == ID": 1,
+    "ID ID": 1,
+    "ID :: ID ID -> [{#ID}]": 1,
+    "++ ID (ID [ID] (ID (ID ID) ID))": 1,
+    "= ID (ID + ID ID) ID {ID & [ID] = ID \\\\ ID <-: ID & ID <- [ID..]}": 1,
+    "ID (ID ID)": 1
+  },
+  "firstErrorLineSignatures": {
+    "ID :: ID ID ID -> ID": 1
+  },
+  "errorFileList": [
+    {
+      "file": "_SystemDynamic.icl",
+      "nodes": 20,
+      "missingTokens": [
+        ")"
+      ],
+      "errorNodes": 19,
+      "firstRow": 601,
+      "firstKind": "ERROR",
+      "firstLine": "shift_type_vars :: Bool Int TypeCode -> TypeCode",
+      "pipelineErrors": 39
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

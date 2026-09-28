@@ -1,0 +1,27 @@
+{
+  "issue": "M19.X9",
+  "code": "X9",
+  "tool": "M19 closure gate mutation harness",
+  "title": "closure gate — planted mutation + scale-presence checks",
+  "verified": true,
+  "checks": 6,
+  "passed": 6,
+  "failed": 0,
+  "measured": {
+    "baseline": "green",
+    "poisonedEvidence": "gate failed",
+    "hollowVerifier": "gate failed",
+    "measuredScale": "gate failed",
+    "missingCorpus": "gate failed",
+    "restored": "green"
+  },
+  "negatives": [
+    "This proves tamper response and evidence integrity, not analyzer perfection or giant-repository timing completion."
+  ],
+  "generatedAt": "2026-08-26T17:15:55.891Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "1dc88a060fc857d84fbe409a4a208782ba57b3ab36c5f7b8d5e61502f63064bd"
+  }
+}

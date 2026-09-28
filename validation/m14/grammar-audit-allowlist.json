@@ -1,0 +1,24 @@
+{
+  "_comment": "M14 grammar-audit allowlist. Format: { \"<language>\": { \"<literal>\": \"justification (required)\" }, \"<language>#fields\": { ... } }. Waived findings remain visible in evidence. Empty by design: every current finding must be fixed or justified during its M14 wave.",
+  "java": {
+    "comment": "M49.K1 cross-wave finding (java R3 argumentCount guard, real-java-analyzer.ts:851): tree-sitter-java declares `comment` as an UNNAMED extra - grammar.nodeTypeForId does not surface it, so the audit's enumeration misses it - but comment nodes demonstrably appear in java named-child lists (the javadoc extraction fixtures depend on block_comment siblings). The guard excludes comment children from call argumentCount. Probe-verified live code, not a dead branch. Kotlin's wasm enumerates `comment` (audit-clean there); java's does not - grammar-enumeration asymmetry, not an analyzer defect."
+  },
+  "swift": {
+    "String": "M49.S1 (real-swift-analyzer.ts ENUM_RAW_VALUE_TYPES): this is a TYPE-NAME table (Swift raw-value enum types), not a parse-tree node reference. The audit scanner counts string literals in const initializers it treats as node-type sets; every literal in this set is a Swift stdlib type name compared against enum rawType payloads. No grammar conformance claim is made by these literals.",
+    "Character": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Int": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Int8": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Int16": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Int32": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Int64": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "UInt": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "UInt8": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "UInt16": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "UInt32": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "UInt64": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Float": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Float32": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Float64": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
+    "Double": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification."
+  }
+}

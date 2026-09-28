@@ -1,0 +1,2497 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "Independent hand audit of validation/m12/fixtures/csharp/*.cs against C# language semantics (Roslyn naming: records → class, record properties from positional params, fields → property, events → event, delegates → delegate, constructors → constructor, indexers → this). Base-list kind resolution: a base class, if present, is listed FIRST in C# (rest are interfaces); kinds confirmed in-file and cross-file via the project companion.",
+  "facts": [
+    {
+      "id": "sym:Repository.cs:4:namespace:Example.Base",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.cs",
+      "line": 4,
+      "attributes": {
+        "name": "Example.Base",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Base;"
+      }
+    },
+    {
+      "id": "sym:Repository.cs:6:interface:IRepository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.cs",
+      "line": 6,
+      "attributes": {
+        "name": "IRepository",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface IRepository<T> where T : BaseService.Entity"
+      }
+    },
+    {
+      "id": "sym:Repository.cs:8:method:Save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.cs",
+      "line": 8,
+      "attributes": {
+        "name": "Save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Task<T> Save(T value);"
+      }
+    },
+    {
+      "id": "sym:Repository.cs:9:method:FindAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Repository.cs",
+      "line": 9,
+      "attributes": {
+        "name": "FindAll",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "List<T> FindAll();"
+      }
+    },
+    {
+      "id": "rel:Repository.cs:references:IRepository:System.Collections.Generic",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.cs",
+      "sourceId": "IRepository",
+      "targetId": "System.Collections.Generic",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Collections.Generic;"
+      }
+    },
+    {
+      "id": "rel:Repository.cs:references:IRepository:System.Threading.Tasks",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.cs",
+      "sourceId": "IRepository",
+      "targetId": "System.Threading.Tasks",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Threading.Tasks;"
+      }
+    },
+    {
+      "id": "rel:Repository.cs:contains:Example.Base:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.cs",
+      "sourceId": "Example.Base",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Base contains IRepository"
+      }
+    },
+    {
+      "id": "rel:Repository.cs:contains:IRepository:Save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.cs",
+      "sourceId": "IRepository",
+      "targetId": "Save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface IRepository contains Save"
+      }
+    },
+    {
+      "id": "rel:Repository.cs:contains:IRepository:FindAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Repository.cs",
+      "sourceId": "IRepository",
+      "targetId": "FindAll",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface IRepository contains FindAll"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:5:namespace:Example.Base",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 5,
+      "attributes": {
+        "name": "Example.Base",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Base;"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:7:class:BaseService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 7,
+      "attributes": {
+        "name": "BaseService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract class BaseService<T> : IRepository<T>"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:9:property:prefix",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 9,
+      "attributes": {
+        "name": "prefix",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "protected readonly string prefix = \"base\";"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:11:method:Format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 11,
+      "attributes": {
+        "name": "Format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract string Format(string value);"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:13:method:Save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 13,
+      "attributes": {
+        "name": "Save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public virtual Task<T> Save(T value)"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:18:method:FindAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 18,
+      "attributes": {
+        "name": "FindAll",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public List<T> FindAll()"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:23:method:FindByFilter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 23,
+      "attributes": {
+        "name": "FindByFilter",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private List<T> FindByFilter(string filter)"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:28:interface:Entity",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 28,
+      "attributes": {
+        "name": "Entity",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface Entity (nested in BaseService)"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:30:method:GetId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 30,
+      "attributes": {
+        "name": "GetId",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "string GetId();"
+      }
+    },
+    {
+      "id": "sym:BaseService.cs:31:method:GetName",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "BaseService.cs",
+      "line": 31,
+      "attributes": {
+        "name": "GetName",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "string GetName();"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:references:BaseService:System",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "System",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System;"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:references:BaseService:System.Collections.Generic",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "System.Collections.Generic",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Collections.Generic;"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:references:BaseService:System.Threading.Tasks",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "System.Threading.Tasks",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Threading.Tasks;"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:implements:BaseService:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "abstract class BaseService<T> : IRepository<T> — IRepository is an interface (companion)"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:calls:Save:FromResult",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "Save",
+      "targetId": "FromResult",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return Task.FromResult(value);"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:calls:FindAll:FindByFilter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "FindAll",
+      "targetId": "FindByFilter",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return FindByFilter(null);"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:instantiates:FindByFilter:List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "FindByFilter",
+      "targetId": "List",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return new List<T>();"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:Example.Base:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "Example.Base",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "file-scoped namespace Example.Base contains BaseService"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:prefix",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "prefix",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService contains field prefix"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:Format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "Format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService contains Format"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:Save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "Save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService contains Save"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:FindAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "FindAll",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService contains FindAll"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:FindByFilter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "FindByFilter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService contains FindByFilter"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:BaseService:Entity",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "BaseService",
+      "targetId": "Entity",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "nested interface Entity in BaseService"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:Entity:GetId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "Entity",
+      "targetId": "GetId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Entity contains GetId"
+      }
+    },
+    {
+      "id": "rel:BaseService.cs:contains:Entity:GetName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "BaseService.cs",
+      "sourceId": "Entity",
+      "targetId": "GetName",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Entity contains GetName"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:5:namespace:Example.Service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 5,
+      "attributes": {
+        "name": "Example.Service",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Service;"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:7:class:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 7,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class UserService : BaseService<UserService.User>, IRepository<UserService.User>"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:9:property:store",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 9,
+      "attributes": {
+        "name": "store",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private readonly Dictionary<string, User> store = new();"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:11:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 11,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public UserService() { }"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:15:method:Format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 15,
+      "attributes": {
+        "name": "Format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public override string Format(string value)"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:20:method:Save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 20,
+      "attributes": {
+        "name": "Save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public override Task<User> Save(User value)"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:26:method:Find",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 26,
+      "attributes": {
+        "name": "Find",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public User Find(string id)"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:31:class:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 31,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class User : BaseService.Entity (nested)"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:33:property:id",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 33,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private readonly string id;"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:34:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 34,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private readonly string name;"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:36:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 36,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public User(string id, string name)"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:42:method:GetId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 42,
+      "attributes": {
+        "name": "GetId",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string GetId() { return id; }"
+      }
+    },
+    {
+      "id": "sym:UserService.cs:44:method:GetName",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "UserService.cs",
+      "line": 44,
+      "attributes": {
+        "name": "GetName",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string GetName() { return name; }"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:references:UserService:System.Collections.Generic",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "System.Collections.Generic",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Collections.Generic;"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:references:UserService:System.Threading.Tasks",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "System.Threading.Tasks",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Threading.Tasks;"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:references:UserService:Example.Base",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "Example.Base",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using Example.Base;"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:extends:UserService:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService : BaseService<UserService.User> — BaseService is a class"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:implements:UserService:IRepository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "IRepository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService : ... , IRepository<UserService.User> — IRepository is an interface"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:instantiates:UserService:Dictionary",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "Dictionary",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Dictionary<string, User> store = new() — target-typed new resolves to Dictionary"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:calls:Format:Trim",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "Format",
+      "targetId": "Trim",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "value.Trim()"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:calls:Save:GetId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "Save",
+      "targetId": "GetId",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "value.GetId()"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:calls:Save:FromResult",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "Save",
+      "targetId": "FromResult",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Task.FromResult(value)"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:implements:UserService.User:BaseService.Entity",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService.User",
+      "targetId": "BaseService.Entity",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class User : BaseService.Entity — Entity is an interface (companion leaf resolution)"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:overrides:UserService.Format:BaseService.Format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService.Format",
+      "targetId": "BaseService.Format",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public override string Format — declares in BaseService (companion)"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:overrides:UserService.Save:BaseService.Save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService.Save",
+      "targetId": "BaseService.Save",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public override Task<User> Save — declares in BaseService (companion, interface-over-superclass: BaseService is first parent and declares it)"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:Example.Service:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "Example.Service",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "file-scoped namespace Example.Service contains UserService"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:store",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "store",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains store"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains constructor"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:Format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "Format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains Format"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:Save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "Save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains Save"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:Find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "Find",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains Find"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:UserService:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "UserService",
+      "targetId": "User",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserService contains nested class User"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:User:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "User",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User contains field id"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User contains field name"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:User:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "User",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User contains constructor"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:User:GetId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "User",
+      "targetId": "GetId",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User contains GetId"
+      }
+    },
+    {
+      "id": "rel:UserService.cs:contains:User:GetName",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "UserService.cs",
+      "sourceId": "User",
+      "targetId": "GetName",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User contains GetName"
+      }
+    },
+    {
+      "id": "sym:Features.cs:5:namespace:Example.Features",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 5,
+      "attributes": {
+        "name": "Example.Features",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Features;"
+      }
+    },
+    {
+      "id": "sym:Features.cs:7:enum:Status",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 7,
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public enum Status"
+      }
+    },
+    {
+      "id": "sym:Features.cs:10:enum_member:None",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 10,
+      "attributes": {
+        "name": "None",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "None = 0"
+      }
+    },
+    {
+      "id": "sym:Features.cs:11:enum_member:Active",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 11,
+      "attributes": {
+        "name": "Active",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Active = 1"
+      }
+    },
+    {
+      "id": "sym:Features.cs:12:enum_member:Inactive",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 12,
+      "attributes": {
+        "name": "Inactive",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Inactive = 2"
+      }
+    },
+    {
+      "id": "sym:Features.cs:15:property:X",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 15,
+      "attributes": {
+        "name": "X",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record Point(int X, int Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:15:property:Y",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 15,
+      "attributes": {
+        "name": "Y",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record Point(int X, int Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:15:class:Point",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 15,
+      "attributes": {
+        "name": "Point",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record Point(int X, int Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:17:method:Distance",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 17,
+      "attributes": {
+        "name": "Distance",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public double Distance(Point other)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:25:property:X",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 25,
+      "attributes": {
+        "name": "X",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record struct Vector2(float X, float Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:25:property:Y",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 25,
+      "attributes": {
+        "name": "Y",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record struct Vector2(float X, float Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:25:class:Vector2",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 25,
+      "attributes": {
+        "name": "Vector2",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public record struct Vector2(float X, float Y)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:27:interface:IShape",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 27,
+      "attributes": {
+        "name": "IShape",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public interface IShape"
+      }
+    },
+    {
+      "id": "sym:Features.cs:29:method:Describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 29,
+      "attributes": {
+        "name": "Describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "string Describe();"
+      }
+    },
+    {
+      "id": "sym:Features.cs:32:class:BaseShape",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 32,
+      "attributes": {
+        "name": "BaseShape",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public abstract class BaseShape"
+      }
+    },
+    {
+      "id": "sym:Features.cs:34:property:Name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 34,
+      "attributes": {
+        "name": "Name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string Name { get; set; }"
+      }
+    },
+    {
+      "id": "sym:Features.cs:37:class:Shape",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 37,
+      "attributes": {
+        "name": "Shape",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class Shape : BaseShape, IShape, IComparable<Shape>"
+      }
+    },
+    {
+      "id": "sym:Features.cs:39:property:Display",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 39,
+      "attributes": {
+        "name": "Display",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string Display => Name.ToUpper();"
+      }
+    },
+    {
+      "id": "sym:Features.cs:43:event:Changed",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 43,
+      "attributes": {
+        "name": "Changed",
+        "symbolKind": "event"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public event EventHandler<EventArgs>? Changed;"
+      }
+    },
+    {
+      "id": "sym:Features.cs:45:method:Describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 45,
+      "attributes": {
+        "name": "Describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string Describe()"
+      }
+    },
+    {
+      "id": "sym:Features.cs:50:method:CompareTo",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 50,
+      "attributes": {
+        "name": "CompareTo",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public int CompareTo(Shape? other)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:55:method:operator",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 55,
+      "attributes": {
+        "name": "operator",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static Shape operator +"
+      }
+    },
+    {
+      "id": "sym:Features.cs:60:method:operator",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 60,
+      "attributes": {
+        "name": "operator",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static implicit operator string"
+      }
+    },
+    {
+      "id": "sym:Features.cs:66:delegate:Filter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 66,
+      "attributes": {
+        "name": "Filter",
+        "symbolKind": "delegate"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public delegate bool Filter(Shape s);"
+      }
+    },
+    {
+      "id": "sym:Features.cs:68:class:ShapeExtensions",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 68,
+      "attributes": {
+        "name": "ShapeExtensions",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static class ShapeExtensions"
+      }
+    },
+    {
+      "id": "sym:Features.cs:70:method:WhereLarge",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 70,
+      "attributes": {
+        "name": "WhereLarge",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public static IEnumerable<Shape> WhereLarge(this IEnumerable<Shape> source, Filter filter)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:76:class:PrimaryCtor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 76,
+      "attributes": {
+        "name": "PrimaryCtor",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class PrimaryCtor(string name)"
+      }
+    },
+    {
+      "id": "sym:Features.cs:78:method:Greet",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.cs",
+      "line": 78,
+      "attributes": {
+        "name": "Greet",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public string Greet()"
+      }
+    },
+    {
+      "id": "rel:Features.cs:references:Status:System",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "System",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System;"
+      }
+    },
+    {
+      "id": "rel:Features.cs:references:Status:System.Collections.Generic",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "System.Collections.Generic",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Collections.Generic;"
+      }
+    },
+    {
+      "id": "rel:Features.cs:references:Status:System.Linq",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "System.Linq",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Linq;"
+      }
+    },
+    {
+      "id": "rel:Features.cs:calls:Distance:Sqrt",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Distance",
+      "targetId": "Sqrt",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Math.Sqrt(dx * dx + dy * dy)"
+      }
+    },
+    {
+      "id": "rel:Features.cs:extends:Shape:BaseShape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "BaseShape",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Shape : BaseShape — BaseShape is a class (in-file)"
+      }
+    },
+    {
+      "id": "rel:Features.cs:implements:Shape:IShape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "IShape",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Shape : BaseShape, IShape — IShape is an interface (in-file)"
+      }
+    },
+    {
+      "id": "rel:Features.cs:implements:Shape:IComparable",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "IComparable",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Shape : ... , IComparable<Shape> — position > 0, deterministic implements"
+      }
+    },
+    {
+      "id": "rel:Features.cs:calls:CompareTo:Compare",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "CompareTo",
+      "targetId": "Compare",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "string.Compare(Name, ...)"
+      }
+    },
+    {
+      "id": "rel:Features.cs:instantiates:Shape:Shape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "Shape",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "new Shape { Name = a.Name + b.Name }"
+      }
+    },
+    {
+      "id": "rel:Features.cs:calls:WhereLarge:Where",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "WhereLarge",
+      "targetId": "Where",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "source.Where(filter)"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "Status",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Status"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Status:None",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "None",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum contains None"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Status:Active",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "Active",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum contains Active"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Status:Inactive",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Status",
+      "targetId": "Inactive",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum contains Inactive"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Point:X",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Point",
+      "targetId": "X",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record contains X"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Point:Y",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Point",
+      "targetId": "Y",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record contains Y"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:Point",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "Point",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Point"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Point:Distance",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Point",
+      "targetId": "Distance",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record contains Distance"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Vector2:X",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Vector2",
+      "targetId": "X",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record struct contains X"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Vector2:Y",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Vector2",
+      "targetId": "Y",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "record struct contains Y"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:Vector2",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "Vector2",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Vector2"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:IShape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "IShape",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains IShape"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:IShape:Describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "IShape",
+      "targetId": "Describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface contains Describe"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:BaseShape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "BaseShape",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains BaseShape"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:BaseShape:Name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "BaseShape",
+      "targetId": "Name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Name"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:Shape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "Shape",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Shape"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:Display",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "Display",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Display"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:this",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "this",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains indexer this"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:Changed",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "Changed",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains event Changed"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:Describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "Describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Describe"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:CompareTo",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "CompareTo",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains CompareTo"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Shape:operator",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Shape",
+      "targetId": "operator",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains operator overload"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:Filter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "Filter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Filter"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:ShapeExtensions",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "ShapeExtensions",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains ShapeExtensions"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:ShapeExtensions:WhereLarge",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "ShapeExtensions",
+      "targetId": "WhereLarge",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains WhereLarge"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:Example.Features:PrimaryCtor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "Example.Features",
+      "targetId": "PrimaryCtor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains PrimaryCtor"
+      }
+    },
+    {
+      "id": "rel:Features.cs:contains:PrimaryCtor:Greet",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.cs",
+      "sourceId": "PrimaryCtor",
+      "targetId": "Greet",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Greet"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:4:namespace:Example.Negative",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 4,
+      "attributes": {
+        "name": "Example.Negative",
+        "symbolKind": "namespace"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace Example.Negative;"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:6:class:Negative",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 6,
+      "attributes": {
+        "name": "Negative",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class Negative"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:8:property:counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 8,
+      "attributes": {
+        "name": "counter",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "private int counter;"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:10:method:LocalsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 10,
+      "attributes": {
+        "name": "LocalsAreNotSymbols",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void LocalsAreNotSymbols()"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:18:method:ParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 18,
+      "attributes": {
+        "name": "ParamsAreNotSymbols",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void ParamsAreNotSymbols(string input, int count)"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:24:method:BuiltinsAreFiltered",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 24,
+      "attributes": {
+        "name": "BuiltinsAreFiltered",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void BuiltinsAreFiltered()"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:35:method:LambdaParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 35,
+      "attributes": {
+        "name": "LambdaParamsAreNotSymbols",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void LambdaParamsAreNotSymbols()"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:42:method:AccessorsAreNotScopes",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 42,
+      "attributes": {
+        "name": "AccessorsAreNotScopes",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void AccessorsAreNotScopes()"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:49:class:Counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 49,
+      "attributes": {
+        "name": "Counter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public class Counter (nested)"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:51:property:Value",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 51,
+      "attributes": {
+        "name": "Value",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public int Value { get; set; }"
+      }
+    },
+    {
+      "id": "sym:Negative.cs:54:method:TargetTypedNew",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.cs",
+      "line": 54,
+      "attributes": {
+        "name": "TargetTypedNew",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "public void TargetTypedNew()"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:references:Negative:System",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "System",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System;"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:references:Negative:System.Collections.Generic",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "System.Collections.Generic",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "using System.Collections.Generic;"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:instantiates:LambdaParamsAreNotSymbols:List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "List",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "new List<int> { 1, 2, 3 }"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:calls:LambdaParamsAreNotSymbols:Select",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "Select",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "list.Select(x => x * 2)"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:calls:LambdaParamsAreNotSymbols:Count",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "Count",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "doubled.Count()"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:instantiates:AccessorsAreNotScopes:Counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "AccessorsAreNotScopes",
+      "targetId": "Counter",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "new Counter { Value = 3 }"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:instantiates:TargetTypedNew:List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "TargetTypedNew",
+      "targetId": "List",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "List<int> numbers = new()"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:calls:TargetTypedNew:Add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "TargetTypedNew",
+      "targetId": "Add",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "numbers.Add(1)"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Example.Negative:Negative",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Example.Negative",
+      "targetId": "Negative",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "namespace contains Negative"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "counter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains counter"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:LocalsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "LocalsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:ParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "ParamsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:BuiltinsAreFiltered",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "BuiltinsAreFiltered",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:LambdaParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "LambdaParamsAreNotSymbols",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:AccessorsAreNotScopes",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "AccessorsAreNotScopes",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains AccessorsAreNotScopes"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:Counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "Counter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Counter"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Counter:Value",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Counter",
+      "targetId": "Value",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains Value"
+      }
+    },
+    {
+      "id": "rel:Negative.cs:contains:Negative:TargetTypedNew",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.cs",
+      "sourceId": "Negative",
+      "targetId": "TargetTypedNew",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class contains TargetTypedNew"
+      }
+    }
+  ]
+}

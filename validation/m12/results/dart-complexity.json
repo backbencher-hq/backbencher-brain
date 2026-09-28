@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:dart",
+  "fixtureDir": "validation/m12/fixtures/dart",
+  "corpusDir": "/tmp/dart-corpus",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:dart",
+        "wallTimeMs": 1144.294969,
+        "userCpuMs": 570.876,
+        "systemCpuMs": 203.872,
+        "peakRssBytes": 208207872,
+        "rssDeltaBytes": 165580800,
+        "databaseBytes": null,
+        "files": 5,
+        "symbols": 48,
+        "relationships": 72,
+        "filesPerSecond": 4.369502737890653,
+        "symbolsPerSecond": 41.947226283750275,
+        "relationshipsPerSecond": 62.92083942562541
+      },
+      "symbols": 48,
+      "relationships": 72
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:dart",
+        "wallTimeMs": 281912.319237,
+        "userCpuMs": 206874.922,
+        "systemCpuMs": 8202.679,
+        "peakRssBytes": 649609216,
+        "rssDeltaBytes": 82526208,
+        "databaseBytes": null,
+        "files": 399,
+        "symbols": 23952,
+        "relationships": 88098,
+        "filesPerSecond": 1.415333679208839,
+        "symbolsPerSecond": 84.96258717897271,
+        "relationshipsPerSecond": 312.5014197266674
+      },
+      "symbols": 23952,
+      "relationships": 88098
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.854Z",
+    "contentSha256": "d283ab3f48cde86194c0f66675ea073ef38a9c5cb41947ffb215cd81ad6e2aff"
+  }
+}

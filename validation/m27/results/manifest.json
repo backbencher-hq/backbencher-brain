@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M27",
+  "githubMilestone": 38,
+  "title": "M27: Everywhere (JetBrains/Zed/Neovim/Helix)",
+  "status": "closed",
+  "authority": "docs/m27/M27-MASTER-PLAN.md",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "evidencePolicy": {
+    "rule": "No issue closes without machine-emitted evidence: a verifier run at a pinned commit, with can-fail proof (dedicated negatives or a fully-caught mutant set), stamped with the current commit and relevant working-tree state.",
+    "contract": "docs/IDE-HONESTY-CONTRACT.md sections 1, 2, 5, 6",
+    "commitStamps": "every evidence JSON carries currentCommit; a cell goes stale when its relevant files changed after that commit",
+    "mutationProofs": "every verifier proves its suite CAN FAIL via negative cases or caught mutants"
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 616,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "Ledger, governance map, closure gate with mutation-proof rules, and the version-ladder audit: the M26 completion bar re-verified inside this gate before any M27 issue may close.",
+      "acceptanceCriteria": [
+        "Gate rejects planned-closure, missing evidence, stale-commit, mutant-survival, and forged evidence — each rejection proven by mutation",
+        "M26 bar audit runs inside the gate (spawned, exit-code checked)",
+        "All existing milestone gates remain VERIFIED after wiring"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-governance.ts exits 0 with clean relevant tree",
+        "Evidence persisted at validation/m27/results/G1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m27/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
+    },
+    {
+      "code": "N1",
+      "githubIssue": 617,
+      "tool": "nvim-adapter",
+      "status": "verified",
+      "scope": "Neovim adapter (I3): nvim-lspconfig-style config, headless driver opening the shared fixture workspace, real LSP session assertions (tiered hover, staleness marker, definition, references, document symbols), mutation-gated.",
+      "acceptanceCriteria": [
+        "Real nvim --headless session drives bb_lsp over stdio (no mock transport)",
+        "Assertions checked against the same fixture answers the VS Code leg uses",
+        "Mutation coverage >= 3 mutants, all caught"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-nvim.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/N1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see N1.json",
+        "verifierCommand": "npx tsx script/m27/verify-nvim.ts",
+        "evidenceFile": "N1.json",
+        "passed": 31,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
+    },
+    {
+      "code": "J1",
+      "githubIssue": 618,
+      "tool": "lsp4ij-template",
+      "status": "verified",
+      "scope": "JetBrains/LSP4IJ adapter: user-defined server template (JSON, no Kotlin plugin), method-set subset proof against bb_lsp declared capabilities, byte-stable template export, runIde leg attempted and honestly classified (D-7: blocked-with-reason, no IDE download on this machine).",
+      "acceptanceCriteria": [
+        "Template valid per LSP4IJ user-defined schema",
+        "Method-set subset proven and drift-gated",
+        "runIde attempt recorded with result or blocked-with-reason — never silent"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-lsp4ij.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/J1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see J1.json",
+        "verifierCommand": "npx tsx script/m27/verify-lsp4ij.ts",
+        "evidenceFile": "J1.json",
+        "passed": 22,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
+    },
+    {
+      "code": "Z1",
+      "githubIssue": 619,
+      "tool": "zed-extension",
+      "status": "verified",
+      "scope": "Zed adapter: minimal extension (extension.toml + thin wasm shim owning binary resolution only), shim unit-proven across found/not-found/override paths, extension built via zed CLI, session leg attempted and honestly classified.",
+      "acceptanceCriteria": [
+        "extension.toml + shim build clean via zed extension CLI",
+        "Shim unit tests cover found / not-found / explicit-override",
+        "Session leg result recorded (I3 or I2-with-reason)"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-zed.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/Z1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see Z1.json",
+        "verifierCommand": "npx tsx script/m27/verify-zed.ts",
+        "evidenceFile": "Z1.json",
+        "passed": 28,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3
+      }
+    },
+    {
+      "code": "H1",
+      "githubIssue": 620,
+      "tool": "helix-config",
+      "status": "verified",
+      "scope": "Helix adapter: languages.toml fragment with drift-gated launch command, TOML validity machine-checked, claim level honest (I2 unless a driven hx session exists; D-7: deeper leg blocked-with-reason).",
+      "acceptanceCriteria": [
+        "Fragment parses (TOML validity machine-checked)",
+        "Launch command drift-gated against the declared resolution order",
+        "Claim level honest: I2 unless a driven session exists"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-helix.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/H1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see H1.json",
+        "verifierCommand": "npx tsx script/m27/verify-helix.ts",
+        "evidenceFile": "H1.json",
+        "passed": 21,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
+    },
+    {
+      "code": "V1",
+      "githubIssue": 621,
+      "tool": "capability-matrix",
+      "status": "verified",
+      "scope": "Fork capability matrix v3: docs/m27/FORK-CAPABILITY-MATRIX.md fully GENERATED from the ledger and verifier outputs (byte-identical drift gate), per-editor x per-feature claim levels, graph webview delta declared (VS Code-only in v3).",
+      "acceptanceCriteria": [
+        "Regeneration is byte-identical; hand edits fail the gate",
+        "Every cell carries a claim level + evidence link",
+        "Graph delta row present and honest"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-matrix.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/V1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1.json",
+        "verifierCommand": "npx tsx script/m27/verify-matrix.ts",
+        "evidenceFile": "V1.json",
+        "passed": 9,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 2,
+        "mutantsTotal": 2
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 622,
+      "tool": "closure-gate",
+      "status": "verified",
+      "scope": "Closure gate: full-suite audit at HEAD with per-mutant named records, v3 completion-bar audit with negative probes (>=1 I3 leg, subset proofs, matrix drift gate, M26 bar re-audit), byte-identical regeneration check.",
+      "acceptanceCriteria": [
+        "100% of suite legs green-or-blocked-with-reason at HEAD",
+        "Per-mutant records for every mutation suite",
+        "Bar probes: removing the I3 leg, breaking a subset proof, or a silent leg each FAIL the gate"
+      ],
+      "closureRequirements": [
+        "npx tsx script/m27/verify-closure.ts exits 0 at HEAD with clean relevant tree",
+        "Evidence persisted at validation/m27/results/X1.json with commit stamp"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m27/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 31,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.423Z",
+    "contentSha256": "952c1b2913a513728bc44d2d469f7702680e2821694425c181c987b35a8ea634"
+  }
+}

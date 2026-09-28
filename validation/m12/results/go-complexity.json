@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:go",
+  "fixtureDir": "validation/m12/fixtures/go",
+  "corpusDir": "/tmp/go-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:go",
+        "wallTimeMs": 1112.660099,
+        "userCpuMs": 401.893,
+        "systemCpuMs": 160.812,
+        "peakRssBytes": 188014592,
+        "rssDeltaBytes": 136130560,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 30,
+        "relationships": 34,
+        "filesPerSecond": 1.7974941330218404,
+        "symbolsPerSecond": 26.962411995327606,
+        "relationshipsPerSecond": 30.557400261371285
+      },
+      "symbols": 30,
+      "relationships": 34
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:go",
+        "wallTimeMs": 25066.990755,
+        "userCpuMs": 22466.526,
+        "systemCpuMs": 1530.635,
+        "peakRssBytes": 373858304,
+        "rssDeltaBytes": 78331904,
+        "databaseBytes": null,
+        "files": 400,
+        "symbols": 7157,
+        "relationships": 28187,
+        "filesPerSecond": 15.95724049645703,
+        "symbolsPerSecond": 285.5149255828574,
+        "relationshipsPerSecond": 1124.4668446840858
+      },
+      "symbols": 7157,
+      "relationships": 28187
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.868Z",
+    "contentSha256": "6487d7425d491be91de22c9e06f0f79a602af65533be6dc5b95cf08356bd9974"
+  }
+}

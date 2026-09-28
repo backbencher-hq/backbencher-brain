@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M61",
+  "issue": "M61.V4 verifier lint (issue #845)",
+  "authority": "docs/m61/M61-MASTER-PLAN.md D-4 (a gate that cannot fail is not evidence)",
+  "note": "Only what no single owner can express is declared here. Gate membership, outputs, sealing, can-fail proofs, tier membership and env vars are all DERIVED by script/m61/gate_lint.ts (from the records, the gate sources, package.json and the lane ladder) \u2014 never duplicated in this file.",
+  "lanes": [
+    "m24",
+    "m25",
+    "m26",
+    "m27",
+    "m28",
+    "m29",
+    "m42",
+    "m44",
+    "m53",
+    "m55",
+    "m61"
+  ],
+  "canFailFloor": 1,
+  "tiers": [
+    {
+      "name": "verify:fast",
+      "kind": "npm-script",
+      "script": "verify:fast"
+    },
+    {
+      "name": "verify",
+      "kind": "npm-script",
+      "script": "verify"
+    },
+    {
+      "name": "r1-ladder",
+      "kind": "script-list",
+      "source": "script/m53/verify-r1-ladder.ts"
+    },
+    {
+      "name": "verify:m40",
+      "kind": "npm-script",
+      "script": "verify:m40"
+    },
+    {
+      "name": "verify:m44-closure",
+      "kind": "npm-script",
+      "script": "verify:m44-closure"
+    },
+    {
+      "name": "verify:m55",
+      "kind": "npm-script",
+      "script": "verify:m55"
+    },
+    {
+      "name": "verify:m51",
+      "kind": "npm-script",
+      "script": "verify:m51"
+    },
+    {
+      "name": "verify:m52",
+      "kind": "npm-script",
+      "script": "verify:m52"
+    },
+    {
+      "name": "verify:m54",
+      "kind": "npm-script",
+      "script": "verify:m54"
+    }
+  ],
+  "declaredNonGates": [
+    {
+      "path": "script/m24/lsp_harness.ts",
+      "reason": "shared LSP test harness (spawns servers, exposes helpers); the gates that use it own the records"
+    },
+    {
+      "path": "script/m29/generate-giant-corpus.ts",
+      "reason": "deterministic corpus generator \u2014 invoked BY the giant-repo gate"
+    },
+    {
+      "path": "script/m29/generate-precision-ledger.ts",
+      "reason": "ledger generator \u2014 invoked BY the precision-ledger gate"
+    },
+    {
+      "path": "script/m29/giant-repo-budget.ts",
+      "reason": "latency runner \u2014 invoked BY the giant-repo gate"
+    },
+    {
+      "path": "script/m29/wave-execute.ts",
+      "reason": "wave runner \u2014 invoked BY the wave-execution gate"
+    },
+    {
+      "path": "script/m29/wave-protocol.ts",
+      "reason": "wave protocol data + helpers \u2014 no verdict of its own"
+    },
+    {
+      "path": "script/m55/lsp-wire.ts",
+      "reason": "stdio transport library"
+    },
+    {
+      "path": "script/m55/screenshot-protocol.ts",
+      "reason": "screenshot harness library"
+    },
+    {
+      "path": "script/m61/adopt-sealed-writes.ts",
+      "reason": "one-shot adoption codemod (already applied)"
+    },
+    {
+      "path": "script/m61/adopt-sealed-writes2.ts",
+      "reason": "one-shot adoption codemod (already applied)"
+    },
+    {
+      "path": "script/m61/adopt-sealed-writes3.ts",
+      "reason": "one-shot adoption codemod (already applied)"
+    }
+  ],
+  "declaredNoCanFail": [
+    {
+      "gate": "script/m25/run-vscode-e2e.mts",
+      "reason": "editor LEG runner: it consumes the shared assertion core (script/m25/feature-assertions.ts), whose can-fail proofs are gated by script/m25/verify-harness-core.ts. The runner's record reports the core's assertions; the proof belongs to the core, not the transport adapter."
+    },
+    {
+      "gate": "script/m25/run-fork-e2e.mts",
+      "reason": "fork-editor leg runner \u2014 same as the VS Code runner: the can-fail proof belongs to the shared assertion core."
+    }
+  ],
+  "declaredEnv": [
+    {
+      "name": "BB_DATA_DIR",
+      "role": "input",
+      "reason": "the index data root \u2014 a data input, not a skip switch"
+    },
+    {
+      "name": "BB_GATE_BREAK_STALE_LOCK",
+      "role": "skip",
+      "reason": "the declared, loudly-logged override that breaks a stale gate lock (V2)"
+    },
+    {
+      "name": "BB_M55_SKIP_LADDER",
+      "role": "skip",
+      "reason": "m55's declared ladder skip mode (the lane's only pre-existing skip switch)"
+    }
+  ],
+  "declaredArtifactRecords": [
+    {
+      "record": "validation/m61/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority, per-issue evidence) \u2014 a declared plan record whose every entry is a PROJECTION of a gate's record, not a gate verdict of its own"
+    },
+    {
+      "record": "validation/m24/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m25/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m26/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m27/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m28/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m29/results/PRECISION-LEDGER.json",
+      "reason": "generated published artifact (byte-gated doc input), not a gate evidence record"
+    },
+    {
+      "record": "validation/m29/results/R3.json",
+      "reason": "latency measurement output produced by the declared runner script/m29/giant-repo-budget.ts; the VERDICT record is R3-verify.json"
+    },
+    {
+      "record": "validation/m29/results/R4.json",
+      "reason": "generated precision-ledger data produced by the declared runner script/m29/generate-precision-ledger.ts; the VERDICT record is R4-verify.json"
+    },
+    {
+      "record": "validation/m29/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m29/results/ramp-groovy.json",
+      "reason": "per-language ramp measurement produced by the declared ramp runner \u2014 measurement data, judged by the ramp gate"
+    },
+    {
+      "record": "validation/m29/results/ramp-zig.json",
+      "reason": "per-language ramp measurement produced by the declared ramp runner \u2014 measurement data, judged by the ramp gate"
+    },
+    {
+      "record": "validation/m29/results/wave-1-approval.json",
+      "reason": "owner approval record (approvedBy/approvedAt) \u2014 a human decision, not a gate verdict"
+    },
+    {
+      "record": "validation/m29/results/wave-2-approval.json",
+      "reason": "owner approval record (approvedBy/approvedAt) \u2014 a human decision, not a gate verdict"
+    },
+    {
+      "record": "validation/m29/results/wave-c.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-cpp.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-c.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-cpp.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-go.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-groovy.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-java.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-javascript.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-kotlin.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-python.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-rust.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-scala.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-svelte.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-typescript.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-vue.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-editor-zig.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-go.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-groovy.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-javascript.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-kotlin.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-python.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-rust.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-scala.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-svelte.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-typescript.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-vue.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m29/results/wave-zig.json",
+      "reason": "per-language wave-execution record produced by the declared runner script/m29/wave-execute.ts (its verdict records belong to the wave harness gate)"
+    },
+    {
+      "record": "validation/m42/results/KNOWN-GAPS.json",
+      "reason": "the milestone's known-gaps register \u2014 a declaration of what is NOT done, not a gate verdict"
+    },
+    {
+      "record": "validation/m42/results/board-closure.json",
+      "reason": "m42 board closure receipt (milestones + closed issue ids) \u2014 a bookkeeping artifact"
+    },
+    {
+      "record": "validation/m42/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m44/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    },
+    {
+      "record": "validation/m55/results/manifest.json",
+      "reason": "the milestone's own ledger/manifest (schemaVersion, milestone, status, authority) \u2014 a declared plan record, not a gate verdict"
+    }
+  ],
+  "declaredLegacyUnsealed": [
+    {
+      "record": "validation/m29/results/PRECISION-LEDGER.json",
+      "reason": "generated published artifact (byte-gated doc input), not a gate evidence record"
+    },
+    {
+      "record": "validation/m25/results/E4-openvsx.json",
+      "reason": "written by the publisher (publish-openvsx.mjs) and re-sealed by verify-packaging at its own gate"
+    }
+  ],
+  "declaredOnDemand": [
+    {
+      "gate": "script/m25/run-fork-e2e.mts",
+      "reason": "launches fork editors (external runtimes)"
+    },
+    {
+      "gate": "script/m25/run-vscode-e2e.mts",
+      "reason": "downloads and launches a pinned VS Code (external runtime, minutes)"
+    },
+    {
+      "gate": "script/m25/verify-cross-platform.ts",
+      "reason": "OS-matrix leg: needs macOS/Windows runners that this machine is not"
+    },
+    {
+      "gate": "script/m25/verify-extension-skeleton.ts",
+      "reason": "requires the built extension bundle"
+    },
+    {
+      "gate": "script/m25/verify-install-docs.ts",
+      "reason": "checks the packaged install docs against the built VSIX (artifact-dependent)"
+    },
+    {
+      "gate": "script/m25/verify-listing.ts",
+      "reason": "requires the BUILT VSIX artifact (packaging/runtime check), not source alone"
+    },
+    {
+      "gate": "script/m25/verify-packaging.ts",
+      "reason": "requires the BUILT VSIX artifact (audits its file list)"
+    },
+    {
+      "gate": "script/m25/verify-status-surface.ts",
+      "reason": "requires the built extension's status rendering"
+    },
+    {
+      "gate": "script/m26/verify-polyglot-e2e.ts",
+      "reason": "needs a polyglot corpus + a real index + the live server (heavy)"
+    },
+    {
+      "gate": "script/m27/verify-governance.ts",
+      "reason": "m27 bar: its audit invokes the editor-runtime gates (nvim/zed/helix/lsp4ij)"
+    },
+    {
+      "gate": "script/m27/verify-lsp4ij.ts",
+      "reason": "needs a JetBrains/LSP4IJ runtime"
+    },
+    {
+      "gate": "script/m27/verify-matrix.ts",
+      "reason": "editor\u00d7feature matrix: needs every editor runtime installed"
+    },
+    {
+      "gate": "script/m28/verify-governance.ts",
+      "reason": "m28 bar: its audit invokes the MCP-surface gates"
+    },
+    {
+      "gate": "script/m28/verify-mcp-surface.ts",
+      "reason": "needs the MCP server runtime up"
+    },
+    {
+      "gate": "script/m29/verify-analyzer-relevance.ts",
+      "reason": "needs analyzer corpora per language"
+    },
+    {
+      "gate": "script/m29/verify-giant-repo.ts",
+      "reason": "the 59k-file giant corpus leg (very heavy)"
+    },
+    {
+      "gate": "script/m29/verify-wave-execution.ts",
+      "reason": "executes the multi-language wave packs end-to-end (very heavy)"
+    },
+    {
+      "gate": "script/m29/verify-wave-harness.ts",
+      "reason": "wave harness over the wave packs (heavy)"
+    },
+    {
+      "gate": "script/m53/r2-probe.mts",
+      "reason": "needs the live index + dist server against the demo repo"
+    },
+    {
+      "gate": "script/m53/verify-branch-audit.ts",
+      "reason": "audits a co-agent branch that may be absent (blocked-with-reason by design)"
+    },
+    {
+      "gate": "script/m53/verify-closure.ts",
+      "reason": "consumes the ladder's receipt and re-runs the milestone sub-ladders"
+    },
+    {
+      "gate": "script/m53/verify-r1-ladder.ts",
+      "reason": "the lane integration ladder (41 gates, ~15 min) \u2014 run deliberately, not per edit"
+    }
+  ]
+}

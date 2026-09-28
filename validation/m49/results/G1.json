@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M49",
+  "issueId": "G1",
+  "runCommand": "bun run script/m49/verify-governance.ts",
+  "verifiedAtCommit": "bb2c631e",
+  "status": "pass",
+  "verdictLine": "see rawOutput tail below",
+  "rawOutput": "G1: 33 passed, 0 failed, 4 negative(s) exercised",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.571Z",
+    "contentSha256": "34431a0f49aad5ffab951782dfbdfdb006e22b5610951593866558626138702c"
+  }
+}

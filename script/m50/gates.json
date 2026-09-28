@@ -1,0 +1,38 @@
+{
+  "comment": "M50 gates registry — governance (G1) checks every entry exists, is wired into the verify chain, and that non-infra gates carry a falsifiability mutation used by the gate self-test. Probes are listed separately: they MEASURE (and may legitimately show a slow number) while gates DECIDE.",
+  "milestone": "M50",
+  "githubMilestone": 54,
+  "issues": { "A1": 763, "A2": 764, "A3": 765, "A4": 766, "X1": 767, "A5": 788 },
+  "unregisteredIssues": {
+    "A5": "Registered after delivery as #788 once connectivity returned; the issue text was stored verbatim in docs/m50/A5-issue.md while the network was down, and the number was never invented before registration."
+  },
+  "gates": [
+    { "code": "G1", "script": "verify-governance.ts", "infra": true },
+    { "code": "G2", "script": "verify-gate-selftest.ts", "infra": true },
+    { "code": "A2-stats", "script": "verify-planner-stats.ts", "infra": false, "mutation": "strip sqlite_stat1 and drop the owner index, then prove the planner falls back to a full scan" },
+    { "code": "A2-aliases", "script": "verify-a2-param-aliases.ts", "infra": false, "mutation": "remove one alias from the table and prove the family call is rejected again" },
+    { "code": "A2-vector-blobs", "script": "verify-vector-blobs.ts", "infra": false, "mutation": "truncate the blob column and prove reads still answer from JSON without throwing" },
+    { "code": "A2-bounded", "script": "verify-a2-bounded-work.ts", "infra": false, "mutation": "corrupt the project-scope LOC aggregate (+1) and prove P5a fails" },
+    { "code": "A2-test-sources", "script": "verify-a2-test-sources.ts", "infra": false, "mutation": "drop the bounded slice in testGaps and prove the returned page is no longer the oracle's top-K" },
+    { "code": "A3-guidance", "script": "verify-a3-guidance-truth.ts", "infra": false, "mutation": "inject a ghost tool name and delete a registry row; both must fail the gate" },
+    { "code": "A4-adoption", "script": "verify-a4-adoption.ts", "infra": false, "mutation": "replay the A1 failure shapes; any shape that still fails to resolve must fail the gate" },
+    { "code": "A5-chain", "script": "verify-a5-verify-chain.ts", "infra": false, "mutation": "restore the pre-repair baseline shape (11 tools) in a copy and prove the contract gate reports drift" },
+    { "code": "X1", "script": "verify-closure.ts", "infra": true }
+  ],
+  "probes": [
+    "probe-a1-latency.ts",
+    "probe-complexity-phases.ts",
+    "probe-security-phases.ts",
+    "probe-pattern-phases.ts",
+    "probe-test-gaps-phases.ts",
+    "probe-test-sources.ts",
+    "combine-a2-residual.ts",
+    "probe-ask-phases.ts",
+    "probe-ask-parse.ts",
+    "probe-ask-cache.ts",
+    "probe-backfill-real.ts",
+    "compare-latency.ts",
+    "combine-a1.ts",
+    "refreeze-baseline.ts"
+  ]
+}

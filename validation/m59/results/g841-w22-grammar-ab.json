@@ -1,0 +1,220 @@
+{
+  "round": "M49 W22",
+  "issue": 841,
+  "subject": "groovy: a class-level field whose initializer continues on dotted lines (field-bound leading_dot_call suffix)",
+  "wasm": {
+    "before": {
+      "sha256_12": "fcfead14d8c0",
+      "md5": "a514f9f528310e7e9b27677f22ac2503"
+    },
+    "after": {
+      "sha256_12": "5a1d1b21d71f",
+      "md5": "b56caf68bddcedc576fb0380559bdfd1"
+    }
+  },
+  "corpusCensus": {
+    "instrument": "script/m12/jvm-corpus-errors.ts groovy --full",
+    "repo": "grails-core",
+    "revision": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+    "extensions": [
+      "*.groovy"
+    ],
+    "measuredFiles": 6564,
+    "parseFailing": {
+      "before": 384,
+      "after": 370
+    },
+    "fixed": 14,
+    "regressed": 0,
+    "stillFailing": 370,
+    "wallMs": {
+      "before": 123374,
+      "after": 77612
+    },
+    "note": "failing-file SETS compared file by file; wallMs is one run each and is not a latency claim (see parseLatency)."
+  },
+  "boundedSet": {
+    "instrument": "script/m59/compare-groovy-grammar.ts --ext groovy --list",
+    "fileList": "validation/m59/results/g841-w22-filelist.txt",
+    "members": "union of both sides' failing files (384) + a 400-file deterministic clean control (seed 841)",
+    "files": 784,
+    "parseFailing": {
+      "before": 384,
+      "after": 370
+    },
+    "relationships": {
+      "before": 57127,
+      "after": 57354,
+      "filesLosing": 0,
+      "filesGaining": 14
+    }
+  },
+  "gradleSurface": {
+    "instrument": "same comparator, --ext gradle",
+    "files": 454,
+    "parseFailing": {
+      "before": 16,
+      "after": 16
+    },
+    "relationships": {
+      "before": 17248,
+      "after": 17248
+    },
+    "note": "a clean NULL: no .gradle file carries this construct, so this surface is unchanged in both directions."
+  },
+  "parseLatency": {
+    "instrument": "script/m14/tmp/g841-parse-latency-ab.ts (both wasms in one process, parse only)",
+    "files": 6564,
+    "totalMs": {
+      "base": 6204,
+      "new": 6141
+    },
+    "ratio": 0.99,
+    "filesSlowerThan3x": 0,
+    "note": "the census wallMs difference is machine contention, not grammar cost: measured per file with both builds in one process, the new build is 0.99x."
+  },
+  "fixtures": {
+    "instrument": "script/m14/run-fixtures.ts",
+    "newFixture": "groovy/class-body-dot-continuation-841",
+    "postFix": {
+      "groovy": {
+        "pass": 56,
+        "fail": 0
+      }
+    },
+    "negativeControl": {
+      "wasm": "before",
+      "result": {
+        "groovy": {
+          "pass": 55,
+          "fail": 1
+        }
+      },
+      "failing": [
+        "groovy/class-body-dot-continuation-841"
+      ],
+      "note": "with the pre-fix wasm restored, exactly this fixture fails and nothing else moves \u2014 the pin for a grammar change, which cannot be mutated."
+    }
+  },
+  "differential": {
+    "instrument": "script/m14/differential.ts --repo grails-core --sample 60 (probe mode, canonical untouched)",
+    "lanes": {
+      "groovy": {
+        "files": 60,
+        "treeTruth": 1213,
+        "covered": 1213,
+        "missing": 0,
+        "analyzerEdges": 1246,
+        "unexplained": 0
+      },
+      "java": {
+        "files": 60,
+        "treeTruth": 1050,
+        "covered": 1050,
+        "missing": 0,
+        "analyzerEdges": 1160,
+        "unexplained": 0
+      },
+      "javascript": {
+        "files": 52,
+        "treeTruth": 558,
+        "covered": 558,
+        "missing": 0,
+        "analyzerEdges": 558,
+        "unexplained": 0
+      }
+    }
+  },
+  "perFileRelationshipDelta": {
+    "etc/bin/test-bisect.groovy": {
+      "relsBefore": 113,
+      "relsAfter": 140,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/input/CreateInputObjectTypeBuilder.groovy": {
+      "relsBefore": 12,
+      "relsAfter": 13,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/input/UpdateInputObjectTypeBuilder.groovy": {
+      "relsBefore": 12,
+      "relsAfter": 13,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/output/EmbeddedObjectTypeBuilder.groovy": {
+      "relsBefore": 12,
+      "relsAfter": 13,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/output/ShowObjectTypeBuilder.groovy": {
+      "relsBefore": 10,
+      "relsAfter": 11,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-graphql/core/src/main/groovy/org/grails/gorm/graphql/types/scalars/CustomScalars.groovy": {
+      "relsBefore": 74,
+      "relsAfter": 82,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-hibernate7/boot-plugin/src/test/groovy/org/grails/datastore/gorm/boot/autoconfigure/HibernateGormAutoConfigurationSpec.groovy": {
+      "relsBefore": 32,
+      "relsAfter": 33,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-data-mongodb/spring-data/src/test/groovy/org/grails/datastore/gorm/mongodb/springdata/SpringDataMongoGormAutoConfigurationContextSpec.groovy": {
+      "relsBefore": 49,
+      "relsAfter": 54,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-encoder/src/main/groovy/org/grails/encoder/CodecMetaClassSupport.groovy": {
+      "relsBefore": 129,
+      "relsAfter": 148,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-forge/grails-forge-analytics-postgres/src/test/groovy/org/grails/forge/analytics/postgres/StoreGeneratedProjectStatsSpec.groovy": {
+      "relsBefore": 85,
+      "relsAfter": 87,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-rest-transforms/src/main/groovy/org/grails/plugins/web/rest/render/DefaultRendererRegistry.groovy": {
+      "relsBefore": 163,
+      "relsAfter": 191,
+      "parseFailingBefore": true,
+      "parseFailingAfter": true
+    },
+    "grails-testing-support-latency/src/test/groovy/org/apache/grails/testing/latency/LatencyAutoConfigurationSpec.groovy": {
+      "relsBefore": 26,
+      "relsAfter": 26,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-views-core/src/main/groovy/grails/views/ResolvableGroovyTemplateEngine.groovy": {
+      "relsBefore": 249,
+      "relsAfter": 303,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-views-core/src/main/groovy/grails/views/mvc/SmartViewResolver.groovy": {
+      "relsBefore": 52,
+      "relsAfter": 120,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    },
+    "grails-web-common/src/main/groovy/org/grails/web/util/ClassAndMimeTypeRegistry.groovy": {
+      "relsBefore": 84,
+      "relsAfter": 95,
+      "parseFailingBefore": true,
+      "parseFailingAfter": false
+    }
+  }
+}

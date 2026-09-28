@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M44",
+  "githubMilestone": 47,
+  "title": "The Understandable Hub (IDE v7)",
+  "status": "closed",
+  "authority": "docs/m44/M44-MASTER-PLAN.md (Issue groups table)",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md (§13 Understanding Rules, M44 amendment)",
+  "prerequisite": "M29 + M42 completion bars met — verified at HEAD (re-audited by G1 on every run)",
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 687,
+      "tool": "m44-governance",
+      "status": "verified",
+      "scope": "M44 ledger; closure gate re-auditing the M29+M42 bars; §13 Understanding Rules in the contract doc, machine-gated",
+      "acceptanceCriteria": [
+        "gate exits 0 at a HEAD where M24→M42 governance all exit 0; exits non-zero when any ledger item lacks evidence or a bar fails (proven by mutant ledger entries)",
+        "evidence JSON written (machine-emitted) with commit pin; no hollow assertions (self-audit)",
+        "no M43/M41/M14/M37 lane files touched (lane separation)"
+      ],
+      "closureRequirements": [
+        "G1 evidence (verified, current HEAD)",
+        "M42 bar gate exit 0 recorded (M29 transitively re-audited)",
+        "verify-chain + CI wiring present (verify:fast and verify)"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m44/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 26,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 9
+      }
+    },
+    {
+      "code": "U1",
+      "githubIssue": 688,
+      "tool": "lsp-graph-usages-groups",
+      "status": "verified",
+      "scope": "bb/graph usages mode returns per-symbol groups (callers/callees once) with declared relationship-type + occurrence counts; file-level and external rows in declared sections; schema version bumped with the client",
+      "acceptanceCriteria": [
+        "fixture-first: 2 call sites of one caller + 2 relationship types + a file-level import + an external row render 4 distinct groups with declared counts — no repeated rows",
+        "mutation: collapsing two distinct callers or dropping a relationship type from a group count FAILS",
+        "differential: per-group occurrence counts equal the raw stored rows per symbol (SQL-count comparable); M26/M42 consumers updated with re-verified gates"
+      ],
+      "closureRequirements": [
+        "U1 evidence (verified, current HEAD)",
+        "graph_request usages-mode verifier + mutation record",
+        "real-server leg over a seeded fixture with duplicated relationships"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see U1.json",
+        "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
+        "evidenceFile": "U1.json",
+        "passed": 20,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 6
+      }
+    },
+    {
+      "code": "U2",
+      "githubIssue": 689,
+      "tool": "hub-list",
+      "status": "verified",
+      "scope": "renderHubList redesign in the ONE renderer core: name-first rows, one row per symbol, file:line secondary, relation chips with counts, evidence tier badge, click affordances, group headers with counts, keyboard focusable",
+      "acceptanceCriteria": [
+        "DOM harness positive: a U1-shaped fixture renders one row per symbol with chips/badges/affordances asserted by class+attr contract",
+        "DOM harness negative: a lying renderer that repeats a symbol row, drops a chip, or renders a non-clickable row for a clickable target FAILS",
+        "in-editor leg (E5/E6): real hover → Open in graph → grouped rows; click navigates via the existing H6 channel"
+      ],
+      "closureRequirements": [
+        "U2 evidence (verified, current HEAD)",
+        "webview harness positive/negative records",
+        "E5/E6 in-editor leg evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see U2.json",
+        "verifierCommand": "npx tsx script/m44/verify-hub-list.ts",
+        "evidenceFile": "U2.json",
+        "passed": 29,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 7,
+        "note": "U2 is DERIVED: its own owner gate (script/m44/verify-hub-list.ts) derives this record from the m26 webview harness run it names, under six gated laws. The declaration lives in script/m44/u2-declaration.json."
+      }
+    },
+    {
+      "code": "U3",
+      "githubIssue": 690,
+      "tool": "hub-tree",
+      "status": "verified",
+      "scope": "renderHubTree rework in the ONE renderer core: expandable tree with per-node occurrence counts, declared expansion, clickable leaves (H6 reveal), truncation declared in-tree",
+      "acceptanceCriteria": [
+        "DOM harness positive/negative on the fixture tree (nesting depth, counts, clickable leaves, truncation marker)",
+        "mutation: a tree that fabricates a level or drops a clickable leaf FAILS",
+        "in-editor leg: tree rows navigate to the index-stored location"
+      ],
+      "closureRequirements": [
+        "U3 evidence (verified, current HEAD)",
+        "tree harness positive/negative records",
+        "in-editor navigation leg evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see U3.json",
+        "verifierCommand": "npx tsx script/m44/verify-hub-tree.ts",
+        "evidenceFile": "U3.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
+    },
+    {
+      "code": "U4",
+      "githubIssue": 691,
+      "tool": "hub-counts-legend",
+      "status": "verified",
+      "scope": "header counts derived from the rendered groups; one badge legend (evidence tiers + enrichment + staleness) shared by hub/graph/impact; stale markers visually consistent with the hover legend",
+      "acceptanceCriteria": [
+        "DOM harness: header count equals the rendered group count for a duplicated-relationship fixture; stale fixture renders the marker",
+        "mutation: a header count that disagrees with the rendered rows FAILS",
+        "legend doc generated from the core, byte-identical regeneration (drift gate)"
+      ],
+      "closureRequirements": [
+        "U4 evidence (verified, current HEAD)",
+        "counts/legend harness records",
+        "generated legend doc committed byte-identical"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "24f9524dd7064fb726003b48f828ee970ba0dc5b",
+        "verifierCommand": "npx tsx script/m44/verify-legend.ts",
+        "evidenceFile": "U4.json",
+        "passed": 25,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "inEditor": "E5 81/81 (5 new U4 checks); W4 19/19 (extended legend assertions); V1 41/41 (AH10/AH11 + 3 liars)"
+      }
+    },
+    {
+      "code": "U5",
+      "githubIssue": 692,
+      "tool": "impact-resolution",
+      "status": "verified",
+      "scope": "impact root resolution resolves member/keyword targets (constructors and member names) through the owning declaration when the member has no stored relationships; declared errors only for genuinely absent symbols",
+      "acceptanceCriteria": [
+        "fixture: constructor symbol with only a containment row → impact opens the owning class with a declared note; unknown symbol → declared bb/impact: error unchanged",
+        "mutation: a regression that breaks member resolution FAILS",
+        "in-editor: hover new Greeter(…) / constructor → Impact analysis renders, not an error toast"
+      ],
+      "closureRequirements": [
+        "U5 evidence (verified, current HEAD)",
+        "impact resolver verifier + mutation record",
+        "in-editor leg evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "99170ce01521d8cff385c717215787b766336eb3",
+        "verifierCommand": "npx tsx script/m44/verify-impact-resolution.ts",
+        "evidenceFile": "U5.json",
+        "passed": 27,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "negativeCases": 2,
+        "inEditor": "E5 83/83 (E5-U5 constructor impact renders with owning-declaration note)",
+        "docs": "docs/m44/M44-MASTER-PLAN.md U5 decision; IDE-HONESTY-CONTRACT §13.10",
+        "generatedAt": "2026-09-08T19:49:56Z"
+      }
+    },
+    {
+      "code": "U6",
+      "githubIssue": 693,
+      "tool": "references-fallback",
+      "status": "verified",
+      "scope": "show-all-usages opens OUR usages list when the editor's native references surface is unavailable or throws; native handoff stays primary; fallback declared and tested",
+      "acceptanceCriteria": [
+        "headless: command-level test with a stubbed editor whose referencesTrigger throws → fallback surface opens, no message-only return",
+        "in-editor (E5): click show-all-usages → native references peek OR our usages list; never a bare message",
+        "mutation: a regression that returns the message-only path FAILS"
+      ],
+      "closureRequirements": [
+        "U6 evidence (verified, current HEAD)",
+        "fallback command verifier + mutation record",
+        "E5 in-editor leg evidence"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
+        "evidenceFile": "U6.json",
+        "passed": 25,
+        "failed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4,
+        "negativeCases": 2,
+        "inEditor": "E5 88/88 (E5-U6 click leg: declared surface + data landing + identity + legacy reveal floor)",
+        "docs": "docs/m44/M44-MASTER-PLAN.md U6 decision",
+        "currentCommit": "9c3f8c49fba98379f63c463d1cc6b0c3aa7b4ce4"
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 694,
+      "tool": "m44-closure",
+      "status": "verified",
+      "scope": "M44 closure gate: full-ladder audit M24→M44 at HEAD; in-editor visual leg through E5/E6 with the new hub; launch bar; known gaps fixed or owner-waived with recorded reason",
+      "acceptanceCriteria": [
+        "gate exits 0 only when the whole ladder M24→M44 is green at HEAD and every M44 ledger item carries evidence; can-fail proven by mutants",
+        "evidence JSON pinned to the closure commit",
+        "launch bar evidence recorded (editors exercised, versions)"
+      ],
+      "closureRequirements": [
+        "X1 evidence (verified, current HEAD)",
+        "closure gate spawns each governance gate bottom-up",
+        "launch bar record"
+      ],
+      "evidence": {
+        "status": "verified",
+        "verifierCommand": "npx tsx script/m44/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 48,
+        "failed": 0,
+        "negativeCases": 7,
+        "editorLegs": "E5 88/88 + forks (cursor, antigravity) 88/88 each with the M44 hub legs; windsurf blocked-with-reason",
+        "launchRecord": "docs/m44/LAUNCH-RECORD.md (12 machine-audited rows)",
+        "knownGaps": "validation/m44/results/KNOWN-GAPS.json (machine-compiled, none silent)",
+        "spotCheckPack": "validation/m44/results/SPOT-CHECK-PACK.md",
+        "currentCommit": "see X1.json",
+        "note": "see X1.json currentCommit — the evidence is re-pinned to the closure HEAD by the standing sweep procedure before governance runs"
+      }
+    }
+  ],
+  "closedAt": "2026-09-09",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-17T01:36:14.721Z",
+    "contentSha256": "8f36ff1b05a0ac03a274678f0c953b220b65b3ea7bca3c9d41e40fc600eb63a4"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "analyzer": "json",
+  "corpus": "$HOME/roslyn",
+  "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+  "extension": "*.json",
+  "files": 133,
+  "cleanFiles": 119,
+  "unsupportedFiles": [
+    ".devcontainer/devcontainer.json",
+    ".vscode/extensions.json",
+    ".vscode/launch.json",
+    ".vscode/settings.json",
+    ".vscode/tasks.json",
+    "src/EditorFeatures/CSharpTest2/EmbeddedLanguages/RegularExpressions/Regex_RealWorldPatterns.json",
+    "src/Razor/src/Compiler/.vscode/launch.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/UnifiedSettings/razor.registration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/csharp-language-configuration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/javascript-language-configuration.json",
+    "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/language-configuration.json",
+    "src/VisualStudio/CSharp/Impl/UnifiedSettings/csharpSettings.registration.json",
+    "src/VisualStudio/Core/Def/UnifiedSettings/roslynSettings.registration.json",
+    "src/VisualStudio/VisualBasic/Impl/UnifiedSettings/visualBasicSettings.registration.json"
+  ],
+  "unsupportedFileCount": 14,
+  "errorFiles": 3,
+  "errorNodes": 16,
+  "grammarGapFiles": [],
+  "crashFiles": 0,
+  "errors": [
+    {
+      "file": ".vscode/launch.json",
+      "count": 8,
+      "reason": "non_strict_json_or_encoding"
+    },
+    {
+      "file": ".vscode/tasks.json",
+      "count": 4,
+      "reason": "non_strict_json_or_encoding"
+    },
+    {
+      "file": "src/Razor/src/Razor/src/Microsoft.VisualStudio.RazorExtension/language-configuration.json",
+      "count": 4,
+      "reason": "non_strict_json_or_encoding"
+    }
+  ],
+  "crashes": [],
+  "passed": true,
+  "policy": "strict JSON acceptance subset; every tracked non-strict JSONC/encoding path is listed as an explicit exclusion, even when the grammar recovers it",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.917Z",
+    "contentSha256": "40891877a9a3f17d49cd523ddbe73b1b6e4d3f89c682783b9ac35b7c89054286"
+  }
+}

@@ -1,0 +1,1027 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/clean/{Service,Negative}.icl",
+  "facts": [
+    {
+      "id": "symbol:Service.icl:1:module:Service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 1,
+      "attributes": {
+        "name": "Service",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "module Service @ line 1"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:7:type:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 7,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "type User @ line 7"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:7:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 7,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property name @ line 7"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:7:property:age",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 7,
+      "attributes": {
+        "name": "age",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property age @ line 7"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:10:type:OrderBook",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 10,
+      "attributes": {
+        "name": "OrderBook",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "type OrderBook @ line 10"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:10:constructor:Book",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 10,
+      "attributes": {
+        "name": "Book",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor Book @ line 10"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:11:type:Side",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 11,
+      "attributes": {
+        "name": "Side",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "type Side @ line 11"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:11:constructor:Bid",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 11,
+      "attributes": {
+        "name": "Bid",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor Bid @ line 11"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:11:constructor:Ask",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 11,
+      "attributes": {
+        "name": "Ask",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor Ask @ line 11"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:14:interface:Serializable",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 14,
+      "attributes": {
+        "name": "Serializable",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "interface Serializable @ line 14"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:15:method:serialize",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 15,
+      "attributes": {
+        "name": "serialize",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method serialize @ line 15"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:18:class:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 18,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User @ line 18"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:19:method:serialize",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 19,
+      "attributes": {
+        "name": "serialize",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method serialize @ line 19"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:23:function:addBid",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 23,
+      "attributes": {
+        "name": "addBid",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function addBid @ line 23"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:26:function:submitOrder",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 26,
+      "attributes": {
+        "name": "submitOrder",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function submitOrder @ line 26"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:29:function:lookupUser",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 29,
+      "attributes": {
+        "name": "lookupUser",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function lookupUser @ line 29"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:33:function:makeUser",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 33,
+      "attributes": {
+        "name": "makeUser",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function makeUser @ line 33"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:37:function:countDown",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 37,
+      "attributes": {
+        "name": "countDown",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function countDown @ line 37"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:40:function:mutualA",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 40,
+      "attributes": {
+        "name": "mutualA",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function mutualA @ line 40"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:43:function:mutualB",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 43,
+      "attributes": {
+        "name": "mutualB",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function mutualB @ line 43"
+      }
+    },
+    {
+      "id": "symbol:Service.icl:46:function:describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.icl",
+      "line": 46,
+      "attributes": {
+        "name": "describe",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function describe @ line 46"
+      }
+    },
+    {
+      "id": "rel:Service.icl:references:Service:StdEnv",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "StdEnv",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "references Service -> StdEnv"
+      }
+    },
+    {
+      "id": "rel:Service.icl:references:Service:Data.Map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "Data.Map",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "references Service -> Data.Map"
+      }
+    },
+    {
+      "id": "rel:Service.icl:implements:User:Serializable",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "User",
+      "targetId": "Serializable",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "implements User -> Serializable"
+      }
+    },
+    {
+      "id": "rel:Service.icl:instantiates:addBid:Book",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "addBid",
+      "targetId": "Book",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates addBid -> Book"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:submitOrder:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "submitOrder",
+      "targetId": "describe",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls submitOrder -> describe"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:submitOrder:addBid",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "submitOrder",
+      "targetId": "addBid",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls submitOrder -> addBid"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:lookupUser:M.lookup",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "lookupUser",
+      "targetId": "M.lookup",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls lookupUser -> M.lookup"
+      }
+    },
+    {
+      "id": "rel:Service.icl:instantiates:makeUser:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "makeUser",
+      "targetId": "User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates makeUser -> User"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:countDown:countDown",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "countDown",
+      "targetId": "countDown",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls countDown -> countDown"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:mutualA:mutualB",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "mutualA",
+      "targetId": "mutualB",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls mutualA -> mutualB"
+      }
+    },
+    {
+      "id": "rel:Service.icl:calls:mutualB:mutualA",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "mutualB",
+      "targetId": "mutualA",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls mutualB -> mutualA"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "User",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> User"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> name"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:User:age",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "User",
+      "targetId": "age",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> age"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:OrderBook",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "OrderBook",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> OrderBook"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:OrderBook:Book",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "OrderBook",
+      "targetId": "Book",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains OrderBook -> Book"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:Side",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "Side",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> Side"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Side:Bid",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Side",
+      "targetId": "Bid",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Side -> Bid"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Side:Ask",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Side",
+      "targetId": "Ask",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Side -> Ask"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:Serializable",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "Serializable",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> Serializable"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Serializable:serialize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Serializable",
+      "targetId": "serialize",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Serializable -> serialize"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:User:serialize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "User",
+      "targetId": "serialize",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> serialize"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:addBid",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "addBid",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> addBid"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:submitOrder",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "submitOrder",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> submitOrder"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:lookupUser",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "lookupUser",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> lookupUser"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:makeUser",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "makeUser",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> makeUser"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:countDown",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "countDown",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> countDown"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:mutualA",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "mutualA",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> mutualA"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:mutualB",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "mutualB",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> mutualB"
+      }
+    },
+    {
+      "id": "rel:Service.icl:contains:Service:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.icl",
+      "sourceId": "Service",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> describe"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:1:module:Negative",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 1,
+      "attributes": {
+        "name": "Negative",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "module Negative @ line 1"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:8:function:preludeOnly",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 8,
+      "attributes": {
+        "name": "preludeOnly",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function preludeOnly @ line 8"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:12:function:memberAccess",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 12,
+      "attributes": {
+        "name": "memberAccess",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function memberAccess @ line 12"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:16:function:matchOn",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 16,
+      "attributes": {
+        "name": "matchOn",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function matchOn @ line 16"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:20:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 20,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function helper @ line 20"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:27:function:runner",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 27,
+      "attributes": {
+        "name": "runner",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function runner @ line 27"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:34:function:compareOp",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 34,
+      "attributes": {
+        "name": "compareOp",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function compareOp @ line 34"
+      }
+    },
+    {
+      "id": "symbol:Negative.icl:38:function:isBid",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.icl",
+      "line": 38,
+      "attributes": {
+        "name": "isBid",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function isBid @ line 38"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:references:Negative:StdEnv",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "StdEnv",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "references Negative -> StdEnv"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:references:Negative:Data.List",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "Data.List",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "references Negative -> Data.List"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:preludeOnly",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "preludeOnly",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> preludeOnly"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:memberAccess",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "memberAccess",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> memberAccess"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:matchOn",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "matchOn",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> matchOn"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "helper",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> helper"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:runner",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "runner",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> runner"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:compareOp",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "compareOp",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> compareOp"
+      }
+    },
+    {
+      "id": "rel:Negative.icl:contains:Negative:isBid",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.icl",
+      "sourceId": "Negative",
+      "targetId": "isBid",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Negative -> isBid"
+      }
+    }
+  ]
+}

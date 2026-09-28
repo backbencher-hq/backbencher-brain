@@ -1,0 +1,134 @@
+{
+  "milestone": "M21",
+  "issue": 462,
+  "code": "R3",
+  "status": "verified",
+  "verifier": "script/m21/verify-cancel-resume.ts",
+  "verifierCommand": "bun run script/m21/verify-cancel-resume.ts",
+  "evidenceFile": "R3-cancel-resume.json",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "workingTreeRelevantChanges": [],
+  "generatedAt": "2026-09-01T15:43:01.451Z",
+  "repo": "$HOME/fixtures/repositories/cabal",
+  "dataDir": "/tmp/m21r3-verify-1788277347269",
+  "passed": 22,
+  "failed": 0,
+  "negativeCases": 4,
+  "checks": [
+    {
+      "name": "R3: index process was alive when SIGINT was sent",
+      "pass": true,
+      "detail": "pid=703055"
+    },
+    {
+      "name": "R3: index showed real progress before cancel",
+      "pass": true,
+      "detail": "stderr contained n/2348"
+    },
+    {
+      "name": "R3: process exited after SIGINT (no hang)",
+      "pass": true,
+      "detail": "exit=0"
+    },
+    {
+      "name": "R3: cancelled-run breakdown reports the cancelled bucket",
+      "pass": true,
+      "detail": "  breakdown: 70 newly parsed | 0 unchanged | 0 skipped | 70 symbol-loss (parsed 0 symbols) | 0 errors | 0 timeouts | 2278 cancelled"
+    },
+    {
+      "name": "R3: live status file exists after cancel",
+      "pass": true,
+      "detail": "{\"projectId\":\"dfe578092dcdd808b83bcd4c4784a5da09fb2a0b\",\"phase\":\"cancelled\",\"processedFiles\":70,\"totalFiles\":2348,\"start"
+    },
+    {
+      "name": "R3: status phase is cancelled",
+      "pass": true,
+      "detail": "phase=cancelled"
+    },
+    {
+      "name": "R3: cancelled run stored fewer files than total",
+      "pass": true,
+      "detail": "70/2348"
+    },
+    {
+      "name": "[negative] R3: cancelled run is not re-labelled complete",
+      "pass": true,
+      "detail": "phase=cancelled"
+    },
+    {
+      "name": "R3: DB readable after cancel",
+      "pass": true,
+      "detail": "{\"files\":70,\"symbols\":0,\"dupes\":0,\"emptyHashFiles\":0}"
+    },
+    {
+      "name": "R3: mid-run DB has partial files (< 2348)",
+      "pass": true,
+      "detail": "files=70"
+    },
+    {
+      "name": "R3: no duplicate brain_file rows after cancel",
+      "pass": true,
+      "detail": "dupes=0"
+    },
+    {
+      "name": "R3: no empty-hash brain_file rows after cancel (no half-writes)",
+      "pass": true,
+      "detail": "emptyHash=0"
+    },
+    {
+      "name": "R3: resume exits 0",
+      "pass": true,
+      "detail": "exit=0 stderr=e\":\"html\",\"wasmPath\":\"/tmp/bb-wasm_tree-sitter-html_tree-sitter-html.wasm\"}\n[STORE] TestCaseUtils.hs: 54s 97r\n\r[progress] 2340/2348 files (99%) 118.2/s ETA 0s — ChangeLog.md[STORE] Utils.hs: 25s 36r\n\n"
+    },
+    {
+      "name": "R3: resume reported checkpoint",
+      "pass": true,
+      "detail": "indexing $HOME/fixtures/repositories/cabal (project dfe57809…)\nresuming interrupted index (checkpoint: 70/2348 files done)\n[brain] ✓ worker "
+    },
+    {
+      "name": "R3: post-resume DB readable",
+      "pass": true,
+      "detail": "{\"files\":2348,\"symbols\":0,\"dupes\":0,\"emptyHashFiles\":0}"
+    },
+    {
+      "name": "R3: post-resume DB has all 2348 files",
+      "pass": true,
+      "detail": "files=2348"
+    },
+    {
+      "name": "R3: no duplicate rows after resume",
+      "pass": true,
+      "detail": "dupes=0"
+    },
+    {
+      "name": "R3: no empty-hash brain_file rows after resume",
+      "pass": true,
+      "detail": "emptyHash=0"
+    },
+    {
+      "name": "R3: final status phase is complete (not cancelled)",
+      "pass": true,
+      "detail": "phase=complete"
+    },
+    {
+      "name": "[negative] R3: resume does not leave a stale cancelled checkpoint",
+      "pass": true,
+      "detail": "phase=complete"
+    },
+    {
+      "name": "[negative] R3: finalize write is guarded by !stats.cancelled (no silent re-label)",
+      "pass": true,
+      "detail": "finalize=144606 guard=144502"
+    },
+    {
+      "name": "[negative] R3: missed-file fallback is skipped on cancelled runs",
+      "pass": true,
+      "detail": "fallbackBlock=129659"
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.385Z",
+    "contentSha256": "3fb9509026f6634fa692c64cea7d95a5ed11b500191482fe8db6b9884b974553"
+  }
+}

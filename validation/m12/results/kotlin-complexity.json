@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:kotlin",
+  "fixtureDir": "validation/m12/fixtures/kotlin",
+  "corpusDir": "/tmp/bb-kotlin-sample",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:kotlin",
+        "wallTimeMs": 179.94947,
+        "userCpuMs": 212.479,
+        "systemCpuMs": 97.377,
+        "peakRssBytes": 211759104,
+        "rssDeltaBytes": 169791488,
+        "databaseBytes": null,
+        "files": 3,
+        "symbols": 34,
+        "relationships": 45,
+        "filesPerSecond": 16.67134668415528,
+        "symbolsPerSecond": 188.94192908709317,
+        "relationshipsPerSecond": 250.0702002623292
+      },
+      "symbols": 34,
+      "relationships": 45
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:kotlin",
+        "wallTimeMs": 8865.918019,
+        "userCpuMs": 14811.284,
+        "systemCpuMs": 729.151,
+        "peakRssBytes": 401616896,
+        "rssDeltaBytes": 84832256,
+        "databaseBytes": null,
+        "files": 300,
+        "symbols": 11286,
+        "relationships": 43364,
+        "filesPerSecond": 33.83744349508856,
+        "symbolsPerSecond": 1272.9646242852316,
+        "relationshipsPerSecond": 4891.089665736734
+      },
+      "symbols": 11286,
+      "relationships": 43364
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Fixtures + real-corpus subset (intellij-community 300-file Kotlin sample). Grammar errors counted separately by explicit re-parse: 51/300 files carry tree-sitter-kotlin grammar ERROR/MISSING nodes (fun interface, object-with-delegation, some extension+object expressions, plus one hidden-MISSING when-entry case in HttpClient.kt whose MISSING _alpha_identifier tokens are not iterable via the web-tree-sitter binding — the engine now emits a root-level warning so it is never silently clean) — the analyzer reports them as warning ParseErrors rather than silently dropping; symbol extraction continues on the rest of each file.",
+  "corpusProvenance": {
+    "repository": "intellij-community",
+    "revision": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+    "selection": "300 tracked *.kt files with size > 5KB, sorted lexicographically (deterministic at pinned revision; .idea templates excluded)",
+    "fileList": "validation/m12/results/kotlin-corpus-sample.txt",
+    "repoState": "dirty (unrelated .agents/skills deletions; Kotlin sources intact)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.919Z",
+    "contentSha256": "ec9765838b55b92095b96760d2c58b7ce5445935861ed03ae1f2ea80827cf953"
+  }
+}

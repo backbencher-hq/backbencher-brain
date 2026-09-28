@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M13.21",
+  "code": "S4",
+  "tool": "bb_search",
+  "title": "bb_search: honesty audit (AST vs lexical; freshness truthfulness)",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "symbols mode: searchSymbols queries brain_symbol JOIN brain_file (indexed corpus)",
+      "pass": true,
+      "detail": "query does not join brain_file"
+    },
+    {
+      "name": "symbols mode: no raw source-file reads in the search path",
+      "pass": true,
+      "detail": "readFileSync present"
+    },
+    {
+      "name": "content mode: searches the indexed symbol corpus (name+qualified_name+docstring)",
+      "pass": true,
+      "detail": "not index-backed"
+    },
+    {
+      "name": "content mode: documented as not full-text file contents (no false claim)",
+      "pass": true,
+      "detail": "missing doc header"
+    },
+    {
+      "name": "content mode: no raw source-file reads",
+      "pass": true,
+      "detail": "readFileSync present"
+    },
+    {
+      "name": "symbol mode: handler delegates to ASTEngine.findSymbol (indexed records)",
+      "pass": true,
+      "detail": "findSymbol not used"
+    },
+    {
+      "name": "file mode: guard requires a brain_file row before reading disk",
+      "pass": true,
+      "detail": "guard missing"
+    },
+    {
+      "name": "freshness: every search engine routes through checkResultsFreshness",
+      "pass": true,
+      "detail": "an engine skips freshness"
+    },
+    {
+      "name": "freshness: checkResultsFreshness compares stored file_hash against disk",
+      "pass": true,
+      "detail": "no hash comparison"
+    },
+    {
+      "name": "freshness: no 'always fresh' shortcut exists",
+      "pass": true,
+      "detail": "hardcoded fresh present"
+    },
+    {
+      "name": "freshness: stale results are flagged, never silently dropped or presented fresh",
+      "pass": true,
+      "detail": "no stale flagging"
+    },
+    {
+      "name": "runtime: symbols-mode results all resolve to indexed brain_file rows",
+      "pass": true,
+      "detail": "results=2"
+    },
+    {
+      "name": "runtime: content-mode results all resolve to indexed brain_file rows",
+      "pass": true,
+      "detail": "results=2"
+    },
+    {
+      "name": "runtime: symbol with no brain_file row is never returned (no unindexed claims) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "returned 0 results"
+    },
+    {
+      "name": "runtime: content mode never returns results for an unindexed file [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "returned 0 results"
+    },
+    {
+      "name": "runtime: file mode refuses unindexed path [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "Error: file is not indexed: src/b.ts"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0
+  },
+  "decisions": {
+    "symbolsMode": "searchSymbols runs SQL over brain_symbol JOIN brain_file — the indexed corpus, never a raw filesystem or git scan",
+    "contentMode": "searchContent runs FTS5/LIKE over the indexed symbol corpus (name+qualified_name+docstring); the source header documents that this is NOT full-text file contents",
+    "symbolMode": "findSymbol reads indexed AST records from the brain database",
+    "fileMode": "requires a brain_file row; throws 'file is not indexed' when the row is absent — disk content is only read for indexed paths",
+    "freshness": "every search engine calls checkResultsFreshness, which compares the stored SHA-256 file_hash against on-disk bytes; changed files are flagged stale, never fresh"
+  },
+  "limitations": [
+    "The audit proves the index-backed claim statically (query shape) and dynamically (row-deletion probe); it does not re-verify analyzer symbol extraction (that is the M12 analyzer work)."
+  ],
+  "generatedAt": "2026-09-05T20:56:33.919Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.299Z",
+    "contentSha256": "5764bb14f68f936a5fcbed94f7090c49cdf72cd5832f8298826bc0e6e66a9b0e"
+  }
+}

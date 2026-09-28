@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "kind": "lua_corpus_errors",
+  "analyzer": "lua",
+  "corpus": "luvit",
+  "corpusPath": "$HOME/fixtures/repositories/luvit",
+  "corpusRepo": "luvit",
+  "revision": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
+  "currentCommit": "e76d972f92f90beb3df18ca31aed695fc241af83",
+  "extensions": [
+    "*.lua",
+    "*.luau"
+  ],
+  "mode": "full-corpus",
+  "measuredFiles": 199,
+  "symbols": 3724,
+  "relationships": 7025,
+  "errorFiles": 0,
+  "errorNodes": 0,
+  "crashFiles": 0,
+  "errorFileList": [],
+  "passed": true,
+  "policy": "Every file in scope is audited through the production parseFile pipeline. The known-invalid fixture is a corpus selector fact, not a defect: a repository may ship a deliberately malformed file, and reporting it as a parse failure would be measuring the selector. Named per repo in $HOME/fixtures/repositories/MANIFEST.json.",
+  "note": "Written by this instrument. It previously wrote nothing, which left the M60 `corpus` cell reading `pass` on a vacuous comparison against a null artifact side."
+}

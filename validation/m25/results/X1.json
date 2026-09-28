@@ -1,0 +1,79 @@
+{
+  "issue": "507",
+  "code": "X1",
+  "milestone": "M25",
+  "status": "verified",
+  "checks": 37,
+  "passed": 37,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 3,
+  "suiteExits": {
+    "E1": 0,
+    "E2": 0,
+    "E3": 0,
+    "E4": 0,
+    "V1": 0,
+    "E5": 0,
+    "E6": 0,
+    "E7": 0,
+    "D1": 0,
+    "D1i": 0
+  },
+  "section6": [
+    {
+      "category": "missing stale marker",
+      "code": "E3",
+      "where": "mutant 'stale: marker suppressed' (4/4 caught)"
+    },
+    {
+      "category": "wrong evidence level rendered",
+      "code": "E3",
+      "where": "mutant 'undeclared: level invented' (4/4 caught)"
+    },
+    {
+      "category": "wrong count (usage count off)",
+      "code": "M24-L2",
+      "where": "M24 closure gate: hover 'content: usage count off by one'"
+    },
+    {
+      "category": "wrong position (±1 line/col)",
+      "code": "M24-P1",
+      "where": "M24 closure gate: positions off-by-one mutants"
+    },
+    {
+      "category": "wrong/confabulated edge",
+      "code": "M24-L5",
+      "where": "M24 closure gate: call-hierarchy fabricated/dropped caller"
+    },
+    {
+      "category": "wrong confidence label",
+      "code": "M24-L2",
+      "where": "M24 closure gate: hover 'content: wrong tier label'"
+    },
+    {
+      "category": "fork claim without a pinned run",
+      "code": "D1",
+      "where": "listing mutant 'drift: unevidenced I4 claim accepted' (3/3 caught)"
+    },
+    {
+      "category": "budget violation hidden",
+      "code": "X1",
+      "where": "planted HERE against the status surface's law-budget"
+    }
+  ],
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "verifierCommand": "npx tsx script/m25/verify-closure.ts",
+  "evidenceFile": "X1.json",
+  "generatedAt": "2026-09-20T02:22:46.483Z",
+  "limitations": [
+    "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
+    "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
+    "The §6 table's M24 rows point at the M24 closure gate's caught mutants (server-side classes); this gate re-proves the extension-surface classes directly."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:22:46.484Z",
+    "contentSha256": "29eb6a62060bfd6f1d3afeb8511fbada8960a3df49db6a22a23113e3c27cb776"
+  }
+}

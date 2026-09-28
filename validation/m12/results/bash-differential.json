@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:bash",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/bash/{Common.sh,Deploy.sh,Negative.sh}",
+  "fixtureDir": "validation/m12/fixtures/bash",
+  "fixtures": [
+    "Common.sh",
+    "Deploy.sh",
+    "Negative.sh"
+  ],
+  "perFile": {
+    "Common.sh": {
+      "symbols": 17,
+      "relationships": 24
+    },
+    "Deploy.sh": {
+      "symbols": 4,
+      "relationships": 8
+    },
+    "Negative.sh": {
+      "symbols": 1,
+      "relationships": 1
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 55,
+      "observedResolved": 55,
+      "truePositive": 55,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:Common.sh:calls:INT:log \"WARN\" \"interrupted\"",
+      "rel:Common.sh:calls:TERM:log \"WARN\" \"interrupted\"",
+      "rel:Common.sh:calls:check_all:log",
+      "rel:Common.sh:calls:global:get_backend",
+      "rel:Common.sh:calls:log:date",
+      "rel:Common.sh:contains:check_all:names",
+      "rel:Common.sh:contains:get_backend:backends",
+      "rel:Common.sh:contains:get_backend:env",
+      "rel:Common.sh:contains:log:level",
+      "rel:Common.sh:contains:log:message",
+      "rel:Common.sh:contains:wait_lock:path",
+      "rel:Common.sh:contains:wait_lock:tries",
+      "rel:Common.sh:imports:global:./env.sh",
+      "rel:Common.sh:references:global:./env.sh",
+      "rel:Common.sh:uses:check_all:name",
+      "rel:Common.sh:uses:check_all:names",
+      "rel:Common.sh:uses:get_backend:env",
+      "rel:Common.sh:uses:global:LOG_LEVEL",
+      "rel:Common.sh:uses:global:main_result",
+      "rel:Common.sh:uses:global:result",
+      "rel:Common.sh:uses:log:level",
+      "rel:Common.sh:uses:log:message",
+      "rel:Common.sh:uses:wait_lock:path",
+      "rel:Common.sh:uses:wait_lock:tries",
+      "rel:Deploy.sh:calls:deploy:ssh",
+      "rel:Deploy.sh:calls:global:bash",
+      "rel:Deploy.sh:calls:global:curl",
+      "rel:Deploy.sh:calls:global:docker",
+      "rel:Deploy.sh:calls:global:ssh-agent",
+      "rel:Deploy.sh:contains:deploy:count",
+      "rel:Deploy.sh:uses:global:APP_DIR",
+      "rel:Deploy.sh:uses:global:IMAGE_NAME",
+      "rel:Negative.sh:calls:global:broken_fn",
+      "symbol:Common.sh:10:variable:level",
+      "symbol:Common.sh:11:variable:message",
+      "symbol:Common.sh:16:function:get_backend",
+      "symbol:Common.sh:17:variable:env",
+      "symbol:Common.sh:18:variable:backends",
+      "symbol:Common.sh:26:function:check_all",
+      "symbol:Common.sh:27:variable:names",
+      "symbol:Common.sh:36:function:wait_lock",
+      "symbol:Common.sh:37:variable:path",
+      "symbol:Common.sh:38:variable:tries",
+      "symbol:Common.sh:48:function:install_trap",
+      "symbol:Common.sh:57:function:ls",
+      "symbol:Common.sh:59:variable:result",
+      "symbol:Common.sh:5:constant:SCRIPT_NAME",
+      "symbol:Common.sh:60:variable:main_result",
+      "symbol:Common.sh:6:constant:LOG_LEVEL",
+      "symbol:Common.sh:9:function:log",
+      "symbol:Deploy.sh:21:function:deploy",
+      "symbol:Deploy.sh:22:variable:count",
+      "symbol:Deploy.sh:4:variable:APP_DIR",
+      "symbol:Deploy.sh:5:variable:IMAGE_NAME",
+      "symbol:Negative.sh:2:function:valid_fn"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:bash",
+      "wallTimeMs": 54.438773,
+      "userCpuMs": 60.036,
+      "systemCpuMs": 10.393,
+      "peakRssBytes": 253628416,
+      "rssDeltaBytes": 4063232,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for bash. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.835Z",
+    "contentSha256": "87b1295a269c695a220ebd3443ed65da13440b512b2e31e3ee1f95952bdfd138"
+  }
+}

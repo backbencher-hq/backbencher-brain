@@ -1,0 +1,10 @@
+id = "bb-lsp"
+name = "Backbencher Brain Language Server"
+version = "0.1.0"
+schema_version = 1
+authors = ["Backbencher Brain"]
+description = "bb_lsp: tiered hover, definition, references, symbols, staleness over the Backbencher Brain index"
+repository = "https://github.com/backbencher-hq/backbencher-brain"
+
+[language_servers.bb-lsp]
+languages = ["TypeScript", "JavaScript"]

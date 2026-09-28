@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:vue",
+  "truthSource": "manual_audit",
+  "truthReference": "Independent hand audit of validation/m12/fixtures/vue/*.vue against Vue 3 semantics and the TS/JS family contract (M12.09/M12.10): SFC component -> class (file-level, L1); <script setup> top-level const -> constant, let/var -> variable, function -> function; Options API: props -> property, emits -> event, data/computed->property, methods/lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content analyzed by the real JavaScript analyzer (family consistency, whether or not lang=ts); template pass emits instantiates only for capitalized PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives (vue:ref, ./Card.vue:Card); calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit '$'-prefixed target (pool-worker $ denylist removed in M12.12); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only.",
+  "fixtureDir": "validation/m12/fixtures/vue",
+  "fixtures": [
+    "App.vue",
+    "Button.vue",
+    "Card.vue",
+    "Negative.vue",
+    "UserList.vue"
+  ],
+  "perFile": {
+    "App.vue": {
+      "symbols": 1,
+      "relationships": 4
+    },
+    "Button.vue": {
+      "symbols": 4,
+      "relationships": 4
+    },
+    "Card.vue": {
+      "symbols": 9,
+      "relationships": 11
+    },
+    "Negative.vue": {
+      "symbols": 10,
+      "relationships": 4
+    },
+    "UserList.vue": {
+      "symbols": 3,
+      "relationships": 8
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 56,
+      "observedResolved": 56,
+      "truePositive": 56,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:App.vue:imports:App:vue-router:RouterLink",
+      "rel:App.vue:imports:App:vue-router:RouterView",
+      "rel:App.vue:instantiates:App:router-link",
+      "rel:App.vue:instantiates:App:router-view",
+      "rel:Button.vue:calls:Button:computed",
+      "rel:Button.vue:calls:Button:ref",
+      "rel:Button.vue:imports:Button:vue:computed",
+      "rel:Button.vue:imports:Button:vue:ref",
+      "rel:Card.vue:calls:handleSelect:$emit",
+      "rel:Card.vue:calls:mounted:toggle",
+      "rel:Card.vue:calls:summary:slice",
+      "rel:Card.vue:contains:Card:body",
+      "rel:Card.vue:contains:Card:data",
+      "rel:Card.vue:contains:Card:handleSelect",
+      "rel:Card.vue:contains:Card:mounted",
+      "rel:Card.vue:contains:Card:select",
+      "rel:Card.vue:contains:Card:summary",
+      "rel:Card.vue:contains:Card:title",
+      "rel:Card.vue:contains:Card:toggle",
+      "rel:Negative.vue:calls:Negative:ref",
+      "rel:Negative.vue:imports:Negative:vue:ref",
+      "rel:UserList.vue:calls:UserList:ref",
+      "rel:UserList.vue:calls:loadMore:fetch",
+      "rel:UserList.vue:calls:loadMore:json",
+      "rel:UserList.vue:imports:UserList:./Button.vue:Button",
+      "rel:UserList.vue:imports:UserList:./Card.vue:Card",
+      "rel:UserList.vue:imports:UserList:vue:ref",
+      "rel:UserList.vue:instantiates:UserList:Button",
+      "rel:UserList.vue:instantiates:UserList:Card",
+      "symbol:App.vue:1:class:App",
+      "symbol:Button.vue:10:constant:count",
+      "symbol:Button.vue:11:constant:isActive",
+      "symbol:Button.vue:13:function:onHit",
+      "symbol:Button.vue:1:class:Button",
+      "symbol:Card.vue:11:property:body",
+      "symbol:Card.vue:11:property:title",
+      "symbol:Card.vue:15:event:select",
+      "symbol:Card.vue:16:method:data",
+      "symbol:Card.vue:1:class:Card",
+      "symbol:Card.vue:22:property:summary",
+      "symbol:Card.vue:27:method:toggle",
+      "symbol:Card.vue:30:method:handleSelect",
+      "symbol:Card.vue:34:method:mounted",
+      "symbol:Negative.vue:13:constant:user",
+      "symbol:Negative.vue:14:constant:visible",
+      "symbol:Negative.vue:15:constant:query",
+      "symbol:Negative.vue:16:constant:options",
+      "symbol:Negative.vue:17:constant:cls",
+      "symbol:Negative.vue:18:variable:message",
+      "symbol:Negative.vue:19:variable:legacy",
+      "symbol:Negative.vue:1:class:Negative",
+      "symbol:Negative.vue:21:function:onInput",
+      "symbol:Negative.vue:25:function:localOnly",
+      "symbol:UserList.vue:18:constant:users",
+      "symbol:UserList.vue:1:class:UserList",
+      "symbol:UserList.vue:20:function:loadMore"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:vue",
+      "wallTimeMs": 78.722813,
+      "userCpuMs": 69.039,
+      "systemCpuMs": 13.868,
+      "peakRssBytes": 245215232,
+      "rssDeltaBytes": 6033408,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for vue. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.115Z",
+    "contentSha256": "68ad25d1cc827eebc4f8c40f46dda74062b6672a3ae2c4801f8f05f01b31a377"
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M29",
+  "githubMilestone": 29,
+  "title": "M29: Precision Waves (IDE v5)",
+  "status": "closed",
+  "authority": "docs/m29/M29-MASTER-PLAN.md",
+  "governingContract": "docs/IDE-HONESTY-CONTRACT.md",
+  "evidencePolicy": {
+    "rule": "No issue closes without machine-emitted evidence: a verifier run at a pinned commit, with can-fail proof (dedicated negatives or a fully-caught mutant set), stamped with the current commit and relevant working-tree state.",
+    "contract": "docs/IDE-HONESTY-CONTRACT.md sections 1, 2, 5, 6",
+    "commitStamps": "every evidence JSON carries currentCommit; a cell goes stale when its relevant files changed after that commit",
+    "mutationProofs": "every verifier proves its suite CAN FAIL via negative cases or caught mutants"
+  },
+  "issues": [
+    {
+      "code": "G1",
+      "githubIssue": 535,
+      "tool": "governance",
+      "status": "verified",
+      "scope": "M29 ledger, closure gate, verify wiring; M28 bar re-audit automated (ladder discipline).",
+      "acceptanceCriteria": [
+        "Ledger + gate + wiring",
+        "M28 bar automated re-audit",
+        "Vocabulary lint over M29 artifacts"
+      ],
+      "closureRequirements": [
+        "Gate evidence",
+        "Mutation check",
+        "Clean rerun"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see G1.json",
+        "verifierCommand": "npx tsx script/m29/verify-governance.ts",
+        "evidenceFile": "G1.json",
+        "passed": 70,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 10
+      }
+    },
+    {
+      "code": "R1",
+      "githubIssue": 536,
+      "tool": "wave-protocol",
+      "status": "verified",
+      "scope": "Document and mechanize the onboarding protocol: analyzer #419 conformance -> position gate -> freshness gate -> IDE fixtures -> mutants -> latency budget -> claim-level assignment. One command runs the full checklist for a candidate language (contract §9 binding enforced mechanically: IDE claim level <= analyzer evidence level).",
+      "acceptanceCriteria": [
+        "Wave gate runner script; per-step pass/fail output",
+        "Binding enforced: claim level capped by #419 state mechanically",
+        "Protocol documented as the checklist a new language walks"
+      ],
+      "closureRequirements": [
+        "Runner evidence on a dry-run language",
+        "Gate wired into verify",
+        "Limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R1.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-protocol.ts",
+        "evidenceFile": "R1.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 4,
+        "mutantsTotal": 4
+      }
+    },
+    {
+      "code": "R2",
+      "githubIssue": 537,
+      "tool": "wave-1-execution",
+      "status": "verified",
+      "scope": "Execute R1 for the next language(s) chosen by the #419 ledger at execution time (candidates: javascript INVENTORY-DONE, vue NOT-STARTED; actual set owner-approved). End-to-end: gates, fixtures, mutants, budgets, claim levels, IDE matrix updated.",
+      "acceptanceCriteria": [
+        "Wave gate green for the onboarded language(s)",
+        "All M24 feature evidence regenerated for the new language(s)",
+        "Capability matrix + precision ledger updated (drift-gated)"
+      ],
+      "closureRequirements": [
+        "Per-language evidence",
+        "Owner approval of the language set recorded before execution",
+        "Owner spot-check scheduled"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R2.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
+        "evidenceFile": "R2.json",
+        "passed": 115,
+        "failed": 0,
+        "realFailed": 0,
+        "mutantsCaught": 3,
+        "mutantsTotal": 3,
+        "approvalRecord": "validation/m29/results/wave-1-approval.json",
+        "languages": [
+          "java",
+          "python",
+          "typescript",
+          "javascript",
+          "kotlin",
+          "scala"
+        ],
+        "s6InEditor": "real headless Neovim sessions per language (M27.N1 pattern)"
+      }
+    },
+    {
+      "code": "R3",
+      "githubIssue": 538,
+      "tool": "giant-repo-budgets",
+      "status": "verified",
+      "scope": "Hover/navigation latency on M19-scale corpora (intellij-community subsets etc.) through the IDE stack where feasible; results recorded with machine + corpus revision. Any budget miss is a filed defect, not a footnote.",
+      "acceptanceCriteria": [
+        "Measured percentiles on named corpora + revisions",
+        "In-editor runs where the runner allows; server-level otherwise, declared",
+        "Misses filed as defects with evidence"
+      ],
+      "closureRequirements": [
+        "Evidence with machine + corpus",
+        "Defect issues linked for any miss",
+        "Limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R3.json",
+        "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
+        "evidenceFile": "R3-verify.json",
+        "passed": 25,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 6
+      }
+    },
+    {
+      "code": "R4",
+      "githubIssue": 539,
+      "tool": "precision-ledger",
+      "status": "verified",
+      "scope": "Published per-language/per-feature precision table: claim level, evidence path, differential sampling results, heuristic-edge ratios, limitations. Regeneration script + drift gate (hand-edits reopen the gate).",
+      "acceptanceCriteria": [
+        "Ledger generated from evidence files; drift-gated",
+        "Published in docs + marketplace listing updated",
+        "Staleness policy documented"
+      ],
+      "closureRequirements": [
+        "Generator evidence",
+        "Drift test byte-identical",
+        "Owner review recorded"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R4-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
+        "evidenceFile": "R4-verify.json",
+        "passed": 16,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 5
+      }
+    },
+    {
+      "code": "R5",
+      "githubIssue": 540,
+      "tool": "precision-improvements",
+      "status": "verified",
+      "scope": "Evidence-driven precision work surfaced by R4 (e.g. heuristic-edge reduction feeding the inferred-tier ratio). Each fix lands fixture-first with a permanent mutant (F7 rule).",
+      "acceptanceCriteria": [
+        "Each improvement: fixture authored before fix, mutant added, gate green",
+        "Ledger reflects improved ratios (regenerated)",
+        "No improvement claimed without its mutant"
+      ],
+      "closureRequirements": [
+        "Per-fix evidence",
+        "Ledger drift-gate green",
+        "Owner spot-check scheduled"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see R5-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-precision-improvements.ts",
+        "evidenceFile": "R5-verify.json",
+        "passed": 18,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 4
+      }
+    },
+    {
+      "code": "V1",
+      "githubIssue": 541,
+      "tool": "verifier-harness",
+      "status": "verified",
+      "scope": "The R1 runner and R4 generator as permanent, wired, fail-able tools.",
+      "acceptanceCriteria": [
+        "Runner + generator wired into verify",
+        "Positive+negative cases",
+        "Mutants for both (tamper -> fail)"
+      ],
+      "closureRequirements": [
+        "Evidence",
+        "Wiring proof",
+        "Limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see V1-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
+        "evidenceFile": "V1-verify.json",
+        "passed": 14,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
+    },
+    {
+      "code": "D1",
+      "githubIssue": 542,
+      "tool": "docs",
+      "status": "verified",
+      "scope": "The published precision ledger (docs + listing) and the wave protocol documentation.",
+      "acceptanceCriteria": [
+        "Both artifacts generated from evidence, drift-gated",
+        "Vocabulary lint green",
+        "Claim levels match ledger"
+      ],
+      "closureRequirements": [
+        "Drift tests",
+        "Evidence",
+        "Limitations declared"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see D1-verify.json",
+        "verifierCommand": "npx tsx script/m29/verify-m29-docs.ts",
+        "evidenceFile": "D1-verify.json",
+        "passed": 13,
+        "failed": 0,
+        "realFailed": 0,
+        "negativeCases": 3
+      }
+    },
+    {
+      "code": "X1",
+      "githubIssue": 543,
+      "tool": "closure-gate",
+      "status": "verified",
+      "scope": "Program-level closure: every version's completion bar (M24-M29) re-verified at current HEAD; every claim level re-checked; every limitation still declared; owner spot-checks recorded. The program is closed only on this evidence — the owner declares the idea achieved, per the spot-check ritual.",
+      "acceptanceCriteria": [
+        "Ladder audit: M24-M29 bars green at current HEAD, machine-checked",
+        "All claim levels re-validated against evidence freshness",
+        "Owner spot-check results (including discrepancies) appended to program evidence"
+      ],
+      "closureRequirements": [
+        "Program audit evidence",
+        "Owner sign-off recorded",
+        "Ledger clean across M24-M29"
+      ],
+      "evidence": {
+        "status": "verified",
+        "currentCommit": "see X1.json",
+        "verifierCommand": "npx tsx script/m29/verify-closure.ts",
+        "evidenceFile": "X1.json",
+        "passed": 32,
+        "failed": 0,
+        "realFailed": 0,
+        "note": "28/28 at HEAD; owner spot-check pack prepared in X1.json (the achieved/not-achieved verdict is the owner's, §8.5)",
+        "negativeCases": 3
+      }
+    }
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.434Z",
+    "contentSha256": "d1d7286d692f97c66e9b6c89ca586e7d9b31600d0b8267d66583339dd757ee33"
+  }
+}

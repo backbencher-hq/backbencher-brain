@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "count": 18,
+  "inventory": [
+    {
+      "code": "E7-linux",
+      "limitation": "Native Linux leg executed on this machine (linux); the other two OSes are machine-emitted blocked records (E7-darwin.json, E7-windows.json) — the OS-matrix workflow (.github/workflows/os-matrix.yml) runs each OS's native leg on its GitHub-hosted runner and uploads the evidence artifact for the owner to persist."
+    },
+    {
+      "code": "E7-linux",
+      "limitation": "The platform mutants prove the identity/data-dir/path cases FAIL LOUDLY; the native Linux leg itself exercises linux semantics (drive letters, % variables on win32)."
+    },
+    {
+      "code": "G1",
+      "limitation": "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those)."
+    },
+    {
+      "code": "G1",
+      "limitation": "A run with relevant uncommitted M42 files is recorded as known-gap; verified status requires a clean relevant tree."
+    },
+    {
+      "code": "H1",
+      "limitation": "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness."
+    },
+    {
+      "code": "H1",
+      "limitation": "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
+    },
+    {
+      "code": "H2",
+      "limitation": "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly."
+    },
+    {
+      "code": "H2",
+      "limitation": "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to)."
+    },
+    {
+      "code": "H2",
+      "limitation": "Warm-budget check uses mean-over-40 as a p95 proxy; the E5 editor leg re-measures with the shared harness."
+    },
+    {
+      "code": "H2",
+      "limitation": "Editor-leg (link clicking in a real session) is asserted in the E5-pattern session at H2 acceptance; this file proves the server surface."
+    },
+    {
+      "code": "H3",
+      "limitation": "Enrichment presence depends on the index enrichment pass running (bb index runs it); an index built with enrichment disabled would show honest absence."
+    },
+    {
+      "code": "H3",
+      "limitation": "Multi-site verb groups render no per-site hover annotation by design (bounded hover); per-edge enrichment always surfaces on graph edges."
+    },
+    {
+      "code": "H3",
+      "limitation": "Overhead budget is a pure-layer proxy (2000 cycles); the in-editor 50ms hover budget with an enriched fixture is asserted in the E5 session."
+    },
+    {
+      "code": "H4",
+      "limitation": "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
+    },
+    {
+      "code": "H5",
+      "limitation": "DOM assertions cover structure/classes/data attributes over a stub DOM; CSS/paint and the webview toggle script's runtime are per-editor presentation (the E5 leg covers the real editor)."
+    },
+    {
+      "code": "H5",
+      "limitation": "The usages fixture is single-file-language (java); cross-language usages reuse the M26.W3 surface, not re-tested here."
+    },
+    {
+      "code": "H6",
+      "limitation": "The full webview round trip (real acquireVsCodeApi postMessage in a live webview) is exercised in the E5 editor leg; this suite drives the SAME handler code headless with a stub editor."
+    },
+    {
+      "code": "H6",
+      "limitation": "The bridge script is generated text asserted by content laws (version, attrs, staleness, no remote origins); DOM event dispatch itself is per-editor runtime."
+    }
+  ],
+  "note": "Every limitation listed here carries its disposition in docs/m42/LAUNCH-RECORD.md (fixed / documented-with-reason / owner / CI-pending). None silent.",
+  "updatedAt": "2026-09-05T20:25:22.641647Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.548Z",
+    "contentSha256": "1006ce6b9b041cdef92bff00ca89632c2862d0dced2f99eb68989dfb082d3496"
+  }
+}

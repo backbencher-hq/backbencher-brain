@@ -1,0 +1,573 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:groovy",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "df286a99659c4f14faffaecc6370da8b5bf9dd6809a10e2ad397253b65e58fc9",
+        "bytes": 74072
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "c04f986e25fcafc51b3e6e0a23a9df18974b3dd0adddb4ac16dc8dbb4c10be9d",
+        "bytes": 40095
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "0813b36368eda40195bc61a146ab8a081438e81eb2293dfd18d7ff9fd78daf58",
+        "bytes": 4948
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "8795b053d9d2b9199221263170cbb64bb6b598b645a29e269f9ca029cbfc4aeb",
+        "bytes": 4363
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "804302cf964b52530a11f0d3b1e566d6df7519daa73c3bcc97e84fcc5d86d8fb",
+        "bytes": 106664
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
+        "bytes": 90257
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "77d6732f951502841928fd1be42639acbc6e1aca2ef5f6c778bf7dc485e9b931",
+        "bytes": 120796
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
+        "bytes": 102001
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "f6a242fad3ae91b51567b6ec64ac1aadc1efb1c6cd411e8034c225303eed7498",
+        "bytes": 147431
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
+        "bytes": 119797
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
+        "bytes": 54878
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "95c0f695ba799b7b0da97fc4be20df2faf7672814e862ec050b2ab6b4899ecfe",
+        "bytes": 140683
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "2cf3348934d5e4c950542e6d2cfe0e8c014befd1f45884299ff3c6649fd2b29a",
+        "bytes": 61621
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "684339cfc5e53d4cee9aae44feee0f9225e0b0e3445ce1d0cf900eb64fad6b8b",
+        "bytes": 83171
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
+        "bytes": 49950
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "64a3209636df0cfedd61d155f46ef91466ed405c09d7e0431ef24e2e93c0d506",
+        "bytes": 74260
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "08ad117ce4008609bbdfbf64a9eca45a2b99ea906c5655b197f9a8f92b359370",
+        "bytes": 87903
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
+        "bytes": 82717
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "25ac06734eaab0dbc753963cc40e2e55645a67137a79be7d362316e80b579580",
+        "bytes": 57574
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
+      },
+      "src/brain/database.ts": {
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
+      },
+      "validation/m12/fixtures/groovy/BaseService.groovy": {
+        "sha256": "68a8c0c3a35c7f536f7dcbf414386e9d64bb5847d6d349a77c42faa1faec1dee",
+        "bytes": 500
+      },
+      "validation/m12/fixtures/groovy/Features.groovy": {
+        "sha256": "add1171e0faff1415d680f20235616b73b45ea202ffbf8f3612e21a9ce6ee43a",
+        "bytes": 763
+      },
+      "validation/m12/fixtures/groovy/Negative.groovy": {
+        "sha256": "cb38794b1610cf634372a8be457b940a04bde2d869b974daec81ad814d93831e",
+        "bytes": 1498
+      },
+      "validation/m12/fixtures/groovy/Repository.groovy": {
+        "sha256": "c218c17bb02a1e38de2681368d293a63b793099fede2212c1a11fa4a80a5ccc9",
+        "bytes": 154
+      },
+      "validation/m12/fixtures/groovy/UserService.groovy": {
+        "sha256": "05bf1610674e6b3bada96510441a556d8351e8a5f6fab6b73a778ac6a080af0c",
+        "bytes": 984
+      },
+      "validation/m12/ground-truth/groovy.json": {
+        "sha256": "17c593ea981d6a2815a8261e9d3727bc7d6d27de9b4a7c36a3d33dabb34e9c26",
+        "bytes": 45434
+      },
+      "grammars/tree-sitter-groovy/grammar.js": {
+        "sha256": "b4cf40fb11a57fc7a7964ea17bfed408cf7380a53ce4871a095514c92e770972",
+        "bytes": 76871
+      }
+    },
+    "digest": "7132a59507b57c7f4e26fd8e0f65f6965441be5447aa132b3ac30235d4d92df3",
+    "parser": {
+      "path": "grammars/tree-sitter-groovy/tree-sitter-groovy.wasm",
+      "sha256": "bd4f689b8afd004d3bb69ecd8c4d23990284fdc9c322375707b599a40f160062",
+      "bytes": 4891652
+    }
+  },
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/groovy/ (BaseService.groovy, Repository.groovy, UserService.groovy, Features.groovy, Negative.groovy) — hand-audited against Groovy 3 semantics",
+  "fixtureDir": "validation/m12/fixtures/groovy",
+  "fixtures": [
+    "BaseService.groovy",
+    "Features.groovy",
+    "Negative.groovy",
+    "Repository.groovy",
+    "UserService.groovy"
+  ],
+  "perFile": {
+    "BaseService.groovy": {
+      "symbols": 11,
+      "relationships": 23
+    },
+    "Features.groovy": {
+      "symbols": 16,
+      "relationships": 22
+    },
+    "Negative.groovy": {
+      "symbols": 10,
+      "relationships": 19
+    },
+    "Repository.groovy": {
+      "symbols": 3,
+      "relationships": 9
+    },
+    "UserService.groovy": {
+      "symbols": 11,
+      "relationships": 40
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": false,
+    "metrics": {
+      "expected": 130,
+      "observedResolved": 157,
+      "truePositive": 111,
+      "falsePositive": 46,
+      "falseNegative": 19,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 0.7070063694267515,
+      "recall": 0.8538461538461538,
+      "falsePositiveRate": 0.2929936305732484,
+      "falseNegativeRate": 0.14615384615384616,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": "ast_extraction",
+    "truePositiveIds": [
+      "rel:BaseService.groovy:calls:findAll:findByFilter",
+      "rel:BaseService.groovy:contains:Audited:createdAt",
+      "rel:BaseService.groovy:contains:Audited:updatedAt",
+      "rel:BaseService.groovy:contains:BaseService:findAll",
+      "rel:BaseService.groovy:contains:BaseService:findByFilter",
+      "rel:BaseService.groovy:contains:BaseService:format",
+      "rel:BaseService.groovy:contains:BaseService:prefix",
+      "rel:BaseService.groovy:contains:Entity:getId",
+      "rel:BaseService.groovy:contains:Entity:getName",
+      "rel:BaseService.groovy:implements:BaseService:Repository",
+      "rel:BaseService.groovy:references:Audited:java.util.List",
+      "rel:BaseService.groovy:references:Audited:java.util.Optional",
+      "rel:Features.groovy:calls:describe:collect",
+      "rel:Features.groovy:calls:describe:toUpperCase",
+      "rel:Features.groovy:contains:Color:GREEN",
+      "rel:Features.groovy:contains:Color:RED",
+      "rel:Features.groovy:contains:Color:hex",
+      "rel:Features.groovy:contains:MathSpec:addition works",
+      "rel:Features.groovy:contains:Robot:describe",
+      "rel:Features.groovy:contains:Robot:name",
+      "rel:Features.groovy:contains:Robot:walk",
+      "rel:Features.groovy:contains:Walkable:greeting",
+      "rel:Features.groovy:contains:Walkable:walk",
+      "rel:Features.groovy:extends:MathSpec:Specification",
+      "rel:Features.groovy:implements:Robot:Walkable",
+      "rel:Features.groovy:references:Color:java.util.List",
+      "rel:Negative.groovy:calls:bump:info",
+      "rel:Negative.groovy:calls:useClosure:square",
+      "rel:Negative.groovy:calls:useList:each",
+      "rel:Negative.groovy:calls:useList:size",
+      "rel:Negative.groovy:contains:Counter:add",
+      "rel:Negative.groovy:contains:Counter:bump",
+      "rel:Negative.groovy:contains:Counter:count",
+      "rel:Negative.groovy:contains:Counter:interpolate",
+      "rel:Negative.groovy:contains:Counter:label",
+      "rel:Negative.groovy:contains:Counter:makeSelf",
+      "rel:Negative.groovy:contains:Counter:useClosure",
+      "rel:Negative.groovy:contains:Counter:useList",
+      "rel:Negative.groovy:instantiates:makeSelf:Counter",
+      "rel:Negative.groovy:references:Counter:java.util.List",
+      "rel:Repository.groovy:contains:Repository:find",
+      "rel:Repository.groovy:contains:Repository:save",
+      "rel:Repository.groovy:references:Repository:java.util.List",
+      "rel:Repository.groovy:references:Repository:java.util.Optional",
+      "rel:UserService.groovy:calls:format:trim",
+      "rel:UserService.groovy:calls:save:completedFuture",
+      "rel:UserService.groovy:calls:save:getId",
+      "rel:UserService.groovy:calls:save:put",
+      "rel:UserService.groovy:contains:User:getId",
+      "rel:UserService.groovy:contains:User:getName",
+      "rel:UserService.groovy:contains:User:id",
+      "rel:UserService.groovy:contains:User:name",
+      "rel:UserService.groovy:contains:UserService:User",
+      "rel:UserService.groovy:contains:UserService:format",
+      "rel:UserService.groovy:contains:UserService:save",
+      "rel:UserService.groovy:contains:UserService:store",
+      "rel:UserService.groovy:extends:UserService:BaseService",
+      "rel:UserService.groovy:implements:User:Entity",
+      "rel:UserService.groovy:implements:UserService:Repository",
+      "rel:UserService.groovy:instantiates:UserService:HashMap",
+      "rel:UserService.groovy:overrides:User.getId:Entity.getId",
+      "rel:UserService.groovy:overrides:User.getName:Entity.getName",
+      "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
+      "rel:UserService.groovy:overrides:UserService.save:Repository.save",
+      "rel:UserService.groovy:references:UserService:com.example.base.BaseService",
+      "rel:UserService.groovy:references:UserService:com.example.base.Entity",
+      "rel:UserService.groovy:references:UserService:com.example.repo.Repository",
+      "rel:UserService.groovy:references:UserService:java.util.HashMap",
+      "rel:UserService.groovy:references:UserService:java.util.Map",
+      "rel:UserService.groovy:references:UserService:java.util.concurrent.CompletableFuture",
+      "symbol:BaseService.groovy:11:interface:Entity",
+      "symbol:BaseService.groovy:12:method:getId",
+      "symbol:BaseService.groovy:13:method:getName",
+      "symbol:BaseService.groovy:16:class:BaseService",
+      "symbol:BaseService.groovy:17:property:prefix",
+      "symbol:BaseService.groovy:19:method:format",
+      "symbol:BaseService.groovy:21:method:findAll",
+      "symbol:BaseService.groovy:25:method:findByFilter",
+      "symbol:BaseService.groovy:6:interface:Audited",
+      "symbol:BaseService.groovy:7:property:createdAt",
+      "symbol:BaseService.groovy:8:property:updatedAt",
+      "symbol:Features.groovy:12:interface:Walkable",
+      "symbol:Features.groovy:13:method:walk",
+      "symbol:Features.groovy:14:method:greeting",
+      "symbol:Features.groovy:17:class:Robot",
+      "symbol:Features.groovy:18:property:name",
+      "symbol:Features.groovy:24:method:walk",
+      "symbol:Features.groovy:28:method:describe",
+      "symbol:Features.groovy:36:class:MathSpec",
+      "symbol:Features.groovy:37:method:addition works",
+      "symbol:Features.groovy:43:method:globalHelper",
+      "symbol:Features.groovy:5:enum:Color",
+      "symbol:Features.groovy:6:enum_member:GREEN",
+      "symbol:Features.groovy:6:enum_member:RED",
+      "symbol:Features.groovy:8:property:hex",
+      "symbol:Negative.groovy:20:property:count",
+      "symbol:Negative.groovy:21:property:label",
+      "symbol:Negative.groovy:27:method:add",
+      "symbol:Negative.groovy:31:method:bump",
+      "symbol:Negative.groovy:37:method:interpolate",
+      "symbol:Negative.groovy:41:method:useClosure",
+      "symbol:Negative.groovy:46:method:useList",
+      "symbol:Negative.groovy:52:method:makeSelf",
+      "symbol:Repository.groovy:6:interface:Repository",
+      "symbol:Repository.groovy:7:method:save",
+      "symbol:Repository.groovy:8:method:find",
+      "symbol:UserService.groovy:10:class:UserService",
+      "symbol:UserService.groovy:11:property:store",
+      "symbol:UserService.groovy:27:class:User",
+      "symbol:UserService.groovy:28:property:id",
+      "symbol:UserService.groovy:29:property:name"
+    ],
+    "falsePositiveIds": [
+      "rel:BaseService.groovy:references:Audited:Date",
+      "rel:BaseService.groovy:references:BaseService:String",
+      "rel:BaseService.groovy:references:findAll:List",
+      "rel:BaseService.groovy:references:findAll:T",
+      "rel:BaseService.groovy:references:findByFilter:List",
+      "rel:BaseService.groovy:references:findByFilter:String",
+      "rel:BaseService.groovy:references:findByFilter:T",
+      "rel:BaseService.groovy:references:format:String",
+      "rel:BaseService.groovy:references:getId:String",
+      "rel:BaseService.groovy:references:getName:String",
+      "rel:Features.groovy:contains:Color:Color",
+      "rel:Features.groovy:contains:Robot:Robot",
+      "rel:Features.groovy:overrides:Robot.walk:Walkable.walk",
+      "rel:Features.groovy:references:Robot:String",
+      "rel:Features.groovy:references:describe:String",
+      "rel:Features.groovy:references:greeting:String",
+      "rel:Features.groovy:uses:describe:name",
+      "rel:Negative.groovy:contains:Counter:Counter",
+      "rel:Negative.groovy:references:Counter:String",
+      "rel:Negative.groovy:references:interpolate:String",
+      "rel:Negative.groovy:uses:bump:count",
+      "rel:Repository.groovy:references:find:Optional",
+      "rel:Repository.groovy:references:find:String",
+      "rel:Repository.groovy:references:find:T",
+      "rel:Repository.groovy:references:save:T",
+      "rel:UserService.groovy:contains:User:User",
+      "rel:UserService.groovy:contains:UserService:UserService",
+      "rel:UserService.groovy:references:User:String",
+      "rel:UserService.groovy:references:UserService:Map",
+      "rel:UserService.groovy:references:UserService:String",
+      "rel:UserService.groovy:references:UserService:User",
+      "rel:UserService.groovy:references:format:String",
+      "rel:UserService.groovy:references:getId:String",
+      "rel:UserService.groovy:references:getName:String",
+      "rel:UserService.groovy:references:save:CompletableFuture",
+      "rel:UserService.groovy:references:save:User",
+      "symbol:Features.groovy:20:constructor:Robot",
+      "symbol:Features.groovy:9:constructor:Color",
+      "symbol:Negative.groovy:19:class:Counter",
+      "symbol:Negative.groovy:23:constructor:Counter",
+      "symbol:UserService.groovy:13:constructor:UserService",
+      "symbol:UserService.groovy:17:method:format",
+      "symbol:UserService.groovy:22:method:save",
+      "symbol:UserService.groovy:31:constructor:User",
+      "symbol:UserService.groovy:37:method:getId",
+      "symbol:UserService.groovy:40:method:getName"
+    ],
+    "falseNegativeIds": [
+      "rel:Features.groovy:contains:Color:constructor",
+      "rel:Features.groovy:contains:Robot:constructor",
+      "rel:Features.groovy:uses:Robot:name",
+      "rel:Negative.groovy:contains:Counter:constructor",
+      "rel:Negative.groovy:uses:Counter:count",
+      "rel:UserService.groovy:contains:User:constructor",
+      "rel:UserService.groovy:contains:UserService:constructor",
+      "rel:UserService.groovy:uses:User:id",
+      "rel:UserService.groovy:uses:User:name",
+      "symbol:Features.groovy:20:constructor:constructor",
+      "symbol:Features.groovy:9:constructor:constructor",
+      "symbol:Negative.groovy:18:class:Counter",
+      "symbol:Negative.groovy:23:constructor:constructor",
+      "symbol:UserService.groovy:13:constructor:constructor",
+      "symbol:UserService.groovy:16:method:format",
+      "symbol:UserService.groovy:21:method:save",
+      "symbol:UserService.groovy:31:constructor:constructor",
+      "symbol:UserService.groovy:36:method:getId",
+      "symbol:UserService.groovy:39:method:getName"
+    ],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "symbol:UserService.groovy:13:constructor:constructor",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "UserService.groovy",
+          "line": 13,
+          "attributes": {
+            "name": "constructor",
+            "symbolKind": "constructor"
+          },
+          "expectedState": "resolved",
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "UserService() {}"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "symbol:Features.groovy:9:constructor:Color",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Features.groovy",
+          "line": 9,
+          "attributes": {
+            "name": "Color",
+            "symbolKind": "constructor"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:groovy",
+      "wallTimeMs": 49.016534,
+      "userCpuMs": 224.954,
+      "systemCpuMs": 27.29,
+      "peakRssBytes": 279961600,
+      "rssDeltaBytes": 19005440,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for groovy. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.879Z",
+    "contentSha256": "cb0184a6009b8801dba2ab0f9edac4c768c8d116113cc3d2f2cdbe45643b7c49"
+  }
+}

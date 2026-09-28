@@ -1,0 +1,239 @@
+{
+  "issue": 763,
+  "milestone": "M50",
+  "status": "measured",
+  "passed": 18,
+  "failed": 1,
+  "commit": "522966109bea6b2138112021e6ce174e9dea9456",
+  "at": "2026-09-12T14:16:11.825Z",
+  "runtime": "node bin/bb mcp (production shape), fresh process per launch, warm-up + 3 measured calls x3 launches (per-call timeout 45s unless noted)",
+  "repoIndexState": {
+    "note": "CRITICAL context discovered during A1: the repo resolves to projectId 1d3d57103be91b8f9716d70199fe28a3f39245d9 whose brain.db is 816MB (3,040 files / 168,705 symbols / 172,869 relationships). A SECOND, EMPTY db (1d3d57103be91b8f9716d70199f0cd63, 0 rows) also existed from earlier probing. All latency numbers below are against the REAL 816MB index — the honest production shape.",
+    "splitBrain": "Two project ids for the same repo existed simultaneously (one empty). Root cause of the empty one: earlier probes created a BB_DATA_DIR-era DB; every fresh MCP server process re-derived the id and opened the REAL one. No code defect implicated for the split itself, but the empty DB masked real costs during earlier ad-hoc tests."
+  },
+  "table": [
+    {
+      "tool": "bb_search symbols",
+      "probe": "bb_search {\"mode\":\"symbols\",\"query\":\"storeResults\"",
+      "p50": 564,
+      "p95": 687,
+      "max": 687,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_ask semantic",
+      "probe": "bb_ask {\"query\":\"where are foreign keys enforce",
+      "p50": 4827,
+      "p95": 6232,
+      "max": 6232,
+      "okRatio": 1,
+      "verdict": "REJECT (agent will not wait)"
+    },
+    {
+      "tool": "bb_analyze impact",
+      "probe": "bb_analyze {\"mode\":\"impact\",\"target\":\"storeResults\"",
+      "p50": 1169,
+      "p95": 1356,
+      "max": 1356,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    },
+    {
+      "tool": "bb_health",
+      "probe": "bb_health {}",
+      "p50": 366,
+      "p95": 442,
+      "max": 442,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_doc symbol",
+      "probe": "bb_doc {\"mode\":\"symbol\",\"target\":\"storeResults\"",
+      "p50": 380,
+      "p95": 525,
+      "max": 525,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_patterns all",
+      "probe": "bb_patterns {}",
+      "p50": 90006,
+      "p95": 90006,
+      "max": 90006,
+      "okRatio": 0,
+      "verdict": "TIMEOUT (hard fail)"
+    },
+    {
+      "tool": "bb_security",
+      "probe": "bb_security {}",
+      "p50": 1032,
+      "p95": 1442,
+      "max": 1442,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    },
+    {
+      "tool": "bb_visualize",
+      "probe": "bb_visualize {\"format\":\"json\"}",
+      "p50": 558,
+      "p95": 619,
+      "max": 619,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_impact",
+      "probe": "bb_impact {\"symbol\":\"storeResults\"}",
+      "p50": 551,
+      "p95": 586,
+      "max": 586,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_cross_language",
+      "probe": "bb_cross_language {\"symbol\":\"getProjectId\"}",
+      "p50": 195,
+      "p95": 248,
+      "max": 248,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_annotations",
+      "probe": "bb_annotations {}",
+      "p50": 3,
+      "p95": 9,
+      "max": 9,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_graph callers",
+      "probe": "bb_graph {\"symbol\":\"storeResults\",\"maxDepth\":2}",
+      "p50": 18859,
+      "p95": 21659,
+      "max": 21659,
+      "okRatio": 1,
+      "verdict": "REJECT (agent will not wait)"
+    },
+    {
+      "tool": "bb_analyze callers",
+      "probe": "bb_analyze {\"mode\":\"callers\",\"target\":\"storeResults",
+      "p50": 582,
+      "p95": 652,
+      "max": 652,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_analyze stats",
+      "probe": "bb_analyze {\"mode\":\"stats\"}",
+      "p50": 244,
+      "p95": 278,
+      "max": 278,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_analyze test_gaps",
+      "probe": "bb_analyze {\"mode\":\"test_gaps\"}",
+      "p50": 1584,
+      "p95": 1855,
+      "max": 1855,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    },
+    {
+      "tool": "bb_analyze test_mapping",
+      "probe": "bb_analyze {\"mode\":\"test_mapping\"}",
+      "p50": 1698,
+      "p95": 1805,
+      "max": 1805,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    },
+    {
+      "tool": "bb_analyze test_quality",
+      "probe": "bb_analyze {\"mode\":\"test_quality\"}",
+      "p50": 70,
+      "p95": 85,
+      "max": 85,
+      "okRatio": 1,
+      "verdict": "OK"
+    },
+    {
+      "tool": "bb_analyze complexity",
+      "probe": "bb_analyze {\"mode\":\"complexity\"}",
+      "p50": 2895,
+      "p95": 11625,
+      "max": 11625,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    },
+    {
+      "tool": "bb_analyze dependencies",
+      "probe": "bb_analyze {\"mode\":\"dependencies\",\"filePath\":\"src/a",
+      "p50": 2093,
+      "p95": 2643,
+      "max": 2643,
+      "okRatio": 1,
+      "verdict": "SLOW (borderline)"
+    }
+  ],
+  "convictions": [
+    {
+      "tool": "bb_patterns",
+      "p50": "90006 (TIMEOUT at 90s)",
+      "evidence": "A1-case-13.json + stdio probes timing out at 45s/90s/100s; in-process on the real DB it also does not return in 100s; raw SQL reconstruction on the real DB: usage-row load 1.7s + 37,281 symbols scanned + 0.4s loop — the handler runs the FULL pattern scan per call and materializes 33,603 findings (>90% of the codebase flagged) before slicing to the 20-item display",
+      "rootCause": "O(all symbols) full-pattern scan per call + finding-volume explosion; at this scale the answer is useless even if it returned"
+    },
+    {
+      "tool": "bb_graph",
+      "p50": 18859,
+      "evidence": "A1-case-2.json (18.4–20.7s warm); reconstructed name-join walk on the real DB: 3 hops / 1,496 nodes = 334,931ms — the engine's per-hop symbol-NAME join shape scales catastrophically on 168k symbols",
+      "rootCause": "per-hop name-join traversal (not id-keyed adjacency); each hop re-scans relationship joins"
+    },
+    {
+      "tool": "bb_analyze complexity",
+      "p50": 2895,
+      "evidence": "A1-case-8.json (2.6–11.6s warm, high variance — filesystem-stat dependent)",
+      "rootCause": "per-call complexity aggregation across all 3,040 files with per-file stat/hash work"
+    },
+    {
+      "tool": "bb_ask",
+      "p50": 4827,
+      "evidence": "A1-case-1.json (4.7–4.8s warm)",
+      "rootCause": "embedding-provider round-trip inside the call path; re-ranking over 168k symbol vectors"
+    },
+    {
+      "tool": "bb_analyze test_gaps / test_mapping",
+      "p50": 1584,
+      "evidence": "A1-case-5/6.json (1.5–1.9s warm)",
+      "rootCause": "full mapping join over 37k production symbols + 50k usage rows per call"
+    },
+    {
+      "tool": "parameter-shape divergence",
+      "p50": 0,
+      "evidence": "bb_graph + bb_impact + bb_cross_language take `symbol`; bb_analyze takes `target`; bb_search takes `query`. Probe guess-errors recorded verbatim: 'unknown or irrelevant options: target, direction' (bb_graph), 'unknown or irrelevant options: target' (bb_impact), 'unknown or irrelevant options: query' (bb_cross_language). With correct args all three are fast (551/195ms).",
+      "rootCause": "graph-family tools use a different parameter vocabulary than analyze/search; every wrong guess is an error round-trip an agent learns from"
+    }
+  ],
+  "fast": [
+    "bb_search symbols (564ms)",
+    "bb_health (366ms)",
+    "bb_doc symbol (380ms)",
+    "bb_visualize (558ms)",
+    "bb_impact (551ms)",
+    "bb_cross_language (195ms)",
+    "bb_annotations (3ms)",
+    "bb_analyze callers (582ms)",
+    "bb_analyze stats (244ms)",
+    "bb_analyze test_quality (70ms)"
+  ],
+  "acceptanceNote": "This file is the A1 evidence: convictions above are A2's worklist. No fixes are claimed here. `passed`/`failed` count probe verdicts that returned vs ERROR/TIMEOUT — for a measurement issue that is the honest axis (the convictions ARE the output).",
+  "verifierCommand": "bun run script/m50/probe-a1-latency.ts <caseIdx> (x20) && bun run script/m50/combine-a1.ts"
+}

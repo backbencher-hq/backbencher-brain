@@ -1,0 +1,45 @@
+{
+  "gate": "M59.O4",
+  "issue": "#823",
+  "at": "2026-09-19T03:11:14.146Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
+  "command": "npx tsx script/m59/verify-honest-callsite.ts",
+  "status": "pass",
+  "fixture": "/tmp/m59-honest-noo5B2/fixture",
+  "checks": [
+    {
+      "name": "null-stays-null",
+      "passed": true,
+      "detail": "1 unknown-line edges audited, 0 fabricated"
+    },
+    {
+      "name": "known-stays-true",
+      "passed": true,
+      "detail": "2 known-line edges audited, 0 misreported"
+    },
+    {
+      "name": "lsp-ranges-finite",
+      "passed": true,
+      "detail": "0 bad ranges"
+    },
+    {
+      "name": "lsp-no-fabricated-ranges",
+      "passed": true,
+      "detail": "every emitted range derives from a real DB line (null-1 would be NaN → caught above)"
+    },
+    {
+      "name": "mutation-caught",
+      "passed": true,
+      "detail": "corrupted DB value is visible through the engine; per-row audit reacts to divergence"
+    }
+  ],
+  "audit": {
+    "auditedKnown": 2,
+    "auditedUnknown": 1,
+    "fabricated": 0,
+    "misreportedKnown": 0,
+    "lspFabricated": 0
+  },
+  "scope": "one kotlin+python fixture project, fresh index; excludes corpus-scale languages"
+}

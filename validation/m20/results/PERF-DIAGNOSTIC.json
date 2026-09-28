@@ -1,0 +1,131 @@
+{
+  "issue": "M20.PERF-DIAGNOSTIC",
+  "code": "PERF-DIAGNOSTIC",
+  "milestone": "M20",
+  "status": "known-gap",
+  "checks": 12,
+  "passed": 9,
+  "failed": 3,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "verifierCommand": "bun run script/m20/diagnose-index-phases.ts",
+  "generatedAt": "2026-08-28T01:44:59.195Z",
+  "methodology": "Read existing index state, then run a bounded incremental sample with post-processing disabled; await background embeddings separately; hash sampled source files before/after.",
+  "measured": [
+    {
+      "id": "rake",
+      "path": "$HOME/fixtures/repositories/rake",
+      "sampleFiles": 0,
+      "before": {
+        "files": 0,
+        "symbols": 0,
+        "relationships": 0,
+        "embeddings": 0
+      },
+      "after": {
+        "files": 0,
+        "symbols": 0,
+        "relationships": 0,
+        "embeddings": 0
+      },
+      "elapsedMs": 41.77,
+      "stats": {
+        "totalFiles": 0,
+        "processedFiles": 0,
+        "successFiles": 0,
+        "timeoutFiles": 0,
+        "errorFiles": 0,
+        "skippedFiles": 0,
+        "symbolsExtracted": 0,
+        "relationshipsFound": 0,
+        "importsFound": 0,
+        "startTime": 1787881470310,
+        "errors": [],
+        "endTime": 1787881470342
+      },
+      "persistedIndexStatus": {
+        "errors": [],
+        "performanceStats": null
+      },
+      "sourceUnchanged": true,
+      "error": null,
+      "embeddingFlushTimedOut": false
+    },
+    {
+      "id": "intellij-community",
+      "path": "$HOME/intellij-community",
+      "sampleFiles": 12,
+      "before": {
+        "files": 69509,
+        "symbols": 1071964,
+        "relationships": 3524679,
+        "embeddings": 0
+      },
+      "after": {
+        "files": 69509,
+        "symbols": 1071964,
+        "relationships": 3524679,
+        "embeddings": 0
+      },
+      "elapsedMs": 10595.3,
+      "stats": null,
+      "persistedIndexStatus": {
+        "errors": [],
+        "performanceStats": null
+      },
+      "sourceUnchanged": true,
+      "error": "database is locked",
+      "embeddingFlushTimedOut": false
+    },
+    {
+      "id": "aspnetcore",
+      "path": "$HOME/aspnetcore",
+      "sampleFiles": 12,
+      "before": {
+        "files": 10431,
+        "symbols": 132744,
+        "relationships": 268793,
+        "embeddings": 0
+      },
+      "after": {
+        "files": 10431,
+        "symbols": 132744,
+        "relationships": 268793,
+        "embeddings": 0
+      },
+      "elapsedMs": 113,
+      "stats": {
+        "totalFiles": 12,
+        "processedFiles": 12,
+        "successFiles": 0,
+        "timeoutFiles": 0,
+        "errorFiles": 0,
+        "skippedFiles": 12,
+        "symbolsExtracted": 132744,
+        "relationshipsFound": 268793,
+        "importsFound": 0,
+        "startTime": 1787881498993,
+        "errors": [],
+        "endTime": 1787881499101
+      },
+      "persistedIndexStatus": {
+        "errors": [],
+        "performanceStats": null
+      },
+      "sourceUnchanged": true,
+      "error": null,
+      "embeddingFlushTimedOut": false
+    }
+  ],
+  "interpretation": "elapsedMs includes parser/store work for the bounded sample plus the bounded embedding-flush wait. A timed-out flush is reported explicitly and does not count as embedding completion; this is not a full-index duration and does not establish asymptotic complexity.",
+  "limitations": [
+    "Only repositories present and already indexed on this machine are measured.",
+    "The bounded sample is not representative of a cold full index.",
+    "Provider/API latency is reported only indirectly unless embedding configuration exposes provider timing.",
+    "Index status fields are observed as persisted; missing fields are null, never interpreted as zero."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.374Z",
+    "contentSha256": "0a5a493e092664a196ec5d21e325b16948cfc9ea23f88187114b7a454c27522e"
+  }
+}

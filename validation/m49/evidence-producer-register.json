@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "purpose": "M49.G8 evidence-producer register: every identity in verify-honesty.ts's REQUIRED_EVIDENCE must be produced by a gate that RUNS in the battery, because an unwired producer's artifact is silently overwritten by whoever runs next (the F7/F8/F9 collision of 2026-09-12) and then goes stale forever. A row here is an explicit, shrinking admission that one identity is knowingly outside the battery, with the reason and the ledger id that owns the fix. G8 fails on an unregistered unwired producer and on a ghost row.",
+  "unwiredRequired": [],
+  "notes": [
+    "M14.0.F6 (fixture coverage) was the sole registered row and is now RESOLVED (M49 W9): its 24 findings were adjudicated against the pinned grammars (all 24 grammar-dead; 2 load-bearing-and-broken in java/javascript repaired; 22 removed or re-pointed, each proven behaviour-preserving), the gate's comment-blind literal scan was fixed with a proof-bearing --selftest, and the producer is WIRED into `verify` (audit:fixture-coverage + audit:fixture-coverage-selftest). Proof it is green at this commit on a clean checkout: see reviews/m49-w9-fixture-coverage-adjudication.md.",
+    "M14.0.F6's committed artifact had been `__LEGACY__` (pre-#761) with all-pass checks, so verify-honesty.ts's F6 deep-check validated a pre-lineage artifact; W8 replaced it with the gate's honest output, and W9 resolved every finding it named.",
+    "Rows may only be removed by fixing the producer (wire it) or by resolving the reason. This register is not a place to park a red gate."
+  ]
+}

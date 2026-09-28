@@ -1,0 +1,132 @@
+{
+  "name": "xml-corpus-production",
+  "wallTimeMs": 301312.560887,
+  "userCpuMs": 87445.982,
+  "systemCpuMs": 5977.043,
+  "peakRssBytes": 320331776,
+  "rssDeltaBytes": 229756928,
+  "databaseBytes": null,
+  "files": 2439,
+  "symbols": 184388,
+  "relationships": 76455,
+  "filesPerSecond": 8.094584549744967,
+  "symbolsPerSecond": 611.9492644355781,
+  "relationshipsPerSecond": 253.73983671617526,
+  "errors": 323,
+  "errorFiles": 0,
+  "crashFiles": 0,
+  "errorSamples": [],
+  "crashSamples": [],
+  "acceptanceFiles": 2439,
+  "passed": true,
+  "declaredNegativeControls": [
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-javafirst/src/main/resources/archetype-resources/pom.xml",
+      "errors": 15,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-javafirst/src/main/resources/archetype-resources/src/main/webapp/WEB-INF/beans.xml",
+      "errors": 17,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-javafirst/src/main/resources/archetype-resources/src/main/webapp/WEB-INF/web.xml",
+      "errors": 17,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-wsdlfirst/src/main/resources/archetype-resources/pom.xml",
+      "errors": 15,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-wsdlfirst/src/main/resources/archetype-resources/src/main/webapp/WEB-INF/beans.xml",
+      "errors": 17,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "maven-plugins/archetypes/cxf-jaxws-wsdlfirst/src/main/resources/archetype-resources/src/main/webapp/WEB-INF/web.xml",
+      "errors": 17,
+      "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT — and the measurement that made the recovery-labelling finding real rather than theoretical"
+    },
+    {
+      "file": "rt/bindings/soap/src/test/resources/org/apache/cxf/binding/soap/test-no-endenv.xml",
+      "errors": 1,
+      "verdict": "NOT A STANDALONE DOCUMENT"
+    },
+    {
+      "file": "rt/bindings/xml/src/test/resources/message-operation-empty-param.xml",
+      "errors": 1,
+      "verdict": "NOT A STANDALONE DOCUMENT"
+    },
+    {
+      "file": "rt/databinding/aegis/src/test/java/org/apache/cxf/aegis/type/encoded/example-messages.xml",
+      "errors": 21,
+      "verdict": "NOT A STANDALONE DOCUMENT — IT IS A DOCUMENT ABOUT DOCUMENTS"
+    },
+    {
+      "file": "rt/databinding/jaxb/src/test/java/org/apache/cxf/jaxb/resources/emptyReq.xml",
+      "errors": 1,
+      "verdict": "AN EMPTY FILE IS NOT AN XML DOCUMENT"
+    },
+    {
+      "file": "rt/ws/policy/src/main/resources/schemas/XMLSchema.dtd",
+      "errors": 50,
+      "verdict": "OUT OF THE WIRED GRAMMAR'S SURFACE, NOT A PARSE FAILURE OF IT"
+    },
+    {
+      "file": "rt/ws/policy/src/main/resources/schemas/datatypes.dtd",
+      "errors": 46,
+      "verdict": "OUT OF THE WIRED GRAMMAR'S SURFACE, NOT A PARSE FAILURE OF IT"
+    },
+    {
+      "file": "rt/ws/security/src/test/resources/org/apache/cxf/ws/security/wss4j/signed_missing_signed_body.xml",
+      "errors": 1,
+      "verdict": "AN EMPTY FILE IS NOT AN XML DOCUMENT"
+    },
+    {
+      "file": "rt/ws/security/src/test/resources/org/apache/cxf/ws/security/wss4j/signed_missing_signed_header.xml",
+      "errors": 1,
+      "verdict": "AN EMPTY FILE IS NOT AN XML DOCUMENT"
+    },
+    {
+      "file": "services/ws-discovery/ws-discovery-api/src/test/java/org/apache/cxf/ws/discovery/msg1.xml",
+      "errors": 1,
+      "verdict": "NOT A SINGLE XML DOCUMENT"
+    },
+    {
+      "file": "services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/XMLSchema.dtd",
+      "errors": 50,
+      "verdict": "OUT OF THE WIRED GRAMMAR'S SURFACE, NOT A PARSE FAILURE OF IT"
+    },
+    {
+      "file": "services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/XMLSchema.xsd",
+      "errors": 1,
+      "verdict": "A REAL DEFECT IN THE UPSTREAM FILE — and the one that made a THIRD grammar defect worth proposing and then REJECTING"
+    },
+    {
+      "file": "services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/datatypes.dtd",
+      "errors": 46,
+      "verdict": "OUT OF THE WIRED GRAMMAR'S SURFACE, NOT A PARSE FAILURE OF IT"
+    },
+    {
+      "file": "src/site/site.xml",
+      "errors": 1,
+      "verdict": "A REAL DEFECT IN THE UPSTREAM FILE, COMMITTED"
+    },
+    {
+      "file": "systests/jaxws/src/test/java/org/apache/cxf/systest/dispatch/resources/GreetMeDocLiteralRespMalformed.xml",
+      "errors": 1,
+      "verdict": "MALFORMED BY NAME, CORRECTLY REJECTED"
+    },
+    {
+      "file": "systests/rs-security/src/test/java/org/apache/cxf/systest/http/resources/jaxws-server.xml",
+      "errors": 3,
+      "verdict": "A REAL DEFECT IN THE UPSTREAM FILE, COMMITTED"
+    }
+  ],
+  "manifest": "$HOME/fixtures/xml/repositories/MANIFEST.json",
+  "manifestPresent": true,
+  "complexityPolicy": "single iterative AST traversal per file; attribute and relationship insertion are O(1) per emitted node, with a Set-based relationship dedupe"
+}

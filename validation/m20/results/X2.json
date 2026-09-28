@@ -1,0 +1,69 @@
+{
+  "issue": "M20.X2",
+  "code": "X2",
+  "milestone": "M20",
+  "status": "verified",
+  "checks": 12,
+  "passed": 12,
+  "failed": 0,
+  "negativeCases": 1,
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "sourceFingerprint": "6d38c8eedca197d908e530dd6761326797e56149b1cb3c4bf43da19ba2c8582a",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m20/verify-real-repo-ledger.ts",
+  "evidenceFile": "X2.json",
+  "generatedAt": "2026-08-28T00:40:04.157Z",
+  "measured": [
+    {
+      "corpus": "rake",
+      "family": "ruby",
+      "state": "measured",
+      "files": 43,
+      "symbols": 489,
+      "indexMs": 16568,
+      "patternsMs": 100,
+      "securityMs": 26,
+      "patternFindings": 100,
+      "securityTotal": 43,
+      "securityResolved": 20,
+      "securityUnresolved": 23
+    },
+    {
+      "corpus": "rebar3",
+      "family": "erlang",
+      "state": "measured",
+      "files": 131,
+      "symbols": 3360,
+      "indexMs": 14139,
+      "patternsMs": 295,
+      "securityMs": 29,
+      "patternFindings": 100,
+      "securityTotal": 141,
+      "securityResolved": 19,
+      "securityUnresolved": 122
+    },
+    {
+      "corpus": "typescript-compiler",
+      "family": "typescript",
+      "state": "measured",
+      "files": 79,
+      "symbols": 21277,
+      "indexMs": 519,
+      "patternsMs": 103865,
+      "securityMs": 379,
+      "patternFindings": 100,
+      "securityTotal": 500,
+      "securityResolved": 147,
+      "securityUnresolved": 353
+    }
+  ],
+  "limitations": [
+    "Wall-clock measurements are environment-dependent (concurrent co-agent indexing may inflate times); they prove completion and scale, not a performance guarantee.",
+    "Corpus coverage is limited to the repositories present on this machine at run time."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.376Z",
+    "contentSha256": "7dce18cf6cfc655be29cbaaa3f9983c7a31de8071d92ac096f86ec3710942413"
+  }
+}

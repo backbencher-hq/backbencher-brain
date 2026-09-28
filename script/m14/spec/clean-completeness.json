@@ -1,0 +1,144 @@
+{
+  "language": "clean",
+  "grammar": "tree-sitter-clean.wasm v1.2.7 (tag commit 302fb5d0, adopted 2026-09-25 — reviews/m60-clean-grammar-127-adjudication.md; wasm sha256 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec)",
+  "handled_verified": {
+    "_description": "Every node type real-clean-analyzer.ts compares against, each one exercised by a committed fixture — this list is evidence only because the F6 gate parses the fixtures and reports any type no parse tree contains. Fixtures: definition-module-interface.dcl (the declaration contract, four signature_name shapes), signature-definition-merge.icl (the declaration/definition merge, an operator callable and its scope exit), instance-target-name-collision.icl (a type colliding with an instance for it), expression-shapes.icl (case, lambda, guards, where block, list comprehension, qualified call, records, class/instance), import-modules-alias-884.icl (comma-separated imports).",
+    "types": [
+      "application",
+      "arrow",
+      "binary_expression",
+      "case_alternative",
+      "case_expression",
+      "class_declaration",
+      "class_member",
+      "class_name",
+      "constructor",
+      "data_constructor",
+      "data_constructors",
+      "function_declaration",
+      "guard",
+      "guard_equation",
+      "identifier",
+      "import_declaration",
+      "instance_class",
+      "instance_declaration",
+      "instance_member",
+      "lambda_expression",
+      "list_comprehension",
+      "module_declaration",
+      "module_name",
+      "operator",
+      "operator_definition",
+      "parenthesized_name",
+      "parenthesized_operator",
+      "qualified",
+      "qualified_identifier",
+      "record_definition",
+      "record_field",
+      "signature_name",
+      "type_definition",
+      "type_definition_body",
+      "type_function",
+      "type_signature",
+      "where_block"
+    ]
+  },
+  "internal_silent": {
+    "_description": "Structural wrappers, type-tree internals and literals that correctly emit nothing. A type_signature is a TYPE tree, so the walk skips its children wholesale (no call site can live inside one) — strict_type/type_application/type_variable are traversed, never dispatched on. local_binding wraps a where-local, which is scoped noise by contract (M11.11): its body attributes to no caller and its signature publishes no symbol.",
+    "types": [
+      "char_list",
+      "integer",
+      "local_binding",
+      "number",
+      "source_file",
+      "strict_type",
+      "string",
+      "type_application",
+      "type_variable"
+    ]
+  },
+  "gap": {
+    "_description": "Named worklists, not hidden ones. The differential does not depend on any of them (F5 is 0 MISSING / 0 UNEXPLAINED exhaustively over all 312 corpus files of the lane's five bases), so each gap is a coverage statement, not a correctness claim.",
+    "gaps": [
+      {
+        "id": "CL-G1",
+        "severity": "low",
+        "node_type": "monad_bind,array_generator_sep,open_range_expression",
+        "missing": "the three node types introduced in v1.2.7 that this analyzer names nowhere. They are lexer-level refinements of shapes the analyzer already handles through other nodes (`>>=`, array generators, `[1..]`), so nothing is lost today; the gap is that their arrival is not measured by any fixture. The fourth new type, char_list, is classified internal_silent above because it wraps a literal."
+      },
+      {
+        "id": "CL-G2",
+        "severity": "medium",
+        "node_type": "ERROR",
+        "missing": "inline `code { ... }` machine-code blocks (clean-stdlib/_SystemDynamic.icl) are not parseable Clean, so the whole file carries ERROR nodes and nothing inside them can be attributed honestly. This is the lane's single grammar-error file on the five bases (F10: Clyde 17 of 109 files damaged, clean-stdlib 1 of 74, and every one of them is a deliberate, classified residual rather than a silent drop). Same category as Go's testdata and Haskell's TemplateHaskell quasiquotes."
+      },
+      {
+        "id": "CL-G3",
+        "severity": "low",
+        "node_type": "class_declaration",
+        "missing": "a class declaration's CONTEXT (`class Eq a | == a`) is not modelled: the constraint identifiers publish nothing and emit no edge. Measured on clean-stdlib/StdClass.dcl, where the whole file is class declarations with contexts."
+      }
+    ]
+  },
+  "design_decision": {
+    "description": "The Clean FP-family contract, each ruling probe- or fixture-verified (see the fixtures named in handled_verified, plus script/m14/tmp/clean-fixture-probe.ts and the four CLEAN probes of the F9 battery).",
+    "decisions": [
+      {
+        "id": "CL-D1",
+        "node_type": "identifier",
+        "status": "RULED",
+        "question": "are bare value reads emitted as `uses`?",
+        "resolution": "No — the FP-family contract (Clojure/Elixir/Erlang/Haskell precedent): variable references are noise. The lane emits contains/implements/calls/instantiates/references only."
+      },
+      {
+        "id": "CL-D2",
+        "node_type": "type_signature",
+        "status": "RULED",
+        "question": "what does a module-level signature publish, given that a `.dcl` is declarations only?",
+        "resolution": "A Function symbol marked `metadata.isDeclaration`, keyed `::name`. A later in-file definition REPLACES it (one entity, the definition's range) — the C prototype/definition merge, real-c-analyzer.ts. Class/instance member signatures are already Method symbols from the class/instance path; a where-local signature publishes nothing."
+      },
+      {
+        "id": "CL-D3",
+        "node_type": "operator_definition",
+        "status": "RULED",
+        "question": "is an operator definition a callable, and where does its attribution stop?",
+        "resolution": "It is a callable wherever it lives (module level, instance member, class member), so its body's applications attribute to the operator's unparenthesized name. Inside a where block it is scoped noise, and a comma/brace pattern mis-shape (`# (a,b,c) = e;`, `(r,{gst & ls=s})`) names nothing. The attribution is RELEASED when the operator's scope exits: before that fix the operator stayed `currentFunction` and swallowed the next module-level application (`calls ++| -> flatten` in clean-stdlib/StdOverloadedList.icl)."
+      },
+      {
+        "id": "CL-D4",
+        "node_type": "instance_declaration",
+        "status": "RULED",
+        "question": "what is an instance named, and what happens when the name collides with its target type?",
+        "resolution": "Named after the TARGET type (the universal impl-naming contract: Rust `impl User`, Elixir `defimpl`, Haskell `instance ... User`), and `implements targetType -> className`. A file that also defines that type therefore offers the name twice; the export list is deduped by NAME first-wins (the type, which comes first, is the importable unit) because the exports-family invariant requires a name a duplicate cannot identify its provider for."
+      },
+      {
+        "id": "CL-D5",
+        "node_type": "record_definition,record_field",
+        "status": "RULED",
+        "question": "does a record emit an instantiation, and what do its fields publish?",
+        "resolution": "Fields publish Property symbols owned by their type and are contained by it. A record CONSTRUCTION or UPDATE emits no `instantiates` — only a constructor-headed application does, so a record literal is never an instantiation."
+      },
+      {
+        "id": "CL-D6",
+        "node_type": "guard_equation,guard",
+        "status": "RULED",
+        "question": "which guard shapes are decision points for cyclomatic complexity?",
+        "resolution": "Both, and they are different things: `guard_equation` is a function guard (1,594 sites over the five bases) and `guard` is a list-comprehension qualifier (23 sites, every one under a comprehension_qualifier). The counter used to read `guard` alone, so it measured comprehension filters while every function guard went uncounted."
+      },
+      {
+        "id": "CL-D7",
+        "node_type": "function_declaration",
+        "status": "RULED",
+        "question": "where does pattern territory end inside a function definition?",
+        "resolution": "At the body FIELD: everything before it is a pattern, so a constructor there never becomes `instantiates`. The pre-fix gate tested each child for `type === \"operator\" && text === \"=\"`, which this grammar cannot produce (a definition's children are name/pattern…/body and the `=` is not a child; the 1,576 corpus `operator` nodes are operator symbols under binary_expression/unary_expression/paren_pattern), so the gate was dead — a grammar that app-lifts a head pattern would have started fabricating with nothing in the way."
+      },
+      {
+        "id": "CL-D8",
+        "node_type": "module_declaration",
+        "status": "RULED",
+        "question": "what is exported from a module that has no export keyword?",
+        "resolution": "The module-level symbols: `ownerName === currentModule` (or ownerless) — the haskell rule, since the module is the namespace and `import M (f)` binds `f` — restricted to exportable kinds and deduped by name. Measured over the five bases: 4,443 exports over 305 of 312 files; the 7 without one are the `_`-prefixed compiler-internal modules, whose names are private by Clean convention. The predicate used to be `!sym.ownerName`, the exact negation of the rule its own comment stated, which left 312 of 312 files exporting at most one thing."
+      }
+    ]
+  }
+}
