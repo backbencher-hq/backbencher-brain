@@ -339,6 +339,20 @@ const PATTERN_NODE_TYPES = new Set([
 ])
 
 /** The definition node types that own an attribution frame. */
+/**
+ * Node types that carry a uniqueness CONSTRAINT rather than a type, so an enclosing
+ * `array_type` / `uniqueness_type` is a constraint and not a type. `{!}` and `{#}`
+ * parse to these and nothing else; `{32#.a}` parses to a `number` PLUS a
+ * `dotted_type`, and the `dotted_type` is what makes it a type.
+ */
+const CONSTRAINT_MARKER_TYPES = new Set([
+  "number",
+  "integer",
+  "float",
+  "uniqueness_star",
+  "uniqueness_constraints",
+])
+
 const CALLABLE_NODE_TYPES = new Set([
   "function_declaration",
   "operator_definition",
@@ -1544,22 +1558,30 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * 293 are `array_type` 127 (`instance Array {} a`), `list_type` 97
    * (`instance toString [a]`), `type_variable` 32, `type_paren` 16,
    * `question_type` 9, `tuple_type` 8 and `unit_type` 4. On those 253
-   * declarations (54 files) the scan found nothing and the instance was skipped
+   * declarations (51 files) the scan found nothing and the instance was skipped
    * whole — no Class symbol, no `implements` edge, no member scope, and every
    * `instance_member` inside it (1,009 members corpus-wide) left ownerless or
    * attributed to the module. The field is exact.
+   *
+   * Reading the field is not sufficient on its own, though: the argument list is
+   * `constraint* Type`, so the TYPE is the LAST argument that names one, and a
+   * bare uniqueness constraint names none. Taking the first argument named every
+   * constrained instance after its constraint — `instance Array {#} Int` as
+   * `{#} -> Array` — which is most of Clean's own StdEnv. See
+   * `instanceTargetName`.
    */
   private processInstance(node: Node, ctx: CleanContext, scopeStack: Scope[]): boolean {
     const classNode = node.childForFieldName("name")
     if (!classNode?.text) return false
     const className = classNode.text
     const args = this.fields(node, "argument")
+    const typeArgs = args.filter((a) => this.instanceTargetName(a) !== null)
     const targetNames: string[] = []
     for (const a of args) {
       const t = this.instanceTargetName(a)
       if (t) targetNames.push(t)
     }
-    const targetType = targetNames[0]
+    const targetType = typeArgs.length > 0 ? this.instanceTargetName(typeArgs[typeArgs.length - 1]) : null
     if (!targetType) return false
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
 
@@ -1569,23 +1591,36 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     // than one target type (`instance Array {} a`, `instance C (a, b)`) records
     // the rest in metadata rather than fabricating sibling symbols — they are
     // arguments to ONE implementation, not several.
-    ctx.symbols.push({
-      name: targetType,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
-      scope: currentScope?.name,
-      ownerName: currentScope?.name || ctx.currentModule,
-      ownerKind: currentScope?.kind,
-      visibility: "public",
-      metadata: {
-        cleanSpecific: true,
-        className,
-        targetType,
-        targetTypes: targetNames,
-        isTypeClassInstance: true,
-      },
-    })
-    this.attachComments(ctx.symbols[ctx.symbols.length - 1], node)
+    //
+    // A POLYMORPHIC instance publishes NO symbol. `instance Sized {!} a` is a real
+    // instance declaration, but its target is the type VARIABLE `a`, and a symbol
+    // named `a` collides head-on with the spec's rule that a type parameter is a
+    // BINDING and never a symbol — the same rule that keeps a class's or generic's
+    // `parameter` field out of the symbol table, and the one `declaration-forms`
+    // pins as `forbidSymbols`. The instance still contributes its `implements` edge
+    // below (that is the real dependency) and its class context, so nothing about
+    // the declaration is lost; what is withheld is a symbol whose NAME would be a
+    // lie. Found by the constrained-instance fixture this round added.
+    const targetIsPolymorphic = typeArgs[typeArgs.length - 1]?.type === "type_variable"
+    if (!targetIsPolymorphic) {
+      ctx.symbols.push({
+        name: targetType,
+        kind: ASTEngine.SymbolKind.Class,
+        range: this.nodeToRange(node),
+        scope: currentScope?.name,
+        ownerName: currentScope?.name || ctx.currentModule,
+        ownerKind: currentScope?.kind,
+        visibility: "public",
+        metadata: {
+          cleanSpecific: true,
+          className,
+          targetType,
+          targetTypes: targetNames,
+          isTypeClassInstance: true,
+        },
+      })
+      this.attachComments(ctx.symbols[ctx.symbols.length - 1], node)
+    }
 
     // The implements edge. Site line = the class NAME's line, the name-bearing
     // node for an implements edge (M59 #825 rule, kept from the old handler).
@@ -1603,6 +1638,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // so the flag records the normal case explicitly instead of leaving the
         // reader to infer it from a missing symbol.
         isExternalClass: !ctx.declaredTypeNames.has(className),
+        // The instance's target is a type VARIABLE, so the instance is polymorphic:
+        // it publishes no symbol (see above) and this flag says why the edge has no
+        // symbol at its source.
+        isPolymorphicInstance: targetIsPolymorphic || undefined,
       },
       this.lineOf(classNode),
     )
@@ -1615,35 +1654,73 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.childForFieldName("body")) ctx.patterns["Inline Machine Code"] = true
 
     ctx.patterns["Type Classes"] = true
-    scopeStack.push({ node, name: targetType, kind: ASTEngine.SymbolKind.Class })
+    // A polymorphic instance publishes no symbol, so it must not own a scope under
+    // the type VARIABLE's name either: the member `contains` edges would carry a
+    // source that resolves to nothing. Measured — the honesty gate failed on exactly
+    // that, 20 `contains` edges in `_SystemStrictLists.icl` reading `a -> _cons`,
+    // `_cons_u`, `decons_u` and six siblings, from the six `instance List [] a
+    // where` forms. Naming the frame after the CLASS keeps the ownership real
+    // (`List` is a symbol this file publishes) without inventing an instance row.
+    scopeStack.push({
+      node,
+      name: targetIsPolymorphic ? className : targetType,
+      kind: ASTEngine.SymbolKind.Class,
+    })
     return true
   }
 
   /**
-   * The name an instance ARGUMENT denotes. A bare `constructor` is the name
-   * itself; every other shape is read from the node's own children, so the name
-   * is structural rather than a text rewrite:
-   *   `constructor`    `User`                     → `User`
-   *   `array_type`     `{!}` (the `instance Array {} a` shape) → its inner type
-   *   `list_type`      `[a]`                      → `[a]`
-   *   `tuple_type`     `(a, b)`                   → `(a, b)`
-   *   `type_paren`     `(Maybe a)`                → `Maybe a`
-   *   `question_type`  `?Int`                     → `?Int`
-   *   `type_variable`  `a`                        → `a`
+   * The TYPE an `argument` names, or null when the argument is a bare UNIQUENESS
+   * CONSTRAINT rather than a type.
+   *
+   * Clean's instance head is `instance Class constraint* Type`, and the grammar puts
+   * a constraint that applies to the WHOLE instance in the same `argument` field as
+   * the type, so the argument list is not all types:
+   *
+   *   instance Array {!} a         args = [ array_type({!}), type_variable(a) ]
+   *   instance Array {#} Int       args = [ array_type({#}), constructor(Int) ]
+   *   instance Array {#} {32#.a}  args = [ array_type({#}), array_type({32#.a}) ]
+   *   instance == {#Char}          args = [ array_type({#Char}) ]  <- ONE arg, and
+   *                                                                    it IS the type
+   *
+   * Taking the FIRST argument named every constrained instance after its
+   * CONSTRAINT: `instance Array {#} Int` became `{#} -> Array`, and
+   * `instance Array {32#} Int` became `32 -> Array` (the inner child of `{32#}`).
+   * That is the misnamed `implements` edge and instance symbol behind every
+   * constrained instance — the shape Clean's own StdEnv uses most, since `Array`
+   * alone has six. Taking the LAST argument fixes the head but still returns `32`
+   * for `{32#.a}`, because an `array_type` may hold a constraint LEVEL and a TYPE
+   * together.
+   *
+   * So the walk is STRUCTURAL: inside a `type_paren` / `array_type` /
+   * `uniqueness_type`, take the first named child that is not a constraint marker.
+   * `{!}` and `{#}` have no such child and are therefore constraints (null);
+   * `{#Char}` and `{32#.a}` have a `dotted_type` and are therefore types. The
+   * earlier version of this comment claimed the same thing via a text test on
+   * `{#…}`; the node shape says it outright, so there is no text inspection left.
    */
   private instanceTargetName(arg: Node): string | null {
     switch (arg.type) {
       case "constructor":
       case "type_application":
       case "type_function":
+      case "tuple_type":
+      case "list_type":
+      case "dotted_type":
         return arg.text
       case "type_variable":
         return arg.namedChild(0)?.text ?? arg.text
       case "type_paren":
       case "array_type":
-      case "uniqueness_type": {
-        const inner = arg.namedChild(0)
-        return inner ? inner.text : arg.text
+      case "uniqueness_type":
+      case "unique_var_type": {
+        for (let i = 0; i < arg.namedChildCount; i++) {
+          const inner = arg.namedChild(i)
+          if (!inner || CONSTRAINT_MARKER_TYPES.has(inner.type)) continue
+          const name = this.instanceTargetName(inner)
+          if (name) return name
+        }
+        return null
       }
       default:
         return arg.text
