@@ -32,6 +32,7 @@ const SAMPLE = process.argv.includes("--sample") ? Number(process.argv[process.a
 // is what actually answers the question.
 const FILES_ARG = process.argv.includes("--files") ? process.argv[process.argv.indexOf("--files") + 1] : undefined
 const ENV = { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH}` }
+const MUTANT_OUT = join("/tmp", `lua-mutant-oracle-${process.pid}.json`)
 
 const original = readFileSync(SRC, "utf8")
 
@@ -166,7 +167,12 @@ interface OracleRun {
 const runOracle = (): OracleRun => {
   let out = ""
   try {
-    const argv = [ORACLE, "--repo", "kong"]
+    // --out into a temp file, ALWAYS. Without it every one of these ~10 narrowed
+    // passes wrote to validation/m60/results/lua-truth-oracle-kong.json and the
+    // last one — a 14-file slice from a MUTATED analyzer — became the committed
+    // "corpus" evidence. A harness that mutates the thing it measures must never
+    // write to the measured thing's canonical artifact.
+    const argv = [ORACLE, "--repo", "kong", "--out", MUTANT_OUT]
     if (FILES_ARG) argv.push("--files", FILES_ARG)
     else argv.push("--sample", String(SAMPLE))
     out = execFileSync("bun", argv, {
@@ -327,6 +333,8 @@ for (const line of results) console.log(line)
 const restored = readFileSync(SRC, "utf8")
 console.log()
 console.log(`analyzer restored byte-for-byte: ${restored === original ? "YES" : "NO — INVESTIGATE"}`)
+// The canonical corpus artifact is never this file's business.
+console.log(`mutant runs wrote only to ${MUTANT_OUT}; validation/m60/results/lua-truth-oracle-kong.json untouched`)
 console.log(`${MUTANTS.length - skipped - inconclusive} run, ${inconclusive} inconclusive (no trigger in the slice), ${skipped} skipped, ${survived} survived`)
 console.log(`A survivor is a real gap in the instrument. An INCONCLUSIVE is a gap in the SLICE — widen it with --sample or --files.`)
 process.exit(survived === 0 && restored === original ? 0 : 1)
