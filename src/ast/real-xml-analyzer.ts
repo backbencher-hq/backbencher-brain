@@ -1212,9 +1212,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * completeness gate can see that the attribute vocabulary is not silently
    * assumed to be `{name}`.
    */
-  private static readonly DECLARATION_NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
-    output: "method",
-  }
+  /**
+   * Declared EMPTY, and that emptiness is the finding.
+   *
+   * This used to read `{ output: "method" }`, on the theory that XSLT
+   * `xsl:output` names something. It does not: `method` names the output METHOD
+   * (`xml`, `html`, `text`) and nothing else. So `<xsl:output method="xml"/>`
+   * was published as a symbol called **`xml`**, marked `isVocabDeclaration`,
+   * with `method`/`encoding`/`indent` hung off it as its attributes — and the
+   * element's real name, `xsl:output`, appeared nowhere in the graph.
+   *
+   * That is the M60.R10 defect class in MIRROR IMAGE. R10 is publishing a VALUE
+   * where a NAME belongs, into a `contains` target; this was taking a value
+   * where a NAME belongs and calling the element IT. The comment on
+   * REFERENCE_ATTRIBUTES above spends two paragraphs refusing to publish
+   * `unbounded` and `Normal` as names, and then the declared-name table handed
+   * `xml` to the graph in the very next screen. The corpus paid for it in
+   * bug-128.xml and bug-92.xml, where `contains xsl:stylesheet -> xsl:output`
+   * was missing and the element had been renamed to its own configuration.
+   *
+   * XSLT 2.0 does give `xsl:output` a `name`, for stylesheets that declare
+   * several outputs — and `name` is already this function's default, so the
+   * correct table is the empty one. `xsl:output` in XSLT 1.0, which is what
+   * these files are, has no name at all and is correctly published under its
+   * written name: it is an instruction, not a declaration.
+   */
+  private static readonly DECLARATION_NAME_ATTRIBUTE: Readonly<Record<string, string>> = {}
 
   /**
    * The DECLARED NAME of an element, when its vocabulary puts the name in an

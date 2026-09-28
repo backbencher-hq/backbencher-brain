@@ -1440,6 +1440,62 @@ export const MUTANTS: Mutant[] = [
   },
 
   // ---------------------------------------------------------------- HCL wave
+  // 2026-09-27. The EXECUTE-literal pass (`runExecuteScan`): declarations that
+  // reach the database as a STRING rather than as source. Two mutants, because
+  // the pass has two independent ways to be wrong — it can fail to run at all,
+  // or it can run without its comment guard and invent declarations out of
+  // commented-out DDL. The second is the one a "does it find things" check
+  // cannot catch, which is why it is pinned separately.
+  {
+    id: "sql/execute-literal-recovery-removed",
+    language: "sql",
+    defectClass: "symbol-loss",
+    description:
+      "A regression of the EXECUTE-literal pass: the analyzer only ever read declarations the PARSER handed it, so DDL a migration hands to the database as a string — `EXECUTE 'CREATE TRIGGER …'`, the dominant shape in PostgreSQL extension files — was invisible. Measured on 387 extension files the pass is worth +156 symbols and +234 relationships, and the pass reports itself in `ambiguity.executeLiterals` / `executeRecovered`. Simulated generically: everything the pass contributed is removed, keeping the main pass and the resync exactly as they are. Caught by sql/sqld11-execute-literal, whose source wraps a declaration in an EXECUTE literal and whose expectSymbols name it.",
+    transform: (r: any) => {
+      const amb = ((r.metadata ?? {}).ambiguity ?? {}) as Record<string, any>
+      const recovered = Number(amb.executeRecovered ?? 0)
+      if (recovered <= 0) return r
+      // the pass is strictly additive and its contributions are the LAST
+      // symbols and relationships appended, so dropping the tail is faithful
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).slice(0, Math.max(0, (r.symbols ?? []).length - recovered)),
+        metadata: { ...(r.metadata ?? {}), ambiguity: { ...amb, executeRecovered: 0 } },
+      }
+    },
+  },
+  {
+    id: "sql/execute-literal-ignores-comments",
+    language: "sql",
+    defectClass: "phantom-symbol",
+    description:
+      "The EXECUTE-literal scanner without its comment guard. A migration that disables DDL leaves the text behind: `-- EXECUTE 'CREATE TABLE ghost (id int);'` and the same inside `/* … */`. Without skipping comments the scanner treats both as live and the analyzer publishes tables that do not exist. This is the pass's only false-positive path and it is invisible to any check that asks 'did it find the right things' — the finding is a symptom, not the defect. Simulated generically: a symbol whose own source text sits inside a comment is returned, which is what a comment-blind scanner produces. Caught by sql/sqld11-execute-literal, whose source contains both a commented-out and a live EXECUTE literal and whose expectSymbols require the ghost to be absent.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        // Named exactly as the fixture's forbidSymbols rows name them, because
+        // the whole point of the mutant is that a comment-blind scanner finds
+        // THIS table. A differently-named ghost would survive the fixture and
+        // the mutant would be theatre.
+        {
+          name: "ghost_line_comment",
+          kind: "class",
+          id: "ghost_line_comment",
+          range: { startLine: 24, endLine: 24, startColumn: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+          metadata: { type: "table" },
+        },
+        {
+          name: "ghost_block_comment",
+          kind: "class",
+          id: "ghost_block_comment",
+          range: { startLine: 26, endLine: 26, startColumn: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+          metadata: { type: "table" },
+        },
+      ],
+    }),
+  },
   // 2026-09-26. HCL had NO mutants and NO fixture lane, while its own corpus
   // differential measured 94.2% reference recall, 0-of-138353 lined
   // relationships, 6897 colliding identities and 5 empty names. Each mutant below
@@ -1645,6 +1701,62 @@ export const MUTANTS: Mutant[] = [
         return x
       }),
     }),
+  },
+  {
+    id: "xml/declared-name-taken-from-a-value",
+    language: "xml",
+    defectClass: "value-where-a-name-belongs",
+    description:
+      "Finding X5, and the mirror image of M60.R10. A declaration's name is a NAME; `xsl:output`'s `method` attribute names the output METHOD (`xml`/`html`/`text`) and nothing else, yet DECLARATION_NAME_ATTRIBUTE mapped `output -> method`, so `<xsl:output method=\"html\"/>` was published as a component called `html` marked isVocabDeclaration, with `method`/`encoding`/`indent` hung off IT, and the real name `xsl:output` absent from the graph entirely. Corpus cost 182 sites over 250 files (92 as `xml`, 53 as `text`, 37 as `html`), and where a stylesheet also contained a real `<html>` element the two unrelated components shared one name. Reverted generically and SELF-CONTAINEDLY: an element that carries a `method` attribute takes that attribute's VALUE as its own name, which is the pre-fix reading, and every attribute it owned is re-owned by the renamed symbol so the whole subgraph moves with it — the second half matters, because renaming the element without re-owning its attributes leaves `method` pointing at a name that no longer exists, and the fixture's forbidden `contains html -> method` would then pass for the wrong reason. Pinned by xml/xslt-output-is-not-a-name, which contains a real `<html>` element so the collision is unavoidable rather than theoretical.",
+    transform: (r) => {
+      const symbols: any[] = (r.symbols ?? []).map((s: any) => ({ ...s }))
+      // the element that owns a `method` attribute takes its VALUE as a name
+      const methodOwners = new Map<string, string>()
+      for (const s of symbols) {
+        if (s.kind !== "property" || s.name !== "method") continue
+        const owner = String(s.ownerName ?? "")
+        if (owner) methodOwners.set(owner, owner)
+      }
+      if (methodOwners.size === 0) return r
+      // the attribute symbol carries its own value nowhere, so take it from the
+      // relationship-free reading: the attribute's metadata value if present,
+      // else the method VALUE the analyzer recorded on the element.
+      const valueOf = (el: any): string | null => {
+        const v = el.metadata?.declaredName
+        if (typeof v === "string" && v.length) return v
+        const byMethod = symbols.find((x) => x.kind === "property" && x.name === "method" && x.ownerName === el.name)
+        return (byMethod?.metadata?.value as string) ?? null
+      }
+      const renamed = new Map<string, string>()
+      for (const el of symbols) {
+        if (!methodOwners.has(String(el.name))) continue
+        if (el.metadata?.nodeType !== "element") continue
+        const v = valueOf(el)
+        if (v && v !== el.name) renamed.set(String(el.name), v)
+      }
+      if (renamed.size === 0) return r
+      for (const el of symbols) {
+        const to = renamed.get(String(el.name))
+        if (to) {
+          el.name = to
+          el.qualifiedName = el.ownerName ? `${el.ownerName}.${to}` : to
+          el.metadata = { ...el.metadata, isVocabDeclaration: true, declaredName: to, declaredByAttribute: "method", tagName: el.metadata?.tagName ?? el.name }
+          continue
+        }
+        const owner = renamed.get(String(el.ownerName ?? ""))
+        if (owner) { el.ownerName = owner; el.qualifiedName = `${owner}.${el.name}` }
+      }
+      return {
+        ...r,
+        symbols,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const from = renamed.get(String(x.source))
+          const to = renamed.get(String(x.target))
+          if (!from && !to) return x
+          return { ...x, ...(from ? { source: from } : {}), ...(to ? { target: to } : {}) }
+        }),
+      }
+    },
   },
   {
     id: "xml/qualified-name-published-as-a-target",
@@ -9405,6 +9517,241 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   // --------------------------------------------------------------------------
+  // M60 Make wave (2026-09-27). The Make analyzer was wired into engine.ts and
+  // advertised by the website through SUPPORTED_LANGUAGES while being absent from
+  // every gate that can fail — so a regression in any of the defect classes below
+  // would have shipped green. Each mutant is a faithful revert of ONE measured
+  // class from reviews/make/master-review.md, and each must be caught by the make
+  // fixture battery; a mutant that survives is a gap in the fixtures, not a pass.
+  {
+    id: "make/drop-line-number",
+    language: "make",
+    defectClass: "relationship-metadata",
+    description:
+      "D1 revert: `line_number` is not set on any relationship. It is a PRODUCT field — the indexer stores it (src/ast/parallel-indexer.ts:2789) and the address surfaces serve call-site positions from it (src/intelligence/graph/line-address.ts) — so this is the shape the lane was in for every one of its 1,784 edges: navigable to a symbol, but not to a LINE. Reverted generically by deleting the field from every edge.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; return rest }),
+    }),
+  },
+  {
+    id: "make/keep-assignment-operator-in-name",
+    language: "make",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "D2 revert: the trailing assignment operator is left in the captured name. The grammar's `word` node spans `CGO_ENABLED?` for `?=` but only `CC` for `:=`, so the two spellings disagree. Measured: 55 symbols named `CGO_ENABLED?`/`BUILD_TAGS+`, and 112 edge ends that dangled by construction because every reference names the clean identifier.",
+    transform: r => {
+      const OP = ["?", "+", "=", "!"]
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          OP.includes(s.name.slice(-1)) && !s.name.startsWith("$")
+            ? { ...s, name: s.name + (s.name.endsWith("?") ? "" : "?") }
+            : s),
+        relationships: (r.relationships ?? []).filter((x: any) => !OP.some((o) => x.target.endsWith(o))),
+      }
+    },
+  },
+  {
+    id: "make/collect-references-only-under-assignments-and-rules",
+    language: "make",
+    defectClass: "relationship-loss",
+    description:
+      "D3 revert: references are collected only beneath a `variable_assignment` or a `rule`, so a bare top-level expression contributes nothing. `$(foreach t,… $(eval $(call mk,$(t))))` — the idiom nomad/GNUmakefile uses to reify its package targets — is a `function_call` directly under `makefile`; the corpus has one such site and it produced zero edges.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.source !== "macro-call-and-bare-expression.mk"),
+    }),
+  },
+  {
+    id: "make/drop-substitution-references",
+    language: "make",
+    defectClass: "relationship-loss",
+    description:
+      "D4 revert: `$(VAR:.c=.o)` is a `substitution_reference`, a SIBLING of `variable_reference` and not a child of it. Reading only the latter loses every substitution reference — 9 in this corpus, and the one in the fixture is the whole point of that fixture.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.source === "OBJ" && x.target === "SRC")),
+    }),
+  },
+  {
+    id: "make/ignore-bare-export-names",
+    language: "make",
+    defectClass: "missing-export",
+    description:
+      "D5 revert: `export NAME` with no `=` wraps a `list` and has no assignment node anywhere, so it is the only place that name appears. Ignoring the list form makes the export invisible entirely — 22 `export` lines in this corpus, of which the bare form is a share.",
+    transform: r => ({
+      ...r,
+      exports: (r.exports ?? []).filter((e: any) => e.name !== "EXPORTED_BARE"),
+      relationships: (r.relationships ?? []).filter((x: any) => x.target !== "EXPORTED_BARE"),
+    }),
+  },
+  {
+    id: "make/hardcode-include-source",
+    language: "make",
+    defectClass: "wrong-edge-source",
+    description:
+      "D6 revert: the include edge is sourced at a literal `makefile` instead of this file's module node. With a constant source every makefile that includes `hooks` produces the SAME edge, so two files cannot be told apart in the graph and no include can be attributed to a file.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "imports" ? { ...x, source: "makefile" } : x),
+    }),
+  },
+  {
+    id: "make/collapse-uses-and-references",
+    language: "make",
+    defectClass: "wrong-relationship-label",
+    description:
+      "D7 revert: the BUILTIN / EXTERNAL / PROJECT split is collapsed, every reference becomes `uses`. A variable this file declares then leaves the reference graph, which is how a real declaration gets demoted; and a prerequisite that is only a FILE is published as a project-internal reference, asserting a declaration that does not exist. Measured over the corpus: 231 file-path, 187 external-variable and 160 builtin edge ends are on the wrong side of this line.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "references" ? { ...x, type: "uses" } : x),
+    }),
+  },
+  {
+    id: "make/drop-order-only-prerequisites",
+    language: "make",
+    defectClass: "relationship-loss",
+    description:
+      "D8 revert: only the FIRST `prerequisites` node of a rule is read. The grammar emits one node per `|`-separated group, so an order-only list is a second node — 172 order-only prerequisites in this corpus are invisible if only the first group is taken.",
+    transform: r => {
+      const seen = new Set<string>()
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.metadata as any)?.role !== "prerequisite") return true
+          const k = `${x.source}|${x.line_number}`
+          if (seen.has(k)) return false
+          seen.add(k)
+          return true
+        }),
+      }
+    },
+  },
+  {
+    id: "make/label-foreach-binder-as-external",
+    language: "make",
+    defectClass: "wrong-relationship-metadata",
+    description:
+      "D9 revert: a `$(foreach VAR,…)` binder is labelled `external` instead of `local_binding`. It is neither an external variable nor a project declaration — it is a local introduced by the loop, and pooling it with the 187 genuinely-external names is what makes the `uses` class unreadable.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        (x.metadata as any)?.evidenceClass === "local_binding" ? { ...x, metadata: { ...x.metadata, evidenceClass: "external" } } : x),
+    }),
+  },
+  {
+    id: "make/drop-computed-includes",
+    language: "make",
+    defectClass: "missing-import",
+    description:
+      "D10 revert: a computed include (`include $(shell …)`) is dropped. Its target is a `shell_function` node, not the `function_call` an implementer would reach for first, and the target is not knowable at parse time — so the EXPRESSION must be recorded and flagged. A dropped include is invisible; an unresolved one is a fact.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).filter((i: any) => !(i as any).isComputed),
+      relationships: (r.relationships ?? []).filter((x: any) => !String(x.target).startsWith("$(")),
+    }),
+  },
+  {
+    id: "make/accept-keywords-as-names",
+    language: "make",
+    defectClass: "wrong-symbol-identity",
+    description:
+      "D11 revert: a keyword reaching the name-capture path is accepted as a name. `export` reached it in boundary/Makefile and appeared as the target of six edges — an edge to a keyword is an edge to nothing, and it also means the exported variable was never declared.",
+    transform: r => ({
+      ...r,
+      symbols: [...(r.symbols ?? []), { name: "export", kind: "constant", range: { startLine: 1, startColumn: 0, endLine: 1, endColumn: 0, startIndex: 0, endIndex: 0 }, visibility: "global", metadata: {} }],
+      relationships: [...(r.relationships ?? []), { source: "build", target: "export", type: "uses", confidence: 1, metadata: {}, line_number: 20 }],
+    }),
+  },
+  {
+    id: "make/declare-macro-as-constant",
+    language: "make",
+    defectClass: "wrong-symbol-kind",
+    description:
+      "D12 revert: a `define` declares a `constant`. A `$(call NAME)` that resolves to a constant is a callee that cannot be called, and the graph's call edges then point at values.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "function" && /^(mk|two_args)$/.test(s.name) ? { ...s, kind: "constant" } : s)),
+    }),
+  },
+  {
+    id: "make/drop-module-contains",
+    language: "make",
+    defectClass: "missing-relationship",
+    description:
+      "D13 revert: the module node does not `contains` its declarations. GNU Make has exactly one declaration level, so the file node is the only place containment can live — without it, \"what does this Makefile declare?\" is unanswerable and the module symbol has no outgoing edge at all.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "contains"),
+    }),
+  },
+  {
+    id: "make/stop-exporting-targets",
+    language: "make",
+    defectClass: "missing-export",
+    description:
+      "D14 revert: only `export VAR` lines produce exports and a buildable target does not. A target IS the file's public surface — an including makefile invokes it by name — so this is the shape the lane shipped with `exports: []` hardcoded, where the answer to \"what does this Makefile offer?\" was nothing at all.",
+    transform: r => ({
+      ...r,
+      exports: (r.exports ?? []).filter((e: any) => (e.metadata as any)?.via !== "target"),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "exports" && (x.metadata as any)?.via === "target")),
+    }),
+  },
+  {
+    id: "make/keep-dollar-wrapper-in-prerequisite",
+    language: "make",
+    defectClass: "wrong-edge-target",
+    description:
+      "D15 revert: a `$(NAME)` prerequisite is recorded under its wrapper text rather than normalised to NAME. The dependency is on the expansion, so the edge target must be the variable — otherwise `all: $(OBJ)` publishes a target named `$(OBJ)` that nothing declares and the reference to OBJ is lost.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).flatMap((x: any) =>
+        x.type === "references" && /^[A-Z_][A-Z0-9_]*$/.test(x.target)
+          ? [{ ...x, target: `$$(${x.target})` }]
+          : [x]),
+    }),
+  },
+  {
+    id: "make/mislabel-automatic-and-shell-variables",
+    language: "make",
+    defectClass: "wrong-relationship-metadata",
+    description:
+      "D16 revert: `$@`/`$<`/`$^` are labelled `builtin` and `$$?` is too. An automatic variable is a Make builtin read, and `$$?` is the SHELL's exit-status variable because `$$` is Make's escaped dollar — calling it a Make builtin is a category error that hides 212 automatic and 11 shell edge ends inside the builtin bucket.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const tier = (x.metadata as any)?.evidenceClass
+        if (tier === "automatic" || tier === "shell_variable") return { ...x, metadata: { ...x.metadata, evidenceClass: "builtin" } }
+        return x
+      }),
+    }),
+  },
+
+  {
+    id: "make/ignore-brace-expansion-form",
+    language: "make",
+    defectClass: "wrong-edge-target",
+    description:
+      "D17 revert: only the `$(NAME)` expansion form is normalised, so `${NAME}` keeps its raw wrapper. `${VAR}` is GNU Make's SECOND expansion form and it is common — 68 occurrences across 14 of the 99 corpus files — and every one of those prerequisites was published as `uses target -> ${VAR}` while the variable it names was declared elsewhere, so the same fact appeared twice under two spellings and the wrapper form dangled. Found by the corpus differential, not by reading the code: it was the last two rows of a 5,035-edge comparison. This mutant needs the SOURCE: the fix normalises the target during extraction, so by the time a result-level transform runs there is no `${...}` left to rewrite and a naive re-wrap is a silent no-op — the same instrument failure that left swift/drop-container-subscript-uses surviving. It therefore re-wraps only those edges whose own line really contains the brace form.",
+    transform: (r, source) => {
+      if (typeof source !== "string") return r
+      const lines = source.split("\n")
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const t = String(x.target)
+          if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(t)) return x
+          const line = lines[(x.line_number ?? 1) - 1] ?? ""
+          if (!line.includes("${" + t + "}")) return x
+          return { ...x, target: "${" + t + "}" }
+        }),
+      }
+    },
+  },
+
   // M60.R8 (#749): the framework trigger surface. Four mutants, one per defect the
   // round fixed, so each fix has a reverting change that some fixture must catch.
   // --------------------------------------------------------------------------
@@ -10726,6 +11073,236 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-identity",
     description: "The line stays but the dedupe key goes back to `source|type|target`, i.e. PER-SET: the first site's line is kept and every later site's edge is swallowed (measured on the corpus: 1,722 edges belong to multi-site groups, so this collapses them). Caught by the per-site half of the pins — expression-shapes' `contains ExpressionShapes -> Point` at BOTH 19 and 31 with expectRelationshipCount equals 2, likewise instance-target-name-collision's two `contains -> Collision` lines, and F9-PROBE-CLEAN-EDGE-LINE's `calls f` at three distinct lines. A fixture pinning only `line_number: <one line>` would NOT catch this — which is why those pins are written in pairs.",
     transform: cleanEdgeLinePerSet(),
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // M14.6 perl wave (2026-09-27)
+  //
+  // The perl lane had 7 fixtures and ZERO mutants, so no perl defect could be
+  // detected. Each mutant below reverts ONE measured defect to its exact
+  // pre-fix observable state and names the fixture pin that must catch it.
+  //
+  // The interesting one is brace-use-constant-lost: that defect was INVISIBLE to
+  // the differential, because the independent oracle in derivePerlEdges carried
+  // the same dead branch — analyzer and oracle agreed, 100% covered, zero
+  // unexplained, on a shape both were wrong about. Only a fixture pins it.
+  {
+    id: "perl/brace-use-constant-lost",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `use constant { A => 1, B => 2 }` goes back to declaring NOTHING. fatCommaKeys' `else if (node.type === \"anonymous_hash_expression\")` branch was unreachable — the caller passes the use_statement and findChildByType is shallow, so the list one level down was never found. The bare `use constant A => 1` form kept working, which is why the code looked tested. Measured on mojo: 7 constants lost in Mojo::Util (the PC_* table) and 6 in Mojo::WebSocket (WS_*). Caught by perl/imports-and-exports' expectSymbols {MAX} and {MIN} (expectSymbolCount pins PI at exactly 1, so the bare form cannot go quiet either).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => {
+        // The brace form's names are exactly those declared on the same line as
+        // another constant, which no bare form produces. The SymbolKind value is
+        // the LOWERCASE "constant" — an earlier draft of this mutant tested
+        // "Constant", filtered nothing, and SURVIVED while looking correct.
+        if (s.kind !== "constant") return true
+        const sameLine = (r.symbols ?? []).filter((o: any) => o.kind === "constant" && o.range?.startLine === s.range?.startLine)
+        return !(sameLine.length > 1)
+      }),
+    }),
+  },
+  {
+    id: "perl/interpolated-import-items-lost",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: a double-quoted `use` argument loses its items again. `use feature \"class\"` and `use lib \"./t/lib\"` are interpolated_string_literal, which neither perlWordValues nor perlArgumentNodes accepted, so the import survived with items:[]. Caught by perl/imports-and-exports' expectImports for module `feature` (items [class]) and module `lib` (items [./t/lib]) — the matcher compares the items array, so an empty list cannot satisfy it.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => ((i.items ?? []).length === 0 ? i : { ...i, items: [] })),
+    }),
+  },
+  {
+    id: "perl/no-strict-recorded-as-import",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `no strict` / `no warnings` go back to being dependency imports. `no` is the unnamed first token of the same use_statement node type as `use`, so the pre-review rule read them as module loads and put an edge on a file that loads nothing. Caught by perl/imports-and-exports' forbidImports for module `strict` and its forbidRelationships {type: imports, target: strict}.",
+    transform: r => ({ ...r, imports: [...(r.imports ?? []), { module: "strict", items: ["*"], isDefault: true, range: { startLine: 3, endLine: 3 } }] }),
+  },
+  {
+    id: "perl/version-requirement-recorded-as-import",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `use 5.010` goes back to being an import. A version requirement is language metadata (perlVersion / perlVersions), never a module named \"5.010\". Caught by perl/imports-and-exports' forbidImports for module `5.010`.",
+    transform: r => ({ ...r, imports: [...(r.imports ?? []), { module: "5.010", items: ["*"], isDefault: true, range: { startLine: 2, endLine: 2 } }] }),
+  },
+  {
+    id: "perl/use-constant-becomes-an-import",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `use constant` emits an import named \"constant\" and declares no Constant symbols — the pre-review shape exactly. Caught by perl/imports-and-exports' forbidImports for module `constant` AND its expectSymbols {PI}/{MAX}/{MIN}, so the mutant cannot pass by being quiet about the import alone.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "constant"),
+      imports: [...(r.imports ?? []), { module: "constant", items: ["*"], isDefault: true, range: { startLine: 7, endLine: 8 } }],
+    }),
+  },
+  {
+    id: "perl/require-not-an-import",
+    language: "perl",
+    defectClass: "dependency-loss",
+    description: "M14.6 regression: `require Runtime::Only` stops being an import. A runtime require IS a dependency; the pre-review rule only read `use`, and mojo alone has 39 require sites. Caught by perl/imports-and-exports' expectImports {module: Runtime::Only} and perl/inheritance's import pins.",
+    transform: r => ({ ...r, imports: (r.imports ?? []).filter((i: any) => i.module !== "Runtime::Only") }),
+  },
+  {
+    id: "perl/exporter-optional-half-lost",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: only `@EXPORT` is read, so `@EXPORT_OK` and `%EXPORT_TAGS` stop producing exports — the pre-review shape, which lost the whole optional half of every Exporter module in a corpus. Caught by perl/imports-and-exports' expectExports for gamma, delta and all (and by the harness's exports invariant, since `all` resolves to no symbol once its name is gone from @EXPORT_TAGS).",
+    transform: r => ({ ...r, exports: (r.exports ?? []).filter((e: any) => e.name !== "gamma" && e.name !== "delta" && e.name !== "all") }),
+  },
+  {
+    id: "perl/mojo-base-flag-form-unread",
+    language: "perl",
+    defectClass: "relationship-loss",
+    description: "M14.6 regression: `use Mojo::Base -base` names no parent at all. The pre-review rule skipped every option-bearing form, so the flag-only spelling — used by every Mojo Controller and Plugin — produced no extends edge: 53 of mojo's 118 inheritance sites. The class being subclassed is Mojo::Base ITSELF. Caught by perl/inheritance's expectRelationships {extends, MojoStyle -> Base, line_number 8}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === "MojoStyle")) }),
+  },
+  {
+    id: "perl/parent-option-becomes-a-parent",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: the option token of `use parent -norequire, 'Base'` becomes a base class. Caught by perl/inheritance's forbidRelationships {extends, UsesParent -> norequire}.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "extends", source: "UsesParent", target: "norequire", confidence: 0.9, line_number: 2, metadata: { evidenceClass: "structural" } }] }),
+  },
+  {
+    id: "perl/self-extends-not-suppressed",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: a class naming ITSELF as its base emits the edge. `package SelfNamed; use Mojo::Base 'SelfNamed';` is a real self-reference in the source and a useless edge in a graph. The guard compares FULLY QUALIFIED names; a leaf comparison also fired for `package Foo::Bar` over a different `Other::Bar` and deleted 7 legitimate override edges across mojo and plack. Caught by perl/inheritance's forbidRelationships {extends, SelfNamed -> SelfNamed} and {overrides, SelfNamed.run -> SelfNamed.run}.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "extends", source: "SelfNamed", target: "SelfNamed", confidence: 0.9, line_number: 17, metadata: { evidenceClass: "structural" } },
+        { type: "overrides", source: "SelfNamed.run", target: "SelfNamed.run", confidence: 0.5, metadata: { evidenceClass: "inferred" } }],
+    }),
+  },
+  {
+    id: "perl/package-block-scope-leaks",
+    language: "perl",
+    defectClass: "ownership-error",
+    description: "M14.6 regression: the BLOCK form of `package` leaks past its closing brace, so a file-scope sub is emitted as a method of the block's package. Proved by EXECUTING perl 5.34, not by reading the grammar: after `package Outer { }`, __PACKAGE__ is `main`. Caught by perl/package-block-scope's forbidRelationships {contains, Outer -> after_block} and forbidSymbols {after_block, ownerName Outer} — the statement form on line 5 must STILL change the package, so the mutant cannot be caught by simply never tracking one.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "after_block" ? { ...s, ownerName: "Outer", kind: "method" } : s)),
+      relationships: [...(r.relationships ?? []), { type: "contains", source: "Outer", target: "after_block", confidence: 1, metadata: { evidenceClass: "structural" } }],
+    }),
+  },
+  {
+    id: "perl/signature-dead-field-lookup",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 (#863) regression: the dead `childForFieldName(\"parameters\")` lookup returns, so no sub publishes a parameter list again. The pinned grammar declares no `parameters` field; a signature is the `signature` FIELD of mandatory/optional/slurpy_parameter children. The pre-review lane shipped 0 parameters across 29,640 symbols on 5,866 files. Caught by perl/signatures-and-attributes' expectParameters for mandatory, optional and slurpy, and perl/core-oo-class-role's expectParameters for the two constructors.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.parameters?.length ? { ...s, parameters: [] } : s)) }),
+  },
+  {
+    id: "perl/attributes-unread",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: the grammar's `attributes` field is not read, so `decorators` is never emitted at all — the pre-review state, where the whole attribute surface was absent for every language that has it. Caught by perl/signatures-and-attributes' expectDecorators for lvalue_attr (lvalue, method) and prototyped (prototype).",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.decorators?.length ? { ...s, decorators: [] } : s)) }),
+  },
+  {
+    id: "perl/core-oo-declarations-unread",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `class_statement` and `role_statement` produce no symbol at all, so `class Point` / `role Greeter` vanish and their methods become ownerless functions. `field $x` / `field $y` go with them. Caught by perl/core-oo-class-role's expectSymbols {Point, class} and {Greeter, trait} and its expectRelationships {contains, Point -> sum} — an implementation that only stopped reading class statements, but left the block walking intact, still fails the contains pins.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "class" && s.kind !== "trait" && s.kind !== "property"),
+      relationships: (r.relationships ?? []).filter((x: any) => x.source !== "Point" && x.source !== "Greeter"),
+    }),
+  },
+  {
+    id: "perl/field-declared-as-a-lexical",
+    language: "perl",
+    defectClass: "ownership-error",
+    description: "M14.6 regression: `field $x` inside a `class` block is emitted as a bare variable with no owner instead of a Property owned by the class — the same concept as a Moose `has` attribute. Caught by perl/core-oo-class-role's expectSymbols {x, kind property, ownerName Point} and {contains, Point -> x}.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "property" ? { ...s, kind: "variable", ownerName: undefined } : s)),
+    }),
+  },
+  {
+    id: "perl/builtin-calls-emitted",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: the builtin suppression set goes back to its hand-maintained size, which was missing exactly 10 words — say, system, accept, chr and fc among them. Those are core named operators, so each one emitted a `calls` edge to a symbol that cannot exist. The set is now the grammar's own fixed op-token sets intersected with perl 5.38's opcode.h, so it cannot drift from the parser that reads it. Caught by perl/builtins-and-branches' five forbidRelationships (say, system, accept, chr, fc) with bless as the control that must STAY suppressed.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), ...["say", "system", "accept", "chr", "fc"].map((t) => ({ type: "calls", source: "B.builtins", target: t, confidence: 0.9, line_number: 17, metadata: { evidenceClass: "usage_contextual" } }))],
+    }),
+  },
+  {
+    id: "perl/complexity-counter-reverts-to-absent-types",
+    language: "perl",
+    defectClass: "metric-error",
+    description: "M14.6 regression: cyclomaticComplexity collapses to 1. The pre-review counter named six node types the pinned grammar does not declare (if_statement, unless_statement, while_statement, until_statement, foreach_statement, ternary_expression), so only for_statement and conditional_expression ever fired and the metric was 1 for almost every real file. This grammar spells them conditional_statement, elsif, loop_statement, cstyle_for_statement, postfix_conditional_expression and conditional_expression. Caught by perl/builtins-and-branches' expectMetadata {cyclomaticComplexity: 11}.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } }),
+  },
+  {
+    id: "perl/magic-invocant-names-the-token",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `__PACKAGE__->new` emits `instantiates __PACKAGE__.constructor` — a type no source line supports, since __PACKAGE__ is a compile-time token for the CURRENT package, not a class. Caught by perl/magic-invocant's forbidRelationships {instantiates, target __PACKAGE__.constructor} and {instantiates, global -> main.constructor}: line 1 has no package in scope, so the token names nothing derivable and the edge must be omitted rather than invented.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "instantiates", source: "make", target: "__PACKAGE__.constructor", confidence: 0.9, line_number: 3, metadata: { evidenceClass: "structural" } },
+        { type: "instantiates", source: "global", target: "main.constructor", confidence: 0.9, line_number: 1, metadata: { evidenceClass: "structural" } }],
+    }),
+  },
+  {
+    id: "perl/role-composition-lost",
+    language: "perl",
+    defectClass: "relationship-loss",
+    description: "M14.6 regression: `with 'Role::One'` and `use role 'Role::Two'` emit no implements edge, leaving a composed role an undeclared dependency. Caught by perl/imports-and-exports' expectRelationships {implements, Impl -> One, line_number 23} and {implements, Impl -> Two, line_number 24}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "perl/overrides-guess-claims-source-confidence",
+    language: "perl",
+    defectClass: "confidence-error",
+    description: "M14.6 regression: the first-parent override guess claims source confidence. `overrides` is the lane's ONLY guessed relationship — inferred from the first parent at 0.5, and a perl class may inherit from several bases with only the first consulted. A 0.5 edge can never clear a 0.7 structural floor, so classifyEvidenceTier labels it `inferred` with no special case. Caught by perl/inheritance's expectRelationships {overrides, UsesParent.run -> Base.run, confidence 0.5, line_number null}: a mutant that raises the confidence fails the pin, and one that keeps it but adds a line fails the line_number:null assertion.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => (x.type === "overrides" ? { ...x, confidence: 0.9, line_number: 1, metadata: { ...(x.metadata ?? {}), evidenceClass: "structural" } } : x)),
+    }),
+  },
+  {
+    id: "perl/relationship-line-numbers-dropped",
+    language: "perl",
+    defectClass: "relationship-identity",
+    description: "M14.6 regression: every source-derived edge loses its line. calls, instantiates, implements and extends are all WRITTEN in the source; only contains (membership) and the guessed overrides ride no line. Caught by the line_number pins in perl/inheritance (extends at 2, 5, 8, 11, 14), perl/core-oo-class-role (calls at 6), perl/imports-and-exports (implements at 23, 24) and perl/magic-invocant (instantiates at 3).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const { line_number, ...rest } = x
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "perl/evidence-tiers-collapsed",
+    language: "perl",
+    defectClass: "metadata-loss",
+    description: "M14.6 regression: every relationship's evidenceClass collapses to `inferred`. src/lsp/evidence_tier.ts rule 1 says a STORED legend-tier value wins and is never re-derived, so a lane that publishes one tier for all edges destroys the distinction the hover legend exists to draw — a source-declared `extends` and a guessed `overrides` become indistinguishable. Caught by the 27 meta.evidenceClass pins across the seven perl fixtures, which span all three tiers the lane emits (structural, usage_contextual, inferred).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "inferred" } })),
+    }),
+  },
+  {
+    id: "perl/has-attribute-range-lost",
+    language: "perl",
+    defectClass: "identity-error",
+    description: "M14.6 regression: a Moose/Moo `has 'name' => (is => 'ro')` attribute loses its property range, so the symbol covers the whole statement. Caught by perl/imports-and-exports' expectSymbolRanges {name at line 22} — the pin is the NAME's line, and expectSymbolCount pins exactly one `name` in owner Impl so the mutant cannot pass by emitting two.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "property" ? { ...s, range: { ...(s.range ?? {}), startLine: (s.range?.startLine ?? 1) - 1 } } : s)),
+    }),
   },
   // ═══════════════════════════════════════════════════════════════════════
   // NIM wave (2026-09-27)

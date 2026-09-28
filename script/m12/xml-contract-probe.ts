@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync, readdirSync } from "node:fs"
 import { ASTEngine } from "../../src/ast/engine"
 
 /**
@@ -144,8 +144,23 @@ const xsl = await read("Template.xsl")
 check("XSL extension routes to xml", xsl.language === "xml")
 check("XSLT has no error", (xsl.errors?.length ?? 0) === 0, `${xsl.errors?.length} errors`)
 check("a named template is published under its name", sym(xsl, "entry-row") !== undefined)
-check("xsl:output is published under its method", sym(xsl, "html") !== undefined)
-check("the xsl:output declaration records its attribute", xsl.symbols.some((s: any) => s.name === "html" && s.metadata?.declaredByAttribute === "method"))
+// These two checks USED TO read:
+//   "xsl:output is published under its method"                        sym(html) !== undefined
+//   "the xsl:output declaration records its attribute"                declaredByAttribute === "method"
+// and they are the reason M60 finding X5 survived. `Template.xsl` carries
+// `<xsl:output method="html"/>`, the table mapped `output -> method`, and the
+// contract then CERTIFIED the result: a stylesheet instruction published as a
+// component called `html`, with `method`/`encoding` hung off it. The check names
+// describe the defect in the grammar of a specification — "is published under its
+// method" reads as intended behaviour, and anyone auditing the lane would have
+// seen two green checks agreeing with each other and no reason to doubt them.
+//
+// A contract that pins observed behaviour is a mirror, not a specification. The
+// replacement asserts what the element actually is: an XSLT instruction with no
+// name of its own, published under its written name, whose attributes it owns.
+check("xsl:output is published under its WRITTEN name", sym(xsl, "xsl:output") !== undefined)
+check("no symbol is named after an output METHOD value", !["xml", "html", "text"].some((m) => sym(xsl, m)?.metadata?.nodeType === "element" && sym(xsl, m)?.metadata?.isVocabDeclaration === true))
+check("xsl:output's own attributes are owned by xsl:output", sym(xsl, "encoding")?.ownerName === "xsl:output")
 check("a local binding is owned by its template", sym(xsl, "indent")?.ownerName === "entry-row")
 // The edge's source is the INSTRUCTION that carries the call, not the enclosing
 // element: `xsl:call-template -> cell` says which instruction reaches which
@@ -201,6 +216,49 @@ check("a clean file's symbols are NOT marked", catalog.symbols.every((s: any) =>
 const emptyPrefix = await ASTEngine.parseFile("validation/m12/fixtures/xml/EmptyNs.xml", `<f xmlns:="urn:x"/>`)
 check("an empty namespace prefix publishes no symbol", emptyPrefix.symbols.every((s: any) => s.name.length > 0 && !/\s/.test(s.name)))
 check("an empty namespace prefix publishes no edge target", emptyPrefix.relationships.every((e: any) => e.target.length > 0))
+
+// ── a declared name comes from a NAMING attribute, and only from one ────────
+/**
+ * The general form of M60 finding X5, written as a rule rather than as a case.
+ *
+ * X5 was `DECLARATION_NAME_ATTRIBUTE = { output: "method" }`, which published
+ * `<xsl:output method="html"/>` as a component called `html` — a value read as a
+ * name. One fixture pins that case; this pins the SHAPE, so the next table entry
+ * that does the same thing fails here even if the element is a different one and
+ * no fixture names it.
+ *
+ * In XSD, RelaxNG, XSLT and WSDL a declaration's name lives in `name`; `id` is
+ * accepted where a vocabulary allows it. Nothing else names anything. So the
+ * rule is: if a symbol is marked a vocabulary declaration, the attribute it took
+ * its name from must be one of those two. Anything else is a VALUE promoted into
+ * a name, which is the M60.R10 class in mirror image.
+ *
+ * It is checked over every vocabulary declaration the analyzer produces across
+ * the whole fixture set rather than one hand-picked file, because the defect's
+ * cost is precisely that it is invisible per-file: each individual output
+ * element looked locally correct.
+ */
+{
+  const NAMING_ATTRIBUTES = new Set(["name", "id"])
+  const dir = "validation/m12/fixtures/xml"
+  const declared: { file: string; name: string; by: string }[] = []
+  const violations: { file: string; name: string; by: string }[] = []
+  for (const f of readdirSync(dir).filter((f) => /\.(xml|xsd|xsl|xslt|rng|wsdl)$/.test(f)).sort()) {
+    const p = `${dir}/${f}`
+    const r: any = await ASTEngine.parseFile(p, readFileSync(p, "utf8"))
+    for (const s of r.symbols ?? []) {
+      if (s.metadata?.isVocabDeclaration !== true) continue
+      const by = String(s.metadata?.declaredByAttribute ?? "(none)")
+      const row = { file: f, name: String(s.name), by }
+      declared.push(row)
+      if (!NAMING_ATTRIBUTES.has(by)) violations.push(row)
+    }
+  }
+  check("every declared name came from a NAMING attribute (name/id), never from a value", violations.length === 0,
+    violations.length ? `PROMOTED VALUES: ${violations.slice(0, 6).map((v) => `${v.file} ${v.name}<-${v.by}`).join("; ")}` : `${declared.length} declaration(s) across the fixture set, all from name/id`)
+  check("the fixture set actually exercises the declared-name rule", declared.length > 0,
+    `${declared.length} vocabulary declaration(s) found — a rule that can never fire is not a rule`)
+}
 
 const result = {
   analyzer: "xml",
