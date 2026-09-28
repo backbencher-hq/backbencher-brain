@@ -135,10 +135,11 @@ classification is four-way — declaration, relationship source, known candidate
 silent — because "classified" and "handled" are different words, and the two-way
 split is what hid both.
 
-M14.0.F5: **100 % edge for edge, on a 120-file draw** — `P3D-Legacy` 60 of 1,880
-files, 627/627 truth edges covered; `DISMTools` 60 of 483, 1,966/1,966; **0
-missing, 0 unexplained, 0 heuristic** on each, with `analyzer-edges` equal to
-`tree-truth` exactly. Audited labels: `calls`, `contains`, `imports`, `extends`,
+M14.0.F5, **whole corpora, not a draw**: `P3D-Legacy` **1,880 of 1,880 files**,
+20,283 truth edges, 20,280 covered (**99.99 %**), 3 missing, **0 unexplained**;
+`DISMTools` **483 of 483**, 13,689 truth edges, 13,684 covered (**99.96 %**), 5
+missing, 0 unexplained. On a frozen 60-file draw per corpus it is 100 % edge for
+edge, with `analyzer-edges` equal to `tree-truth` exactly. Audited labels: `calls`, `contains`, `imports`, `extends`,
 `implements`; `references` is deliberately excluded because the oracle does not
 derive it. **That is 4.5 % of the corpus**, drawn by a rotation that prefers
 never-sampled files, and 48 % of the corpus carries a syntax error the

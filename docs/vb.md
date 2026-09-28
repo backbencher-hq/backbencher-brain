@@ -97,18 +97,42 @@ Corpus-wide through `parseFile`, 435 files: `implements` **56 → 176**,
 relationships 38,312 → **38,432**, symbols unchanged, 0 crashes. The full-corpus
 figure is now **13,684 / 13,689 = 99.96 %, 0 unexplained**.
 
-### The 5 that remain, and why a lane cannot fix them
+### The primary corpus, in full: 1,880 files
 
-All five are `calls` edges inside a method whose *name begins with `New`*:
+The draw is 60 files. The primary corpus is 1,880, and it has now been swept
+whole:
+
+| corpus | files | truth edges | covered | missing | unexplained |
+|---|---:|---:|---:|---:|---:|
+| `DISMTools` (full) | 483 of 483 | 13,689 | 13,684 (**99.96 %**) | 5 | 0 |
+| `P3D-Legacy` (full) | 1,880 of 1,880 | 20,283 | 20,280 (**99.99 %**) | 3 | **0** |
+
+`P3D-Legacy` went 11 missing → 3 across this wave, and the three that remain are
+constructions the analyzer does not publish. Two of the three are confirmed inside
+a `Sub New*` handler — `NewGameButton` at `MainMenuScreen.vb:1605`, with the
+dropped `New OfflineGameWarningScreen(Me)` twelve lines below it — so they are
+the grammar defect below. The third, `SoundManager -> SoundContainer`, is in a
+file that contains **no** `Sub New*`, so it is either a second cause or an
+instance of the same one reached another way; it is not yet explained, and it is
+listed here rather than folded into the count it resembles.
+
+Two whole declaration kinds and the member-level heritage form were found by
+these sweeps and are fixed; the numbers above are after those fixes.
+
+### The `New*` grammar defect, and why a lane cannot fix it
+
+All five `DISMTools` survivors, and two of the three `P3D` survivors, are `calls`
+edges inside a method whose *name begins with `New`*:
 
 | file | missing |
 |---|---|
 | `Panels/ISOFiles/NewTestingEnv.vb` | `calls … -> SetColors`, `-> Clear`, `-> Beep` |
 | `Panels/Prj_Ops/NewProj.vb` | `calls … -> SetColors` |
 | `Panels/Unattend_Files/…/NewUnattendWiz.vb` | `calls … -> PostInstallScript` |
+| `Screens/MainMenu/MainMenuScreen.vb` | `calls … -> OfflineGameWarningScreen` (in `Sub NewGameButton`) |
 
-The grammar mis-lexes any `Sub New*`. The trigger is exact, and five controls
-pin it down — all of these parse **CLEAN** on the unmodified grammar:
+The grammar mis-lexes any `Sub New*`. The trigger is exact, and five controls pin
+it down — all of these parse **CLEAN** on the unmodified grammar:
 
 ```
 Public NewItem As Integer        (a field)          CLEAN
@@ -127,8 +151,9 @@ node — which is why the *calls* go missing rather than the method.
 
 **127 distinct `New*` identifiers, 2,823 occurrences** in the corpus, and the
 pattern is contagious in exactly the code this corpus is made of: Windows Forms
-names handlers `<Form>_<Event>`, so a form called `NewForm` loses the body of
-**every** handler it has — silently, with the file's symbol count still plausible.
+names handlers `<Form>_<Event>` and names buttons `New<Thing>`, so a form or a
+button called `New…` loses the body of **every** handler it has — silently, with
+the file's symbol count still plausible.
 
 Four fixes were built and none lands safely, which is itself the useful result:
 
@@ -137,12 +162,16 @@ Four fixes were built and none lands safely, which is itself the useful result:
 | append `\b` to the `ci()` keyword helper | **illegal** — a tree-sitter token may not contain a zero-width assertion (`Unexpected rule ExpandRegex(Assertion)`) |
 | identifier `prec(-1)` → tie, let length decide | generator accepts it; the lexer still picks `New` |
 | identifier → `prec(1)`, outrank the keywords | **worse** — `Handles MyBase.Load` breaks too, and `New*` still fails |
-| `constructor_declaration` `prec(100)` → `prec(1)` | generator accepts it, still fails; and it would have put the two rules in tension for no gain |
+| `constructor_declaration` `prec(100)` → `prec(1)` | generator accepts it, still fails; and it puts two rules in tension for no gain |
 
 All four reverted. `grammars/` and the wasm are byte-identical to HEAD and the pin
 gate is green. The real repair is keyword extraction — teaching the grammar that
-`New` is a *word* and not a prefix — which is a grammar project for whoever owns
-`grammar.js`, not a change a lane should make to a digest-verified artefact.
+`New` is a *word* and not a prefix — and the reason it is not a one-liner is now
+understood rather than guessed: `ci()` returns a case-insensitive **RegExp**, and
+tree-sitter's keyword extraction only recognises keywords it can prove are
+keywords, so none of the 287 `ci()` call sites participates. That is a restructure
+of how the grammar declares keywords, for whoever owns `grammar.js` — not a change
+a lane should make to a digest-verified artefact.
 
 **Read the 120-file draw as 120 files, not 2,660.** It is 4.5 % of the corpus,
 drawn by a rotation that *prefers* never-sampled files, so it is fresh rather
