@@ -274,6 +274,24 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * This table exists because a well-formed document CANNOT supply them, so a
    * resolver that only reads declarations can never resolve them. See M60 X8.
    */
+  /**
+   * The XML Schema built-in DERIVED types, from Part 2's own list. Written out
+   * rather than derived, because the analyzer and the corpus oracle each keep
+   * their own copy ON PURPOSE: two implementations that share a constant cannot
+   * disagree, and a constant that cannot be disagreed with cannot find a defect.
+   */
+  private static readonly XSD_BUILTIN_TYPE_NAMES: ReadonlySet<string> = new Set([
+    "anyType", "anySimpleType", "string", "boolean", "decimal", "float", "double",
+    "duration", "dateTime", "time", "date", "gYearMonth", "gYear", "gMonthDay",
+    "gDay", "gMonth", "hexBinary", "base64Binary", "anyURI", "QName", "NOTATION",
+    "normalizedString", "token", "language", "NMTOKEN", "NMTOKENS", "Name",
+    "NCName", "ID", "IDREF", "IDREFS", "ENTITY", "ENTITIES", "integer",
+    "nonPositiveInteger", "negativeInteger", "long", "int", "short", "byte",
+    "nonNegativeInteger", "unsignedLong", "unsignedInt", "unsignedShort",
+    "unsignedByte", "positiveInteger", "dateTimeStamp", "dayTimeDuration",
+    "yearMonthDuration", "lang", "space", "base", "id",
+  ])
+
   private static readonly IMPLICIT_PREFIX_BINDINGS: Readonly<Record<string, string>> = {
     xml: "http://www.w3.org/XML/1998/namespace",
     xmlns: "http://www.w3.org/2000/xmlns/",
@@ -357,6 +375,8 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       nameNode: Node
       valueNode: Node
       binding: string | undefined
+      /** The resolved namespace of the ELEMENT carrying the attribute. X11. */
+      ownerNs?: string
       bareNameReference?: boolean
     }
     const referenceCandidates: ReferenceCandidate[] = []
@@ -989,6 +1009,37 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const qname = this.asQName(candidate.value)
       if (!qname) continue
       const resolvableInDocument = declaredNames.has(qname.local)
+      // A BUILT-IN is reached ONE way: the value carries a PREFIX whose binding is
+      // a built-in namespace. `xs:int` and `xml:lang` are recognised.
+      //
+      // There is a second way — a BARE value names a built-in when the element
+      // carrying it is in the XSD namespace, so `<xsd:element type="int"/>` reads
+      // as the built-in `int` in a document written `xmlns="…/2001/XMLSchema"`
+      // with no prefix at all, which is the older and very common spelling. It is
+      // NOT implemented, and implementing it would be a DEFECT rather than a fix.
+      //
+      // `libxml2/test/schemas/vdv-first5_0.xsd` writes
+      //
+      //     <xs:schema xmlns:xs="…/2001/XMLSchema">
+      //       <xs:include schemaLocation="vdv-simpleTypes.xsd"/>
+      //       <xs:element name="born" type="date"/>
+      //
+      // and `vdv-simpleTypes.xsd` line 32 declares a CUSTOM type called `date`.
+      // So that bare `date` is the schema's own type, not XSD's built-in `date` —
+      // and both files are libxml2's own schema-composition tests, so the intent
+      // is not in doubt. Resolving it as a built-in would replace a correct
+      // refusal with a confidently wrong answer, and the corpus differential
+      // reported it as a MISS precisely because its oracle made the same unsafe
+      // inference and disagreed with a refusal that was right.
+      //
+      // Telling the two apart needs `xs:include` cross-file declarations, which is
+      // the same machinery X7 started for `import` and has not been built for
+      // `include` — and `include` is harder, because an included schema shares the
+      // INCLUDING schema's target namespace, so a bare name may be satisfied by
+      // either file and the disambiguation is a whole-corpus question rather than
+      // a per-document one. Until that exists, refusing a bare value that no file
+      // in this document declares is the honest reading, and the corpus sites are
+      // recorded rather than papered over.
       const isBuiltin = candidate.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(candidate.binding)
       // X7: an IMPORTED namespace makes the name resolvable in a third way. The
       // target symbol is deliberately NOT published — the component is not in
@@ -1114,7 +1165,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     publishedNames: Set<string>,
     declaredNames: Set<string>,
     namespaceBindings: Map<string, string>,
-    referenceCandidates: { ownerName: string; attributeName: string; value: string; nameNode: Node; valueNode: Node; binding: string | undefined; bareNameReference?: boolean }[],
+    referenceCandidates: { ownerName: string; attributeName: string; value: string; nameNode: Node; valueNode: Node; binding: string | undefined; ownerNs?: string; bareNameReference?: boolean }[],
     ensureTargetSymbol: (
       name: string,
       ownerName: string | undefined,
@@ -1125,6 +1176,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ownerLocalName: string,
     ownerNamespace: string | undefined,
   ): void {
+    // The OWNER's resolved namespace, carried on every reference candidate. X11:
+    // a BARE value names a built-in type only when the element carrying it is
+    // itself in the XSD namespace, because that is what makes an unprefixed
+    // QName resolve into it. The value's own binding cannot answer that — a bare
+    // value has none — so the question has to travel with the candidate.
+    const ownerNs = ownerNamespace
     // Is this element one that NAMES another declaration rather than being one?
     // `name` is the attribute in both cases, and the two readings are opposites,
     // so the vocabulary — not the attribute name — decides which applies.
@@ -1241,6 +1298,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         nameNode,
         valueNode,
         binding: undefined,
+        ownerNs,
         bareNameReference: true,
       })
     }
@@ -1302,6 +1360,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       nameNode,
       valueNode,
       binding,
+      ownerNs,
     })
   }
 
