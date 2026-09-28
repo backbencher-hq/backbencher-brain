@@ -168,6 +168,10 @@ const REJECTED = new Map<string, string>([
   ["svelte:selfdestructive", "REJECTED — an undeclared member of the reserved `svelte:` namespace, and a deliberate near-miss of `svelte:self` in `compiler-errors/samples/svelte-selfdestructive/`, a file the Svelte compiler REJECTS. Before the reserved-namespace ruling the analyzer published `instantiates -> svelte:selfdestructive` and reported zero errors, because the grammar parses an unknown element name perfectly well. It cannot name a component: there is no such element to import."],
   ["{@htmlfoo}", "REJECTED — an `{@html}` tag with no separating whitespace, in `compiler-errors/samples/raw-mustaches-whitespace/`, which exists to assert the compiler rejects exactly this spelling. Not a distinct construct and not a call site."],
   ["{@constfoo}", "REJECTED — the same invalid-`{@tag}`-spelling shape, in a compiler-error sample. `{@const}` requires whitespace before its name."],
+  ["xlink", "REJECTED — an XML/SVG NAMESPACE, not a Svelte directive. 7 occurrences, from real SVG markup like `<use xlink:href='' x='' y=''/>`. The one member that is worth naming is `xlink:href`, a RESOURCE reference: modelling it is the html lane's resource contract (a carrier census over URL-bearing tag/attribute pairs), and this lane declares its scope as component structure plus script, so the question is recorded as out of scope here rather than answered by publishing an edge this lane has no contract for."],
+  ["xml", "REJECTED — an XML namespace attribute (`xml:lang`, `xml:space`), 2 occurrences in a corpus sample of unknown-attribute handling. Not a Svelte directive."],
+  ["xmlns", "REJECTED — a namespace DECLARATION (`xmlns:xlink`), 2 occurrences alongside the above. A declaration names no runtime value and is never a carrier."],
+  ["foo", "REJECTED — an invented attribute in a compiler-error sample (`<button foo:bar>click me</button>`, `<C foo:bar />`), 2 occurrences. Present precisely to assert the compiler rejects an unknown namespaced attribute."],
 ])
 
 // --- DIMENSION 3: THE DIRECTIVE CARRIER SPACE -------------------------------
@@ -219,6 +223,56 @@ function walk(dir: string, out: string[]): void {
   }
 }
 
+/**
+ * Remove balanced `{...}` regions, honouring string literals.
+ *
+ * THREE INSTRUMENT DEFECTS CAME FROM GETTING THIS WRONG, and each would have
+ * manufactured a phantom "undeclared Svelte directive":
+ *   1. A single `/\{[^{}]*\}/` pass does nothing to `class={cn(...)}` when the
+ *      expression contains a NESTED brace.
+ *   2. Repeating that pass to a fixpoint still fails. shadcn-svelte writes
+ *      `class={cn("... focus:z-10 focus-visible:z-10 ...", ...)}`, and the arguments
+ *      contain a `${...}` — so across the window from `class={cn(` to the next `}` the
+ *      braces are genuinely UNBALANCED (measured: 2 `{`, 1 `}`) and no regex over
+ *      `[^{}]` can ever match it.
+ *   3. A brace inside a STRING is not a brace, so a naive scanner would close an
+ *      expression at the wrong place — and Tailwind arbitrary values live inside
+ *      class strings and are full of brackets.
+ * So this walks the text, tracks quote state with backslash escapes, and drops a
+ * region only when its braces actually balance. Unbalanced input is left intact
+ * rather than guessed at, so a malformed document cannot delete the rest of the scan.
+ */
+function stripBalancedExpressions(input: string): string {
+  let out = ""
+  let i = 0
+  while (i < input.length) {
+    if (input[i] === "{") {
+      let depth = 0
+      let j = i
+      let quote: string | null = null
+      let balanced = false
+      for (; j < input.length; j++) {
+        const d = input[j]
+        if (quote) {
+          if (d === "\\") { j++; continue }
+          if (d === quote) quote = null
+          continue
+        }
+        if (d === '"' || d === "'" || d === "`") { quote = d; continue }
+        if (d === "{") depth++
+        else if (d === "}") {
+          depth--
+          if (depth === 0) { balanced = true; break }
+        }
+      }
+      if (balanced) { out += "{}"; i = j + 1; continue }
+    }
+    out += input[i]
+    i++
+  }
+  return out
+}
+
 const files: string[] = []
 for (const r of CORPUS_ROOTS) walk(r, files)
 files.sort()
@@ -263,20 +317,7 @@ for (const f of files) {
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/=\s*"[^"]*"/g, '=""')
     .replace(/=\s*'[^']*'/g, "=''")
-  // Expression values are stripped to FIXPOINT, not in one pass. `class={cn(...)}`
-  // is an expression, not a quoted string, and a single `/\{[^{}]*\}/` pass does
-  // nothing to it when the expression contains a NESTED brace (`cn('...', { v })`)
-  // — which is how three Tailwind prefixes (`disabled:`, `focus:`, `focus-visible:`)
-  // survived into the scan and nearly became three phantom "undeclared directives".
-  // Repeating until stable makes nesting depth irrelevant; the depth cap is a
-  // backstop against a pathological document, not a correctness knob.
-  {
-    let prev = ""
-    for (let depth = 0; depth < 32 && namesOnly !== prev; depth++) {
-      prev = namesOnly
-      namesOnly = namesOnly.replace(/\{[^{}]*\}/g, "{}")
-    }
-  }
+  namesOnly = stripBalancedExpressions(namesOnly)
   for (const m of namesOnly.matchAll(/\s([a-zA-Z][\w-]*):([\w-]+)(?=[\s=/>])/g)) {
     carrierPrefixes.set(m[1], (carrierPrefixes.get(m[1]) ?? 0) + 1)
   }
@@ -367,7 +408,7 @@ note(
 //     is a stale excuse for a construct that has since been fixed or removed.
 for (const [k] of REJECTED) {
   note(
-    svelteTags.has(k) || blocks.has(k),
+    svelteTags.has(k) || blocks.has(k) || carrierPrefixes.has(k),
     `REJECTED ruling for ${k} no longer matches anything in the corpus — either the invalid construct was fixed upstream, ` +
       `or the ruling is stale and should be deleted rather than left to excuse a name that is now legal`,
   )
@@ -380,7 +421,7 @@ for (const [k] of REJECTED) {
 //     type as verified.
 const undeclaredCarriers: Array<[string, number]> = []
 for (const [pre, count] of carrierPrefixes) {
-  if (!CARRIER_FAMILIES.has(pre)) undeclaredCarriers.push([pre, count])
+  if (!CARRIER_FAMILIES.has(pre) && !REJECTED.has(pre)) undeclaredCarriers.push([pre, count])
 }
 note(
   undeclaredCarriers.length === 0,
@@ -459,6 +500,10 @@ for (const p of USER_NAMESPACE_PROBES) {
 }
 console.log(`  probes: ${probedRunes} runes asserted suppressed, ${USER_NAMESPACE_PROBES.length} user namespaces asserted preserved`)
 console.log(
+  `  carrier dimension: ${carrierPrefixes.size} directive prefixes in the corpus, ${CARRIER_FAMILIES.size} declared, ` +
+    `${[...REJECTED.keys()].filter((k) => carrierPrefixes.has(k)).length} ruled rejected`,
+)
+console.log(
   `  template dimension: ${svelteTags.size} svelte:* tags (${DECLARED_SVELTE_BUILTINS.size} declared builtins, ` +
     `${[...REJECTED.keys()].filter((k) => svelteTags.has(k)).length} ruled rejected), ` +
     `${blocks.size} block constructs (${DECLARED_BLOCKS.size} declared, ` +
@@ -503,10 +548,27 @@ const carrierFile = path.join("/tmp", `svelte-census-carriers-${Math.random().to
 fs.writeFileSync(carrierFile, carrierDoc)
 const carrierRes: any = await ASTEngine.parseFile(carrierFile, carrierDoc)
 try { fs.unlinkSync(carrierFile) } catch {}
-const cUses = new Set((carrierRes.relationships ?? []).filter((e: any) => e.type === "uses").map((e: any) => e.target))
+// The read families assert the PROVENANCE FLAG, not mere presence — and that
+// correction is itself a finding. Measuring with the carrier read pass disabled shows
+// `bind:value={m}`, `class:on={c}` and `style:color={col}` were ALREADY published as
+// `uses` by the general attribute-expression collection, because the grammar wraps an
+// attribute value in an `expression` node the existing walk already visits. The first
+// version of this probe asserted presence, and it PASSED with the read set emptied —
+// which is what exposed the overstatement. Asserting presence would have tested
+// nothing about D12 and would have kept a false claim in the spec.
+const cUses = new Set(
+  (carrierRes.relationships ?? [])
+    .filter((e: any) => e.type === "uses" && e?.metadata?.carrierDirective === true)
+    .map((e: any) => e.target),
+)
 const cCalls = new Set((carrierRes.relationships ?? []).filter((e: any) => e.type === "calls").map((e: any) => e.target))
 for (const t of CARRIER_PROBE.reads) {
-  note(cUses.has(t), `carrier family that DECLARES a member read published no \`uses\` edge for ${t} — the whole point of the family is that it reads a member`)
+  note(
+    cUses.has(t),
+    `carrier family that DECLARES a member read published no PROVENANCE-TAGGED \`uses\` edge for ${t} — the read is published by the ` +
+      "general expression walk, so what the carrier pass must contribute is `metadata.carrierDirective`, which is what makes a " +
+      "two-way binding distinguishable from an ordinary template read",
+  )
 }
 for (const t of CARRIER_PROBE.invoked) {
   note(cCalls.has(t), `carrier family that DECLARES a framework invocation published no \`calls\` edge for ${t} — an action or transition is invoked by the same mechanism as an on: handler`)

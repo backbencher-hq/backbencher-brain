@@ -169,12 +169,12 @@ would make the gate permanently red on a defect this lane does not own.
 | Gate | Result |
 |---|---|
 | F1 grammar audit | PASS — 32 refs, 0 unknown, 0 unknown fields |
-| F3 fixtures | **36/36** |
-| F4 mutation | **29/29 caught** (one class deliberately unmutated — see below) |
+| F3 fixtures | **37/37** |
+| F4 mutation | **31/31 caught** (one class deliberately unmutated — see below) |
 | F5 differential (60/corpus) | 100%, `MISSING=0`, `unexplained=0` on both corpora |
 | F5 differential (**1,000/corpus**) | 99.7–99.9% — the only `MISSING` is gap `X2`, a typescript-oracle defect |
 | F6 fixture coverage | PASS — 34 handled, 78 types, 0 uncovered, 0 dead literals |
-| Construct census | **PASS** — 20 runes, 5 non-runes, 10 `svelte:` builtins, 13 blocks, 3 rejected, 0 unclassified over 6,143 files |
+| Construct census | **PASS** — 20 runes, 5 non-runes, 10 `svelte:` builtins, 13 blocks, 10 carrier families, 7 rejected, 0 unclassified over 6,143 files |
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
 | SPEC A–H | **8/8** — 76 types classified, gap list 16 CLOSED + 1 open cross-lane |
 | Regex census | **0** |
@@ -320,6 +320,64 @@ identified when the shared tree went unstable — `real-typescript-analyzer.ts` 
 mid-edit with syntax errors, and svelte delegates its scripts to it, so the depth
 run cannot complete until that lands. Reporting 100% here would mean quietly
 excluding the one disagreement that exists.
+
+## The carrier space, and a finding I had to correct
+
+Svelte carries behaviour and data through **attribute names**, and the lane
+implemented only `on:` (D8) and `<svelte:component this={X}>` (H2). Ruling `D12`
+gives the rest three obligations:
+
+- **reads a member** → `uses` (0.95): `bind:`, `class:`, `style:`
+- **invoked by the framework** → `calls` (0.85): `use:`, `transition:`, `in:`,
+  `out:`, `animate:` — on exactly the D8 argument, since Svelte calls an action on
+  mount and a transition on state change by the same mechanism that calls a handler
+- **declares, does not read** → silent: `let:x` names a slot prop the component
+  *accepts*
+
+**I overstated this finding by ~7× and had to correct it.** I first reported eight
+silent families at **~2,049** corpus occurrences including `bind:value` at 581. That
+was wrong: only the five **invoked** families were actually silent — **292**
+occurrences — while `bind:`/`class:`/`style:` were *already* published as `uses` by
+the general attribute-expression walk, because the grammar wraps an attribute value
+in an `expression` node that walk already visits. This work's contribution there is
+**provenance**, not the edge: those reads now carry `metadata.carrierDirective`, so a
+two-way binding is distinguishable from an ordinary template read.
+
+The error was mine and the cause is worth keeping: my probe **imported** the
+identifiers it then expected to read, and `uses` publishes only for a name that
+resolves to a *declared component member* — so every read came back empty and I read
+that silence as a missing carrier.
+
+**What caught it was a census negative control that did not fire.** The carrier probe
+asserted that a declared read family publishes a `uses` edge; with the read set
+emptied, the census still **passed** — only possible if the read was already
+published elsewhere. That control is now the standing regression test, retargeted on
+the provenance flag rather than on mere presence, because asserting presence would
+test nothing and let the false claim back in.
+
+**Tailwind is the trap, twice over.** `md:grid-cols-2`, `dark:bg-background`,
+`hover:text-primary` and `after:absolute` carry the exact `prefix:value` shape of a
+directive and live inside quoted `class` values. Matching the *shape* would publish
+all of them — the same failure the bare-leaf rune fix had. `after:*` is not a Svelte
+directive at all.
+
+**Three instrument defects in my own census, each of which manufactured a phantom
+"undeclared directive"** — recorded because a census that measures the wrong thing is
+worse than none: it never stripped **comments** (a `<!-- @migration-task: svelte:self
+is deprecated -->` matched as an attribute); its non-greedy `<script>…</script>`
+strip was truncated by a `</script>` inside a string, leaking a Tailwind prefix from
+a JS string literal; and no regex over `[^{}]` can strip `class={cn(...)}` when the
+arguments hold a `${...}`, because the braces are genuinely **unbalanced** across the
+window (measured: 2 `{`, 1 `}`). Replaced with a balanced scanner that tracks quote
+state. The four prefixes that genuinely remain are `xlink:`, `xml:`, `xmlns:` —
+real XML/SVG namespaces — and `foo:`, an invented attribute in a compiler-error
+sample.
+
+**Three new negative controls, each verified:** dropping a carrier `REJECTED` ruling
+exits 1; a declared read family that stops publishing its provenance exits 1; and a
+declared-**silent** family that starts publishing exits 1 — the last one matters most,
+because a census that only ever checked for presence would not notice a rule that
+published everything.
 
 ## Performance — measured here for the first time
 

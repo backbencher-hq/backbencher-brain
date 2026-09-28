@@ -1217,6 +1217,21 @@
         "authority": "manual_audit",
         "reference": "L20 `on:greet={() => select(item)}` calls the component's own `select`"
       }
+    },
+    {
+      "id": "rel:Negative.svelte:calls:Negative:fade",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.svelte",
+      "sourceId": "Negative",
+      "targetId": "fade",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "L16 `<button transition:fade>Go</button>` \u2014 Svelte INVOKES the `fade` transition on state change, the same mechanism that makes `on:click` a call under D8. This edge appeared when the carrier space was ruled (D12); M12 reported it as a false positive against a truth that predated the ruling, which is the gate working as intended."
+      }
     }
   ]
 }
