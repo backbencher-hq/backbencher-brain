@@ -683,6 +683,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidImports ?? []) {
       const hit = (result.imports ?? []).find((imp: any) =>
         Object.entries(want).every(([k, v]) => {
+          // Documentation keys are NOT match constraints, exactly as in
+          // matchConstraints: a `note` explaining the pre-fix shape must not
+          // make the assertion unassertable. Without this exemption a
+          // forbidImports pin that DOCUMENTS itself could never fire — the
+          // three perl mutants perl/no-strict-recorded-as-import,
+          // perl/version-requirement-recorded-as-import and
+          // perl/use-constant-becomes-an-import all survived a suite that
+          // looked complete, and only because their pins carried a note.
+          if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           return imp[k] === v
         }),
@@ -692,8 +701,10 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidExports ?? []) {
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
+      // `note`/`comment` are documentation, not constraints — same exemption as
+      // matchConstraints and forbidImports above.
       const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => e[k] === v),
+        Object.entries(want).every(([k, v]) => (k === "comment" || k === "note" ? true : e[k] === v)),
       )
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
