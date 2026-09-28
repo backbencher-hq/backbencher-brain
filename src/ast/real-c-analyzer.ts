@@ -39,6 +39,42 @@ function stripIncludeChars(text: string): string {
   return out
 }
 
+/**
+ * #928: is this text a NAME FRAGMENT that a C lexer split off a JNI-mangled
+ * identifier -- one that starts at a digit and carries only word characters?
+ *
+ * This replaces the regex `/^[0-9][0-9A-Za-z_]*$/`, which was a SYNTAX test on an
+ * ERROR node's text: "classify this blob as a name fragment". The C lexer cannot
+ * start an identifier with a digit, so `…, jstring, 1value_1text16)` splits into
+ * an ERROR holding the leading digits and an identifier holding the rest
+ * (measured: sqlite3-jni.c's S3JniApi family, every mangled name) -- and reading
+ * only the identifier would drop the `1` and name the definition
+ * `value_1text16`, a symbol no reader can resolve. The join is gated on
+ * ADJACENCY and on the ERROR being nothing but the fragment, so it can only mend
+ * a name the lexer itself split.
+ *
+ * A character test, not a regex literal, for the same reason the include-path
+ * strip is one: this file's policy is that string logic does not arrive as a
+ * regex (the M49 regex census's standing rule), and a lexical classification is
+ * string logic. Measured behaviour is identical on the corpus -- the same two
+ * sites the regex gated, the same accept/reject decisions.
+ */
+function isDigitLedNameFragment(text: string): boolean {
+  if (text.length === 0) return false
+  const first = text[0]
+  if (first < "0" || first > "9") return false
+  for (let i = 1; i < text.length; i++) {
+    const ch = text[i]
+    const ok =
+      (ch >= "a" && ch <= "z") ||
+      (ch >= "A" && ch <= "Z") ||
+      (ch >= "0" && ch <= "9") ||
+      ch === "_"
+    if (!ok) return false
+  }
+  return true
+}
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -365,7 +401,7 @@ export function macroWrappedHeadingShape(header: Node): {
     // A NAME FRAGMENT, not junk: the split always starts at the digit, and
     // the lexer can hand back one or two name characters with it
     // (`1` + `value_1text16`, `1b` + `ackup_1finish`).
-    /^[0-9][0-9A-Za-z_]*$/.test(beforeName.text) &&
+    isDigitLedNameFragment(beforeName.text) &&
     beforeName.endIndex === args[lastIdentIdx].startIndex
   ) {
     name = beforeName.text + name
@@ -550,6 +586,259 @@ export function wrappedBodyAfter(header: Node): Node | null {
   return next && next.type === "compound_statement" ? next : null
 }
 
+/**
+ * #928: is this `field_declaration` a member the analyzer can NAME?
+ *
+ * A vendored C family declares fields through a macro:
+ *
+ *   #define BIT(x) int x : 1
+ *   struct flags { int a; BIT(closing); BIT(keepalive); int b; };
+ *
+ * tree-sitter-c does not expand macros (C-D2: the preprocessor is textual), so
+ * the parse is unambiguous about what it CAN and CANNOT offer:
+ *
+ *   field_declaration
+ *     macro_type_specifier      <- the ONLY named child
+ *       identifier              <- the macro's own name
+ *       "(" type_descriptor ")" <- its arguments
+ *     ";"
+ *
+ * There is no declarator in that declaration at all. The old extractor walked
+ * the field's children, landed on the `macro_type_specifier`, and descended to
+ * its first named child -- the macro's own name -- and published THAT as the
+ * member. Measured: `curl/lib/cf-h2-proxy.c` emitted `cf_h2_proxy_ctx.BIT` five
+ * times and `tunnel_stream.BIT` three times, three more owners in the same
+ * directory, and the struct's `memorySize` was computed from a field that does
+ * not exist.
+ *
+ * The real member name (`closing`) is NOT recoverable: whether the macro's
+ * parameter lands in name position is a property of the macro's REPLACEMENT list,
+ * which is C-D2's ruled-out territory. So the honest result is silence, and the
+ * loss is a declared limitation rather than a name borrowed from the macro that
+ * stands in for the declaration.
+ *
+ * The test is the shape itself -- a named declarator is present or it is not --
+ * so it cannot fire on a real member: `int a;` carries a `field_identifier`,
+ * `unsigned x : 1;` carries a `field_identifier` plus a `bitfield_clause`, and
+ * `void (*cb)(int);` carries a `function_declarator`. `#define RESERVED int`
+ * used as a statement already produced no member (a bare `type_identifier` and
+ * no declarator), and still does not.
+ */
+function fieldDeclarationHasDeclarator(field: Node): boolean {
+  for (let i = 0; i < field.namedChildCount; i++) {
+    const c = field.namedChild(i)
+    if (!c) continue
+    const t: string = c.type
+    if (
+      t === "field_identifier" ||
+      t === "identifier" ||
+      t === "pointer_declarator" ||
+      t === "array_declarator" ||
+      t === "function_declarator" ||
+      t === "parenthesized_declarator" ||
+      t === "attributed_declarator"
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * #928: the declarator a macro-truncated declaration's re-parsed sibling carries.
+ *
+ * The sibling is an `expression_statement`, and the two shapes the #916 recovery
+ * accepts are both structural:
+ *
+ *   NAME = value;    assignment_expression { left: identifier NAME, operator "=" }
+ *                    -> a VARIABLE's declarator, truncated away and re-parsed
+ *   NAME(args);      call_expression { function: identifier NAME, argument_list }
+ *                    -> a PROTOTYPE's declarator, truncated away and re-parsed
+ *
+ * Anything else is refused, which is what keeps a call or an initializer inside
+ * an ordinary body from being read as a file-scope declaration. The refusals
+ * were measured against the text-parsing rule this replaces (see
+ * script/m14/tmp/c-audit/truncation-shape.ts for the ten-shape parity table), so
+ * this is a re-expression of the same decision, not a new one.
+ */
+function truncatedSiblingDeclarator(stmt: Node): { name: string; callable: boolean } | null {
+  if (!stmt || stmt.type !== "expression_statement") return null
+  const inner = stmt.namedChildCount > 0 ? stmt.namedChild(0) : null
+  if (!inner) return null
+  if (inner.type === "call_expression") {
+    const fn = inner.childForFieldName("function")
+    if (fn && fn.type === "identifier" && fn.text.trim()) {
+      return { name: fn.text.trim(), callable: true }
+    }
+    return null
+  }
+  if (inner.type === "assignment_expression") {
+    // Exactly `=`: a compound assignment is a statement, not a declaration.
+    const op = inner.childForFieldName("operator")
+    const opText = op ? (op.text ?? op.type) : ""
+    if (opText !== "=") return null
+    const left = inner.childForFieldName("left")
+    if (left && left.type === "identifier" && left.text.trim()) {
+      return { name: left.text.trim(), callable: false }
+    }
+    return null
+  }
+  return null
+}
+
+
+/**
+ * #930: the `enumerator`s in this list that are the ARGUMENTS of a macro
+ * invocation, not enumerators.
+ *
+ * curl declares its option table through a macro that stands where an enumerator
+ * belongs:
+ *
+ *   #define CURLOPT(id, type, num) CURLOPT_##id = num
+ *   typedef enum {
+ *     CURLOPT(CURLOPT_WRITEDATA, CURLOPTTYPE_CBPOINT, 1),
+ *     PLAIN_MEMBER = 3,
+ *   } CURLoption;
+ *
+ * The grammar cannot keep the invocation together, so the list comes back as
+ * ERROR fragments carrying the macro's punctuation with bare
+ * `enumerator(identifier)` fragments BETWEEN them -- one per argument:
+ *
+ *   enumerator_list { ERROR(identifier "(") enumerator enumerator
+ *                     ERROR(number_literal ")" "," identifier "(") enumerator ... }
+ *
+ * and every one of those fragments was published as a member. Measured on the
+ * corpus: `CURLOPTTYPE_CBPOINT` twenty-one times under `CURLoption` in
+ * curl/include/curl/curl.h, `CURLOPT_WRITEDATA` beside it, a `contains` edge onto
+ * each, and the visible corpus consequence of 41 duplicate member names in curl,
+ * 41 in libgit2 and 19 in redis.
+ *
+ * The rule is POSITIONAL, not "this list is damaged". A damaged list still holds
+ * real enumerators -- `PLAIN_MEMBER` above sits BETWEEN two invocations, and
+ * `REAL_AFTER` in the fixture FOLLOWS one -- and a blunt rejection would delete
+ * them. So the list's children are walked in order, an ERROR carrying an opening
+ * paren enters the invocation, an ERROR carrying a closing paren leaves it, and
+ * the enumerators in between are refused.
+ *
+ * It cannot fire on a well-formed list: that has no ERROR children at all, so the
+ * invocation state is never entered. And where it DOES fire the situation is
+ * genuinely ambiguous -- an enumerator between an ERROR's parens cannot be told
+ * from an argument -- so silence is the honest reading (C-D2). The real
+ * enumerator name is derivable only after token pasting, which is C-D2's ruled-out
+ * territory.
+ *
+ * The text read here is the ERROR NODE's own text, the same
+ * source-text-on-a-recovery-node practice the #907/#912 glue rules already use, and
+ * the test is a pure-String character scan rather than a pattern.
+ */
+function enumeratorsInsideMacroInvocation(list: Node): Set<number> {
+  const inside = new Set<number>()
+  let inInvocation = false
+  for (let i = 0; i < list.childCount; i++) {
+    const c = list.child(i)
+    if (!c) continue
+    if (c.isError || c.type === "ERROR") {
+      // A single ERROR can BOTH close one invocation and open the next: curl's
+      // list is punctuated by `ERROR(number_literal ")" "," identifier "(")`,
+      // which is the separator BETWEEN two invocations. Testing `)` first and
+      // then `(` unconditionally is what makes the second invocation's arguments
+      // get refused too -- an earlier draft used `else if`, so a closing ERROR
+      // that also opened the next one left the state closed and published that
+      // invocation's arguments as members.
+      const text = c.text
+      if (text.indexOf(")") !== -1) inInvocation = false
+      if (text.indexOf("(") !== -1) inInvocation = true
+      continue
+    }
+    if (inInvocation && c.type === "enumerator") inside.add(c.startIndex)
+  }
+  return inside
+}
+
+/**
+ * #932: is this `field_declaration` a damaged one whose NAME SLOT holds a type
+ * rather than a declarator?
+ *
+ * jemalloc writes a bare macro token in field position:
+ *
+ *   struct tsd_s {
+ *   #define O(n, t, nt)  t TSD_MANGLE(n);
+ *     TSD_DATA_SLOW
+ *     tsd_state_t state;
+ *     TSD_DATA_FAST
+ *   };
+ *
+ * The grammar promotes the bare identifier to a `type_identifier` where a type
+ * belongs, and the parse comes out as:
+ *
+ *   field_declaration { type_identifier(TSD_DATA_SLOW) field_identifier(tsd_state_t) ";" MISSING }
+ *   field_declaration { type_identifier(state) ";" }
+ *
+ * so the extractor published `tsd_state_t` -- a TYPE -- as a member of `tsd_s`,
+ * a symbol a reader can navigate to that resolves to nothing. Measured: 1
+ * occurrence over the 2,498-file curl+libgit2+redis corpus
+ * (redis/deps/jemalloc/.../tsd.h:255).
+ *
+ * Both conditions are required, and the pair is what makes it sound:
+ *   - a MISSING `;` -- well-formed C never produces one, and a member may
+ *     LEGITIMATELY share a spelling with a type declared in the same file
+ *     (`struct S { struct T T; };` is legal C: the declarator is an ordinary
+ *     identifier, the tag is in its own namespace). The MISSING token is what
+ *     separates the two, and the corpus found that case: C-D12's ruling is why
+ *     the tag/ordinary split is load-bearing rather than pedantic.
+ *   - the name slot's text is a name the file declares as a TYPE, so a genuine
+ *     field whose name happens to be an identifier-shaped word cannot be caught
+ *     by shape alone.
+ *
+ * What this rule does is SUPPRESS, not mend. The real member (`state`) is one
+ * token away in the NEXT declaration's type slot, and recovering it is left
+ * unfixed on purpose: a two-token mend whose generality I have not measured
+ * would be exactly the kind of fabrication recovery risks. The consequence is
+ * therefore a NAMED LOSS (`state` is not a symbol) rather than a phantom, which
+ * is the trade the family's contract prefers -- "a missing edge is a defect, a
+ * DECLARATION is not an edge" reads the other way here, so both are recorded:
+ * a phantom member is a symbol that exists and is wrong, which is worse.
+ */
+function fieldDeclarationNamesANonDeclarator(
+  field: Node,
+  declaredTypeNames: Set<string>,
+  allMacroNames: Set<string>,
+): boolean {
+  let missingSemicolon = false
+  for (let i = 0; i < field.childCount; i++) {
+    const c = field.child(i)
+    if (c && c.isMissing && c.type === ";") missingSemicolon = true
+  }
+  for (let i = 0; i < field.namedChildCount; i++) {
+    const c = field.namedChild(i)
+    if (!c) continue
+    if (c.type === "field_identifier" || c.type === "identifier") {
+      const name = c.text.trim()
+      if (!missingSemicolon) return false
+      // #933, the merged shape. jemalloc writes two macro tokens where a field
+      // belongs and the grammar merges them into ONE damaged declaration:
+      //
+      //   field_declaration { type_identifier(TSD_DATA_FAST) field_identifier(TSD_DATA_SLOWER) ";" MISSING }
+      //
+      // where `TSD_DATA_SLOW`/`FAST`/`SLOWER` are all FUNCTION-like macros whose
+      // replacement lists hold the real declaration. Neither token is a member, so
+      // the analyzer published `property TSD_DATA_SLOWER` at tsd.h:257.
+      //
+      // The MISSING `;` is required for the macro half too, and it is what makes
+      // the rule sound for FUNCTION-like macros: `#define min(a, b) ...` followed
+      // by `int min;` is legal C, because no `(` follows the name and the
+      // preprocessor leaves it alone -- redis's `double min, max;` is exactly
+      // that. A well-formed declaration never carries a MISSING token, so the
+      // token separates the legal case from the damaged one.
+      if (allMacroNames.has(name)) return true
+      // A TYPE name in the declarator slot, same MISSING-token requirement,
+      // because `struct S { struct T T; };` is legal C too: the declarator is an
+      // ordinary identifier while the tag lives in its own namespace.
+      if (declaredTypeNames.has(name)) return true
+    }
+  }
+  return false
+}
 class CScopeManager {
   private stack: ScopeEntry[] = []
 
@@ -628,6 +917,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // directive line spliced into code by parse recovery is physically a
     // '#' line even with no surviving preproc_* ancestor.
     this.analyzeContent = content
+    // #929: drop the previous file's line index (the HC5 hygiene rule, applied to
+    // the one piece of per-file state this wave added).
+    this.lineIndex = null
+    this.lineIndexContent = ""
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -840,8 +1133,124 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // #931: every macro's NAME with the byte offset where it is defined, gathered
+    // in a pre-pass. Used by the enum extractor to tell a macro USE in enumerator
+    // position from a real enumerator -- see `extractEnum`.
+    // Value is `"object" | "function"`, because the two expand under DIFFERENT
+    // conditions and conflating them fabricates a finding: an object-like macro
+    // replaces its name wherever the name appears, while a function-like macro
+    // only replaces it when `(` FOLLOWS. redis's `server.h` defines both
+    // `#define min(a, b) ...` and `#define max(a, b) ...` and then declares
+    // `double min, max;` -- legal, and the field names really are `min` and
+    // `max`, because the `,` after each name is not a `(`. Keyed on the FIRST
+    // definition, as the preprocessor is.
+    const macroDefOffsets = new Map<string, { at: number; kind: "object" | "function" }>()
+    // The object-like subset, for the field-position member rule (#928/#932
+    // unified): a member's name may not be a name the preprocessor would have
+    // replaced.
+    const objectMacroNames = new Set<string>()
+    // Every macro name, both kinds, for the field-position member rule. The
+    // enumerator rule below deliberately uses ONLY the object-like subset,
+    // because an enumerator is never followed by `(` and so is never a
+    // function-like macro's use -- while a DAMAGED field declaration can merge
+    // one in, which is the #933 case.
+    const allMacroNames = new Set<string>()
+    {
+      const preStack: Node[] = [rootNode]
+      while (preStack.length > 0) {
+        const n = preStack.pop()!
+        if (n.type === "preproc_def" || n.type === "preproc_function_def") {
+          const nm = n.childForFieldName("name")
+          if (nm && nm.text.trim() && !macroDefOffsets.has(nm.text.trim())) {
+            macroDefOffsets.set(nm.text.trim(), {
+              at: nm.startIndex,
+              kind: n.type === "preproc_function_def" ? "function" : "object",
+            })
+            if (n.type !== "preproc_function_def") objectMacroNames.add(nm.text.trim())
+            allMacroNames.add(nm.text.trim())
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (c) preStack.push(c)
+        }
+      }
+    }
+
+    // #934: the AST pre-pass above is NOT the whole macro inventory, and the gap
+    // is measurable. jemalloc writes a 65-line brace-enclosed macro body:
+    //
+    //   #define TSD_DATA_SLOW_INITIALIZER   { JEMALLOC_TSD_INITIALIZER(__VA_ARGS__) }  ...
+    //       /* reentrancy_level */  0,  \
+    //       ...
+    //   }
+    //   #define TSD_DATA_FAST  ...        <- the grammar never produces a node here
+    //   #define TSD_DATA_SLOWER ...
+    //
+    // The `preproc_def` at 91 swallows the brace block, the brace block absorbs the
+    // following DIRECTIVES, and the parse then contains ZERO nodes starting on
+    // those lines (measured: `redis/deps/jemalloc/include/jemalloc/internal/tsd.h`,
+    // 24 preproc nodes for 29 `#define`s, and a whole-tree scan finds no node at
+    // all with a start row in 120..146). A macro the parse never sees produces no
+    // symbol, so every read of it is unresolvable, and the member and enumerator
+    // rules that key on macro names are blind to it -- which is how
+    // `property TSD_DATA_SLOWER` reached the `tsd_s` member list.
+    //
+    // The supplementary pass reads the file's own text for the ONE shape a C
+    // lexer defines without help: a line whose first non-space character is `#`
+    // introduces a directive, and `#define` followed by a name DEFINES that name.
+    // Nothing else is read, and a line the grammar already modelled is simply
+    // recorded twice under the same key. This is the same line-anchored principle
+    // the analyzer already applies in `isHashLineMention` (CGD40) and
+    // `insideMacroContinuation`, so it is inside the established contract rather
+    // than outside it -- and it is a character scan, not a pattern, which is what
+    // the lane's own P11 property requires of this file.
+    //
+    // What it does NOT do is decide what a macro means (C-D2). It makes the
+    // inventory COMPLETE, which is a different and much smaller claim.
+    {
+      const content = this.analyzeContent
+      let i = 0
+      while (i < content.length) {
+        let j = i
+        while (j < content.length && (content[j] === " " || content[j] === "\t")) j++
+        if (content[j] === "#") {
+          j++
+          while (j < content.length && (content[j] === " " || content[j] === "\t")) j++
+          if (content.startsWith("define", j)) {
+            let k = j + 6
+            while (k < content.length && (content[k] === " " || content[k] === "\t")) k++
+            const start = k
+            while (k < content.length) {
+              const ch = content[k]
+              const word =
+                (ch >= "a" && ch <= "z") ||
+                (ch >= "A" && ch <= "Z") ||
+                (ch >= "0" && ch <= "9") ||
+                ch === "_"
+              if (!word) break
+              k++
+            }
+            const name = content.slice(start, k)
+            if (name !== "" && !allMacroNames.has(name)) {
+              allMacroNames.add(name)
+              // Only a bare `NAME` with no `(` is object-like, and only a bare
+              // `NAME` is a macro this pass can honestly classify. Anything with
+              // parameters is left out rather than guessed at -- the enumerator
+              // rule does not need function-like macros anyway, and the field rule
+              // uses the ALL-macro set.
+              if (k < content.length && content[k] !== "(") objectMacroNames.add(name)
+            }
+          }
+        }
+        const nl = content.indexOf("\n", i)
+        if (nl === -1) break
+        i = nl + 1
+      }
+    }
+
     // Track current active function for localized metadata updates
-    let activeFunctionSymbol: ASTEngine.UniversalSymbol | null = null
+    let activeFunctionSymbol: null | ASTEngine.UniversalSymbol = null
 
     // 2. METRICS TRACKED IN-PASS
     let cyclomaticComplexity = 1
@@ -1064,6 +1473,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             isLLP64,
             scopeManager.getScopeName(),
             isConditional,
+            declaredTypes,
+            allMacroNames,
           )
           break
         }
@@ -1082,7 +1493,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeManager.pushScope(ScopeKind.Union, unionName, node)
         willPushScope = true
       }
-          this.extractUnion(node, symbols, unions, scopeManager.getScopeName(), isConditional)
+          this.extractUnion(node, symbols, unions, scopeManager.getScopeName(), isConditional, declaredTypes, allMacroNames)
           break
         }
         case "enum_specifier":
@@ -1090,7 +1501,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           // their members must not leak as file-scope EnumMember symbols
           // (measured: BackupSubCommandEnum/MB_enum members in sqlite).
           if (scopeManager.isInsideFunction()) break
-          this.extractEnum(node, symbols, enums, scopeManager.getScopeName(), isConditional)
+          this.extractEnum(
+            node,
+            symbols,
+            enums,
+            scopeManager.getScopeName(),
+            isConditional,
+            macroDefOffsets,
+          )
           break
         case "declaration":
           {
@@ -1423,6 +1841,22 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const obj = node.childForFieldName("argument") || node.namedChild(0)
         if (field && field.text.trim() && !isWrite && !isCallee) {
           const sourceScope = scopeManager.getRelationshipSource()
+          // One name occurrence, ONE edge. The key is shared with the identifier
+          // branch below on purpose (`::uses::` on BOTH sides): a field read is
+          // read twice by the walk -- once at the `field_expression`, once at its
+          // own `field_identifier` leaf -- and when the two branches spelled the
+          // dedup key differently (`::uses::` against `::use::`) the set could not
+          // see that they were the same edge, so every field read in C published
+          // two `uses` edges for one occurrence: `field_access`@0.9 from the
+          // parent and `identifier_usage`@1.0 from the leaf. One fact, two
+          // confidences a threshold filter would return both of, and one fact
+          // split across two `relationshipType` vocabularies so any count by
+          // relationshipType halved a single semantic event.
+          // Measured: 2,369 provable occurrences over 80 redis files (35200
+          // edges), 274 over the C fixtures plus a curl/lib slice -- one class,
+          // no others. The `field_access` edge is the survivor because it is the
+          // one that carries the receiver (`accessedFrom`); pinned by
+          // `c/field-read-single-edge`.
           const relKey = `${sourceScope}::uses::${field.text}`
           if (!emittedUseRelationships.has(relKey)) {
             emittedUseRelationships.add(relKey)
@@ -1618,7 +2052,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               ["type_identifier", "struct_specifier", "union_specifier", "enum_specifier"],
               node.type,
             )
-          const relKey = `${sourceScope}::${isTypeNode ? "ref" : "use"}::${text}`
+          // `::uses::` / `::ref::`, spelled the SAME way the field_expression
+          // branch spells its key above. The two branches produce the same
+          // relationship kind for the same name occurrence, so they must share
+          // one dedup key or the "one edge per pair" contract is unenforced
+          // between them (that mismatch was measured as 2,369 duplicate field
+          // reads in redis alone).
+          const relKey = `${sourceScope}::${isTypeNode ? "ref" : "uses"}::${text}`
           if (!emittedUseRelationships.has(relKey)) {
             emittedUseRelationships.add(relKey)
             relationships.push({
@@ -2022,6 +2462,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     isLLP64: boolean,
     scope: string,
     isConditional: boolean,
+    // #932: the file's declared type names, so a field_declaration whose name slot
+    // holds a TYPE can be recognised (see `fieldDeclarationNamesAType`).
+    declaredTypes: Set<string>,
+    allMacroNames: Set<string>,
   ) {
     const nameNode = node.childForFieldName("name")
     let structName = "anonymous_struct"
@@ -2043,7 +2487,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
-        if (field && field.type === "field_declaration") {
+        // #928: a field_declaration with no declarator names no member. A macro-generated
+        // field (`BIT(closing);`) has only a macro_type_specifier, and descending to its
+        // first named child is how a `property` named after the MACRO used to be
+        // published (cf_h2_proxy_ctx.BIT x5). Silence is the honest result -- the real
+        // name lives in the macro's replacement list, which is C-D2.
+        // #932: a field_declaration whose name slot holds a TYPE (see the rule for
+        // why the MISSING `;` is required, and why this suppresses rather than
+        // mends) publishes nothing. The real member is then a NAMED LOSS rather
+        // than a phantom symbol that resolves to nothing.
+        if (
+          field &&
+          field.type === "field_declaration" &&
+          fieldDeclarationHasDeclarator(field) &&
+          !fieldDeclarationNamesANonDeclarator(field, declaredTypes, allMacroNames)
+        ) {
           let typeNode =
             field.childForFieldName("type") ||
             this.findChild(field, (c) =>
@@ -2095,7 +2553,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
 
               if (declNode && declNode.text.trim()) {
-                fields.push({ name: declNode.text, type: typeNode ? typeNode.text : "unknown", arraySize, isPointer })
+                fields.push({
+                  name: declNode.text,
+                  type: typeNode ? typeNode.text : "unknown",
+                  // #927: how the member SPELLS its type, so the layout maths can
+                  // respect C's tag/ordinary namespace split instead of matching
+                  // bare text against both maps.
+                  typeKind: this.memberTypeKind(typeNode),
+                  arraySize,
+                  isPointer,
+                })
                 symbols.push({
                   name: declNode.text,
                   kind: ASTEngine.SymbolKind.Property,
@@ -2144,6 +2611,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     unions: Record<string, any[]>,
     scope: string,
     isConditional: boolean,
+    // #932: as `extractStruct`.
+    declaredTypes: Set<string>,
+    allMacroNames: Set<string>,
   ) {
     const nameNode = node.childForFieldName("name")
     let unionName = "anonymous_union"
@@ -2159,7 +2629,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
-        if (field && field.type === "field_declaration") {
+        // #928: a field_declaration with no declarator names no member. A macro-generated
+        // field (`BIT(closing);`) has only a macro_type_specifier, and descending to its
+        // first named child is how a `property` named after the MACRO used to be
+        // published (cf_h2_proxy_ctx.BIT x5). Silence is the honest result -- the real
+        // name lives in the macro's replacement list, which is C-D2.
+        // #932: a field_declaration whose name slot holds a TYPE (see the rule for
+        // why the MISSING `;` is required, and why this suppresses rather than
+        // mends) publishes nothing. The real member is then a NAMED LOSS rather
+        // than a phantom symbol that resolves to nothing.
+        if (
+          field &&
+          field.type === "field_declaration" &&
+          fieldDeclarationHasDeclarator(field) &&
+          !fieldDeclarationNamesANonDeclarator(field, declaredTypes, allMacroNames)
+        ) {
           let typeNode =
             field.childForFieldName("type") ||
             this.findChild(field, (c) =>
@@ -2212,7 +2696,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
 
               if (declNode && declNode.text.trim()) {
-                fields.push({ name: declNode.text, type: typeNode ? typeNode.text : "unknown", arraySize, isPointer })
+                fields.push({
+                  name: declNode.text,
+                  type: typeNode ? typeNode.text : "unknown",
+                  // #927: the struct extractor's classification, for the same reason.
+                  typeKind: this.memberTypeKind(typeNode),
+                  arraySize,
+                  isPointer,
+                })
                 symbols.push({
                   name: declNode.text,
                   kind: ASTEngine.SymbolKind.Property,
@@ -2250,6 +2741,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     enums: Record<string, boolean>,
     scope: string,
     isConditional: boolean,
+    macroDefOffsets: Map<string, { at: number; kind: "object" | "function" }>,
   ) {
     const nameNode = node.childForFieldName("name")
     let enumName = nameNode && nameNode.text.trim() ? nameNode.text : "anonymous_enum"
@@ -2268,13 +2760,54 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     let listNode = node.childForFieldName("body") || this.findFirstChildOfType(node, "enumerator_list")
 
     if (listNode) {
+      // #930: enumerator fragments that are a macro invocation's ARGUMENTS are not
+      // enumerators (curl's `CURLOPT(CURLOPT_WRITEDATA, CURLOPTTYPE_CBPOINT, 1)`
+      // in enumerator position). Positional, so a real enumerator in the SAME
+      // damaged list still lands -- see the rule for why a blunt "this list is
+      // damaged" rejection would have been wrong.
+      const macroArgumentEnumerators = enumeratorsInsideMacroInvocation(listNode)
       for (let i = 0; i < listNode.namedChildCount; i++) {
         const enumerator = listNode.namedChild(i)
-        if (enumerator && enumerator.type === "enumerator") {
+        if (enumerator && enumerator.type === "enumerator" && !macroArgumentEnumerators.has(enumerator.startIndex)) {
           const enumNameNode = enumerator.childForFieldName("name") || enumerator.namedChild(0)
+          // #931 SHADOWING: this local is `memberName`, NOT `enumName`. Naming it
+          // `enumName` shadowed the METHOD's own `enumName` (the enum's name) for
+          // the rest of the block, so every member came out with
+          // `ownerName: <its own name>` and a self-`contains` edge. The corpus
+          // caught it; the lane's own P5 could not, because the ownerName was
+          // present -- only the SELF-CONTainment property can see this class, and
+          // it is now P12 in script/m14/tmp/c-audit/verify-c-lane.ts.
+          const memberName = enumNameNode ? enumNameNode.text.trim() : ""
+          // #931: an enumerator whose name is a MACRO defined at or before this
+          // point is a macro USE, not a declaration -- the preprocessor replaces
+          // the identifier, so the enumerator does not exist. Measured, all one
+          // class: `CURLOPTDEPRECATED(CURLOPT_HTTPPOST, ..., 24, 7.56.0, "...")`
+          // (the macro's own name, 3x) and `CURLINFO_DOUBLE` x6 in
+          // curl/include/curl/curl.h; `REG_OK` in redis's tre.h; `XXH_OK` in
+          // xxhash.h; `tsd_state_t` in jemalloc's tsd.h, where a `#define
+          // tsd_state_t atomic_u8_t` type macro is read back as a member name out
+          // of a damaged enum body.
+          //
+          // ORDER-RESPECTING, because that is how the preprocessor behaves: the
+          // define must be at or before the use. A macro defined AFTER the enum
+          // does not touch it, and the enumerator there is real.
+          //
+          // And OBJECT-LIKE only, which is the second half of the rule and the
+          // half an earlier draft of this fix was missing. `#define min(a, b) ...`
+          // is a FUNCTION-like macro: it is replaced only where `( ... )` follows
+          // the name. An enumerator is followed by `,`, `=` or `}`, never by `(`,
+          // so an enumerator named after a function-like macro is REAL -- and
+          // redis/src/server.h proves it, declaring `double min, max;` as struct
+          // members 3,700 lines after its own `#define min(a, b)`. The first
+          // corpus run reported those two members as macro-named phantoms; the
+          // # census and the rule were both wrong about C, and the census was the
+          // more expensive of the two mistakes.
+          const macroDef = memberName ? macroDefOffsets.get(memberName) : undefined
+          const isMacroUse =
+            macroDef !== undefined && macroDef.kind === "object" && macroDef.at <= enumerator.startIndex
 
-          if (enumNameNode && enumNameNode.text.trim()) {
-            values.push(enumNameNode.text)
+          if (enumNameNode && memberName && !isMacroUse) {
+            values.push(memberName)
 
             const valueNode = enumerator.childForFieldName("value")
             if (valueNode) {
@@ -2291,7 +2824,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
 
             symbols.push({
-              name: enumNameNode.text,
+              name: memberName,
               kind: ASTEngine.SymbolKind.EnumMember,
               range: this.nodeToRange(enumerator),
               scope: enumName,
@@ -2517,6 +3050,46 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   // --- Shallow Memory Math ---
+
+  /**
+   * How a member spells its own type, read from the TYPE NODE the parse already
+   * separated. C keeps tag names (`struct S`, `union U`, `enum E`) and ordinary
+   * identifiers (typedef names) in SEPARATE namespaces, so the bare text of a
+   * member's type cannot say on its own which map it belongs to -- one spelling
+   * can name two different entities.
+   *
+   * This is an ACCURACY input, not the crash guarantee. curl's `h1_tunnel_state`
+   * member spells its type with the TYPEDEF (a bare name), so classification
+   * alone does not disambiguate that site; the in-progress set below is what
+   * makes the descent finite.
+   */
+  private memberTypeKind(typeNode: Node | null): string {
+    if (!typeNode) return "unknown"
+    const t: string = typeNode.type
+    if (t === "primitive_type" || t === "sized_type_specifier") return "primitive"
+    if (t === "struct_specifier") return "tag_struct"
+    if (t === "union_specifier") return "tag_union"
+    if (t === "enum_specifier") return "tag_enum"
+    if (t === "type_identifier") return "typedef"
+    return "unknown"
+  }
+
+  /**
+   * #927: the types whose layout is being computed on THIS descent. A member that
+   * reaches a type already on the stack closes a cycle, and "how big is a type
+   * that contains itself by value" has no answer -- C forbids the construct (an
+   * object type may not contain itself), so any number here would be invented.
+   *
+   * The measured cause of the crash this replaces is NOT illegal C: it is C's
+   * tag/ordinary namespace split letting one bare name be BOTH an enum typedef
+   * and a struct tag. `curl/lib/cf-h1-proxy.c` declares
+   * `typedef enum {...} h1_tunnel_state;` and then
+   * `struct h1_tunnel_state { ... h1_tunnel_state tunnel_state; ... };`, the
+   * bare-name lookup resolved the ENUM-typed member to the STRUCT, and the
+   * recursion never terminated -- "RangeError: Maximum call stack size
+   * exceeded", one crash in 900 curl files against a lane that documents a
+   * crash guarantee of 0.
+   */
   private calculateMemorySize(
     fields: any[],
     isPacked: boolean,
@@ -2525,7 +3098,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     is64Bit: boolean,
     isLLP64: boolean,
     isUnion: boolean = false,
+    inProgress?: Set<string>,
   ): number {
+    const active = inProgress ?? new Set<string>()
     let currentOffset = 0
     let maxAlign = 1
     let maxSize = 0
@@ -2553,12 +3128,29 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (inArray(["double", "int64_t", "uint64_t", "size_t", "ssize_t"], type)) {
         fieldSize = 8
         align = 8
-      } else if (structs[type]) {
-        fieldSize = this.calculateMemorySize(structs[type], false, structs, unions, is64Bit, isLLP64, false)
-        align = this.calculateAlignment(structs[type], structs, unions, is64Bit, isLLP64)
-      } else if (unions[type]) {
-        fieldSize = this.calculateMemorySize(unions[type], false, structs, unions, is64Bit, isLLP64, true)
-        align = this.calculateAlignment(unions[type], structs, unions, is64Bit, isLLP64)
+      } else if (field.typeKind === "tag_enum") {
+        // An enum member has platform int layout, and is never a struct to
+        // descend into -- the `tag_enum` case is what keeps an enum/struct name
+        // collision out of the descent in the first place.
+        fieldSize = 4
+        align = 4
+      } else {
+        const structKey = this.structKeyForMember(field, structs)
+        const unionKey = structKey ? null : this.unionKeyForMember(field, unions)
+        const key = structKey ?? unionKey
+        if (key) {
+          if (active.has(key)) {
+            // A by-value cycle: C forbids the construct, so no size exists. Bounded, not followed.
+            fieldSize = 0
+            align = 1
+          } else {
+            active.add(key)
+            const list = structKey ? structs[key] : unions[key]
+            fieldSize = this.calculateMemorySize(list, false, structs, unions, is64Bit, isLLP64, !structKey, active)
+            align = this.calculateAlignment(list, structs, unions, is64Bit, isLLP64, active)
+            active.delete(key)
+          }
+        }
       }
 
       if (isPacked) align = 1
@@ -2583,13 +3175,60 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return currentOffset
   }
 
+  /**
+   * #927: the STRUCT-map key this member's declared type resolves to, or null.
+   * Only where the spelling allows it -- a member written `union U` is a union
+   * even if a struct of that name exists, and `enum E` is neither. A bare/typedef
+   * spelling keeps the historical behaviour (structs first), which is precisely
+   * why the in-progress set, and not this rule, is the crash guarantee.
+   *
+   * The KEY is returned rather than a boolean because a `struct S` member is
+   * spelled `struct S` while the map is keyed `S`: one lookup, one answer, and no
+   * chance of the caller re-indexing with the unstripped text (which is the bug
+   * this shape was written to prevent -- the first draft of this fix passed a
+   * boolean back and then looked the map up with `field.type` again).
+   */
+  private structKeyForMember(field: any, structs: Record<string, any[]>): string | null {
+    const k = field.typeKind
+    if (k === "tag_union" || k === "tag_enum") return null
+    const key = k === "tag_struct" ? this.stripTagKeyword(field.type) : field.type
+    return structs[key] ? key : null
+  }
+
+  private unionKeyForMember(field: any, unions: Record<string, any[]>): string | null {
+    const k = field.typeKind
+    if (k === "tag_union") {
+      const tag = this.stripTagKeyword(field.type)
+      return unions[tag] ? tag : null
+    }
+    if (k === "tag_struct" || k === "tag_enum") return null
+    return unions[field.type] ? field.type : null
+  }
+
+  /** `struct Foo` / `union Foo` / `enum Foo` as the parse spells it -> the bare tag. */
+  private stripTagKeyword(typeText: string): string {
+    let s = typeText.trim()
+    for (const kw of ["struct", "union", "enum"]) {
+      if (s.length > kw.length && s.startsWith(kw) && (s[kw.length] === " " || s[kw.length] === "\t")) {
+        s = s.slice(kw.length).trim()
+        break
+      }
+    }
+    return s
+  }
+
   private calculateAlignment(
     fields: any[],
     structs: Record<string, any[]>,
     unions: Record<string, any[]>,
     is64Bit: boolean,
     isLLP64: boolean,
+    // #927: the same in-progress set and the same reason -- this function
+    // recursed on the identical cycle one function away, so bounding only the
+    // size computation would have left half the crash in place.
+    inProgress?: Set<string>,
   ): number {
+    const active = inProgress ?? new Set<string>()
     let align = 1
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
@@ -2598,10 +3237,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (inArray(["double", "int64_t", "uint64_t"], field.type)) align = Math.max(align, 8)
       else if (inArray(["int", "float", "int32_t", "uint32_t"], field.type)) align = Math.max(align, 4)
       else if (inArray(["short", "int16_t", "uint16_t"], field.type)) align = Math.max(align, 2)
-      else if (structs[field.type])
-        align = Math.max(align, this.calculateAlignment(structs[field.type], structs, unions, is64Bit, isLLP64))
-      else if (unions[field.type])
-        align = Math.max(align, this.calculateAlignment(unions[field.type], structs, unions, is64Bit, isLLP64))
+      else if (field.typeKind === "tag_enum") align = Math.max(align, 4)
+      else {
+        const structKey = this.structKeyForMember(field, structs)
+        const unionKey = structKey ? null : this.unionKeyForMember(field, unions)
+        const key = structKey ?? unionKey
+        if (key) {
+          if (active.has(key)) align = Math.max(align, 1)
+          else {
+            active.add(key)
+            const list = structKey ? structs[key] : unions[key]
+            align = Math.max(align, this.calculateAlignment(list, structs, unions, is64Bit, isLLP64, active))
+            active.delete(key)
+          }
+        }
+      }
     }
     return align
   }
@@ -2652,13 +3302,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!next) return false
 
     // Shape A/B — the declarator was re-parsed as an expression statement.
+    //
+    // #928: the name and its "is it a declarator or a call" verdict are read from
+    // the SIBLING'S OWN STRUCTURE, not from its text. The old rule parsed
+    // `/^([A-Za-z_][A-Za-z0-9_]*)\s*(=|\()/` off `next.text` -- an identifier and
+    // a delimiter recovered by regex from a node the grammar had already parsed,
+    // which is the one thing this analyzer's own contract forbids ("Pure AST --
+    // symbols and relationships derive from Tree-sitter nodes/fields, never
+    // source-text scanning") and what the M49 regex census exists to catch.
+    //
+    // The structural reading is FAITHFUL, and the parity was measured
+    // (truncation-shape.ts) over the ten spellings the regex accepted or refused:
+    //   `NAME = value;`      -> expression_statement > assignment_expression with
+    //                           `left` an identifier and the operator exactly "="
+    //   `NAME(args);`        -> expression_statement > call_expression with
+    //                           `function` an identifier
+    //   `NAME;`              -> a bare identifier statement; REFUSED, as before
+    //   `*NAME;`             -> pointer_expression; REFUSED, as before
+    //   `NAME += 1;`         -> operator "+=", so REFUSED (the regex needed `=` or
+    //                           `(` immediately after the name)
+    //   `(NAME) = 1;`        -> left is parenthesized; REFUSED, as before
+    // The operator test is exact rather than "first `=` in the text", which is
+    // what the old regex did implicitly and why a compound assignment could never
+    // have been accepted by it.
     if (next.type === "expression_statement") {
-      const match = /^([A-Za-z_][A-Za-z0-9_]*)\s*(=|\()/.exec(next.text.trim())
-      if (!match) return false
-      const name = match[1]
+      const read = truncatedSiblingDeclarator(next)
+      if (!read) return false
+      const name = read.name
       if (name === macroId.text) return false
-      const callable = match[2] === "("
-      if (callable) {
+      if (read.callable) {
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Function,
@@ -3254,6 +3926,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // isDirectiveConditionText). One lastIndexFrom(0) per mention — measured
   // negligible on the vdbe.c perf budget.
   private analyzeContent = ""
+  // #929: the per-file line-start index backing `indexToLineColumn`. Both fields
+  // move together; the content key is what makes a reused instance safe, and the
+  // reset at `analyze()` entry is what keeps the array from outliving its file.
+  private lineIndex: Int32Array | null = null
+  private lineIndexContent = ""
   private isHashLineMention(node: Node): boolean {
     const bol = this.analyzeContent.lastIndexOf("\n", node.startIndex - 1) + 1
     let i = bol
@@ -3602,18 +4279,62 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private indexToLineColumn(content: string, index: number): { line: number; column: number } {
-    let line = 1
-    let column = 1
-    const max = Math.min(index, content.length)
-    for (let i = 0; i < max; i++) {
-      if (content[i] === "\n") {
-        line++
-        column = 1
-      } else {
-        column++
-      }
+    // #929: this used to walk the WHOLE content from 0 on every call, and its one
+    // caller is `recoverFunctionRange` -- once per FUNCTION. That is O(n) per
+    // function, so O(n * functions) per file: superlinear in the file, and
+    // invisible in a per-kilobyte number taken from small files. The analyzer
+    // documentation claimed "No O(n^2) or per-symbol O(n) scans", which this
+    // contradicted.
+    //
+    // MEASURED attribution (script/m14/tmp/c-audit/perf-attribution.ts, three
+    // variants of the real analyzer on `redis/src/server.c`, 360,751 bytes /
+    // 39,321 nodes, median of 3, load1 disclosed in the run):
+    //   as-is                        4809 ms
+    //   line index built once        3930 ms   (-18.3%)
+    //   constant answer (upper bound) 3667 ms (-23.7%)
+    // so the term was roughly a fifth of the analyzer's wall time on a 360 KB
+    // file. The build is O(n) once per file; each lookup is then O(log lines) by
+    // binary search, or O(1) amortised from a cursor -- the cursor is kept out
+    // because `recoverFunctionRange` asks for increasing offsets in practice but
+    // nothing guarantees it, and a wrong answer would be worse than a slower one.
+    const starts = this.lineStartIndex(content)
+    // The clamp is NOT cosmetic: the pre-#929 walk used `Math.min(index,
+    // content.length)` and a negative index simply ran no iterations, so both
+    // out-of-range directions answered "line 1, column 1"-shaped values. The
+    // parity probe (script/m14/tmp/c-audit/line-index-parity.ts) measured 36
+    // disagreements over 383,195 in-range offsets being zero but every
+    // out-of-range probe differing -- a past-the-end index returned a column of
+    // `index - lastLineStart + 1` and a negative index returned column 0. Clamping
+    // to the content's own bounds restores the old answers exactly, and the probe
+    // is re-run to prove it.
+    const clamped = index < 0 ? 0 : index > content.length ? content.length : index
+    let lo = 0
+    let hi = starts.length - 1
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1
+      if (starts[mid] <= clamped) lo = mid
+      else hi = mid - 1
     }
-    return { line, column }
+    return { line: lo + 1, column: clamped - starts[lo] + 1 }
+  }
+
+  /**
+   * #929: the byte offset of each line's first character, built once per file.
+   * Keyed on the content so a reused instance (the HC5 lesson) can never answer
+   * for the previous file, and reset at `analyze()` entry so the array does not
+   * outlive the file it describes.
+   */
+  private lineStartIndex(content: string): Int32Array {
+    if (this.lineIndexContent === content && this.lineIndex) return this.lineIndex
+    let lines = 1
+    for (let i = 0; i < content.length; i++) if (content[i] === "\n") lines++
+    const starts = new Int32Array(lines)
+    let n = 0
+    starts[n++] = 0
+    for (let i = 0; i < content.length; i++) if (content[i] === "\n") starts[n++] = i + 1
+    this.lineIndex = starts
+    this.lineIndexContent = content
+    return starts
   }
 
   private isPointerType(node: Node | null): boolean {
