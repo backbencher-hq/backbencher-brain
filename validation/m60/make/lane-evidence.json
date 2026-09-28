@@ -2,7 +2,7 @@
   "lane": "make",
   "title": "GNU Make / Makefile analyzer (M60, 2026-09-27)",
   "question": "The website advertises a Make analyzer via SUPPORTED_LANGUAGES. Do we have one, and is it any good?",
-  "verdict": "We had one: wired into engine.ts, advertised, and named by ZERO gates. It is now gated, measured and substantially rebuilt. 17 defects found and fixed; recall/precision 1.000000 against an independent oracle; completeness A-H 8/8.",
+  "verdict": "We had one: wired into engine.ts, advertised, and named by ZERO gates. Now gated, measured and rebuilt. 18 defects found and fixed. The most consequential finding is not among them: FOUR gates existed for this lane and none had been run — two of the eighteen defects and one dead branch were sitting inside checks that would have reported green. Recall/precision 1.000000; completeness A-H 8/8; all four M12 gates now execute.",
   "grammar": {
     "upstream": "tree-sitter-grammars/tree-sitter-make",
     "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
@@ -74,8 +74,8 @@
     "precision": 1,
     "missing": 0,
     "spurious": 0,
-    "truthEdges": 5035,
-    "lineAgreement": "2015/2015",
+    "truthEdges": 5447,
+    "lineAgreement": "2427/2427",
     "harnessF5": {
       "tf-aws-components": "100% covered, 0 missing, 0 unexplained",
       "consul": "100% covered, 0 missing, 0 unexplained"
@@ -84,7 +84,7 @@
   },
   "census": {
     "symbols": 1772,
-    "relationships": 5445,
+    "relationships": 5870,
     "imports": 4,
     "unknownKind": 0,
     "emptyName": 0,
@@ -92,14 +92,14 @@
     "badRange": 0,
     "ownerless": 0,
     "symbolFree": 0,
-    "relNoLineNumber": "0/5445",
+    "relNoLineNumber": "0/5870",
     "operatorInName": 0,
     "sameSiteDuplicates": 0,
     "relTypes": {
       "contains": 1742,
-      "references": 1566,
+      "references": 1971,
       "exports": 1347,
-      "uses": 785,
+      "uses": 805,
       "imports": 4,
       "calls": 1
     },
@@ -107,15 +107,16 @@
       "module": 99,
       "function": 1329,
       "constant": 344
-    }
+    },
+    "danglingEndpoints": 342
   },
   "dangleAdjudication": {
     "classes": {
       "builtinVariable": 160,
-      "externalVariable": 173,
+      "externalVariable": 183,
       "shellVariable": 11,
-      "filePath": 232,
-      "automaticVariable": 212
+      "automaticVariable": 213,
+      "filePath": 241
     },
     "trueDanglers": 0,
     "note": "only the operator-polluted class (112 edge ends) was a real defect; the rest are structural to GNU Make and are what the `uses` class exists for. 0 fell into a true-dangler bucket."
@@ -145,32 +146,32 @@
   },
   "complexity": {
     "linearity": "no growth in per-node cost with file size: consistent with linear",
-    "perNodeRatioLargestOverSmallest": 0.525,
+    "perNodeRatioLargestOverSmallest": 0.258,
     "bandComparison": {
       "band": "40-200 nodes",
       "files": 73,
       "via": "ASTEngine.parseFile (production)",
       "perFile": {
         "n": 73,
-        "mean": 3.28,
-        "min": 1.323,
-        "max": 34.515
+        "mean": 3.231,
+        "min": 1.361,
+        "max": 15.499
       },
       "perK": {
         "n": 73,
-        "mean": 43.805,
-        "min": 15.941,
-        "max": 313.771
+        "mean": 42.224,
+        "min": 15.591,
+        "max": 161.551
       }
     },
     "load": {
-      "atStart": 50.5,
-      "atEnd": 49.2
+      "atStart": 39.68,
+      "atEnd": 39.68
     },
     "withdrawnClaim": "the first version bucketed by QUARTILES and printed a 1.208 'spread' with n=1 and n=0 buckets. 50 of 99 files sit within a few nodes of each other, so quartiles cannot work here; a spread over an empty bucket is not a measurement."
   },
   "defects": {
-    "total": 17,
+    "total": 18,
     "inAnalyzer": 15,
     "inSharedHarness": 2,
     "headline": [
@@ -183,11 +184,13 @@
       "exports hardcoded [] -> a makefile's public surface unanswerable",
       "imports sourced at a literal \"makefile\" -> two files including the same path produced the same edge",
       "${VAR} (Make's second expansion form, 68 occurrences in 14 of 99 files) not normalised -> each fact published twice, one spelling dangling",
-      "define produced a constant, so a `calls` edge pointed at a value that cannot be called"
+      "define produced a constant, so a `calls` edge pointed at a value that cannot be called",
+      "D18: a rule whose TARGET is an EXPRESSION published no prerequisite edges at all — `$(BIN): $(OBJS) | builddir` declares no literal target, so the code iterated an empty list. 405 corpus edges lost. Found by the M12 contract probe, a gate that had existed for this lane and had never been run."
     ],
     "sharedHarness": [
       "the F5 file picker required a dotted extension, and Make's files are named `Makefile` — so the lane read as EMPTY rather than unchecked. Added an additive opt-in `fileNames` list; no other lane's matching changes.",
-      "the F5 label allowlist registered only 3 of the 6 labels the make oracle derives, so 1,500 analyzer edges were filtered off and reported as 1,498 MISSING (92% of truth) while the analyzer was emitting 2,109 edges for those 53 files."
+      "the F5 label allowlist registered only 3 of the 6 labels the make oracle derives, so 1,500 analyzer edges were filtered off and reported as 1,498 MISSING (92% of truth) while the analyzer was emitting 2,109 edges for those 53 files.",
+      "three M12 gates hardcoded an `elixir` corpus that is not on this machine and died with `fatal: cannot change to ...` before measuring anything. The corpus now comes from script/m12/make-corpus.ts, a missing checkout is skipped and RECORDED, and both corpus gates pin the grammar residual instead of demanding zero errors."
     ]
   },
   "survivingMutantsFoundAndFixed": [
@@ -201,26 +204,37 @@
     "M14.0.F4 mutants": "17/17 caught",
     "M14.0.F5 differential (harness)": "both corpora 100% covered, 0 missing, 0 unexplained",
     "M14.0 completeness": "44/44 types classified; sections A-H 8/8",
-    "zero-unknown census": "0 unknown / 0 empty / 0 bad ranges / 0 ownerless / 0 symbol-free; 5,445/5,445 line_number",
-    "doc-truth audit": "49 claims, 0 stale, self-test PASS — corrupting the \"contains edges\" l",
-    "regex": "zero"
+    "zero-unknown census": "0 unknown / 0 empty / 0 bad ranges / 0 ownerless / 0 symbol-free; 5,870/5,870 line_number",
+    "doc-truth audit": "49 claims, 0 stale, self-test green",
+    "regex": "zero",
+    "M12.0.F3 fixtures": "6/6 pass",
+    "M12.0.F4 mutants": "18/18 caught",
+    "M12 contract probe": "44/44 — was 25/34 on first execution",
+    "M12 node-types compare": "passed — 35 live references, 0 phantom",
+    "M12 corpus errors": "passed — 12/14 clean, 0 crashes, grammar residual PINNED",
+    "M12 corpus measure": "passed — 622 symbols / 2,480 relationships"
   },
   "notClosed": {
     "gaps": [
       {
         "id": "MAKE-G1",
         "status": "OPEN",
-        "summary": "`VPATH = src` is a declared node type the analyzer does not model, so the search path is not recorded. 0 occurrences across all 99 corpus files, so there is no evidence to design against and no regres"
+        "summary": "`VPATH = src` is a declared node type the analyzer does not model, so the search path is not recorded. 0 occurrences across all 99 corpus files, so there is no evidence to design against and no regression to guard. The s"
       },
       {
         "id": "MAKE-G2",
         "status": "OPEN",
-        "summary": "`.RECIPEPREFIX = >` changes what a recipe line looks like, so ignoring it means recipe lines using a non-default prefix are not recognized as recipes. 0 occurrences in this corpus (every one of the 99"
+        "summary": "`.RECIPEPREFIX = >` changes what a recipe line looks like, so ignoring it means recipe lines using a non-default prefix are not recognized as recipes. 0 occurrences in this corpus (every one of the 99 files uses a tab), "
       },
       {
         "id": "MAKE-G3",
         "status": "OPEN",
-        "summary": "GRAMMAR limitation, not an analyzer defect, and deliberately NOT patched. The target-scoped form `target: export VAR = value` — 10 lines across 2 of 99 files (boundary/Makefile, tf-aws-components/.../"
+        "summary": "GRAMMAR limitation, not an analyzer defect, and deliberately NOT patched. The target-scoped form `target: export VAR = value` — 10 lines across 2 of 99 files (boundary/Makefile, tf-aws-components/.../runner/Makefile) — i"
+      },
+      {
+        "id": "MAKE-G4",
+        "status": "OPEN",
+        "summary": "SECOND grammar limitation, found by the same gate run and likewise not patched. `MAIN_PACKAGES=$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` in vault/Makefile line 5 — a shell command inside an escaped-dol"
       }
     ],
     "notClaimed": [
@@ -232,7 +246,10 @@
   "incidents": [
     "the hcl LANG_CONFIGS entry was NEVER COMMITTED — it lived only in a dirty worktree and a concurrent `git checkout` deleted it, after which `--lang hcl` threw `unknown language hcl`. Restored here and marked as a restoration; the gate itself then caught my reconstruction being wrong (I had required `calls`, which hcl rules N/A), so the restored entry is verified rather than assumed.",
     "`script/**` is NOT in the typecheck program (root tsconfig includes `src/**/*.ts` only), so `npx tsc --noEmit` never sees the harnesses. I reported a shared file as type-clean on that basis while it had a syntax error. `bun build <file> --target=bun` is the real syntax gate for script/**.",
-    "`open(p,'wb')` truncates BEFORE the write fails: a full disk turned one mutant insertion into an empty mutate-analyzer.ts. All writes in this lane go temp-file + os.replace, verified after each."
+    "`open(p,'wb')` truncates BEFORE the write fails: a full disk turned one mutant insertion into an empty mutate-analyzer.ts. All writes in this lane go temp-file + os.replace, verified after each.",
+    "the analyzer carried ONE regex literal I introduced (a `String.split` on a two-character pattern in moduleName), found by the M12 contract probe's zero-regex check. Fixing it then tripped the same check again, because my explanatory comment quoted the old expression and the detector only exempts `//` comments — a regex quoted in a doc comment reads to the next maintainer as a regex in the file.",
+    "the analyzer had a dead `endif_directive` branch: the grammar declares no such node type, so it could never run and read as coverage. Found by the node-types gate, and removed.",
+    "torrentinim/Makefile reports hasError=true with ZERO ERROR and ZERO MISSING nodes — the engine's generic hidden-recovery-token warning (engine.ts:1264). It parses into the correct tree and the analyzer's output for it is correct. Counting it as a file error would have hidden the two REAL grammar gaps behind a third phantom, so the two classes are now separated and pinned separately."
   ],
   "artifacts": {
     "review": "reviews/make/master-review.md",
