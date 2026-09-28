@@ -247,7 +247,33 @@ of that name. Two exact invariants replace the fuzzy one:
 |---|---|---|---|
 | span mismatches | 6,448 | **0** | harness: TAB and wrong-line lookups |
 | symbols whose name is not where R says | 876 | **7** | 833 real, 1 quoted name, 42 harness |
-| edges whose line has no such name | 2,003 | **465** | 927 harness, 1,003 real, 71 harness |
+| edges whose line has no such name | 2,003 | **0** | 927 harness, 1,076 real |
+
+Of the 2,003 edge failures, **927 were a blind spot in the oracle and 1,076 were real
+defects.** The blind spot is worth naming rather than banking: an `imports` edge whose
+evidence is `base::sign` was failing because the package name lives in R's
+`SYMBOL_PACKAGE` token, which the first version of the oracle never asked for.
+
+Three of the R-token facts are asymmetries, which is the pattern worth remembering — R has
+a distinct token type for each of these, and none of them is discoverable from the rule
+names in the grammar:
+
+| R text | token | why it matters |
+|---|---|---|
+| `Dim = ...` in a call | `SYMBOL_SUB` | an argument name, not a variable |
+| `base` in `base::sign` | `SYMBOL_PACKAGE` | the package; `NS_GET`'s own text is just `"::"` |
+| `"Matrix"` in `setClass("Matrix", ...)` | `STR_CONST` | R **requires** the class name to be a string |
+| `return(1)` | `SYMBOL_FUNCTION_CALL` | a NAME |
+| `break()` | `BREAK` | a **keyword**, though it is a legal call |
+| `\tfoo` → `foo` at column 9 | — | columns are **TAB-EXPANDED**, not byte offsets |
+
+The last one is the one I got wrong first. This document asserted "R's columns are 1-based
+bytes, **verified**" on the strength of a `café <- 1` probe — a file with no leading
+whitespace, which is exactly where tab expansion and byte counting coincide. The claim was
+true and untested, and testing it rejected 6,448 rows that looked like the oracle
+disagreeing with the analyzer. It was also the second wrong conclusion in a row: the first
+was an off-by-one line index that I had already written up as a bytes-versus-UTF-16 unit
+error. Both are corrected above, and the correction is in the code as well as here.
 
 Four analyzer defects, all real:
 
@@ -284,6 +310,46 @@ unit assumption agree with each other and are wrong together.** That is the most
 important thing this pass found, and it is left open rather than quietly patched,
 because the unit is a framework-wide contract and 1.3% of files is not the place to
 change it unilaterally. Every one of the 7 remaining position failures is this.
+
+### The nameability of a callee is a property of its text, not of its node type
+
+The first fix here allowlisted node types. That was the wrong axis and it cost real
+coverage: the grammar gives `return` its own node type, so every `return(x)` in the corpus
+stopped producing an edge — **1,089 removals the audit could not explain**. `return` is a
+name; it is a name the grammar happens to tokenize specially.
+
+Asking instead whether the callee's text *is* an R name gets it right without enumerating
+the grammar, and stays right if a future grammar adds a node type. `chol2inv((if (uplo
+== "U") triu else tril)(x))` is not a name and gets no edge; `return(1)` is.
+
+### Which line an edge points at
+
+"The line that names the target" needed a rule for a target split across lines. R's
+promises package chains routinely:
+
+```r
+p$value <- p$value$          <- line 743: `value` is here
+  then(function(value) {     <- line 744: `then` is HERE
+```
+
+The target is `value$then`. The rule adopted is **the line where the target's last name
+component is written** — uniform, and identical to the expression start for the ordinary
+one-line `pkg::fn` and `obj$method` cases. "The line where the expression begins" is not a
+property of the call; it is an artifact of where the author pressed return.
+
+A related fix: `nameLineOf` found a symbol's name with a plain substring search, so
+`theme` matched inside `class_theme` and put `global exports theme` on the binding's line
+instead of the line the class is named on. It now requires a whole identifier.
+
+### An audit whose baseline cannot be named cannot be believed
+
+The removal audit compared the current analyzer against `/tmp/r-head-analyzer.ts` — a
+snapshot in a temp directory that nobody could reproduce or date. It was reporting **79
+`contains|global|<name>` edges as lost that this lane had never touched**, because they
+had been gone for some while. The baseline is now checked out from a **pinned git commit**,
+its import paths rewritten so the snapshot loads, and the commit printed in the output. A
+baseline that fails to load aborts the run, because a baseline that silently analyzes zero
+files reports "nothing was removed" — the most flattering possible false result.
 
 ## Text operations (the complete inventory)
 
