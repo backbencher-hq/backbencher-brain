@@ -1,4 +1,13 @@
-node_modules/
+# NO trailing slash, and that is the whole point of this line. `node_modules/`
+# matches a DIRECTORY only, so it did not match the tracked `node_modules`
+# SYMLINK (mode 120000) pointing at $HOME/mcp/backbencher-brain/node_modules
+# -- a path that does not exist. A dangling symlink that the ignore rule cannot see
+# is a permanent ` D node_modules` in `git status`, which means any `git add -A`
+# or `git commit -a` in this repo commits the DELETION of node_modules for everyone
+# who checks it out, and every probe, gate and typecheck that shells out to
+# ./node_modules/.bin fails on a fresh clone. A pattern without the trailing slash
+# matches both the directory and the symlink, so neither can be tracked again.
+node_modules
 dist/
 *.tgz
 bun.lock
