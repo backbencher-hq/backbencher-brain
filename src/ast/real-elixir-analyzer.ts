@@ -184,10 +184,22 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               // identifier target + do_block) — pattern constructs, not calls.
               ctx.patterns["Pattern Matching"] = true
               if (t === "receive") ctx.patterns["Actor Model (OTP)"] = true
-            } else if (t === "struct" || t === "struct!") {
+            } else if (t === "struct" || t === "struct!" || t === "raise" || t === "reraise") {
               // struct(User, attrs) / struct!(__MODULE__, attrs) construct
               // the named type (ELXD19) — an instantiates edge, never a call.
-              // Dynamic first args stay silent (no static target to name).
+              // EX-A9: `raise Mod` / `raise Mod, "msg"` / `reraise Mod, stack`
+              // is the SAME construction through the exception entry point —
+              // Kernel.raise/2 calls `Mod.exception([])`, which builds `%Mod{}`
+              // — so it emits the same instantiates edge and never a call
+              // (raise/reraise stay in SPECIAL_FORMS, so the call half of this
+              // branch is still skipped for them). Measured 401 alias-named
+              // `raise` sites in 200 files of elixir@024beb1b carrying no
+              // dependency edge at all: an exception struct that a module
+              // raises is exactly as much a dependency as one it writes
+              // literally, and the defexception struct symbol already existed.
+              // Dynamic first args stay silent (no static target to name):
+              // `raise "boom"`, `raise err` (a bound exception), `raise` with a
+              // computed module are all unnameable, not dropped names.
               if (!this.isInAttribute(node) && !this.isDefHead(node)) {
                 const structArgs = this.findChild(node, (c) => c?.type === "arguments")
                 const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
@@ -210,9 +222,19 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   ctx.patterns["Process Spawning"] = true
                 }
                 if (!this.shouldSkipCall(node, t) && !this.isPipeStep(node) && !this.isCaptureHead(node)) {
+                  // EX-A13: the marker is only reachable for the QUALIFIED spawn
+                  // forms. `send`/`send_after`/`spawn`/`spawn_link`/`spawn_monitor`
+                  // are Kernel auto-imports, so the EX-D2 exclusion drops them a
+                  // few lines below and the `isMessagePass`/`isSend` flags this
+                  // branch used to build for them could NEVER reach an edge — a
+                  // dead store that read as a live payload. Measured, not assumed:
+                  // a probe file with `send(pid, :hi)` emits zero relationships
+                  // while `Task.async/1` and `Agent.start_link/1` (qualified, not
+                  // Kernel) emit `isProcessSpawn`. Message passing survives as the
+                  // file-level `Message Passing` pattern, which IS pinned
+                  // (fixture otp-messaging).
                   let meta: any = {}
-                  if (t === "send" || t === "send_after") meta = { isMessagePass: true, isSend: true }
-                  else if (t === "spawn" || t === "spawn_link" || t === "spawn_monitor" || t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
+                  if (t === "Task.async" || t === "Task.start" || t === "Task.start_link" || t === "Agent.start" || t === "Agent.start_link") meta = { isProcessSpawn: true }
                   // M59: the callee name-bearing node's line + the call's arity.
                   const callArgs = this.findChild(node, (c) => c?.type === "arguments")
                   this.recordCall(t, ctx, currentScope, this.enclosingDeclaredScope(scopeStack), meta, targetNode ? targetNode.startPosition.row + 1 : node.startPosition.row + 1, callArgs ? callArgs.namedChildCount : 0)
@@ -454,7 +476,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     for (const s of ctx.symbols) {
-      const isModLevel = !s.ownerName
+      // A MODULE (or protocol) is a public entry point whatever its nesting:
+      // `MyApp.User` is addressable from outside its file, so the EX-A10
+      // ownerName must not demote it out of the export surface. File-level
+      // declarations (functions/structs written outside any module — the .exs
+      // script shape) are the other half, and they carry no owner by
+      // definition.
+      const isModLevel = !s.ownerName || s.kind === ASTEngine.SymbolKind.Module || s.kind === ASTEngine.SymbolKind.Interface
       const isPub = s.visibility === "public"
       const isExp = [ASTEngine.SymbolKind.Module, ASTEngine.SymbolKind.Function, ASTEngine.SymbolKind.Interface, ASTEngine.SymbolKind.Struct].includes(s.kind)
       if (isModLevel && isPub && isExp) { ctx.exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: s.visibility }) }
@@ -908,8 +936,18 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!argsNode) return false
     const name = this.extractName(argsNode)
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
+    // EX-A10: a NESTED defmodule is owned by its enclosing declaration — the
+    // same field its own functions/struct/fields already carry, the lane's own
+    // symbol contract ("nested modules owned by the parent") and the M14 ledger
+    // ruling (`ownerName` = the innermost enclosing declaration, #867). Only
+    // `scope` was written, so `ownerName`/`ownerKind` were undefined on every
+    // nested module in every corpus (measured: 100% of nested-module symbols on
+    // ecto_sql's 60-file slice) and any consumer reading `ownerName` alone — as
+    // src/ast/override-context.ts and src/ast/framework-intelligence.ts do —
+    // saw a module with no parent. The indexer survived it only because it
+    // falls back to `scope`; the contract did not.
     const symbol: ASTEngine.UniversalSymbol = {
-        name: fullName, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public",
+        name: fullName, kind: ASTEngine.SymbolKind.Module, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility: "public",
         metadata: { elixirSpecific: true }
     }
     ctx.symbols.push(symbol)
@@ -935,7 +973,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!argsNode) return false
     const name = this.extractName(argsNode)
     const fullName = currentScope ? `${currentScope.name}.${name}` : name
-    const protocolSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } }
+    // EX-A10 (same ruling, protocol half): a protocol declared inside a module
+    // is owned by it, like every other nested declaration in this file.
+    const protocolSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility: "public", metadata: { elixirSpecific: true, isProtocol: true } }
     ctx.symbols.push(protocolSym)
     ctx.symbolByName.set(fullName, protocolSym)
     // EX-L5 (corrected): same exit-time registration for protocols — the
@@ -1004,7 +1044,16 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     // one Implements edge per type (each type genuinely implements the
     // protocol); the shared method body's scope rides the FIRST type.
     // Single-type output is byte-identical to the pre-fix behavior.
-    const implSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, forType: forTypeList.length > 0 ? forTypeList : forType } }
+    // EX-A12: `forType` records the type the implementation is FOR — the
+    // single-argument form (`defimpl P do` nested in a module) implements P FOR
+    // THE ENCLOSING MODULE, whose name the symbol already carries, so the old
+    // `"Unknown"` sentinel there was a PLACEHOLDER LITERAL in the payload
+    // (the same literal this lane forbids as a symbol name) sitting next to the
+    // real answer. When no type is derivable at all the field is ABSENT, which
+    // is what "unknown" is allowed to look like in a payload.
+    const resolvedForType: string | string[] | undefined =
+        forTypeList.length > 0 ? forTypeList : (forType !== "Unknown" ? forType : (implName !== protocol ? implName : undefined))
+    const implSym: ASTEngine.UniversalSymbol = { name: fullName, kind: ASTEngine.SymbolKind.Class, range: this.nodeToRange(node), scope: currentScope?.name || "", visibility: "public", metadata: { elixirSpecific: true, isProtocolImplementation: true, protocol, ...(resolvedForType !== undefined ? { forType: resolvedForType } : {}) } }
     ctx.symbols.push(implSym)
     ctx.symbolByName.set(fullName, implSym)
     if (forTypeList.length > 1) {
@@ -1192,6 +1241,30 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (ctx.functionHeads[fnId]) {
         const existing = ctx.functionHeads[fnId]!
         existing.metadata!.heads = (existing.metadata!.heads as number) + 1
+        // EX-A8: a MERGED multi-clause definition's extent is the whole
+        // function — first clause start .. LAST CLAUSE end. The symbol keeps
+        // the first clause's start (its declaration site, which is what the id
+        // and the name-line contract are built on) and the end follows the last
+        // clause, exactly the rule real-clean-analyzer.ts already applies to a
+        // multi-clause `f x = ...` definition. Before this the payload claimed
+        // `heads: 7` while the range covered ONE clause: measured 2,321 merged
+        // groups in 559 elixir-repo files, of which 184 in a 60-file ecto_sql
+        // slice (`def loaders/2` heads=7, range 211..211), so any consumer that
+        // asks "is this symbol here?" (LSP document symbols, the indexer's
+        // enclosing-span attribution, a hover over clause 3) could not see the
+        // definition it was asking about.
+        //
+        // The span is first..last and NOT clause-by-clause because a span can
+        // only be one — and because first..last alone is lossy in the other
+        // direction: measured on elixir@024beb1b, 195 of 2,321 merged groups
+        // (8.4%) have OTHER declarations between their first and last clause
+        // (`Date.to_string/1` spans 335..1170 and swallows 54 defs). So the
+        // exact per-clause ranges ride `metadata.clauseRanges`: the span is the
+        // function, the list is the clauses, and neither is inferable from the
+        // other.
+        this.extendRange(existing, this.nodeToRange(node))
+        const clauseRanges = existing.metadata!.clauseRanges as ASTEngine.UniversalSymbol["range"][]
+        clauseRanges.push(this.nodeToRange(node))
         if (hasPattern) existing.metadata!.hasPatternMatching = true
         if (guardList.length > 0) {
             let existingGuards = existing.metadata!.guards as string[] || []
@@ -1203,7 +1276,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     } else {
         const symbol: ASTEngine.UniversalSymbol = {
             name, kind: symbolKind, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
-            metadata: { elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback }
+            metadata: { elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)], hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback }
         }
         ctx.symbols.push(symbol)
         ctx.functionHeads[fnId] = symbol
@@ -1430,5 +1503,18 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1, startIndex: node.startIndex, endIndex: node.endIndex }
+  }
+
+  // EX-A8: grow a symbol's range to include a later declaration of the SAME
+  // definition (a merged multi-clause head). The start never moves — the
+  // declaration site is what every id and name-line consumer is built on — and
+  // endColumn is only meaningful together with its endLine, so a clause ending
+  // on a later line replaces the column and a clause ending on the same line
+  // takes the larger one. endIndex follows the same max rule.
+  private extendRange(symbol: ASTEngine.UniversalSymbol, r: ASTEngine.UniversalSymbol["range"]): void {
+      const cur = symbol.range
+      if (r.endLine > cur.endLine) { cur.endLine = r.endLine; cur.endColumn = r.endColumn }
+      else if (r.endLine === cur.endLine && r.endColumn > cur.endColumn) cur.endColumn = r.endColumn
+      if (typeof r.endIndex === "number" && typeof cur.endIndex === "number" && r.endIndex > cur.endIndex) cur.endIndex = r.endIndex
   }
 }
