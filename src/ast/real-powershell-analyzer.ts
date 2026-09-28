@@ -1585,11 +1585,44 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           // PS18 — `New-Object -TypeName X` is THE PowerShell instantiation
           // form and the pre-wave lane emitted no `instantiates` edge for it.
+          // `New-Object` is a CONSTRUCTOR CALL, and PowerShell spells the thing
+          // being constructed two ways: `-TypeName <managed type>` and
+          // `-ComObject <ProgID>`. Only the first was read, so the second produced
+          // NO EDGE AT ALL — not a wrong edge, none. Found by hand-auditing the F5
+          // differential's MISSING samples, where `instantiates Extract-ZipLegacy ->
+          // Shell.Application` appears on ansible's own Windows modules, and
+          // confirmed in isolation: `New-Object -ComObject Shell.Application`
+          // published neither a call nor an instantiation.
+          //
+          // `-ComObject` is not a rarer spelling of `-TypeName`, it is the ONLY
+          // spelling for a COM object, and `$shell = New-Object -ComObject
+          // Shell.Application` is how the language gets a Shell handle. The COM
+          // ProgID is a dotted name, so its target is external by nature — which is
+          // the designed handling for a name the file does not declare, the same as
+          // a cmdlet name.
           if (leaf === "New-Object") {
+            // THREE spellings, and the first version of this fix read one of them
+            // for the wrong reason — it keyed `isComObject` on the constructed name
+            // containing a dot, so `-TypeName System.Text.StringBuilder` was
+            // published as a COM object. The flag decides the kind, never the
+            // spelling of the type: a dotted .NET name and a COM ProgID look alike
+            // and mean different things. Caught by the fixture's two metadata rows
+            // before it was committed.
+            const comObject = this.parameterValue(node, "ComObject") ?? this.parameterValue(node, "comobject")
             const typeName = this.parameterValue(node, "TypeName") ?? this.parameterValue(node, "typename")
-            if (typeName && !isTypeAccelerator(typeName)) {
-              addRel(top().scope, typeName, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
-                powershellSpecific: true, viaNewObject: true,
+            // The POSITIONAL form: `New-Object System.Collections.ArrayList` and
+            // `New-Object System.Version`, which is how the cmdlet is written
+            // whenever the author did not bother with a flag. `commandArgs` returns
+            // values only, having already skipped every `command_parameter`, so the
+            // first entry is the positional type name and the flagged forms leave it
+            // empty.
+            const positional = commandArgs(node)[0]
+            const constructed = comObject ?? typeName ?? positional
+            if (constructed && !isTypeAccelerator(constructed)) {
+              addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
+                powershellSpecific: true,
+                viaNewObject: true,
+                ...(comObject ? { isComObject: true } : {}),
               })
             }
             break

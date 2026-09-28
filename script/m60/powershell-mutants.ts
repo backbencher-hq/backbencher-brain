@@ -104,9 +104,10 @@ import type { Mutant } from "../m14/mutate-analyzer"
 
 /** Drop every relationship of one type. PS-A2: written generically so it reverts
  *  whatever the fixture declares rather than a hard-coded target. */
-const psDropRelType = (type: string) => (r: any) => ({
+const psDropRelType = (type: string, only?: (rel: any) => boolean) => (r: any) => ({
   ...r,
-  relationships: (r.relationships ?? []).filter((x: any) => x.type !== type),
+  relationships: (r.relationships ?? []).filter((x: any) =>
+    x.type !== type || (only ? !only(x) : false)),
 })
 
 export const POWERSHELL_MUTANTS: Mutant[] = [
@@ -791,5 +792,27 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
         ],
       }
     },
+  },
+  {
+    id: "powershell/new-object-com-and-positional",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A3 REVERT: `New-Object` reads only `-TypeName`, so `-ComObject <ProgID>` and the POSITIONAL form `New-Object System.Collections.ArrayList` publish no edge at all. Found by hand-auditing the F5 differential's MISSING samples — `instantiates Extract-ZipLegacy -> Shell.Application` appears on ansible's own Windows modules — then confirmed in isolation. The pre-fix state produced no edge rather than a wrong one, which is why ERROR-keyed gates never saw it and why a fixture was needed. Caught by new-object-psa3's two missing rows and, independently, by its `instantiates == 3` count: a fix that read `-ComObject` but not the positional form scores 2.",
+    transform: psDropRelType("instantiates", (x: any) => x.metadata?.viaNewObject === true),
+  },
+  {
+    id: "powershell/com-object-keyed-on-a-dot",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A3 REVERT, the mistake this work made: `isComObject` is derived from the CONSTRUCTED NAME containing a dot rather than from the FLAG that was used. A dotted .NET type name and a COM ProgID look alike and mean different things, so `-TypeName System.Text.StringBuilder` — a managed type — is published as a COM object. This is recorded as a mutant rather than quietly corrected because it is the more interesting half of the finding: the fix that closed a real gap introduced a different one, and the two metadata rows in new-object-psa3 are the only thing that distinguishes them. Caught by that fixture's `Shell.Application` row expecting `isComObject: true` AND its `System.Text.StringBuilder` row expecting the flag to be ABSENT.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "instantiates" && x.metadata?.viaNewObject
+          ? { ...x, metadata: { ...(x.metadata ?? {}), ...(String(x.target).includes(".") ? { isComObject: true } : { isComObject: undefined }) } }
+          : x),
+    }),
   },
 ]

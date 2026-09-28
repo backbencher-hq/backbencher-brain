@@ -1,8 +1,8 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-28T03:01:17.593Z",
-  "commit": "3876b3db85238015861f511a10f1eac995422275",
+  "at": "2026-09-28T06:25:40.899Z",
+  "commit": "4a5526efb88c372c91c2ba06f8e88088751e281c",
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -19,13 +19,13 @@
         "missing": 6
       },
       "symbols": 2588,
-      "relationships": 10111,
+      "relationships": 10129,
       "kinds": {
         "contains": 2532,
         "references": 24,
         "calls": 3676,
         "uses": 3782,
-        "instantiates": 60,
+        "instantiates": 78,
         "exports": 37
       },
       "absent": [
@@ -35,8 +35,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 10111,
-        "total": 10111
+        "withLine": 10129,
+        "total": 10129
       },
       "unknownTargets": {
         "count": 0,
@@ -51,9 +51,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 19196,
-        "perFileMs": 391.749,
-        "factsPerMs": 0.662
+        "wallMs": 12395,
+        "perFileMs": 252.95,
+        "factsPerMs": 1.026
       }
     },
     {
@@ -66,13 +66,13 @@
         "missing": 1
       },
       "symbols": 573,
-      "relationships": 2162,
+      "relationships": 2171,
       "kinds": {
         "references": 52,
         "contains": 549,
         "calls": 616,
         "uses": 876,
-        "instantiates": 61,
+        "instantiates": 70,
         "exports": 8
       },
       "absent": [
@@ -82,8 +82,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 2162,
-        "total": 2162
+        "withLine": 2171,
+        "total": 2171
       },
       "unknownTargets": {
         "count": 0,
@@ -98,17 +98,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 3694,
-        "perFileMs": 153.919,
-        "factsPerMs": 0.74
+        "wallMs": 1330,
+        "perFileMs": 55.429,
+        "factsPerMs": 2.063
       }
     }
   ],
   "summary": {
     "files": 73,
     "symbols": 3161,
-    "relationships": 12273,
-    "withLine": 12273,
+    "relationships": 12300,
+    "withLine": 12300,
     "absentKinds": [
       "extends",
       "implements",
