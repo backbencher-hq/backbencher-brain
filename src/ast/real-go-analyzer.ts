@@ -205,7 +205,12 @@ const GO_FRAMEWORK_RULES: GoFrameworkRule[] = [
 ]
 
 function getUniqueStrings(arr: string[]): string[] {
-  const seen: Record<string, boolean> = {}
+  // `Object.create(null)`, not `{}`: the keys are framework NAMES and symbol
+  // names, and `seen["constructor"]` on a plain object is `Object` — truthy —
+  // which would make a repeat of that one name look already-seen. Same class as
+  // the analyzer's other name-keyed map (see analyzeGoInterfaceImplementation);
+  // fixed here for the same reason, before it can bite.
+  const seen: Record<string, boolean> = Object.create(null)
   const result: string[] = []
   if (!arr) return result
   for (let i = 0; i < arr.length; i++) {
@@ -915,7 +920,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Extract struct tags like `json:"name"` — pure string scan over
             // the raw_string_literal content (backtick-delimited), no regex.
             const tagNode = fieldDecl.childForFieldName("tag")
-            let structTags: Record<string, string> = {}
+            // `Object.create(null)`: the keys come from a struct TAG, which is
+            // arbitrary text, and a tag key of `constructor`/`toString` on a
+            // plain object would read back `Object` instead of the tag's own
+            // value. Same prototype hazard as every other name-keyed map here.
+            let structTags: Record<string, string> = Object.create(null)
             if (tagNode) {
               const tagText = this.stripRawStringDelimiters(tagNode.text)
               structTags = this.parseStructTags(tagText)
@@ -1987,7 +1996,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // only Shape embedded appeared NOT to implement an interface it does).
     // Resolve embedding via the go_struct_embedding extends edges (source =
     // embedding struct, target = embedded type).
-    const embeddedOf: Record<string, string[]> = {}
+    //
+    // `Object.create(null)`, NOT `{}`. The key is a Go TYPE NAME, and Go
+    // identifiers may be any Unicode letter followed by letters and digits —
+    // which includes `constructor`, `toString`, `valueOf` and every other
+    // `Object.prototype` member. On a plain object literal,
+    // `embeddedOf["constructor"]` returns the `Object` constructor: truthy, so
+    // the `if (embeddedTypes)` guard in collectGoPromotedMethods passes, and
+    // `for (const et of embeddedTypes)` then throws `TypeError: {} is not
+    // iterable`. The F5 oracle already builds all five of its name-keyed maps
+    // this way for exactly this reason, with the comment "a legal Go type named
+    // `constructor`/`toString`/`valueOf` once made the go lane CRASH OUTRIGHT on
+    // go-tools/go/callgraph/vta/vta.go" — the analyzer never got the same
+    // defence, and the defect stayed latent only because
+    // collectGoPromotedMethods used to be reached for fewer candidates.
+    // FOUND BY THE FULL-EXTENT READ, NOT BY A GATE: `go-799-surface.ts` over
+    // go-tools (1,931 files) crashed on
+    // `go/callgraph/vta/vta.go`, whose `constructor` type is exactly the name in
+    // the oracle's comment. See reviews/go/sixth-review.md §12.
+    const embeddedOf: Record<string, string[]> = Object.create(null)
     for (const r of relationships) {
       if (
         (r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Extends &&
@@ -3560,7 +3587,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Parse struct tags `json:"name" db:"x"` into key -> value (no regex). */
   private parseStructTags(tagText: string): Record<string, string> {
-    const result: Record<string, string> = {}
+    const result: Record<string, string> = Object.create(null)
     let i = 0
     const n = tagText.length
     while (i < n) {
