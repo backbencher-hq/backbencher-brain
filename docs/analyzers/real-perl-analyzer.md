@@ -384,7 +384,7 @@ real file; a fixture with ten decision points now reports 11.
 
 | station | state |
 | --- | --- |
-| F1 grammar cells | green -- 0 unknown node types, 0 unknown fields |
+| F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. See the correction below. |
 | F3 fixtures | **7 expectations, 7/7 pass.** `validation/m14/fixtures/perl/`, one per defect class |
 | F4 mutation | **23 mutants, 23/23 caught** |
 | #419 structural (A) | green -- 140/140 classified, each in exactly one bucket |
@@ -404,6 +404,52 @@ lane is REGISTERED (`LANG_CONFIGS.perl`) and runnable with `--lang perl`, which
 reports 6 of 8; it is deliberately **not** in `GATED_LANGS`, because that list
 means "reached CONFORMANT and runs in `npm run verify`", and a language in it must
 be 8 of 8.
+
+### A false claim this document used to make
+
+An earlier version of this file carried the line "F1 grammar cells: green -- 0
+unknown node types, 0 unknown fields". It was **not green.** The cell was red at
+**2 unknown node types and 1 unknown field**, and the sentence was written from
+the pin being green rather than from the audit having been run. Two of the three
+were branches this wave had just added for `tree-sitter-perl` **2.0.0** --
+`noninterpolated_string_content` and `parenthesized_expression`, neither of which
+exists in the wired 1.2.1 grammar -- and the third was
+`childForFieldName("signature")`, which returns `undefined` on every sub.
+
+That third one is the sharp end. `signature` is a node **type**, not a field: the
+grammar's 44 field names are `alternative, arguments, array, arrayref, attributes,
+block, body, callback, catch_block, catch_expr, condition, consequent, content,
+continue, default, finally_block, function, hash, hashref, index, initialiser,
+invocant, iterator, key, label, left, lexical, list, loopex, method, modifiers,
+module, name, operand, operator, phase, right, statement, try_block, type, value,
+variable, variables`, and `signature` is not among them. So the #863 fix had
+replaced one non-existent field with a different non-existent field, and the
+`findChildByType` fallback beside it is what has been producing every parameter all
+along. The wrong word -- "FIELD" -- is what produced the original bug, and it
+survived in the comment that claimed to have fixed it.
+
+All three are gone rather than waived. The grammar allowlist is "empty by design:
+every current finding must be fixed or justified", and both existing waivers
+(`java`'s `comment`, `swift`'s `String`) are for literals the audit
+*misenumerates* -- live code, not dead branches. These were neither. The 2.0.0
+branches are requirements of a bump that is explicitly **not authorised**; they
+belong to that wave, and deleting them moved **nothing** on any of the seven
+corpora, which is the proof they were dead:
+
+| corpus | before | after |
+| --- | --- | --- |
+| mojo / plack | 11,109 / 2,387, 0 / 0 | 11,109 / 2,387, 0 / 0 |
+| Moose / Catalyst | 11,979 / 6,450, 0 / 0 | 11,979 / 6,450, 0 / 0 |
+| Moo / DBI / perl5 | 1,484 / 2,367 / 48,138, 0 / 0 | 1,484 / 2,367 / 48,138, 0 / 0 |
+
+The dead-literal record for perl is now **empty**, which is what closes #863: the
+issue asked for the dead field read to go, and the register that existed to track
+it is finally clear.
+
+The lesson is the one the head gate now enforces: a claim copied from a
+neighbouring gate is not a measurement. The pin being green says the grammar is
+pinned; only the audit says the analyzer has no dead branches, and only the audit
+was asked.
 
 The two fixtures-plus-mutants waves each found something the previous station
 could not, which is the argument for running them in this order:

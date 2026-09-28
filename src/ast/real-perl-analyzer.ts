@@ -120,7 +120,14 @@ export function perlWordValues(node: Node): string[] {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      if (child.type === "string_content" || child.type === "noninterpolated_string_content") {
+      // `noninterpolated_string_content` is deliberately NOT listed here: it is
+      // absent from the wired 1.2.1 grammar (checked against the wasm's node-type
+      // table) and the grammar-audit cell is zero-tolerance, so a branch for a
+      // grammar this lane does not run is dead code by definition. It is 2.0.0's
+      // counterpart of `string_content`; the bump must re-add it, and that
+      // requirement is recorded in reviews/perl/master-review.md rather than
+      // smuggled in as a branch the wired grammar can never reach.
+      if (child.type === "string_content") {
         for (const w of splitWords(child.text)) values.push(w)
       }
     }
@@ -182,7 +189,12 @@ export function perlArgumentNodes(node: Node): Node[] {
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
     if (!child || child === module) continue
-    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
+    // `parenthesized_expression` is the wrapper 2.0.0 ADDS to remove the
+    // multi-child paren field (1,419 unreachable sites, down from 39,526). It is
+    // absent from the wired grammar and so absent here for the same reason as
+    // `noninterpolated_string_content` above: the audit is zero-tolerance and
+    // this lane does not run 2.0.0. The bump re-adds it.
+    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword") {
       if (perlWordValues(child).length > 0) result.push(child)
     }
   }
@@ -1177,12 +1189,35 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The pinned tree-sitter-perl grammar declares NO `parameters` field, so that
    * lookup returned undefined for every sub in every file and the lane shipped
    * 0 parameters across 29,640 symbols on 5,866 corpus files. A signature is the
-   * `signature` FIELD, whose children are `mandatory_parameter`,
+   * `signature` NODE TYPE, whose children are `mandatory_parameter`,
    * `optional_parameter` and `slurpy_parameter`; each wraps the
    * scalar/array/hash node that carries the `varname`.
+   *
+   * The first version of this fix said FIELD here and reached for
+   * `childForFieldName("signature")`, which is dead for the same reason the
+   * original was — `signature` is not among the grammar's 44 fields either. The
+   * working `findChildByType` beside it is what has been producing every
+   * parameter all along, and the dead-literal audit is what finally said so. The
+   * wording is corrected here because the wrong word is what produced the bug.
    */
   private extractParameters(node: Node): ASTEngine.Parameter[] {
-    const signature = node.childForFieldName("signature") || this.findChildByType(node, "signature")
+    // `signature` is a NODE TYPE, not a field. The pinned grammar declares 44
+    // fields — alternative, arguments, array, arrayref, attributes, block, body,
+    // callback, catch_block, catch_expr, condition, consequent, content,
+    // continue, default, finally_block, function, hash, hashref, index,
+    // initialiser, invocant, iterator, key, label, left, lexical, list, loopex,
+    // method, modifiers, module, name, operand, operator, phase, right, statement,
+    // try_block, type, value, variable, variables — and `signature` is not one of
+    // them, so `childForFieldName("signature")` is undefined on EVERY sub, signed
+    // or not. Measured, not assumed: on `sub f ($a, $b = 1, @rest) { }` it
+    // returns undefined while the signature is right there as a named child.
+    //
+    // That call was the SAME defect as #863 with a different field name: the
+    // lane read a field the grammar does not declare, and the `findChildByType`
+    // fallback beside it is what has quietly done the work. The audit caught both
+    // (UNREGISTERED perl field literal "signature"), which is what the dead-literal
+    // record exists for. Read the node type.
+    const signature = this.findChildByType(node, "signature")
     if (!signature) return []
     const result: ASTEngine.Parameter[] = []
     for (let i = 0; i < signature.namedChildCount; i++) {
