@@ -191,41 +191,48 @@ different claims, and only the first is true here.
   error, and every one is re-tested against the pinned wasm rather than carried
   forward.
 
-## The `.scss` / `.sass` / `.less` files this lane is also routed
+## `.scss` is no longer routed here — it has its own lane
 
-The product routes all four extensions here — `src/ast/parallel-indexer.ts` lists
-`.css`/`.scss`/`.sass` and `script/m13/corpus-map.ts` maps
-`.scss`/`.sass`/`.less` → `css` — and **all 254 real `.scss` files in the corpus
-route to this analyzer** (measured 254/254).
+**This section used to be a declaration that the declaration was missing from.**
 
-The CSS grammar does not support SCSS, and the numbers are:
+It said, in effect: all 254 real `.scss` files in the corpus route to this analyzer,
+the CSS grammar does not support SCSS, 42 of 244 non-empty files parse clean (17.2%),
+and "this is declared, not a defect in the CSS contract". The last sentence was the
+error. It was declared **in this document only** — `CSS-L1` in
+`script/m14/spec/css-completeness.json` was the record, and nothing else read it. An
+82.8% parse-failure rate on 254 real files was therefore invisible to every gate while
+being fully described in prose three screens away.
+
+It also gave the wrong reason for leaving it: *"removing the routing would take away
+real capability: the plain-CSS rules inside an SCSS file parse correctly."* That is
+backwards. Keeping the routing was what cost the capability — 43 of 244 files parsed
+at all, and the ones that did were parsed by a grammar that silently produced nothing
+for every SCSS construct in them.
+
+**What happened instead (2026-09-27).** `.scss` became its own language with its own
+grammar, analyzer, pin, fixtures and mutants:
 
 ```
-244 non-empty .scss files
-  42 parse CLEAN   (17.2%)
- 202 with errors
-   0 crashes
-11,451 distinct error lines
-4,477 symbols and 2,025 relationships still emitted
+.scss routed here          254 files, 43 parsing clean (17.6%)
+.scss under the scss lane  244 files, 149 parsing clean (61.1%)
+ERROR nodes                30,767 -> 3,900
+grammar patches            2, both strictly additive (76 fixed, 0 regressed)
 ```
 
-Cause breakdown over every distinct error line: `$variable` reference **17.9%**,
-`@include` **12.8%**, `$variable` declaration **6.7%**, `//` line comment
-**2.7%**, `@use` **1.6%**, `#{…}` interpolation **1.2%**, `@each`/`@for`/`@if`
-**1.1%**, `@mixin` **0.6%**; the remaining 55.3% is the structural fallout of those
-rather than a separate cause.
+`src/ast/language-detection.ts` maps `scss: "scss"`, `engine.ts` dispatches it to
+`RealScssAnalyzer`, and the fixture lane claims `.scss` separately. See
+`docs/analyzers/real-scss-analyzer.md`.
 
-(`@use` looked like the dominant cause in a first pass and was not — that sample
-read only the first error rows of files in name order, and `@use` sorts early.)
+`.sass` and `.less` **still** route here and are **still declared** — 0 files of each
+across 13 corpora, so this repo can neither support nor refute a claim about them, and
+inventing coverage for a dialect with no corpus would be a claim with nothing behind
+it. `.sass` in particular is indented syntax and is a genuinely different grammar, not
+a dialect flag.
 
-This is **declared, not a defect in the CSS contract**, and the reason is that
-removing the routing would take away real capability: the plain-CSS rules inside an
-SCSS file parse correctly and are worth keeping. Teaching the CSS grammar SCSS is
-a different grammar (`tree-sitter-scss`) with its own A/B, not a third hunk on a
-pinned 0.25.0 that has already been measured twice. What was missing was not the
-behaviour but the **declaration** — nothing in the repo said this lane also
-receives `.scss`, so an 82.8% parse-failure rate on 254 real files was invisible to
-every gate. Recorded as `CSS-L1` in `script/m14/spec/css-completeness.json`.
+The general lesson, recorded because it is the second time in this lane: **a
+limitation that lives only in a document is not a limitation, it is a paragraph.**
+`CSS-L1` was in the spec and still nothing read it. What made it real the second time
+was that the spec entry was replaced by a measurement another gate could fail on.
 
 ## Regex inventory
 
