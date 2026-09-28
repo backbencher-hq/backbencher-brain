@@ -25,6 +25,97 @@ function stripAccessSpecifier(text: string): string {
   return text.trim()
 }
 
+/**
+ * D6: the last `::` segment of a type expression, with template arguments and
+ * whitespace already out of the way — the base-class leaf the `extends` target
+ * must be (CPPD4: template ARGUMENTS are arguments, never the inherited base).
+ *
+ * This replaces the lane's last two regexes, `/::|\s+/`, which the M12 regex
+ * census has been recording as `needs_review` while
+ * `docs/analyzers/real-cpp-analyzer.md` claimed the analyzer had **zero** regex
+ * usages. The census was right and the doc was wrong; a doc that under-reports
+ * its own analyzer's text rules is worse than the rules, because it is the
+ * artifact a reviewer trusts instead of re-measuring.
+ *
+ * Pure-String, and it is a SEGMENT split rather than a regex split on purpose:
+ * a qualifier is a run of non-separator characters, and the answer is the last
+ * one. Single pass, no allocation beyond the segments it keeps.
+ */
+function lastScopeSegment(text: string): string {
+  let start = 0
+  let out = ""
+  for (let i = 0; i <= text.length; i++) {
+    // The sentinel at i === length is a separator, so a name with no separator
+    // in it at all (the common `class D : public B`) still lands in `out`.
+    const atEnd = i === text.length
+    const c = atEnd ? ":" : text[i]
+    // `::` is a two-character separator; a lone `:` and any whitespace also end
+    // a segment (the recovery shapes write `> :: value , int >`).
+    const isSep = c === ":" || c === " " || c === "\t" || c === "\n" || c === "\r"
+    if (isSep) {
+      if (i > start) out = text.slice(start, i)
+      start = i + 1
+    }
+  }
+  return out
+}
+
+/**
+ * D2: the base-class name an `extends` edge may name, or `null` when the base
+ * cannot be named — which is the case the analyzer had been publishing anyway.
+ *
+ * A class cannot inherit from itself. Two real shapes both collapse to the
+ * class's own name once the qualifier and the template arguments are removed,
+ * and both were emitted as `X extends X` (49 rows over 1,722 real C++ files):
+ *
+ *   template <unsigned N> struct priority_tag : priority_tag<N - 1> {};
+ *   //  -> priority_tag extends priority_tag   (a different INSTANTIATION)
+ *
+ *   namespace nlohmann { namespace detail {
+ *     template <typename T> struct char_traits : std::char_traits<T> {};
+ *   }}
+ *   //  -> char_traits extends char_traits   (a DIFFERENT CLASS, in std)
+ *
+ * The second is the worse of the two: the inheritance is real, and the leaf
+ * clean that produced the impossible edge is the same clean that threw away the
+ * one piece of information the edge carried — which class was inherited from.
+ * The override resolver already refused these bases (`if (base === startCls)
+ * continue`, with this exact reasoning); the EDGE they were derived from did
+ * not. One rule, both places.
+ *
+ * So the ruling is not "skip self-inheritance" — it is that a base whose leaf
+ * equals the derived class's own name has lost the evidence that told them
+ * apart, and an edge built on lost evidence is not a weaker edge, it is no
+ * edge. Nothing is published, and the class's own base list omits it too, so
+ * no override chain can be resolved through a base that does not exist.
+ *
+ * Exported so the F5 oracle derives `extends` truth with the SAME rule rather
+ * than a second copy of the leaf clean and a second answer about the self case
+ * (#916's lesson — a copied rule is a second answer, and the two sides
+ * cancelling out of every count is how a wrong edge survives a year of gates).
+ */
+export function extendsTargetName(baseText: string, className: string): string | null {
+  const leafOf = (raw: string): string => {
+    let t = stripAccessSpecifier(raw)
+    const lt = t.indexOf("<")
+    if (lt !== -1) t = t.slice(0, lt).trim()
+    return lastScopeSegment(t)
+  }
+  const leaf = leafOf(baseText)
+  if (!leaf) return null
+  // The class's own name is compared in the SAME namespace the base is compared
+  // in, and that is the whole point of the rule. Two callers spell a class
+  // differently for a good reason — the analyzer reads the CPPD1 `template_type`
+  // base name (`formatter`) while the F5 oracle keeps the head spelling
+  // (`formatter<std::byte, Char>`) — and comparing those two literally would let
+  // `formatter<std::byte, Char> : formatter<…>` through, re-introducing the
+  // impossible self-inheritance the rule exists to refuse. `formatter<std::byte,
+  // Char>` IS a `formatter`: a specialization is not a different class in the
+  // only sense this edge cares about, which is "did I inherit from myself".
+  if (leaf === leafOf(className)) return null
+  return leaf
+}
+
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
@@ -146,6 +237,147 @@ export const CPP_BUILTIN_TYPE_KEYWORDS: Set<string> = new Set([
   "void", "bool", "char", "char8_t", "char16_t", "char32_t", "wchar_t",
   "short", "int", "long", "float", "double", "signed", "unsigned", "auto",
 ])
+
+/**
+ * D1: EVERY C++ keyword, ISO 14882 [lex.name] through C++23, plus the standard
+ * preprocessor operators. #924 enumerated one class of impossible callee — a
+ * builtin TYPE keyword, 17 sites over two corpora — and closed it. The full-corpus
+ * register then found the class is much larger and the enumeration was the defect,
+ * not the fix: **5,496 `calls` edges to keywords** over 1,502 real C++ files,
+ * led by `static_cast` (4,812) and `reinterpret_cast` (472), and including
+ * `if` (25), `for` (4) and `switch` (6) as CALL TARGETS — a control-flow keyword
+ * is not a callee in any language, so those are not a near-miss but a fabrication
+ * with no reading at all. Measured per name in
+ * `validation/m14/results/cpp-defect-register.json`.
+ *
+ * The ruling is the C lane's (`C_KEYWORDS`), and it is the same sentence: C++ has
+ * no identifier spelled `static_cast`, so a name that is spelled that way names
+ * nothing a consumer can resolve, at ANY extraction point — call target, `uses`
+ * target, or declared symbol name. One set, three gates, one impossibility.
+ *
+ * Why the shapes reach here at all: the grammar classifies a cast's operator as
+ * an `identifier` callee (`static_cast<int>(x)` is
+ * `call_expression[function=template_function[name=identifier(static_cast)]]`),
+ * and its ERROR recovery manufactures `call_expression` nodes out of statements
+ * whose head is a keyword. The recovery is real; the NAME it yields is not.
+ *
+ * Contextual keywords are deliberately ABSENT — `final`, `override`, `import`,
+ * `concept`(as an identifier is reserved in C++20 but the analyzer's corpora
+ * never spell a callable that way), `requires`, `co_await` keep their legal-
+ * identifier readings. `operator` is present but only as the EXACT spelling:
+ * `operator=`, `operator()` and `operator[]` are ordinary C++ function names and
+ * are not in this set, so the analyzer's operator overloads are untouched.
+ */
+export const CPP_KEYWORDS: Set<string> = new Set([
+  // declarations, types, specifiers
+  "alignas", "auto", "bool", "char", "char8_t", "char16_t", "char32_t", "class",
+  "const", "consteval", "constexpr", "constinit", "decltype", "double", "enum",
+  "explicit", "export", "extern", "float", "friend", "inline", "int", "long",
+  "mutable", "namespace", "register", "short", "signed", "static", "struct",
+  "template", "thread_local", "typedef", "typeid", "typename", "union",
+  "unsigned", "using", "virtual", "void", "volatile", "wchar_t",
+  // control flow
+  "break", "case", "catch", "co_await", "co_return", "co_yield", "continue",
+  "default", "do", "else", "for", "goto", "if", "return", "switch", "throw",
+  "try", "while",
+  // expressions — the CAST family is what #924's type-only set missed
+  "const_cast", "delete", "dynamic_cast", "new", "noexcept", "nullptr",
+  "reinterpret_cast", "sizeof", "static_assert", "static_cast", "this", "true",
+  "false", "operator", "requires", "concept",
+  // access
+  "private", "protected", "public",
+  // alternative tokens (ISO 14882 [lex.digraph], [lex.alternative])
+  "and", "and_eq", "bitand", "bitor", "compl", "not", "not_eq", "or", "or_eq",
+  "xor", "xor_eq",
+  // implementation-reserved spellings and the standard preprocessor operators.
+  // None of these is a user-spellable identifier either, and each was measured
+  // producing an edge on the corpora (`defined` 34, `__has_include` 42,
+  // `__has_cpp_attribute` 6).
+  "defined", "__has_include", "__has_cpp_attribute", "asm", "__asm", "__asm__",
+  "__declspec", "__attribute__", "__attribute", "__inline", "__inline__",
+  "__forceinline", "__restrict", "__restrict__", "__extension__", "__typeof__",
+  "__typeof", "__cdecl", "__stdcall", "__thiscall", "__vectorcall", "__int8",
+  "__int16", "__int32", "__int64", "__forceinline__", "__declspec__",
+  "__builtin_offsetof", "__builtin_va_arg", "__builtin_types_compatible_p",
+  "__func__", "__FUNCTION__", "__PRETTY_FUNCTION__",
+])
+
+/**
+ * D1 (second gate position): is this text a name C++ can spell?
+ *
+ * Exported because the F5 oracle must answer the SAME question with the SAME set
+ * — #916's lesson (leaving truth behind converts a recovery into a fabrication).
+ * Kept as a function rather than inlined at the three call sites so the
+ * membership test and its justification live in one place.
+ */
+export function isCppSpelledName(text: string | null | undefined): boolean {
+  if (!text) return false
+  return !CPP_KEYWORDS.has(text)
+}
+
+/**
+ * D4: the name the SOURCE writes for a declarator whose `declarator` field the
+ * grammar's ERROR recovery displaced — or `null` when the field cannot be read
+ * at all, which means nothing is published.
+ *
+ * A macro access-specifier label is legal C++ and has no node type:
+ *
+ *   JSON_PRIVATE_UNLESS_TESTED:              <- nlohmann/json.hpp:36
+ *     /// iterator as signed integer type
+ *     difference_type m_it = (…min)();       <- the REAL declaration
+ *
+ * The grammar reads the label as a `type`, so the declarator field lands on the
+ * TYPE, and the real name is pushed into an adjacent ERROR:
+ *
+ *   field_declaration [ERR] [type=type_identifier(LABEL), ERROR(":"), comment,
+ *                        declarator=field_identifier(difference_type),
+ *                        ERROR(identifier(m_it)), "=", init, ";"]
+ *
+ * The analyzer read the declarator field faithfully and published a `property`
+ * named `difference_type` — a name that is a TYPE, colliding with the real
+ * `using difference_type = std::ptrdiff_t;` alias in the same class (which is
+ * what produced a duplicate `contains` edge), while the declaration that
+ * actually exists, `m_it`, was absent from the graph entirely. 10 sites over
+ * 1,722 real C++ files; 5 of them are this exact shape with a real, recoverable
+ * name.
+ *
+ * The ruling is that the recovery record is EVIDENCE, not noise. A declarator
+ * immediately followed by an ERROR that holds exactly one bare identifier, at a
+ * later offset, is the grammar's own account of where the name went. Two
+ * deliberate narrownesses keep it from becoming a guess:
+ *
+ *   - the ERROR must hold EXACTLY ONE named child, and it must be a bare
+ *     `identifier` — an expression, a member access or a nested declarator is
+ *     soup, and a name is not read out of soup;
+ *   - the recovered name must still be a name C++ can spell (`isCppSpelledName`),
+ *     which disposes of the `>::value, int >::type = 0 >` template-soup sites
+ *     whose ERROR holds `int`.
+ *
+ * When there is no such identifier the declarator names nothing, and `null` here
+ * means the caller publishes no symbol — the C-family CGD19 rule, applied where
+ * the grammar has told us outright that it does not know.
+ *
+ * Exported for the F5 oracle, for #916's reason.
+ *
+ * The node passed in is the DECLARATION (`field_declaration` / `declaration`);
+ * the rule reads the `declarator` field off it and looks at THAT node's
+ * siblings, because the displaced name sits beside the declarator inside the
+ * declaration — not beside the declaration itself.
+ */
+export function recoveredDeclaredName(declNode: Node): Node | null {
+  if (!declNode.hasError) return null
+  const declared: Node | null = declNode.childForFieldName?.("declarator") ?? null
+  if (!declared) return null
+  let next: Node | null = declared.nextSibling
+  // Step over the separators the recovery leaves between the two.
+  while (next && (next.isMissing || !next.isNamed)) next = next.nextSibling
+  if (!next || next.type !== "ERROR" || next.namedChildCount !== 1) return null
+  const inner: Node | null = next.namedChild(0)
+  if (!inner || inner.type !== "identifier") return null
+  if (inner.startIndex <= declared.startIndex) return null
+  if (!isCppSpelledName(inner.text)) return null
+  return inner
+}
 
 /**
  * #924: the NAME and the OWNER of a `qualified_identifier` standing as a
@@ -313,6 +545,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     // entirely (proven by probe), and virtual registries contaminated
     // unrelated files.
     const usesSeen = new Set<string>()
+    // D3: the same set discipline for `references`. An `#include` is a
+    // compile-time DEPENDENCY, and a file that writes `#include <vector>` six
+    // times depends on `vector` once — six identical `global -> vector` rows
+    // were 87 excess rows over 554 real C++ files (the top pairs:
+    // `global algorithm` x6, `global cstdint` x6, `global string` x6). The
+    // `imports` ARRAY keeps every occurrence, because a consumer counting
+    // include directives wants the count; the GRAPH keeps the dependency, which
+    // is what an edge means. Same split the family makes for `uses`.
+    const referencesSeen = new Set<string>()
     let fileDecisions = 0
     const classVirtuals = new Map<string, Map<string, string[]>>()
     const pendingOverrides: Array<{ cls: string; method: string; params: string; line?: number }> = []
@@ -340,6 +581,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         { n: rootNode, ns: [], inFn: false, inClass: null },
       ]
       const addValue = (name: string, ns: string[], cls: string | null): void => {
+        // D1, ROSTER GATE. This is the single funnel for every name the bare-read
+        // resolver (`isResolvableRead`) can resolve — file scope, namespace
+        // members and class members all land here, and `isResolvableRead` reads
+        // only these three maps. A keyword that entered the roster would turn
+        // every read of it into a `uses` edge (measured: `uses -> void`, 5
+        // sites). A keyword names no value, so it never enters.
+        if (!isCppSpelledName(name)) return
         if (!name) return
         if (cls) {
           let s = classMembers.get(cls)
@@ -359,7 +607,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       const leftmostId = (n: Node | null): string | null => {
         let cur = n
         while (cur) {
-          if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+          // D1: same impossibility as `addValue` — this walk is the pre-pass's
+          // own declarator read, and a keyword terminator is a macro or a
+          // damaged region, never the leftmost declarator of a real binding.
+          if (cur.type === "identifier" || cur.type === "field_identifier") {
+            return isCppSpelledName(cur.text) ? cur.text : null
+          }
           cur = cur.childForFieldName("declarator") || cur.namedChild(0)
         }
         return null
@@ -412,8 +665,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // ERROR-recovered fragments of sibling macro sites read as uses).
           const det = this.getFunctionDetails(n)
           if (det && !det.isDestructor && !det.name.startsWith("operator") && !this.isMacroFunctionShape(n, det.name)) {
-            if (det.scope) pendingQualified.push({ name: det.name, scope: det.scope })
-            else if (!inFn) addValue(det.name, ns, inClass)
+            // D5, ROSTER: a CONSTRUCTOR is not a callable value. `Handle(int)`
+            // defines a name that spells the class, and C++ never lets you call
+            // it unqualified — you write `Handle h(1)`, which is a construction,
+            // not a call. The roster here is the resolution source for bare
+            // reads, so admitting the constructor made the class name itself
+            // resolvable as a value: `Handle parent_handle(7);` published
+            // `uses Handle -> Handle` at confidence 1.0, an edge asserting that
+            // the class reads itself. The test is the name against the class it
+            // is declared in, which is exactly what a constructor is.
+            const isCtor = (inClass !== null && det.name === inClass) || (det.scope !== undefined && det.name === det.scope)
+            if (!isCtor) {
+              if (det.scope) pendingQualified.push({ name: det.name, scope: det.scope })
+              else if (!inFn) addValue(det.name, ns, inClass)
+            }
           }
           for (let i = n.namedChildCount - 1; i >= 0; i--) {
             const c = n.namedChild(i)
@@ -461,7 +726,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (!inFn && t === "enumerator") {
           const nm = this.childText(n, "identifier")
           // Enum members are global constants (C parity) — visible anywhere.
-          if (nm) fileScopeValues.add(nm)
+          // Routed through `addValue` so the D1 roster gate applies to this path
+          // too (an enumerator cannot be spelled with a keyword, so one that is
+          // is recovery, and a keyword in the roster fabricates `uses` edges).
+          if (nm) addValue(nm, [], null)
         } else if (t === "using_declaration" && !inFn && !inClass) {
           const txt = n.text
           if (txt.indexOf("using namespace") !== -1) {
@@ -471,7 +739,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             const leaf = this.findChild(n, "qualified_identifier") || this.findChild(n, "identifier")
             if (leaf) {
               const segs = leaf.text.split("::").filter(Boolean)
-              if (segs.length > 0) fileScopeValues.add(segs[segs.length - 1])
+              if (segs.length > 0) addValue(segs[segs.length - 1], [], null)
             }
           }
         }
@@ -484,7 +752,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (const q of pendingQualified) {
         if (classMembers.has(q.scope)) addValue(q.name, [], q.scope)
         else if (namespaceValues.has(q.scope)) addValue(q.name, [q.scope], null)
-        else fileScopeValues.add(q.name)
+        else addValue(q.name, [], null)
       }
     }
 
@@ -756,6 +1024,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       return null
     }
+    // D5: is the enclosing scope a function body? One predicate for the three
+    // places that need it — the function branch (a nested `function_definition` is
+    // a local direct-initialization, never a definition), and the two alias
+    // spellings (`using X = Y;` and `typedef Y X;`, which are the same
+    // block-scoped construct under the same CGD20 rule).
+    //
+    // It reads the SCOPE, not the tree: a Function/Method/Constructor
+    // `parentContext` means the walk is inside a body, which is the fact the
+    // rules are about. `classScope` (an out-of-line `Foo::bar`) is deliberately
+    // NOT consulted — that is a class member's scope, and a member of `Foo` is
+    // not a local of anything.
+    const ownerIsFunctionScope = (ctx: Scope | undefined): boolean =>
+      !!ctx && (ctx.kind === ASTEngine.SymbolKind.Function ||
+        ctx.kind === ASTEngine.SymbolKind.Method ||
+        ctx.kind === ASTEngine.SymbolKind.Constructor)
     // CP1 resolution: file-scope value, enclosing-class member,
     // enclosing/used-namespace member, or global enum member.
     const isResolvableRead = (name: string): boolean => {
@@ -801,7 +1084,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declaredNameNode = (node: Node | null): Node | null => {
       let cur: Node | null = node
       while (cur) {
-        if (cur.type === "identifier" || cur.type === "field_identifier") return cur
+        if (cur.type === "identifier" || cur.type === "field_identifier") {
+          // D1, DECLARED-NAME GATE. This is the single choke point every
+          // declared name in the analyzer passes through (`declaredValueName`,
+          // `declaratorParamNames`, the field/variable branch, the lambda and
+          // catch bindings), so the invariant is structural rather than a
+          // convention repeated at each push site: a DECLARED name is one the
+          // source spells as an identifier, and C++ has no identifier spelled
+          // with a keyword. What actually arrives here is the grammar's
+          // recovery — measured `friend` (property), `noexcept` (function),
+          // `for`/`switch` (method) and `static_cast` (variable) as published
+          // symbol names over the real corpora. A keyword declarator is a
+          // macro or a damaged region, never a declaration.
+          if (!isCppSpelledName(cur.text)) return null
+          return cur
+        }
         // CPPD12b: the chain must never NAME A FUNCTION where a value is expected.
         // A function declarator whose own declarator is a bare name declares a
         // function (`void JSON_ASSERT(int);`), so descending through it is how the
@@ -974,7 +1271,10 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           const targetNode = this.findChild(node, "qualified_identifier") || this.findChild(node, "identifier")
           const raw = targetNode?.text ?? ""
           const isNamespaceForm = node.text.indexOf("using namespace") !== -1
-          if (raw) {
+          // D1: a `using` can only import a name the source spells as an
+          // identifier. A keyword here is recovery, and a module named with one
+          // resolves to nothing in any store or tool.
+          if (raw && isCppSpelledName(raw)) {
             const segs = raw.split("::").filter(Boolean)
             imports.push({
               module: raw,
@@ -982,28 +1282,64 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               range: this.nodeToRange(node),
               metadata: { isImport: true, isUsingDeclaration: true, isNamespaceImport: isNamespaceForm },
             })
-            relationships.push({
-              // File-level dependency statement → source "global" (same
-              // convention as the #include references edge above).
-              source: "global",
-              target: raw,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.9,
-              // M59.A7 (#825): the written path names the edge, not the `using`
-              // keyword — `using namespace\n  std;` would otherwise name the line
-              // above the module.
-              line_number: this.nodeLine(targetNode ?? node),
-              metadata: { isUsingDeclaration: true, isImport: true, relationshipType: "using_dependency" },
-            })
+            // D3: one `references` edge per module, exactly as for `#include` —
+            // the key is the module name, so a repeated `using std::vector;`
+            // states the same dependency. The `imports` entry above is still
+            // pushed for every occurrence.
+            if (!referencesSeen.has(raw)) {
+              referencesSeen.add(raw)
+              relationships.push({
+                // File-level dependency statement → source "global" (same
+                // convention as the #include references edge above).
+                source: "global",
+                target: raw,
+                type: ASTEngine.RelationshipType.References,
+                confidence: 0.9,
+                // M59.A7 (#825): the written path names the edge, not the `using`
+                // keyword — `using namespace\n  std;` would otherwise name the line
+                // above the module.
+                line_number: this.nodeLine(targetNode ?? node),
+                metadata: { isUsingDeclaration: true, isImport: true, relationshipType: "using_dependency" },
+              })
+            }
           }
         }
       } else if (type === "alias_declaration") {
         // `using Point = std::pair<double, double>;` — the modern typedef.
         // The alias name is the `name` field (type_identifier); the value is
         // a type_descriptor. Captured as a Type symbol (matches C typedefs).
+        //
+        // D5, CGD20 PARITY: a FUNCTION-LOCAL alias is an execution artifact.
+        // The C lane states the rule and cites it — "CGD20: function-local
+        // typedefs are execution artifacts (C-D1)" (`real-c-analyzer.ts`, the
+        // `type_definition` case) — and C++ has the identical construct in two
+        // spellings, `using X = Y;` and `typedef Y X;`. The C++ lane had no
+        // such guard, so every block-scoped alias became a `Type` symbol owned
+        // by the enclosing function: 173 over 554 real C++ files, the owners
+        // being macro-heading functions whose names are the literal heading
+        // text (`type attoseconds owner=TEST(chrono_test, …)`). That is an edge
+        // shape the documented ontology does not contain — `contains` is
+        // namespace→class/enum/alias, class→method/property/constructor,
+        // enum→member — and a block-scoped alias has no members, so nothing is
+        // lost by not publishing it. It matches the rule this analyzer already
+        // applies to a local VARIABLE ("Function-local declarations are
+        // execution artifacts, not declaration sites").
+        //
+        // A local CLASS is deliberately still published: it has members, and
+        // they need an owner. That asymmetry is the reason the rule is stated
+        // here, on the alias, and not as a blanket "nothing inside a function".
+        if (ownerIsFunctionScope(parentContext)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         const nameNode = node.childForFieldName("name") || this.findChild(node, "type_identifier")
         const name = nameNode?.text
-        if (name) {
+        // D1: an alias declares a name, and a declared name is an identifier.
+        if (name && isCppSpelledName(name)) {
           symbols.push({
             name,
             kind: ASTEngine.SymbolKind.Type,
@@ -1016,8 +1352,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       } else if (type === "type_definition" || node.text.startsWith("typedef")) {
+        // The other C++ spelling of the same construct, and the CGD20 parity
+        // guard above applies to it identically — see the `alias_declaration`
+        // branch for the full argument.
+        if (ownerIsFunctionScope(parentContext)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         const typeId = this.findChild(node, "type_identifier")
-        if (typeId) {
+        if (typeId && isCppSpelledName(typeId.text)) {
           symbols.push({
             name: typeId.text,
             kind: ASTEngine.SymbolKind.Type,
@@ -1077,18 +1424,27 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // isImport) — the C++ variant previously emitted only
           // isIncludeDependency, so the completeness gate's Section B saw no
           // pin for the include dependency kind.
-          relationships.push({
-            source: "global",
-            target: includePath,
-            type: ASTEngine.RelationshipType.References,
-            confidence: 1.0,
-            // M59.A7 (#825), the C lane's rule: the include directive is the
-            // source construct and its WRITTEN NAME is the path token — take
-            // that node's line, not the directive's (a multi-line include puts
-            // the path last).
-            line_number: this.nodeLine(pathNode ?? node),
-            metadata: { relationshipType: "include_dependency", isSystem, isImport: true, isIncludeDependency: true },
-          })
+          //
+          // D3: one edge per dependency. `referencesSeen` is keyed on the
+          // module name alone, so the EDGE is the dependency; the `imports`
+          // entry above was still pushed for every directive, which is the
+          // distinction between "how many times was it included" (a count) and
+          // "what does this file depend on" (an edge).
+          if (!referencesSeen.has(includePath)) {
+            referencesSeen.add(includePath)
+            relationships.push({
+              source: "global",
+              target: includePath,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 1.0,
+              // M59.A7 (#825), the C lane's rule: the include directive is the
+              // source construct and its WRITTEN NAME is the path token — take
+              // that node's line, not the directive's (a multi-line include puts
+              // the path last).
+              line_number: this.nodeLine(pathNode ?? node),
+              metadata: { relationshipType: "include_dependency", isSystem, isImport: true, isIncludeDependency: true },
+            })
+          }
         }
 
         const lowerText = text.toLowerCase()
@@ -1125,6 +1481,17 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (type === "namespace_definition") {
         const name = this.childText(node, "namespace_identifier") || "anonymous"
+        // D1: a namespace is named by an identifier; a keyword spelling is
+        // recovery. (The "anonymous" sentinel is the deliberate no-name marker,
+        // not a keyword, and is unaffected.)
+        if (!isCppSpelledName(name)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Namespace,
@@ -1183,6 +1550,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const kind = ASTEngine.SymbolKind.Class
         const defaultVis = type === "class_specifier" ? "private" : "public"
 
+        // D1: a class/struct/union is named by an identifier, and the name is
+        // the anchor for every `contains`, `extends` and `overrides` edge that
+        // follows. A keyword spelling is recovery, and a class published under
+        // one would anchor a whole subgraph on a name nothing can resolve — so
+        // the scope is not entered either (entering it would attribute the
+        // members to a class that was never declared).
+        if (!isCppSpelledName(name)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
+
         const isTemplate = node.parent?.type === "template_declaration"
 
         newContext = { node, name, kind, visibility: defaultVis, isTemplate, isAbstract: false, friends: [] }
@@ -1211,19 +1593,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             // the whole template_type text, fabricating extends edges whose
             // target is the full argument list. Template args are ARGUMENTS,
             // never the inherited base (family contract, mirror of the
-            // JS/TS/Dart heritage rule). The cleanBases registry below already
-            // applies exactly this clean (split '<' then ::-segments) — the
-            // edge now uses the same leaf.
-            let rawText = stripAccessSpecifier(typeNode.text)
-            const ltRaw = rawText.indexOf("<")
-            if (ltRaw !== -1) rawText = rawText.slice(0, ltRaw).trim()
-            const rawSegs = rawText.split(/::|\s+/).filter(Boolean)
-            if (rawSegs.length > 1) rawText = rawSegs[rawSegs.length - 1]
-            if (rawText) {
-              baseClasses.push(rawText)
+            // JS/TS/Dart heritage rule). The registry below applies exactly this
+            // clean — the edge and the registry read the same leaf, from one
+            // helper, so they cannot disagree (D2, D6).
+            //
+            // D2: a base whose cleaned leaf equals this class's own name is
+            // refused outright — `priority_tag : priority_tag<N-1>` and
+            // `char_traits : std::char_traits<T>` both cleaned to themselves,
+            // and publishing them asserted that a class inherits from itself.
+            const target = extendsTargetName(typeNode.text, name)
+            if (target) {
+              baseClasses.push(target)
               relationships.push({
                 source: name,
-                target: rawText,
+                target,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
                 // M59.A7 (#825): a type expression's start is not always the
@@ -1234,15 +1617,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
-          // Registry key = CLEAN base name (template args stripped, leaf
-          // segment) - methods register under the declared class name, so a
-          // raw 'numpunct<Char>' key never matched the 'numpunct' registry.
-          const cleanBases = baseClasses.map((b) => {
-            let t = b.split("<")[0].trim()
-            const parts = t.split(/::|\s+/).filter(Boolean)
-            return parts[parts.length - 1] ?? t
-          })
-          classBases.set(name, cleanBases)
+          // Registry key = the SAME leaf the edge names (template args stripped,
+          // last qualifier segment) - methods register under the declared class
+          // name, so a raw 'numpunct<Char>' key never matched the 'numpunct'
+          // registry. D2: a refused self-base is not in `baseClasses` and so
+          // cannot seed an override chain either.
+          classBases.set(name, [...baseClasses])
         }
 
         const sym: ASTEngine.UniversalSymbol = {
@@ -1309,6 +1689,16 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "enum_specifier") {
         const enumNameNode = node.childForFieldName("name") || this.findChild(node, "type_identifier")
         const name = this.childText(node, "type_identifier") || "anonymous"
+        // D1: an enum is named by an identifier; a keyword spelling is recovery.
+        // The scope is not entered either, for the reason the class branch gives.
+        if (!isCppSpelledName(name)) {
+          newContext = parentContext
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext: newContext })
+          }
+          continue
+        }
         let isEnumClass = false
         for (let i = 0; i < node.childCount; i++) {
           const child = node.child(i)
@@ -1361,6 +1751,49 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         if (funcDetails) {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator, nameNode: funcNameNode } = funcDetails
+
+          // D5: C++ HAS NO NESTED FUNCTION DEFINITION. A `function_definition`
+          // whose enclosing scope is a function body cannot be a definition, so
+          // what it is instead is the one thing that shape genuinely is: a LOCAL
+          // VARIABLE written with direct-initialization parentheses, which is
+          // ambiguous to a parser without semantics —
+          //
+          //   std::string contents(ReadEntireFile(flagfile));
+          //   AutoHandle parent_process_handle(::OpenProcess(…));
+          //   const FloatingPoint<RawType> lhs(val1), rhs(val2);
+          //
+          // The grammar resolves toward the function reading, so the analyzer was
+          // publishing each of those variables as a FUNCTION symbol owned by the
+          // enclosing function — 619 of them over 554 real C++ files, and the
+          // graph's answer to "what does this function contain" was a set of
+          // sibling functions.
+          //
+          // This is the third guard of one family, and its absence is why the
+          // other two were not enough: the field/variable branch already refuses
+          // to publish inside a function (`insideFunction`), and `isMacroFunctionShape`
+          // already refuses an untyped heading at file scope. Neither reaches a
+          // node the grammar calls a `function_definition` INSIDE a body, and
+          // that is exactly where the class lives.
+          //
+          // The name is still BOUND as a local — a local shadows a file-scope or
+          // class-scope name of the same spelling for the rest of the body, and
+          // dropping that binding would fabricate a read of the outer name. No
+          // symbol, no scope, and the children walk under the enclosing function
+          // unchanged.
+          const ownerIsFunction = ownerIsFunctionScope(parentContext)
+          if (ownerIsFunction && !explicitScope) {
+            const fnScope = enclosingFunctionScope()
+            if (fnScope && isCppSpelledName(funcName)) {
+              if (!fnScope.locals) fnScope.locals = new Set<string>()
+              fnScope.locals.add(funcName)
+            }
+            newContext = parentContext
+            for (let i = node.namedChildCount - 1; i >= 0; i--) {
+              const child = node.namedChild(i)
+              if (child) stack.push({ node: child, parentContext: newContext })
+            }
+            continue
+          }
 
           // CP2: macro-function shapes (`TEST(a, b) {...}`) declare no real
           // function — `TEST` is not a name in the source — BUT the body is
@@ -1607,7 +2040,22 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             const d = decls[idx];
             // CPPD12: the name comes off the declarator chain, never off the
             // initializer (see declaredNameNode).
-            const idNode = d.type === "init_declarator" ? declaredNameNode(d) : declaredValueName(d)
+            //
+            // D4: and when the grammar's own recovery displaced that chain's
+            // terminal, the name is in the ERROR beside it and it WINS — the
+            // declarator field is then holding the source's TYPE, which is not
+            // a name at all. Measured on nlohmann's
+            // `primitive_iterator.hpp:38`, where a macro access-specifier label
+            // (`JSON_PRIVATE_UNLESS_TESTED:`) drove the grammar into recovery:
+            // the analyzer published a `property difference_type` — a name that
+            // is a type, colliding with the real alias of that name in the same
+            // class — and the declaration that exists, `m_it`, was not in the
+            // graph at all. Order matters: the chain read is not null here (a
+            // type name is a legal identifier spelling), so the recovery has to
+            // be consulted FIRST, not as a fallback.
+            const idNode =
+              recoveredDeclaredName(d) ??
+              (d.type === "init_declarator" ? declaredNameNode(d) : declaredValueName(d))
             const name = idNode ? idNode.text : ""
             // Function-local declarations are execution artifacts, not
             // declaration sites — only class-scope fields and file-scope
@@ -1660,7 +2108,9 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "enumerator") {
         const enumeratorNameNode = node.childForFieldName("name") || this.findChild(node, "identifier")
         const name = this.childText(node, "identifier")
-        if (name) {
+        // D1: an enumerator declares a name, and a declared name is an
+        // identifier — the same rule `declaredNameNode` applies to variables.
+        if (name && isCppSpelledName(name)) {
           // CP1: function-local enumerators bind locals too (shadow
           // suppression for later reads — same walk-order discipline as
           // variable declarations).
@@ -1710,7 +2160,19 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           pType === "assignment_expression" &&
           node.parent?.namedChild(0) &&
           node.parent!.namedChild(0)!.startIndex === node.startIndex
-        if (field && field.text.trim() && pType !== "call_expression" && !lhsAssign) {
+        // D1, FIELD-POSITION GATE: the third `uses` emitting position, and the
+        // last one the keyword set had to reach. A trailing return type is the
+        // shape that gets here — measured at
+        // catch2/extras/catch_amalgamated.hpp:5522,
+        //
+        //   constexpr auto isBinaryExpression() const -> bool { … }
+        //
+        // whose `-> bool` the grammar recovers as a `field_expression` with a
+        // missing object, so the branch read a member named `bool` and published
+        // `uses Detail -> bool` at confidence 0.9. A keyword is not a member, and
+        // the bare-read gate cannot see this position because the edge is emitted
+        // here rather than from the `identifier` branch.
+        if (field && field.text.trim() && isCppSpelledName(field.text) && pType !== "call_expression" && !lhsAssign) {
           const source = parentContext?.name || "global"
           const relKey = `${source}::uses::${field.text}`
           if (!usesSeen.has(relKey)) {
@@ -1807,17 +2269,18 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 continue
               }
               if (!NAME_BEARING(t)) return null
-              // #924: a BUILTIN TYPE keyword can never be a function name, so a
-              // callee spelled that way is a functional CAST the grammar
-              // classified as an `identifier` instead of a `primitive_type`
-              // (`unsigned(x)`, `short(x)`, `long(x)`; 17 sites over the two
-              // pinned corpora after the name-bearing rule landed). This is the
-              // same discipline the C lane has always applied
-              // (`C_KEYWORDS`/`C_SPECIFIER_KEYWORDS` at extraction) — the cpp
-              // lane simply never had the list. Only TYPE keywords are in it:
-              // contextual keywords (`final`, `override`, `import`) are legal
-              // identifiers and stay callable.
-              if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return null
+              // #924 + D1: a callee the language cannot spell names no function.
+              // #924 closed the builtin-TYPE half of this (`unsigned(x)` is a
+              // functional cast the grammar calls an `identifier`); D1 closed
+              // the rest — the CAST family, which is the same impossibility
+              // (`static_cast<int>(x)` is
+              // `call_expression[function=template_function[name=identifier]]`),
+              // and the CONTROL-FLOW keywords the grammar's ERROR recovery
+              // invents `call_expression` nodes for (`calls if`, 25 sites).
+              // Measured 5,496 keyword call targets over 1,502 real C++ files.
+              // The membership test and its justification are `isCppSpelledName`
+              // (exported: the F5 oracle applies the same rule, never a copy).
+              if (t === "identifier" && !isCppSpelledName(cur.text)) return null
               return cur
             }
             return null
@@ -1983,7 +2446,12 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         } else if (
           node.text &&
-          !isDeclarationPosition(node) &&          !isPreprocText(node) &&
+          // D1, EDGE GATE. The roster gate above is the structural fix; this is
+          // the edge-level guarantee, so the impossibility holds on the row
+          // itself even if a future path adds a name to a roster directly. A
+          // keyword names no value, so it is never a read.
+          isCppSpelledName(node.text) &&
+          !isDeclarationPosition(node) && !isPreprocText(node) &&
           // Assignment LHS is a WRITE, never a read (C CGD1 / family
           // write-is-not-a-use contract — plain and compound assignments
           // both carry the LHS as first named child).
@@ -2125,26 +2593,53 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Post-loop: add contains for owned symbols (class→method, class→field, namespace→class)
+    //
+    // D3: ONE EDGE PER PAIR. `contains` is a containment relation between two
+    // named entities — `person contains constructor` is a fact about the class,
+    // not a fact about each of its overloads. But constructors are normalized to
+    // the single name "constructor" (the family contract, C# parity) and
+    // operator overloads keep their spelling, so a class with 14 constructors
+    // published 14 identical rows, and two same-named members published two.
+    // Measured 841 excess `contains` rows over 554 real C++ files (fmt +
+    // nlohmann-json), the top pairs being `person constructor` x14 and
+    // `formatter format` x12.
+    //
+    // The FIRST occurrence wins, and walk order is source order, so the edge
+    // lands on the first declaration of the name — which is the declaration a
+    // consumer navigating to the name wants. The overloads remain as SYMBOLS
+    // (each with its own range and line); only the duplicated EDGE is dropped,
+    // so nothing that was resolvable stops being resolvable.
+    //
+    // `calls` is deliberately NOT deduped here, and that is a measured
+    // distinction rather than an oversight: line N calling `foo` and line M
+    // calling `foo` are two facts, each carrying its own M59.A7 `line_number`,
+    // and the C, TypeScript and Java lanes all emit both. The family's
+    // "one edge per pair" set (`emittedUseRelationships` in C, `usesSeen` here)
+    // covers `uses`/`references` — the read/include shapes, where many sites
+    // express one fact.
+    const containsSeen = new Set<string>()
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner) {
-        relationships.push({
-          source: _owner,
-          target: s.name,
-          type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
-          // M59.A7 (#825) + #921 (M60): a contains edge takes the CHILD's line,
-          // and "the child's line" means the line that NAMES it — the rule every
-          // other relationship type already follows (`nameLine`) and the rule the
-          // M59 Tier A oracle checks. The symbol's RANGE still starts at its whole
-          // declaration node (search, edit anchors and the M73 line base read
-          // that), so the two are no longer forced to agree: a wrapped return
-          // type used to put the edge on the declaration's first line, where the
-          // name is not written (`void NORETURN` then `CheckFailed(…)`).
-          line_number: (s.metadata as any)?.nameLine ?? s.range?.startLine,
-          metadata: {},
-        })
-      }
+      if (!_owner) continue
+      const relKey = `${_owner} ${s.name}`
+      if (containsSeen.has(relKey)) continue
+      containsSeen.add(relKey)
+      relationships.push({
+        source: _owner,
+        target: s.name,
+        type: ASTEngine.RelationshipType.Contains,
+        confidence: 1.0,
+        // M59.A7 (#825) + #921 (M60): a contains edge takes the CHILD's line,
+        // and "the child's line" means the line that NAMES it — the rule every
+        // other relationship type already follows (`nameLine`) and the rule the
+        // M59 Tier A oracle checks. The symbol's RANGE still starts at its whole
+        // declaration node (search, edit anchors and the M73 line base read
+        // that), so the two are no longer forced to agree: a wrapped return
+        // type used to put the edge on the declaration's first line, where the
+        // name is not written (`void NORETURN` then `CheckFailed(…)`).
+        line_number: (s.metadata as any)?.nameLine ?? s.range?.startLine,
+        metadata: {},
+      })
     }
 
 
@@ -2630,6 +3125,15 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     let scope: string | undefined = undefined
     let isDestructor = nameNode.type === "destructor_name" || name.startsWith("~")
     let isOperator = nameNode.type === "operator_name" || name.startsWith("operator")
+
+    // D1, FUNCTION-NAME GATE. The declared-name choke point above cannot reach a
+    // function's own name (this method reads the declarator directly), so the
+    // same impossibility is enforced here: a function's name is an identifier,
+    // and C++ has no identifier spelled with a keyword. Measured `noexcept` as a
+    // published `function` symbol. `operator=`, `operator()` and every other
+    // operator overload are ordinary names and pass — the set is an exact-match
+    // test, and `operator` alone is in it precisely because nothing declares it.
+    if (!isCppSpelledName(name)) return null
 
     if (nameNode.type === "qualified_identifier") {
       // #924: the name is the deepest qualifier's LAST segment, and a segment
