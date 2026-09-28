@@ -42,7 +42,7 @@ interface Mutant {
   find: string
   replace: string
   /** Which signal must move for the mutant to count as caught. */
-  signal: "analyzer-missing" | "unexplained" | "line" | "exports"
+  signal: "analyzer-missing" | "unexplained" | "line" | "exports" | "rel-spurious"
   /**
    * A source pattern that MUST occur in the corpus slice, or the mutant has no
    * trigger and its result is INCONCLUSIVE rather than SURVIVING.
@@ -125,6 +125,92 @@ const MUTANTS: Mutant[] = [
     replace: "if (false) {",
     signal: "analyzer-missing",
   },
+  // ── wave 2: every ANALYZER defect class this lane has actually fixed ────────
+  // M1-M8 covered six classes. The lane has fixed twenty. These add the
+  // relationship-level ones that were previously untested at corpus scale, so
+  // "the differential would notice" is a claim about the whole set and not a
+  // convenient subset.
+  {
+    id: "M9",
+    trigger: /^\s*local\s+\w+\s*$/m,
+    // LUA-13: the callee of `table . field` is the LAST named child, because the
+    // FIRST is the receiver and the receiver's start is a different line. Before
+    // the fix a call split across two lines was reported at the receiver's line,
+    // and the old payload filter deleted it from the graph outright.
+    what: "LUA-13 again: the callee is taken as the FIRST named child, so a line-broken call reports the receiver's line",
+    find: "      const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(functionNode.namedChildCount - 1) : undefined",
+    replace: "      const last = functionNode.namedChildCount > 0 ? functionNode.namedChild(0) : undefined",
+    signal: "line",
+  },
+  {
+    id: "M10",
+    trigger: /^\s*local\s+\w+\s*$/m,
+    // LUA-23: a bare `local x` has NO assignment_statement, so the name list is a
+    // direct child of the declaration rather than a child of the assignment. That
+    // third arm is the whole fix; removing it makes every bare local vanish.
+    what: "LUA-23 again: a bare `local x` with no assignment produces no symbol",
+    find: '      : (first?.type === "variable_list" ? first : undefined)',
+    replace: "      : undefined",
+    signal: "analyzer-missing",
+  },
+  {
+    id: "M11",
+    // The trigger must match the PRECONDITION, not a near-miss. The first version
+    // used `/\w+\s*=\s*\w+/` — any assignment anywhere — so the slice it selected
+    // satisfied the regex without containing a single closure that assigns an
+    // enclosing local, and M11 was reported SURVIVED when it had simply never run.
+    // A trigger that fires is not a trigger that can fire, and the difference is
+    // invisible unless the pattern encodes what the mutant actually needs.
+    trigger: /function[\s\S]{0,300}?[a-z_]\w*\s*=\s*[^=]/,
+    // LUA-21: a closure's frame is seeded from the enclosing frame's locals. That
+    // inheritance is what a closure IS, and its absence made every upvalue
+    // assignment look like a fresh declaration.
+    what: "LUA-21 again: a closure's frame does not inherit the enclosing scope's locals",
+    find: "        const locals = new Set<string>(frame.localNames)",
+    replace: "        const locals = new Set<string>()",
+    // `unexplained`, NOT `analyzer-missing`. The mutation ADDS edges the oracle
+    // does not derive — `contains bump -> counter` for an upvalue write — so it
+    // moves the unexplained count, not the missing one. Assigned the wrong signal
+    // it read as a survivor while the run underneath it showed UNEXPLAINED 1 -> 43.
+    // A survivor is a claim about the instrument, and this one was a claim about
+    // the harness's own bookkeeping.
+    signal: "unexplained",
+  },
+  {
+    id: "M12",
+    trigger: /\[\s*["'][^"']+["']\s*\]|\[\s*\w+\s*\]/,
+    // LUA-22: a computed index has no name. The whitelist returns undefined for
+    // every non-string field; a mutant that publishes the field's text brings back
+    // the original defect — an EXPRESSION used as a relationship target.
+    what: "LUA-22 again: a computed index publishes its expression as the target",
+    find: '      if (field?.type !== "string") return undefined',
+    replace: '      if (field?.type !== "string") return { name: field?.text ?? functionNode.text, nameNode: field ?? functionNode }',
+    signal: "unexplained",
+  },
+  {
+    id: "M13",
+    // Same lesson as M11: the trigger is the setmetatable's own precondition — a
+    // SECOND argument that is a table literal. `/setmetatable\s*\(/` matched every
+    // setmetatable in the repo, so the slice was full of NAMED metatables the
+    // mutant cannot touch, and M13 read as a survivor.
+    trigger: /setmetatable\s*\([^,]+,\s*\{/,
+    // LUA-32: both setmetatable endpoints must be names. The nameBearing guard is
+    // the fix; a mutant that drops it republishes the whole table constructor as
+    // the extends target, which is the five-line payload the pipeline filters out
+    // and which was therefore invisible until the seam probe found it.
+    what: "LUA-32 again: an inline metatable table is published as the extends target",
+    // BOTH the guard AND the body. The first version widened the condition but left
+    // `addRelationship(ctx, srcName, mtName, …)` in place, so the mutant changed
+    // nothing at all and was reported as a survivor — a mutant that cannot fire.
+    // Reintroducing the defect means publishing `target.text`/`metatable.text`,
+    // which is what the pre-LUA-32 code did.
+    find: "      if (target && metatable && !this.isTableNode(target) && srcName && mtName) {\n        this.addRelationship(ctx, srcName, mtName, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: \"lua_metatable\" }, metatable)\n      }",
+    replace: "      if (target && metatable && !this.isTableNode(target)) {\n        this.addRelationship(ctx, target.text, metatable.text, ASTEngine.RelationshipType.Extends, { luaSpecific: true, relationshipType: \"lua_metatable\" }, metatable)\n      }",
+    // `rel-spurious`: a payload target the tree never derived. It is invisible to
+    // the pipeline comparison because pool-worker drops newline-bearing targets,
+    // so it shows up ONLY on the direct-path relationship leg (LUA-34).
+    signal: "rel-spurious",
+  },
 ]
 
 // ── pre-flight: EVERY anchor must exist before a single mutant runs ───────────
@@ -162,6 +248,8 @@ interface OracleRun {
   exportMissed: number
   exportSpurious: number
   exportTruth: number
+  relSpurious: number
+  relMissed: number
 }
 
 const runOracle = (): OracleRun => {
@@ -201,6 +289,7 @@ const runOracle = (): OracleRun => {
   // also the second silent no-op replacement in this file, which is why every
   // edit to it is now made with the edit tool rather than a script.
   const x = out.match(/exports \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) spurious=(\d+)/)
+  const rl = out.match(/relationships \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) SPURIOUS=(\d+)/)
   return {
     analyzerMissing: m ? Number(m[1]) : -1,
     unexplained: m ? Number(m[2]) : -1,
@@ -209,6 +298,8 @@ const runOracle = (): OracleRun => {
     exportTruth: x ? Number(x[2]) : -1,
     exportMissed: x ? Number(x[4]) : -1,
     exportSpurious: x ? Number(x[5]) : -1,
+    relSpurious: rl ? Number(rl[5]) : -1,
+    relMissed: rl ? Number(rl[4]) : -1,
   }
 }
 
@@ -241,6 +332,7 @@ console.log(`  analyzer-attributable missing: ${base.analyzerMissing}`)
 console.log(`  unexplained:                   ${base.unexplained}`)
 console.log(`  line accuracy:                 ${base.lineAccuracy}  (wrong ${base.lineWrong})`)
 console.log(`  direct-path exports missed:    ${base.exportMissed}  (spurious ${base.exportSpurious}, of ${base.exportTruth} truth)`)
+console.log(`  direct-path relationships:     missed ${base.relMissed}  SPURIOUS ${base.relSpurious}`)
 if (base.lineAccuracy !== 1) {
   console.error("refusing to mutate: the baseline is not line-clean, so a line mutant proves nothing")
   process.exit(2)
@@ -289,6 +381,9 @@ try {
     } else if (m.signal === "analyzer-missing") {
       caught = r.analyzerMissing > base.analyzerMissing
       how = `analyzer-attributable ${base.analyzerMissing} -> ${r.analyzerMissing}`
+    } else if (m.signal === "rel-spurious") {
+      caught = r.relSpurious > base.relSpurious
+      how = `direct-path relationship SPURIOUS ${base.relSpurious} -> ${r.relSpurious}`
     } else if (m.signal === "exports") {
       caught = r.exportMissed > base.exportMissed || r.exportSpurious > base.exportSpurious
       how = `direct-path exports missed ${base.exportMissed} -> ${r.exportMissed}, spurious ${base.exportSpurious} -> ${r.exportSpurious}`
@@ -323,7 +418,7 @@ for (const line of results) console.log(line)
   writeFileSync(SRC, original.replace(noop.find, noop.replace))
   const r = runOracle()
   writeFileSync(SRC, original)
-  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious
+  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious && r.relSpurious === base.relSpurious && r.relMissed === base.relMissed
   console.log()
   console.log(`  M0    ${noopSurvived ? "SURVIVED" : "caught"}    a no-op mutant ${noopSurvived ? "correctly reported as surviving — the harness does not call everything caught" : "WRONGLY REPORTED CAUGHT — the harness is broken"}`)
   if (!noopSurvived) survived++
