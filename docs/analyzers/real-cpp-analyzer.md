@@ -33,7 +33,7 @@ BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
 
 Every class states the CONTRACT it breaks, and asserts on what the analyzer
 **publishes** — not on a tree shape, because a shape can be present and correctly
-handled. Six gated classes, all at **0**:
+handled. Seven gated classes, all at **0**:
 
 | class | the contract | was | now |
 |---|---|---|---|
@@ -43,13 +43,45 @@ handled. Six gated classes, all at **0**:
 | **D4** | a declared name is not a type; when the grammar's recovery displaced the declarator, the name is in the adjacent `ERROR` | 10 | **0** |
 | **D5** | C++ has no nested function definition, so a `function_definition` inside a body is a local direct-initialization | 792 | **0** |
 | **D6** | the analyzer's own source uses a regex, while this doc claimed zero | 2 | **0** |
+| **D7** | a specifier's name arrives as a `qualified_identifier`, so the class publishes as `anonymous` | 48 | **0** |
 
 Issues: [#957](https://github.com/backbencher-hq/backbencher-brain/issues/957) (D1),
 [#958](https://github.com/backbencher-hq/backbencher-brain/issues/958) (D2),
 [#959](https://github.com/backbencher-hq/backbencher-brain/issues/959) (D3),
 [#960](https://github.com/backbencher-hq/backbencher-brain/issues/960) (D4),
-[#961](https://github.com/backbencher-hq/backbencher-brain/issues/961) (D5).
+[#961](https://github.com/backbencher-hq/backbencher-brain/issues/961) (D5),
+[#962](https://github.com/backbencher-hq/backbencher-brain/issues/962) (D7).
 Registered before worked, per M60 R3.
+
+## What the gate does NOT cover, and one class that used to be invisible
+
+**The differential audits 82.6% of the output.** The label set it compares for cpp is
+`calls, uses, extends, implements, instantiates` — `overrides` is excluded for cpp by
+name, `contains` is audited only for perl/xml, and `references` is in neither list.
+`script/cpp-review/coverage-share.ts` measures the remainder: **41,408 of 238,205 rows
+(17.4%)** — `contains` 27,587, `references` 13,321, `overrides` 500 — sit inside the
+lane's "100% covered" and are not examined by it. The D3 work (928 duplicate
+contains/references rows) was in exactly that unexamined region and was found by a
+separate probe.
+
+**D1–D6 are all fabrication-shaped — too much output — so none of them could see a
+MISSING symbol, and neither can the differential**, which compares the analyzer against
+an oracle written from the same reading of the same grammar. A shared blind spot
+cancels out of every count; that is how the CPPD15 self-agreeing `uses num_bits`
+survived a year of gates, and it is why the 100% coverage number was, in part, a
+measurement of the defect: `fmt:cpp` truth was 4,600 with ~5,500 keyword call targets
+inside it, and both sides agreed.
+
+`script/cpp-review/loss-census.ts` asks the complement — for every declaration the
+grammar hands over at file/namespace/class scope, is there a published symbol? — and
+found **D7**. It is the first loss class, and the gate for it is the first one that had
+to be written to run against a broken analyzer: the first cut imported the analyzer's
+own `specifierDeclaredName`, and its self-test died with *"Export named
+'specifierDeclaredName' not found"* instead of reporting a violation. A check that
+cannot load against the code it gates has not proved it can fail, so D7's legibility
+test is stated in the register itself, as the five-line contract it is, while the
+analyzer implements it in the two exported helpers. Against the pre-fix analyzer the
+gate reports `D7: 22` and `pass: false`; against the fixed one, 0.
 
 ## Symbol contract
 
@@ -249,9 +281,10 @@ Five are new and each pins one fixed class:
 | `cpp/one-edge-per-pair-959` | D3 via `expectRelationshipCount`/`equals` — **an exact count, which is the only assertion form that can fail on a duplicate** — and the `calls`-are-not-duplicates distinction as an exact count of 6 |
 | `cpp/recovered-declared-name-960` | D4, including the ordering (recovery consulted **first**, not as a `??` fallback — the first cut used `??` and fixed nothing) and the no-comment control |
 | `cpp/no-nested-function-def-961` | D5, plus the local-class asymmetry and the constructor roster |
+| `cpp/specifier-qualified-name-962` | D7 both arms, all three attribute spellings, and the two controls (an unqualified specialization, and a genuinely unnamed enum) |
 
-**39 cpp mutants, all caught** (`BB_MUTANT_ONLY="cpp/" bun run script/m14/mutate-analyzer.ts`),
-7 of them new. One of the new mutants was caught by *my own* fixture's limit and
+**41 cpp mutants, all caught** (`BB_MUTANT_ONLY="cpp/" bun run script/m14/mutate-analyzer.ts`),
+9 of them new. One of the new mutants was caught by *my own* fixture's limit and
 that is recorded rather than hidden: the D3 fixture's first version used
 `expectRelationships`, which means "≥ 1 match", so a duplicated edge satisfied it
 and the mutant **SURVIVED**. The mutation harness is what said so.

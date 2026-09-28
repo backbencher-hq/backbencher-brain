@@ -3063,6 +3063,43 @@ export const MUTANTS: Mutant[] = [
       ]),
     }),
   },
+  // ── D7 (the C++ loss side, 2026-09-28) ────────────────────────────────────
+  // The first six cpp classes are all FABRICATION-shaped — too much output — so
+  // none of them could see a missing symbol, and the M14 differential cannot
+  // either (it compares the analyzer against an oracle written from the same
+  // reading of the same grammar; a shared blind spot cancels out). D7 is the
+  // first LOSS class, and it was found by asking the complement question.
+  {
+    id: "cpp/d7-specifier-published-as-anonymous",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D7 (#962) regression, ARM A: re-publishes a class/struct whose name the grammar handed over as a `qualified_identifier` under the `anonymous` sentinel. An explicit specialization (`template <> struct fmt::formatter<T> : formatter<U> { … }`) is legal C++ and its leaf IS the name, but `findChild(node, \"type_identifier\")` is a direct-child scan and cannot see it. Measured 26 sites over 1,722 real C++ files; the class published as `anonymous` with its members owned by `anonymous`, beside correctly-named siblings — a row that is not merely wrong but AMBIGUOUS with the analyzer's own no-name marker.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? [])
+        .filter((s: any) => s.name !== "formatter")
+        .concat([
+          { name: "formatter", kind: "class", range: { startLine: 55, startColumn: 1, endLine: 58, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppClass: true } },
+          { name: "anonymous", kind: "class", range: { startLine: 55, startColumn: 1, endLine: 58, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppClass: true } },
+        ]),
+    }),
+  },
+  {
+    id: "cpp/d7-attribute-as-enum-name",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D7 (#962) regression, ARM B: re-publishes a C++23 `enum class [[=fmt::as_identifiers]] color { … }` with the ATTRIBUTE as the enum's name and the real name as a phantom file-scope variable. An enum has no qualified name in C++ (`enum class ns::E` is not valid), so a qualified path in an enum's name slot is the attribute the grammar's recovery displaced — and the real name is the bare identifier it left in the enclosing declaration's `init_declarator`. Measured 22 sites. Three defects in one construct at fmt/test/enum-test.cc:24: the enum as `anonymous`, a phantom `variable \"color\"`, and every enumerator lost.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? [])
+        .filter((s: any) => s.name !== "color" && s.name !== "qualified_attr_enum")
+        .concat([
+          { name: "as_identifiers", kind: "enum", range: { startLine: 74, startColumn: 1, endLine: 74, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppEnum: true } },
+          { name: "color", kind: "variable", range: { startLine: 74, startColumn: 1, endLine: 74, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace" },
+          { name: "outer::as_identifiers", kind: "enum", range: { startLine: 82, startColumn: 1, endLine: 82, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppEnum: true } },
+        ]),
+    }),
+  },
   {
     id: "rust/drop-scoped-struct-literal-leaf",
     language: "rust",

@@ -16,6 +16,57 @@ import path from "node:path"
 import { ASTEngine, parseFile } from "../../src/ast/engine"
 import { CPP_KEYWORDS, isCppSpelledName, recoveredDeclaredName } from "../../src/ast/real-cpp-analyzer"
 
+// D7's legibility test is written HERE rather than imported from the analyzer,
+// and that asymmetry is deliberate. The other classes import the analyzer's rule
+// (#916: one set, one answer), but a gate that imports the code under test cannot
+// be run against the code it is gating — the first cut of this check did, and the
+// self-test died with "Export named 'specifierDeclaredName' not found" instead of
+// reporting a violation. A check that cannot load against a broken analyzer has
+// not proved it can fail, which is the M49 selftest rule ("a check that cannot
+// fail is decoration").
+//
+// So this states the CONTRACT in five lines, which is what a gate is for:
+//
+//   an enum_specifier has NO qualified name in C++ (`enum class ns::E` is not
+//   valid; you write `namespace ns { enum class E; }`), so a `::`-qualified path
+//   in its name slot is a C++23 `[[=attr]]` the recovery displaced — and either
+//   the real name is legible beside it or the enum is genuinely unnamed;
+//   a class/struct/union DOES have a qualified name (an explicit
+//   specialization), and its leaf is the name.
+//
+// The analyzer implements that contract in `specifierDeclaredName` /
+// `attributeDisplacedEnumName`, which the F5 oracle imports. Two statements of one
+// small contract, on purpose: one of them has to be able to run when the other is
+// broken.
+const d7LegibleName = (n: any): string | null => {
+  const leaf = (q: any, d = 0): string | null => {
+    if (!q || d > 8) return null
+    if (q.type === "type_identifier" || q.type === "identifier") return q.text
+    if (q.type === "qualified_identifier") return leaf(q.namedChild(q.namedChildCount - 1), d + 1)
+    if (q.type === "template_type") {
+      const tn = q.childForFieldName?.("name")
+      if (tn) return leaf(tn, d + 1)
+      const lt = q.text.indexOf("<")
+      return lt > 0 ? q.text.slice(0, lt).trim() : null
+    }
+    return null
+  }
+  const nf = n.childForFieldName?.("name")
+  if (n.type === "enum_specifier") {
+    if (nf && nf.type === "qualified_identifier") {
+      // the attribute arm: the real name is the identifier the recovery left in
+      // the enclosing declaration's init_declarator
+      const decl = n.parent
+      const outer = decl && (decl.type === "declaration" || decl.type === "field_declaration")
+        ? decl.childForFieldName?.("declarator") : null
+      const id = outer && outer.type === "init_declarator" ? outer.childForFieldName?.("declarator") : null
+      return id && id.type === "identifier" && id.startIndex > n.endIndex ? id.text : null
+    }
+    return leaf(nf)
+  }
+  return leaf(nf)
+}
+
 const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/ishaq/fixtures/repositories"
 const REPOS = (process.env.CPP_REPOS ?? "fmt,nlohmann-json,catch2,abseil-cpp,spdlog,zig").split(",").filter(Boolean)
 const EXTS = [".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hxx", ".hh", ".h++"]
@@ -69,6 +120,8 @@ const D5 = cls("D5", "a symbol is published with a FUNCTION as its owner, and is
   "C++ has no nested function definition, so a `function_definition` inside a body is a local direct-initialization — a variable, not a function.")
 const D6 = cls("D6", "the analyzer's own source uses a regex",
   "The regex census is the honesty artifact; the doc's claim of zero must be true, not asserted.")
+const D7 = cls("D7", "a specifier's name arrives as a qualified_identifier, so the class publishes as `anonymous`",
+  "A class/struct may have a qualified name (an explicit specialization) and its LEAF is the name; an enum has NO qualified name in C++, so one in that slot is a C++23 [[=attr]] the recovery displaced, and the declared name is the identifier beside it. Publishing `anonymous` also collides with the analyzer's own no-name sentinel.")
 const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before the source's own brace balance",
   "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
   false)
@@ -95,6 +148,9 @@ for (const repo of REPOS) {
     } catch { continue }
     files++
     const rel = f.replace(CORPUS + "/", "")
+    // D7: the `anonymous` publications this file made, resolved against the tree
+    // after the walk. Declared BEFORE the D1/D5 loops that push into it.
+    const pendingAnon: { kind: string; line: number; file: string; repo: string }[] = []
     syms += r.symbols?.length ?? 0
     rels += r.relationships?.length ?? 0
 
@@ -121,6 +177,16 @@ for (const repo of REPOS) {
       const n = (pairN.get(k) ?? 0) + 1
       pairN.set(k, n)
       if (n === 2) add(D3, `${x.type}:${x.source}->${x.target}`, { repo, file: rel, line: x.line_number, source: x.source, target: x.target })
+    }
+    // D7 — assert on the OUTPUT: no specifier that carries a name in the grammar
+    // may be published under the `anonymous` sentinel, and a displaced enum name
+    // must not ALSO be published as a variable. Read from the tree (that is where
+    // the name lives), judged from what the analyzer published.
+    for (const sy of (r.symbols ?? []) as any[]) {
+      if (sy.name !== "anonymous") continue
+      const line = sy.range?.startLine
+      // walk the tree once per file looking for the specifier at this line
+      pendingAnon.push({ kind: String(sy.kind ?? ""), line, file: rel, repo })
     }
     // D5 — a function owns nothing, except a local type.
     const LOCAL_TYPE = new Set(["class", "struct", "enum", "union"])
@@ -171,8 +237,40 @@ for (const repo of REPOS) {
       for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) visit(c) }
     }
     visit(tree.rootNode)
+
+    // D7 verdict: for every specifier carrying a name the analyzer published as
+    // `anonymous`, the name was legible. And for every enum whose name the
+    // attribute displaced, the name must not also be published as a variable.
+    if (pendingAnon.length) {
+      const named = new Map<string, { kind: string; name: string; line: number }[]>()
+      const collect = (n: any) => {
+        if (n.type === "enum_specifier" || n.type === "class_specifier" || n.type === "struct_specifier" || n.type === "union_specifier") {
+          const body = n.type === "enum_specifier" ||
+            (n.namedChildren ?? []).some((c: any) => c.type === "class_body" || c.type === "field_declaration_list")
+          if (body) {
+            const nm = d7LegibleName(n)
+            if (nm) {
+              const arr = named.get(String(n.startPosition.row + 1)) ?? []
+              arr.push({ kind: n.type, name: nm, line: n.startPosition.row + 1 })
+              named.set(String(n.startPosition.row + 1), arr)
+            }
+          }
+        }
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) collect(c) }
+      }
+      collect(tree.rootNode)
+      for (const a of pendingAnon) {
+        const hits = named.get(String(a.line)) ?? []
+        // a genuinely unnamed enum/class has no legible name, so it is absent
+        // here and is correct; anything present was publishable
+        for (const h of hits) {
+          add(D7, `${a.kind}->${h.name}`, { repo, file: a.file, line: h.line, specifier: h.kind, publishableName: h.name, published: "anonymous" })
+        }
+      }
+      pendingAnon.length = 0
+    }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} R1=${R1.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} R1=${R1.n}\n`)
 }
 
 // D6 — the analyzer's own source, by the same shape the repo's census records.
