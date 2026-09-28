@@ -368,6 +368,48 @@ class ScopeManager {
     return undefined
   }
 
+  /**
+   * R10: the owner of a DECLARATION, decided LEXICALLY.
+   *
+   * `getOwnerInfo()` alone answers the wrong question for a declaration nested
+   * in a function body: it walks to the nearest class/namespace/interface/enum
+   * scope and SKIPS function scopes, so `class K { go() { function inner(){} } }`
+   * resolved `inner`'s owner to `K` and emitted `contains K->inner` \u2014 the graph
+   * claiming the class has a member it does not have. The same false edge
+   * appeared for a type alias and an interface declared in a method body, and for
+   * a function declared inside a namespace function.
+   *
+   * It cannot be fixed in the scope stack, because that stack ACCUMULATES: the
+   * class member loop extracts each member synchronously, so while member 2 is
+   * being resolved, member 1's Method scope is still on top. A guard there \u2014
+   * "a function scope means local" \u2014 was tried and measured, and it stripped REAL
+   * members, because member 2 legitimately resolves through member 1's leftover
+   * scope to the class. The scope stack is a resource stack, not a faithful
+   * lexical stack, so the question is asked of the TREE instead.
+   *
+   * A declaration belongs to the nearest enclosing BODY container; if any
+   * function body sits between it and that container, it is a local of that
+   * function and owns nothing. All five shapes measured:
+   *
+   *   class K { a(){} b(){} }                 -> b's parent is class_body  : member
+   *   class K { go() { function inner(){} } }  -> inner meets `go` first    : local
+   *   function f() { class C {} }              -> C meets `f` first         : local
+   *   namespace N { export function f() {} }   -> f meets no function       : member
+   *   function f() { class C { m(){} } }       -> m meets class_body first  : member
+   */
+  getOwnerInfoForDeclaration(node: any): { ownerName?: string; ownerKind?: ASTEngine.SymbolKind } | undefined {
+    for (let p = node?.parent; p; p = p.parent) {
+      const t = p.type
+      if (
+        t === "function_declaration" || t === "generator_function_declaration" ||
+        t === "function_signature" || t === "function_expression" ||
+        t === "arrow_function" || t === "method_definition" || t === "function"
+      ) return undefined
+      if (t === "class_body" || t === "interface_body" || t === "enum_body") break
+    }
+    return this.getOwnerInfo()
+  }
+
   findEnclosingClassNode(): Node | null {
     // Nearest Class scope's node (for class-level decorator lookup —
     // controller base paths). Returns null outside any class.
@@ -2231,7 +2273,7 @@ class TypeScriptAnalysisRunner {
       apiContractPath: apiContract.path,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         apiMethod: apiContract.method,
         isGenerator: node.type === "generator_function_declaration",
@@ -2299,7 +2341,7 @@ class TypeScriptAnalysisRunner {
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2317,6 +2359,18 @@ class TypeScriptAnalysisRunner {
 
     // Process class body for methods, properties, constructor
     this.scopeManager.pushScope(ScopeKind.Class, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
@@ -2389,7 +2443,6 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2411,7 +2464,7 @@ class TypeScriptAnalysisRunner {
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2425,13 +2478,24 @@ class TypeScriptAnalysisRunner {
 
     // Process interface body for members
     this.scopeManager.pushScope(ScopeKind.Interface, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
       this.extractInterfaceMembers(body, symbols, name)
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2554,7 +2618,7 @@ class TypeScriptAnalysisRunner {
       returnType: typeValue?.text,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       comments: this.extractComments(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2642,7 +2706,7 @@ class TypeScriptAnalysisRunner {
       scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2655,6 +2719,18 @@ class TypeScriptAnalysisRunner {
 
     // Extract enum members
     this.scopeManager.pushScope(ScopeKind.Enum, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
@@ -2688,7 +2764,6 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2787,7 +2862,7 @@ class TypeScriptAnalysisRunner {
         apiContractPath: apiContract.path,
         taintSources: valueNode ? this.extractTaintSources(valueNode) : undefined,
         taintSinks: valueNode ? this.extractTaintSinks(valueNode) : undefined,
-        ...this.scopeManager.getOwnerInfo(),
+        ...this.scopeManager.getOwnerInfoForDeclaration(node),
         metadata: {
           apiMethod: apiContract.method,
           isExported: exportStatus.isExported,
@@ -2903,7 +2978,11 @@ class TypeScriptAnalysisRunner {
         range: this.nodeRange(nameNode, false),
         scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
-        ...this.scopeManager.getOwnerInfo(),
+        // A destructured binding is a declaration too:  inside a
+        // method is a local of that method, not a member of the class. The
+        // lexical question is asked of the DECLARATOR, which is the node whose
+        // ancestors describe where the binding is written.
+        ...this.scopeManager.getOwnerInfoForDeclaration(declarator),
         metadata: {
           isDestructured: true,
           isConst,
@@ -2963,7 +3042,7 @@ class TypeScriptAnalysisRunner {
       visibility = "protected"
     }
 
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
     // ONE complexity walk per method: the top-level field and the metadata
     // mirror are the same number by contract.
     const ownComplexity = this.calculateComplexity(node)
@@ -3050,7 +3129,7 @@ class TypeScriptAnalysisRunner {
     decoratorNodes?: Node[],
   ): boolean {
     const params = this.extractParameters(node)
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
     const modifiers = extractModifiersFromNode(node)
     const apiContract = this.extractApiContract(
       node,
@@ -3159,7 +3238,7 @@ class TypeScriptAnalysisRunner {
       visibility = "protected"
     }
 
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       // #813: the declared spelling is the member's one name (see the method
@@ -3521,9 +3600,24 @@ class TypeScriptAnalysisRunner {
     // member and a class-declaration member are resolved by ONE contract
     // instead of two hand-rolled walks that disagreed.
     const ownerName = containerOwnerName(node)
+    // R10: an UNBOUND literal has no owner, and its members must not borrow the
+    // enclosing one. This used to fall back to `getOwnerInfo()`, which is
+    // invisible at module level (no scope to inherit) and wrong everywhere
+    // else: `class K { go() { return { m(){} } } }` emitted `contains K->m`,
+    // telling the graph that class K has a member `m` when `m` belongs to a
+    // temporary object one of its methods returns. Measured across both twins
+    // (typescript and javascript agree on the false edge, so this is a shared
+    // defect, not a divergence) and in every enclosing-scope shape: a method
+    // body, a static method, a nested callback, a namespace function.
+    //
+    // The bound case was always right and is untouched: `const o = { m(){} }`
+    // inside a method gives `ownerName === "o"`, and `class K { go() { const o
+    // = { m(){} } } }` already emitted no `K->m`. So the fallback was never
+    // load-bearing for a literal that HAS a name; it only ever fired for the
+    // nameless ones, which is exactly where it invented an owner.
     const ownerInfo = ownerName
       ? { ownerName, ownerKind: ASTEngine.SymbolKind.Constant as unknown as ASTEngine.SymbolKind }
-      : this.scopeManager.getOwnerInfo()
+      : undefined
     // Reuse extractMethod for full parity (params, complexity, qualified_calls,
     // taint payloads) with the owner info swapped in afterwards.
     const before = symbols.length
@@ -3535,6 +3629,13 @@ class TypeScriptAnalysisRunner {
           s.ownerName = ownerInfo.ownerName
           s.ownerKind = ownerInfo.ownerKind
           s.scope = ownerInfo.ownerName
+        } else {
+          // extractMethod seeds owner/scope from the enclosing scope; clear them
+          // so a nameless literal's member is ownerless, which is what the
+          // module-level case already produced.
+          s.ownerName = undefined
+          s.ownerKind = undefined
+          s.scope = undefined
         }
       }
       // extractMethod pushed a Method scope named after the METHOD — for
