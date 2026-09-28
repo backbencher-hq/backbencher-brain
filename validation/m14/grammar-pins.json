@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T09:15:58.960Z",
-  "commit": "1e6dfab117ef9adcc26c3f930d2403450d030e8f",
-  "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell); the shape extends to any lane with an entry in script/m14/verify-grammar-pins.ts",
-  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+  "generatedAt": "2026-09-28T17:36:07.210Z",
+  "commit": "6844268d4ec9683155a69bf62029bca668d96798",
+  "scope": "every lane with an entry in the LANES map of script/m14/verify-grammar-pins.ts (clean, clojure, css, elixir, erlang, fsharp, haskell, json, markdown, powershell, yaml — 11 lanes as of this write). The MAP is the authority and this string is only a reader's summary of it, which is exactly why it was wrong for months: it said \"the six functional-family lanes\" while the map held ten. A field that describes a list should not be a hand-maintained copy of that list, and the cheapest way to stop it drifting is to name the map as the source of truth rather than to re-type the members as prose.",
+  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. A lane that loads MORE THAN ONE grammar at runtime — markdown does: the block grammar plus the tree-sitter-markdown_inline companion the engine pre-parses every inline node with — records its companions under `companions` and is gated on them identically: bytes, length and all ten surface keys, in BOTH directions, so a companion that appears, vanishes, or changes a single node-type id fails. The companions exist because the alternative was measured: the inline grammar carried no sha256 anywhere in this repository while supplying every `uses` edge the lane emits, and the F1 grammar audit had already been fooled once by an oracle that read only the primary grammar. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
     "haskell": {
       "wired": {
@@ -11,6 +11,7 @@
         "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
         "bytes": 3805902
       },
+      "companions": [],
       "surface": {
         "ids": 552,
         "uniqueNames": 450,
@@ -193,6 +194,7 @@
         "sha256": "729731fb83e4cd26f42216d4db6a37ce1144165435a670b5b403bd26887020a1",
         "bytes": 206409
       },
+      "companions": [],
       "surface": {
         "ids": 195,
         "uniqueNames": 185,
@@ -275,6 +277,7 @@
         "sha256": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2",
         "bytes": 156495
       },
+      "companions": [],
       "surface": {
         "ids": 153,
         "uniqueNames": 131,
@@ -369,6 +372,7 @@
         "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
         "bytes": 1412267
       },
+      "companions": [],
       "surface": {
         "ids": 235,
         "uniqueNames": 202,
@@ -468,6 +472,7 @@
         "sha256": "16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e",
         "bytes": 12613928
       },
+      "companions": [],
       "surface": {
         "ids": 544,
         "uniqueNames": 510,
@@ -545,6 +550,7 @@
         "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
         "bytes": 401807
       },
+      "companions": [],
       "surface": {
         "ids": 338,
         "uniqueNames": 300,
@@ -586,6 +592,7 @@
         "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
         "bytes": 91957
       },
+      "companions": [],
       "surface": {
         "ids": 73,
         "uniqueNames": 73,
@@ -620,6 +627,7 @@
         "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
         "bytes": 6743856
       },
+      "companions": [],
       "surface": {
         "ids": 280,
         "uniqueNames": 276,
@@ -647,6 +655,7 @@
         "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
         "bytes": 5961
       },
+      "companions": [],
       "surface": {
         "ids": 26,
         "uniqueNames": 26,
@@ -682,6 +691,7 @@
         "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
         "bytes": 189255
       },
+      "companions": [],
       "surface": {
         "ids": 301,
         "uniqueNames": 140,
@@ -783,6 +793,7 @@
         "sha256": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6",
         "bytes": 1168838
       },
+      "companions": [],
       "surface": {
         "ids": 429,
         "uniqueNames": 421,
@@ -811,6 +822,30 @@
           "grammar.js": {
             "sha256": "b1a96075a192a77cb88343314a965d90eac2a9e1a9d32a9380e490874517923a",
             "bytes": 62646
+          },
+          "h4.ps1": {
+            "sha256": "69b1aab94f816be3105cc9f26f5f47b8566e00bbfbf44612b63df619e9ca82bd",
+            "bytes": 12
+          },
+          "h5.ps1": {
+            "sha256": "39632eb6bd4f87c47b2a603996982e9019fd051eb0869c44ae4abe89e6f0db44",
+            "bytes": 15
+          },
+          "h6.ps1": {
+            "sha256": "20f27ac75a988b7689f5f5a31227fd11fcc02b58013a7a2d57617062bd620a4f",
+            "bytes": 13
+          },
+          "h7.ps1": {
+            "sha256": "21e454abe4da88ac7b89701455388ffe4e23abf6f4a1d9d72f35620578595500",
+            "bytes": 15
+          },
+          "h8.ps1": {
+            "sha256": "28bac40f4ad393a1ed6ebd5fd2180a2b9ae04055712a23bb40957fedc79e1789",
+            "bytes": 13
+          },
+          "h9.ps1": {
+            "sha256": "4558790074dfbee40a9903cd05e8f3e782970b157ffe1bd1c9a7f26e20043e92",
+            "bytes": 11
           },
           "LICENSE": {
             "sha256": "1fca8454c0d77a73f9922a52d39e1f7c339f5da5d03f2766eff66b859fa19477",
@@ -857,8 +892,8 @@
             "bytes": 855
           }
         },
-        "digest": "3108a3259e9c94e8482059a09f465821ba3ccaac1a1923434511691cdc977f06",
-        "fileCount": 12
+        "digest": "dfb311128ec84a386e7ee2d0b1bee75ac646e3a9a478177f1ac8690917d20529",
+        "fileCount": 18
       },
       "sourceVsWasm": {
         "nodeTypesJson": "grammars/tree-sitter-powershell/src/node-types.json",
@@ -869,6 +904,65 @@
         "missingInWasm": [],
         "allowedWasmExtras": [],
         "namedOnlyInWasm": []
+      }
+    },
+    "markdown": {
+      "wired": {
+        "file": "wasm/tree-sitter-markdown.wasm",
+        "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+        "bytes": 421534
+      },
+      "companions": [
+        {
+          "file": "wasm/tree-sitter-markdown_inline.wasm",
+          "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+          "bytes": 426020,
+          "surface": {
+            "ids": 153,
+            "uniqueNames": 145,
+            "namedIds": 34,
+            "namedUnique": 26,
+            "anonIds": 119,
+            "anonUnique": 119,
+            "fieldCount": 0,
+            "idOrderDigest": "75b95fbcd7f910aa0932e96addb8475216807bf231c78cadd0da0aaab6d01b14",
+            "typeSetDigest": "00fcdca77b7ac379eb7711c0cb4d9e521953132e3463cacde67baef6ece8a4cb",
+            "fieldSetDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "surface": {
+        "ids": 207,
+        "uniqueNames": 194,
+        "namedIds": 64,
+        "namedUnique": 51,
+        "anonIds": 143,
+        "anonUnique": 143,
+        "fieldCount": 1,
+        "idOrderDigest": "851b8973c1516a3a7746d6fe5b4d172f6188ab3ea03f7c51e7a140d869a5c791",
+        "typeSetDigest": "6582ec3895582ccc6693afd282d8d28f1a66fe711d82205ee0be866b2f16d0a8",
+        "fieldSetDigest": "478b6c6aaf9935500483e1467c3a562d8c0f6f836d648213e347214c223e8657"
+      },
+      "copies": [
+        {
+          "label": "wasm registry copy of the block grammar",
+          "path": "~/.bb/wasm/tree-sitter-markdown.wasm",
+          "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+          "byteIdentical": true
+        },
+        {
+          "label": "wasm registry copy of the INLINE companion grammar",
+          "path": "~/.bb/wasm/tree-sitter-markdown_inline.wasm",
+          "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+          "byteIdentical": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
       }
     }
   },
@@ -1370,6 +1464,51 @@
         {
           "path": "tree-sitter-powershell.wasm",
           "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
+    "markdown": {
+      "provenance": {
+        "kind": "unnamed-build-sha-only",
+        "chain": "NOT provenanced to a published version from inside this tree, and the lane says so rather than guessing. `docs/analyzers/real-markdown-analyzer.md` records that `script/m60/find-grammar-provenance.ts` matched the BLOCK wasm by exact sha256 against a published artifact of `@tree-sitter-grammars/tree-sitter-markdown@0.5.1` (3e13182f21373634…, 421,534 B), and that the match came from a GITHUB RELEASE ASSET rather than an npm tarball because the package's repository publishes a prebuilt wasm per release. That claim is INHERITED, not re-derived here: the artifact it cites (`validation/m60/results/G-PROVENANCE.json`) has no markdown row, and no local copy of the package is reachable offline, so neither the block nor the inline wasm could be re-hashed against a published one. INHERITING IT AS IF IT WERE MEASURED IS THE THING THIS RECORD EXISTS TO PREVENT, so it is recorded as a chain and the two things that WERE measured are recorded beside it.\n\nWHAT WAS ESTABLISHED, and it is the part that decides whether the analyzer is safe:\n  1. BOTH wasms are byte-identical to the copies the wasm registry serves (~/.bb/wasm/tree-sitter-markdown.wasm and ~/.bb/wasm/tree-sitter-markdown_inline.wasm). Measured by sha256 on both sides; recorded under `copies` so the gate fails if either stops matching. A dev run and a compiled run therefore see the same grammars.\n  2. Neither grammar is vendored (`grammars/` has no tree-sitter-markdown), so there is no grammar.js, no src/node-types.json and no scanner to diff against the wired bytes. The source<->wasm proof the haskell, elixir, css, fsharp, clojure, clean, yaml and powershell lanes run CANNOT run for this lane, and the pin rests on byte identity plus the fully enumerable surface instead.\n  3. The ANALYZER matches on node-type NAMES and never on a numeric id, so it is immune to the id-order divergence that separates two builds of one grammar source — the json lane documents that hazard at length. The id-order digest is recorded for both grammars anyway, because it is the only thing that would separate two builds of THIS source.\n\nWHAT IS NOT ESTABLISHED: that these bytes are the 0.5.1 release, for EITHER grammar. The block wasm's match is inherited from a doc; the inline wasm has no provenance claim at all, anywhere, and the pin makes none. Re-deriving both needs network access to the release assets and is owed."
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "grammars/ has no tree-sitter-markdown directory, so there is no vendored grammar.js, no node-types.json and no scanner to diff against either wired wasm. The source<->wasm check cannot run for this lane in either direction, and the pin therefore rests on byte identity, the enumerable surface, and the name-not-id property of the analyzer. Stated rather than approximated."
+      },
+      "decision": "Pin BOTH grammars by sha256 + full enumerable surface, list the registry copies as byte-identical for each, and declare the provenance class `unnamed-build-sha-only` rather than inheriting the doc's 0.5.1 claim as if it had been measured in this round. The claim is plausible and cited; it is not established, and the difference between those two is the whole subject of this record.",
+      "alternatives": [
+        {
+          "option": "record `byte-identical-to-npm-tarball` for @tree-sitter-grammars/tree-sitter-markdown@0.5.1, on the strength of the lane doc's existing claim",
+          "measured": "REFUSED as unsupported by this round. The census artifact the claim cites carries no markdown row, and the class asserts the bytes ARE the published tarball's, which is stronger than 'a published artifact hashes to these bytes' (a release asset is not the tarball). Recording the stronger class on the weaker evidence is how a pin becomes a decoration.",
+          "artifact": "validation/m60/results/G-PROVENANCE.json (no markdown row); sha256 of both wasms vs the registry copies"
+        },
+        {
+          "option": "pin only the block grammar, as the other ten lanes do",
+          "measured": "REFUSED, and it is the option this entry was written to close. The inline grammar supplies every `uses` edge the lane emits, so pinning the block grammar alone would leave the load-bearing input unpinned — and the F1 oracle had already been caught reading only the block grammar, which is how `uri_autolink` and `email_autolink` sat in the dead-literal record for 35 days as branches that 'can never match' when both are live named types of the companion (ids 37, 38).",
+          "artifact": "audit-analyzer-grammar.ts EXTRA_GRAMMARS; validation/m14/grammar-audit-baseline.json (markdown 2 -> 0, repayment recorded)"
+        },
+        {
+          "option": "vendor the grammar source so the source<->wasm proof can run, as eight other lanes do",
+          "measured": "NOT TAKEN in this round, and named as owed rather than dismissed. The source class is a release asset, not an npm tarball, so 'vendoring the tarball tree' has no source tree to copy; obtaining the repository's grammar.js and regenerating from it would be a build-identity question this round did not answer.",
+          "artifact": "grammars/ (12 lanes vendored, no tree-sitter-markdown)"
+        }
+      ],
+      "evidence": [
+        "sha256 + size of both wired grammars, and of both registry copies, in this record",
+        "the enumerable surface (ids/named/anon/fieldCount + three digests) for both grammars, in this record",
+        "validation/m14/grammar-audit-baseline.json — markdown 2 -> 0, with the repayment that the F1 oracle was missing the companion",
+        "validation/m60/results/G-PROVENANCE.json — has NO markdown row, which is why the provenance class is unnamed-build",
+        "docs/analyzers/real-markdown-analyzer.md — the two-grammar design and the inherited 0.5.1 claim"
+      ],
+      "notVendored": [
+        {
+          "path": "grammar.js / src/grammar.json / src/node-types.json",
+          "why": "not vendored; the package publishes a prebuilt per-release wasm, so there is no tarball source tree to copy byte-for-byte"
+        },
+        {
+          "path": "tree-sitter-markdown_inline.wasm",
+          "why": "the wired companion bytes; they live at wasm/ and are pinned by sha here via companionWasm"
         }
       ]
     }
