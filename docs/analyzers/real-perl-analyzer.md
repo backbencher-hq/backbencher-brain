@@ -199,11 +199,11 @@ text under `content` on every shape that needs the fallback.
   | mojo (M12 pinned, F5 lane) | 274 | 11,109 | 100% | 0 | 0 |
   | plack (second, F5 lane) | 225 | 2,387 | 100% | 0 | 0 |
   | perl5 core | 3,607 | 48,138 | 100% | 0 | 0 |
-  | Moose-2.4000 | 961 | 11,987 | 100% | 0 | 0 |
-  | Catalyst-Runtime-5.90132 | 465 | 6,451 | 100% | 0 | 0 |
-  | Moo-2.005005 | 141 | 1,487 | 100% | 0 | 0 |
-  | DBI-1.654 | 101 | 2,383 | 100% | 0 | 0 |
-  | **all seven** | **5,774** | **83,942** | **100%** | **0** | **0** |
+  | Moose-2.4000 | 961 | 11,979 | 100% | 0 | 0 |
+  | Catalyst-Runtime-5.90132 | 465 | 6,450 | 100% | 0 | 0 |
+  | Moo-2.005005 | 141 | 1,484 | 100% | 0 | 0 |
+  | DBI-1.654 | 101 | 2,367 | 100% | 0 | 0 |
+  | **all seven** | **5,774** | **83,914** | **100%** | **0** | **0** |
 
   **Auditing the corpora the census walks but the F5 lane never sampled is what
   found the defects in this wave**, and it is worth saying why two F5 corpora
