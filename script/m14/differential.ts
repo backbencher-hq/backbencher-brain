@@ -14695,16 +14695,69 @@ export function normalizeSelector(raw: string): string {
  * which is not hypothetical: the first version of `deriveScssEdges` had no rule owner
  * at all and derived zero `uses` edges for a file with six `@include`s.
  */
+/**
+ * Whether a `selectors` node's text is actually a SELECTOR rather than mis-spanned
+ * block content.
+ *
+ * Grammar recovery can give a `selectors` node a text range that covers DECLARATIONS,
+ * and it does so WITHOUT an ERROR ancestor — measured on
+ * `element-plus/packages/theme-chalk/src/input-number.scss`, where one `selectors`
+ * node's text was a run of `padding-left: …; padding-right: …` declarations while the
+ * ERROR spans were elsewhere in the file entirely. Deriving a graph name from that
+ * produces a "selector" containing braces, colons and semicolons, which nothing can
+ * reference and which no consumer splitting on commas can use. It was 22 of the 50
+ * residue rows at full extent.
+ *
+ * The test rejects a `;` outright, and a `{` that is not part of an interpolation.
+ *
+ * The brace half is the subtle one and the first version got it WRONG in a way worth
+ * recording: it rejected any text containing `{` or `}`, and in SCSS `#{$x}` INTERPOLATION
+ * is spelled with braces — so it threw away every interpolated selector, which in the
+ * element-plus corpus is most of them. Truth fell from 594 rows to 363 and 237 edges
+ * became UNEXPLAINED, which is the direction that says "the truth got smaller", and the
+ * only honest reading of a truth that shrank is that the truth is wrong.
+ *
+ * So: a `{` immediately preceded by `#` opens an interpolation and is part of the name;
+ * any other `{` is a block. A `;` is never part of a selector under either reading.
+ */
+export function looksLikeSelectorText(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === ";") return false
+    if (c === "{" && text.charAt(i - 1) !== "#") return false
+  }
+  return text.trim().length > 0
+}
+
 export function resolveNestedSelector(asWritten: string, parent: string): string | null {
   if (!asWritten) return null
   const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
   const parents = parent.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
   if (members.length === 0 || parents.length === 0) return null
+  //
+  // `&` EXPANDS PER PARENT MEMBER, and this is the last of the comma-group fixes.
+  //
+  // `&` stands for the ENCLOSING SELECTOR. When that selector is a group, each member
+  // stands for its own member of it — so `&:first-child` under
+  //
+  //     h1, h2, h3, h4, h5, h6 { &:first-child { … } }
+  //
+  // is SIX selectors, one per parent. Substituting the comma-JOINED parent instead
+  // produced
+  //
+  //     h1, h2, h3, h4, h5, h6:first-child
+  //
+  // which suffixes only the LAST member and leaves the other five as a claim the author
+  // never made. Measured on `element-plus/packages/theme-chalk/src/reset.scss` L40-45,
+  // and it was the single largest residue class at full extent — 33 MISSING and 35
+  // UNEXPLAINED rows, 68 of 100, the same disagreement counted from both directions.
+  //
+  // The analyzer already had this right.
   const resolved: string[] = []
   for (const p of parents) {
     for (const member of members) {
       resolved.push(
-        member.includes("&") ? normalizeSelector(member.split("&").join(parent)) : normalizeSelector(`${p} ${member}`),
+        member.includes("&") ? normalizeSelector(member.split("&").join(p)) : normalizeSelector(`${p} ${member}`),
       )
     }
   }
@@ -14947,7 +15000,7 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
       if (afterKeyword.length > 0) nextOwner = `${atKeyword} ${afterKeyword}`
     } else if (n.type === "rule_set") {
       const sels = kidOfType(n, "selectors")
-      if (sels) {
+      if (sels && looksLikeSelectorText(textOf(sels))) {
         const asWritten = collapse(textOf(sels))
         // The rule OWNS what is inside it, and that is what an `@include`, an
         // `@extend` or a `$var` read inside it must be sourced from.
@@ -15411,7 +15464,7 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
     let childParent = enclosingSelector
     if (n.type === "rule_set") {
       const inner = children(n).find((c: any) => c.type === "selectors")
-      const asWritten = inner ? normSelector(textOf(inner)) : null
+      const asWritten = inner && looksLikeSelectorText(textOf(inner)) ? normSelector(textOf(inner)) : null
       // CSS-D8: a RESET selector — `*`, `*::before`, `*|a` — carries no semantic
       // symbol and is suppressed, and a mixed group is SPLIT so the reset members are
       // dropped and the real ones are kept under their own names. The oracle has to

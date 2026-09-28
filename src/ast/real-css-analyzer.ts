@@ -142,6 +142,31 @@ function leadingCustomIdent(prelude: string): string {
   return m ? m[1] : ""
 }
 
+/**
+ * Whether a `selectors` node's text is a SELECTOR rather than mis-spanned block
+ * content.
+ *
+ * A `;` is never part of a selector. A `{` is part of one only when it opens an
+ * INTERPOLATION — SCSS spells `#{$x}` with braces — so a blanket brace test would throw
+ * away every interpolated selector, which in a real Sass corpus is most of them.
+ * Measured: the blanket version cost 231 truth rows and produced 237 unexplained edges.
+ * Any other `{` is a block, and a selector containing a block is not a selector.
+ *
+ * Defined HERE rather than imported from the differential harness, on purpose: the
+ * analyzer must not depend on a test file in order to know what a selector is. The same
+ * predicate exists in `differential.ts` because an oracle that shares code with the
+ * thing it checks is not an independent check — two implementations of one rule is the
+ * price of independence, and it is worth paying in a predicate this small.
+ */
+function looksLikeSelectorText(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === ";") return false
+    if (c === "{" && text.charAt(i - 1) !== "#") return false
+  }
+  return text.trim().length > 0
+}
+
 function collapseWhitespace(text: string): string {
   let out = ""
   let pendingSpace = false
@@ -1186,6 +1211,28 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
 
+    //
+    // A `selectors` node whose text is not a SELECTOR publishes nothing.
+    //
+    // Grammar recovery can give the node a text range that covers DECLARATIONS, and it
+    // does so WITHOUT an ERROR ancestor. Measured on
+    // `element-plus/packages/theme-chalk/src/input-number.scss`, where one `selectors`
+    // node's text was
+    //
+    //   `.#{$namespace}-input__wrapper padding-left: #{map.get(…)};\n  padding-right: …`
+    //
+    // and the lane published it as a symbol name — a "selector" containing braces,
+    // colons and semicolons, which nothing can reference and no consumer splitting on
+    // commas can use. It reached the differential as an UNEXPLAINED edge, i.e. a
+    // fabrication.
+    //
+    // The test rejects a `;` outright and a `{` that is not part of an INTERPOLATION:
+    // in SCSS `#{$x}` is spelled with braces, so a blanket brace test throws away every
+    // interpolated selector — which in the element-plus corpus is most of them. The
+    // first version made exactly that mistake and the truth fell from 594 rows to 363
+    // with 237 edges unexplained, which is the signature of a truth that got SMALLER,
+    // and the only honest reading of that is that the truth is wrong.
+    if (!looksLikeSelectorText(selectorsNode.text)) return null
     const rawParts = selectorsNode.text.split(",")
     const rawSelectors: string[] = []
     for (let i = 0; i < rawParts.length; i++) {
