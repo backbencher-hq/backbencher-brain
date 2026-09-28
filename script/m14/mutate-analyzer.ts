@@ -2730,8 +2730,7 @@ function svelteMemberReadCarriersDropped() {
   return (r: any) => ({
     ...r,
     relationships: (r.relationships ?? []).filter((e: any) => {
-      const c = String(e?.metadata?.context ?? "")
-      return !(e.type === "uses" && /Svelte (bind|class|style) directive/.test(c))
+      return !(e.type === "uses" && e?.metadata?.carrierDirective === true)
     }),
   })
 }
@@ -6954,7 +6953,7 @@ export const MUTANTS: Mutant[] = [
     id: "svelte/member-read-carriers-dropped",
     language: "svelte",
     defectClass: "underclaim",
-    description: "D12 obligation 1 of 2: the MEMBER-READ carriers are dropped. `bind:`, `class:` and `style:` each read a component member in the template, which is the S1 case, and every one was silent before the ruling — roughly 1,857 corpus occurrences including `bind:value` at 581, the most common attribute interaction in the corpus. Removing them drops the component's primary data-flow surface while the document still looks analysed. Caught by svelte/directive-carriers.",
+    description: "D12 obligation 1 of 2: the MEMBER-READ carriers are dropped. `bind:`, `class:` and `style:` each read a component member in the template, which is the S1 case, and every one was silent before the ruling — roughly 1,857 corpus occurrences including `bind:value` at 581, the most common attribute interaction in the corpus. Removing them drops the component's primary data-flow surface while the document still looks analysed. Selective on the `carrierDirective` provenance flag rather than on a blanket `uses` filter: a blanket drop is caught by a dozen unrelated fixtures and would prove nothing about D12, and the first version of this mutant used a `metadata.context` marker that only the CALL edges carry, so it SURVIVED. Caught by svelte/directive-carriers.",
     transform: svelteMemberReadCarriersDropped(),
   },
   {
