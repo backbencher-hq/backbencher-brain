@@ -9,6 +9,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { execSync } from "child_process"
+import { createHash } from "crypto"
 import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(Bun.main), "..", "..")
@@ -133,6 +134,175 @@ writeSealed(path.join(OUT, "r-differential.json"), {
   currentCommit: commit,
 })
 console.log(`r-differential.json  expected=${totalExpected} tp=${metrics.truePositive} fp=${metrics.falsePositive} fn=${metrics.falseNegative} P=${metrics.precision} R=${metrics.recall}`)
+
+// ---------------------------------------------------------------- 1a. R-oracle differential
+// The strongest check available: R 4.4.3 ITSELF decides which top-level names each
+// file binds, and the answer is compared to the analyzer's, name by name. The two
+// share no grammar, no code and no assumptions, which is the only reason the result
+// means anything.
+//
+// This is what caught the two errors a fixture suite structurally could not: a
+// wrong belief about `->` that the fixtures had been written to match, and an
+// identifier the grammar split in half. See docs/analyzers/real-r-analyzer.md.
+const ORACLE_SCRIPT = path.join(ROOT, "validation/m12/oracle/r-globals-oracle.R")
+const ORACLE_SHA = (() => {
+  try { return createHash("sha256").update(fs.readFileSync(ORACLE_SCRIPT)).digest("hex") }
+  catch { return null }
+})()
+const oracleRecordPath = process.env.BB_R_ORACLE_RECORD ?? "$HOME/fixtures/census/r-oracle-diff.json"
+let oracle: any = null
+try {
+  oracle = JSON.parse(fs.readFileSync(oracleRecordPath, "utf8"))
+} catch { /* the oracle is optional; its absence is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-oracle-differential.json"), {
+  schemaVersion: 1,
+  kind: "r_oracle_differential",
+  oracle: {
+    // The harness records the absolute path of the script it ran. That path is stripped
+    // here rather than spread through, because a sealed record naming a path outside the
+    // repository is a claim nobody can check from the repository.
+    ...(({ entry: _dropped, ...rest }) => rest)(oracle?.oracle ?? {
+      implementation: "R 4.4.3",
+      method: "R parse() builds the AST; a walk over R's own AST collects file-level bindings",
+    } as any),
+    entry: "validation/m12/oracle/r-globals-oracle.R",
+    // The script that produced these numbers is COMMITTED, and pinned by hash. It
+    // previously lived only in an unversioned scratch directory that this record named
+    // by absolute path, which meant the strongest result in this lane could not be
+    // regenerated from the repository at all -- an evidence record nobody else can
+    // reproduce is an assertion, not evidence. Re-run it with:
+    //   BB_R_LIST=<file-list> r-run -f validation/m12/oracle/r-globals-oracle.R
+    script: "validation/m12/oracle/r-globals-oracle.R",
+    scriptSha256: ORACLE_SHA,
+  },
+  present: oracle !== null,
+  totals: oracle?.totals ?? null,
+  repos: oracle?.repos ?? [],
+  disagreements: oracle?.disagreements ?? [],
+  note:
+    "R's own parser and AST decide which names a file binds; the analyzer decides the same question with " +
+    "tree-sitter-r; the answers are compared. Precision 1.0 / recall 1.0 means every binding R reports is " +
+    "published and no binding is published that R does not make. `declarationsNotBindings` counts S4/S7 " +
+    "registrations, which declare a class or generic without binding a variable of that name - a different " +
+    "fact from a variable binding, so it is reported rather than scored. " +
+    (oracle ? "" : "THE ORACLE DID NOT RUN IN THIS PROCESS; the numbers below are absent rather than carried over."),
+  currentCommit: commit,
+})
+console.log(
+  oracle
+    ? `r-oracle-differential.json  files=${oracle.totals.compared} bindings=${oracle.totals.bindings} ` +
+      `agreed=${oracle.totals.agreed} phantom=${oracle.totals.phantom} missed=${oracle.totals.missed} ` +
+      `P=${oracle.totals.precision.toFixed(6)} R=${oracle.totals.recall.toFixed(6)}`
+    : `r-oracle-differential.json  ORACLE ABSENT - run fixtures/corpus/r-oracle-diff.mts first`,
+)
+if (oracle && (oracle.totals.phantom !== 0 || oracle.totals.missed !== 0)) process.exitCode = 1
+
+// ---------------------------------------------------------------- 1a2. R-positions oracle
+// The binding differential above asks R WHICH NAMES a file binds. This asks WHERE they
+// are, using R's own token stream, so the line-number claim is no longer resting on a
+// substring test that a string literal or a comment could satisfy.
+//
+// It is recorded WITH its failures. The remaining 7 are a real, open defect -- for a
+// file containing non-ASCII, startIndex/endIndex are code-unit offsets and not bytes --
+// and a record that reported 0 problems here would be false. `symbolsNamedOutsideRange`
+// is that defect, counted rather than hidden.
+const POSITIONS_SCRIPT = path.join(ROOT, "validation/m12/oracle/r-positions-oracle.R")
+const POSITIONS_SHA = (() => {
+  try { return createHash("sha256").update(fs.readFileSync(POSITIONS_SCRIPT)).digest("hex") }
+  catch { return null }
+})()
+let positions: any = null
+try {
+  positions = JSON.parse(fs.readFileSync(
+    process.env.BB_R_POSITIONS_RECORD ?? "$HOME/fixtures/census/r-positions-oracle.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+const pt = positions?.totals
+writeSealed(path.join(OUT, "r-positions-oracle.json"), {
+  schemaVersion: 1,
+  kind: "r_positions_oracle",
+  oracle: {
+    implementation: "R 4.4.3",
+    method: "parse() then getParseData(); every identifier-bearing terminal with the line and column R recorded",
+    invariants: [
+      "a symbol's name BEGINS at an offset R recorded, and that offset is inside the analyzer's declared range",
+      "an edge's line holds an occurrence of its target that R's lexer produced",
+    ],
+    columnsAreTabExpanded: true,
+    namesInsideStringsAreLegitimate: "R requires S4 class names, slot names and contains= parents to be strings",
+    script: "validation/m12/oracle/r-positions-oracle.R",
+    scriptSha256: POSITIONS_SHA,
+    executed: false,
+  },
+  present: positions !== null,
+  vacuousPass: positions?.vacuousPass ?? null,
+  totals: pt ?? null,
+  openDefects: positions
+    ? [{
+        defect: "byteIndex is a code-unit offset, not a byte offset, for files containing non-ASCII",
+        measured: pt.symbolProblems,
+        why: "R places the name at a byte offset the analyzer does not report; the difference is the surplus UTF-8 bytes earlier in the file",
+        scope: "15 of 1174 R files in the pinned corpora",
+        note: "the range audit cannot see it: it recomputes offsets in the same unit, so two harnesses sharing a unit assumption agree with each other and are wrong together",
+        proven: (positions?.unitFinding?.PROVEN ?? null),
+        refuted: (positions?.unitFinding?.REFUTED ?? null),
+        remedy: positions?.unitFinding?.remedy ?? null,
+        status: "OPEN - the unit is proven and the scope bounded; the remedy is additive but touches a shared contract used by ~15 lanes, so it is a cross-lane decision and is not applied unilaterally here",
+      }]
+    : [],
+  currentCommit: commit,
+})
+console.log(
+  positions
+    ? `r-positions-oracle.json    symbols=${pt.symbolsChecked} outsideRange=${pt.symbolProblems} ` +
+      `edges=${pt.edgesChecked} lineMismatch=${pt.edgeProblems} spanMismatches=${pt.spanMismatches} ` +
+      `vacuous=${positions.vacuousPass}`
+    : `r-positions-oracle.json    ABSENT - run fixtures/corpus/r-positions-oracle.mts first`,
+)
+// A vacuous pass fails; the remaining symbol failures do NOT, and are carried above as an
+// open defect. Failing the gate on a known, bounded, documented defect would train
+// everyone to ignore a red gate.
+if (positions?.vacuousPass) process.exitCode = 1
+
+// ---------------------------------------------------------------- 1a3. the production path
+// Every other check in this lane constructs RealRAnalyzer directly, which skips grammar
+// resolution, the analyzer registry and the temp copy the engine hands to web-tree-sitter.
+// A green harness is not evidence that the PRODUCT uses what the harness used.
+let production: any = null
+try {
+  production = JSON.parse(fs.readFileSync(
+    process.env.BB_R_PRODUCTION_RECORD ?? "$HOME/fixtures/census/r-production-path.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-production-path.json"), {
+  schemaVersion: 1,
+  kind: "r_production_path",
+  why: production?.why ?? "ASTEngine.parseFile -> analyzer registry -> grammar resolution -> shipped wasm",
+  present: production !== null,
+  shippedSha256: production?.shippedSha256 ?? null,
+  loadedSha256: production?.loadedSha256 ?? null,
+  loadedIsShippedArtifact: production?.loadedIsShippedArtifact ?? null,
+  patch1HexFloatReachable: production?.patch1HexFloatReachable ?? null,
+  patch2DotDotIdentifierReachable: production?.patch2DotDotIdentifierReachable ?? null,
+  s7BindingEdgeLine: production?.s7BindingEdgeLine ?? null,
+  // A differing copy in a directory SEARCHED BEFORE the shipped one is a hazard; only
+  // loadedIsShippedArtifact is a breach. Keeping them apart matters: the engine caches the
+  // grammar in /tmp and reuses it, so the file actually loaded can be right while a stale
+  // shadow sits unused, and reporting that as a failure would train people to ignore it.
+  shadowCandidates: production?.shadowCandidates ?? [],
+  symbolsFromPublicApi: production?.symbolsFromPublicApi ?? null,
+  relationshipsFromPublicApi: production?.relationshipsFromPublicApi ?? null,
+  problems: production?.problems ?? ["THE PRODUCTION PATH WAS NOT EXERCISED; run fixtures/corpus/r-production-path.mts"],
+  currentCommit: commit,
+})
+console.log(
+  production
+    ? `r-production-path.json       loadedShipped=${production.loadedIsShippedArtifact} ` +
+      `patch1=${production.patch1HexFloatReachable} patch2=${production.patch2DotDotIdentifierReachable} ` +
+      `s7Line=${production.s7BindingEdgeLine} problems=${production.problems.length}`
+    : `r-production-path.json       ABSENT - run fixtures/corpus/r-production-path.mts first`,
+)
+// A missing, breached or broken production path is a real failure: it means the shipped
+// product does not do what the rest of this lane measured.
+if (!production || production.problems.length) process.exitCode = 1
 
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not

@@ -1,9 +1,9 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 4.85,
-    "loadAvgEnd": 5.19,
-    "sliceCount": 6
+    "loadAvgStart": 42.05,
+    "loadAvgEnd": 44.07,
+    "sliceCount": 1
   },
   "counts": {
     "java": {
@@ -1449,35 +1449,31 @@
       },
       "sampleSetHash": "93bd5239a044ad6d"
     },
-    "svelte:css": {
+    "terraform:hcl": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "truthRows": 68,
-      "covered": 68,
-      "coveragePct": 100,
-      "filesSampled": 60,
       "perf": {
-        "avgMsPerFile": null,
-        "loadAvg1AtPin": 41.17,
-        "note": "NOT MEASURED COMPARABLY. This host is at load ~40; the file's shared loadContext records loadAvg 4.85 -> 5.19 for the other rows, so a per-file cost measured here would be several times its peers for reasons that have nothing to do with the analyzer. Pinned as null rather than filled in. M14 F3 section F stays open until this is measured at a load comparable to loadContext -- do not 'fix' it by pasting a number measured on a busy box."
+        "avgMsPerFile": 2.1,
+        "maxMsPerFile": 26.8,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 42.51
       },
-      "sampleSetHash": "def94838c364b04e"
+      "sampleSetHash": "f31a3e00122c4639"
     },
-    "grails-core:css": {
+    "tf-aws-components:hcl": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
-      "truthRows": 475,
-      "covered": 475,
-      "coveragePct": 100,
-      "filesSampled": 60,
       "perf": {
-        "avgMsPerFile": null,
-        "loadAvg1AtPin": 41.17,
-        "note": "NOT MEASURED COMPARABLY. This host is at load ~40; the file's shared loadContext records loadAvg 4.85 -> 5.19 for the other rows, so a per-file cost measured here would be several times its peers for reasons that have nothing to do with the analyzer. Pinned as null rather than filled in. M14 F3 section F stays open until this is measured at a load comparable to loadContext -- do not 'fix' it by pasting a number measured on a busy box."
+        "avgMsPerFile": 6.2,
+        "maxMsPerFile": 182.8,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 44.07
       },
-      "sampleSetHash": "13f8825d05114cf8"
+      "sampleSetHash": "7c80eed7b9f98324"
     }
   },
   "hashes": {
@@ -1529,7 +1525,10 @@
     "svelte:svelte": "05b3e3087abed566",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
-    "svelte:css": "def94838c364b04e",
-    "grails-core:css": "13f8825d05114cf8"
+    "terraform:hcl": "f31a3e00122c4639",
+    "tf-aws-components:hcl": "7c80eed7b9f98324"
+  },
+  "pinProvenance": {
+    "scoped run (--pin-baseline)": "2026-09-27T23:56:32.010Z"
   }
 }

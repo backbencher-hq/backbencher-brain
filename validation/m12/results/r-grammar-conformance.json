@@ -3,7 +3,7 @@
   "kind": "r_grammar_conformance",
   "oracle": {
     "source": "wasm/tree-sitter-r.wasm, enumerated at verify time through web-tree-sitter's Language API",
-    "sha256": "a5cf0d30ccaf5350430dbdbe44d17080988a5838b6a56e072940884b3a5b89cc",
+    "sha256": "ea825fd3812bd0850e0a3ddef33a7abf02b8d0f140d4ef22d7a306f37265f9a6",
     "nodeTypeCount": 139,
     "fieldCount": 20,
     "namedTypes": [
@@ -141,6 +141,7 @@
       "argument",
       "arguments",
       "binary_operator",
+      "braced_expression",
       "call",
       "comma",
       "comment",
@@ -151,6 +152,7 @@
       "namespace_operator",
       "parameter",
       "parameters",
+      "parenthesized_expression",
       "return",
       "string"
     ],
@@ -172,10 +174,10 @@
   "regexLiterals": [],
   "commentBacktickMentionsExcluded": 2,
   "note": "Both the oracle and the analyzer's literals are produced in this run; nothing is a maintained list. The analyzer's only text-level operations are on a single node's own text: stripping one backtick pair from a quoted identifier, unquoting a `string` node's content via the grammar's `content` field with a first/last token fallback, detecting roxygen tags inside a `comment` token, and the S3 `generic.class` naming convention. The grammar exposes no sub-structure for any of those, so each is a justified text operation rather than source scanning.",
-  "currentCommit": "993b61aaeed0404842d4f4db4212144cc860d8e1",
+  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-27T05:26:28.695Z",
-    "contentSha256": "24a4ed024a8709d0048dd2bb53b2cffc2e8d98ccb7ff5a7ea508cfc7dca081df"
+    "sealedAt": "2026-09-28T03:07:52.045Z",
+    "contentSha256": "4d63ebae917276ba6f7481c3aff086e0d6538739d2d5cd6d59bcc32462ca3474"
   }
 }

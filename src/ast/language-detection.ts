@@ -8,7 +8,7 @@ export type DetectedLanguage =
   | "bash" | "powershell" | "hcl" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
 
-const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
+export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
   html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css", scss: "css", sass: "css", less: "css",
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
@@ -45,7 +45,22 @@ const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   swift: "swift", dart: "dart", cs: "csharp", csx: "csharp", vb: "vb", fs: "fsharp", fsi: "fsharp", fsx: "fsharp",
   r: "r", sql: "sql", sh: "bash", bash: "bash", zsh: "bash", ps1: "powershell", psm1: "powershell", psd1: "powershell",
   tf: "hcl", tfvars: "hcl", tofu: "hcl", hcl: "hcl", m: "objective-c", mm: "objective-c",
-  md: "markdown", markdown: "markdown", toml: "toml", xml: "xml", xsd: "xml", dtd: "xml", proto: "protobuf",
+  md: "markdown", markdown: "markdown", toml: "toml", proto: "protobuf",
+  // M60 XML lane: `xml` was routed for `.xml`/`.xsd`/`.dtd` only, while the wired
+  // grammar's OWN `tree-sitter.json` declares `file-types: [xml, svg, xsd, xslt,
+  // xsl, rng]`. Three of the grammar's six declared types were unreachable, and
+  // the corpus cost is measured, not asserted: 617 `.xsl`, 31 `.xslt`, 155 `.svg`
+  // and 110 `.rng` files across the lane's 6 pinned repos — 913 XML documents
+  // that bb never opened. Routing is taken from the grammar's own declaration
+  // rather than from taste.
+  //
+  // DELIBERATELY NOT ROUTED, under the M60 #913 ruling ("an extension whose
+  // format no pinned grammar can represent is NOT routed"): `.wsdl` (805 files),
+  // `.pom` (693), `.xhtml` (36) and `.plist` are XML-shaped, but the grammar
+  // does not declare them, so routing them would be a claim the grammar does not
+  // back. They stay invisible and are recorded as owed in
+  // `reviews/xml/master-review.md` §F — visible debt rather than a silent gap.
+  xml: "xml", xsd: "xml", dtd: "xml", svg: "xml", xsl: "xml", xslt: "xml", rng: "xml",
   mk: "make", mak: "make", makefile: "make",
 }
 

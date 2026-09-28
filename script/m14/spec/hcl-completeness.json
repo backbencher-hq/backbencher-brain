@@ -1,0 +1,167 @@
+{
+  "language": "hcl",
+  "grammar": "tree-sitter-hcl.wasm",
+  "grammarPin": {
+    "upstream": "tree-sitter-grammars/tree-sitter-hcl",
+    "rev": "64ad62785d442eb4d45df3a1764962dafd5bc98b",
+    "package": "@tree-sitter-grammars/tree-sitter-hcl@1.2.0",
+    "wiredSha256": "86bb80cd151bd3ab1e44ed431a9c1874978db31519c62055efb50f028a1d0118",
+    "vendoredSource": "grammars/tree-sitter-hcl",
+    "gate": "bun run script/m14/verify-grammar-pins.ts",
+    "sourceVsWasm": "all 64 declared names present (0 supertypes hidden by design), 64 wasm-named types all declared, 0 built-in extras"
+  },
+  "corpus": {
+    "_note": "63 of the grammar's 64 named node types occur in the measured corpus; `template_else_intro` does not (no `%{ else }` directive in 9 repos) and is classified from the grammar. `ERROR` is tree-sitter's runtime node, absent from node-types.json by design, and is observed on 244 files.",
+    "files": 9079,
+    "nodes": 1623844,
+    "repos": 9,
+    "grammarNamedTypes": 64,
+    "grammarTypesObserved": 63,
+    "grammarTypesNotObserved": [
+      "template_else_intro"
+    ],
+    "runtimeTypesObserved": [
+      "ERROR"
+    ],
+    "errorFiles": 244,
+    "missingNodes": 6
+  },
+  "handled_verified": {
+    "_rule": "the analyzer reads this node to produce a symbol, a relationship, an import, an export, or a metadata value; the behaviour is pinned by a fixture in validation/m14/fixtures/hcl except where corpus.grammarTypesNotObserved says no corpus example exists",
+    "types": [
+      "attr_splat",
+      "attribute",
+      "binary_operation",
+      "block",
+      "body",
+      "bool_lit",
+      "collection_value",
+      "conditional",
+      "config_file",
+      "expression",
+      "for_cond",
+      "for_expr",
+      "for_intro",
+      "for_object_expr",
+      "for_tuple_expr",
+      "full_splat",
+      "function_arguments",
+      "function_call",
+      "get_attr",
+      "heredoc_template",
+      "identifier",
+      "index",
+      "legacy_index",
+      "literal_value",
+      "new_index",
+      "null_lit",
+      "numeric_lit",
+      "object",
+      "object_elem",
+      "object_end",
+      "object_start",
+      "operation",
+      "quoted_template",
+      "quoted_template_end",
+      "quoted_template_start",
+      "splat",
+      "string_lit",
+      "template_directive",
+      "template_directive_end",
+      "template_directive_start",
+      "template_else_intro",
+      "template_expr",
+      "template_for",
+      "template_for_end",
+      "template_for_start",
+      "template_if",
+      "template_if_end",
+      "template_if_intro",
+      "template_interpolation",
+      "template_interpolation_end",
+      "template_interpolation_start",
+      "template_literal",
+      "tuple",
+      "tuple_end",
+      "tuple_start",
+      "unary_operation",
+      "variable_expr"
+    ]
+  },
+  "internal_silent": {
+    "_rule": "the analyzer reaches this node and correctly emits no declaration of its own \u2014 a delimiter, a punctuation token, trivia, or (for ERROR) a construct owned by ASTEngine that the analyzer descends through rather than reports. `ERROR` is deliberately NOT in this bucket: it is tree-sitter's RUNTIME node, absent from the wasm's id space and from node-types.json, so a row naming it would be the stale-row shape gate rule 2 rejects. It is recorded in corpus.runtimeTypesObserved and in design_decision HCL-D4 instead.",
+    "types": [
+      "block_end",
+      "block_start",
+      "comment",
+      "ellipsis",
+      "heredoc_identifier",
+      "heredoc_start",
+      "strip_marker"
+    ]
+  },
+  "gap": {
+    "_description": "No confirmed HCL emission gap remains. The two residuals are measured, adjudicated and RULED in design_decision (HCL-D3 the Go-template reference, HCL-D4 the unreachable swallow class) rather than left silent. Reference recall 0.999931 and precision 1.000000 against an independent grammar oracle over 9,079 files; 180,809/180,809 relationships carry the product's `line_number`; 0 empty names, 0 ownerless properties, 0 document/block identity collisions.",
+    "gaps": []
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "HCL-D1",
+        "node_type": "the five unemitted relationship kinds: calls, extends, implements, overrides, instantiates",
+        "status": "RULED",
+        "question": "The relationship taxonomy carries ten kinds. Can HCL express a call graph, a class hierarchy, or object construction?",
+        "resolution": "NOT APPLICABLE, and each half is measured rather than asserted. `extends`/`implements`/`overrides`: HCL has no type declaration, no base clause and no interface implementation among the grammar's 64 named node types, so the kinds are not merely unused but inexpressible. `instantiates`: HCL builds values with `object()`/`list()`, never instances of a declared type. `calls`: 12,977 `function_call` nodes over 144 distinct callees in 9,079 files, and NOT ONE callee resolves to a symbol the project declares, because the grammar provides no syntax for declaring one; the 5 that appear to match are provable name collisions (Terraform core functions `length`, `file`, `timestamp`, `lower`, and the type keyword `object` beside a declared `output \"object\"`). Every `calls` edge would therefore dangle, which is the shape java and groovy suppress with explicit builtin filters. The reference read INSIDE a call is still published. ENFORCED, not merely stated: run-fixtures.ts's UNIVERSAL_FORBIDDEN_RELATIONSHIPS for hcl refuses extends/implements into the reference roots var/local/module/data, and the hcl/builtin-vs-project-reference fixture forbids a `calls` edge to toset/merge/lookup. Adjudication: fixtures/hcl/out/calls-feasibility.json."
+      },
+      {
+        "id": "HCL-D2",
+        "node_type": "441 distinct block types across the measured corpus",
+        "status": "RULED",
+        "question": "The corpus contains 441 distinct block types; the analyzer classifies 8 Terraform top-level kinds and calls the rest nested. Is the remainder a gap?",
+        "resolution": "RULED, not a gap. The remainder is legitimate in its own DSLs \u2014 terragrunt include/dependency/feature, packer source/build, nomad job/task/group, consul/vault/boundary config \u2014 and each is a real block in the HCL container grammar, emitted as kind `class` with hclBlockKind `nested`, which is truthful. This lane extracts the HCL CONTAINER grammar; a terragrunt `dependency { config_path = ... }` is a block, and reading it as a cross-file edge would be a guess the grammar does not support. The 8 Terraform top-level kinds carry their own kind (resource/data -> class, variable/output -> variable, module/provider/terraform/locals -> module)."
+      },
+      {
+        "id": "HCL-D3",
+        "node_type": "Go-template directives read as reference paths (2 occurrences, 1 file)",
+        "status": "RULED",
+        "question": "The corpus differential's only 2 MISSED references are `range.requiredVariables` and `if.requiredVariables`, from terragrunt/test/fixtures/catalog/local-template/.boilerplate/terragrunt.hcl. Defect?",
+        "resolution": "RULED, analyzer-is-faithful. That file is a Go text/template that happens to be named `.hcl`; `{{- range .requiredVariables }}` is not HCL, and the grammar parses `{{-` as a binary operation whose operands read as a two-segment path, so the emission is faithful to the bytes. Suppressing it would mean keying on the template words if/range/with/define, which are also legal HCL identifier bases \u2014 the rule would cost more than the 2 occurrences in 9,079 files it removes. Recorded rather than hidden: this is the entire measured recall residual, 0.000069."
+      },
+      {
+        "id": "HCL-D4",
+        "node_type": "swallow class \u2014 a block the grammar never produces under template damage (2 files)",
+        "status": "RULED",
+        "question": "boundary/internal/cmd/commands/config/fixtures/config_ext_decrypt.hcl holds a real `kms \"aead\" { \u2026 }` after two Go-template `{{decrypt(\u2026)}}` lines, and the analyzer emits 1 symbol where minimal reconstruction yields 4. Is a declaration being swallowed?",
+        "resolution": "RULED, with the loss measured rather than asserted. The grammar decomposes the block into identifier + literal_value + an expression/collection_value/object and emits NO `block` node at all, so a block-driven walker has nothing to find; the same shape occurs in 2 of 9,079 files (22 ppm). Proven by minimal reconstruction through parseFile \u2014 the method the lane formula prescribes: deleting the two template lines recovers kms.aead plus purpose and aead_type, 4 symbols against 1. No heuristic recovery was added: a rule keyed on this damaged shape is a confidence-<1 guess over 2 files, which costs more in false-edge risk than it recovers. The REACHABLE form of the class \u2014 a real `block` node inside an ERROR region \u2014 is handled: the walker descends through ERROR nodes, which is why the 244 corpus ERROR files still yield 135,645 symbols."
+      },
+      {
+        "id": "HCL-D5",
+        "node_type": "duplicate attribute key inside one block (21 corpus identities)",
+        "status": "RULED",
+        "question": "After sibling disambiguation 21 (scope,name) pairs still repeat, all ATTRIBUTE keys rather than blocks: `terraform.backend.local|path` on lines 3 and 4, `duplicate|foo` in a file named duplicate.tfvars, `import|id`, `storage.raft|retry_join` eight times. Disambiguate them too?",
+        "resolution": "RULED, deliberately NOT disambiguated. A repeated key in one block is rejected by Terraform outright ('Attribute redefined'), so the collision is inherited from invalid input, and inventing a second identity for it would misrepresent a file that does not exist in the language. BLOCKS are disambiguated \u2014 many legitimately repeat, which is what HCL-D2's 441 types are made of \u2014 because a repeated block is legal. Every one of the 21 sits in a file whose name or path declares the intent: invalid-backend-configuration/repeated-attr, duplicate.tfvars, agent_config_duplicate_keys.hcl, raft_retry_join_attr.hcl."
+      },
+      {
+        "id": "HCL-D6",
+        "node_type": "a quoted attribute key (`\"k\" = v`)",
+        "status": "RULED",
+        "question": "The grammar makes the whole enclosing block one ERROR node for a quoted attribute key, so the block's declarations are lost. Parse gap?",
+        "resolution": "RULED, correct per specification. HCL2's native syntax defines Attribute as `Identifier \"=\" Expression`, so a quoted key is not the native spelling; the JSON-ish spelling is a different file format that gets its own extension. Measured: nomad/command/agent/testdata/sample1/sample2.hcl (`\"advertise\" = {\u2026}`) is one of the 13 legitimately symbol-free corpus files. No recovery attempted \u2014 the input is not HCL."
+      },
+      {
+        "id": "HCL-D7",
+        "node_type": "ERROR \u2014 tree-sitter's runtime error node (not a grammar type)",
+        "status": "RULED",
+        "question": "`ERROR` is observed on 244 corpus files but is declared by no node type in the grammar, so where does it belong in a completeness classification whose rule is 'every node type the wasm produces is in exactly one bucket'?",
+        "resolution": "RULED, and deliberately kept OUT of all three buckets. The completeness gate's own rule 2 makes a row the wasm does not produce a stale row, and `ERROR` is produced by the parser at runtime, not declared by the grammar, so it has no stable place in a grammar-type census. What IS true about it is recorded where it can be checked: the analyzer emits nothing FOR an ERROR node and deliberately DESCENDS THROUGH it, which is what keeps a surviving declaration reachable under grammar damage. That descent is the mechanism behind the hcl/negative-syntax-error fixture, it is what yields 135,645 symbols across the 244 damaged corpus files, and the one shape it still cannot reach \u2014 a block the grammar never produces at all \u2014 is HCL-D4's 2 files in 9,079, measured and ruled."
+      },
+      {
+        "id": "HCL-D8",
+        "node_type": "the two reference CLASSES \u2014 a project address vs a language builtin",
+        "status": "RULED",
+        "question": "`references` and `uses` are distinct values in the taxonomy and HCL emits both. What decides which one an edge gets, and is the distinction real or cosmetic?",
+        "resolution": "REAL, and it was wrong before this wave. The house precedent is real-sql-analyzer.ts:1569 \u2014 a target in a GLOBAL namespace is `uses`, a project symbol is `references`. HCL's reference roots divide exactly that way, and the analyzer was publishing BOTH classes as `references`: 2,029 edges (4.6% of all references) whose root is count/each/self/path/terraform, led by path.module (506), each.key (325), each.value (285) and count.index (214). None of those resolve in the index \u2014 no file can declare them, since `count.index` exists wherever a `count` argument does. Publishing them as `references` asserted a declaration that does not exist. They are now `uses` with evidenceClass `builtin_qualified` and `hclBuiltin: true`; the 41,882 project addresses keep `references` with `reference_qualified` (41,882 + 2,029 = 43,911, unchanged \u2014 nothing added or dropped, only labelled). The class boundary is enforced in BOTH directions, because the two errors are not symmetric: a builtin published as `references` asserts a phantom declaration, and a project address published as `uses` demotes a real declaration out of the reference graph and out of every consumer that follows `references`. The corpus differential therefore checks the LABEL as well as the target and reports `mislabelled: 0`; hcl/builtin-vs-project-reference pins both halves, with the mutants hcl/builtin-published-as-reference and hcl/project-published-as-builtin."
+      }
+    ]
+  }
+}
