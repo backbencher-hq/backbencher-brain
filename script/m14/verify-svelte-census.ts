@@ -170,6 +170,39 @@ const REJECTED = new Map<string, string>([
   ["{@constfoo}", "REJECTED — the same invalid-`{@tag}`-spelling shape, in a compiler-error sample. `{@const}` requires whitespace before its name."],
 ])
 
+// --- DIMENSION 3: THE DIRECTIVE CARRIER SPACE -------------------------------
+// Found by this gate: eight Svelte directive families produced no edge of any kind
+// and had NO declared ruling anywhere — zero mentions in the spec, zero in the
+// analyzer. Roughly 2,049 corpus occurrences were silent, more than double the
+// `on:` carriers that did work, including `bind:value` at 581.
+//
+// WHY A NODE-TYPE CENSUS CANNOT FIND THIS, which is the structural lesson. Section A
+// classifies GRAMMAR NODE TYPES, and `attribute` was already marked handled_verified.
+// These eight families were hiding INSIDE a node type the gate had blessed. A handled
+// type can contain an unexamined space and no node-type gate will ever see it — which
+// is why the space had to be enumerated in its own right, by PREFIX, from the corpus.
+//
+// TAILWIND IS THE TRAP, and it is why discovery strips quoted values first.
+// `md:grid-cols-2`, `dark:bg-background`, `hover:text-primary` and `after:absolute`
+// carry the exact `prefix:value` shape of a directive and live inside a quoted
+// `class` value. 765 such tokens are text inside attribute values; counting them would
+// have declared four nonexistent Svelte directives and, worse, invited a
+// shape-matching rule that published all of them. Discovery below therefore reads
+// ATTRIBUTE NAMES only. `after:*` consequently does not appear at all — it was never a
+// Svelte directive.
+const CARRIER_FAMILIES = new Map<string, string>([
+  ["on", "INVOKED -> `calls`. D8: the framework calls the name."],
+  ["bind", "READS -> `uses` (0.95). Two-way, so the read half only; carries metadata.carrierDirective."],
+  ["class", "READS -> `uses` (0.95). A class TOGGLE's condition is a template read; the class name is not an identity."],
+  ["style", "READS -> `uses` (0.95). A style PROPERTY's value is a template read; the property name is not an identity."],
+  ["use", "INVOKED -> `calls`. An action is invoked on mount, by the same mechanism as on:."],
+  ["transition", "INVOKED -> `calls`. Invoked on state change."],
+  ["in", "INVOKED -> `calls`. The intro transition."],
+  ["out", "INVOKED -> `calls`. The outro transition."],
+  ["animate", "INVOKED -> `calls`. The animate directive."],
+  ["let", "DECLARES -> silent. A slot prop the component ACCEPTS is not a read of a member."],
+])
+
 // --- CORPUS DISCOVERY ------------------------------------------------------
 function walk(dir: string, out: string[]): void {
   let entries: fs.Dirent[]
@@ -194,6 +227,7 @@ const bare = new Map<string, number>()
 const dotted = new Map<string, number>()
 const svelteTags = new Map<string, number>()
 const blocks = new Map<string, number>()
+const carrierPrefixes = new Map<string, number>()
 for (const f of files) {
   let src: string
   try {
@@ -207,6 +241,45 @@ for (const f of files) {
     bucket.set(full, (bucket.get(full) ?? 0) + 1)
   }
   for (const m of src.matchAll(/<(svelte:[a-zA-Z]+)/g)) svelteTags.set(m[1], (svelteTags.get(m[1]) ?? 0) + 1)
+  // Carrier discovery reads ATTRIBUTE NAMES only, so quoted values and {expressions}
+  // are blanked first. A Tailwind token inside class="md:grid-cols-2" is text in a
+  // value, not a directive; without this the census would declare four nonexistent
+  // Svelte directives and license a shape-matching rule that published all of them.
+  // Greedy on purpose. A NON-greedy `<script[\s\S]*?<\/script>` is truncated by a
+  // `</script>` appearing inside a STRING, which left the tail of a script body in the
+  // scan and produced a phantom `disabled:*` prefix from a Tailwind token inside a
+  // JS string literal. Carriers are a TEMPLATE property, so removing from the first
+  // `<script` to the last `</script>` — which consumes every script block in the file —
+  // is the correct and simpler rule.
+  //
+  // Comments are stripped too, and that was the second instrument defect: an HTML
+  // comment reading `<!-- @migration-task: svelte:self is deprecated -->` matched as a
+  // `svelte:self` ATTRIBUTE. Prose is not an attribute, and without this the census
+  // would have declared three phantom "undeclared directives" and invited a ruling
+  // about constructs that do not exist.
+  let namesOnly = src
+    .replace(/<script[\s\S]*<\/script>/g, "")
+    .replace(/<style[\s\S]*<\/style>/g, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/=\s*"[^"]*"/g, '=""')
+    .replace(/=\s*'[^']*'/g, "=''")
+  // Expression values are stripped to FIXPOINT, not in one pass. `class={cn(...)}`
+  // is an expression, not a quoted string, and a single `/\{[^{}]*\}/` pass does
+  // nothing to it when the expression contains a NESTED brace (`cn('...', { v })`)
+  // — which is how three Tailwind prefixes (`disabled:`, `focus:`, `focus-visible:`)
+  // survived into the scan and nearly became three phantom "undeclared directives".
+  // Repeating until stable makes nesting depth irrelevant; the depth cap is a
+  // backstop against a pathological document, not a correctness knob.
+  {
+    let prev = ""
+    for (let depth = 0; depth < 32 && namesOnly !== prev; depth++) {
+      prev = namesOnly
+      namesOnly = namesOnly.replace(/\{[^{}]*\}/g, "{}")
+    }
+  }
+  for (const m of namesOnly.matchAll(/\s([a-zA-Z][\w-]*):([\w-]+)(?=[\s=/>])/g)) {
+    carrierPrefixes.set(m[1], (carrierPrefixes.get(m[1]) ?? 0) + 1)
+  }
   for (const m of src.matchAll(/\{([#:@])\s*([a-zA-Z_$][\w$]*)/g)) {
     const k = "{" + m[1] + m[2] + "}"
     blocks.set(k, (blocks.get(k) ?? 0) + 1)
@@ -300,6 +373,29 @@ for (const [k] of REJECTED) {
   )
 }
 
+// 5c. THE CARRIER SPACE. Every directive prefix in the corpus must carry a declared
+//     obligation. This is the rule with teeth for the space that hid inside a
+//     handled node type: a new Svelte directive fails here, rather than being
+//     silently unhandled on both sides while section A reports the `attribute` node
+//     type as verified.
+const undeclaredCarriers: Array<[string, number]> = []
+for (const [pre, count] of carrierPrefixes) {
+  if (!CARRIER_FAMILIES.has(pre)) undeclaredCarriers.push([pre, count])
+}
+note(
+  undeclaredCarriers.length === 0,
+  `${undeclaredCarriers.length} directive prefix(es) in the corpus carry no declared obligation: ` +
+    undeclaredCarriers.map(([p, c]) => `${p}:* (${c})`).join(", ") +
+    " — a new Svelte directive. Declare it in CARRIER_FAMILIES with what it owes the graph, or rule it rejected if the " +
+    "occurrence is an invalid spelling in a compiler-error sample. Do NOT match the `prefix:value` SHAPE: Tailwind tokens " +
+    "(`md:grid-cols-2`, `dark:bg-background`, `after:absolute`) have it and live inside quoted class values.",
+)
+
+// 5d. Every declared family must be exercised, or its disposition proves nothing.
+for (const [pre] of CARRIER_FAMILIES) {
+  note(carrierPrefixes.has(pre), `declared carrier family ${pre}:* does not occur in the corpus — its disposition is stale`)
+}
+
 // 6. Declared svelte builtins must be a real reserved-namespace reading: each must
 //    actually occur in the corpus, or the table carries a member nothing exercises.
 for (const t of DECLARED_SVELTE_BUILTINS) {
@@ -380,6 +476,44 @@ const nsResult: any = await ASTEngine.parseFile(nsFile, nsDoc)
 const nsInst = (nsResult.relationships ?? []).filter((e: any) => e.type === "instantiates").map((e: any) => e.target)
 try { fs.unlinkSync(nsFile) } catch {}
 note(!nsInst.includes("svelte:bogus"), `an undeclared member of the reserved namespace was PUBLISHED as a component: ${nsInst.join(", ")}`)
+
+// Carrier probes: run the analyzer over ONE document carrying every declared family
+// and assert the obligation each one declares. The read half and the call half are
+// checked separately because they are separate rulings, and `let:` is checked for
+// SILENCE because a family that declares no obligation must stay quiet — a census that
+// only ever checked for presence would not notice a rule that published everything.
+const CARRIER_PROBE = {
+  reads: ["m", "c", "col"],
+  invoked: ["act", "tr", "fly", "fade", "flip"],
+  silent: ["item"],
+}
+const carrierDoc = `<script>
+  let m = $state(0)
+  let c = $state(false)
+  let col = $state("red")
+  function act() {}
+  function tr() {}
+  function fly() {}
+  function fade() {}
+  function flip() {}
+</script>
+<button bind:value={m} class:on={c} style:color={col} use:act transition:tr in:fly out:fade animate:flip let:item>x</button>
+`
+const carrierFile = path.join("/tmp", `svelte-census-carriers-${Math.random().toString(36).slice(2)}.svelte`)
+fs.writeFileSync(carrierFile, carrierDoc)
+const carrierRes: any = await ASTEngine.parseFile(carrierFile, carrierDoc)
+try { fs.unlinkSync(carrierFile) } catch {}
+const cUses = new Set((carrierRes.relationships ?? []).filter((e: any) => e.type === "uses").map((e: any) => e.target))
+const cCalls = new Set((carrierRes.relationships ?? []).filter((e: any) => e.type === "calls").map((e: any) => e.target))
+for (const t of CARRIER_PROBE.reads) {
+  note(cUses.has(t), `carrier family that DECLARES a member read published no \`uses\` edge for ${t} — the whole point of the family is that it reads a member`)
+}
+for (const t of CARRIER_PROBE.invoked) {
+  note(cCalls.has(t), `carrier family that DECLARES a framework invocation published no \`calls\` edge for ${t} — an action or transition is invoked by the same mechanism as an on: handler`)
+}
+for (const t of CARRIER_PROBE.silent) {
+  note(!cUses.has(t) && !cCalls.has(t), `carrier family that DECLARES silence published an edge for ${t} — a declared no-obligation family must stay quiet`)
+}
 note(nsInst.includes("Child"), "the reserved-namespace rule suppressed real components — it must reject undeclared svelte:* only, not the whole neighbourhood")
 
 // --- REPORT ----------------------------------------------------------------
@@ -452,6 +586,17 @@ const evidence = {
         `that a bare-leaf fix for the missing runes would have silently swallowed`,
     },
     {
+      id: "census-carrier-space",
+      status: "pass",
+      description:
+        `every directive prefix in the corpus (${carrierPrefixes.size} distinct) carries a declared obligation ` +
+        `(${CARRIER_FAMILIES.size} families), with quoted values stripped so Tailwind tokens are never mistaken for ` +
+        `directives. FOUND BY THIS CHECK: eight families were silent with no ruling anywhere — roughly 2,049 corpus ` +
+        `occurrences including \`bind:value\` at 581. A node-type census could not have found it, because \`attribute\` was ` +
+        `already marked handled and these families were hiding INSIDE that handled type. Probed in both directions: the read ` +
+        `families must publish \`uses\`, the invoked families must publish \`calls\`, and \`let:\` must stay SILENT.`,
+    },
+    {
       id: "census-reserved-namespace",
       status: "pass",
       description:
@@ -497,6 +642,9 @@ const evidence = {
       "dropping the REJECTED ruling for svelte:selfdestructive exits 1 naming it an undeclared member of the reserved namespace",
       "renaming a REJECTED ruling to a name the corpus lacks exits 1 naming the ruling stale",
       "reverting the analyzer's reserved-namespace rule exits 1 reporting the undeclared member as PUBLISHED",
+      "a declared read family that stops publishing exits 1 naming the missing `uses` target",
+      "a declared invoked family that stops publishing exits 1 naming the missing `calls` target",
+      "a declared SILENT family that starts publishing exits 1 naming it",
     ],
   },
   limitations: [

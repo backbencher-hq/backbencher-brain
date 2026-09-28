@@ -83,6 +83,31 @@ const SVELTE_BUILTIN_TAGS = new Set([
   "svelte:boundary",
 ])
 
+// --- D12: THE DIRECTIVE CARRIER SPACE ---------------------------------------
+// Svelte carries behaviour and data through ATTRIBUTE NAMES, not through elements
+// or expressions. Three families, three different obligations, and this lane
+// implemented only the `on:` one until the census's carrier dimension measured the
+// rest as silent across ~2,049 corpus occurrences.
+//
+//   READS A MEMBER -> `uses`, on the S1 argument (the template reads the
+//     component's own state). `bind:` is two-way; the READ half is what the `uses`
+//     vocabulary can express, and the write half is recorded as a declared
+//     non-emission rather than invented as a new relationship type.
+//   INVOKED BY THE FRAMEWORK -> `calls`, on the D8 argument: `on:click={h}` is a
+//     call because the framework calls `h`, and Svelte calls an ACTION on mount and
+//     a TRANSITION on state change by exactly the same mechanism. Their silence was
+//     an internal inconsistency, not a position.
+//   DECLARES, DOES NOT READ -> silent. `let:x` on a component is the component
+//     naming a slot prop it ACCEPTS, so there is no member read to publish.
+//
+// Tailwind cannot collide with any of this: `md:grid-cols-2` and `after:absolute`
+// live INSIDE a quoted `class` value, and only ATTRIBUTE NAMES are examined. The
+// census measures the same distinction, which is why `after:*` does not appear in
+// the corpus's carrier set at all.
+const SVELTE_MEMBER_READ_DIRECTIVES = new Set(["bind", "class", "style"])
+const SVELTE_INVOKED_DIRECTIVES = new Set(["use", "transition", "in", "out", "animate"])
+const SVELTE_DECLARING_DIRECTIVES = new Set(["let"])
+
 // Svelte compiler macros / runes — calls to these are never relationships.
 const SVELTE_RUNES = new Set([
   "$state", "$state.raw", "$state.snapshot", "$state.eager", "$derived", "$derived.by",
@@ -264,6 +289,15 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
     const templateExprNames = new Map<string, number>()
+    // D12: framework-invoked carriers (`use:`, `transition:`, `in:`, `out:`,
+    // `animate:`) are CALL SITES. Accumulated here and emitted after the walk, so
+    // the edges pass through the same DEDUPE and the same central `classifyEvidenceTier`
+    // as every other edge rather than hardcoding a tier here.
+    const directiveCalls: Array<{ leaf: string; line: number; context: string }> = []
+    const seenDirectiveCalls = new Set<string>()
+    // `name@line` for every member read contributed by a `bind:`/`class:`/`style:`
+    // carrier, so the emitted `uses` edge can say which carrier produced it.
+    const carrierReadKeys = new Set<string>()
     // H2 (review wave): `this=` targets on svelte:component/svelte:element
     // with a bare-identifier value are DYNAMIC component references,
     // resolved post-merge (imports are unknown until the script pass).
@@ -452,6 +486,68 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               // attribute's (the name is written on the tag it belongs to).
               this.collectIdentifiersFromText(expr, templateExprNames, childShadowed, attr.startPosition.row + 1)
             }
+          }
+        }
+        // --- D12: the directive carrier space ---------------------------------
+        // `on:` is handled below, and everything else that Svelte spells as
+        // `prefix:name` on an attribute was silent until this. Two obligations, one
+        // table each, and the member-read half feeds the SAME `templateExprNames`
+        // the block constructs use, so a `bind:value={m}` read and a `{m}` read are
+        // indistinguishable downstream — which is the point: they are the same fact.
+        // `startTag2` is NULL for a bare self-closing tag: the node IS the
+        // `self_closing_tag`, so `findChildByType(n, "self_closing_tag")` looks for
+        // a child of that type and finds none. The shorthand pass above guards for
+        // exactly this and my first version did not, so every self-closing tag with
+        // an expression-valued attribute — `<input bind:value={m} />`,
+        // `<svelte:component this={C} />` — threw and the engine returned a BASIC
+        // PARSE RESULT: zero symbols for the whole file.
+        for (let i = 0; startTag2 && i < startTag2.namedChildCount; i++) {
+          const attr = startTag2.namedChild(i)
+          if (!attr || attr.type !== "attribute") continue
+          const attrName = this.attributeName(attr)
+          if (!attrName) continue
+          const colon = attrName.indexOf(":")
+          if (colon <= 0) continue
+          const prefix = attrName.slice(0, colon)
+          const rest = attrName.slice(colon + 1)
+          if (!rest) continue
+          if (attrName.startsWith("on:")) continue // its own pass below
+          if (SVELTE_DECLARING_DIRECTIVES.has(prefix)) continue
+
+          const exprNode = this.findChildByType(attr, "expression")
+          // The READ families: collect from the value expression at the value's own
+          // line, falling back to the attribute's for the valueless forms.
+          if (SVELTE_MEMBER_READ_DIRECTIVES.has(prefix)) {
+            const text = exprNode ? this.expressionText(exprNode) : ""
+            if (!text) continue
+            const base = exprNode ? exprNode.startPosition.row + 1 : attr.startPosition.row + 1
+            const before = new Set(templateExprNames.keys())
+            this.collectIdentifiersFromText(text, templateExprNames, childShadowed, base)
+            // D12 provenance. The read joins the SAME `templateExprNames` the block
+            // constructs use, which is deliberate — a `bind:value={m}` read and a
+            // `{m}` read are the same fact — but it means the collection site is
+            // otherwise unrecoverable from the edge. Recording WHICH CARRIER produced
+            // it is information a consumer wants in its own right: "is this member read
+            // a two-way binding, a class toggle or a style value?" is not answerable
+            // from `uses` alone, and `bind:` is the one family that is two-way.
+            for (const nm of templateExprNames.keys()) if (!before.has(nm)) carrierReadKeys.add(`${nm}@${templateExprNames.get(nm)}`)
+            continue
+          }
+          // The INVOKED families: the target is the directive's own name, written in
+          // the attribute name, so the line is the attribute's — the same rule the
+          // shorthand pass uses for a name that lives in the attribute name.
+          if (SVELTE_INVOKED_DIRECTIVES.has(prefix)) {
+            if (rest === moduleName) continue
+            // A dotted directive value is a namespace (`transition:helpers.slide`),
+            // and the callable leaf is what a `calls` edge can name.
+            const leaf = rest.includes(".") ? rest.slice(rest.lastIndexOf(".") + 1) : rest
+            if (!leaf) continue
+            seenDirectiveCalls.add(`${leaf}@${attr.startPosition.row + 1}`)
+            directiveCalls.push({
+              leaf,
+              line: attr.startPosition.row + 1,
+              context: `Svelte ${prefix} directive ${attrName}`,
+            })
           }
         }
         // on: directives — the handler is the first call-target identifier or
@@ -779,7 +875,13 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           // base line for a fragment it could not locate — the oracle counts
           // that as a wrong line rather than a silent pass.
           ...(line > 0 ? { line_number: line } : {}),
-          metadata: { isTemplateExpression: true },
+          metadata: {
+            isTemplateExpression: true,
+            // D12: present only for a carrier-sourced read. Absent means the read came
+            // from a block construct, a store subscription or a tag expression, so a
+            // consumer can tell a two-way binding from an ordinary template read.
+            ...(carrierReadKeys.has(`${resolved}@${line}`) ? { carrierDirective: true } : {}),
+          },
         })
       }
     }
@@ -834,6 +936,22 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: "Svelte",
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
+
+    // D12: the invoked-carrier call edges, emitted HERE so they flow through the
+    // dedupe below and the central evidence-tier classifier with everything else.
+    // The target is the directive's own name — written in the ATTRIBUTE NAME, so the
+    // line is the attribute's — and the confidence matches the `on:` handler tier
+    // (0.85), because it is the same argument: the framework invokes this name.
+    for (const dc of directiveCalls) {
+      relationships.push({
+        source: moduleName,
+        target: dc.leaf,
+        type: ASTEngine.RelationshipType.Calls,
+        confidence: 0.85,
+        line_number: dc.line,
+        metadata: { context: dc.context },
+      })
+    }
 
     // DEDUPE: sub-analyzers emit their own contains edges; combined with
     // the ownerName-based pass above, identical triples appeared twice.

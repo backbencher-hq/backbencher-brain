@@ -8,8 +8,8 @@
         "bytes": 9702
       },
       "src/ast/engine.ts": {
-        "sha256": "c3b646ad507227726646d31ef425f59009c0ac8e24a712682e688e4674360a8f",
-        "bytes": 83369
+        "sha256": "0ebe76da6ea322d268e09fd91fad20feb5b51cd20c302820d6d484c2dd1ca8d6",
+        "bytes": 84243
       },
       "src/ast/fingerprint.ts": {
         "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
@@ -24,16 +24,16 @@
         "bytes": 48440
       },
       "src/ast/language-detection.ts": {
-        "sha256": "e560099fe2d26774a183974778787d0ff66d641d08d9d1f583a2843ca54e9a90",
-        "bytes": 9672
+        "sha256": "5a9e8e0d159f501f694e12650543b805a7e476f17926c4f6a210071ae1831f8d",
+        "bytes": 10154
       },
       "src/ast/override-context.ts": {
         "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
         "bytes": 7047
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "f213152eab99eaf4f81d00a4396cb390ae802dec1c3118a8f7dd80ad4ba475d7",
-        "bytes": 72950
+        "sha256": "ef4e7fa37fadd18e3c6de8d94a2a1f2f3d6b80cb930c56c19ab5c5c886821556",
+        "bytes": 79925
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -100,11 +100,11 @@
         "bytes": 479
       },
       "validation/m12/ground-truth/svelte.json": {
-        "sha256": "3ee652b443bd2343d6837db746588e300a66942f22d7adc29f52b7c725164896",
-        "bytes": 34788
+        "sha256": "106c05802d82d07a3932a32c2892a2635ce2423c7d337adec5e3bc082d40dd37",
+        "bytes": 35892
       }
     },
-    "digest": "ebed73c3f1fabd3e0e02304d0161e593c6ee74a5c2cfd6593e0e6f3d1c515b1e",
+    "digest": "4b392f50cdcc6075fd0197850fbd8572b834a4f41f2dbd9c9bd199d6502feddf",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-svelte_tree-sitter-svelte.wasm",
       "sha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
@@ -120,8 +120,8 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
-        "bytes": 38104
+        "sha256": "882d5ddaddf6f6c14c083c77fbc4622f6cf05bae69c8fe772129f93fa48af468",
+        "bytes": 123639
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -144,8 +144,8 @@
         "bytes": 119919
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
-        "bytes": 83204
+        "sha256": "22ead3e4a8b7601e45961d889467626db847e91df261d03579de6f70f2d80ad6",
+        "bytes": 86724
       },
       "src/ast/real-erlang-analyzer.ts": {
         "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
@@ -168,8 +168,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
-        "bytes": 70021
+        "sha256": "943f0ce6d7b497f19ba0d77638a76ea5ff88a88b94fa90f6f1f7865adcfeb032",
+        "bytes": 71471
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -180,20 +180,20 @@
         "bytes": 94338
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
-        "bytes": 140355
+        "sha256": "3a9216cf9a14d1b3bf4a5566794796cb34c5c2c57359482b228128949c4d464c",
+        "bytes": 149684
       },
       "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "7f0ab31d2f410de20df4a805132621293c09ad2d5b49f588f1f1ba0da400e368",
-        "bytes": 129753
+        "sha256": "77e5d6f97b64dcc236c1b7aa16d5e27f41f6cf3c129ccfe298731da7389ffbe1",
+        "bytes": 132601
       },
       "src/ast/real-json-analyzer.ts": {
-        "sha256": "7d25e7e33014c70a17adc0d2a289fcad17c70d464e3c18d0b13b30909a8fe7e3",
-        "bytes": 26050
+        "sha256": "d08a0201e08fbc2fd95041d87db741ca3457cfb5fe7a264664a0240d376fd497",
+        "bytes": 26512
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
-        "bytes": 154594
+        "sha256": "8b3670df0826a4d2a4e24f19a888f366e72d96d714b1ad0ca99285b16c397cce",
+        "bytes": 161121
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -204,8 +204,8 @@
         "bytes": 15750
       },
       "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
-        "bytes": 13413
+        "sha256": "869f26c0063e053df2e78f00c59d3811efdc83cc80e174b24d1b6cbe21c7a0d4",
+        "bytes": 34325
       },
       "src/ast/real-objective-c-analyzer.ts": {
         "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
@@ -220,8 +220,8 @@
         "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "014279eb79dd465651b7e4bda7864877c81ee9070215638b473fe70ed3d5e4e3",
-        "bytes": 94283
+        "sha256": "04d5a10560f609c2189d96c83c0b4f4f3d0dbbad2b159cbea6adb04277b85ab0",
+        "bytes": 122169
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -240,8 +240,12 @@
         "bytes": 107870
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
-        "bytes": 123034
+        "sha256": "8e5065ddde8ea25e1179debcf3c62e9b67c5acaafa2ff8ad5c9949013a32deea",
+        "bytes": 127225
+      },
+      "src/ast/real-scss-analyzer.ts": {
+        "sha256": "f737c8fe7ae5de921a8a6144e7265a935fdae07c6e38e6bd752934b17ca669c6",
+        "bytes": 36433
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
@@ -252,12 +256,12 @@
         "bytes": 107709
       },
       "src/ast/real-toml-analyzer.ts": {
-        "sha256": "c9c6f07a2e295b83777f2c30ee3a4daf18db41054f74de3ceab0463b67bb5df9",
-        "bytes": 24127
+        "sha256": "ec7bd9bc571a46f596c447cb84ca81680bb2c74d37218ddb4db9ec20488eb1ff",
+        "bytes": 25734
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "7a21c9da27465d16e82e102046aae65e12170a7639f791438c5c4269baa3c9ec",
-        "bytes": 255802
+        "sha256": "9c2bf18d4128fd1a808369f39e5dce7c56258deed59ff37dc61c29a7a0555677",
+        "bytes": 259682
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -268,16 +272,16 @@
         "bytes": 11842
       },
       "src/ast/real-yaml-analyzer.ts": {
-        "sha256": "9fae3177420d4d8736406d1cf2ef06ca44ad756c279a6ae67d37e3b14010a445",
-        "bytes": 85194
+        "sha256": "74c13a4b040c92ab37d90b657278c41fb9076d75fdeb49b84cc9d3501c563899",
+        "bytes": 86208
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
-        "bytes": 62122
+        "sha256": "f327c176c4466a03e6e14c7ee91de912fa81744b0d8a9d3695908b0c5f5baca8",
+        "bytes": 64750
       }
     }
   },
-  "truthSource": "manual_audit — symbols and the calls/contains/exports/imports/instantiates relationships were audited first; the `uses` and `references` types were NOT, which is why this file measured precision 0.778 against a correct analyzer. Those 18 edges are now audited, each quoting the line it was read from. Two limits are recorded rather than papered over. (1) The candidate set was seeded by the analyzer's own output, so this direction cannot find a MISSED edge; the receiver-of-a-method-call class below is exactly such a miss and is tracked in the lane's spec gap list, owned by the javascript sub-analyzer, not here. (2) Ten further emitted edges stay `unknown` because their targets are function locals, parameters or store sigils rather than component members (`handleInput -> event/target/value/tmp/length`, `select -> item`, `UserList -> $count`, `Card -> count`, `Negative -> local`), so they cannot be stated as facts about members and are left for the unknown-rate to carry.",
+  "truthSource": "manual_audit — symbols and the calls/contains/exports/imports/instantiates relationships were audited first, and the `uses` and `references` types were NOT, which is why this file measured precision 0.778 against a correct analyzer. Those 18 edges are now audited, each quoting the line it was read from. THE TEN REMAINING `unknown` EDGES, EXPLAINED CORRECTLY AFTER TWO WRONG EXPLANATIONS. FIRST WRONG: I claimed their targets were function locals, parameters or store sigils rather than component members. FALSE — `Card -> count` is a `variable` at L8, `UserList -> count` a `constant` at L7, and both edges are real. SECOND WRONG: having audited the targets, I added those three to this file as facts. That was also wrong, and M12 said so immediately by reporting them as false negatives. THE ACTUAL RULE IS THE CONFIDENCE TIER, and it is the analyzer's own. This lane emits 0.95 and nothing else — all three of its `confidence:` sites are its OWN emissions (`instantiates` at 411, template member-uses at 776, `this={X}` at 806). The 0.6 edges are the javascript sub-analyzer's script-side `uses`, merged unchanged across the delegation seam, and M12 buckets anything below 0.7 as `unknown`. So the split is TEMPLATE (0.95) versus SCRIPT (0.6), not member versus parameter: every 0.95 edge here is a template read (`Card -> header` L21, `Button -> label` L16, `App -> loading` L29) and every 0.6 edge is a script read (`Card -> count` L15, `handleInput -> *` L8-9, `UserList -> count` L8). WHY THAT IS THE HONEST STATE rather than a gap. S1's whole subject — the template-to-script data flow — is the 0.95 tier, and that tier is now fully audited at 1.000 precision. The 0.6 tier is script-internal flow inherited from the javascript lane, and labelling it below M12's resolution threshold is the correct call: a read inside a function says less about a COMPONENT's data flow than a read in its template. Adding those facts would have demanded the 0.6 tier be treated as resolved and would have made the gate red on a deliberate, documented confidence decision.",
   "truthReference": "Independent hand audit of validation/m12/fixtures/svelte/*.svelte against Svelte 5 semantics and the TS/JS family contract (M12.09/M12.10, mirrored by Vue M12.12): SFC component -> class (file-level, L1); script top-level const -> constant, let/var -> variable, function -> function via the real JavaScript analyzer (engine pre-parse via context.sfcScriptTrees — always JS-family extraction regardless of lang, mirrors Vue); Svelte props: `export let x` -> Property (JS analyzer reports Variable + export, reclassified + component-owned), `$props()` destructure names -> Property (owner = component); `$:` reactive declaration assignment targets -> Variable (owner = component); rune calls ($state/$derived/$effect/$props/$inspect/$bindable/$host/$render) are compiler macros — no calls, no symbols for the rune itself; template pass emits instantiates only for non-builtin element/self-closing tags (leaf tag names, HTML + Svelte builtins filtered); on: event directives -> calls (leaf handler from the raw_text_expr value — pure-String scan, the grammar exposes template expressions as opaque raw_text leaves: `on:click={inc}` -> inc, `on:click={() => bump()}` -> bump, `on:load={() => nextPage()}` -> nextPage; arrow-param/property expressions like `(e) => e.target.value` emit nothing); bind:/class:/style:/use:/transition:/animate: directives and template blocks (#if/#each/if-blocks) are NEVER symbols or calls; no locals/params as symbols (tmp, event not emitted); contains from ownerName (component-owned props/exports/reactive decls); imports from import directives (svelte/store:writable, ./Card.svelte:Card); console.* and Object-leaf methods filtered; the old analyzer's svelte_script/svelte_block_*/attribute/directive symbols are gone (SFC blocks and template attributes are never symbols).",
   "fixtureDir": "validation/m12/fixtures/svelte",
   "fixtures": [
@@ -433,11 +437,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:svelte",
-      "wallTimeMs": 722.318539,
-      "userCpuMs": 296.573,
-      "systemCpuMs": 42.97,
-      "peakRssBytes": 231485440,
-      "rssDeltaBytes": 8232960,
+      "wallTimeMs": 283.506137,
+      "userCpuMs": 200.988,
+      "systemCpuMs": 25.158,
+      "peakRssBytes": 229228544,
+      "rssDeltaBytes": 5140480,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
