@@ -22,6 +22,7 @@ import { runLang, LANGS } from "./run-fixtures"
 import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
+import { SCSS_MUTANTS } from "../m60/scss-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -12508,6 +12509,7 @@ export const MUTANTS: Mutant[] = [
   // rather than a footnote, and for which pin carries each class.
   ...YAML_MUTANTS,
   ...CSS_MUTANTS,
+  ...SCSS_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
