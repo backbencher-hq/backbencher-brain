@@ -379,26 +379,37 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * The two SIDES of an assignment, without deciding which is a declaration.
-   * `<-`/`<<-`/`=` can only bind their left operand; `->`/`->>` are the same
-   * operation with the operands swapped, so the bound name is whichever side is a
-   * plain identifier — `5 -> d` binds `d` from the right and `e -> 6` binds `e`
-   * from the left.
+   *
+   * `<-`/`<<-`/`=` bind their LEFT operand. `->`/`->>` bind their RIGHT operand and
+   * nothing else — the left side is always a VALUE.
+   *
+   * This is not a stylistic choice, it is what R does, and it was measured
+   * against R 4.4.3's own runtime rather than assumed:
+   *
+   *     2 -> b          OK, binds b
+   *     2 ->> cc        OK, binds cc
+   *     identity(1) -> gg   OK, binds gg
+   *     bb -> 2         Error: invalid (do_set) left-hand side to assignment
+   *     cc ->> 2        Error: invalid (do_set) left-hand side to assignment
+   *
+   * R desugars both rightward forms to `<-`(value, name) at parse time, so a
+   * name on the LEFT of `->` is not a declaration — it is a runtime error, and
+   * publishing a symbol for it would invent a binding R refuses to make.
+   * tree-sitter-r does NOT desugar (it keeps `->` as an operator), which is
+   * exactly why the two sides have to be distinguished here.
+   *
+   * An earlier revision of this analyzer read whichever side happened to be an
+   * identifier. That published `variable e` for `e -> 6` — a construct R
+   * rejects. Caught by the R oracle, not by the fixtures, because the fixture
+   * had been written to match the same wrong belief.
    */
   private assignmentSides(node: Node): { target: Node | null; value: Node | null } {
     const operator = node.childForFieldName("operator")?.text
     if (operator === undefined) return { target: null, value: null }
     const lhs = node.childForFieldName("lhs")
     const rhs = node.childForFieldName("rhs")
-    if (LEFT_BINDING_OPERATORS.has(operator)) {
-      return { target: lhs ?? null, value: rhs ?? null }
-    }
-    if (RIGHT_BINDING_OPERATORS.has(operator)) {
-      // `a -> b` binds whichever side is the identifier; both sides being
-      // identifiers is not a declaration this analyzer can name.
-      if (lhs?.type === "identifier" && rhs?.type !== "identifier") return { target: lhs, value: rhs }
-      if (rhs?.type === "identifier" && lhs?.type !== "identifier") return { target: rhs, value: lhs }
-      return { target: null, value: null }
-    }
+    if (LEFT_BINDING_OPERATORS.has(operator)) return { target: lhs ?? null, value: rhs ?? null }
+    if (RIGHT_BINDING_OPERATORS.has(operator)) return { target: rhs ?? null, value: lhs ?? null }
     return { target: null, value: null }
   }
 
@@ -450,11 +461,11 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name) return
     const doc = this.extractDocstring(node)
 
-    // Function-local assignments are execution locals, not file-level
-    // declarations. This also prevents indexed/call-shaped local LHS nodes
-    // from becoming phantom symbols in large R packages. The walk already knows
-    // whether an enclosing function is on the stack, so this is O(1).
+    // Function-local and `local()`-scoped assignments are execution locals, not
+    // file-level declarations. The walk already knows whether an enclosing
+    // function is on the stack, so that part is O(1).
     if (insideFunction) return
+    if (this.hasLocalBoundary(node)) return
 
     if (value.type === "function_definition") {
       // An S3 method is registered under `generic.class`; the dot is part of the
@@ -626,8 +637,15 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // and the binding is a real R object in its own right, so both are emitted
       // and linked rather than one silently replacing the other.
       const s7Args = this.getArgumentsNode(callNode)
-      const declared = s7Args ? this.stringArgumentAt(s7Args, 0) : undefined
+      // The node as well as the text: it is the line that NAMES the class, which is not
+      // necessarily the line the call starts on.
+      const declaredNode = this.stringArgumentNodeAt(s7Args, 0)
+      const declared = declaredNode ? this.stringNodeText(declaredNode) : undefined
       const className = declared || name
+      // With no declared string, `className` falls back to the binding name, which the
+      // enclosing assignment already names. Falling back to the CALL node then keeps the
+      // edge on a line that mentions the binding, rather than inventing a position.
+      const classNameNode = declaredNode ?? node
       symbols.push({
         name: className,
         kind: ASTEngine.SymbolKind.Class,
@@ -645,7 +663,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           docstring: doc,
           metadata: { rSpecific: true, isS7ClassBinding: true, boundClass: className },
         })
-        this.pushRel(relationships, name, className, ASTEngine.RelationshipType.References, 1.0, { rSpecific: true, relationshipSubType: "s7_class_binding" }, node)
+        this.pushRel(relationships, name, className, ASTEngine.RelationshipType.References, 1.0, { rSpecific: true, relationshipSubType: "s7_class_binding" }, classNameNode)
       }
       for (const parent of this.extractNamedArguments(callNode, "parent")) {
         this.pushRel(relationships, className, parent, ASTEngine.RelationshipType.Extends, 1.0, { rSpecific: true, relationshipSubType: "s7_parent" }, this.namedArgumentNode(callNode, "parent", parent))
@@ -761,7 +779,63 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return ""
     }
     if (fnNode.type === "identifier") return this.unquoteIdentifier(fnNode.text)
-    return this.unquoteIdentifier(fnNode.text)
+    // A callee is nameable when its own text IS an R name -- and it is that simple, with
+    // no list of node types involved.
+    //
+    // The previous version of this line was a blanket `return unquoteIdentifier(
+    // fnNode.text)`, which turned ANY node's source text into a function's name. R can
+    // CALL a non-name, and when it does the text became the target:
+    //
+    //     chol2inv((if (uplo == "U") triu else tril)(x), ...)
+    //
+    // produced a `calls` edge whose target was the whole string
+    // `(if (uplo == "U") triu else tril)`. 75 such edges in the pinned corpora. A
+    // relationship target that is a copy of the caller's own source is not a
+    // relationship; it is the analysis quoting its input back.
+    //
+    // An earlier attempt at this fix ALLOWLISTED node types, which was the wrong axis and
+    // cost real coverage: the grammar gives `return` its own node type, so every
+    // `return(x)` in the corpus stopped producing an edge -- 1,089 removals the audit
+    // could not explain. `return` is a name; it is a name the grammar happens to
+    // tokenize specially. Asking whether the TEXT is a name gets that right without
+    // enumerating the grammar, and it stays right if the grammar adds a node type.
+    if (this.isRName(fnNode.text)) return this.unquoteIdentifier(fnNode.text)
+    return ""
+  }
+
+  /**
+   * Is this text an R name? R's rule: a letter or a `.` not followed by a digit, then
+   * letters, digits, `.` and `_`; or a backtick-quoted name, inside which almost
+   * anything is legal. Letters beyond ASCII are accepted, since R source is frequently
+   * UTF-8 and a name is a name in any alphabet.
+   *
+   * Character codes rather than a regexp, to keep the analyzer free of pattern matching.
+   * This is the only place the analyzer inspects a node's TEXT to decide what it is -- the
+   * grammar's node types do not carry a "this is a name" flag -- and it is listed in the
+   * documentation's inventory of text operations.
+   */
+  private isRName(text: string): boolean {
+    if (text.length === 0) return false
+    if (text.charCodeAt(0) === 96) {
+      return text.length >= 2 && text.charCodeAt(text.length - 1) === 96
+    }
+    const isLetter = (c: number) =>
+      (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 0xc0 && c <= 0x24f) || (c >= 0x370 && c <= 0x1fff)
+    const isDigit = (c: number) => c >= 48 && c <= 57
+    const first = text.charCodeAt(0)
+    let i = 0
+    if (first === 46) {
+      i = 1
+      if (i < text.length && isDigit(text.charCodeAt(i))) return false
+    } else if (!isLetter(first)) {
+      return false
+    }
+    for (; i < text.length; i++) {
+      const c = text.charCodeAt(i)
+      if (isLetter(c) || isDigit(c) || c === 46 || c === 95) continue
+      return false
+    }
+    return true
   }
 
   /**
@@ -806,7 +880,23 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const classNode = this.secondPositionalValue(tArgs)
       if (!genericNode) return
       const generic = this.nodeAsName(genericNode)
-      const owner = classNode ? this.nodeAsName(classNode) : undefined
+      // S7 dispatches on a SET of classes: `S7::method(`+`, list(class_a, class_b))`.
+      // The owner is the first class in that list, and it must be the first
+      // NAMED argument, so a positionally-indexed list is not mistaken for one.
+      let owner: string | undefined
+      if (classNode) {
+        owner = this.nodeAsName(classNode) || undefined
+        if (!owner && classNode.type === "call" && this.calleeName(classNode.childForFieldName("function")) === "list") {
+          const listArgs = this.getArgumentsNode(classNode)
+          for (let i = 0; listArgs && i < listArgs.namedChildCount; i++) {
+            const entry = listArgs.namedChild(i)
+            if (entry?.type !== "argument") continue
+            if (entry.childForFieldName("name")) continue
+            const v = this.nodeAsName(entry.childForFieldName("value"))
+            if (v) { owner = v; break }
+          }
+        }
+      }
       if (!generic) return
       this.pushIfUnique(metadata.patterns, "S7 Object System")
       symbols.push({
@@ -874,13 +964,64 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** An identifier or string node read as a name. */
-  private nodeAsName(node: Node): string {
+  private nodeAsName(node: Node | null | undefined): string {
+    if (!node) return ""
     if (node.type === "string") return this.stringNodeText(node)
     if (node.type === "identifier" || node.type === "dots") return this.unquoteIdentifier(node.text)
     return ""
   }
 
   /** The value of a named argument of a call, or null. */
+  /**
+   * True when the node sits inside a `local({ ... })` body.
+   *
+   * `local()` is the one construct in ordinary R that evaluates an expression in a
+   * NEW environment without introducing a `function_definition` node, so the
+   * function-ancestor test cannot see it. Assignments inside it are NOT file-level
+   * bindings: R's `local()` creates a child environment and nothing escapes.
+   *
+   * Found by the R oracle, not by reading: dplyr's test-across.R binds
+   * `_local_var` inside `local({ ... })` and the analyzer was publishing it as a
+   * global variable. A plain `{ ... }` block inside a call is deliberately NOT
+   * treated as a boundary, because R evaluates that in the CALLING frame and the
+   * binding really is global.
+   */
+  private hasLocalBoundary(node: Node): boolean {
+    let current: Node | null = node
+    while (current) {
+      const parent: Node | null = current.parent
+      if (!parent) return false
+      // NOT a boundary, and this was measured rather than assumed: R binds a name
+      // assigned inside a SUBSET index, inside parentheses, and as a call argument.
+      // Verified on R 4.4.3:
+      //   m[ci <- 1]                 binds ci
+      //   (r12 <- 5)[-1]             binds r12
+      //   f(r12 <- 5)                binds r12
+      //   tru[i.lt <- 1] <- c(2,3,4) binds i.lt AND tru
+      // An earlier revision treated a `subset` ancestor as a scope boundary on the
+      // reasoning that a complex assignment is evaluated "in the indexing context".
+      // That is wrong, and it silently dropped four real bindings; the R oracle
+      // caught it. Only `local()` and function bodies are boundaries.
+      if (parent.type === "braced_expression" || parent.type === "parenthesized_expression") {
+        // The block is usually the VALUE of an argument, so the chain to the call
+        // is block -> argument -> arguments -> call, not block -> call.
+        let owner: Node | null = parent
+        for (let hop = 0; hop < 3 && owner; hop++) {
+          const up: Node | null = owner.parent
+          if (!up) break
+          if (up.type === "call") {
+            const fn = up.childForFieldName("function")
+            if (fn && this.calleeName(fn) === "local") return true
+            break
+          }
+          owner = up
+        }
+      }
+      current = parent
+    }
+    return false
+  }
+
   /**
    * The line a symbol's NAME is written on.
    *
@@ -892,6 +1033,45 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * start when the name is synthesized (an S4 `validity` method has no literal
    * token in the source).
    */
+  /**
+   * Whether `at` is the start of the IDENTIFIER `name` in `segment`, rather than a place
+   * where those characters merely occur.
+   *
+   * R identifiers continue with letters, digits, `.` and `_`, so `theme` occurs inside
+   * `class_theme` and `sizes` inside `resize`. A substring search cannot tell those apart
+   * from the real thing, and the consequence is a relationship pointing at a line that
+   * does not name its target: `class_theme <- S7::new_class(` on line 219 matched
+   * `theme`, so `global exports theme` and `global contains theme` were attributed to 219
+   * while the class name is written on 220. Eight such edges in ggplot2's all-classes.R.
+   *
+   * A backtick-quoted name is a special case: inside backticks almost anything is legal,
+   * so only the closing backtick is excluded, and the backticks themselves are not part of
+   * the name.
+   */
+  private isIdentifierOccurrence(segment: string, at: number, name: string): boolean {
+    // Character codes, not a regexp: the analyzer carries no pattern matching at all, and
+    // the grammar-conformance audit counts regex literals and would (correctly) fail on
+    // one. The first version of this line was `/[A-Za-z0-9._]/.test(ch)`.
+    const isPart = (ch: string | undefined) => {
+      if (ch === undefined) return false
+      const c = ch.charCodeAt(0)
+      return (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 46 || c === 95
+    }
+    const before = at > 0 ? segment[at - 1] : undefined
+    if (before === "`") {
+      // Inside backticks almost anything is legal, so a backticked name ends only at the
+      // closing backtick.
+      return segment[at + name.length] === "`"
+    }
+    // The only thing that disqualifies a position is a preceding identifier character.
+    // An allowlist of "acceptable" delimiters would be longer, easier to get wrong, and
+    // would reject the exotic ones; `$`, `::`, `=`, `(`, `,` and whitespace all work here
+    // for free because none of them is an identifier part.
+    if (isPart(before)) return false
+    const after = segment[at + name.length]
+    return !isPart(after)
+  }
+
   private nameLineOf(symbol: ASTEngine.UniversalSymbol, content: string): number {
     const start = symbol.range.startIndex
     const end = symbol.range.endIndex
@@ -899,7 +1079,16 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return symbol.range.startLine
     }
     const segment = content.substring(start, end)
-    const at = segment.indexOf(symbol.name)
+    // Every occurrence is examined, not just the first: a later one may be the real
+    // identifier while an earlier one is a substring. The scan is over the symbol's own
+    // range, so it is bounded by the declaration and cannot walk the file.
+    let at = -1
+    for (let from = 0; from <= segment.length - symbol.name.length; from++) {
+      const i = segment.indexOf(symbol.name, from)
+      if (i === -1) break
+      if (this.isIdentifierOccurrence(segment, i, symbol.name)) { at = i; break }
+      from = i
+    }
     if (at === -1) return symbol.range.startLine
     let line = symbol.range.startLine
     for (let i = 0; i < at; i++) if (segment.charCodeAt(i) === 10) line++
@@ -1071,7 +1260,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: memberName,
             kind: ASTEngine.SymbolKind.Method,
-            range: this.getRange(memberValue),
+            range: this.getDeclarationRange(memberNameNode, memberValue),
             signature: this.extractSignature(memberValue),
             parameters: this.extractParameters(memberValue),
             docstring: "",
@@ -1089,7 +1278,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
           symbols.push({
             name: memberName,
             kind: ASTEngine.SymbolKind.Property,
-            range: this.getRange(memberValue),
+            range: this.getDeclarationRange(memberNameNode, memberValue),
             ownerName: className,
             ownerKind: ASTEngine.SymbolKind.Class,
             docstring: "",
@@ -1249,7 +1438,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
     declaredTypes: Set<string>,
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
     fnStack: Array<{ node: Node; attribution: CallAttribution | null }>,
   ): void {
     const fnNode = node.childForFieldName("function")
@@ -1313,7 +1502,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `Cls$new`), because the qualified form is the information a reader needs;
       // `calleeName` is the bare name used only for dispatch decisions.
       const callTarget = this.callTargetName(fnNode, fnName)
-      this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, fnNode)
+      // An unnameable callee produces no edge. Counting it keeps the gap visible instead
+      // of letting it vanish into a total.
+      if (!callTarget) ambiguity.callsToUnnameableCallee = (ambiguity.callsToUnnameableCallee ?? 0) + 1
+      else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, this.callTargetNode(fnNode, callTarget))
       if (attribution.confidence < 1.0) ambiguity.callsAttributedThroughClosure++
 
       // R6/R5 construction is only certain when the receiver was declared as a
@@ -1537,7 +1729,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
   ) {
     if (!args) return
     const fnName = this.calleeName(node.childForFieldName("function"))
@@ -1862,21 +2054,84 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * function slot is not a simple callable form.
    */
   private callTargetName(fnNode: Node, bare: string): string {
+    if (!bare) return ""
     if (fnNode.type === "identifier") return bare
     if (fnNode.type === "namespace_operator" || fnNode.type === "extract_operator") {
       const ns = fnNode.childForFieldName("lhs")
       const op = fnNode.childForFieldName("operator")?.text
       const rhs = fnNode.childForFieldName("rhs")
       if (ns && op && rhs) {
-        return `${this.unquoteIdentifier(ns.text)}${op}${rhs.type === "identifier" ? this.unquoteIdentifier(rhs.text) : rhs.text}`
+        // The receiver must itself be NAMEABLE for a qualified target to mean anything.
+        // R's promises package chains, so the LHS is routinely a call:
+        //
+        //     promises::promise(function(resolve, reject) { ... })$then
+        //
+        // and interpolating that LHS verbatim made the target a copy of the caller's
+        // source again -- the same failure the if-expression callee had, one level down
+        // and reached through a different branch. 4 such edges in testthat.
+        //
+        // When the receiver is a plain name or a chain of them, the qualified form is the
+        // information a reader wants (`pkg::fn`, `obj$method`, `Cls$new`). When it is not,
+        // the bare method name is the honest target: the call is still to `then`, and the
+        // receiver is an expression rather than a thing with a name.
+        const receiver = this.calleeName(ns)
+        if (!receiver) return bare
+        const rhsName = rhs.type === "identifier" ? this.unquoteIdentifier(rhs.text) : rhs.text
+        return `${receiver}${op}${rhsName}`
       }
       return bare
     }
     return bare
   }
 
+  /**
+   * The node that WRITES the edge's target, which is the node the edge's `line_number`
+   * must come from.
+   *
+   * The rule is: **the line where the target's LAST name component is written.** For
+   * `pkg::fn` and `obj$method` on one line that is the same line either way, so the
+   * common case is unaffected. It matters when R splits a chain, which the promises
+   * package does routinely:
+   *
+   *     p$value <- p$value$          <- line 743: `value` is here
+   *       then(function(value) {     <- line 744: `then` is HERE
+   *
+   * The target is `value$then`, and the method name is what identifies the call and what
+   * a reader searches for. Preferring the rhs puts the edge on 744. Preferring the
+   * expression start put it on 743, a line that does not contain the string `then` at
+   * all -- and "the line where the expression happens to begin" is not a stable property
+   * of the call, it is an artifact of where the author pressed return.
+   */
+  private callTargetNode(fnNode: Node, _target: string): Node {
+    if (fnNode.type !== "namespace_operator" && fnNode.type !== "extract_operator") return fnNode
+    const rhs = fnNode.childForFieldName("rhs")
+    if (rhs && rhs.type === "identifier") return rhs
+    return fnNode
+  }
+
   private stringArgumentAt(args: Node | null, index: number): string | undefined {
-    if (!args) return undefined
+    const n = this.stringArgumentNodeAt(args, index)
+    return n ? this.stringNodeText(n) : undefined
+  }
+
+  /**
+   * The Nth positional STRING argument of a call, as the NODE rather than the text.
+   *
+   * The node matters because an edge's `line_number` is the line of the node that NAMES
+   * the target, and the name of an S7 class lives in a string that need not be on the
+   * same line as the call:
+   *
+   *     class_theme <- S7::new_class(        <- line 219
+   *       "theme", class_S3_gg,              <- line 220: this is where `theme` is named
+   *       ...
+   *
+   * Attributing the edge to the call put `class_theme references theme` on line 219, a
+   * line that does not contain the word `theme` anywhere. The R-positions oracle found 6
+   * such edges in ggplot2 alone. Passing the string node puts the edge on the line that
+   * actually names the class, which is the line a reader needs.
+   */
+  private stringArgumentNodeAt(args: Node | null, index: number): Node | null {
+    if (!args) return null
     let seen = 0
     // The grammar exposes commas as named children too, so skip punctuation
     // explicitly while retaining source-order positional arguments.
@@ -1887,16 +2142,14 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (arg.childForFieldName("name")) continue
         const value = arg.childForFieldName("value")
         if (!value) continue
-        if (seen === index && value.type === "string") return this.stringNodeText(value)
-        if (seen === index) return undefined
+        if (seen === index) return value.type === "string" ? value : null
         seen++
         continue
       }
-      if (seen === index && arg.type === "string") return this.stringNodeText(arg)
-      if (seen === index) return undefined
+      if (seen === index) return arg.type === "string" ? arg : null
       seen++
     }
-    return undefined
+    return null
   }
 
   /** The Nth positional STRING argument of a call, unquoted. */
@@ -1979,7 +2232,19 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (entry?.type !== "argument") continue
       const entryName = entry.childForFieldName("name")
       if (entryName?.text) {
-        results.push({ name: this.unquoteIdentifier(entryName.text), range: this.getRange(entryName), via })
+        // An argument name can be written three ways -- bare (`Dim = ...`), backticked
+        // (`` `odd name` = ... ``) or as a string (`"a" = ...`) -- and R requires the
+        // last form in places. The S4 idiom
+        //
+        //     setClass("new_class", slots = c("a" = "numeric"))
+        //
+        // names its slot with a string, and this function stripped only backticks, so the
+        // published symbol was literally `"a"`, quotes included. That name exists in
+        // exactly one R file in the pinned corpora, and the R-positions oracle found it
+        // because R has no token whose text is `"a"`. Backticks then quotes, because a
+        // backticked name may itself contain a double quote.
+        const name = this.unquoteString(this.unquoteIdentifier(entryName.text))
+        results.push({ name, range: this.getRange(entryName), via })
       }
     }
     return results
@@ -2059,6 +2324,31 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return results
+  }
+
+  /**
+   * The range of a member DECLARATION: from the declared name to the end of its value.
+   *
+   * A member is written `name = value`, and a range taken from `value` alone starts at
+   * the value. For an R6 or R5 method that means the range begins at the `function`
+   * keyword and so EXCLUDES the name the symbol is published under -- a range that does
+   * not contain the thing it names. The R-positions oracle found 833 of these across the
+   * pinned corpora (dplyr, shiny, testthat), every one a method, all of them off by the
+   * length of `name = `.
+   *
+   * Both nodes are required, so a member with no name is not representable here and the
+   * caller is forced to decide what it means rather than being handed a range that
+   * silently omits the name.
+   */
+  private getDeclarationRange(nameNode: Node, valueNode: Node) {
+    return {
+      startLine: nameNode.startPosition.row + 1,
+      startColumn: nameNode.startPosition.column + 1,
+      endLine: valueNode.endPosition.row + 1,
+      endColumn: valueNode.endPosition.column + 1,
+      startIndex: nameNode.startIndex,
+      endIndex: valueNode.endIndex,
+    }
   }
 
   private getRange(node: Node) {

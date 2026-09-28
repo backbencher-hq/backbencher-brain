@@ -16,9 +16,12 @@
     "F09-negative.R",
     "F10-literals.R",
     "F11-triple-colon.R",
-    "F12-edges.R"
+    "F12-edges.R",
+    "F13-invalid-r.R",
+    "F14-local-boundary.R",
+    "F15-dotdot.R"
   ],
-  "fixtureFacts": 222,
+  "fixtureFacts": 251,
   "precision": 1,
   "recall": 1,
   "corpusSymbols": 0,
@@ -27,8 +30,8 @@
   "grammarErrorNodes": 0,
   "perFile": {
     "F01-assignments.R": {
-      "symbols": 10,
-      "relationships": 10,
+      "symbols": 7,
+      "relationships": 7,
       "imports": 0
     },
     "F02-s3.R": {
@@ -52,9 +55,9 @@
       "imports": 0
     },
     "F06-s7.R": {
-      "symbols": 4,
-      "relationships": 8,
-      "imports": 2
+      "symbols": 6,
+      "relationships": 13,
+      "imports": 4
     },
     "F07-imports.R": {
       "symbols": 0,
@@ -85,15 +88,30 @@
       "symbols": 9,
       "relationships": 16,
       "imports": 0
+    },
+    "F13-invalid-r.R": {
+      "symbols": 2,
+      "relationships": 2,
+      "imports": 0
+    },
+    "F14-local-boundary.R": {
+      "symbols": 9,
+      "relationships": 9,
+      "imports": 0
+    },
+    "F15-dotdot.R": {
+      "symbols": 3,
+      "relationships": 3,
+      "imports": 0
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 222,
-      "observedResolved": 222,
-      "truePositive": 222,
+      "expected": 251,
+      "observedResolved": 251,
+      "truePositive": 251,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -108,25 +126,19 @@
       "earliestFailingLayer": null
     },
     "truePositiveIds": [
-      "symbol:F01-assignments.R:variable|left_arrow|2",
-      "symbol:F01-assignments.R:variable|equals|3",
-      "symbol:F01-assignments.R:variable|super_left|4",
-      "symbol:F01-assignments.R:variable|right_from_value|5",
-      "symbol:F01-assignments.R:variable|name_on_left|6",
-      "symbol:F01-assignments.R:variable|super_a|7",
+      "symbol:F01-assignments.R:variable|left_arrow|4",
+      "symbol:F01-assignments.R:variable|equals|5",
+      "symbol:F01-assignments.R:variable|super_left|6",
+      "symbol:F01-assignments.R:variable|right_from_value|7",
       "symbol:F01-assignments.R:variable|super_b|8",
       "symbol:F01-assignments.R:function|fn_left|9",
-      "symbol:F01-assignments.R:function|fn_right|10",
-      "symbol:F01-assignments.R:variable|deferred_name|13",
+      "symbol:F01-assignments.R:variable|deferred_name|12",
       "rel:F01-assignments.R:contains|global|left_arrow",
       "rel:F01-assignments.R:contains|global|equals",
       "rel:F01-assignments.R:contains|global|super_left",
       "rel:F01-assignments.R:contains|global|right_from_value",
-      "rel:F01-assignments.R:contains|global|name_on_left",
-      "rel:F01-assignments.R:contains|global|super_a",
       "rel:F01-assignments.R:contains|global|super_b",
       "rel:F01-assignments.R:contains|global|fn_left",
-      "rel:F01-assignments.R:contains|global|fn_right",
       "rel:F01-assignments.R:contains|global|deferred_name",
       "symbol:F02-s3.R:method|print.myclass|2",
       "symbol:F02-s3.R:method|summary.myclass|6",
@@ -202,6 +214,8 @@
       "symbol:F06-s7.R:property|celsius|4",
       "symbol:F06-s7.R:property|scale|4",
       "symbol:F06-s7.R:method|format|6",
+      "symbol:F06-s7.R:method|format|13",
+      "symbol:F06-s7.R:method|show|16",
       "rel:F06-s7.R:extends|Temperature|Measurement",
       "rel:F06-s7.R:contains|Temperature|celsius",
       "rel:F06-s7.R:contains|Temperature|scale",
@@ -210,6 +224,11 @@
       "rel:F06-s7.R:calls|format|helper_format",
       "rel:F06-s7.R:contains|global|Temperature",
       "rel:F06-s7.R:imports|global|S7",
+      "rel:F06-s7.R:contains|Reading|format",
+      "rel:F06-s7.R:contains|Reading|show",
+      "rel:F06-s7.R:calls|format|paste",
+      "rel:F06-s7.R:calls|show|invisible",
+      "rel:F06-s7.R:calls|format|as.character",
       "rel:F07-imports.R:references|global|dplyr",
       "rel:F07-imports.R:references|global|methods",
       "rel:F07-imports.R:references|global|stats",
@@ -320,7 +339,35 @@
       "rel:F12-edges.R:contains|global|private_fn",
       "rel:F12-edges.R:contains|global|Base2",
       "rel:F12-edges.R:contains|global|Child2",
-      "rel:F12-edges.R:contains|global|Other2"
+      "rel:F12-edges.R:contains|global|Other2",
+      "symbol:F13-invalid-r.R:variable|valid_right|9",
+      "symbol:F13-invalid-r.R:variable|valid_super_right|10",
+      "rel:F13-invalid-r.R:contains|global|valid_right",
+      "rel:F13-invalid-r.R:contains|global|valid_super_right",
+      "symbol:F14-local-boundary.R:variable|inside_local|3",
+      "symbol:F14-local-boundary.R:variable|in_a_plain_block|9",
+      "symbol:F14-local-boundary.R:variable|bound_in_block|10",
+      "symbol:F14-local-boundary.R:function|wrap|15",
+      "symbol:F14-local-boundary.R:variable|bound_as_argument|16",
+      "symbol:F14-local-boundary.R:variable|bound_via_argument|16",
+      "symbol:F14-local-boundary.R:variable|bound_via_parens|17",
+      "symbol:F14-local-boundary.R:variable|vec|18",
+      "symbol:F14-local-boundary.R:variable|bound_via_subset|19",
+      "rel:F14-local-boundary.R:contains|global|inside_local",
+      "rel:F14-local-boundary.R:contains|global|in_a_plain_block",
+      "rel:F14-local-boundary.R:contains|global|bound_in_block",
+      "rel:F14-local-boundary.R:contains|global|wrap",
+      "rel:F14-local-boundary.R:contains|global|bound_as_argument",
+      "rel:F14-local-boundary.R:contains|global|bound_via_argument",
+      "rel:F14-local-boundary.R:contains|global|bound_via_parens",
+      "rel:F14-local-boundary.R:contains|global|vec",
+      "rel:F14-local-boundary.R:contains|global|bound_via_subset",
+      "symbol:F15-dotdot.R:function|..2dge|3",
+      "symbol:F15-dotdot.R:function|..foo|4",
+      "symbol:F15-dotdot.R:function|uses_dot_one|5",
+      "rel:F15-dotdot.R:contains|global|..2dge",
+      "rel:F15-dotdot.R:contains|global|..foo",
+      "rel:F15-dotdot.R:contains|global|uses_dot_one"
     ],
     "falsePositiveIds": [],
     "falseNegativeIds": [],
@@ -332,10 +379,10 @@
   },
   "measurements": [],
   "note": "Regenerated by script/m12/r-evidence.ts against wasm/tree-sitter-r.wasm and the hand-derived fixture ground truth. Symbol facts are keyed by kind|name|startLine; relationship facts by type|source|target; imports by module. rangeAssertions pin the exact 1-based source columns of members and S4 slots, so a symbol that points at its enclosing call instead of itself fails.",
-  "currentCommit": "993b61aaeed0404842d4f4db4212144cc860d8e1",
+  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-27T05:25:19.811Z",
-    "contentSha256": "f48f9ef36a9831e3538d51bc5581bcf754271ffe046a677aaf6940a36e9438a5"
+    "sealedAt": "2026-09-28T03:05:38.525Z",
+    "contentSha256": "7517890f2056ba05514f65cb2933660ad47c64fd1aa446d634752ae69f26dd10"
   }
 }

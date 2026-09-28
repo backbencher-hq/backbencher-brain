@@ -286,6 +286,105 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "haskell FP wave (HSD1-5)",
   },
+  perl: {
+    id: "perl",
+    wasm: "tree-sitter-perl.wasm",
+    classification: "perl-completeness.json",
+    fixturesDir: "validation/m14/fixtures/perl",
+    docs: ["docs/analyzers/real-perl-analyzer.md"],
+    differentialCheck: "differential-perl",
+    // mojo IS the M12 pinned perl corpus (corpus-manifest perl.corpusTarget),
+    // so the canonical sweep's perf row for this lane is mojo:perl. plack is
+    // the lane's SECOND corpus (a different dialect profile) and has no perf
+    // row of its own.
+    perfKey: "mojo:perl",
+    // Exactly the six kinds the perl analyzer emits as relationships, and all
+    // six are pinned by fixtures. NOT listed, each ruled in
+    // script/m14/spec/perl-completeness.json rather than left as silent
+    // absence: `uses`/`references` (PERLD12 — perl's dependency surface is the
+    // `imports` payload plus the Module Includes pattern, and a bareword call
+    // is resolvable only within a file), `imports`/`exports` as RELATIONSHIPS
+    // (ImportInfo/ExportInfo are payload rows the indexer stores, not edges),
+    // and `overrides` beyond the guessed first-parent chain (PERLD13).
+    requiredKinds: ["calls", "contains", "extends", "implements", "instantiates", "overrides"],
+    // Matrix 1b rows perl actually pins. `complexity` is a FILE-metadata row
+    // (expectMetadata/cyclomaticComplexity), not expectComplexity: perl
+    // complexity is a whole-file decision count, so a per-symbol value would
+    // be a fabricated number rather than a measured one.
+    payloads: {
+      complexity: { key: "expectMetadata", pin: "perl/builtins-and-branches cyclomaticComplexity" },
+      parameters: { key: "expectParameters", pin: "perl/signatures-and-attributes signature field" },
+      decorators: { key: "expectDecorators", pin: "perl/signatures-and-attributes attrlist" },
+      imports: { key: "expectImports", pin: "perl/imports-and-exports use/require" },
+      exports: { key: "expectExports", pin: "perl/imports-and-exports Exporter surface" },
+    },
+    title: "perl wave (#419 sections A-D, G; E/F await the canonical sweep)",
+  },
+  // M60 XML wave (2026-09-27). xml had NO entry here while its analyzer emitted
+  // 228,194 relationships and while two of its declaration classes had no branch
+  // at all, so the authoritative per-language record the ledger names was silent
+  // on the lane that had just had two UPSTREAM grammar defects and a
+  // declared-name recall of 0.045.
+  //
+  // The ontology is settled BY MEASUREMENT (reviews/xml/master-review.md; every
+  // number over 7,975 files / 5.90M nodes / 6 pinned repos):
+  //
+  //   contains    structural containment read off the tree. Every contains TARGET
+  //               is a PUBLISHED SYMBOL in the same file — enforced structurally,
+  //               not by convention, and pinned by xml/dtd-declarations.
+  //   references  a NAME, never a written value. 11,117 resolvable QName
+  //               references; the target is the LOCAL NAME and the prefix rides in
+  //               metadata, because a prefix in a target is a value where a name
+  //               belongs. 1,319 values that resolve to nothing are REFUSED.
+  //   imports     a FILE PATH, the one case where a value is the right target:
+  //               630 distinct schemaLocation targets, 238 DOCTYPE external IDs,
+  //               78 entity/notation external IDs, 18 stylesheet hrefs — 0 of
+  //               them emitted before the fix.
+  //
+  // NOT APPLICABLE, each on a measurement: calls / extends / implements /
+  // overrides / instantiates / exports (XML declares no procedure and has no type
+  // system — a complexType REFERENCES another by `base`, it is not a subclass of
+  // it), and standalone `.dtd` documents (routed, but the xml grammar's `document`
+  // rule requires a document element, so a standalone DTD's root is ERROR under
+  // every build while upstream's separate `dtd` grammar parses them with 0).
+  xml: {
+    id: "xml",
+    wasm: "tree-sitter-xml.wasm",
+    classification: "xml-completeness.json",
+    fixturesDir: "validation/m14/fixtures/xml",
+    docs: ["docs/analyzers/real-xml-analyzer.md"],
+    differentialCheck: "differential-xml",
+    perfKey: "grails-core:xml",
+    requiredKinds: ["contains", "references", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "xml/type-graph" },
+    },
+    title: "xml data/config wave (M60, 2026-09-27)",
+  },
+  nim: {
+    id: "nim",
+    wasm: "tree-sitter-nim.wasm",
+    classification: "nim-completeness.json",
+    fixturesDir: "validation/m14/fixtures/nim",
+    docs: ["docs/analyzers/real-nim-analyzer.md"],
+    differentialCheck: "differential-nim",
+    perfKey: "nim:nim",
+    // Exactly the eight kinds the nim analyzer emits, and all eight are pinned
+    // by validation/m14/fixtures/nim (calls 3, contains 3, extends 1, imports 3,
+    // instantiates 1, overrides 1, references 3, uses 2). `implements` is NOT
+    // listed because it is structurally N/A — a Nim concept is satisfied by
+    // implicit structural dispatch and the source never names a nominal
+    // subtype, so there is nothing to point at. That is ruling NIMD3 in
+    // script/m14/spec/nim-completeness.json, not a silent absence.
+    requiredKinds: ["calls", "contains", "extends", "imports", "instantiates", "overrides", "references", "uses"],
+    // Matrix 1b rows nim actually pins. `complexity` is a per-SYMBOL value
+    // (expectComplexity), unlike perl's whole-file decision count.
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "nim/contract per-symbol cyclomatic complexity" },
+      imports: { key: "expectImports", pin: "nim/contract the three import path shapes" },
+    },
+    title: "nim wave (#419 sections A-D, G; E/F await the canonical sweep)",
+  },
   php: {
     id: "php",
     wasm: "tree-sitter-php.wasm",
@@ -563,7 +662,13 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell"]
+
+// The union of both sides: this list is a SET and both waves found a lane missing
+// from it. Kept from ours: bash. Added by the M60 xml/hcl wave:
+// hcl, xml. The gate prints nothing for a lane it does not visit, so
+// an unlisted lane reads as ABSENT rather than as UNCHECKED — which is the whole
+// defect class, and why a set needs a union rather than a winner.
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
@@ -591,10 +696,16 @@ async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
 
 function loadSpec(cfg: LangConfig) {
   const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "script", "m14", "spec", cfg.classification), "utf8"))
-  const handled = new Set(spec.handled_verified.types)
-  const silent = new Set(spec.internal_silent.types)
+  const handled = new Set(spec.handled_verified?.types ?? [])
+  const silent = new Set(spec.internal_silent?.types ?? [])
   const gapTypes = new Set<string>()
-  for (const g of spec.gap.gaps) {
+  for (const g of spec.gap?.gaps ?? []) {
+    // A spec is DATA. A record with no `node_type` classifies nothing — the same
+    // rule the decisions loop below already applies — and must not take the gate
+    // down. Before this, go's GO-GAP-1 threw here, which presented as an
+    // unrelated TypeError and silently stopped the run after groovy, so 13 of the
+    // 23 gated lanes were not being checked at all.
+    if (typeof g.node_type !== "string") continue
     for (const t of g.node_type.split(",")) gapTypes.add(t.trim())
   }
   const decisionTypes = new Set<string>()
@@ -779,6 +890,16 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
   const sectionFails = checks.filter((c) => c.status !== "pass")
   if (sectionFails.length > 0) {
     failures++
+    // A language registered but not yet CONFORMANT (perl: E and F await the
+    // canonical sweep) needs its passing sections VISIBLE, not just its two
+    // failures — "6 of 8" is a different claim from "it failed", and only the
+    // first one tells a reviewer which work is left. Same courtesy as
+    // differential.ts's scoped-run banner: this prints, it does not write.
+    const SCOPED = !!(globalThis as any).__SCOPED_LANG
+    if (SCOPED) {
+      console.log(`${cfg.id} SECTIONS (scoped run — M14.0.SPEC evidence is NOT written):`)
+      for (const c of checks) console.log(`  ${c.status === "pass" ? "pass" : "FAIL"}  ${c.id.padEnd(28)} ${c.detail}`)
+    }
     for (const c of sectionFails) console.error(`${cfg.id} SECTION FAIL: ${c.id} — ${c.detail}`)
   }
   const summary = `${cfg.id}: ${types.length} types classified; sections A-H: ${checks.length - sectionFails.length}/${checks.length} pass`
@@ -789,6 +910,9 @@ async function main() {
   const listOnly = process.argv.includes("--list")
   const langArg = process.argv.includes("--lang") ? process.argv[process.argv.indexOf("--lang") + 1] : undefined
   const ids = langArg ? [langArg] : GATED_LANGS
+  // runLang reads this to decide whether a partial section list is worth
+  // printing; a --lang run is a diagnostic, a bare run is the milestone gate.
+  ;(globalThis as any).__SCOPED_LANG = langArg
   const cfgs = ids.map((id) => {
     if (!LANG_CONFIGS[id]) throw new Error(`unknown language ${id}`)
     return LANG_CONFIGS[id]

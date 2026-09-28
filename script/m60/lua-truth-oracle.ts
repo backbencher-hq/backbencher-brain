@@ -52,6 +52,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { parseFile } from "../../src/ast/pool-worker"
+import { parseWithAnalyzer } from "./lua-analyzer-direct"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const REPOS = "$HOME/fixtures/repositories"
@@ -90,6 +91,8 @@ interface Walk {
   edges: TruthEdge[]
   /** local variable names declared directly in each function scope */
   localsIn: Map<string, Set<string>>
+  /** LUA-28: self-containment edges deliberately NOT derived. Reported, not hidden. */
+  selfContainmentSkipped: number
   /** every table name bound to a table_constructor anywhere in the file */
   declaredTables: Set<string>
   /** ORA-4: scope -> its enclosing scope, so a name can be resolved up the chain */
@@ -112,7 +115,55 @@ function calleeOf(call: any): { name: string; nameNode: any } | null {
   // analyzer had — so the two agreed on a wrong answer and the differential
   // could not see it. Both sides now skip it, which is the point: an oracle that
   // shares a defect is worse than no oracle, because it launders the defect.
-  if (n.type === "table_index_expression") return null
+  //
+  // LUA-27: this guard was DEAD CODE for the whole life of LUA-22, because it
+  // tested for `table_index_expression` — a node type this grammar never emits.
+  // The wired grammar builds `dao[method or context](x)` as
+  // function_call > bracket_index_expression, and the ANALYZER's own LUA-22 fix
+  // already corrected the name to `bracket_index_expression` with a comment
+  // recording the mistake. The oracle's copy kept the wrong one, so every
+  // computed-index call fell through to `return { name: n.text }` and the truth
+  // side carried targets like `dao[method or context .. "_by_" .. endpoint_key]`
+  // — a PROGRAM, not a name. 46 such edges on kong, all of them filed as analyzer
+  // misses. A guard copied from another file and never re-measured against the
+  // grammar is how a fixed defect stays fixed on one side and live on the other.
+  // LUA-30: a LITERAL string index is a NAME, and it is the same name
+  // `dao.rows()` gives — `dao["rows"]()` and `dao.rows()` call the same field.
+  // LUA-27 stopped the whole `bracket_index_expression` class, which also stopped
+  // the literal half of it. The two are indistinguishable BY TYPE (both are
+  // bracket_index_expression) and distinguishable by the `field` child, measured:
+  //   dao["rows"]()  field=string      -> the name is the unquoted content
+  //   dao[1]()       field=number      -> an array index, not a name
+  //   dao[k]()       field=identifier  -> a VARIABLE holding the key; which key
+  //                                       is not statically knowable
+  // Stated from the grammar rather than copied from the analyzer: the analyzer
+  // independently reached the same rule in the same pass, and two sides reaching
+  // one rule from one measurement is the only kind of agreement worth having.
+  if (n.type === "bracket_index_expression") {
+    const field = n.childForFieldName("field")
+    if (field?.type !== "string") return null
+    let content: any = null
+    for (let j = 0; j < field.namedChildCount; j++) {
+      const c = field.namedChild(j)
+      if (c && c.type === "string_content") { content = c; break }
+    }
+    const name = content ? content.text : field.text.replace(/^["']|["']$/g, "")
+    return name ? { name, nameNode: field } : null
+  }
+  // LUA-28: the same category error, one step further out. A call ON A CALL —
+  // `json_array_iterator('{1, 2, 3}')()`, `sandbox.sandbox(...)()` — has a callee
+  // that is itself a `function_call`, so the fallthrough named the inner call and
+  // the truth side carried `json_array_iterator('{1, 2, 3}')` as a target. There
+  // is no name there: what is called is the RESULT of a call, and nothing about
+  // that is statically knowable. The analyzer drops these and is right.
+  //
+  // Stated as a WHITELIST rather than another blacklist entry, because two
+  // blacklists in a row is how the dead guard above happened: each named a type
+  // that had to be measured, and a type nobody re-measures stays wrong forever.
+  // These four are the only callee forms that carry a name, and the grammar is
+  // the authority for that list.
+  if (n.type === "function_call" || n.type === "table_constructor" || n.type === "binary_expression" ||
+      n.type === "parenthesized_expression" || n.type === "string" || n.type === "number") return null
   return { name: n.text, nameNode: n }
 }
 
@@ -225,6 +276,17 @@ function collectTables(root: any, out: Set<string>): void {
 // declaration — the analyzer skips it and is right. So the oracle resolves a
 // name against the whole enclosing SCOPE CHAIN, which is what lexical scope
 // means.
+// M60 LUA-33: the ONE rule for "does this node carry a name", shared by the
+// callee path (LUA-27/LUA-30) and the setmetatable path (LUA-33), so the two
+// cannot drift the way `table_index_expression` did. Three forms carry a name;
+// nil, a call, a binary expression and a table constructor do not.
+function nameBearing(node: any): string | undefined {
+  if (!node) return undefined
+  if (node.type === "identifier") return node.text
+  if (node.type === "dot_index_expression" || node.type === "method_index_expression") return node.text
+  return undefined
+}
+
 function visibleInChain(w: Walk, scope: string, name: string): boolean {
   let s: string | undefined = scope
   const seen = new Set<string>()
@@ -236,7 +298,7 @@ function visibleInChain(w: Walk, scope: string, name: string): boolean {
   return false
 }
 
-function walk(node: any, scope: string, w: Walk, rel: string): void {
+function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void {
   if (node.isMissing) return
 
   if (node.type === "variable_declaration") {
@@ -270,11 +332,35 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       for (let i = 0; i < list.namedChildCount; i++) {
         const id = list.namedChild(i)
         if (id?.type !== "identifier") continue
-        if (scope !== "global") {
-          if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
-          w.localsIn.get(scope)!.add(id.text)
-        }
-        w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        // M60 LUA-25: file-scope locals MUST be registered here too, and were
+        // not. The `if (scope !== "global")` guard skipped the bookkeeping while
+        // still pushing the `contains` edge below, so `local prev_min_at` at
+        // kong/cluster_events/init.lua:272 produced an edge but left
+        // `localsIn.get("global")` empty. `visibleInChain` then walked
+        // `poll` -> `global`, found nothing, and returned false — so the
+        // upvalue WRITE at :286 was read as a fresh declaration and the oracle
+        // demanded `contains poll -> prev_min_at`. The analyzer does not emit it
+        // and is right: `prev_min_at` is a file-scope local that `poll` closes
+        // over, not a local of `poll`.
+        //
+        // This is LUA-21's shape again, in the instrument. LUA-21 was an
+        // upvalue assignment emitting a containment edge naming a symbol that
+        // does not exist; it was fixed in the analyzer, and the oracle's
+        // ORA-4 guard for the same case was blind to file scope the whole time.
+        // 242 of kong's 290 analyzer-attributable missing edges are this one
+        // missing line.
+        if (!w.localsIn.has(scope)) w.localsIn.set(scope, new Set())
+        w.localsIn.get(scope)!.add(id.text)
+        // LUA-28: a scope cannot be a member of itself. `contains new_router ->
+        // new_router` is incoherent on any reading — the scope IS the name — and
+        // the analyzer's member-identity gate has a standing check that no
+        // symbol duplicates its own owner. The oracle derived 5 such edges on
+        // kong (`new_router` L426, `initialize` L36, `sleep_once_for_balancer_init`
+        // L802 and two more), all filed as analyzer misses, and the analyzer was
+        // right to omit every one. Skipped rather than emitted, and not silently:
+        // the count is reported.
+        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        else w.selfContainmentSkipped++
         // A bare `local x` carries no value, so there is nothing to test for a
         // table. A declaration WITH a value can bind a table, and the
         // `instantiates` rule depends on knowing which names those are.
@@ -283,6 +369,44 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       }
     }
   }
+
+  // M60 LUA-26 — DELIBERATELY NOT DERIVED, and the reason is a decision that has
+  // not been made rather than a rule that was overlooked.
+  //
+  // A for-loop's control variables are bindings in Lua, and an earlier version
+  // of this oracle DID derive `contains scope -> <loop var>` for both clause
+  // forms (for_numeric_clause's `name` field, for_generic_clause's
+  // variable_list). That produced 2,921 additional missing edges on kong and
+  // read as 2,921 analyzer defects. It is not 2,921 defects, and the evidence
+  // is a two-function probe:
+  //
+  //   local function sel(a)  for _, listener in ipairs(a) do print(listener) end end
+  //   local function sel2(a) for _, listener in ipairs(a) do listener = a end end
+  //
+  // emits `sel2 -> listener` and NOT `sel -> listener`. The analyzer has no
+  // for-clause declaration rule at all — for_statement appears in it once, as a
+  // cyclomatic-complexity counter — so the sel2 symbol is manufactured by the
+  // ASSIGNMENT, not by the loop. Which means the analyzer is not "missing" loop
+  // variables by accident; it does not model them, consistently, and a file that
+  // only READS a loop variable gets no symbol while one that ASSIGNS it does.
+  //
+  // So the question is not which side is wrong, it is whether loop variables
+  // belong in the symbol graph at all. FOR: they are locals, and
+  // `contains sel -> listener` is a true statement. AGAINST: the variable's
+  // scope is the LOOP, not the function, so filing it under the function is
+  // imprecise, and a binding that lives one iteration is rarely a navigation
+  // target. That is a product decision about the symbol table's meaning, and the
+  // oracle is not entitled to make it by deriving edges the analyzer never
+  // claimed. Recorded as LUA-26, open, for the owner.
+  //
+  // It also explains this run's single UNEXPLAINED edge, which is the shape of a
+  // real defect and was nearly recorded as one: the analyzer emits
+  // `contains Schema:errors_to_string -> err` for `for _, err in pairs(...)`
+  // in kong/db/schema/init.lua, where `err` is bound by no `local` — but it is
+  // ASSIGNED at :2320 (`err = self:errors_to_string(err)`), and that assignment
+  // is what creates the symbol. Two different routes to the same true edge. The
+  // oracle is silent on the loop, so the agreement is a coincidence rather than
+  // a derivation, which is why the edge showed up unexplained.
 
   if (node.type === "assignment_statement" && node.parent?.type !== "variable_declaration") {
     const vl = node.namedChild(0)
@@ -296,7 +420,8 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
         // skip those. The analyzer answers the same question with an inherited
         // frame, which is the same rule expressed structurally.
         if (visibleInChain(w, scope, id.text)) continue
-        w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        else w.selfContainmentSkipped++
       }
     }
   }
@@ -357,16 +482,32 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
       if (callee.name === "setmetatable") {
         const target = argAt(node, 0)
         const meta = argAt(node, 1)
-        // The metatable may be ANY expression, not only a bare identifier.
-        // `setmetatable(e, Emitter.meta)` — luvit/deps/hooks.lua:37 — is a real
-        // inheritance edge, and the first version of this oracle required
-        // `meta.type === "identifier"`, so it called 3 genuine edges on luvit
-        // FABRICATIONS and recorded the analyzer's precision as 0.7. The defect
-        // was the oracle's. Requiring an identifier was never justified: the
-        // second argument of setmetatable is a table-valued expression by
-        // definition, and a member expression names one perfectly well.
-        if (target && meta && target.type !== "table_constructor" && meta.type !== "table_constructor") {
-          w.edges.push({ label: "extends", from: target.text, target: meta.text, line: meta.startPosition.row + 1, rule: "setmetatable", rel })
+        // M60 LUA-33: the relaxation that fixed LUA-18 overcorrected, and the
+        // oracle became the mirror image of the defect it was correcting.
+        //
+        // LUA-18 retracted an `extends` over-fabrication claim: the oracle had
+        // required `meta.type === "identifier"`, called 3 genuine edges
+        // fabrications, and recorded the analyzer's precision as 0.7. The
+        // correction — "the second argument of setmetatable is a table-valued
+        // expression by definition" — was right about MEMBER expressions
+        // (`Emitter.meta`) and wrong about everything else. Dropping the type
+        // requirement entirely let `setmetatable(_G, nil)` derive
+        // `extends _G -> nil` (5 sites on kong), `setmetatable(opts or {}, defaults)`
+        // derive a SOURCE that is a binary expression, and
+        // `setmetatable(env.ngx, getmetatable(ngx))` derive a call as a target.
+        //
+        // The rule is the LUA-32 one, which the analyzer adopted in the same pass
+        // and this rule missed: an endpoint must be a NAME. identifier,
+        // dot_index_expression and method_index_expression carry one; nil, a
+        // binary expression, a call and a table constructor do not. `nil` is not a
+        // superclass and `getmetatable(ngx)` is not a name.
+        //
+        // 16 kong edges were the difference, and they were the ORACLE's — the
+        // analyzer was right to refuse all of them.
+        const srcName = nameBearing(target)
+        const mtName = nameBearing(meta)
+        if (target && meta && target.type !== "table_constructor" && meta.type !== "table_constructor" && srcName && mtName) {
+          w.edges.push({ label: "extends", from: srcName, target: mtName, line: meta.startPosition.row + 1, rule: "setmetatable", rel })
         }
       }
 
@@ -385,7 +526,13 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     }
   }
 
-  if (node.type === "return_statement" && scope === "global") {
+  // LUA-24: `fnDepth === 0` is the real test for "is this a module export", and
+  // it is a different test from `scope === "global"`. The scope NAME can be
+  // `global` inside an anonymous function, because an unnamed function
+  // contributes no name; the depth cannot. Both are required: depth keeps an
+  // in-function return out, and the scope check keeps the oracle from deriving
+  // an export edge attributed to some other callable.
+  if (node.type === "return_statement" && scope === "global" && fnDepth === 0) {
     const list = node.namedChild(0)
     const first = list?.namedChild(0)
     // Only `return <identifier>`: the oracle asserts what the analyzer's own
@@ -394,6 +541,42 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     // finding, not a mirror.
     if (first?.type === "identifier") {
       w.edges.push({ label: "exports", from: "global", target: first.text, line: first.startPosition.row + 1, rule: "return-id", rel })
+    }
+    // M60 LUA-09: a returned table literal names its own members, and the
+    // analyzer now publishes them. This branch was added at the same time, and
+    // it is a MIRROR — which is the whole risk of this instrument. If the two
+    // sides are wrong together, the differential reports agreement. So the
+    // independent check on this rule is not the oracle at all: it is
+    // script/m60/lua-export-census.ts, which derives the same expectation from
+    // the grammar by a different walk and compares it to the analyzer over 1,508
+    // corpus files. The oracle's job is only to keep the PIPELINE-side truth
+    // complete so the LUA-14 gap is measured at its true size — it was
+    // understating it as 500 edges when the census derives 1,579.
+    //
+    // Only the `name` FIELD of a member is read. A positional entry has none,
+    // and publishing it would mean inventing a name, so the oracle refuses to
+    // derive one for the same reason the analyzer does.
+    else if (first?.type === "table_constructor") {
+      for (let i = 0; i < first.namedChildCount; i++) {
+        const f = first.namedChild(i)
+        if (!f || f.type !== "field") continue
+        const key = f.childForFieldName("name")
+        if (!key) continue
+        let name: string | undefined
+        if (key.type === "identifier") name = key.text
+        else if (key.type === "string") {
+          // The unquoted text lives in the `content` child; falling back to the
+          // raw text would publish `"k"` with its quotes.
+          let content: any = null
+          for (let j = 0; j < key.namedChildCount; j++) {
+            const c = key.namedChild(j)
+            if (c && c.type === "string_content") { content = c; break }
+          }
+          name = content ? content.text : key.text.replace(/^["']|["']$/g, "")
+        }
+        if (!name) continue
+        w.edges.push({ label: "exports", from: "global", target: name, line: key.startPosition.row + 1, rule: "return-table-member", rel })
+      }
     }
   }
 
@@ -409,14 +592,30 @@ function walk(node: any, scope: string, w: Walk, rel: string): void {
     ? (functionNameOf(node)?.label ?? scope)
     : scope
   if (childScope !== scope) w.scopeParent.set(childScope, scope)
+  // M60 LUA-24: an ANONYMOUS function must still count as a function for
+  // anything that asks "is this lexically inside a function?", even though it
+  // contributes no scope NAME. `functionNameOf` returns null when there is no
+  // `name` field, so `childScope` above stays the enclosing scope and the body
+  // was walked as if it were file scope — which made the oracle derive
+  // `exports global -> v` for `return v` inside `for n, v in pairs(h) do`, and
+  // 218 such edges across kong. The analyzer does not publish them, and it is
+  // right: that is LUA-20, the same defect this lane fixed in the analyzer, here
+  // in the instrument, and invisible until LUA-09 made exports measurable at all.
+  //
+  // Tracked as a depth rather than as a scope name on purpose. Giving the
+  // anonymous function a synthetic scope name (`<anon@L113>`) would fix exports
+  // AND silently change every `contains`/`calls` edge inside it, because those
+  // carry the scope as their source. Depth answers only the question the export
+  // rule actually asks, and leaves the other labels byte-identical.
+  const childDepth = node.type === "function_declaration" || node.type === "function_definition" ? fnDepth + 1 : fnDepth
   for (let i = 0; i < node.namedChildCount; i++) {
     const c = node.namedChild(i)
-    if (c) walk(c, childScope, w, rel)
+    if (c) walk(c, childScope, w, rel, childDepth)
   }
 }
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
-  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set(), scopeParent: new Map([["global", undefined]]) }
+  const w: Walk = { edges: [], localsIn: new Map(), declaredTables: new Set(), scopeParent: new Map([["global", undefined]]), selfContainmentSkipped: 0 }
   collectTables(root, w.declaredTables)
   walk(root, "global", w, rel)
   // A set, because the analyzer's edge identity is (label, from, target): N call
@@ -439,11 +638,37 @@ async function main(): Promise<void> {
   const repoRoot = join(REPOS, repo)
   const sampleArg = arg("--sample")
   const selftest = process.argv.includes("--selftest")
-  const outPath = arg("--out", join(ROOT, "validation", "m60", "results", `lua-truth-oracle-${repo}${sampleArg ? `-${sampleArg}` : ""}.json`))
+  // The default artifact name must distinguish EVERY way the file set can be
+  // narrowed, not just --sample. It did not: a `--files` run and a full-corpus run
+  // both wrote `lua-truth-oracle-kong.json`, so the corpus mutation harness —
+  // which runs ~10 narrowed passes and passes no --out — overwrote the
+  // authoritative corpus artifact with a 14-file slice, and that slice was
+  // committed as the corpus result. `filesDrawn: 14` in a file named for 1,309
+  // is exactly the kind of quiet mislabel this lane keeps catching elsewhere.
+  const filesArg0 = arg("--files")
+  const sliceTag = sampleArg ? `-${sampleArg}` : filesArg0 ? `-files${filesArg0.replace(/\W+/g, "")}` : ""
+  const outPath = arg("--out", join(ROOT, "validation", "m60", "results", `lua-truth-oracle-${repo}${sliceTag}.json`))
 
   let files = execFileSync("git", ["-C", repoRoot, "ls-files", "*.lua", "*.luau"], { encoding: "utf8", maxBuffer: 1 << 28 })
     .trim().split("\n").filter(Boolean)
   if (sampleArg) files = files.slice(0, Number(sampleArg))
+  // --files <path> : a newline-separated list of corpus-relative paths. Added for
+  // the corpus mutation harness, which must fire on a construct rather than on
+  // whatever happens to sort first: the first 25 kong files contain ZERO
+  // call-on-call and ZERO literal-index calls, so a mutation harness pointed at
+  // them measures nothing and reports its mutants as SURVIVING when they simply
+  // had no trigger. "Inconclusive" and "survived" are different facts and the
+  // harness has to be able to tell them apart.
+  const filesArg = filesArg0
+  if (filesArg) {
+    const want = new Set(readFileSync(filesArg, "utf8").split("\n").map((x) => x.trim()).filter(Boolean))
+    const keep = files.filter((f) => want.has(f.replace(`${repoRoot}/`, "")) || want.has(f))
+    if (keep.length === 0) {
+      console.error(`--files matched none of ${files.length} corpus files; check the list is repo-relative`)
+      process.exit(2)
+    }
+    files = keep
+  }
 
   loadNoiseTargets(readFileSync(join(ROOT, "src", "ast", "pool-worker.ts"), "utf8"))
   const { loadWebTreeSitter, resolveWasmAsset } = await import("../../src/util/wasm")
@@ -460,6 +685,19 @@ async function main(): Promise<void> {
 
   const truth = new Map<string, TruthEdge>()
   const observed = new Map<string, any>()
+  // LUA-31: which labels the pipeline DISCARDS, PROVEN rather than inferred.
+  // The direct path costs a second parse per file, so the probe is capped, and the
+  // cap is reported with the verdict: a conclusion drawn from 150 files and
+  // presented as a property of 1,309 is the quiet extrapolation this lane keeps
+  // catching itself doing.
+  const DUAL_SAMPLE_CAP = 150
+  const dualProvesDiscard = new Set<string>()
+  const dualAgrees = new Set<string>()
+  let dualMeasured = 0
+  let exportTruth = 0, exportHit = 0, exportSpurious = 0, exportFilesProbed = 0
+  const exportMissed: string[] = []
+  const exportExtra: string[] = []
+  const exportTruthNames = new Set<string>()
   const perLabelTruth = new Map<string, number>()
   const perLabelObs = new Map<string, number>()
   const missingSamples: any[] = []
@@ -477,7 +715,10 @@ async function main(): Promise<void> {
 
     const tree = parser.parse(src)
     if (tree.rootNode.hasError) { parseErrors++; continue }
-    for (const e of deriveLuaTruth(tree.rootNode, rel)) truth.set(`${rel}|${key(e)}`, e)
+    for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+      truth.set(`${rel}|${key(e)}`, e)
+      if (e.label === "exports") exportTruthNames.add(`${rel}|${e.target}`)
+    }
 
     const r: any = await parseFile(abs, repoRoot)
     if (r.errors?.length) parseErrors++
@@ -487,15 +728,100 @@ async function main(): Promise<void> {
       perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
     }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) perLabelTruth.set(e.label, (perLabelTruth.get(e.label) ?? 0) + 1)
+
+    // ── LUA-31: PROVE which labels the pipeline discards; never infer it ───────
+    // A label the pipeline emitted zero times across the corpus used to be
+    // classified "structurally undeliverable", i.e. excused. That inference fails
+    // in the one direction that matters most: if the analyzer emits NOTHING for a
+    // label, the pipeline also emits nothing, the label looks discarded, and every
+    // truth edge for it is excused. A collapsed analyzer and a dropped field become
+    // indistinguishable.
+    //
+    // Caught by mutation, not by reading. Neutering addContainsRelationships —
+    // dropping EVERY synthesized contains edge — moved kong's missing from 3 to 47
+    // on a 5-file slice and STILL reported `analyzer=0`, with all 47 filed as
+    // pipeline-discarded. The differential passed a totally broken analyzer, which
+    // is the exact failure this lane exists to prevent, committed by the very fix
+    // that was supposed to improve the split.
+    //
+    // So the verdict must be evidence. Parse the same file through the DIRECT path
+    // too: a label is discarded only where the analyzer supplies it and the
+    // pipeline does not, on that same file. Absence on both sides is not evidence.
+    if (dualMeasured < DUAL_SAMPLE_CAP) {
+      dualMeasured++
+      const direct: any = await parseWithAnalyzer(abs)
+      const dLabels = new Set<string>()
+      for (const e of direct.relationships ?? []) if (e.type) dLabels.add(e.type)
+      if ((direct.exports ?? []).length > 0) dLabels.add("exports")
+      const pLabels = new Set<string>()
+      for (const e of r.relationships ?? []) if (e.type) pLabels.add(e.type)
+      if ((r.exports ?? []).length > 0) pLabels.add("exports")
+      for (const l of dLabels) {
+        if (pLabels.has(l)) dualAgrees.add(l)
+        else dualProvesDiscard.add(l)
+      }
+      for (const l of pLabels) dualAgrees.add(l)
+
+      // ── exports on the DIRECT path, because the pipeline cannot see them ────
+      // LUA-14 drops the `exports` field at the worker boundary, so every export
+      // comparison this instrument makes through parseFile is a comparison against
+      // an empty set. That is not a weak signal, it is NO signal: a corpus
+      // mutation that deletes the entire returned-table export branch (LUA-09) or
+      // republishes every in-function return as a file export (LUA-20) leaves the
+      // pipeline output byte-identical, because the pipeline was never carrying
+      // exports to begin with. Both mutants SURVIVED the corpus differential for
+      // exactly that reason.
+      //
+      // So exports get their own comparison against the same tree-derived truth,
+      // read through parseWithAnalyzer. This is the same measurement
+      // script/m60/lua-export-census.ts makes, and having it here as well as there
+      // was the duplication that let the two drift apart into a 218-edge
+      // disagreement (LUA-24). One instrument, two paths, one truth.
+      const dExports = new Set<string>((direct.exports ?? []).map((e: any) => e.name))
+      for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+        if (e.label !== "exports") continue
+        exportTruth++
+        if (dExports.has(e.target)) exportHit++
+        else if (exportMissed.length < 25) exportMissed.push(`${e.target} (${e.rule}, L${e.line}) ${rel}`)
+      }
+      for (const n of dExports) {
+        if (!exportTruthNames.has(`${rel}|${n}`)) {
+          let anyTruth = false
+          for (const e of deriveLuaTruth(tree.rootNode, rel)) if (e.label === "exports" && e.target === n) { anyTruth = true; break }
+          if (!anyTruth) { exportSpurious++; if (exportExtra.length < 25) exportExtra.push(`${n} ${rel}`) }
+        }
+      }
+      exportFilesProbed++
+    }
   }
 
   // ── the two directions ─────────────────────────────────────────────────────
   const missing: any[] = []
   const unexplained: any[] = []
-  // Split the missing set: an edge the pipeline STRUCTURALLY CANNOT deliver is
-  // not the same fact as an edge the analyzer forgot. Conflating them would
-  // send the next reader hunting an analyzer bug that is not there.
+  // Split the missing set THREE ways, not two. An edge the pipeline STRUCTURALLY
+  // CANNOT deliver is not the same fact as an edge the analyzer forgot, and
+  // conflating them sends the next reader hunting an analyzer bug that is not
+  // there. The previous classifier knew only about the noise denylist
+  // (LUA-16), so EVERY export edge — 1,579 of them on kong — was filed as
+  // "analyzer-attributable" when the analyzer publishes all 1,579 and the worker
+  // drops the field. Measured, not assumed: `parseFile` on a file with two
+  // exports returns no `exports` KEY AT ALL, while the direct path returns both.
+  //
+  // "Structurally absent" is derived from the run, never hardcoded: a label the
+  // pipeline emitted zero times across the whole corpus cannot be judged on
+  // recall, because there is no observed side to compare. That also means the
+  // split heals itself when LUA-14 is fixed and the label starts appearing.
+  const labelsSeenInPipeline = new Set<string>()
+  // The observed edge is the analyzer's relationship object, so the field is
+  // `type`. The truth edge calls the same thing `label`. Reading `o.label` here
+  // yields undefined for EVERY observed edge, the set stays empty, and the whole
+  // corpus is misfiled as "pipeline discarded" — which is what the first run of
+  // this leg did: analyzer=0, PASS, on 1,867 edges it never actually examined.
+  // A gate that reports zero defects because it classified everything as
+  // unjudgeable is worse than no gate, and it looked exactly like a clean lane.
+  for (const o of observed.values()) if (o.type) labelsSeenInPipeline.add(o.type)
   const missingByNoiseFilter: any[] = []
+  const missingByPipelineDiscard: any[] = []
   const missingFromAnalyzer: any[] = []
   const lineWrong: any[] = []
   for (const [k, t] of truth) {
@@ -503,6 +829,10 @@ async function main(): Promise<void> {
     if (!o) {
       missing.push(t)
       if (NOISE_TARGETS.has(leafOf(t.target))) missingByNoiseFilter.push(t)
+      // LUA-31: excused ONLY on evidence that the pipeline drops the label, never
+      // on its absence. `labelsSeenInPipeline` survives as a cross-check and is no
+      // longer load-bearing.
+      else if (dualProvesDiscard.has(t.label)) missingByPipelineDiscard.push(t)
       else missingFromAnalyzer.push(t)
       continue
     }
@@ -595,7 +925,10 @@ async function main(): Promise<void> {
   // reported and excluded from the analyzer verdict. Counting it as an analyzer
   // failure would be a false accusation; ignoring it would hide a real user-facing
   // hole. It gets its own number and its own finding.
-  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0
+  // The direct-path export comparison is part of the verdict, not decoration: it is
+  // the ONLY place an export defect can show up at all while LUA-14 stands.
+  const exportsDirectBad = exportTruth > 0 && (exportHit !== exportTruth || exportSpurious > 0)
+  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad
   const report = {
     schemaVersion: 1,
     kind: "lua_truth_oracle_differential",
@@ -610,6 +943,33 @@ async function main(): Promise<void> {
       observedEdges: observed.size,
       missing: missing.length,
       missingFromAnalyzer,
+      // LUA-14, measured per run: labels the pipeline never emitted at all. Their
+      // edges are the pipeline's, not the analyzer's, and calling them the
+      // analyzer's is what produced a "1,797 vs 1,579" phantom disagreement.
+      exportsDirectPath: {
+        note: "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+        filesProbed: exportFilesProbed,
+        truth: exportTruth,
+        hit: exportHit,
+        missed: exportTruth - exportHit,
+        spurious: exportSpurious,
+        recall: exportTruth ? Number((exportHit / exportTruth).toFixed(6)) : 1,
+        precision: exportHit + exportSpurious ? Number((exportHit / (exportHit + exportSpurious)).toFixed(6)) : 1,
+        missedSample: exportMissed,
+        spuriousSample: exportExtra,
+      },
+      pipelineDiscardEvidence: {
+        note: "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+        filesProbed: dualMeasured,
+        cap: DUAL_SAMPLE_CAP,
+        provenDiscarded: [...dualProvesDiscard].sort(),
+        observedOnBothSides: [...dualAgrees].sort(),
+      },
+      missingByPipelineDiscard: {
+        total: missingByPipelineDiscard.length,
+        byLabel: shapes(missingByPipelineDiscard),
+        labelsAbsentFromPipeline: [...new Set(missingByPipelineDiscard.map((e) => e.label))].sort(),
+      },
       missingByPipelineNoiseFilter: missingByNoiseFilter.length,
       noiseTargetsHit: [...new Set(missingByNoiseFilter.map((e) => e.target))].sort(),
       unexplained: unexplained.length,
@@ -639,9 +999,12 @@ async function main(): Promise<void> {
 
   console.log(`repo=${repo} files=${files.length} parseErrorFiles=${parseErrors}`)
   console.log(`truth=${truth.size} observed=${observed.size}`)
-  console.log(`MISSING=${missing.length} (analyzer=${missingFromAnalyzer.length}, pipelineNoiseFilter=${missingByNoiseFilter.length}) UNEXPLAINED=${unexplained.length}`)
+  console.log(`MISSING=${missing.length} (analyzer=${missingFromAnalyzer.length}, pipelineNoiseFilter=${missingByNoiseFilter.length}, pipelineDiscardedLabel=${missingByPipelineDiscard.length}) UNEXPLAINED=${unexplained.length}`)
+  if (missingByPipelineDiscard.length) console.log(`  PROVEN pipeline-discarded: ${[...new Set(missingByPipelineDiscard.map((e) => e.label))].sort().join(", ")}  (direct path supplied these and the pipeline did not, on ${dualMeasured} probed files)`)
+  if (dualProvesDiscard.size === 0) console.log(`  WARNING: no label could be PROVEN discarded from ${dualMeasured} probed files — every missing edge is charged to the analyzer`)
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
+  console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
   console.log("\nper label:")
   for (const L of LABELS) {
     const b = byLabel[L]

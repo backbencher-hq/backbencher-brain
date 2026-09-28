@@ -32,10 +32,39 @@ Values are read only from their grammar nodes (`AttValue`, `SystemLiteral`,
 | XML Schema construct | `class` | ordinary `element` symbol, with `isSchemaConstruct` metadata for known XSD vocabulary names |
 
 Every symbol has an exact AST range, visibility, metadata node type, and stable
-owner identity where an element is nested. Qualified element names preserve XML
-prefixes (`xs:element`, `book:book`); containment uses the nearest AST element
-owner. XML has no function parameters, return types, decorators, or exports, so
-those fields are intentionally absent rather than synthesized.
+owner identity where an element is nested. XML has no function parameters,
+return types, decorators, or exports, so those fields are intentionally absent
+rather than synthesized.
+
+### Declared names, not written prefixes
+
+Qualified element names **do not** keep their prefix. An element in a namespace
+the analyzer knows a declaration vocabulary for is published under the name it
+**declares**, and the written `prefix:local` form is kept in metadata:
+
+| written | declared name | namespace |
+| --- | --- | --- |
+| `xsd:element name="catalog"` | `catalog` | `…/2001/XMLSchema` |
+| `xsl:template name="render"` | `render` | `…/1999/XSL/Transform` |
+| `book:book` | `book` (a declaration) or the local name (not one) | `…/2001/XMLSchema-instance` is a known-vocabulary namespace; an ordinary `book:` prefix is not, and the local name is used |
+
+This is not a rename for tidiness. The question the index has to answer is
+"which component does this name refer to", and in a 2,439-file XSD corpus the
+prefix is a property of the *file*, while the declared name is a property of the
+*component*. `xs:element` is the same 30 times in `spring-context.xsd` and
+`hibernate-mapping.xsd` and refers to a different component in each. Publishing
+the prefix collapsed two components onto one identity.
+
+`metadata.writtenName` keeps the source form, `metadata.namespace` the resolved
+URI, and `metadata.isVocabDeclaration`/`vocabNamespace` mark the symbols whose
+name came from a declaration attribute. Namespaces that are **not** declaration
+vocabularies are left alone: `book:book` with an unrecognised prefix keeps
+`book:book`, because there is no declaration attribute to read a better name
+from and inventing one would be a guess.
+
+Namespaces are resolved ONCE per element and inherited through a scoped stack, so
+a prefix bound on the root is visible to every descendant. Resolving per text node
+loses root-level bindings for the majority of a real schema.
 
 Syntax errors are retained by the engine as warning `ParseError` records. The
 negative fixture demonstrates that malformed XML is not silently accepted or
@@ -47,9 +76,44 @@ turned into phantom recovery symbols.
 | --- | --- |
 | `contains` | element → nested element; element → attribute/namespace; element → processing instruction when nested; DTD declaration → declaration |
 | `imports` | DOCTYPE `ExternalID` system/public literal → external DTD path |
+| `references` | a QName-valued attribute resolved through a declared prefix → the component it names (`type`, `base`, `ref`, `itemType`, `substitutionGroup`, …). The target is the LOCAL name, published as a symbol on the same document, so the edge is resolvable rather than dangling |
+| `calls` | `xsl:call-template` / `xsl:apply-templates` → the `xsl:template` that declares the named template |
+| `imports` | `xsl:import`/`xsl:include` `href` → the stylesheet path, alongside the DOCTYPE and `schemaLocation` forms |
 | `uses` | not emitted; XML syntax alone does not establish executable use |
-| `calls`, `extends`, `implements`, `instantiates`, `exports`, `overrides`, `references` | not emitted; no such semantics exist in the XML grammar |
+| `extends`, `implements`, `instantiates`, `exports`, `overrides` | not emitted; no such semantics exist in the XML grammar |
 | imports array | external DTD `ExternalID` becomes an `ImportInfo` with `importType: xml-doctype` |
+
+Every `contains` target is a symbol published by this analyzer — that is a hard
+invariant, checked by a gate, because a `contains` edge pointing at a name that
+is not a symbol is a graph that cannot be walked.
+
+`references` targets are local names on the same document, **or** built-in XSD
+types, and the two are told apart in metadata rather than left to the reader. A
+local target is a symbol this analyzer published; a built-in target carries
+`metadata.resolvable: "builtin"` together with the full `qname`, `prefix` and
+`namespaceUri`, so `type="xs:string"` is recorded as a reference to the built-in
+`string` and never as a local symbol named `string`. On the corpus this is 367
+edges, and the distinction is the reason a `references` edge to `xs:string` is not
+a dangling name.
+
+Each relationship carries `metadata.evidenceClass`, assigned where the edge is
+written so a tier cannot drift from the rule that produced it:
+
+| tier | edges | count on the corpus |
+| --- | --- | ---: |
+| `structural` | containment read off the tree, DTD→declaration, declaration→notation, PI→target | the large majority |
+| `import_based` | the target is a FILE: `ExternalID`, stylesheet `href`, `schemaLocation` | 964 |
+| `reference_qualified` | the target is a NAME reached through a declared prefix, or a named XSLT template | 11,145 |
+| `usage_contextual` | the document stating what an element MAY contain through an attribute, e.g. `<!ELEMENT catalog (entry+)>` | 821 |
+| `inferred` | the honest default for a role the table does not name | 0 |
+
+`usage_contextual` is deliberately not folded into `structural`.
+`<!ELEMENT catalog (entry+)>` says catalog MAY admit entry; `contains
+catalog -> entry` read off an actual `<entry/>` child is nesting. They are
+different claims, and because edge identity is `source|type|target` they collapse
+onto one edge. The collapse is counted, not hidden: the edge records
+`meta.occurrences`, `meta.lines`, and `meta.alsoRoles`, so every contributing
+rule and every contributing line survives the merge.
 
 Relationships are deduplicated by `(source, type, target)` in a `Set`, so the
 same tag/attribute identity cannot create repeated edges during traversal.
@@ -95,10 +159,28 @@ standalone DTD files.
 
 ## Regex inventory
 
-The XML analyzer has **zero regex usages**. The previous element-name regex and
-source-text attribute parsing were removed. The refreshed machine census reports
-39 classified regex usages across all 41 analyzers, with **0 XML entries**, 0
-missing entries, 0 stale entries, and 0 unclassified entries.
+The XML analyzer has **zero regex usages**, and the machine census agrees: 0 XML
+entries, 0 missing, 0 stale, 0 unclassified, out of 28 classified usages across
+43 analyzers.
+
+That agreement was not free, and the disagreement is worth recording. This
+section claimed zero while the census reported **1** —
+`value.split(/\s+/)` at the `schemaLocation` handler, classified
+`needs_review` with an **empty justification**. The doc had been written when the
+claim was true and never re-checked against the machine that can disprove it; the
+census had been right the whole time and the prose had drifted.
+
+`schemaLocation` is the one attribute whose value is a token list rather than a
+single name, so it is the only place a value has to be cut into words. That is now
+a char walk over space, tab, LF, CR — the XML `S` production, spelled out so the
+behaviour is pinned to a stated character set rather than to a regex dialect,
+matching the house idiom in `real-groovy-analyzer.ts`. The tree supplies the
+attribute name and the value node; only the tokenisation changed, and the emitted
+edges are byte-identical (contract 90/90 and fixtures 8/8 unchanged across the
+edit).
+
+Attribute names, element names, namespace URIs, and QNames are all read from tree
+nodes. Nothing is read by scanning source text.
 
 ## Complexity envelope
 
@@ -106,7 +188,16 @@ Evidence: `validation/m12/results/xml-corpus-complexity.json`.
 
 | Run | files | symbols | relationships | wall ms | files/s | symbols/s | relationships/s | errors | crashes |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Grails XML/XSD corpus | 154 | 6,195 | 2,388 | 2,188.9 | 70.36 | 2,830.24 | 1,090.98 | 0 | 0 |
+| Grails XML/XSD corpus (superseded) | 154 | 6,195 | 2,388 | 2,188.9 | 70.36 | 2,830.24 | 1,090.98 | 0 | 0 |
+| CXF archetypes, all seven globs | 2,439 | 184,388 | 76,455 | 268,928 | 9.07 | 686 | 284 | 0 | 0 |
+
+The second row is 16x the file count and 30x the symbol count of the first, and
+it is the honest figure: the first row measured only `*.xml`/`*.xsd` and so
+excluded every `.dtd`, `.xsl`, `.xslt`, `.rng`, and `.wsdl` file, which is most of
+what a real corpus contains. Peak RSS 298 MB, single process, no database writes. The symbol and
+relationship totals are stable across runs; the rates move a few percent with
+machine load, which is why the gate's perf budget takes the minimum over repeated
+timed runs rather than one measurement.
 
 The hot path is a single explicit stack traversal. Each AST node is visited
 once; direct child lookups scan only the bounded child list of that grammar
@@ -122,17 +213,72 @@ symbols/relationships.
 - Result: `validation/m12/results/xml-differential.json`
 - Differential: **49/49 facts, precision 1.000, recall 1.000, 0 FP, 0 FN,
   0 unknown**
-- Contract probe: `validation/m12/results/xml-contract.json`
-- Shape safety: `validation/m12/results/xml-shape-safety.json` — 16/16 analyzer
-  node references live, with 0 dead defensive references.
+- Contract probe: `validation/m12/results/xml-contract.json` — 90/90
+- Shape safety: `validation/m12/results/xml-shape-safety.json` — 10 checks, and
+  16/16 analyzer node references live with 0 dead defensive references
+
+The 49/49 figure is the small-fixture ground truth and is unaffected by what
+follows. It should not be quoted as though it were the corpus result.
+
+### The corpus differential, and why its recall is not reported
+
+A second, larger instrument — `fixtures/xml/probes/corpus-differential.mts` —
+builds an **independent oracle** from the parse tree and compares class by class
+over the whole manifest. Over 7,975 files it reports the analyzer emitting 657,432
+symbols and 228,194 relationships, 228,194/228,194 of them carrying a line, 0
+symbols without an owner, 0 names containing whitespace or NUL, and 0 files
+unrouteable.
+
+It also reports `contains-attribute` recall **0.910** and 76,372 spurious
+relationships, and **both numbers are the oracle's error**. On
+`grails-context.xsd` its namespace histogram is `[["…XMLSchema",1],["(none)",61]]`
+— it resolved the XSD namespace for 1 of 62 elements and therefore published
+owners as `xsd:element` where the analyzer correctly published `component-scan`.
+Every "spurious" edge was that one scoping defect.
+
+So the recall figure is not reported as a finding, and the oracle-free check
+replaces it:
+
+> **one symbol per `element` node in the tree, one per `Attribute` node, per
+> file, equal on both sides, no tolerance.**
+
+This is stronger than a recall percentage. It cannot be satisfied by publishing
+the wrong *name*, and it cannot be satisfied by publishing anything *twice* — a
+differential recall of 1.000 would pass both of those failures. It runs over 12
+sources (39 elements, 40 attributes, all exact), and the gate's self-test carries
+a mutation that loses an element and another that duplicates an attribute, so it
+is known to be able to fail: **11/11 mutations caught**.
+
+Two implementations disagreeing is evidence about both. A percentage computed
+against a broken second implementation is a lie with a decimal point.
+
+Still owed, and deliberately not claimed: the differential's 25 line mismatches
+and 20,904 repeated identity keys, each of which has to be adjudicated against
+the tree before it can be called a defect — the instrument that produced them is
+the one shown above to be wrong.
 
 ## Corpus validation
 
-- Corpus: `grails_core@a83f87480e0c0138caa5a7191a053b1e59a64066`
-- Scope: 154 tracked `*.xml`/`*.xsd` files, deterministic lexicographic order
-- Result: **0 grammar-error files, 0 grammar-error nodes, 0 crashes**
-- Evidence: `xml-corpus-errors.json`, `xml-corpus-complexity.json`, and
+- Manifest: `fixtures/xml/repositories/MANIFEST.json` — six repositories at pinned
+  revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
+  `*.xsl`, `*.xslt`, `*.svg`, `*.rng`), deterministic lexicographic order.
+  grails-core's 314 are 146 xml + 9 xsd + 4 dtd + 155 svg, so a lane that measured
+  only `*.xml`/`*.xsd` was measuring 49% of the corpus it claimed. `*.wsdl` is
+  NOT in the set: the engine does not claim it, and 805 such files are recorded
+  as unrouted under the M60 #913 ruling to refuse rather than claim
+- Pinned: grails-core `334007a`, docx4j `0e8e763`, libxml2 `c43dc98`, maven
+  `d296cc33`, cxf `e43776be`, libxslt `ec95343`
+- Error acceptance, grails 314 files: **0 unexpected error files, 0 crashes**,
+  with **4 declared negative controls** — a file that MUST produce errors and did,
+  so a gate that stopped parsing would fail rather than report zero
+- Throughput acceptance, cfx 2,439 files: **0 unexpected error files, 0 crashes,
+  21 declared negative controls**
+- Evidence: `xml-corpus-errors.json`, `xml-corpus-complexity.json`,
   `xml-corpus-shapes.json`
+
+The negative controls are the part that makes the zero meaningful. An error gate
+that measures zero cannot tell "parsed everything" from "parsed nothing", so each
+run names files that are expected to fail and fails the run if they succeed.
 - Standalone tracked `*.dtd` files are an explicit boundary and are not
   falsely counted as XML documents.
 
@@ -145,9 +291,43 @@ symbols/relationships.
 - Corpus errors: `validation/m12/results/xml-corpus-errors.json`
 - Complexity: `validation/m12/results/xml-corpus-complexity.json`
 - Shape safety: `validation/m12/results/xml-shape-safety.json`
+- Corpus differential: `fixtures/xml/out/corpus-differential.json`, runner
+  `fixtures/xml/probes/corpus-differential.mts`
+- Lane registration and per-language record: `script/m14/completeness-inventory.ts`
+  → `script/m14/spec/xml-completeness.json`, emitted by
+  `script/m14/emit-xml-completeness.ts`
+- M14 fixtures: `validation/m14/fixtures/xml/` (8), mutants via
+  `script/m14/mutate-analyzer.ts` (9)
+- Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
+  `script/m14/verify-grammar-pins.ts`
 - Evidence scripts: `script/m12/xml-corpus-errors.ts`,
-  `xml-corpus-measure.ts`, `xml-node-types-compare.ts`, and
-  `xml-contract-probe.ts`
+  `xml-corpus-measure.ts`, `xml-node-types-compare.ts`,
+  `xml-contract-probe.ts`, and `regex-census.ts`
+
+### The two grammar repairs
+
+`grammars/tree-sitter-xml/` is vendored and patched, not consumed as an upstream
+blob. Both defects are in the **grammar**, not in the analyzer, and neither is
+reachable from an analyzer workaround — the tree does not contain the nodes:
+
+1. **`common/scanner.h`** — the scanner ran a failing `advance_if_eq('\n')` on a
+   PI's trailing whitespace, consuming the character on failure and losing text.
+   Replaced with a non-failing `skip_if_eq`.
+2. **`xml/grammar.js`** — `_intSubsetItem` was defined but unreachable, so an
+   internal DTD subset's conditional section was not parsed as a conditional
+   section. Added the rule and wired it into `conditionalSect`.
+
+The pre-repair wasm is provably an **unmodified, current upstream v0.7.0 build**:
+its enumerable surface is 143 ids / 51 named / 2 fields, a wasm built from
+upstream HEAD has the same surface with a zero set difference in both directions,
+and behaviour is identical on all 29 constructs of the A/B battery. The repairs
+were therefore necessary rather than opportunistic.
+
+Corpus A/B, 8,888 files / 6.69M nodes: 31 files repaired, 2 moved, 8,855
+unchanged. MISSING nodes fell 32 → 10. Both movements were adjudicated as
+standalone-DTD and libxml2 negative controls, not as repairs. Independently, the
+16-case expat oracle agreed on 16/16 accepts and rejects, which is what retracted
+an earlier third "defect" that a hand-read of one file had suggested.
 
 ## Issue
 

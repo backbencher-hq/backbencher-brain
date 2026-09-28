@@ -67,7 +67,7 @@ const TSC_FLAGS = ["--noEmit", "--skipLibCheck", "--target", "es2022", "--module
 // away, rather than quietly becoming a second, narrower copy of the main check.
 function mainTypecheckScope(): { files: number; scriptFiles: number } {
   try {
-    const out = execFileSync("npx", ["tsc", "--noEmit", "--listFiles", ...TSC_FLAGS.filter((f) => f !== "--noEmit")], {
+    const out = execFileSync(process.execPath, [TSC_BIN!, "--listFiles", ...TSC_FLAGS.filter((f) => f !== "--noEmit")], {
       cwd: ROOT,
       encoding: "utf8",
       maxBuffer: 64 * 1024 * 1024,
@@ -79,7 +79,7 @@ function mainTypecheckScope(): { files: number; scriptFiles: number } {
   } catch {
     // tsc exits non-zero when it finds errors, and --listFiles still printed to stdout.
     try {
-      const out = execFileSync("npx", ["tsc", "--listFiles", "--skipLibCheck", "--target", "es2022", "--module", "esnext", "--moduleResolution", "bundler"], {
+      const out = execFileSync(process.execPath, [TSC_BIN!, "--listFiles", "--skipLibCheck", "--target", "es2022", "--module", "esnext", "--moduleResolution", "bundler"], {
         cwd: ROOT,
         encoding: "utf8",
         maxBuffer: 64 * 1024 * 1024,
@@ -99,10 +99,30 @@ const absent = INSTRUMENTS.filter((f) => !existsSync(path.join(ROOT, f)))
 
 let errors: Array<{ file: string; line: string; message: string }> = []
 let ran = false
+
+// Resolve the compiler by its real path, never via `npx`. Two ways this went wrong in one
+// session, both of which produced a CLEAN reading from a compiler that never ran:
+//
+//   1. `npx tsc` resolved to the unrelated `tsc` npm package, which prints
+//      "This is not the tsc command you are looking for" and exits 0 — so a grep for
+//      "error TS" found nothing and the gate reported zero errors.
+//   2. `node_modules` was absent from a worktree, so the same invocation failed to launch
+//      and produced no output at all — again zero errors, again a false clean.
+//
+// A typecheck gate that cannot distinguish "no errors" from "no compiler" is worse than
+// none, because it is trusted. So the compiler's existence is a precondition, checked
+// before it is invoked, and its absence is a hard failure.
+const TSC_BIN = [path.join(ROOT, "node_modules", "typescript", "bin", "tsc"), path.join(ROOT, "node_modules", ".bin", "tsc")].find((p) => existsSync(p)) ?? null
+
+if (!TSC_BIN) {
+  console.error('script typecheck: REFUSING to report — no TypeScript compiler found.\n  looked in: node_modules/typescript/bin/tsc and node_modules/.bin/tsc\n  (run `bun install` in the tree you are checking).\n  A typecheck that cannot find its compiler must FAIL, not report zero errors.`)
+  process.exit(2)
+}
+
 if (present.length) {
   ran = true
   try {
-    execFileSync("npx", ["tsc", ...TSC_FLAGS, ...present], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] })
+    execFileSync(process.execPath, [TSC_BIN, ...TSC_FLAGS, ...present], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 900_000, stdio: ["ignore", "pipe", "pipe"] })
   } catch (e: any) {
     const text = String(e?.stdout ?? "") + String(e?.stderr ?? "")
     for (const line of text.split("\n")) {
@@ -136,6 +156,9 @@ const result = {
     mainTypecheckGap: scope.scriptFiles === 0 ? "CONFIRMED: `tsc --noEmit` covers 0 files under script/. Every 'tsc 0 errors' in this milestone's history has been true and has not covered these instruments." : `tsc --noEmit now covers ${scope.scriptFiles} script file(s) — re-check whether this gate is still needed.`,
   },
   ran,
+  compiler: TSC_BIN ? path.relative(ROOT, TSC_BIN) : null,
+  compilerRule:
+    "resolved by absolute path, never via npx: `npx tsc` can resolve the unrelated `tsc` package, which prints 'This is not the tsc command you are looking for' and exits 0, and a missing node_modules fails to launch at all. Both produce a grep for 'error TS' that finds nothing, and both read as a clean typecheck.",
   errors,
   errorsByFile: Object.fromEntries(byFile),
   hardFailures: hard,
