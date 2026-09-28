@@ -357,8 +357,10 @@ comparable across grammar versions.
   silently absent — 95 `handled_verified`, 31 `internal_silent` (each with the
   reason it is silent rather than merely unreferenced), 0 `gap`, and 5
   `design_decision` rulings (NIMD1 file-scope pragma statements, NIMD2 cross-file
-  overrides, NIMD3 concept satisfaction, NIMD4 `.nimble` routing, NIMD5 `.nims`
-  routing). The open work in this lane is a **grammar** gap, which is a different
+  overrides, and 5 `design_decision` rulings — NIMD1 file-scope pragma
+  statements, NIMD2 cross-file overrides, NIMD3 concept satisfaction, NIMD4
+  `.nimble` routing, NIMD5 `.nims` routing, all five now RULED on recorded
+  evidence). The open work in this lane is a **grammar** gap, which is a different
   ledger from an analyzer gap.
 - **#419 sections** (`bun run script/m14/completeness-inventory.ts --lang nim`):
   **A** structural (164 types classified), **B** all eight relationship kinds
@@ -480,9 +482,11 @@ relationships**. The residue is therefore a *path* difference — the engine rou
 post-processes the analyzer's output before counting (it drops relationships that
 do not resolve, the same rule the seam gate asserts) — and it is recorded as an
 open reconciliation item rather than smoothed into one number. `.nimble` is
-excluded from the complexity artifact on purpose: it is not routed to this
-analyzer (decision NIMD4), so measuring it inside the NIM envelope would report
-coverage the router does not have.
+excluded from the complexity artifact on purpose: that run predates the routing
+decision, so including it would report coverage the router had not yet been given
+when the number was taken. Its share is stated above (26 symbols, 315
+relationships) rather than folded in silently, and a re-run of the measure on a
+quiet machine will cover all 5,227 through the production path.
 
 ## Honest limitations
 
@@ -507,13 +511,26 @@ coverage the router does not have.
    covered by fixture, seam and corpus evidence. The alternative — resolving
    against a corpus-wide name set — would attribute an override to a same-named
    method of an unrelated type, which is the failure mode this lane refuses.
-3. **`.nims` and `.nimble` are not routed.** The grammar's own `file-types`
-   declares all three, and the differential lane's `ext` list carries `nim,nims`
-   so the sweep does not silently skip them, but `language-detection.ts` routes
-   only `.nim`. `.nimble` is a package manifest with a `requires`/`task` block
-   syntax that is not the same surface as a NIM module, and routing it would
-   claim a format this analyzer does not model. Routing them is a measurement
-   first and a decision second.
+3. **`.nims` and `.nimble` are now ROUTED — decided on measurement, as the
+   deferral required.** They were left pending on purpose, with a recorded reason:
+   the pinned grammar declares both in its own `file-types`, and declaring a
+   format is not evidence the analyzer models it. Routing on the declaration
+   alone is the claim-without-coverage class. So the deferral named the missing
+   input, and this is that input, over every tracked file of all 12 corpora:
+
+   | ext | files | error files | error nodes | symbols | relationships | imports |
+   | --- | --- | --- | --- | --- | --- | --- |
+   | `.nims` | 65 | **0** | 0 | 43 | 279 | 96 |
+   | `.nimble` | 171 | **0** | 0 | 26 | 315 | 11 |
+
+   100% parse health on both, and neither is pure data: a `.nims` is NimScript
+   (`set_cmd`/`switch`/`buildFile` — procs and calls on a real stdlib), and a
+   `.nimble`'s `task`/`bin` blocks declare real things. `language-detection.ts`
+   now maps all three extensions to `nim`, and the differential and fixture lanes'
+   `ext` lists changed in the same edit so the claim and the router cannot drift
+   apart: a lane that sweeps an extension the router skips is the inert-pin
+   class, and a lane that under-reports what the router now handles is the same
+   defect wearing a hat. Rulings NIMD4/NIMD5 are now RULED with their numbers.
 4. **The oracle shares two inputs with the analyzer, deliberately.** It imports
    the analyzer's builtin-name filter, and it takes the analyzer's symbol list as
    the name inventory for `contains` (the zig bare-uses oracle sets the same
