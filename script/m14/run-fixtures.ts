@@ -87,6 +87,12 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // assumed), and each is verified by running the lane.
   sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
+  // NIM wave (2026-09-27). `ext` carries .nim and .nims but NOT .nimble: the
+  // router does not send .nimble here (decision NIMD4 in
+  // script/m14/spec/nim-completeness.json), and a lane that swept a file the
+  // indexer would never route is the inert-pin class — it would report coverage
+  // the production path does not have.
+  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims" },
   java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
   typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   // GraphQL joined 2026-09-27 with the M12.38/#177 wave. The lane did not exist,
