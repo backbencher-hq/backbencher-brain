@@ -279,6 +279,9 @@ interface Inventory {
   subtypes: Map<string, Set<string>>
 }
 
+/** Literal keywords: values, never type names. */
+const LITERAL_KEYWORDS = new Set(["true", "false", "nil", "void", "auto"])
+
 function buildInventory(symbols: any[]): Inventory {
   const inv: Inventory = {
     values: new Set(), types: new Set(), callables: new Set(),
@@ -698,6 +701,16 @@ function pushTypeRef(site: any, owner: string, inv: Inventory, push: (l: string,
   if (!leaf) return
   if (BUILTIN_TYPES.has(leaf)) return
   if (inv.genericParams.has(leaf)) return
+  // A declared-type reference names a TYPE. Two kinds of identifier sit in a type
+  // POSITION without being type names, and this oracle had the same blind spot
+  // the analyzer had — which is how `type Foo = typeof(p(fail(123)))` came to
+  // publish `references -> p` and `references -> fail` for two PROCS, and
+  // `TNestedChoices(outerChoice: false, …)` came to publish a reference to a
+  // boolean LITERAL. Written from the rule, not from the analyzer's filter: a
+  // name the file declares as a value or a callable is a use of that value, and
+  // a literal keyword is a value.
+  if (inv.values.has(leaf) || inv.callables.has(leaf)) return
+  if (LITERAL_KEYWORDS.has(leaf)) return
   push("references", owner, leaf)
 }
 
