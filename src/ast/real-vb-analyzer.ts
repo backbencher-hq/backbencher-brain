@@ -467,17 +467,90 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private modifierNames(node: Node): Set<string> {
     const out = new Set<string>()
-    const mods = node.childForFieldName("modifiers")
-    if (mods) {
-      for (const m of this.kids(mods)) {
-        if (m.type === "member_modifier" || m.type === "local_declaration_modifier") {
+    // EVERY modifier, not the first one. This reads `childForFieldName("modifiers")`,
+    // which returns a single node -- and this grammar emits the field REPEATEDLY,
+    // once per modifier: `Public Overrides Sub Go()` is
+    // `modifiers: (member_modifier) modifiers: (member_modifier)`, so the
+    // singular field read returned `public` and silently dropped `overrides`.
+    //
+    // The consequence was not a cosmetic gap, it was every modifier-dependent
+    // fact in the index being wrong wherever the modifier was not written first:
+    // `Public Shared Sub A()` reported `isStatic: false`, `Public Overrides Sub`
+    // published no `overrides` edge at all (0 across 435 files, and 0 on a
+    // textbook override), and `MustOverride`, `ReadOnly`, `WriteOnly` and
+    // `NotInheritable` were all missed for the same reason. VB writes
+    // `Public` first by convention, so the ONE modifier that was ever read was the
+    // one least worth reading.
+    //
+    // The read is by NODE TYPE rather than by field name, because a field name
+    // that appears N times has no singular accessor, and a modifier is
+    // lexically distinctive: nothing else in the tree is a `member_modifier`.
+    const collect = (n: Node, depth: number): void => {
+      if (depth > 4) return
+      for (const c of this.allKids(n)) {
+        if (c.type === "member_modifier" || c.type === "local_declaration_modifier") {
           // The modifier's own text is its keyword; lower-cased by a char-code
           // fold rather than by a regex, so a Unicode keyword is not mangled.
-          out.add(m.text.toLowerCase())
+          out.add(c.text.toLowerCase())
+          continue
         }
+        collect(c, depth + 1)
       }
     }
+    collect(node, 0)
     return out
+  }
+
+  /**
+   * The `overrides` edge for a member declared `Overrides`.
+   *
+   * Extracted so that METHODS, PROPERTIES and EVENTS all get one. It was inline
+   * in the method visitor only, so `Public Overrides Property Description` —
+   * which is how P3D's whole `Item` hierarchy is written, 56 of the missing rows
+   * in one frozen draw — published nothing while the oracle, reading the modifier
+   * off the declaration, derived the edge and reported the analyzer as
+   * incomplete. VB has overridable properties and events, and they are not rare:
+   * they are the shape a designer emits.
+   *
+   * The edge is QUALIFIED by the base type when this file says what the base type
+   * is, because the unqualified form is a self-edge (`Go -> Go`) and a self-edge
+   * cannot answer "what does this override?". The base type is usually right here
+   * — the owning type's own `Inherits` was already read to publish `extends` — so
+   * the edge can name `Item.Description` instead of guessing. When the base type
+   * is not derivable, the edge keeps the same name and says `baseTypeKnown: false`
+   * rather than inventing a type it never read.
+   */
+  private pushOverride(node: Node, nameNode: Node | null, sym: ASTEngine.UniversalSymbol, owner: ASTEngine.UniversalSymbol | null): void {
+    // The DECLARING TYPE, not the member. These call sites run after the member
+    // has been pushed on the owner stack, so `currentOwner()` returns the member
+    // itself -- and the base lookup then found no `extends` edge and emitted the
+    // unqualified self-edge `P -> P`. The declaring type is the nearest entry
+    // below the member on the stack, so it is read from there rather than from
+    // whatever `currentOwner()` happens to say at the call site.
+    const type = this.ownerStack
+      .slice()
+      .reverse()
+      .find((e) => e !== sym && e.ownerKind === "class" || e !== sym && (e.kind === ASTEngine.SymbolKind.Class || e.kind === ASTEngine.SymbolKind.Struct || e.kind === ASTEngine.SymbolKind.Interface || e.kind === ASTEngine.SymbolKind.Module || e.kind === ASTEngine.SymbolKind.Enum))
+    const declaring = type ?? owner
+    if (!declaring) return
+    const baseType = this.relationships.find(
+      (r) => r.source === declaring.name && r.type === ASTEngine.RelationshipType.Extends,
+    )
+    const baseKnown = typeof baseType?.target === "string" && baseType.target.length > 0
+    this.relationships.push({
+      source: sym.name,
+      target: baseKnown ? `${baseType!.target}.${sym.name}` : sym.name,
+      type: ASTEngine.RelationshipType.Overrides,
+      confidence: baseKnown ? 0.9 : 0.6,
+      line_number: this.nodeLine(nameNode ?? node),
+      metadata: {
+        baseMemberName: sym.name,
+        baseTypeName: baseKnown ? baseType!.target : undefined,
+        baseTypeKnown: baseKnown,
+        fromModifier: "Overrides",
+        declaringType: declaring.name,
+      },
+    })
   }
 
   private isStatic(node: Node): boolean {
@@ -1171,26 +1244,10 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    if (overridesBase && owner) {
-      this.relationships.push({
-        source: sym.name,
-        target: sym.name,
-        type: ASTEngine.RelationshipType.Overrides,
-        confidence: 0.6,
-        line_number: this.nodeLine(nameNode ?? node),
-        metadata: {
-          // The base member is the SAME name in the base type, which this file
-          // does not name. So the edge records what it knows — the name and the
-          // modifier — and does NOT invent a base type it never read.
-          baseMemberName: sym.name,
-          fromModifier: "Overrides",
-          baseTypeKnown: false,
-        },
-      })
-    }
 
     this.ownerStack.push(sym)
     this.visitMemberHeritage(node, sym, context)
+    if (this.modifierNames(node).has("overrides")) this.pushOverride(node, null, sym, this.currentOwner())
     this.collectCalls(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
@@ -1278,6 +1335,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const owner = this.currentOwner()
     this.ownerStack.push(sym)
     this.visitMemberHeritage(node, sym, context)
+    if (this.modifierNames(node).has("overrides")) this.pushOverride(node, null, sym, this.currentOwner())
     this.collectCalls(node, sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
@@ -1305,6 +1363,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     this.ownerStack.push(sym)
     this.visitMemberHeritage(node, sym, context)
+    if (this.modifierNames(node).has("overrides")) this.pushOverride(node, null, sym, this.currentOwner())
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
   }
