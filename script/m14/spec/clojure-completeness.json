@@ -2,7 +2,7 @@
   "grammar": "tree-sitter-clojure.wasm",
   "language": "clojure",
   "handled_verified": {
-    "_description": "Analyzer-referenced node types (F1 PASS refs=15 unknown=0 at CLJ1; RE-MEASURED 2026-09-28 at FULL EXTENT by script/m14/tmp/clj-deep-audit.ts over 4,252 metabase Clojure files: 35 distinct node types observed, every one classified, 0 unclassified, 0 placeholder symbol names, 0 empty symbol names, and exactly 1 file with an ERROR node (0.024%) — that file contains 3 literal NUL bytes in a string literal, which no Clojure grammar can lex, so it is a corpus data artifact and is disclosed as such rather than counted as a parse defect). Behavior probe-verified 2019-06..2026-09 against the pinned wasm (@yogthos 0.0.14, the wasm-packaged sogaiu lineage) via real-clojure-analyzer.ts and the CLJ1 + CLJ-F5 + CLJ-ADV + M60-deep fixture batteries (42 fixtures, 63 mutants caught). sym_lit carries the name/namespace FIELDS (sym_name/sym_ns children) so those children are read through the field API, not type-matched — and since CLJ-D28 the qualified-name resolution reads those fields too, so no code path splits a symbol's text on `/`.",
+    "_description": "Analyzer-referenced node types (`grep`-measured 15 type literals, F1 PASS refs=15 unknown=0); behavior probe-verified 2026-09-19 against the pinned wasm (@yogthos 0.0.14, the wasm-packaged sogaiu lineage) via real-clojure-analyzer.ts and the CLJ1 + CLJ-F5 + CLJ-ADV fixture batteries (32 fixtures, 41 mutants caught). sym_lit carries the name/namespace FIELDS (sym_name/sym_ns children) so those children are read through the field API, not type-matched.",
     "types": [
       "anon_fn_lit",
       "comment",
@@ -46,7 +46,7 @@
     ]
   },
   "gap": {
-    "_description": "CLJ1 (2026-09-19) closed C1-C13. The CLJ-F5 certification then found three further defect classes, and the CLJ-ADV adversarial review sixteen more — the claim 'no gaps' was falsified twice on the SAME surface, and each time because the instrument list was too small. THE M60 DEEP ROUND (2026-09-28) falsified it a THIRD time, and this time the falsifying instrument was not a differential at all. F5 compares the analyzer against `deriveClojureEdges`, and the two MIRROR each other's rules deliberately — so a defect present in BOTH is invisible by construction, and the lane's largest single defect was exactly that: `CLOJURE_CORE_BUILTINS` was a 437-name hand transcription that the oracle IMPORTS by reference, so every name it omitted was a MIRRORED fabrication. Measured: 2,525 `calls` edges to real clojure.core vars in the clojure corpus (30% of all 8,391 call edges), 999 in clj-kondo, 151 in core.async. The instruments that found it were four NEW ones, and the list grew again for the same reason it grew twice before: (1) script/m14/tmp/clj-core-derive.ts — DERIVE the language's own constant from clojure/clojure's source with the pinned wasm (namespace-scoped, top-level-only, privacy-filtered) and diff it against what ships; (2) script/m14/tmp/clj-core-impact.ts — count the emitted edges that name a derived core var; (3) script/m14/tmp/clj-gate-census.ts — for every SURVIVING core-named call, decide independently (file-declares / region-bound / referred / RESIDUAL) which exemption admitted it, so the claim 'every one is explained' is measured rather than asserted; (4) script/m14/tmp/clj-full-f5.ts — the F5 comparison at FULL EXTENT, sharded, because one wasm module cannot hold 4,122 metabase files (the W11 heap cliff), which is where the `h2x//` qualified-name defect surfaced (2 unexplained of 239,192 truth edges over 4,252 files) after a 60-file draw had missed it for a full wave. THE CLAIM NOW READS: no gap is known to any instrument built so far — and the instrument list is recorded here precisely because that claim has now broken three times, each break being the reason a fourth instrument existed. MEASURED RESIDUES, named rather than rounded: unshadowed core-call edges 6 / 11 / 2 (clojure / clj-kondo / core.async) with 0 RESIDUAL after independent classification; metabase 4,252 files 100% coverage MISSING=0 unexplained=0; clojure 143 files 6,871/6,871, clj-kondo 444 files 8,087/8,087, core.async 46 files 2,108/2,108. STILL OPEN, with sizes: multi-arity parameter merging (W23-c, registered; 342 sites in the three small corpora) needs a cross-lane `UniversalSymbol.parameters` decision; `:refer :all` names a whole lib and so registers no individual name (25 sites, documented — the `[*]` items path is the honest reading).",
+    "_description": "CLJ1 (2026-09-19) closed C1-C13: call-site lines (0/8381 → 16103/16103 corpus edges lined), callArity identity, per-site rows, the doc channel (0 → 629 symbols), implements alias resolution, top-level require/import directives, def-initializer/deftest attribution, reify/extend method impls, body-vector parameter leakage, & rest marker, tagged/ctor literals, complexity fallback. The 'no open gaps' claim was then falsified at CLJ-F5 certification (2026-09-19) on this very surface: the clj-kondo SECOND corpus found three further defect classes the CLJ1 battery could not see — kwd-headed data-form ns corruption (junit.clj: `(:ns (meta var))` reset the alias table mid-file), `toString` prototype pollution in six plain-object lookup records (12 MISSING edges across rewrite-clj node files), and self-require/self-qualified self-loop references edges. The claim was falsified AGAIN by the independent adversarial review (CLJ-ADV, 2026-09-19 — reviews/clojure/adversarial-2026-09-19.md): 16 more defect classes on the SAME surface (mirrored rules the differential structurally cannot see, plus the seventh prototype-polluted record), all fixed and pinned. The claim now reads: no gaps known to ANY instrument built so far — and the instrument list literally grew because the claim broke twice.",
     "gaps": []
   },
   "design_decision": {
@@ -163,106 +163,7 @@
         "status": "RULED",
         "question": "CC1: which forms count +1 cyclomatic complexity? The lane counted only if/cond/when/case/for/loop/when-let/if-let — omitting the not/some variants of its own if/when family, condp, the conditional threaders and while (W23-a, review #2).",
         "resolution": "RULED (M49 CC1-c, 2026-09-20): one rule — every conditional/loop CONSTRUCT counts +1; the full family = if/if-not/if-let/if-some, when/when-not/when-let/when-some, cond/condp/case, for/while/loop, cond->/cond->>/some->/some->>. Clause nodes are not counted in clojure (case children are pairs, not nodes — the elixir lane counts stab_clause nodes where the grammar exposes them, EX-D10); try/catch/finally and and/or count nothing (declared; elixir omits try too); the JVM/TS per-entry granularity stays declared-divergent (EX-D10 precedent). The four conditional threaders are counted in the THREADING branch (which intercepts before the builtin check). A companion parity item exposes per-symbol complexity (symbol.complexity mirrors metadata.complexity, the ELXD15 shape). FAIL-proof: pre-fix the ten additions read 1 (file total 8); post-fix the fixture reads 2 each (total 18). Fixture complexity-forms + mutants complexity-policy-dropped, symbol-complexity-stripped."
-      },
-      {
-        "id": "CLJ-D17",
-        "node_type": "sym_lit (bare head that names a clojure.core var)",
-        "status": "RULED",
-        "question": "Is a bare head that is a clojure.core var a call? The lane's contract says no (builtin/special forms never produce Calls), and the suppression set WAS a 437-name hand transcription — 368 core vars + 69 deliberate extras.",
-        "resolution": "RULED (M60 deep round, 2026-09-28): the SET is DERIVED, not typed. script/m14/tmp/clj-core-derive.ts parses clojure/clojure's own src/clj/clojure/*.clj with the pinned wasm, keeps only the files whose ns/in-ns is clojure.core (or clojure.core.protocols / clojure.core.reducers), keeps only TOP-LEVEL def-family forms (an internal helper inside a defn body is not public API), and drops what the lane's own privacy rule calls private (defn-, ^:private, ^{:private true}). That yields 654 public vars; the 69 extras (special forms, uncurried interop statics, the clojure.string/clojure.test spellings) are kept deliberately. The list stays a CONSTANT so the analyzer stays a function of ONE file, and the derivation is the evidence a gate re-checks. WHY IT MATTERED, MEASURED: the F5 oracle IMPORTS this object by reference, so every name missing from the list was a MIRRORED fabrication the differential structurally could not see — 2,525 calls edges in the clojure corpus (30% of all 8,391), 999 in clj-kondo, 151 in core.async. After the derivation the unshadowed residue is 6 / 11 / 2 (script/m14/tmp/clj-gate-census.ts, 0 RESIDUAL on all three)."
-      },
-      {
-        "id": "CLJ-D18",
-        "node_type": "sym_lit in a binding position (name shadow, by reference)",
-        "status": "RULED",
-        "question": "A core-SHAPED name can be the file's own var. Is the suppression position-blind (a flag), name-blind (a span), or neither?",
-        "resolution": "RULED: the existing order-aware, region-scoped shadow table becomes a (name, span) LIST and `isCoreCallSuppressed(name, pos)` is the single gate every suppression site uses. Three exemptions: (1) SHADOWED — the file binds the name at that point (def-family name incl. declare/defmethod/deftest, a protocol/interface signature, a param, a binding vector, a letfn spec); a def binds at its form's END because Clojure compiles a form when it reads it, which is why the ranges are order-aware; (2) REFERRED — a :refer/:only/:rename name is a confirmed external target; (3) not a core name. The (name, span) shape is load-bearing: a bare span declared every later head in a file shadowed by, say, a protocol signature named `seq`, and the first post-change F5 run read 26 MISSING / 11 UNEXPLAINED for exactly that. Measured recovery: 555 real in-file call sites in the clojure corpus, 64 in clj-kondo, 27 in core.async."
-      },
-      {
-        "id": "CLJ-D19",
-        "node_type": "sym_lit (protocol/interface signature head, method-impl head, letfn spec head)",
-        "status": "RULED",
-        "question": "May the core-builtin gate sit on a DECLARATION?",
-        "resolution": "RULED: NO. A signature, an impl and a letfn spec are declarations; the gate belonged only on call sites. The gate that sat there was a leftover from C9, whose real fix was the null-prototype alias table — `toString` was NEVER in the list, so the gate never fired for the prototype-pollution class it was written for. What it did instead was delete members: gvec.clj's (definterface ArrayManager …) declares array/alength/aclone/aget/aset and four of the five are core names, so the interface shipped with ONE method; (definterface … (identity [x])) shipped with none. The 723-name list would have swallowed get/key/count too. Pinned by fixture proto-members."
-      },
-      {
-        "id": "CLJ-D20",
-        "node_type": "anon_fn_lit head sym_lit (anonymous-argument shorthand)",
-        "status": "RULED",
-        "question": "`%`, `%1`..`%N`, `%&` are parameter references, not callees. The test was `/^%(\\d+|&)?$/` — the lane's last regex.",
-        "resolution": "RULED (M60 deep round): the clojure lane is ZERO-REGEX. `isAnonArgShorthand` is a char scan, and the conversion is PROVED not asserted — script/m14/tmp/clj-regex-equiv.ts runs the regex and the scan over every sym_lit name in three corpora (633 files, 187,678 symbol nodes, 13,363 distinct names) plus a 42-case adversarial battery and reports 0 mismatches. reviews/regex-policy.md's clojure row and validation/m49/regex-debt-register.json's row are removed with the literal, so neither can become a ghost."
-      },
-      {
-        "id": "CLJ-D21",
-        "node_type": "vec_lit (libspec `:only` / `:refer` name list)",
-        "status": "RULED",
-        "question": "`(:use [lib :only (names)])` — is `:only` read, and is its name list a vector?",
-        "resolution": "RULED: `:only` is `:refer`'s legacy twin and reads identically, and the name list is a LIST as often as a vector — `(:use [clojure.java.browse :only (browse-url)])` appears 16 times in the clojure corpus alone (clojure.java.javadoc, clojure.java.shell, clojure.pprint, the test tree). `:refer :all` has no name list and stays on the `[*]` items path, which is the honest whole-lib reading. Pinned by fixture lib-rules."
-      },
-      {
-        "id": "CLJ-D21b",
-        "node_type": "list_lit (a name list nested in a libspec vector)",
-        "status": "RULED",
-        "question": "Is a list inside a libspec site ever a call?",
-        "resolution": "RULED: no, at ANY depth. The C7/C8 guard looked only at a LIST parent, so it covered `(java.util Date)` and the direct libspecs but MISSED a name list nested in a VECTOR spec — and once :only was read, that fabrication acquired a lib: `ns -[calls]-> clj.java.browse/browse-up` with isTopLevel. The rule is now \"is any enclosing LIST a libspec site\", which is what the rule always was. Pinned by mutant clojure/libspec-name-list-walked."
-      },
-      {
-        "id": "CLJ-D22",
-        "node_type": "list_lit (anywhere inside a require/use/import/refer site)",
-        "status": "RULED",
-        "question": "Same as CLJ-D21b, stated once for the whole site.",
-        "resolution": "RULED: the libspec subtree is DATA. Mirrored in deriveClojureEdges."
-      },
-      {
-        "id": "CLJ-D23",
-        "node_type": "list_lit (declare)",
-        "status": "RULED",
-        "question": "`(declare a b)` interns a var. Is a forward declaration a symbol?",
-        "resolution": "RULED: yes — a Variable with isForwardDeclaration, NOT an export (a forward declaration is not a definition, and publishing it made the declared name and its real defn two public Variables under one name, which the harness's duplicate-export invariant caught). `declare` is a core form, so before this wave it produced no symbol and no edge at all AND its names were not in-file declarations, leaving every later call with nothing to resolve to: 68 sites across the corpora (mutual recursion in the compiler, clj-kondo's compojure fixture, core.async's dispatch). Pinned by fixture lib-rules + two mutants (symbol dropped, export published)."
-      },
-      {
-        "id": "CLJ-D24",
-        "node_type": "list_lit (two ns forms in one file)",
-        "status": "RULED",
-        "question": "A file with two `(ns …)` forms has two namespaces. Is the refer table one map?",
-        "resolution": "RULED: no — it is a POSITIONAL SEGMENT LIST, one per ns form, and the post-walk resolution pass reads the call site's byte offset (carried in a Map keyed by the edge's array index, so the published relationship keeps exactly the fields the store contract declares). A single mutable table is wrong in BOTH directions: keeping it resolves a first-namespace call against the second namespace's clause, and resetting it at the second ns empties it for the post-walk pass, which leaves even the first-namespace call bare. 45 two-namespace files in the corpora. A closed segment is never reused — almost every file opens with (ns …) at byte 0, so \"close at 0, then open at 0\" returned a zero-width span matching no position, and every :refer in the file stopped resolving (the refer-forms fixture caught it). Pinned by fixture two-namespaces, which pins both failure modes with the same referred name called from two places."
-      },
-      {
-        "id": "CLJ-D25",
-        "node_type": "map_lit (`:rename {old new}`)",
-        "status": "RULED",
-        "question": "A renamed libspec: which half of the pair is referable?",
-        "resolution": "RULED: the NEW name, and the pairing is POSITIONAL — a map literal's named children alternate key/value, so `{old new}` is (child 0, child 1) and the new name is the ODD child. Reading both makes the name Clojure deliberately UNBIND resolve to a lib, which is the shadowing :rename exists to prevent; a call to it is a genuine unresolved var and stays BARE. This was the declared F17 limitation, measured at 7 sites in clj-kondo and now closed. Pinned by fixture lib-rules."
-      },
-      {
-        "id": "CLJ-D26",
-        "node_type": "kwd_lit (an auto-resolved `::kw` spec name)",
-        "status": "RULED",
-        "question": "What is the name of `(s/def ::kw …)`?",
-        "resolution": "RULED: `:current-namespace/kw` — the reader qualifies `::` against the enclosing namespace, and the symbol was published under the literal `::kw`, so the spec had an identity no other file could reference. 15 sites in one metabase shard alone. Pinned by fixture two-namespaces + mutant clojure/auto-resolved-spec-name."
-      },
-      {
-        "id": "CLJ-D27",
-        "node_type": "meta_lit on a defprotocol/defrecord/deftype name",
-        "status": "RULED",
-        "question": "Is `^:private` on a TYPE declaration private?",
-        "resolution": "RULED: yes — it is the same privacy contract W24-mr3 established for def/defn, and the type branches never read it, so a private protocol or record was published in the namespace's export surface. Pinned by fixture proto-members + mutant clojure/type-private-ignored."
-      },
-      {
-        "id": "CLJ-D28",
-        "node_type": "sym_lit (a qualified name whose own NAME contains a slash)",
-        "status": "RULED",
-        "question": "`h2x//` — a metabase function whose name is `/`. Is the qualified name read by splitting the text?",
-        "resolution": "RULED: no. The grammar already splits a qualified symbol into `namespace` and `name` FIELDS, and the analyzer was splitting the TEXT a second time, TWICE and differently: `\"h2x//\".split(\"/\")` is `[\"h2x\",\"\",\"\"]` so the generic-call branch published `…honey-sql-2/` while resolveQualified (slice after the first slash) published `…honey-sql-2//` — two answers for one call site inside one analyzer. Every qualified callee is now read from the head node's fields, so the three emission shapes (generic call, thread step, #() shorthand) cannot disagree. The shape is invisible to a 60-file draw: it needs a function whose name ends in a slash. Pinned by fixture qualified-names + mutant clojure/qualified-name-text-split."
-      },
-      {
-        "id": "CLJ-D29",
-        "node_type": "list_lit (the `..` macro, oracle side)",
-        "status": "RULED",
-        "question": "Is `..` unconditionally a Java member-access macro?",
-        "resolution": "RULED: no — it is a core MACRO, and clojure/core.clj DEFINES it: `(defmacro .. \"form => fieldName-symbol …\" …)` at L1677. In that file every later `(.. sc comparator (compare …))` is a call to the macro the file itself defines, which is exactly what CLJ-D18's shadow guard admits. The analyzer read it that way (the `..` case falls through to the generic branch and the gate decides); deriveClojureEdges' `.`-prefix branch fired first and dropped it, so the full-extent run over clojure/clojure read 1 unexplained of 6,871 truth edges — the analyzer right and the oracle wrong, the m49 W24 shape. Pinned by the full-extent lane."
       }
-    ],
-    "_description": "Clojure analyzer contract (CLJ waves + the M60 deep round, probe- and corpus-verified against the pinned @yogthos/tree-sitter-clojure 0.0.14 wasm): the RULINGS below are load-bearing — each names the node types whose handling they govern. CLJ-D1..D16 are the original sixteen; CLJ-D17..D29 are the M60 deep round (2026-09-28), which is the first wave whose instrument was the DERIVATION of a shipped constant rather than a hand list: the core-suppression set is derived from the language's own source (CLJ-D17), the suppression gate gained two exemptions so the expansion could not trade one fabrication for another (CLJ-D18), and the declaration/identity/ns-clause surfaces were swept on four corpora (4,885 tracked .clj/.cljc/.cljs files, 4,252 of them in one repo). The round found 13 defect classes, one of which (the core list) had been invisible to every existing gate because the F5 oracle imports the list by reference — a MIRRORED fabrication is invisible to a differential whose truth side carries the same bug, which is the lane's recurring blind spot and the reason the gap note below now names the instruments rather than asserting cleanliness."
+    ]
   }
 }
