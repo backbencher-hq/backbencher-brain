@@ -22,6 +22,15 @@ interface ElixirContext {
   symbolByName: Map<string, ASTEngine.UniversalSymbol>
   // Ordered import records for :only-based call resolution (ELXD17).
   importList: { module: string; only?: Set<string>; scope: string }[]
+  // EX-A14: `@callback name(args) :: type` is a DECLARATION of a function, and
+  // its relationship to a sibling `def` is order-independent (a protocol may
+  // write either first). Keyed `owner/name/arity` -> spec text, read when the
+  // symbol is created and read again when a callback attribute is walked, so
+  // whichever comes second completes the other.
+  callbackSpecs: Record<string, string>
+  // EX-A14: `@optional_callbacks a: 0, b: 0` — same ordering problem, so the
+  // names are parked here and stamped onto the method symbols on creation.
+  optionalCallbacks: Record<string, string[]>
   // Dedup set for relationship emission: one edge per (source|type|target).
   seenRels: Set<string>
 }
@@ -98,7 +107,8 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         patterns: {}, frameworks: {}, content,
         // W23-E1: alias frames are prototype CHAINS (Object.create(parent));
         // the null-prototype root makes chain lookups pollution-safe.
-        aliases: Object.create(null), functionHeads: {}, pendingDoc: undefined, importList: [], symbolByName: new Map(), seenRels: new Set(),
+        aliases: Object.create(null), functionHeads: {}, pendingDoc: undefined, importList: [], callbackSpecs: {}, optionalCallbacks: {},
+        symbolByName: new Map(), seenRels: new Set(),
     }
     const scopeStack: Scope[] = []
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
@@ -271,7 +281,149 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         const attrName = attrCallId?.text || (attrCall?.type !== "call" ? attrCall?.text || "" : "")
         if (attrName === "moduledoc" || attrName === "doc") ctx.patterns["Documentation"] = true
         if (attrName === "spec" || attrName === "type" || attrName === "typep" || attrName === "opaque") ctx.patterns["Typespecs"] = true
-        if (attrName === "callback" || attrName === "macrocallback") ctx.patterns["Behaviours"] = true
+        if (attrName === "callback" || attrName === "macrocallback" || attrName === "optional_callbacks") {
+          ctx.patterns["Behaviours"] = true
+          // EX-A14: a typed callback is a DECLARATION of a function — the same
+          // kind of published fact as @type (which already emits a Type symbol),
+          // and it was emitting NOTHING but a pattern flag: 165 sites in a
+          // 100-file sample of elixir+phoenix+ash, 98 in a 171-file
+          // ecto_sql+ecto+wallaby sample, 0 covered by a symbol. A module may
+          // declare a callback with no `def` at all (a behaviour surface), in
+          // which case the callback existed nowhere in the index.
+          if (attrCallId && (attrCallId.text === "callback" || attrCallId.text === "macrocallback")) {
+            const argsNode = this.findChild(attrCall!, (c) => c?.type === "arguments")
+            // Find the `::` operator EXPLICITLY, not the first binary_operator: a
+            // typespec may carry a `when` constraint
+            // (`@callback get_and_update(d, k, f) :: {…} when c: v`), and taking
+            // the first binary operator whichever it is picked the `when` side —
+            // so a constrained callback published no symbol at all (found by the
+            // declaration census on elixir's own access.ex:187).
+            // The `when` constraint WRAPS the `::` expression
+            // (`@callback pop(d, k) :: {…} when d: container` parses as one
+            // binary_operator whose operator is `when` and whose LEFT side is the
+            // `::`), so the search descends: depth-bounded, and only through
+            // binary operators, which is where a typespec's shape lives.
+            const findTypeOp = (n: Node | null, depth = 0): Node | null => {
+                if (!n || depth > 4) return null
+                if (n.type === "binary_operator" && n.child(1)?.text === "::") return n
+                for (let i = 0; i < n.childCount; i++) {
+                    const c = n.child(i)
+                    if (c && c.type === "binary_operator") { const hit = findTypeOp(c, depth + 1); if (hit) return hit }
+                }
+                return null
+            }
+            const binOp = findTypeOp(argsNode)
+            // `@callback fetch(t, key) :: …` — the declared name is the `::`
+            // LEFT side, identifier or call head (the EX2-U4 rule, reused).
+            // A spec written without a `::` (a bare `@callback load(t)`) is not
+            // a typespec declaration; it stays silent rather than guessing.
+            let lhs: Node | null = null
+            if (binOp) {
+              const left = binOp.child(0)
+              if (left?.type === "identifier") lhs = left
+              else if (left?.type === "call") lhs = this.findChild(left, (c) => c?.type === "identifier")
+            }
+            if (lhs?.text) {
+              let arity = 0
+              if (binOp) {
+                const left = binOp.child(0)
+                if (left?.type === "call") {
+                  for (let i = 0; i < left.childCount; i++) { const c = left.child(i); if (c && c.type === "arguments") arity = c.namedChildCount }
+                }
+              }
+              // the owner is the nearest module/interface scope: a callback
+              // declared inside a def belongs to the module, not the function
+              let ownerName = ""
+              let ownerKind: ASTEngine.SymbolKind | undefined
+              for (let i = scopeStack.length - 1; i >= 0; i--) {
+                const k = scopeStack[i].kind
+                if (k === ASTEngine.SymbolKind.Module || k === ASTEngine.SymbolKind.Interface) { ownerName = scopeStack[i].name; ownerKind = k; break }
+              }
+              const specText = this.nodeToRange(binOp ?? node) && (binOp ? binOp.text : node.text)
+              const key = `${ownerName}/${lhs.text}/${arity}`
+              ctx.callbackSpecs[key] = specText
+              const existing = ctx.symbols.find((sym) => sym.name === lhs!.text && (sym.ownerName ?? sym.scope ?? "") === ownerName && sym.metadata?.arity === arity)
+              if (existing) {
+                // the sibling `def size(x)`: complete the ONE method with its
+                // typed spec rather than minting a second symbol for it.
+                // Declaration-ness is NOT decided here — a bodiless protocol
+                // head is a declaration and a `def … do … end` implementation is
+                // not, and only the DEF knows which it is (processFunction
+                // applies its own verdict, clearing the flag when a body exists).
+                existing.metadata = { ...existing.metadata, callbackSpec: specText, isCallbackDeclaration: true, ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}) }
+                // EX-D16 parity: the typed spec is part of the declaration
+                // surface, so the symbol's extent grows to cover it — the same
+                // "first..last of everything this symbol is" rule the clause
+                // merge applies. `clauseRanges` is NOT touched: a callback is a
+                // declaration, not a clause.
+                this.extendRange(existing, this.nodeToRange(node))
+              } else {
+                const isMethod = ownerKind === ASTEngine.SymbolKind.Interface || ownerKind === ASTEngine.SymbolKind.Class
+                const cbSym: ASTEngine.UniversalSymbol = {
+                  name: lhs.text,
+                  kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
+                  range: this.nodeToRange(node),
+                  scope: ownerName,
+                  ownerName: ownerName || undefined,
+                  ownerKind,
+                  visibility: "public",
+                  isDeclaration: true,
+                  metadata: {
+                    elixirSpecific: true, isCallback: true, isBodylessDeclaration: true, arity, heads: 0, clauseRanges: [],
+                    ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}),
+                    callbackSpec: specText, hasCallbackSpec: true,
+                  },
+                }
+                ctx.symbols.push(cbSym)
+                // Share the function merge key (`owner.name/arity`, the same
+                // spelling processFunction builds), so a `def` of the same
+                // callback later in the module COMPLETES this symbol instead of
+                // minting a second one for the same function. Without it, a
+                // module with `@callback load(t)` + `def load(x)` published two
+                // `load` symbols — a duplicate the index's
+                // `${fileId}:${name}:${startLine}` ids could not even keep apart.
+                if (ownerName) ctx.functionHeads[`${ownerName}.${lhs.text}/${arity}`] = cbSym
+              }
+            }
+          } else if (attrCallId && attrCallId.text === "optional_callbacks") {
+            // `@optional_callbacks after_begin: 0, before_commit: 0` names the
+            // callbacks an implementation MAY omit. It declares nothing new, so
+            // it annotates: the names ride the owning protocol/module's
+            // metadata and stamp the matching members.
+            const argsNode = this.findChild(attrCall!, (c) => c?.type === "arguments")
+            const names: string[] = []
+            // Two shapes carry the names: the bare keyword form
+            // (`@optional_callbacks after_begin: 0`) and a LIST of keywords
+            // (`@optional_callbacks [path: 1, filename: 1]` — ash uses this one,
+            // and the first version of this branch read only the bare form, so
+            // the list form annotated nothing).
+            const keywordGroups: Node[] = []
+            if (argsNode) {
+              for (const c of this.filterChildren(argsNode, (x) => x?.type === "keywords" || x?.type === "list")) {
+                if (c.type === "keywords") { keywordGroups.push(c); continue }
+                for (const inner of this.filterChildren(c, (x) => x?.type === "keywords" || x?.type === "pair")) keywordGroups.push(inner)
+              }
+            }
+            for (const grp of keywordGroups) {
+              for (let j = 0; j < grp.namedChildCount; j++) {
+                const pair = grp.namedChild(j)
+                if (!pair || pair.type !== "pair") continue
+                const kw = this.findChild(pair, (c) => c?.type === "keyword" || c?.type === "quoted_keyword")
+                if (kw?.text) names.push(this.stripAfterColon(this.stripQuotes(kw.text)))
+              }
+            }
+            let ownerName = ""
+            for (let i = scopeStack.length - 1; i >= 0; i--) {
+              const k = scopeStack[i].kind
+              if (k === ASTEngine.SymbolKind.Module || k === ASTEngine.SymbolKind.Interface) { ownerName = scopeStack[i].name; break }
+            }
+            if (names.length > 0 && ownerName) {
+              ctx.optionalCallbacks[ownerName] = [...(ctx.optionalCallbacks[ownerName] ?? []), ...names]
+              const ownerSym = ctx.symbolByName.get(ownerName)
+              if (ownerSym) ownerSym.metadata = { ...ownerSym.metadata, optionalCallbacks: [...(ownerSym.metadata?.optionalCallbacks ?? []), ...names] }
+            }
+          }
+        }
         // @type name :: ... — type aliases are declaration-site symbols (Type
         // kind), mirroring Erlang -type handling. M11.11 universal contract.
         if (attrCallId && (attrCallId.text === "type" || attrCallId.text === "typep" || attrCallId.text === "opaque")) {
@@ -719,6 +871,30 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (id?.text === "unquote" || id?.text === "unquote_splicing") return false
         }
         cur = cur.parent
+      }
+      return false
+  }
+
+  // EX-A14: does this `def` have a BODY? Two shapes, both real: a `do_block`
+  // child, and the single-line `, do: body` pair — which the grammar nests
+  // INSIDE the def's `arguments`, so it is not a sibling of it (the first
+  // version of this check looked for a direct `pair` child and read every
+  // `def f(x), do: y` as bodiless, which is how a definition ended up carrying
+  // isDeclaration). The walk stays inside `arguments` and never descends into
+  // a nested `do_block`, which is a body of some inner construct, not this def's.
+  private hasDefBody(node: Node): boolean {
+      if (this.findChild(node, (c) => c?.type === "do_block") !== null) return true
+      const args = this.findChild(node, (c) => c?.type === "arguments")
+      if (!args) return false
+      const stack: Node[] = [args]
+      while (stack.length > 0) {
+          const n = stack.pop()!
+          if (n !== args && n.type === "do_block") continue
+          if (n.type === "pair") {
+              const kw = this.findChild(n, (c) => c?.type === "keyword")
+              if (kw && this.stripAfterColon(kw.text) === "do") return true
+          }
+          for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) stack.push(c) }
       }
       return false
   }
@@ -1212,6 +1388,15 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
     }
 
+    // EX-A14: a `def` with NO BODY is a DECLARATION, not a definition — the
+    // protocol callback head (`def size(item)` inside `defprotocol`), the one
+    // Elixir form where a bodiless def is legal and meaningful. Marked at the
+    // TOP level too, because that is the field the indexer binds to
+    // brain_symbol.is_declaration (#612) and the C/Clean lanes already set it
+    // for their prototypes. Detection is structural: no `do_block` child and no
+    // `do:` keyword pair in the arguments (a single-line `def f(x), do: y` has
+    // the pair, so it is never mistaken for a head).
+    const isDeclaration = !this.hasDefBody(node) && defType === "def"
     const visibility = (defType === "defp" || defType === "defmacrop" || defType === "defguardp") ? "private" : "public"
     let isGenCallback = false, isSupCallback = false
 
@@ -1238,9 +1423,30 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbolKind = ASTEngine.SymbolKind.Method
     }
 
+    const specKey = `${currentScope?.name ?? ""}/${name}/${arity}`
+    const parkedSpec = ctx.callbackSpecs[specKey]
+    const parkedOptional = currentScope?.name ? ctx.optionalCallbacks[currentScope.name] : undefined
+
     if (ctx.functionHeads[fnId]) {
         const existing = ctx.functionHeads[fnId]!
-        existing.metadata!.heads = (existing.metadata!.heads as number) + 1
+        // `heads` counts CLAUSES, so a clause counts only when it has a BODY.
+        // A `@callback` that seeded this identity is a declaration and carries
+        // no clause, and a bodiless `def` head is a declaration too — while
+        // `def twice(y)` + `def twice(y), do: y` is two heads of one function,
+        // because the second one has a body.
+        if (!isDeclaration) existing.metadata!.heads = (existing.metadata!.heads as number) + 1
+        if (parkedSpec) existing.metadata!.callbackSpec = parkedSpec
+        if (isDeclaration) {
+            if (!existing.isDeclaration) { existing.isDeclaration = true; existing.metadata!.isBodylessDeclaration = true }
+        } else {
+            // A clause WITH a body makes the merged symbol a DEFINITION, even if
+            // its first clause was a bodiless head (`def f(y)` + `def f(y), do:
+            // y`) or a `@callback` of the same name was parked for it: leaving
+            // the flag on would be a false statement about the symbol.
+            existing.isDeclaration = undefined
+            existing.metadata!.isBodylessDeclaration = undefined
+            if (parkedSpec) existing.metadata!.isCallbackDeclaration = true
+        }
         // EX-A8: a MERGED multi-clause definition's extent is the whole
         // function — first clause start .. LAST CLAUSE end. The symbol keeps
         // the first clause's start (its declaration site, which is what the id
@@ -1263,7 +1469,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // function, the list is the clauses, and neither is inferable from the
         // other.
         this.extendRange(existing, this.nodeToRange(node))
-        const clauseRanges = existing.metadata!.clauseRanges as ASTEngine.UniversalSymbol["range"][]
+        // Defensive: EX-A14 lets a `@callback` seed the same merge key, and a
+        // callback has no CLAUSE, so its list starts empty. (Caught the hard
+        // way: an unguarded push here threw on the first callback+def pair, and
+        // the engine's timeout path downgraded it to a "basic parse result" —
+        // the exact silent-failure shape registered as R4 in the review.)
+        let clauseRanges = existing.metadata!.clauseRanges as ASTEngine.UniversalSymbol["range"][] | undefined
+        if (!clauseRanges) { clauseRanges = []; existing.metadata!.clauseRanges = clauseRanges }
         clauseRanges.push(this.nodeToRange(node))
         if (hasPattern) existing.metadata!.hasPatternMatching = true
         if (guardList.length > 0) {
@@ -1276,7 +1488,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     } else {
         const symbol: ASTEngine.UniversalSymbol = {
             name, kind: symbolKind, range: this.nodeToRange(node), scope: currentScope?.name || "", ownerName: currentScope?.name, ownerKind: currentScope?.kind, visibility, parameters,
-            metadata: { elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)], hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback }
+            ...(isDeclaration ? { isDeclaration: true } : {}),
+            metadata: {
+                elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)],
+                hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback,
+                ...(isDeclaration ? { isBodylessDeclaration: true } : {}),
+                ...(parkedSpec ? { callbackSpec: parkedSpec, isCallbackDeclaration: true } : {}),
+                ...(parkedOptional && parkedOptional.includes(name) ? { isOptionalCallback: true } : {}),
+            }
         }
         ctx.symbols.push(symbol)
         ctx.functionHeads[fnId] = symbol
