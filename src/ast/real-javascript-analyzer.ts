@@ -931,10 +931,32 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   source: moduleName,
                   target: `${reqPath}:*`,
                   type: ASTEngine.RelationshipType.Imports,
-                  confidence: 1.0,
+                  // JD-J12 (M60, 2026-09-27): a `*` target names NO SYMBOL.
+                  //
+                  // `require("m")` and `import("m")` are module-level: the
+                  // source declares that the module is loaded, not which member
+                  // is taken from it. Publishing `<module>:*` at 1.0 states a
+                  // certainty the file does not contain — and this is the ONLY
+                  // shape a CJS require ever takes, so for an ES5 corpus it is
+                  // the whole import class.
+                  //
+                  // Measured on the two javascript corpora at 300 files: 310
+                  // edges carry a `*` leaf and **every one is at confidence
+                  // 1.0** — 233 of 1,606 in svelte, and 77 of 77 in lodash
+                  // (whose entire import surface is `require`). No named-leaf
+                  // import edge exists there at all.
+                  //
+                  // This is the same defect shape as java's inferred JPA table
+                  // name (`mapped_table`, fixed earlier in this review): an
+                  // inference published at maximum confidence. The edge is KEPT
+                  // — the module dependency is real and worth recording — but it
+                  // is marked and demoted below the 0.7 fabrication threshold,
+                  // so it is declared suspicion rather than a counted
+                  // relationship, and a consumer can filter on `unresolved`.
+                  confidence: 0.6,
                   // The module path argument is the name this edge is about.
                   ...this.lineField(arg),
-                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic },
+                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic, unresolved: true },
                 })
               }
             }
@@ -1011,18 +1033,31 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { type: "import" },
             })
             for (const item of items) {
+              // JD-J12 (M60, 2026-09-27): `import * as ns from "m"` binds a
+              // NAMESPACE, not a symbol — the `*` leaf names no member, and the
+              // local binding `ns` is a namespace object, not a declaration in
+              // the target module. JD2b deliberately left namespace imports
+              // unresolved (there is nothing to resolve TO), which is right; what
+              // was wrong was pairing that honest refusal with confidence 1.0.
+              // A named import keeps 1.0 — its local binding IS written in the
+              // file, and the two importing fixtures pin exactly that.
+              const isNamespaceItem = item.text === "*"
               relationships.push({
                 source: moduleName,
                 // UNCHANGED, and deliberately so: the local binding, which is
                 // what the two importing fixtures pin.
-                target: `${srcPath}:${item.text === "*" ? "*" : item.text.split(" as ")[0]}`,
+                target: `${srcPath}:${isNamespaceItem ? "*" : item.text.split(" as ")[0]}`,
                 type: ASTEngine.RelationshipType.Imports,
-                confidence: 1.0,
+                confidence: isNamespaceItem ? 0.6 : 1.0,
                 ...this.lineField(item.node),
                 // JD2b, additive: what the MODULE declares, so the resolver can
                 // reach the right symbol for an aliased or default import. The
                 // edge target above is untouched.
-                metadata: { declaredName: item.declared, declaredKind: item.kind },
+                metadata: {
+                  declaredName: item.declared,
+                  declaredKind: item.kind,
+                  ...(isNamespaceItem ? { unresolved: true } : {}),
+                },
               })
             }
           }
@@ -1064,11 +1099,17 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: moduleName,
               target: `${modPath}:*`,
               type: ASTEngine.RelationshipType.Imports,
-              confidence: 1.0,
+              // JD-J12 (M60, 2026-09-27): a clause-less re-export (`export * from
+              // "m"`) names the MODULE and no member of it — `*` again. The
+              // comment below is right that the written name is the path
+              // argument, but a module path is not a symbol, so 1.0 overstated
+              // it the same way it overstated `require` and the namespace import.
+              // Kept, marked, and demoted: the re-export dependency is real.
+              confidence: 0.6,
               // A re-export with no clause names the MODULE, so the written name
               // is the module-path argument itself.
               ...this.lineField(exportSource),
-              metadata: { isReExport: true },
+              metadata: { isReExport: true, unresolved: true },
             })
             patterns["ES6 ReExports"] = true
           }
