@@ -272,6 +272,13 @@ export function readCodeInputs(root: string): CodeInputs {
 // `files=0`), and the single-pin corpusPins emission silently DISCARDED the
 // historical multi-repo pin set on every run. Default now sweeps one honest
 // repo per language; --repo <name> still restricts to a single repo.
+// The JSON oracle is lane-owned: `script/m14/oracles/json.ts`. It is re-exported here
+// because the F5 harness resolves oracles through this module, and re-exporting is the
+// whole of this file's JSON footprint beyond the two registrations below.
+import { deriveJsonEdges } from "./oracles/json"
+
+export { deriveJsonEdges }
+
 export const LANG_REPOS: Record<string, string> = {
   // M14 #277: bash's primary corpus is `otp` — 80 tracked .sh files, the largest
   // bash holding in CORPUS_ROOT, and hand-written build/install tooling rather
@@ -1389,6 +1396,16 @@ export function deriveJavaContainsTruth(root: any): { label: string; from: strin
         const nm = fieldName(c, "name"); if (nm) push(owner, nm)
       } else if (c.type === "enum_constant") {
         const nm = fieldName(c, "name"); if (nm) push(owner, nm)
+      } else if (c.type === "enum_body_declarations") {
+        // An enum's METHODS and FIELDS live inside `enum_body_declarations`, not
+        // directly in `enum_body` — only its constants sit beside them. Reading
+        // that wrapper for constants alone (as the named-type walk below did)
+        // silently dropped every method an enum declares, which is what left
+        // `Relationship -> length / charAt / subSequence / toString` unexplained
+        // at 400 files: `public enum Relationship implements CharSequence` DOES
+        // declare all four, so the analyzer's edges are right and the truth was
+        // wrong. Recurse rather than filter.
+        membersOf(owner, c)
       } else if (TYPE(c.type)) {
         const nm = fieldName(c, "name"); if (nm) push(owner, nm)
       }
@@ -1420,24 +1437,8 @@ export function deriveJavaContainsTruth(root: any): { label: string; from: strin
     if (TYPE(n.type)) {
       const owner = fieldName(n, "name")
       const body = n.childForFieldName("body")
-      const kids = body ? named(body) : named(n)
-      for (const c of kids) {
-        if (c.type === "field_declaration") {
-          for (const d of named(c)) if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
-        } else if (c.type === "constant_declaration") {
-          for (const d of named(c)) if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
-        } else if (c.type === "method_declaration" || c.type === "annotation_type_element_declaration") {
-          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
-        } else if (c.type === "constructor_declaration" || c.type === "compact_constructor_declaration") {
-          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
-        } else if (c.type === "enum_constant") {
-          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
-        } else if (c.type === "enum_body_declarations") {
-          for (const d of named(c)) if (d.type === "enum_constant") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
-        } else if (TYPE(c.type)) {
-          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)     // a nested type is a member too
-        }
-      }
+      if (body) membersOf(owner!, body)
+      else membersOf(owner!, n)
     }
     for (const c of named(n)) walk(c)
   }
@@ -1510,6 +1511,25 @@ export function deriveJavaReferencesTruth(root: any): { label: string; from: str
     // 60 files, and deriving it would make the lane owe an edge it does not
     // declare. Ruled rather than "fixed" — recorded as a limitation.
     if (p.type === "type_arguments" && p.parent?.type === "method_invocation") return true
+    // A TYPE PARAMETER DECLARATION is not a type usage: `<T>`, `<A extends B>`,
+    // `<K, V>` declare variables, they do not name a type in the file. The
+    // analyzer emits no reference for them and neither should the oracle — a
+    // USAGE of a parameter (`T field`) is a different node, under
+    // `field_declaration` rather than `type_parameters`, so this does not
+    // silence those. Measured on a grails-core rotation: MISSING rows, every one
+    // a bare `T` or `A` from Identity.java / EmbeddedPersistentEntity.java.
+    for (let a: any = n, i = 0; a && i < 6; i++, a = a.parent) {
+      if (a.type === "type_parameters") return true
+    }
+    // An implements/extends clause can reach a type through a GENERIC, and the
+    // `type_list` test above only sees a DIRECT child — so
+    // `implements Foo<Selectable<X>>` left `Selectable` in the truth while the
+    // analyzer published it as an `implements` edge, not a reference. Climb to
+    // the clause instead of testing one level up. Measured on the same
+    // rotation: ServletImplDTO.java.
+    for (let a: any = n, i = 0; a && i < 8; i++, a = a.parent) {
+      if (a.type === "superclass" || a.type === "super_interfaces" || a.type === "extends_interfaces") return true
+    }
     // `new X()` -> instantiates, but `new X[]` -> array_creation (a reference).
     // The type is not always the node itself: `new java.util.ArrayList<>()` puts
     // the scannable `scoped_type_identifier` INSIDE a `generic_type`, which is
@@ -14936,10 +14956,23 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
           const inner = children(c).find((k: any) => k.type === "string_value")
           if (inner) { target = textOf(inner).trim().replace(/^["']|["']$/g, ""); break }
           // `url(x.css)` and `url(chrome://communicator/skin/)` — UNQUOTED, so the
-          // payload is a plain_value node. An oracle that only reads the quoted form
-          // misses every unquoted url(), which is the majority in vendor CSS
-          // (Firefox's own chrome.manifest skin imports are the measured case).
-          const bare = children(c).find((k: any) => k.type === "plain_value" || k.type === "call_expression")
+          // payload is a `plain_value`. An oracle that only reads the quoted form
+          // misses every unquoted url(), which is the majority in vendor CSS.
+          //
+          // The `plain_value` is a GRANDCHILD, though: the tree is
+          // `call_expression > function_name, arguments > plain_value`, and the branch
+          // looked for it among the call's DIRECT children, so it never fired and every
+          // unquoted import was silently absent from the truth. Measured on
+          // `svelte/tests/css/samples/supports-import/expected.css`: four of the six
+          // imports derive nothing, and all four are the unquoted form. The file is
+          // outside the rotating 60-file sample, which is why the CSS row stayed at
+          // 100% while the truth was quietly short.
+          //
+          // Read by descending into `arguments` rather than by slicing the statement's
+          // text: a `url()` payload can contain characters that make text-slicing
+          // guess, and the tree already knows where the argument ends.
+          const args = children(c).find((k: any) => k.type === "arguments")
+          const bare = args ? children(args).find((k: any) => k.type === "plain_value") : null
           if (bare) { target = textOf(bare).trim().replace(/^["']|["']$/g, ""); break }
         }
       }
@@ -15072,9 +15105,17 @@ export function deriveCssEdges(root: any, moduleName: string): { label: string; 
       if (asWritten) {
         const members = asWritten.split(",").map((m) => m.trim()).filter((m) => m.length > 0)
         const real = members.filter((m) => !isResetMember(m))
-        // a group that is ENTIRELY reset selectors publishes nothing, and neither does
-        // anything inside it
-        if (real.length === 0) return
+        // D8 suppresses the reset SELECTORS, not the block. A rule inside a
+        // `* { … }` still gets walked, and the first version here RETURNED on a
+        // pure-reset group, which skipped the whole subtree — and that is what
+        // produced two `unexplained` containment edges on grails-core, a lane that
+        // was at 0. Suppressing a name and skipping a subtree are different acts and
+        // the ruling only asks for the first.
+        if (real.length === 0) {
+          // nothing to name, but keep descending with the parent UNCHANGED
+          for (const c of children(n)) walk(c, ctx, childParent)
+          return
+        }
         // a MIXED group keeps only its real members, which is the D8 split
         if (real.length !== members.length) {
           const rejoined = real.join(", ")
@@ -15980,7 +16021,11 @@ async function main() {
         // The module name is the file's BASENAME with the extension, matching the
         // analyzer's `importerName`, and `@use`/`@forward` carry their own module path
         // so they are unaffected by it.
-        const scssModule = (relPath.split("/").pop() || "stylesheet").replace(/\.[^.]+$/, "") || "stylesheet"
+        // The basename WITH its extension, matching the CSS path and the analyzer's
+        // `importerName`. The first version stripped it, which made every SCSS import's
+        // `from` disagree with the analyzer's by exactly the extension — invisible in
+        // the comparison because it matches on label+target, and wrong everywhere else.
+        const scssModule = relPath.split("/").pop() || "stylesheet"
         for (const e of deriveCssEdges(root, scssModule)) {
           ;(truth as any[]).push(e)
         }
@@ -17737,7 +17782,25 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
   // accounted for 93 analyzer `uses` edges this function could not explain.
   for (const el of descendants(root, "element_access")) {
     if (damaged(el)) continue
-    for (const v of descendants(el, "variable")) if (v.text) push("uses", ownerOf(el), v.text)
+    // The `$` MUST BE STRIPPED, and this is the third site in this function that
+    // needed saying rather than inheriting. `derivePowershellEdges` pushes a
+    // `variable` node's text verbatim, so `$result['dest']` contributed
+    // `uses -> $dest` — a target no stored symbol can ever have, because this
+    // lane's analyzer stores variables STRIPPED (PS19: `calls -> $sb` is "a name no
+    // symbol can have, since a variable is stored stripped"). Every such row is
+    // counted by F5 as MISSING, so the oracle was manufacturing disagreements
+    // against its own target model.
+    //
+    // Found by hand-auditing the F5 MISSING sample rather than by reading the diff:
+    // 52 of 202 sampled `uses` rows had a `$`-prefixed target, which is a shape no
+    // correct oracle can emit. The `member_access` branch above was already correct
+    // because it goes through the name-validity helper, and the general name
+    // helper strips too — this branch was the one that read `.text` directly.
+    for (const v of descendants(el, "variable")) {
+      if (!v.text) continue
+      const bare = v.text.charCodeAt(0) === 36 /* $ */ ? v.text.slice(1) : v.text
+      if (bare) push("uses", ownerOf(el), bare)
+    }
     for (const sl of descendants(el, "string_literal")) {
       const t = sl.text.replace(/^['"]|['"]$/g, "")
       if (t) push("uses", ownerOf(el), t)
@@ -17960,202 +18023,6 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
     const toks = kids(els).filter((t) => t.type === "generic_token" || t.type === "simple_name").map((t) => t.text)
     if (toks.length >= 2) push("references", moduleName, toks[1])
   }
-
-  return edges
-}
-
-/**
- * M14 F5 — the JSON oracle.
- *
- * Written from JSON's own semantics and sharing no rule table, key set, path
- * helper or classification branch with `RealJsonAnalyzer`. That is the only
- * property that makes a MATCH mean something: an oracle derived from the analyzer
- * cannot disagree with it, and the bash lane's first truth file was exactly that
- * — 55 hand-authored facts, all `authority: manual_audit`, twelve of which pinned
- * the `global` phantom endpoint as EXPECTED. A lane whose truth cannot disagree
- * with its analyzer has no differential; it has a mirror.
- *
- * ## What JSON's semantics actually give
- *
- * A JSON document is a tree of `object` (pairs) / `array` / scalars, and the only
- * relation the format itself defines is CONTAINMENT: the object a key is written
- * in contains that key. There is no name resolution, no binding, no inheritance
- * and no control flow, so `calls`, `extends`, `implements`, `overrides` and
- * `instantiates` are not derivable from the format at all.
- *
- * The one non-trivial edge is JSON Schema's `$ref`, which names another location in
- * the SAME document. Resolving it needs a path index, so the oracle builds its own
- * from its own walk — deliberately not by calling the analyzer's `referenceTarget`,
- * because a shared resolver would make the comparison untestable in exactly the way
- * this lane's blind spot already was.
- *
- * ## Grain
- *
- * (label, from, target) triples, one per declaration, matching site-agnostically in
- * the F5 harness. Module name is the file's basename WITHOUT its extension, which is
- * what the analyzer emits and what the contract probe pins.
- */
-export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest?: boolean }): { label: string; from: string; target: string }[] {
-  const edges: { label: string; from: string; target: string }[] = []
-  // An npm manifest declares, under these four keys, a map of package name to
-  // version RANGE. Each entry is a genuine `uses` relationship: the manifest uses
-  // that package. Encoded here from the npm manifest format rather than from the
-  // analyzer's `isDependencyContainerPath`, so the two agreeing means something —
-  // they are the same four keys because the FORMAT names those four, not because
-  // the analyzer did.
-  const MANIFEST_DEPENDENCY_KEYS = new Set(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
-  const pathToName = new Map<string, string>()
-  const refs: { from: string; refPath: string }[] = []
-  const deps: { from: string; name: string }[] = []
-  const endpoints: { from: string; target: string }[] = []
-  const HTTP_METHOD_KEYS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"])
-
-  const keyText = (pair: any): string | null => {
-    const k = pair.childForFieldName?.("key")
-    if (!k) return null
-    // A JSON key is a `string` node whose `string_content` child is the name; the
-    // quotes are not part of it. Reading the CONTENT node rather than stripping
-    // quotes off the parent's text is the structural form, and it is why this
-    // oracle needs no regex.
-    const c = k.namedChildren?.find((x: any) => x.type === "string_content")
-    if (c) return String(c.text ?? "")
-    const raw = String(k.text ?? "")
-    return raw.length >= 2 ? raw.slice(1, -1) : raw
-  }
-  const valueOf = (pair: any): any => pair.childForFieldName?.("value") ?? null
-  const isObject = (n: any): boolean => !!n && n.type === "object"
-  const isArray = (n: any): boolean => !!n && n.type === "array"
-  const unquote = (n: any): string => {
-    const t = String(n?.text ?? "")
-    return t.length >= 2 ? t.slice(1, -1) : t
-  }
-
-  // Pass 1 — walk, recording CONTAINMENT and every path at which a name is declared,
-  // plus every `$ref` with the path it was written at.
-  const walk = (node: any, parentPath: string, parentName: string): void => {
-    if (isArray(node)) {
-      // An array's SCALAR elements are leaves — positional, unnamed, nothing to
-      // contain. But an array of OBJECTS carries real containment, and this oracle's
-      // first version returned early for every array, which is how 18,283
-      // analyzer edges came to read as fabrications when the truth simply had not
-      // modelled them. Being wrong in the oracle's direction is still wrong: it
-      // would have convicted correct edges, which is the one failure a differential
-      // must never produce.
-      const items = (node.namedChildren ?? []).filter((c: any) => c.type !== "[")
-      items.forEach((item: any, i: number) => {
-        if (!isObject(item)) return // a scalar element has no named children
-        // The item is named from the ARRAY's own name plus the index, never from
-        // the item's path. Taking the last dot-segment is correct only while the
-        // module name has no dot, and `index.svelte.warnings.json` is an ordinary
-        // filename: that path gives `warnings[0]` where the truth is
-        // `index.svelte.warnings[0]`. The analyzer had the same bug and both were
-        // fixed from the same rule — an array element is identified by its index
-        // UNDER THE ARRAY, and the array is named by the key it was written under.
-        const itemPath = `${parentPath}[${i}]`
-        const itemName = `${parentName}[${i}]`
-        if (parentName) edges.push({ label: "contains", from: parentName, target: itemName })
-        pathToName.set(itemPath, itemName)
-        walk(item, itemPath, itemName)
-      })
-      return
-    }
-
-    if (!isObject(node)) return
-    const pairs = (node.namedChildren ?? []).filter((c: any) => c.type === "pair")
-    for (const pair of pairs) {
-      const key = keyText(pair)
-      const value = valueOf(pair)
-      if (!key || !value) continue
-      const here = parentPath ? `${parentPath}.${key}` : key
-      // CONTAINMENT: the object a key is written in contains that key. The SOURCE
-      // is the parent SYMBOL's name, never its qualified path — an edge whose source
-      // is not a symbol name resolves to nothing, which is the defect the contract
-      // probe caught.
-      if (parentName) edges.push({ label: "contains", from: parentName, target: key })
-      pathToName.set(here, key)
-      // OpenAPI path entry: a `/`-prefixed key whose object declares an HTTP method.
-      if (key.length > 1 && key.startsWith("/") && isObject(value)) {
-        const methods = (value.namedChildren ?? []).filter((c: any) => c.type === "pair").map((c: any) => keyText(c))
-        if (methods.some((m: string | null) => !!m && HTTP_METHOD_KEYS.has(m))) {
-          endpoints.push({ from: parentName || scriptName, target: key })
-        }
-      }
-      if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
-        for (const dep of (value.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
-          const depKey = keyText(dep)
-          if (depKey) deps.push({ from: scriptName, name: depKey })
-        }
-      }
-      if (key === "$ref" && value.type === "string") {
-        refs.push({ from: here, refPath: unquote(value) })
-      } else if (isObject(value) || isArray(value)) {
-        walk(value, here, key)
-      }
-    }
-  }
-
-  const doc = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
-  if (doc) walk(doc, scriptName, scriptName)
-
-  // The document's top level may be an OBJECT or an ARRAY, and an earlier version of
-  // this oracle only handled the object — so all 1,380 array-rooted files returned
-  // zero truth edges and every analyzer edge on them read as a fabrication.
-  // terraform's `apply.json` equivalence outputs are arrays at the top level, which
-  // is how it surfaced: the analyzer emitted 65 correct `contains` edges on a file
-  // where the oracle had nothing to say. A differential that is SILENT is worse than
-  // one that is wrong, because silence reads as corroboration.
-  //
-  // This invocation was also deleted by accident while the manifest rule above was
-  // being added — a `replace` whose anchor spanned it — and the symptom was
-  // WORSE NUMBERS (files-with-truth 2,201 -> 1,884), which read like an analyzer
-  // regression rather than a broken instrument. An instrument that fails by being
-  // absent is the hardest kind of failure to notice and the easiest to misattribute.
-  // EVERY top-level value, not just the first. Concatenated JSON documents are legal
-  // input for tooling that streams them, and kubernetes' `hack/testdata` holds
-  // several: two `Service` objects back to back in one file. The oracle walked only
-  // the first, so the whole second document's containment went uncorroborated and
-  // 12 edges read as fabrications. Note the cost this exposes rather than hides: the
-  // two documents both declare `spec`, so both symbols are named `spec` and the
-  // edges from them are AMBIGUOUS — which is the language property recorded in §7,
-  // arriving through a door nobody expected.
-  const topLevels: any[] =
-    root?.type === "object" || root?.type === "array"
-      ? [root]
-      : (root?.namedChildren ?? []).filter((c: any) => c.type === "object" || c.type === "array")
-  for (const topLevel of topLevels) walk(topLevel, scriptName, scriptName)
-
-  // Pass 2 — resolve each `$ref` against the index Pass 1 built.
-  //
-  // A `$ref` names a LOCATION in the document, not a symbol, so the edge targets the
-  // LOCATION. This is not a cosmetic choice and it is the whole adjudication for
-  // 7,653 edges: the first version of this oracle resolved a pointer to the bare
-  // NAME declared there, the analyzer resolves it to the PATH, and the two disagreed
-  // on 91% of every `references` edge in the corpus — kubernetes' OpenAPI specs,
-  // where a `$ref` is a location and the name at that location is one of several
-  // possible names. A pointer into a document cannot be answered with a name,
-  // because nothing guarantees the name is unique; a location can. The analyzer was
-  // right and the oracle was under-specified.
-  for (const r of refs) {
-    if (!r.refPath.startsWith("#/")) continue
-    // A JSON Pointer is RELATIVE TO THE DOCUMENT ROOT, so `#/components/schemas/X`
-    // names `<module>.components.schemas.X`. The lookup used the raw pointer
-    // (`components/schemas/X`) against a path index keyed from the module name, so it
-    // never matched and 7,653 kubernetes OpenAPI `$ref`s — the single largest class in
-    // the corpus — were skipped by the oracle and read as fabrications. A pointer is
-    // not a path in the document; it is a path FROM the document.
-    const pointerPath = `${scriptName}.${r.refPath.slice(2).replaceAll("/", ".")}`
-    if (!pathToName.has(pointerPath)) continue // no declaration at that location
-    edges.push({ label: "references", from: r.from, target: pointerPath })
-  }
-
-  // An OpenAPI/Swagger `paths` entry: a key beginning with `/` whose object holds at
-  // least one HTTP method. The endpoints are USED by the `paths` object, and the
-  // method names are the evidence — the rule is structural, taken from the OpenAPI
-  // document shape rather than from the analyzer's `isApiEndpoint`.
-  for (const e of endpoints) edges.push({ label: "uses", from: e.from, target: e.target })
-
-  // The manifest's dependencies are `uses`, sourced by the file's own module.
-  for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
 
   return edges
 }
