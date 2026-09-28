@@ -437,8 +437,13 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (dot < 0) return false
     const ext = withoutFragment.slice(dot + 1)
     if (!DOCUMENT_EXTENSIONS.includes(ext)) return false
-    // It must look like a PATH, not a bare word that happens to end in `.json`.
-    return withoutFragment.includes("/") || withoutFragment.startsWith(".")
+    // No further shape test. An earlier version also demanded a `/` or a leading `.`,
+    // on the theory that a bare word ending in `.json` might not be a path — and that
+    // rejected `other.schema.json`, which plainly is one. The extension IS the test:
+    // a `$ref` whose value is a document name is naming a document. The cost of the
+    // over-strict version was an UNDERCOUNT, and it was invisible until a fixture
+    // asked for the shape the corpus happened not to contain.
+    return true
   }
 
   private referenceTarget(ctx: JsonContext, refPath: string): string {
