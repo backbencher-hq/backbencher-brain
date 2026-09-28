@@ -326,6 +326,34 @@ check("an empty namespace prefix publishes no edge target", emptyPrefix.relation
   check("the fixture set exercises the implicit-prefix rule", implicitSeen.length > 0,
     `${implicitSeen.length} reference(s) through a spec-bound prefix`)
 
+  // X14: a merged edge must be able to answer "is this edge ALSO a usage claim?"
+  // from its own metadata. `evidenceClass` carries the PRIMARY role's tier, so a
+  // consumer had to hold the tier table and re-derive the answer — and 148 of 813
+  // content-model sites were indistinguishable from 665 genuine nesting edges.
+  // The invariant is POSITIONAL: `alsoRoles[i]` and `alsoRoleTiers[i]` must be the
+  // same role, so the two lists cannot be read out of step.
+  const alsoRoleBad: string[] = []
+  let mergedEdges = 0, alsoUsage = 0
+  for (const f of readdirSync(dir).filter((f) => /\.(xml|xsd|xsl|xslt|rng|wsdl)$/.test(f)).sort()) {
+    const p = `${dir}/${f}`
+    const r: any = await ASTEngine.parseFile(p, readFileSync(p, "utf8"))
+    for (const e of r.relationships ?? []) {
+      const also = e.metadata?.alsoRoles
+      if (!Array.isArray(also) || also.length === 0) continue
+      mergedEdges++
+      const tiers = e.metadata?.alsoRoleTiers
+      if (!Array.isArray(tiers) || tiers.length !== also.length) { alsoRoleBad.push(`${f}: ${also.length} alsoRoles but ${tiers?.length ?? 0} tiers`); continue }
+      for (let i = 0; i < also.length; i++) {
+        if (tiers[i]?.role !== also[i]) alsoRoleBad.push(`${f}: position ${i} is ${also[i]} vs ${tiers[i]?.role}`)
+        if (tiers[i]?.tier === "usage_contextual") alsoUsage++
+      }
+    }
+  }
+  check("every merged edge records a TIER for each of its other roles, in step with alsoRoles", alsoRoleBad.length === 0,
+    alsoRoleBad.slice(0, 5).join("; ") || `${mergedEdges} merged edge(s), ${alsoUsage} secondary usage claim(s) now answerable from metadata`)
+  check("the fixture set exercises the merged-edge tier pairing", mergedEdges > 0 && alsoUsage > 0,
+    `${mergedEdges} merged edge(s), ${alsoUsage} with a usage-claiming secondary role`)
+
   check("the fixture set exercises the unresolved resolvability class", unresolvedEdges > 0,
     `${unresolvedEdges} unresolved reference(s) — X13's class must be reachable or it is untested`)
 
