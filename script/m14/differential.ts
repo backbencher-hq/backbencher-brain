@@ -1045,7 +1045,21 @@ export function deriveSvelteComponentUsages(
           }
         }
       }
-      if (name && !ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name) && !seen.has(name)) {
+      // X4 (RULED 2026-09-27): the `svelte:` prefix is a RESERVED NAMESPACE. Only the
+      // eleven entries in VUE_STYLE_BUILTINS exist; an undeclared `svelte:*` is a compile
+      // error that cannot name a component.
+      //
+      // The corpus carries `<svelte:selfdestructive x="{x - 1}"/>` in its own
+      // `compiler-errors/samples/svelte-selfdestructive/` — a deliberate near-miss of
+      // `svelte:self`, in a file the Svelte compiler REJECTS — and both this oracle and the
+      // analyzer published `instantiates -> svelte:selfdestructive`, so the two AGREED and
+      // the differential reported the lane clean. That is the one defect class invisible to
+      // the gate that compares the two sides, because it is invisible BY CONSTRUCTION: two
+      // readings of the same spec cannot disagree about a construct both forgot to check
+      // against the language's own rules. Found by the construct census, which consults
+      // neither side.
+      const reservedUndeclared = !!name && name.startsWith("svelte:") && !VUE_STYLE_BUILTINS.has(name)
+      if (name && !reservedUndeclared && !ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name) && !seen.has(name)) {
         seen.add(name)
         edges.push({ label: "instantiates", from: "(expr)", target: name })
       }
@@ -2073,7 +2087,25 @@ export function deriveTypeScriptEdges(root: any): { label: string; from: string;
       // Mirror of the analyzer's instantiation branch: generic_type head,
       // leaf segment, generic arguments stripped, GLOBAL_CTORS filtered.
       const ctor = n.namedChild(0)
-      if (ctor) {
+      // X2 (RULED 2026-09-27): construction candidates are NAMEABLE LEAVES only. The
+      // javascript twin already carries this guard — with a comment recording the exact
+      // reason, "deriving their raw expression text fabricated unmatchable oracle edges
+      // (lodash corpus)" — and the typescript twin never got it, so the two drifted.
+      //
+      // Measured, not inferred: `validator/samples/inline-new-class/input.svelte` contains
+      // `const a = new class { foo = $state(0) }`, an ANONYMOUS class expression. The
+      // typescript grammar yields `new_expression` with `ctor.type === "class"` and
+      // `ctor.text` equal to the whole class body, and this branch published
+      // `instantiates -> "class {\n\t\tfoo = $state(0)\n\t}"` — a target that is a span of
+      // SOURCE TEXT. The javascript grammar emits no `new_expression` for that input at
+      // all, which is precisely how a twin drifts from its twin: only the TS side is ever
+      // asked the question. A truth-side defect is worse than an analyzer defect, because
+      // the differential charges the analyzer for the oracle's mistake.
+      const TS_CTOR_NAMEABLE = new Set([
+        "identifier", "member_expression", "qualified_identifier", "template_type",
+        "generic_type", "type_identifier", "type_descriptor", "primitive_type",
+      ])
+      if (ctor && TS_CTOR_NAMEABLE.has(ctor.type)) {
         let className = ctor.text
         if (ctor.type === "generic_type") className = ctor.namedChild(0)?.text ?? className
         const dot = className.lastIndexOf(".")
@@ -16629,6 +16661,36 @@ async function main() {
                     if (attr.type !== "attribute") continue
                     const nameNode = attr.namedChildren?.find((c: any) => c.type === "attribute_name")
                     const attrName = nameNode?.text ?? ""
+                    // X7 (RULED 2026-09-27, D12's other half): the FRAMEWORK-INVOKED
+                    // carriers are call sites. `use:`/`transition:`/`in:`/`out:`/`animate:`
+                    // are invoked by the framework on exactly the argument D8 accepted for
+                    // `on:click` — Svelte calls an action on mount and a transition on state
+                    // change by the same mechanism it calls a handler. The target is the
+                    // directive's OWN NAME, written in the attribute name, so a dotted
+                    // value's callable leaf is the target; a `let:` names a slot prop the
+                    // component ACCEPTS and stays silent, which is why it is absent here.
+                    //
+                    // Before this, the analyzer emitted these and the oracle did not, so the
+                    // differential charged the ANALYZER for the truth's silence: 29 of svelte's
+                    // 34 unexplained rows at 400 files per corpus were exactly these. Reading
+                    // the attribute NAME rather than matching a `prefix:value` shape is
+                    // deliberate — Tailwind tokens (`md:grid-cols-2`, `dark:bg-background`)
+                    // have that shape and live inside quoted class values.
+                    {
+                      const CARRIER_PREFIXES = new Set(["use", "transition", "in", "out", "animate"])
+                      const cIdx = attrName.indexOf(":")
+                      if (cIdx > 0) {
+                        const cPre = attrName.slice(0, cIdx)
+                        const cRest = attrName.slice(cIdx + 1)
+                        if (CARRIER_PREFIXES.has(cPre) && cRest) {
+                          const leaf = cRest.includes(".") ? cRest.slice(cRest.lastIndexOf(".") + 1) : cRest
+                          if (leaf && leaf !== moduleName && !seenRender.has("c|" + leaf)) {
+                            seenRender.add("c|" + leaf)
+                            ;(truth as any[]).push({ label: "calls", from: "(template)", target: leaf })
+                          }
+                        }
+                      }
+                    }
                     // #898 closure: both event spellings, the analyzer's gates
                     // character for character. on: directives are universal;
                     // Svelte-5 on* attributes only on intrinsic tags — on a
