@@ -265,6 +265,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   ])
 
   /**
+   * The two prefixes the Namespaces specification binds in EVERY document,
+   * whether or not the document says so (XML Namespaces 1.0 §4, and the
+   * Namespaces in XML 1.1 §2.2 which makes it a namespace name rather than a
+   * reserved prefix). Neither may be declared to anything else: re-binding `xml`
+   * is an error, and `xmlns` is bound to the XMLNS namespace.
+   *
+   * This table exists because a well-formed document CANNOT supply them, so a
+   * resolver that only reads declarations can never resolve them. See M60 X8.
+   */
+  private static readonly IMPLICIT_PREFIX_BINDINGS: Readonly<Record<string, string>> = {
+    xml: "http://www.w3.org/XML/1998/namespace",
+    xmlns: "http://www.w3.org/2000/xmlns/",
+  }
+
+  /**
    * Transient per-attribute context, set by the element branch before its
    * attributes run. `bareNameReference` — the element is one that NAMES another
    * declaration rather than being one (XSLT `call-template`, RelaxNG `ref`).
@@ -1240,13 +1255,28 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // type, which is the M60.R10 class in reverse.
     if (!qname.prefix && !RealXmlAnalyzer.REFERENCE_ATTRIBUTES.has(attributeName)) return
     if (!qname.prefix && this.bareNameDeclarationElement) return
+    // M60 X8: the `xml` and `xmlns` prefixes are bound by the Namespaces
+    // specification ITSELF and need no declaration — `xmlns:xml=…` is forbidden,
+    // and no real document writes it. So `namespaceBindings.get("xml")` is
+    // undefined in every well-formed file, and every `ref="xml:lang"`,
+    // `ref="xml:id"`, `ref="xml:space"` and `ref="xml:base"` came through with
+    // NO binding. The reference pass then asked "is this a built-in?", found no
+    // namespace to test, and REFUSED them — 71 references across 20 corpus files,
+    // including every `xml:lang` in docx4j's Dublin Core schemas.
+    //
+    // The analyzer already knows the answer: BUILTIN_NAMESPACE_URIS contains
+    // `http://www.w3.org/XML/1998/namespace`. It was consulted only when a
+    // binding existed, and for the one prefix the spec guarantees can never
+    // arrive with one. The knowledge was present and unreachable.
+    const declared = namespaceBindings.get(qname.prefix)
+    const binding = declared ?? RealXmlAnalyzer.IMPLICIT_PREFIX_BINDINGS[qname.prefix]
     referenceCandidates.push({
       ownerName,
       attributeName,
       value,
       nameNode,
       valueNode,
-      binding: namespaceBindings.get(qname.prefix),
+      binding,
     })
   }
 

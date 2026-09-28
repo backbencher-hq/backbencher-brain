@@ -1756,6 +1756,22 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "xml/implicit-xml-prefix-unbound",
+    language: "xml",
+    defectClass: "reference-suppression",
+    description:
+      "Finding X8. The `xml` and `xmlns` prefixes are bound by the Namespaces specification ITSELF, in every document, and re-binding `xml` is an error — so a well-formed file CANNOT supply them. A resolver reading only declarations therefore never resolved `xml`, the reference pass found no namespace to test for built-inness, and REFUSED the edge: 71 references over 20 corpus files, including every xml:lang in docx4j's Dublin Core schemas. The knowledge was present and unreachable — BUILTIN_NAMESPACE_URIS already held the xml namespace, consulted only when a binding existed, for the one prefix guaranteed never to bring one. Reverted generically: every reference edge whose qname uses a prefix the spec binds implicitly is deleted. Pinned by xml/xsd-implicit-xml-prefix, which declares NO xmlns:xml on purpose — adding one would make the fixture pass against the broken analyzer, which is the trap it exists to catch — and which uses the prefix xs rather than xsd so a normalising fixture would fail rather than pass.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if (x.type !== "references") return true
+        const q = String(x.metadata?.qname ?? "")
+        if (!q.includes(":")) return true
+        return !/^(xml|xmlns):/.test(q)
+      }),
+    }),
+  },
+  {
     id: "xml/external-reference-dropped",
     language: "xml",
     defectClass: "reference-suppression",
