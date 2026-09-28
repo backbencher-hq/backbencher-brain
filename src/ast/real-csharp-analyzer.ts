@@ -2759,13 +2759,29 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    // Dedup against calls edges (member_access in call-callee position).
-    const emittedCalls = new Set<string>()
-    for (const r of relationships) {
-      if ((r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Calls) {
-        emittedCalls.add(`${r.source}->${r.target}`)
-      }
-    }
+    // CS-D6 (2026-09-28, the `uses`-oracle round): a "dedup against calls" guard used to live
+    // here, keyed on `${source}->${target}` with NO SITE:
+    //
+    //     if (!seen.has(key) && !emittedCalls.has(`${src}->${tgt}`)) { … }
+    //
+    // Its stated purpose was to avoid duplicating a `calls` edge for a member access in
+    // call-callee position — but `isCallee` above already does that, STRUCTURALLY, by
+    // comparing node spans against the invocation's `function` field. The name-keyed guard was
+    // therefore a coarser duplicate of a precise rule, and it dropped real reads: in C# a static
+    // member and a method call can share a name, so ANY read of one is lost as soon as
+    // something else in the same function is CALLED by that name. Four occurrences over 150 real
+    // roslyn files, all the same class, all measured against a NEW independent truth:
+    //
+    //   * `_options.X.Severity == ReportDiagnostic.Suppress`  (a READ, line 164) dropped because
+    //     `context.ReportDiagnostic(diagnostic)` is CALLED in the same function (line 229);
+    //   * `properties.ContainsKey(RedundantEqualityConstants.Negate)` (a READ, line 56) dropped
+    //     because `generator.Negate(…)` is CALLED in the same function (line 57);
+    //   * `declarationDeclarators.Count` (a READ, line 65) dropped because
+    //     `fieldDeclarators.Count()` is CALLED on the same line's other side.
+    //
+    // So the suppression is now SITE-AWARE, which is what `isCallee` already was: the caller's
+    // own gate decides, and the name is never a reason to drop a read. `seen` stays, because
+    // that one is genuine dedup — the same (source, member) read twice is one dependency.
     const stack: Node[] = [rootNode]
     const seen = new Set<string>()
     while (stack.length > 0) {
@@ -2817,7 +2833,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const src = containing || "global"
             const tgt = field.text
             const key = `${src}.${tgt}`
-            if (!seen.has(key) && !emittedCalls.has(`${src}->${tgt}`)) {
+            if (!seen.has(key)) {
               seen.add(key)
               relationships.push({
                 source: src,
@@ -3605,10 +3621,40 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     )
   }
 
-  /** True when `node` is the defining NAME of its entity parent. */
+  /** True when `node` is the defining NAME of its entity parent, or a TYPE it declares. */
   private isCSharpEntityName(node: Node): boolean {
     const p = node.parent
     if (!p) return false
+    // CS-D7 (2026-09-28, the `uses`-oracle round): a declared TYPE is never a value read, and
+    // the grammar does not put a field's type directly under `field_declaration` — it nests it:
+    //
+    //     field_declaration > variable_declaration [ type = identifier, variable_declarator [ … ] ]
+    //
+    // so the "first direct identifier child" rule below never saw it, and a field whose TYPE
+    // name collides with a MEMBER of the same class published a read of itself:
+    // `public Widget Widget;` -> `uses Holder -> Widget`, stamped on the field's own line. The
+    // read resolves because the class-chain inventory holds a Property-kind member of exactly
+    // that name, and the shadowing frame cannot help: the shadow and the read are the same
+    // identifier. Probe: script/m14/tmp/cs-deep-22-type-as-value.ts, cases T1/T3.
+    //
+    // The `type` FIELD is the grammar's own statement of "this is a type", so the gate reads the
+    // field rather than counting children. Nothing is lost: the declared-type reference graph
+    // already publishes this name, and it is the position that owns it (R9).
+    if (p.type === "variable_declaration") {
+      const t = p.childForFieldName("type")
+      if (t && t.startIndex === node.startIndex && t.endIndex === node.endIndex) return true
+    }
+    // The same round, second half: for a PROPERTY the first direct identifier is the TYPE, so
+    // the rule below gated the type and let the property's own NAME through — and a property
+    // whose name collides with a member published a read of ITSELF (`public Widget Widget
+    // { get; set; }` -> `uses Widget -> Widget`, case T4). The `name` FIELD is the grammar's own
+    // statement of "this is the declared name", so it is read the same way. This is the rule the
+    // function was named for, applied to the field that actually carries the name instead of to
+    // a child-count proxy for it.
+    {
+      const nf = p.childForFieldName("name")
+      if (nf && nf.startIndex === node.startIndex && nf.endIndex === node.endIndex) return true
+    }
     switch (p.type) {
       case "class_declaration":
       case "struct_declaration":

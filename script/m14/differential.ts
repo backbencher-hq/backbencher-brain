@@ -3864,6 +3864,89 @@ export function deriveCSharpUsingReferences(root: any): { label: string; from: s
   return out
 }
 
+/**
+ * 2026-09-28: the FIELD-ACCESS half of csharp's `uses` class — `member_access_expression` /
+ * `member_binding_expression` reads that are neither a call callee nor an assignment-LHS write.
+ * 5,698 of the lane's 6,440 `uses` edges (88%), and the largest relationship class on this lane
+ * with NO independent derivation at all: 25.3% of everything the analyzer emits was adjudicable
+ * by nothing but its own fixtures and mutants.
+ *
+ * INDEPENDENT BY CONSTRUCTION: this walks the tree and knows nothing of the analyzer's walk
+ * order, its `seen` set, or its function-structure table. The three gates it re-derives are the
+ * ones that decide whether a member access is a read at all:
+ *
+ *   callee    a member access that IS the invocation's `function`, or the last binding of a
+ *             `conditional_access_expression` that is one (`x?.M()` — CSD4's 2-level shape, or
+ *             the callee leaks as a bogus `uses` edge naming a METHOD);
+ *   write     an assignment LHS, by SPAN CONTAINMENT through any member-access wrappers, so
+ *             `this.count = 0` and `this.count += 1` are writes while the RHS of
+ *             `this.count = this.count + 1` still reads (SCD1, the java JAD1 / kotlin KAD1 rule);
+ *   binding   a `member_binding_expression` has no `expression` field — the binding IS the
+ *             member selection — so demanding a receiver would silently drop every `?.X` read.
+ *
+ * `seen` is keyed per (source, target) because the analyzer dedupes the same way and the harness
+ * compares (label, target) site-agnostically, so a per-site row would read as fabrication.
+ */
+export function deriveCSharpFieldAccessUses(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const containingFn = (node: any): string => {
+    let cur: any = node.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "method_declaration") return cur.childForFieldName?.("name")?.text ?? "?"
+      if (t === "constructor_declaration") return "constructor"
+      if (t === "destructor_declaration") return "Finalize"
+      if (t === "property_declaration") return cur.childForFieldName?.("name")?.text ?? "?"
+      if (t === "indexer_declaration") return "this"
+      cur = cur.parent
+    }
+    return "global"
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "member_access_expression" || n.type === "member_binding_expression") {
+      let isCallee = false
+      {
+        const parent = n.parent
+        if (parent && parent.type === "invocation_expression") {
+          const fn = parent.childForFieldName?.("function")
+          if (fn && fn.startIndex === n.startIndex && fn.endIndex === n.endIndex) isCallee = true
+        } else if (parent && parent.type === "conditional_access_expression") {
+          const gp = parent.parent
+          const fn = gp?.childForFieldName?.("function")
+          if (gp && gp.type === "invocation_expression" && fn &&
+              fn.startIndex === parent.startIndex && fn.endIndex === parent.endIndex) isCallee = true
+        }
+      }
+      let isLhsWrite = false
+      {
+        let a: any = n.parent
+        while (a && (a.type === "member_access_expression" || a.type === "member_binding_expression")) a = a.parent
+        if (a && a.type === "assignment_expression") {
+          const lhs = a.childForFieldName?.("left")
+          if (lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex) isLhsWrite = true
+        }
+      }
+      if (!isCallee && !isLhsWrite) {
+        const field = n.childForFieldName?.("name")
+        const expr = n.childForFieldName?.("expression")
+        if (field && (expr || n.type === "member_binding_expression")) {
+          const src = containingFn(n)
+          const key = `${src}|${field.text}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            out.push({ label: "uses", from: src, target: field.text })
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+  }
+  return out
+}
+
 export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14962,6 +15045,21 @@ async function main() {
         for (const e of deriveCSharpUsingReferences(root)) {
           ;(truth as any[]).push(e)
         }
+
+        // 2026-09-28: the `uses` label JOINS the compared set, for the FIELD-ACCESS half —
+        // 5,698 of the lane's 6,440 `uses` edges and 25.3% of everything it emits, the largest
+        // class on this lane that no independent derivation had ever adjudicated. Writing this
+        // truth is what found the two fabrications in reviews/csharp/m60-deep-round-2026-09-28.md
+        // (CS-D6, CS-D7): an oracle that agrees with the lane cannot find a MISSING row, so
+        // nothing in 55 mutants and 16 fixtures could have found them either.
+        //
+        // The BARE-IDENTIFIER half (the remaining 742 rows, marker `identifier_usage`) is NOT
+        // derived here and `uses` is therefore compared on the field-access marker alone — the
+        // analyzer-side filter below restricts the class to `csharp_field_access` rows, and the
+        // bare half stays on its fixture + mutant gate with that limit stated rather than hidden.
+        for (const e of deriveCSharpFieldAccessUses(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "dart") {
         for (const e of deriveDartEdges(root)) {
@@ -15142,6 +15240,23 @@ async function main() {
         from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
+        // 2026-09-28: the analyzer's MARKER, carried through. This mapping dropped `metadata`
+        // wholesale, so a label could be compared but never SCOPED BY MARKER — and the first
+        // csharp `uses` attempt hit that wall as a manufactured red: thousands of MISSING rows
+        // that the analyzer really does publish, because a marker filter given no marker drops
+        // every row it is asked to judge. Same failure the #910 note below records for `imports`
+        // ("the allowlist silently dropped them from the ANALYZER side"); the fix is the same
+        // shape, give the allowlist what it needs to decide.
+        //
+        // Additive and inert for every lane already gated: no existing comparison reads `marker`,
+        // so an absent marker behaves exactly as an absent field did.
+        //
+        // (The first attempt at this landed the filter but NOT the field, because the edit
+        // script wrote twice from one stale buffer. The symptom was 13,283 MISSING on a file
+        // where truth and analyzer agree 430/430 — recorded here because "the filter cannot see
+        // the field" and "the field is missing" are the same failure and only one of them is
+        // obvious.)
+        marker: (r.metadata ?? {}).relationshipType ?? null,
       // c, rust and go compare CALL edges too (their independently derivable
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
@@ -15223,7 +15338,17 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "references"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label))
+        ...(lang === "csharp" ? ["calls", "references", "uses"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label)
+        // 2026-09-28: `uses` is compared for csharp on the FIELD-ACCESS half only. The
+        // bare-identifier half (marker `identifier_usage`, confidence 1.0) has no truth
+        // derivation, so letting it through would report those rows UNEXPLAINED for the truth's
+        // silence rather than for any defect — a manufactured red, which is the failure mode this
+        // gate exists to prevent (the same reason vb's `uses` and the #910 `imports` classes are
+        // excluded above). A marker-scoped comparison beats either extreme: the 5,698-row half is
+        // adjudicated at corpus scale, and the 742-row half keeps its fixture + mutant gate with
+        // the limit written down rather than left to be found as unexplained rows. Removing the
+        // restriction is a one-line change once deriveCSharpBareIdentifierUses lands.
+        && !(lang === "csharp" && r.label === "uses" && r.marker !== "csharp_field_access"))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
