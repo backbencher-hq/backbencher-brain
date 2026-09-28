@@ -214,6 +214,51 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     "call-template", "apply-templates",
   ])
 
+  /**
+   * The M14 Matrix 1d evidence tier for each edge CLASS, assigned where the edge
+   * is written so a tier cannot drift from the rule that produced it.
+   *
+   *   structural         the parent/child or declaration/member relation is READ
+   *                       off the tree — the fact needs nothing outside the file
+   *   import_based       the target is a FILE, taken from a path the document
+   *                       itself writes
+   *   reference_qualified the target is a NAME reached through a declared
+   *                       namespace prefix, or an XSLT named template reached by
+   *                       its declared name
+   *   usage_contextual   a containment the document states through an attribute
+   *                       rather than through nesting — the DTD content model and
+   *                       the NOTATION attribute type, which are the document
+   *                       saying what an element MAY contain
+   *   inferred           the edge is a reading the analyzer supplies and the
+   *                       document does not state outright
+   *
+   * XML emitted no tier at all before this, so the lane's Matrix 1d cell was
+   * silent; the completeness gate's section D now pins four of the five.
+   */
+  private static readonly EVIDENCE_TIER: Readonly<Record<string, string>> = {
+    xml_element: "structural",
+    xml_attribute: "structural",
+    xml_namespace: "structural",
+    dtd_element_declaration: "structural",
+    dtd_attribute_declaration: "structural",
+    dtd_content_model: "usage_contextual",
+    dtd_notation_reference: "usage_contextual",
+    dtd_ndata_notation: "structural",
+    dtd_entity_declaration: "structural",
+    dtd_parameter_entity_declaration: "structural",
+    dtd_notation_declaration: "structural",
+    processing_instruction: "structural",
+    pseudo_attribute: "structural",
+    doctype_external_id: "import_based",
+    entity_external_id: "import_based",
+    parameter_entity_external_id: "import_based",
+    notation_external_id: "import_based",
+    processing_instruction_href: "import_based",
+    schema_location: "import_based",
+    attribute_qname_reference: "reference_qualified",
+    xslt_named_template_reference: "reference_qualified",
+  }
+
   private static readonly BUILTIN_NAMESPACE_URIS: ReadonlySet<string> = new Set([
     "http://www.w3.org/2001/XMLSchema",
     "http://www.w3.org/XML/1998/namespace",
@@ -340,11 +385,23 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const key = `${source}\u0000${type}\u0000${target}`
       const line = targetNode ? targetNode.startPosition.row + 1 : undefined
+      const role = metadata.role as string | undefined
       const existing = seenRelationships.get(key)
       if (existing) {
         // The graph's edge identity is the triple, so N declarations of the same
         // pair share one edge. Count the collapse rather than losing it silently.
         existing.metadata.occurrences = ((existing.metadata.occurrences as number | undefined) ?? 1) + 1
+        // Two RULES can produce one edge, and the collapse must not lose which.
+        // `<!ELEMENT catalog (entry+)>` (a content-model reading, so
+        // `usage_contextual`) and `<entry/>` (a nesting reading, so `structural`)
+        // are the same `contains catalog -> entry` pair, and the first one to fire
+        // used to erase the other. The extra roles ride on `alsoRoles` beside the
+        // extra lines, on the same principle: count the collapse, do not hide it.
+        if (role && role !== existing.metadata.role) {
+          const also = (existing.metadata.alsoRoles as string[] | undefined) ?? []
+          if (!also.includes(role)) also.push(role)
+          existing.metadata.alsoRoles = also
+        }
         // Seed from the EDGE's own line_number, not from a metadata key: the
         // relationship carries `line_number`, so reading `metadata.line` seeded
         // the list empty and the first occurrence's line was dropped. Measured on
@@ -377,7 +434,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         type,
         confidence: 1,
         line_number: line,
-        metadata: { ...metadata, occurrences: 1 },
+        // M14 Matrix 1d: the tier is a property of the RULE that produced the
+        // edge, so it is stamped from a table keyed by that rule's role and an
+        // unrecognised role is `inferred` — which is the honest default, because
+        // a tier nobody can name is a reading the analyzer supplies rather than
+        // one the document states.
+        metadata: { ...metadata, occurrences: 1, evidenceClass: (role && RealXmlAnalyzer.EVIDENCE_TIER[role]) || "inferred" },
       }
       seenRelationships.set(key, relationship)
       relationships.push(relationship)

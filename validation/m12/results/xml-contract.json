@@ -330,7 +330,7 @@
     {
       "name": "every line of a collapsed edge is recorded",
       "passed": true,
-      "detail": "{\"role\":\"xml_attribute\",\"value\":\"1\",\"attributeName\":\"x\",\"occurrences\":3,\"lines\":[2,3,4]}"
+      "detail": "{\"role\":\"xml_attribute\",\"value\":\"1\",\"attributeName\":\"x\",\"occurrences\":3,\"evidenceClass\":\"structural\",\"lines\":[2,3,4]}"
     },
     {
       "name": "a construct never references itself",
