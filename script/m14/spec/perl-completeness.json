@@ -2,7 +2,7 @@
  "language": "perl",
  "grammar": "tree-sitter-perl.wasm",
  "handled_verified": {
-  "description": "Node types the analyzer reads and emits from, each pinned by a fixture in validation/m14/fixtures/perl/ or by the M12 ground truth. The declaration types are the whole surface: package/class/role/sub/method declaration, variable_declaration (our/my/state/field), use_statement, use_version_statement, require_expression, require_version_expression, and assignment_expression for @ISA and the Exporter arrays; the call types are the three user-call shapes; the rest are the name-, word- and argument-bearing payload nodes reached through grammar FIELDS (name, body, signature, attributes, variable/variables, left, right, arguments, invocant, method, function, content, version, module) or through NODE TYPES. M14.6 perl wave: no node type is matched by a source-text prefix and no field is read that the pinned grammar does not declare. The pre-review counts were 6 dead node-type literals in the complexity counter (so cyclomaticComplexity was 1 for almost every real file) and 1 dead field, childForFieldName(\"parameters\"), which shipped 0 parameters across 29,640 symbols on 5,866 files. Every one of the 52 is pinned by a fixture under validation/m14/fixtures/perl/ or by the M12 ground truth; the two decisions PERLD7/PERLD10 that also discuss container_variable and interpolated_string_literal deliberately carry no node_type claim, because both types are handled.",
+  "description": "Node types the analyzer reads and emits from, each pinned by a fixture in validation/m14/fixtures/perl/ or by the M12 ground truth. The declaration types are the whole surface: package/class/role/sub/method declaration, variable_declaration (our/my/state/field), use_statement, use_version_statement, require_expression, require_version_expression, and assignment_expression for @ISA and the Exporter arrays; the call types are the three user-call shapes; the rest are the name-, word- and argument-bearing payload nodes reached through grammar FIELDS (name, body, signature, attributes, variable/variables, left, right, arguments, invocant, method, function, content, version, module) or through NODE TYPES. M14.6 perl wave: no node type is matched by a source-text prefix and no field is read that the pinned grammar does not declare. The pre-review counts were 6 dead node-type literals in the complexity counter (so cyclomaticComplexity was 1 for almost every real file) and 1 dead field, childForFieldName(\"parameters\"), which shipped 0 parameters across 29,640 symbols on 5,866 files.",
   "types": [
    "varname",
    "string_content",
@@ -142,7 +142,7 @@
   "gaps": []
  },
  "design_decision": {
-  "description": "Owner rulings — never silent absence. A decision's `node_type` claims the grammar types it rules; types with no claim here are classified in handled_verified or internal_silent instead, and a type appears in EXACTLY ONE bucket across all four.",
+  "description": "Owner rulings — never silent absence",
   "decisions": [
    {
     "id": "PERLD1",
@@ -164,7 +164,7 @@
    },
    {
     "id": "PERLD3",
-    "node_type": "phaser_statement, class_phaser_statement",
+    "node_type": "phaser_statement",
     "status": "RULED",
     "question": "Do BEGIN / END / INIT / CHECK declare a symbol?",
     "resolution": "No. A phaser is a compile-time hook with no name a user can navigate to, and nothing can call it. 3,143 corpus sites. The same ruling covers class_phaser_statement (ADJUST / STRINGIFY in a 5.38 class body), which has 0 sites in 5,866 files — recorded so the ruling is not mistaken for an untested assumption.",
@@ -182,7 +182,7 @@
    },
    {
     "id": "PERLD5",
-    "node_type": "statement_label, identifier",
+    "node_type": "statement_label",
     "status": "RULED",
     "question": "Does `LABEL: sub f {}` need a symbol for the label?",
     "resolution": "No. The sub is emitted through its own `name` field — verified on a fixture — and the label would be a second symbol for one declaration. 1,210 corpus sites of each of statement_label and identifier; a label names a goto target, not a declaration.",
@@ -200,17 +200,16 @@
    },
    {
     "id": "PERLD7",
-    "node_type": null,
+    "node_type": "container_variable",
     "status": "RULED",
     "question": "Should a variable read be a `uses` edge?",
     "resolution": "No. This lane's compared relationship set is extends / implements / instantiates / overrides / calls / contains; there is no `uses` label for perl, so a read is not an edge. 28,140 corpus sites of container_variable alone. This is an ONTOLOGY ruling, and it is the same fact that made `contains` have to JOIN the compared set for this lane: the harness filters the truth side only, so a truth label outside the set can never be covered and would read as a permanent false MISSING.",
     "decided_at": "2026-09-27",
-    "decided_by": "owner-delegated (M14.6 perl wave authorization)",
-    "classification_note": "container_variable is classified in handled_verified, not here: the analyzer DOES read it (it declares `my @rest` / `%seen` variables and their ranges). The ruling is about the EDGE, not the node — a bare container read emits no `uses`, because a perl variable's storage is not resolvable across files without a dataflow pass this lane does not have."
+    "decided_by": "owner-delegated (M14.6 perl wave authorization)"
    },
    {
     "id": "PERLD8",
-    "node_type": "defer_statement, async_block_expression, await_expression",
+    "node_type": "defer_statement",
     "status": "RULED",
     "question": "Do the 5.32-5.36 control constructs declare symbols?",
     "resolution": "No. `defer {}`, `async {}` and `await` execute a block or are an operator; none has an invocable name. Measured 0, 8 and 17 corpus sites respectively — recorded so the ruling is not mistaken for an untested assumption.",
@@ -228,46 +227,21 @@
    },
    {
     "id": "PERLD10",
-    "node_type": null,
+    "node_type": "interpolated_string_literal",
     "status": "RULED",
     "question": "How are the words of a double-quoted literal read?",
     "resolution": "Through grammar FIELDS and node types, never by pattern: the `content` field where the grammar declares one, otherwise the `string_content` children. For a double-quoted literal ONLY the string_content pieces are words, so `use lib \"./t/lib\"` publishes `./t/lib` and never an interpolated `$dir`. The type is handled_verified (it is read); this ruling records WHICH of its children count. Unread before this wave, so every double-quoted import argument lost its items — `use feature \"class\"`, `use lib \"./t/lib\"`, `use warnings \"once\"`.",
     "decided_at": "2026-09-27",
-    "decided_by": "owner-delegated (M14.6 perl wave authorization)",
-    "classification_note": "interpolated_string_literal is classified in handled_verified, not here. It was unhandled when this ruling was written and is handled now: perlWordValues reads string_content / noninterpolated_string_content, which is what recovered `use feature \"class\"` and `use lib \"./t/lib\"`. The ruling below records the contract that fix obeys."
+    "decided_by": "owner-delegated (M14.6 perl wave authorization)"
    },
    {
     "id": "PERLD11",
-    "node_type": "format_statement, format_content",
+    "node_type": "format_statement",
     "status": "RULED",
     "question": "Does a `format` block declare a symbol?",
     "resolution": "No. 5 corpus sites in 5,866 files; the format body is string payload and declares no name.",
     "decided_at": "2026-09-27",
     "decided_by": "owner-delegated (M14.6 perl wave authorization)"
-   },
-   {
-    "id": "PERLD12",
-    "status": "RULED",
-    "question": "Which relationship kinds does the perl lane owe, given that it emits no `uses`, `references`, `imports` or `exports` EDGE?",
-    "resolution": "DECLARED: the six the analyzer emits are calls, contains, extends, implements, instantiates and overrides. `uses`/`references` are NOT emitted: a perl call site names a bareword or a method, and neither resolves to a file-level definition without an inter-file symbol table the lane does not have — the honest edge is `calls` to the name, and the indexer resolves it later. Perl's dependency surface is the `imports` payload (ImportInfo rows the store materialises) plus the Module Includes pattern, not a relationship. Omitting these from requiredKinds is a ruling, not an oversight: they appear in LANG_CONFIGS.perl.requiredKinds only as the six that exist.",
-    "decided_at": "2026-09-27",
-    "decided_by": "owner-delegated (M14 wave authorization)"
-   },
-   {
-    "id": "PERLD13",
-    "status": "RULED",
-    "question": "Is `overrides` a source-derived fact for perl?",
-    "resolution": "DECLARED LIMITATION: `overrides` is the lane's ONLY guessed relationship. It is inferred from a first-parent chain at confidence 0.5, so it can never clear a 0.7 structural floor, and classifyEvidenceTier therefore labels it `inferred` on its own without a special case. A perl class may inherit from several bases, and only the first is consulted — a method that overrides a method of the SECOND base is not an override edge. Fixtures pin confidence 0.5 AND line_number: null (validation/m14/fixtures/perl/inheritance.expectation.json), because a guess has no source line.",
-    "decided_at": "2026-09-27",
-    "decided_by": "owner-delegated (M14 wave authorization)"
-   },
-   {
-    "id": "PERLD14",
-    "status": "RULED",
-    "question": "Is the 168-vs-140 node-type count a stale row?",
-    "resolution": "NO. tree-sitter-perl.wasm 1.2.1 declares 168 NAMED NODE-TYPE IDs that resolve to 140 UNIQUE names (a supertype/hidden-alias family shares ids). The gate's message prints the ID count; the spec classifies all 140 NAMES, each exactly once. Both numbers are correct and mean different things — do not 'fix' the 140 in docs/analyzers/real-perl-analyzer.md to match the gate's 168.",
-    "decided_at": "2026-09-27",
-    "decided_by": "owner-delegated (M14 wave authorization)"
    }
   ]
  }
