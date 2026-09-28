@@ -1719,6 +1719,17 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "xml/external-reference-dropped",
+    language: "xml",
+    defectClass: "reference-suppression",
+    description:
+      "Finding X7. A references edge whose prefix is bound to a namespace the document IMPORTS points at a component declared in ANOTHER FILE. The reference pass refused it, and the refusal is right for a prefix bound to nothing — that would put a name in the graph no file supports, the M60.R10 lie. It was wrong for an imported namespace, where the document already names the file: the imports edge for the same xsd:import says where the name lives. ~108 edges lost corpus-wide, and a schema set stopped being a graph and became a pile of files. Reverted generically: every reference edge carrying resolvable === 'external' is deleted, which is the pre-fix suppression, and NO symbol is added — a reversion that also published a phantom local symbol would be testing a different defect than the one that existed. Pinned by xml/xsd-external-reference, which writes its reference BEFORE the import that authorises it (the ordinary spelling) and forbids both the phantom symbols and the still-refused unimported prefix, so a fix that simply emitted every prefixed value would fail it.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "references" && x.metadata?.resolvable === "external")),
+    }),
+  },
+  {
     id: "xml/self-named-import-dropped",
     language: "xml",
     defectClass: "reference-suppression",

@@ -375,16 +375,26 @@
     {
       "name": "every declared name came from a NAMING attribute (name/id), never from a value",
       "passed": true,
-      "detail": "11 declaration(s) across the fixture set, all from name/id"
+      "detail": "13 declaration(s) across the fixture set, all from name/id"
+    },
+    {
+      "name": "every reference edge declares HOW it resolves, and an external one names the file",
+      "passed": true,
+      "detail": "8 reference edge(s), 2 external"
+    },
+    {
+      "name": "the fixture set exercises the external resolvability class",
+      "passed": true,
+      "detail": "2 external reference(s) — X7's class must be reachable or it is untested"
     },
     {
       "name": "the fixture set actually exercises the declared-name rule",
       "passed": true,
-      "detail": "11 vocabulary declaration(s) found — a rule that can never fire is not a rule"
+      "detail": "13 vocabulary declaration(s) found — a rule that can never fire is not a rule"
     }
   ],
   "passed": true,
-  "count": 93,
-  "passedCount": 93,
+  "count": 95,
+  "passedCount": 95,
   "failed": []
 }
