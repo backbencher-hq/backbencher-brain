@@ -27,6 +27,8 @@ interface LuaContext {
   errors: ASTEngine.ParseError[]
   globalVariables: Set<string>
   declaredTables: Set<string>
+  /** M60 LUA-35: file-scope returns that carry no NAME. A disclosure, never an export. */
+  unpublishedSurface: Array<{ shape: string; detail: string | null; line: number; why: string }>
   frameworks: Set<string>
   patterns: Set<string>
   seenRelationships: Set<string>
@@ -44,6 +46,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: [],
       globalVariables: new Set<string>(),
       declaredTables: new Set<string>(),
+      unpublishedSurface: [],
       frameworks: new Set<string>(),
       patterns: new Set<string>(),
       seenRelationships: new Set<string>(),
@@ -121,6 +124,14 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: ctx.exports,
       errors: ctx.errors,
       metadata: {
+        // M60 LUA-35. Present ONLY when there is something to say, and every field
+        // is derived from the parse: `shape` from the node type, `detail` from the
+        // node's own text, `line` from its start position, `why` a fixed reason per
+        // shape. Nothing here is a constant shaped like a measurement, which is the
+        // LUA-11 rule — a count or score that did not vary with the file would be
+        // worse than an absent field, and this is a list that is empty whenever the
+        // module's surface is nameable.
+        ...(ctx.unpublishedSurface.length ? { unpublishedSurface: ctx.unpublishedSurface } : {}),
         complexity: ctx.symbols.length + ctx.relationships.length,
         linesOfCode: this.lineCount(content),
         cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
@@ -580,6 +591,53 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     //     from a module path or a literal, which is a different relationship
     //     entirely. Pinned as silent in the gate so a future change cannot start
     //     inventing them unnoticed.
+    // M60 LUA-35: `return setmetatable(M, mt)` names M. The module's surface IS
+    // M — the metatable is an attribute OF M, not a second export — so this is
+    // the one shape LUA-09 left silent that carries a defensible name and was
+    // simply never wired. Measured on kong by
+    // script/m60/lua-silent-export-census.ts: 3 files carry a name here
+    // (`_M`, `deprecation`), 2 more pass an expression with no name to publish.
+    //
+    // The other three silent shapes carry NO name and are recorded as a
+    // DISCLOSURE instead of an export, because "no exports" otherwise means two
+    // indistinguishable things — this module defines nothing, and this module's
+    // surface exists but cannot be named. A disclosure separates them while
+    // publishing no name at all: an export called "kong.tools.dns" for a
+    // re-export of kong.tools.dns would be a fabricated name, which is the same
+    // fabrication LUA-22/LUA-29/LUA-32 refused for relationship targets.
+    if (target.type === "function_call") {
+      // The callee NAME is the call's `name` FIELD, reached exactly as
+      // processCall reaches it. Passing the function_call node itself to
+      // callee() returns undefined — that is LUA-29's whitelist, which rejects
+      // function_call because a call ON a call has no name. Here the node IS the
+      // call, so the name has to be read off its field, and getting that wrong
+      // made every disclosure read `call-result` with a null detail.
+      const calleeName = this.callee(target.childForFieldName("name") || target.namedChild(0))?.name
+      if (calleeName === "setmetatable") {
+        const first = this.callArgument(target, 0)
+        const named = this.nameBearing(first)
+        if (named) {
+          ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })
+        } else {
+          ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "setmetatable's first argument is an expression, so the surface has no name" })
+        }
+      } else if (calleeName === "require") {
+        const arg = this.callArgument(target, 0)
+        const path = arg?.type === "string" ? this.stringValue(arg) : null
+        ctx.unpublishedSurface.push({ shape: "re-export", detail: path, line: target.startPosition.row + 1, why: "the surface is another module's, not this module's" })
+      } else {
+        ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "the result of a call is statically unknowable" })
+      }
+      return
+    }
+    if (target.type === "string") {
+      ctx.unpublishedSurface.push({ shape: "value-literal", detail: this.stringValue(target), line: target.startPosition.row + 1, why: "a value is not a name" })
+      return
+    }
+    if (target.type === "function_definition") {
+      ctx.unpublishedSurface.push({ shape: "anonymous-function", detail: null, line: target.startPosition.row + 1, why: "an anonymous function has no name" })
+      return
+    }
     if (target.type === "table_constructor") {
       for (let i = 0; i < target.namedChildCount; i++) {
         const f = target.namedChild(i)
@@ -730,6 +788,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child) values.push(child)
     }
     return values
+  }
+
+  private callArgument(node: Node, index: number): Node | undefined {
+    return this.callArguments(node)[index]
   }
 
   private stringValue(node: Node | undefined): string | undefined {

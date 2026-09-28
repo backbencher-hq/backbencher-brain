@@ -21,15 +21,15 @@
     }
   ],
   "totals": {
-    "truthEdges": 60995,
+    "truthEdges": 60998,
     "observedEdges": 58616,
-    "missing": 2380,
+    "missing": 2383,
     "missingFromAnalyzer": [],
     "exportsDirectPath": {
       "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
       "filesProbed": 150,
-      "truth": 317,
-      "hit": 317,
+      "truth": 318,
+      "hit": 318,
       "missed": 0,
       "spurious": 0,
       "recall": 1,
@@ -37,11 +37,16 @@
       "missedSample": [],
       "spuriousSample": []
     },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 150,
+      "totalDisclosures": 4
+    },
     "relationshipsDirectPath": {
       "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
       "filesProbed": 150,
-      "truth": 8346,
-      "hit": 8346,
+      "truth": 8347,
+      "hit": 8347,
       "missed": 0,
       "spurious": 0,
       "loopCoincidenceExempted": 0,
@@ -67,11 +72,11 @@
       ]
     },
     "missingByPipelineDiscard": {
-      "total": 1577,
+      "total": 1580,
       "byLabel": [
         {
           "shape": "return <identifier> at file scope",
-          "n": 1577
+          "n": 1580
         }
       ],
       "labelsAbsentFromPipeline": [
@@ -132,9 +137,9 @@
       "recall": 1
     },
     "exports": {
-      "truth": 1579,
+      "truth": 1582,
       "observed": 0,
-      "missing": 1579,
+      "missing": 1582,
       "unexplained": 0,
       "precision": 1,
       "recall": 0

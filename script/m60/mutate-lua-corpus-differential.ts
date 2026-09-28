@@ -42,7 +42,7 @@ interface Mutant {
   find: string
   replace: string
   /** Which signal must move for the mutant to count as caught. */
-  signal: "analyzer-missing" | "unexplained" | "line" | "exports" | "rel-spurious"
+  signal: "analyzer-missing" | "unexplained" | "line" | "exports" | "rel-spurious" | "disclosures"
   /**
    * A source pattern that MUST occur in the corpus slice, or the mutant has no
    * trigger and its result is INCONCLUSIVE rather than SURVIVING.
@@ -211,6 +211,28 @@ const MUTANTS: Mutant[] = [
     // so it shows up ONLY on the direct-path relationship leg (LUA-34).
     signal: "rel-spurious",
   },
+  {
+    id: "M14",
+    trigger: /return\s+setmetatable\s*\(/m,
+    // LUA-35: `return setmetatable(M, mt)` publishes M. Deleting the arm makes the
+    // three kong files that genuinely name M publish nothing — a recall loss, not a
+    // precision one, which is the distinction M13 exists to test on the other side.
+    what: "LUA-35 again: return setmetatable(<name>, mt) publishes nothing",
+    find: "        if (named) {\n          ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })\n        } else {",
+    replace: "        if (false) {\n          ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })\n        } else {",
+    signal: "exports",
+  },
+  {
+    id: "M15",
+    trigger: /return\s+(require|")/m,
+    // The disclosure half of LUA-35: a nameless surface must be DISCLOSED, and the
+    // disclosure must not invent a name. Deleting it makes the disclosure disappear —
+    // silence, which is the state LUA-35 exists to end.
+    what: "LUA-35 again: a nameless surface is silent instead of disclosed",
+    find: '        ctx.unpublishedSurface.push({ shape: "re-export", detail: path, line: target.startPosition.row + 1, why: "the surface is another module\'s, not this module\'s" })',
+    replace: '        void path',
+    signal: "disclosures",
+  },
 ]
 
 // ── pre-flight: EVERY anchor must exist before a single mutant runs ───────────
@@ -250,6 +272,7 @@ interface OracleRun {
   exportTruth: number
   relSpurious: number
   relMissed: number
+  disclosures: number
 }
 
 const runOracle = (): OracleRun => {
@@ -290,6 +313,7 @@ const runOracle = (): OracleRun => {
   // edit to it is now made with the edit tool rather than a script.
   const x = out.match(/exports \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) spurious=(\d+)/)
   const rl = out.match(/relationships \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) SPURIOUS=(\d+)/)
+  const dc = out.match(/disclosures \(nameless surfaces\): files=(\d+) total=(\d+)/)
   return {
     analyzerMissing: m ? Number(m[1]) : -1,
     unexplained: m ? Number(m[2]) : -1,
@@ -300,6 +324,7 @@ const runOracle = (): OracleRun => {
     exportSpurious: x ? Number(x[5]) : -1,
     relSpurious: rl ? Number(rl[5]) : -1,
     relMissed: rl ? Number(rl[4]) : -1,
+    disclosures: dc ? Number(dc[2]) : -1,
   }
 }
 
@@ -333,6 +358,7 @@ console.log(`  unexplained:                   ${base.unexplained}`)
 console.log(`  line accuracy:                 ${base.lineAccuracy}  (wrong ${base.lineWrong})`)
 console.log(`  direct-path exports missed:    ${base.exportMissed}  (spurious ${base.exportSpurious}, of ${base.exportTruth} truth)`)
 console.log(`  direct-path relationships:     missed ${base.relMissed}  SPURIOUS ${base.relSpurious}`)
+console.log(`  surface disclosures:           ${base.disclosures}`)
 if (base.lineAccuracy !== 1) {
   console.error("refusing to mutate: the baseline is not line-clean, so a line mutant proves nothing")
   process.exit(2)
@@ -381,6 +407,9 @@ try {
     } else if (m.signal === "analyzer-missing") {
       caught = r.analyzerMissing > base.analyzerMissing
       how = `analyzer-attributable ${base.analyzerMissing} -> ${r.analyzerMissing}`
+    } else if (m.signal === "disclosures") {
+      caught = r.disclosures < base.disclosures
+      how = `surface disclosures ${base.disclosures} -> ${r.disclosures}`
     } else if (m.signal === "rel-spurious") {
       caught = r.relSpurious > base.relSpurious
       how = `direct-path relationship SPURIOUS ${base.relSpurious} -> ${r.relSpurious}`
@@ -418,7 +447,7 @@ for (const line of results) console.log(line)
   writeFileSync(SRC, original.replace(noop.find, noop.replace))
   const r = runOracle()
   writeFileSync(SRC, original)
-  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious && r.relSpurious === base.relSpurious && r.relMissed === base.relMissed
+  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious && r.relSpurious === base.relSpurious && r.relMissed === base.relMissed && r.disclosures === base.disclosures
   console.log()
   console.log(`  M0    ${noopSurvived ? "SURVIVED" : "caught"}    a no-op mutant ${noopSurvived ? "correctly reported as surviving — the harness does not call everything caught" : "WRONGLY REPORTED CAUGHT — the harness is broken"}`)
   if (!noopSurvived) survived++
