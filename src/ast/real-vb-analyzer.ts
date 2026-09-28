@@ -744,6 +744,14 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     const { text, node: nameNode } = this.declaredName(node)
     const sym = this.pushSymbol(text, SymbolKind.Namespace, node, {
       metadata: {
+        // Uniform with every other declaration. The node-type yield audit walks
+        // the corpus counting declaration NODES and then counts symbols by their
+        // `grammarNode`, and a declaration that records none of its own node type
+        // is invisible to that audit -- which is how a whole kind can stop being
+        // produced with nothing left to notice. The audit found this one missing
+        // and could not tell a dead visitor from an unlabelled symbol; the fix is
+        // to label it.
+        grammarNode: node.type,
         // The two namespace forms are ONE node type in this grammar (two
         // alternatives of one rule), and the analyzer's job is to say which one
         // it read. The discriminator is the ABSENCE of `End Namespace`: the

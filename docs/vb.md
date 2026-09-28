@@ -396,8 +396,75 @@ corpus are classified"* — a vacuous pass, exit 0, on the strength of having
 measured nothing. A gate that can pass by measuring nothing is worse than no gate.
 
 ```sh
-bun run script/m14/vb-node-type-census.ts
+bun run script/m14/vb-node-type-census.ts    # every node type is classified
+bun run script/m14/vb-node-type-yield.ts      # every declaration yields something
+bun run script/m14/verify-field-reads.ts      # no repeated field read as singular
 ```
+
+## Three structural gates, and why a count cannot see a missing thing
+
+Every gate in this lane was built after a defect was found, and each of the last
+several defects had the same shape: **something that should have been published
+was not, while every count stayed healthy.** A metric that counts what exists
+cannot report a class that does not exist. So the lane now has three structural
+gates that ask about *coverage* rather than output.
+
+| gate | asks | would have caught |
+|---|---|---|
+| `vb-node-type-census.ts` | is every node type the grammar produces **classified**? | `array_creation_expression` in neither set; `implements_member_clause` filed as silent |
+| `vb-node-type-yield.ts` | does every declaration node type **publish something**? | constructors, operators, interface members — all classified, all visited, all silent |
+| `verify-field-reads.ts` | is every **repeated** field read by a walk, not a singular accessor? | the modifier read |
+
+### The yield audit is the one that finds whole missing kinds
+
+A node type can be classified, have a dedicated visitor, and still publish
+nothing. Three of this lane's largest defects were exactly that:
+
+- **constructors** — classified, visited, and the empty-name guard returned before
+  the naming contract, so 12,549 symbols contained zero of them;
+- **operators** — classified, visited by a dedicated `visitOperator`, and produced
+  nothing twice over: the same guard, plus an `isKeyword` test that returned true
+  for the operator's own symbol;
+- **interface members** — three node types in neither set, so nothing dispatched
+  them and every interface was an empty shell.
+
+It works by walking the corpus twice over the same trees — once counting
+declaration *nodes* by type, once running the analyzer and counting the symbols it
+publishes by their own recorded `grammarNode` — and reporting any type that
+appears as a node and yields no symbol.
+
+Two results are worth having on the record:
+
+**The yield is exactly 1:1.** Over the covering sample, every type's symbol count
+equals its node count — method 665→665, constructor 19→19, interface method
+42→42, property 50→50. The single exception is `field_declaration`, which yields
+*more* symbols than nodes, and that is the declarator rule working: `Dim X, Y,
+width As Integer` is one field node and three members.
+
+**It costs 7 files, not 2,660.** A first version drew the first 600 files and
+reported two types as "not exercised by this sample" — the audit admitting it knew
+nothing about the very types the interface fix was about. So the sample is now a
+**greedy set cover**: a cheap parse-only pass finds which files contain which
+declaration types, and the analyzer runs only on the files needed to exercise all
+nineteen. Total type coverage, 1/380th of the cost, and a rare construct can no
+longer hide behind an unlucky draw.
+
+### Every gate here has been made to fail on purpose
+
+A gate that has only ever passed is not evidence. The first attempt at
+self-testing the yield audit **did not work**: the fault I injected was
+`if (opName === "__never__") return`, a condition that is never true, so the gate
+correctly reported green on an analyzer I believed I had broken. Re-injected
+honestly — `visitOperator` returning immediately — the gate reports
+`operator_declaration 14 nodes, 0 symbols — DEAD VISITOR` and exits 2.
+
+That is worth writing down, because it is the same failure mode as the surviving
+mutant: a test that cannot fail is worse than no test, and the only way to know is
+to try to break it on purpose and check that it noticed.
+
+The census has the same property and records it too — its first run found zero
+files and printed "all 0 node types in the corpus are classified", a vacuous pass
+at exit 0. It now refuses to conclude on an empty corpus.
 
 ## The modifier read — the largest defect this lane has had
 
