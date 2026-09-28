@@ -67,11 +67,70 @@ function loadAvg1(): number {
  * Corpus-relative paths, sorted, so the hash is stable across checkouts and
  * across the order the pool happens to return.
  */
+/**
+ * THE PIN — ONE implementation, called by the canonical sweep and, with an
+ * explicit opt-in, by a scoped one-lane run. Two copies would drift, and this
+ * function decides what every later run is allowed to regress against.
+ *
+ * What it deliberately does NOT do, because each of these is a way a pin could
+ * launder a problem into an allowance:
+ *   - it pins ONLY lanes whose own parity is clean. A lane carrying its own
+ *     missing/unexplained is SKIPPED and named in the output; pinning it would
+ *     bake a real anomaly into the number a later run is scored against (#870,
+ *     cpp's uses@0). Heuristic counts do NOT block a pin: they are declared
+ *     low-confidence edges, and drift on an UNPINNED lane is exactly the false
+ *     positive a pin removes.
+ *   - it MERGES into the previous counts rather than replacing them, so pinning
+ *     one lane never erases another lane's recorded floor.
+ *   - it records WHICH files produced each row (`sampleSetHash`), so a later
+ *     cold-pool rotation reads as `resampled` for triage rather than as a
+ *     regression on a different draw (M49 G5).
+ *   - it records the LOAD the rows were measured under, so a later breach can
+ *     be told apart from a busy machine and a perf row can be REFUSED scoring
+ *     rather than misread (#871).
+ */
+function writeBaselinePin(
+  current: Record<string, any>,
+  currentSecond: Record<string, any>,
+  sliceCount: number,
+  provenance: string,
+  loadAvgStart: number,
+): void {
+  const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
+  const clean: Record<string, any> = {}
+  const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
+  const pinSkipped: string[] = []
+  for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
+    if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
+      pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
+      continue
+    }
+    clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
+    if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
+  }
+  const merged = {
+    samplePerLang: SAMPLE_PER_LANG,
+    loadContext: { loadAvgStart, loadAvgEnd: loadAvg1(), sliceCount },
+    counts: { ...(previous.counts ?? previous), ...clean },
+    hashes,
+    // WHICH run last wrote each provenance class, so a reader can tell a floor
+    // pinned by the full sweep from one pinned by a single-lane run.
+    pinProvenance: { ...(previous.pinProvenance ?? {}), [provenance]: new Date().toISOString() },
+  }
+  fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
+  console.log(`differential baseline updated (${provenance}): ${Object.keys(clean).length} lane(s) pinned; drawn file sets pinned: ${Object.keys(hashes).length}`)
+  if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
+}
+
 export function sampleSetHash(relPaths: string[]): string {
   return createHash("sha256").update([...relPaths].sort().join("\n")).digest("hex").slice(0, 16)
 }
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
+
+// Hoisted from main() so the pin (module scope) and main share ONE baseline path —
+// two spellings of the file would let the pin write somewhere the gate never reads.
+const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.json")
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
@@ -361,6 +420,22 @@ export const SECOND_CORPUS: Record<string, string> = {
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
+/**
+ * `--pin-baseline`: let a SCOPED run write `differential-baseline.json`.
+ *
+ * WHY IT EXISTS. `--lang a,b` was added so ONE lane could be re-measured and its
+ * own artifact emitted without running the whole set — and it was wired
+ * everywhere EXCEPT the pin, which sits past the scoped guard's `process.exit`.
+ * So a lane whose corpora are the only ones present on the machine could be
+ * measured, audited, and still not have its floor recorded: `completeness-inventory`
+ * sections E and F read that floor, and they read it as `n/a` no matter how clean
+ * the lane was. Measured on the HCL lane, whose two corpora are present and
+ * whose 100 %/0-unexplained rows were reproducible on demand.
+ *
+ * It is a separate flag from `--update-baseline` so the default is unchanged: a
+ * probe still writes nothing, and only an explicit request writes the registry.
+ */
+const PIN_BASELINE_FROM_SCOPE = process.argv.includes("--pin-baseline")
 // M60 groovy lane (2026-09-25): the lane's DISCOVERY cap must never truncate a
 // full-extent draw. It read `if (files.length > 4000) return` — an early return
 // that abandons the whole directory — so on grails-core the groovy+gradle pool
@@ -14333,14 +14408,21 @@ async function main() {
   for (const [lang, r] of Object.entries<any>(report)) current[`${repoFor(lang)}:${lang}`] = {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
     heuristic: r.heuristicUnexplained,
-    perf: { avgMsPerFile: r.perf.avgMsPerFile },
+    // #871 was half-wired: the lane row RECORDS `perf.loadAvg1`, and the scorer
+    // REFUSES any baseline row without it — but this reducer rebuilt `perf` from
+    // `avgMsPerFile` alone, so the context was measured and then thrown away one
+    // line later. Every pinned row in the repo therefore lacked it and perf
+    // scoring was inert for all 178 lanes: F could read a number and no breach
+    // could ever be called. The whole perf context is carried now, so a pinned
+    // row can be scored at all.
+    perf: { ...r.perf },
     sampleHash: r.sampleSetHash,
   }
   const currentSecond: Record<string, any> = {}
   for (const [key, r] of Object.entries<any>(reportSecond)) currentSecond[key] = {
     missing: r.missingInAnalyzer, unexplained: r.unexplainedInAnalyzer,
     heuristic: r.heuristicUnexplained,
-    perf: { avgMsPerFile: r.perf.avgMsPerFile },
+    perf: { ...r.perf },
     sampleHash: r.sampleSetHash,
   }
   const baselineHashes: Record<string, string> = parsedBaseline.hashes ?? {}
@@ -14485,6 +14567,14 @@ async function main() {
       + `The artifact belongs to the canonical ${SAMPLE_PER_LANG}-file, ${Object.keys(LANGS).length}-language sweep; `
       + `a scoped run is for inspecting lanes, and writing it here would replace that claim with a smaller one${process.argv.includes("--emit") ? " (its own lane-scoped artifact was written)" : ""}.`,
     )
+    // The scoped guard returns HERE, which is why `--pin-baseline` has to be
+    // honoured here and not only at the canonical pin below: a scoped run never
+    // reaches that statement. The pin writes the floor REGISTRY only — the
+    // evidence artifact is still refused above, so the canonical 30-language
+    // claim stays exactly as its own sweep left it.
+    if (PIN_BASELINE_FROM_SCOPE) {
+      writeBaselinePin(current, currentSecond, 1, "scoped run (--pin-baseline)", runLoadAvgStart)
+    }
     removeFrozenTrees()
     process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
   }
@@ -14584,39 +14674,21 @@ async function main() {
   // Improvement-forcing gate: missing/unexplained counts may never grow.
   // Baseline updates are explicit and are not silently treated as validation.
   const updateBaseline = process.argv.includes("--update-baseline")
-  if (updateBaseline) {
-    const previous = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, "utf8")) : {}
-    // Merge BOTH lanes (primary + second) into the repo:lang baseline file.
-    const clean: Record<string, any> = {}
-    const hashes: Record<string, string> = { ...(previous.hashes ?? {}) }
-    const pinSkipped: string[] = []
-    for (const [k, v] of Object.entries<any>({ ...current, ...currentSecond })) {
-      // #871 §2: pin ONLY lanes whose own parity is clean. Pinning a lane that
-      // carries its own missing/unexplained would bake a real anomaly into the
-      // allowance (cpp's uses@0 is the one such lane today — #870). Heuristic
-      // counts do NOT block pinning: they are declared low-confidence edges,
-      // and heuristic drift on an UNPINNED lane is exactly the false-positive
-      // this pin removes.
-      if ((v.missing ?? 0) > 0 || (v.unexplained ?? 0) > 0) {
-        pinSkipped.push(`${k} (missing=${v.missing ?? 0} unexplained=${v.unexplained ?? 0})`)
-        continue
-      }
-      clean[k] = { missing: v.missing, unexplained: v.unexplained, heuristic: v.heuristic, perf: v.perf }
-      // M49 G5: pin WHICH files produced this row. Without it a later rotation
-      // is scored against a different sample and mislabelled a regression.
-      if (v.sampleHash) { clean[k].sampleSetHash = v.sampleHash; hashes[k] = v.sampleHash }
-    }
-    const merged = {
-      samplePerLang: SAMPLE_PER_LANG,
-      // #871 §1: the load context the pinned rows were measured under — a
-      // later breach can now be told apart from a busy machine.
-      loadContext: { loadAvgStart: runLoadAvgStart, loadAvgEnd: loadAvg1(), sliceCount: willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1 },
-      counts: { ...(previous.counts ?? previous), ...clean },
-      hashes,
-    }
-    fs.writeFileSync(BASELINE, JSON.stringify(merged, null, 2) + "\n")
-    console.log(`differential baseline updated (primary + second lanes): ${Object.keys(clean).length} lane(s); drawn file sets pinned: ${Object.keys(hashes).length}`)
-    if (pinSkipped.length > 0) console.log(`differential baseline: NOT PINNED — ${pinSkipped.join(", ")} — a lane carrying its own missing/unexplained is never pinned (pinning would bury the anomaly; see #870)`)
+  // `--pin-baseline` lets a SCOPED run (`--lang`, `--repo`) reach the pin. It is
+  // a separate flag from `--update-baseline` on purpose: a probe must write
+  // nothing by default, and only an explicit request may write the registry.
+  // It changes nothing about WHAT the pin does — same function, same
+  // clean-lanes-only rule, same merge, same hashes and load context — and it
+  // still writes NO evidence artifact, because the scoped guard above returns
+  // before that and this flag does not move the guard.
+  if (updateBaseline || PIN_BASELINE_FROM_SCOPE) {
+    writeBaselinePin(
+      current,
+      currentSecond,
+      willBatch ? Math.ceil(lanes.length / BATCH_SIZE) : 1,
+      PIN_BASELINE_FROM_SCOPE ? "scoped run (--pin-baseline)" : "canonical sweep",
+      runLoadAvgStart,
+    )
   } else if (!evaluation.comparable) {
     console.log(`differential baseline gate: SKIPPED (baseline sampled ${parsedBaseline.samplePerLang ?? "unknown"}/lang, this run ${SAMPLE_PER_LANG}/lang — probe mode, not comparable)`)
   } else {

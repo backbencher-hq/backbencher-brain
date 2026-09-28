@@ -208,7 +208,7 @@ suppression, against the analyzer's recursive descent with threaded scope).
 | --- | --- |
 | `script/m14/run-fixtures.ts --lang hcl` | **8 / 8 pass** |
 | `script/m14/mutate-analyzer.ts` (hcl) | **9 / 9 mutants caught** |
-| `script/m14/completeness-inventory.ts --lang hcl` | sections A–D pass; E/F blocked, see review § 8 |
+| `script/m14/completeness-inventory.ts --lang hcl` | sections A–H **8/8 pass** (E/F closed; see review § 8) |
 | `script/m12/hcl-contract-probe.ts` | **38 / 38** |
 | `script/m14/audit-analyzer-grammar.ts` | hcl PASS, 0 unknown types, 0 unknown fields |
 | `script/m14/verify-grammar-pins.ts` | hcl 0 drift, source↔wasm exact |
