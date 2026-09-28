@@ -1119,7 +1119,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const mod of moduleNodes) {
       const parsed = this.parseModuleExpression(mod)
       if (!parsed) continue
-      for (const { path, alias, site } of parsed.paths) {
+      for (const { path, alias, qualifier, site } of parsed.paths) {
         imports.push({
           module: path,
           isDefaultImport: false,
@@ -1141,6 +1141,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
             fileLevel: true,
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
+            ...(qualifier ? { nimQualifier: qualifier } : {}),
           },
         })
       }
@@ -1156,7 +1157,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   `./rel`, `../parent`           → the relative path, verbatim
    *   `"file.nim"`                   → the string literal, verbatim
    */
-  private parseModuleExpression(node: Node): { paths: { path: string; alias?: string; site: Node }[]; isPathList: boolean } | null {
+  private parseModuleExpression(node: Node): { paths: { path: string; alias?: string; qualifier?: string; site: Node }[]; isPathList: boolean } | null {
     if (node.type === "identifier" || node.type === "accent_quoted") {
       return { paths: [{ path: node.text, site: node }], isPathList: false }
     }
@@ -1165,7 +1166,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (node.type === "array_construction") {
       // `import a/[b, c]` — a bare list with no prefix.
-      const out: { path: string; alias?: string; site: Node }[] = []
+      const out: { path: string; alias?: string; qualifier?: string; site: Node }[] = []
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
@@ -1207,8 +1208,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // a path, and it still has to yield one edge per element.
       const opText = op.text
       if (opText.indexOf("/") === -1) return null
+      // A QUALIFIER SET on a from-import. `from std/uri {.all.} as uri2 import
+      // removeDotSegments` parses as
+      //   infix(std/uri, "/", pragma_expression(identifier(uri), pragma_list({.all.})))
+      //   infix(  that,  "as",  identifier(uri2))
+      // so the node's own text is "std/uri {.all.}" and the OLD rule published
+      // that whole string as the module — a dependency edge on a name no file
+      // has, and the real module missing from the graph. The `{.all.}` is a
+      // request to import EVERY symbol; it is not part of the path.
+      //
+      // Found by the full 3,914-file oracle comparison, not by the 60-file
+      // rotation: the differential reported 0 unexplained on every sample that
+      // did not happen to draw one of the five affected files, so this class was
+      // invisible until the oracle was run over the whole corpus.
+      if (right.type === "pragma_expression") {
+        const inner = right.childForFieldName("left")
+        if (!inner || (inner.type !== "identifier" && inner.type !== "accent_quoted")) return null
+        const qualifierList = right.childForFieldName("right")
+        return {
+          paths: [{
+            path: `${this.nodeText(left)}/${inner.text}`,
+            site: right,
+            ...(qualifierList ? { qualifier: this.nodeText(qualifierList) } : {}),
+          }],
+          isPathList: false,
+        }
+      }
       if (right.type === "array_construction") {
-        const out: { path: string; alias?: string; site: Node }[] = []
+        const out: { path: string; alias?: string; qualifier?: string; site: Node }[] = []
         const prefix = this.nodeText(left)
         for (let i = 0; i < right.namedChildCount; i++) {
           const c = right.namedChild(i)
@@ -1235,6 +1262,42 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // and the operand is a path expression rather than a bare identifier.
       // Reading only the operand was what dropped 434 multi-segment relative
       // imports across the corpus.
+      // The relative form can also carry a QUALIFIER SET, and then the node's
+      // own text is the whole `import ./m1 {.all.}` operand:
+      //   prefix_expression(operator("./"), pragma_expression(identifier(m1), pragma_list))
+      // so the same rule as the `/` branch applies — the module is the prefix
+      // token plus the pragma's left leaf, and `{.all.}` is a request for every
+      // symbol, not a path segment.
+      const qualOp = node.childForFieldName("operator")
+      if (qualOp) {
+        // Skip the operator node BY IDENTITY. It is a NAMED node of type
+        // `operator` and it is the first named child, so "the first named child"
+        // returns the `./` token and never reaches the operand — which is why
+        // the first version of this fix silently did nothing and both the
+        // analyzer and the oracle kept publishing `./m1 {.all.}`.
+        let operand: Node | null = null
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.id !== qualOp.id) {
+            operand = c
+            break
+          }
+        }
+        if (operand && operand.type === "pragma_expression") {
+          const inner = operand.childForFieldName("left")
+          if (inner && (inner.type === "identifier" || inner.type === "accent_quoted")) {
+            const qualifierList = operand.childForFieldName("right")
+            return {
+              paths: [{
+                path: `${qualOp.text}${inner.text}`,
+                site: operand,
+                ...(qualifierList ? { qualifier: this.nodeText(qualifierList) } : {}),
+              }],
+              isPathList: false,
+            }
+          }
+        }
+      }
       return { paths: [{ path: this.nodeText(node), site: node }], isPathList: false }
     }
     if (node.type === "dot_expression") {

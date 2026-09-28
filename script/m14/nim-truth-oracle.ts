@@ -419,7 +419,13 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       }
     } else if (n.type === "import_from_statement") {
       const m = field(n, "module")
-      emitImport(m ? modulePathOf(m) : "")
+      // modulePaths, NOT modulePathOf: a from-import's module is frequently an
+      // infix chain carrying an `as ALIAS` and a `{.all.}` qualifier, and
+      // modulePathOf returns the node's raw text. That is how the oracle came to
+      // publish `std/uri {.all.} as uri2` as a module — a name no file has —
+      // while the analyzer published `std/uri`. The analyzer was right.
+      const fromPaths = m ? modulePaths(m) : []
+      for (const mp of fromPaths) emitImport(mp)
     } else if (n.type === "include_statement") {
       const list = firstOfType(n, "expression_list")
       for (const operand of list ? named(list) : []) emitImport(modulePathOf(operand))
@@ -769,7 +775,24 @@ function modulePaths(node: any): string[] {
   if (node.type === "interpreted_string_literal" || node.type === "raw_string_literal" || node.type === "long_string_literal") {
     return [modulePathOf(node)]
   }
-  if (node.type === "prefix_expression" || node.type === "dot_expression") return [node.text]
+  if (node.type === "dot_expression") return [node.text]
+  if (node.type === "prefix_expression") {
+    // A relative path that also carries a QUALIFIER SET:
+    //   prefix_expression(operator("./"), pragma_expression(identifier(m1), pragma_list))
+    // The node's own text is the whole "./m1 {.all.}", so the module is the
+    // prefix token plus the pragma's left leaf.
+    const op = field(node, "operator")
+    // The `operator` node is NAMED and is the first named child, so the operand
+    // is the first named child that is not the operator — by identity, because
+    // both nodes can share a type string.
+    const operand = op ? named(node).find((c: any) => c.id !== op.id) : named(node)[0]
+    if (op && operand && operand.type === "pragma_expression") {
+      const inner = field(operand, "left")
+      if (inner && (inner.type === "identifier" || inner.type === "accent_quoted")) return [`${op.text}${inner.text}`]
+      return []
+    }
+    return [node.text]
+  }
   if (node.type === "array_construction") {
     const out: string[] = []
     for (const c of named(node)) out.push(...modulePaths(c))
@@ -780,9 +803,22 @@ function modulePaths(node: any): string[] {
     const left = field(node, "left")
     const right = field(node, "right")
     if (!op || !left || !right) return []
-    // `as` — the right side is the LOCAL ALIAS, not a module.
+    // `as` — the right side is the LOCAL ALIAS, not a module. The module is the
+    // LEFT side, so an aliased import publishes the module and the alias goes to
+    // metadata; the pre-fix oracle kept the whole "m as alias" text as the
+    // target, which disagreed with the analyzer on 6 real files for a reason that
+    // was the ORACLE's fault, not the analyzer's.
     if (op.type === "as" || op.text === "as") return modulePaths(left)
     if (!op.text.includes("/")) return []
+    // A QUALIFIER SET: `from std/uri {.all.} as uri2 import x` puts a
+    // pragma_expression on the right whose LEFT is the path's last segment and
+    // whose RIGHT is the `{.all.}` request. The module is left + that leaf; the
+    // qualifier is not part of the path.
+    if (right.type === "pragma_expression") {
+      const inner = field(right, "left")
+      if (!inner || (inner.type !== "identifier" && inner.type !== "accent_quoted")) return []
+      return [`${left.text}/${inner.text}`]
+    }
     // A `[...]` right side is a module LIST, not a path: one module per element.
     if (right.type === "array_construction") {
       const out: string[] = []
