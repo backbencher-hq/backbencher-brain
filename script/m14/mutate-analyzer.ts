@@ -11368,6 +11368,70 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   // --------------------------------------------------------------------------
+  // EX-A14 — the output-coverage census's last real gap: `@callback` /
+  // `@macrocallback` emitted a pattern flag and nothing else (165 sites in a
+  // 100-file elixir+phoenix+ash sample, 98 in a 171-file ecto+ecto_sql+wallaby
+  // sample, 0 covered). Four mutants: the pre-fix silence, the duplicate-symbol
+  // over-correction, the declaration flag read backwards, and the spec payload
+  // dropped while the symbol stays.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/callback-symbol-dropped",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "EX-A14 regression (the pre-fix state): a `@callback`/`@macrocallback` declaration publishes no symbol at all, so a module that declares a behaviour surface with no `def` (Callback.Probe) has no trace of it in the index. Caught by the callback-declarations fixture's symbol pins.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.isCallback !== true),
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "contains" && String(x.target) === "build")),
+    }),
+  },
+  {
+    id: "elixir/callback-duplicate-symbol",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "EX-A14 over-correction: a `@callback` mints its OWN symbol instead of sharing the function merge key, so `@callback load(t)` + `def load(x)` publish TWO symbols for one function — ids the index (`${fileId}:${name}:${startLine}`) cannot even keep apart. Caught by the fixture's expectSymbolCount pair.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => s.metadata?.isCallback && s.ownerName === "Callback.Probe")
+          .map((s: any) => ({ ...s, range: { ...s.range, startLine: s.range.startLine + 4 } })),
+      ],
+    }),
+  },
+  {
+    id: "elixir/every-def-a-declaration",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A14 regression: the bodyless-def detection is read backwards, so EVERY `def` is marked isDeclaration (and every merged symbol keeps the flag). A definition that claims to be a declaration is a false statement the store persists in brain_symbol.is_declaration (#612). Caught by the fixture's forbidSymbols entries on `load`, `twice` and the protocol implementation's `size`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!["function", "method", "macro"].includes(String(s.kind))) return s
+        return { ...s, isDeclaration: true, metadata: { ...(s.metadata || {}), isBodylessDeclaration: true } }
+      }),
+    }),
+  },
+  {
+    id: "elixir/callback-spec-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A14 regression: the declaration symbols survive but the TYPED SPEC does not — callbackSpec / isCallbackDeclaration / hasCallbackSpec are stripped, so the index knows a callback exists but not its contract. Differential-invisible (no edge moves), so only the fixture can hold it.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.callbackSpec
+        delete m.isCallbackDeclaration
+        delete m.hasCallbackSpec
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
   // EX-PAYLOAD WAVE — the suite's coverage of the elixir PAYLOAD surface, asked
   // as a measurement rather than assumed. The mutants above all target
   // relationship shape and symbol IDENTITY; this batch targets the fields a

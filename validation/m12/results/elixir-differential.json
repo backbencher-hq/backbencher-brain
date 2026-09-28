@@ -36,8 +36,8 @@
         "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "4798e9f827b6bfa184d2667a07ec7f8cb8e2b9e2f31aa8e290418eec2a40c065",
-        "bytes": 219094
+        "sha256": "ece63e5d6d248d1153c2742211b133932982939de947a586f99833087b852424",
+        "bytes": 258947
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
@@ -48,12 +48,12 @@
         "bytes": 115522
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "5aa816d757b3b03ebabf74078340acbc0e25ed0bb4d98bfb7441721259ceef1e",
-        "bytes": 163435
+        "sha256": "ad9acd5b374a778d447b69385e74d07d23073970c47ee1cd40dff868c3619fc8",
+        "bytes": 172186
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "970e9dee20531e09ca63635e3f55200d7fadeaf6236f0e4068c8b6572111aea7",
-        "bytes": 202089
+        "sha256": "380e0fd455c979696fb78e67c492e92e085fbeb1c72493ac9ab27b6e7146e5fc",
+        "bytes": 205562
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
@@ -64,20 +64,20 @@
         "bytes": 119919
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "c26c1c29152506c654eb35df0d3c26060a95c408bfb0092b96a42e8410f08f97",
-        "bytes": 89804
+        "sha256": "ced57c561a8965e45b711213c72b6b5bfca500973f54e1c010f0b08b1dad5863",
+        "bytes": 103829
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "17a33ed9759e67a7596bdd93bcc65a93508ec61339f78ae5684eb561bbd4440c",
-        "bytes": 73905
+        "sha256": "42aecca78bd0a88ff762d14d92ccc5c7fd4ba907177e220c4602cbadbb6a6a08",
+        "bytes": 76405
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "3bfb1ca3c907b4cdc561c34ff397830f8d3d6012d13caa29bd1667c907dc28de",
-        "bytes": 66764
+        "sha256": "00ea1e5a13a0c61a982a82e25a8e458bde359f7a9ea4600f2bb3766de4393a14",
+        "bytes": 80225
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "e8864d1651c65def80f40596b8ff3d3c3d2daf00241a8a7b1ddd777b845ee34e",
-        "bytes": 187918
+        "sha256": "5e2d82b429564a883c6483b979e805f637820423b5a36cb4b2678b7e9ef25384",
+        "bytes": 191085
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "0b97146dce60edb84625d820b7c68d137c86b17b6177e352c61168d31af6c013",
@@ -156,8 +156,8 @@
         "bytes": 100699
       },
       "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "b827f1fe3434863747cdb3d001a14e94e92f365f8d1133877b3948c6047ae9c1",
-        "bytes": 104046
+        "sha256": "6095e463de0750022e2e8cce3fc226ae30e2597a8f89af3e6a9d44b5b23d02e6",
+        "bytes": 108937
       },
       "src/ast/real-rust-analyzer.ts": {
         "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
@@ -200,8 +200,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "21a5a8a07a4439ba727b9835760be7e6fb1676f1596dfebf9c8c3ac6a806a130",
-        "bytes": 82173
+        "sha256": "03687dcb8cc906ac56280e9c88ebefb01b5aa5e23bb35302a8782675d42825fa",
+        "bytes": 85537
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -264,7 +264,7 @@
         "bytes": 26639
       }
     },
-    "digest": "c0887906e4f4c6506a5bb7718ede6c5eea7c4885157d115e2817e6a17ec2af0e",
+    "digest": "c846af2637bf863588f419235521de9462b16851dac3b7790fbea869520fba06",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
@@ -389,11 +389,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 170.374494,
-      "userCpuMs": 79.017,
-      "systemCpuMs": 5.759,
-      "peakRssBytes": 274067456,
-      "rssDeltaBytes": 1572864,
+      "wallTimeMs": 25.881287,
+      "userCpuMs": 78.256,
+      "systemCpuMs": 4.12,
+      "peakRssBytes": 270708736,
+      "rssDeltaBytes": 1171456,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

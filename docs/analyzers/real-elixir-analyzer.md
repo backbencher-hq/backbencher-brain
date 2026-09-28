@@ -25,10 +25,12 @@
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
 | name | ✅ | `defmodule` → module name from the `arguments` `alias` (nested modules qualified: `MyApp.User`); `def`/`defp`/`defdelegate` → the signature `call`'s identifier (`defdelegate` preserves the local declaration — `defdelegate rstrip(b), to: M, as: :trim_trailing` → `rstrip`; `as:` names the remote target, not the declaration); `defmacro`/`defmacrop`/`defguard`/`defguardp` → macro; `defstruct` → struct named by the enclosing module; struct fields → `atom` elements of the bare list (`[:id, :name]`, colon-stripped) and `pair > keyword` for the keyword form; `@type`/`@typep`/`@opaque` → the `::` left-side identifier; `defprotocol` → protocol name; `defimpl` → class named by the `for:` target type |
-| kind | ✅ | `defmodule` → `module`; `defprotocol` → `interface`; `defimpl` → `class` (named by for-type, `implements` edge to protocol); `defstruct` → `struct` + field `property`s; `def`/`defp`/`defdelegate` → `function` (or `method` when inside a protocol/impl scope); `defmacro`/`defmacrop`/`defguard`/`defguardp` → `macro`; `@type` → `type` |
+| kind | ✅ | `defmodule` → `module`; `@callback`/`@macrocallback` → `method` inside a protocol/impl, `function` otherwise (EX-D21); `defprotocol` → `interface`; `defimpl` → `class` (named by for-type, `implements` edge to protocol); `defstruct` → `struct` + field `property`s; `def`/`defp`/`defdelegate` → `function` (or `method` when inside a protocol/impl scope); `defmacro`/`defmacrop`/`defguard`/`defguardp` → `macro`; `@type` → `type` |
 | qualified/container name | ✅ | `ownerName` = the innermost enclosing DECLARATION (M14 ledger #867 ruling) for **every** nested symbol: functions, types, struct, fields, protocol/impl members — and, since EX-A10, nested `defmodule`/`defprotocol` themselves, which previously carried only `scope` (`contains MyApp -> MyApp.User` was emitted, the symbol field was not) |
 | range (start/end line + column) | ✅ | the declaration node; for a MERGED multi-clause head the extent runs to the **last clause's end** (EX-D16 — the same rule real-clean-analyzer.ts applies to a multi-clause `f x = …`) and every clause's exact range is published as `metadata.clauseRanges`, because a span cannot be discontiguous: 195 of 2,321 merged groups in elixir@024beb1b carry other declarations between their first and last clause |
 | parameters | ✅ (metadata only) | `def` signature `arguments` children; `name = default` collapses to the name |
+| isDeclaration | ✅ | `@callback`/`@macrocallback` (EX-D21) and a BODILESS `def` head (the protocol callback) are declarations, not definitions; a clause with a body makes the merged symbol a definition and the flag is removed. Structurally: no `do_block` and no `do:` pair inside the def's `arguments` |
+| callbackSpec | ✅ (metadata) | the `@callback name(args) :: type` text, merged into the sibling `def`'s symbol (one function, one symbol). The `::` operator is found by a depth-bounded search, because a `when` constraint wraps it |
 | visibility | ✅ | `defp`/`defmacrop` → `private`, else `public` |
 
 ## Relationship ontology
@@ -118,12 +120,13 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 | gate | result |
 | --- | --- |
-| F3 fixtures | **58/58 PASS** |
-| F4 mutants | **77/77 CAUGHT** (a 15-mutant payload wave found **9 survivors** — holes in this lane's own suite — and all 9 are now pinned) |
-| F5 differential | 6 corpora, 400 files, **8,911 oracle edges: coverage 100.0%, MISSING 0, unexplained 0**; the same-sample A/B is **161 MISSING before → 0 after** |
+| F3 fixtures | **59/59 PASS** |
+| F4 mutants | **81/81 CAUGHT** (a 15-mutant payload wave found **9 survivors** — holes in this lane's own suite — and all 9 are now pinned; +4 for the callback class) |
+| F5 differential | 6 corpora, 360 files, **9,974 oracle edges: coverage 100.0%, MISSING 0, unexplained 0**; the same-sample A/B is **161 MISSING before → 0 after** |
 | M12 differential | re-emitted **69/69, precision 1.000, recall 1.000** |
-| Deep audit (oracle-blind) | line contract, source attribution, contains integrity, symbol sanity, edge surface and complexity: **CLEAN** on the 60-file ecto_sql slice (3,846 edges) |
-| Spec census | 697 files / 6 corpora: **116 node types, 0 parse-error files, 0 unclassified named types** |
+| Deep audit (oracle-blind) | line contract, source attribution, contains integrity, symbol sanity, edge surface and complexity: **CLEAN** on the 60-file ecto_sql slice (3,852 edges) |
+| **Declaration coverage** (per FORM, not per node type) | **every live form 100%** over 294 files (elixir+phoenix+ash) and 171 files (ecto_sql+ecto+wallaby) — `defmodule` 554/554, `def` 1689/1689, `defp` 1728/1728, `@callback` 83/83, `@optional_callbacks` 5/5, `type` 235/235, `use` 318/318, `alias` 121/121, `raise` 255/255, … and two forms with no live site in the sample are reported as such, never as OK |
+| Spec census | 697 files over 6 corpora: **116 distinct node types, 0 parse-error files, ZERO named types unclassified** |
 | Perf | ms/def **flat** 2.22–4.25 from N=1,000 to N=4,000 on two synthetic ladders — no O(n²) term |
 
 The six corpora are elixir@024beb1b, phoenix@0e02edbe, ecto@94d69279,
@@ -131,7 +134,11 @@ ecto_sql@44f561b8, ash@e3f9c80a and wallaby@13e1394d, run through
 `script/m14/tmp/elixir-lane-diff.ts` — a fixed-sample, per-file, error-visible
 re-run of this lane's F5 comparison, because the shared harness silently
 converts an analyzer exception into a coverage collapse (R4 in the review) and
-draws a different sample per run unless its pool is frozen.
+draws a different sample per run unless its pool is frozen. The declaration
+census is `script/m14/tmp/elixir-declaration-census.ts`, and it is the instrument
+that found the last real gap: classifying node types is the wrong granularity,
+because a node type can be "handled" while the declaration it carries publishes
+nothing.
 
 ## Corpus validation
 
