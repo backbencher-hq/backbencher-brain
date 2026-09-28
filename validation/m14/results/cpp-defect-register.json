@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-28T17:27:44.815Z",
+  "generatedAt": "2026-09-28T21:58:34.278Z",
   "corpusRoot": "$HOME/ishaq/fixtures/repositories",
   "corpora": [
     "fmt",
@@ -61,6 +61,15 @@
       "id": "D6",
       "title": "the analyzer's own source uses a regex",
       "contract": "The regex census is the honesty artifact; the doc's claim of zero must be true, not asserted.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D7": {
+      "id": "D7",
+      "title": "a specifier's name arrives as a qualified_identifier, so the class publishes as `anonymous`",
+      "contract": "A class/struct may have a qualified name (an explicit specialization) and its LEAF is the name; an enum has NO qualified name in C++, so one in that slot is a C++23 [[=attr]] the recovery displaced, and the declared name is the identifier beside it. Publishing `anonymous` also collides with the analyzer's own no-name sentinel.",
       "gated": true,
       "n": 0,
       "byName": {},
@@ -192,10 +201,10 @@
   "keywordSetSize": 123,
   "totals": {
     "files": 1722,
-    "symbols": 45710,
-    "relationships": 238205,
-    "wallMs": 60111,
-    "msPerFile": 34.9
+    "symbols": 45689,
+    "relationships": 238172,
+    "wallMs": 118443,
+    "msPerFile": 68.8
   },
   "verdict": {
     "pass": true,
@@ -206,6 +215,7 @@
       "D4": 0,
       "D5": 0,
       "D6": 0,
+      "D7": 0,
       "R1": 715
     },
     "reportedNotGated": {
