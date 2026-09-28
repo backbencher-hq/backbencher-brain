@@ -184,7 +184,7 @@ not a gate.
 The load-bearing number is **0**: `resolvableQualified`, the class where the
 metadata names an enclosing type, `Type.field` exists in the project, and the
 edge was still emitted bare. It is empty, so the analyzer qualifies everything it
-can prove — `fixtures/graphql/probe/project-resolution.mts` exits non-zero if it
+can prove — `script/m14/tmp/graphql/probe/project-resolution.mts` exits non-zero if it
 ever stops being empty, and that is gate 8b.
 
 The 747 are **not** a defect. `id` has 305 candidate owners and `slug` has 37
@@ -194,7 +194,7 @@ rather than guess an owner. The 514 dangling are bare names plus qualified ones
 whose type condition the project never defines (a selection inside `... on Test`
 where no file declares `Test`) — the analyzer qualified them from the only
 evidence the document itself carries, and the reference is genuinely absent. All
-of it is recorded in `fixtures/graphql/out/project-resolution.json` rather than
+of it is recorded in `script/m14/tmp/graphql/out/project-resolution.json` rather than
 folded into a percentage.
 
 Built-in scalars and introspection meta-fields are **specification vocabulary**:
@@ -208,7 +208,7 @@ the store, not of the edge — the edge names exactly what the document says.
 `real-graphql-analyzer.ts` row, and the committed analyzer at `HEAD` was already
 regex-free — the count is 0, not "pending paydown". Zero `RegExp` calls, and no
 `match` / `matchAll` / `replace` / `search` / `split` used as a parser —
-machine-checked by `fixtures/graphql/probe/no-text-scan.mts`, which also has
+machine-checked by `script/m14/tmp/graphql/probe/no-text-scan.mts`, which also has
 **two negative controls** proving it can fail. Descriptions are unquoted by
 `slice` plus an explicit escape scan, and block strings are dedented by the
 §2.9.4 algorithm implemented line by line. Three `String` operations remain and
@@ -248,8 +248,22 @@ block-string escape.
 
 ## Evidence
 
-Every artifact below is regenerable; the commands are at the end of
-`fixtures/graphql/REVIEW.md`.
+Every artifact below is regenerable, and **they are here, in the repository**:
+`script/m14/tmp/graphql/` holds the probes, the hand-derived ground truth, the
+fixtures, the runner and the artifacts themselves. That was not always so — the
+lane lived outside version control, which meant a clone had none of it and every
+number in this document was unverifiable from a checkout. One input is
+deliberately external: the 1.2 GB third-party corpus, fetched by
+`script/m14/tmp/graphql/clone.sh` at the exact revisions
+`script/m14/tmp/graphql/repositories.json` records.
+
+Run it with `script/m14/tmp/graphql/run-all.sh --corpus`.
+**Gate 11 runs last and that ordering is load-bearing**: it re-derives every number
+above from the artifacts, four of which (corpus-sweep, project-resolution,
+perf-accessors, extraction-ab) are produced by gates 8, 8b, 9 and 10b. It used to
+be gate 7, which passed only because those artifacts were left over from an
+earlier run — so on a clean checkout the one gate whose job is to catch a stale
+claim was the gate that could not run.
 
 | artifact | what it is | headline |
 |---|---|---|
@@ -259,16 +273,16 @@ Every artifact below is regenerable; the commands are at the end of
 | `validation/m12/results/graphql-corpus-complexity.json` | production throughput | 3,251 symbols / 6,418 relationships, plus a `performanceTruth` field recording the analyzer is **1.62× slower** than the one it replaced and what the time buys |
 | `validation/m14/results/M14.0.F3.json` | the fixture-lane evidence | `graphql: 2/2 fixtures pass`, check `fixtures-graphql` |
 | `validation/m14/grammar-pins.json` | the grammar pin | wired sha `f988e0a0…`, 13 vendored files, mirror byte-identical, source↔wasm proof **zero in both directions** |
-| `fixtures/graphql/out/contract-battery.json` | 52 hand-audited cases | **52/52** |
-| `fixtures/graphql/out/differential.json` | hand-derived ground truth, 7 fixtures, 8 channels | **292 facts, P=1.000, R=1.000** |
-| `fixtures/graphql/out/mutation.json` | 33 mutants, one per finding | **29 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 2 declared equivalent, each with its structural justification. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
-| `fixtures/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
-| `fixtures/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
-| `fixtures/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
-| `fixtures/graphql/out/extraction-ab.json` | the same analyzer under both grammars | **12 → 4** error files, **20 → 7** error nodes, **+4 symbols, +76 relationships**, every delta adjudicated in REVIEW.md §E |
-| `fixtures/graphql/out/source-guards.json` | zero-regex and no-structural-text-scan | **HOLDS / HOLDS**, with 2 negative controls |
-| `fixtures/graphql/out/perf-attribution.json` | a 2×2 attribution, one cell per process | parse ×1.55, analyze ×1.65; the cost is the code, not the grammar |
-| `fixtures/graphql/out/perf-accessors.json` | the machine-INDEPENDENT cost: counted tree-sitter accessor calls, and an A/B with both analyzers in one process, alternating | **338,432 → 151,488 accessor calls, 55.2% fewer**; `namedChildCount` 93,956 → **0**; `type` 99,735 → 41,558 |
+| `script/m14/tmp/graphql/out/contract-battery.json` | 52 hand-audited cases | **52/52** |
+| `script/m14/tmp/graphql/out/differential.json` | hand-derived ground truth, 7 fixtures, 8 channels | **292 facts, P=1.000, R=1.000** |
+| `script/m14/tmp/graphql/out/mutation.json` | 33 mutants, one per finding | **29 caught, 0 survived**; 2 defeated by another guard (defence in depth, measured); 2 declared equivalent, each with its structural justification. **0 unapplied** — an anchor is a verbatim copy of analyzer source, so when `topLevelDefinitions` was refactored the anchor went stale, the mutant silently stopped testing anything, and the harness reported it as a *survival*. An unapplied edit is now a hard failure with its own exit path, because a suite that prints "0 survived" while a mutant was never applied proves nothing |
+| `script/m14/tmp/graphql/out/grammar-gaps.json` | 113 specification constructs | **0 valid constructs rejected**; 8 invalid still rejected |
+| `script/m14/tmp/graphql/out/corpus-sweep.json` | 47 real files, 4 repositories, 691,855 bytes | 8,747 symbols, 19,054 relationships, **0 phantoms, 0 duplicate identities, 0 crashes, 12/12 extension members** |
+| `script/m14/tmp/graphql/out/project-resolution.json` | all 19,054 relationships decided at **project** scope against the store's own two strategies, **sources included** | **93.38% resolvable**; **0** provable-but-unqualified; **0** unresolved sources; 747 ambiguous by the store's own uniqueness rule; 514 genuinely absent |
+| `script/m14/tmp/graphql/out/extraction-ab.json` | the same analyzer under both grammars | **12 → 4** error files, **20 → 7** error nodes, **+4 symbols, +76 relationships**, every delta adjudicated in REVIEW.md §E |
+| `script/m14/tmp/graphql/out/source-guards.json` | zero-regex and no-structural-text-scan | **HOLDS / HOLDS**, with 2 negative controls |
+| `script/m14/tmp/graphql/out/perf-attribution.json` | a 2×2 attribution, one cell per process | parse ×1.55, analyze ×1.65; the cost is the code, not the grammar |
+| `script/m14/tmp/graphql/out/perf-accessors.json` | the machine-INDEPENDENT cost: counted tree-sitter accessor calls, and an A/B with both analyzers in one process, alternating | **338,432 → 151,488 accessor calls, 55.2% fewer**; `namedChildCount` 93,956 → **0**; `type` 99,735 → 41,558 |
 
 ## Complexity envelope
 
@@ -348,4 +362,4 @@ in the same process under the same conditions. See REVIEW.md §I and §I.1.
 ## Issue
 
 M12.38 / GitHub issue #177. The deep review that produced every number above is
-`fixtures/graphql/REVIEW.md`.
+`script/m14/tmp/graphql/REVIEW.md`.
