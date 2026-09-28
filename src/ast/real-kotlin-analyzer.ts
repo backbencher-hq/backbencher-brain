@@ -50,6 +50,40 @@ import { findDeclaringParent } from "./override-context"
  * blindness (type variables in nested `<T>` positions) is oracle debt, not paid
  * for with a fabricated red row.
  */
+/**
+ * M60 (#924, kotlin half): quoting syntax is not part of an identifier's NAME.
+ * `fun `test char column read and write`()` declares the identifier
+ * `test char column read and write`; the backticks are Kotlin's escape for a name
+ * that cannot be spelled plainly (keywords, spaces), not part of what it is called.
+ * This mirrors the swift half of the same issue (real-swift-analyzer.ts
+ * stripNameQuoting); kotlin goes one step further because the strings this file
+ * publishes are also PATHS ("Outer.`object`") and ids (dotted names), so every
+ * COMPLETE backtick run is quoting, wherever it sits in the string. An unmatched
+ * backtick is not a run and is kept verbatim. Measured before the fix on the
+ * census's own samples: 6 occurrences / 3 distinct names
+ * (script/m14/tmp/c924-name-surface-probe.ts).
+ */
+function stripKotlinQuoting(text: string): string {
+  if (!text.includes("`")) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 96) {
+      const close = text.indexOf("`", i + 1)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 1, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
 function kotlinSigHasTypeVar(sig: string): boolean {
   const n = sig.length
   let i = 0
@@ -492,6 +526,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { isImportDep: true },
       })
     }
+
+    // M60 (#924, kotlin half): the published name surface — quoting syntax is
+    // not part of a name. Runs BEFORE exports and the import-source rewrite so
+    // every published spelling is derived from the canonical one.
+    this.canonicalizePublishedNames(symbols, relationships)
 
     // Rewrite import-reference sources from the placeholder "root" to the
     // file's primary top-level type so references carry a symbol identity
@@ -2860,7 +2899,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parent = n.parent
         const lhs = parent && parent.type === "assignment" ? parent.namedChild(0) : null
         const isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-        if (recv && hasIndexing && !isWrite) emitUse(n, recv.text)
+        // M60 (#924, kotlin E half): the receiver's NAME, never its text — see
+        // kotlinIdentifierPath. A receiver with no identifier on its spine keeps
+        // its old spelling only when that spelling is itself name-shaped; an
+        // expression-shaped target is exactly what this fix stops publishing.
+        if (recv && hasIndexing && !isWrite) {
+          const receiverPath = this.kotlinIdentifierPath(recv)
+          if (receiverPath) emitUse(n, receiverPath)
+          else if (this.kotlinNameShapedText(recv.text)) emitUse(n, recv.text)
+        }
       } else if (n.type === "interpolated_identifier") {
         emitUse(n, n.text)
       } else if (n.type === "simple_identifier") {
@@ -2892,6 +2939,42 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Call Expression Builder
    */
+  /**
+   * M60 (#924, kotlin half): canonicalize the PUBLISHED name surface.
+   *
+   * Kotlin has no symbol factory (symbols are pushed inline by the extractors),
+   * so the strip cannot be applied at construction the way swift's createSymbol
+   * does it; it is applied here, at the publish boundary — after every analysis
+   * pass and before exports/imports are derived from these same objects, so all
+   * published spellings agree with each other (a `contains` target still equals
+   * the symbol name it points at) and with what a reference can spell.
+   *
+   * Internal keys are deliberately NOT rewritten past this point: the analysis
+   * resolves references in the source's own spelling (a kotlin reference to a
+   * quoted name is itself quoted), so the quoted form is the correct lookup key
+   * inside the analysis and the stripped form is the correct published name.
+   */
+  private canonicalizePublishedNames(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    // typeof, not truthiness: id/ownerName are optional on UniversalSymbol and a
+    // target can be absent — the first cut of this pass called the helper with
+    // undefined, the analyzer threw, and the ENGINE swapped in a basic parse
+    // result, i.e. an empty analysis. Nothing published is missing, so a run
+    // cannot smell that; only the probe's "census samples re-derived" guard can
+    // (it read 0/33 and refused the green).
+    for (const s of symbols) {
+      if (typeof s.name === "string") s.name = stripKotlinQuoting(s.name)
+      if (typeof s.ownerName === "string") s.ownerName = stripKotlinQuoting(s.ownerName)
+      if (typeof s.id === "string") s.id = stripKotlinQuoting(s.id)
+    }
+    for (const r of relationships) {
+      if (typeof r.source === "string") r.source = stripKotlinQuoting(r.source)
+      if (typeof r.target === "string") r.target = stripKotlinQuoting(r.target)
+    }
+  }
+
   private buildKotlinCallExpression(node: Node): string {    switch (node.type) {
       case "simple_identifier":
       case "identifier":
@@ -2918,6 +3001,63 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Navigation Expression Builder (for method calls)
    */
+  /**
+   * M60 (#924, kotlin E half): the NAME of an expression, when it has one.
+   *
+   * The uses walk published an indexing receiver's raw TEXT, so a read of
+   * `dest.selectAll().where { dest.id eq 1 }.single()[dest.id]` was published as
+   * that whole expression — arguments, lambda body and brackets included. Every
+   * one of the 27 such strings the census collected on kotlin is an indexing
+   * receiver (script/m14/tmp/c924-name-surface-probe.ts). A name is the chain of
+   * IDENTIFIERS along the callee/receiver spine; arguments and lambda bodies are
+   * never part of it. Returns undefined when the spine carries no identifier, and
+   * the caller then decides by the old text's SHAPE (see kotlinNameShapedText).
+   */
+  private kotlinIdentifierPath(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    switch (node.type) {
+      case "simple_identifier":
+      case "identifier":
+      case "type_identifier":
+        return stripKotlinQuoting(node.text)
+      case "navigation_expression": {
+        const receiver = node.namedChild(0)
+        let selector = node.namedChild(node.namedChildCount - 1)
+        if (!receiver || !selector) return undefined
+        if (selector.type === "navigation_suffix") {
+          const inner = selector.namedChild(selector.namedChildCount - 1)
+          if (!inner) return undefined
+          selector = inner
+        }
+        const rt = this.kotlinIdentifierPath(receiver)
+        const st = this.kotlinIdentifierPath(selector)
+        return rt && st ? `${rt}.${st}` : undefined
+      }
+      case "call_expression":
+      case "indexing_expression":
+        return this.kotlinIdentifierPath(node.namedChild(0))
+      default:
+        return undefined
+    }
+  }
+
+  /**
+   * M60 (#924, kotlin E half): is this published TEXT itself name-shaped? A name
+   * carries no argument, lambda, index or separator punctuation — the same rule
+   * the census's E class measures. Used only as a FALLBACK: a receiver whose spine
+   * has no identifier (`this`, a type parameter, a quoted name) keeps its old
+   * spelling rather than losing the edge, because those spellings are names and
+   * the defect being fixed is an EXPRESSION published as one.
+   */
+  private kotlinNameShapedText(text: string): boolean {
+    if (!text) return false
+    if (text.includes("\n")) return false
+    for (const ch of ["(", ")", "{", "}", "[", "]", ","]) {
+      if (text.includes(ch)) return false
+    }
+    return text.trim() === text
+  }
+
   private buildKotlinNavigationExpression(node: Node): string {
     const receiver = node.namedChild(0)
     let selector = node.namedChild(node.namedChildCount - 1)

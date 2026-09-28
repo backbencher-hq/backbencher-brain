@@ -1089,6 +1089,43 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * M60 (#924, elixir E): the parts of a binary_operator read RELATIVE TO ITS OPERATOR
+   * TOKEN, never by absolute child index. A comment between a definition head and its
+   * `when` guard is an extra node that lands at index 1, so `child(1)` published the
+   * COMMENT as the function name (measured: list.ex:783; node shape in
+   * script/m14/tmp/c924-elixir-head-shape.ts — [0]left call, [1] comment,
+   * [2]operator `when`, [3]right guard).
+   */
+  private binaryPart(node: Node, part: "operator" | "left" | "right"): Node | null {
+    let opIdx = -1
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed) { opIdx = i; break }
+    }
+    if (opIdx === -1) return null
+    if (part === "operator") return node.child(opIdx)
+    // A COMMENT is not an operand. The measured shape of a comment-split head is
+    // [left call][comment][operator when][right guard], so the nearest named child before
+    // the operator IS the comment, and taking it as the head published the analyzer's
+    // Unknown fallback — caught by the publication dump's --all, NOT by the census probe
+    // (that file publishes the same name from its OTHER clauses, so the name was present
+    // for the wrong reason). Trivia is skipped on both sides.
+    const isTrivia = (c: Node) => c.type === "comment"
+    if (part === "left") {
+      for (let i = opIdx - 1; i >= 0; i--) {
+        const c = node.child(i)
+        if (c && c.isNamed && !isTrivia(c)) return c
+      }
+      return null
+    }
+    for (let i = opIdx + 1; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && c.isNamed && !isTrivia(c)) return c
+    }
+    return null
+  }
+
   private processFunction(node: Node, defType: string, ctx: ElixirContext, currentScope: Scope | undefined, scopeStack: Scope[]): boolean {
     // A def-shaped call nested in another declaration head is the inner
     // signature (`defmacro def(sig)`, `def defguard(...)`) — never a new
@@ -1111,10 +1148,13 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (sigNode) {
-       if (sigNode.type === "binary_operator" && sigNode.childCount > 1 && sigNode.child(1)?.text === "when") {
-          const guardExpr = sigNode.childCount > 2 ? sigNode.child(2) : null
+       // M60 (#924, elixir E): the operator and its operands come from binaryPart — a
+       // comment between the head and its guard is why child(1) named the function
+       // after a COMMENT.
+       if (sigNode.type === "binary_operator" && this.binaryPart(sigNode, "operator")?.text === "when") {
+          const guardExpr = this.binaryPart(sigNode, "right")
           if (guardExpr) guardList.push(guardExpr.text)
-          actualCall = sigNode.childCount > 0 ? sigNode.child(0) || undefined : undefined
+          actualCall = this.binaryPart(sigNode, "left") || undefined
           ctx.patterns["Pattern Matching"] = true
           hasPattern = true
        } else {
@@ -1148,9 +1188,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (actualCall.type === "identifier") {
             name = actualCall.text
         } else if (actualCall.type === "binary_operator") {
-            name = actualCall.childCount > 1 ? actualCall.child(1)?.text || "Unknown" : "Unknown"
-            parameters.push({ name: actualCall.childCount > 0 ? actualCall.child(0)?.text || "left" : "left", type: "dynamic" })
-            parameters.push({ name: actualCall.childCount > 2 ? actualCall.child(2)?.text || "right" : "right", type: "dynamic" })
+            // M60 (#924, elixir E): FIELD-free, index-free reads (see binaryPart).
+            name = this.binaryPart(actualCall, "operator")?.text || "Unknown"
+            parameters.push({ name: this.binaryPart(actualCall, "left")?.text || "left", type: "dynamic" })
+            parameters.push({ name: this.binaryPart(actualCall, "right")?.text || "right", type: "dynamic" })
         } else if (actualCall.type === "unary_operator") {
             // Unary operator definition (`def +value`) — the name is the
             // operator token, the operand the single parameter (ELXD24).
@@ -1306,6 +1347,29 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       // line. The ANALYZER-side line is per-node; the dedupe key still holds
       // the resolved name.
       let deps: { name: string; line: number }[] = [{ name: moduleName, line: argsNode.startPosition.row + 1 }]
+      // M60 (#924, elixir E): the group form is a DEPENDENCY shape, not an alias-only
+      // one. `import Module.Types.{Helpers, Descr}` names two modules —
+      // Module.Types.Helpers and Module.Types.Descr — while the brace group is an
+      // EXPRESSION, and it was published verbatim as the reference target (measured:
+      // module/types/pattern.ex:9). ELXD20 already ruled the shape for `alias` ("the
+      // bare prefix alone is not a module and emits nothing"); this applies the same
+      // rule to use/import/require. Alias REGISTRATION stays alias-only: a plain
+      // `import Foo.Bar` does not create the local alias `Bar` in Elixir, so this edit
+      // changes nothing but the published module NAMES.
+      if (target !== "alias") {
+          const groupDot = this.findChild(argsNode, (c) => c?.type === "dot" && !!this.findChild(c, (d) => d?.type === "tuple"))
+          const groupTuple = groupDot ? this.findChild(groupDot, (c) => c?.type === "tuple") : undefined
+          if (groupDot && groupTuple) {
+            deps = []
+            const rawPrefix = this.findChild(groupDot, (c) => c?.type === "alias")?.text
+              ?? this.findChild(groupDot, (c) => c?.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
+            const prefix = this.resolveAlias(resolveSelf(rawPrefix), ctx)
+            for (const kid of this.filterChildren(groupTuple, (c) => c?.type === "alias" || c?.type === "dot")) {
+              const full = prefix ? `${prefix}.${kid.text}` : kid.text
+              if (full) deps.push({ name: full, line: kid.startPosition.row + 1 })
+            }
+          }
+      }
       if (target === "alias") {
           // alias Foo.Bar          → aliases["Bar"] = "Foo.Bar"
           // alias Foo.Bar, as: Baz → aliases["Baz"] = "Foo.Bar"
