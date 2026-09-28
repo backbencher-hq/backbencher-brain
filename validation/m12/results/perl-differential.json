@@ -363,5 +363,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for perl. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for perl. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T02:54:46.175Z",
+    "contentSha256": "a5ad6da23bac1751909227d19889c61721b92e952ab4b4226d95047c66f928ac"
+  }
 }

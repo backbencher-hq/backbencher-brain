@@ -476,5 +476,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for vue. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for vue. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T02:54:46.584Z",
+    "contentSha256": "c9f87e991a1e1e9277e01d01cdd6e93806e98f65624449aa8cf730d0efd9b04b"
+  }
 }

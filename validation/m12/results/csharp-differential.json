@@ -598,5 +598,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for csharp. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for csharp. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T02:54:45.268Z",
+    "contentSha256": "a221bb14efd9ffe4b33d49a8b90ea7d555af0ec0a9002f9b8ed807c17af8ef60"
+  }
 }

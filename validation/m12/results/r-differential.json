@@ -377,5 +377,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for r. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for r. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T02:54:46.289Z",
+    "contentSha256": "db9846d49d596451bc5b4d52bd0399d35d35a2293481e60c731e6572b24276a8"
+  }
 }
