@@ -1329,6 +1329,107 @@ export function deriveJavaUsesTruth(root: any): { label: string; from: string; t
   return edges
 }
 
+// JD-J4: java `contains` truth, derived from the language's containment rule.
+//
+// A type CONTAINS its DECLARED members: fields, methods, constructors, nested
+// types, enum constants, and annotation elements. The container is named by its
+// own declaration, so both ends of the edge are names written in the file and
+// the rule needs no inference.
+//
+// What it deliberately does NOT derive: SYNTHESIZED members. java's analyzer
+// manufactures phantoms (Spring-Data repository methods carrying the interface's
+// range, lombok accessors carrying the field's) whose names appear nowhere in
+// the source. Those are runtime/framework inventions, not declarations, so the
+// language rule cannot produce them — and if the analyzer publishes them at
+// confidence 1.0 the differential will (correctly) report them.
+export function deriveJavaContainsTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (owner: string, target: string) => {
+    if (!owner || !target) return
+    const k = `${owner}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "contains", from: owner, target })
+  }
+  const named = (n: any): any[] => (n?.namedChildren ?? [])
+  const fieldName = (n: any, f: string): string | null => n?.childForFieldName?.(f)?.text ?? null
+  const TYPE = (t: string) => t === "class_declaration" || t === "interface_declaration" || t === "enum_declaration" ||
+                           t === "record_declaration" || t === "annotation_type_declaration"
+
+  // An anonymous class body is still a DECLARED member list — `new Runnable()
+  // { public void run() {} }` writes `run` in the file. The analyzer gives the
+  // container a synthetic name (`anonymous_Runnable`) because the source has no
+  // identifier for it, and matching is site-agnostic on label+target, so only
+  // the MEMBER names matter here. Measured: omitting this produced all 17
+  // UNEXPLAINED rows in the first adjudication (anonymous_Stack -> toString,
+  // anonymous_Runnable -> run, anonymous_FileFilter -> accept,
+  // anonymous_SimpleFileVisitor -> preVisitDirectory, ...).
+  const membersOf = (owner: string, body: any) => {
+    for (const c of named(body)) {
+      if (c.type === "field_declaration" || c.type === "constant_declaration") {
+        for (const d of named(c)) if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) push(owner, nm) }
+      } else if (c.type === "method_declaration" || c.type === "annotation_type_element_declaration" ||
+                 c.type === "constructor_declaration" || c.type === "compact_constructor_declaration") {
+        const nm = fieldName(c, "name"); if (nm) push(owner, nm)
+      } else if (c.type === "enum_constant") {
+        const nm = fieldName(c, "name"); if (nm) push(owner, nm)
+      } else if (TYPE(c.type)) {
+        const nm = fieldName(c, "name"); if (nm) push(owner, nm)
+      }
+    }
+  }
+  const walk = (n: any) => {
+    if (n.type === "object_creation_expression") {
+      // The analyzer gives an anonymous class a STABLE SYNTHETIC identity
+      // `anonymous_<Supertype>` (the plan's R10 addendum names one:
+      // `anonymous_QueryHandler`), because the source has no identifier to
+      // contain the members under. That name is derivable from the tree — it is
+      // the instantiated type's own name — so the oracle mirrors the CONVENTION
+      // rather than exempting the rows. Mirroring a naming convention is not the
+      // same as mirroring a semantic decision: the members inside are still
+      // derived from the language's containment rule above, and the edge can
+      // still go red if a member goes missing.
+      const t = n.childForFieldName("type")
+      for (const c of named(n)) if (c.type === "class_body") {
+        membersOf("(anonymous)", c)
+        if (t?.text) {
+          // `new Stack<>()` types the instantiation with type arguments; the
+          // synthetic name carries the ERASURE only, so strip them before the
+          // last-segment split (measured: `anonymous_Stack<>` vs `anonymous_Stack`).
+          const seg = t.text.split("<")[0]!.split(".").pop()!
+          push("(anonymous)", `anonymous_${seg}`)
+        }
+      }
+    }
+    if (TYPE(n.type)) {
+      const owner = fieldName(n, "name")
+      const body = n.childForFieldName("body")
+      const kids = body ? named(body) : named(n)
+      for (const c of kids) {
+        if (c.type === "field_declaration") {
+          for (const d of named(c)) if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
+        } else if (c.type === "constant_declaration") {
+          for (const d of named(c)) if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
+        } else if (c.type === "method_declaration" || c.type === "annotation_type_element_declaration") {
+          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
+        } else if (c.type === "constructor_declaration" || c.type === "compact_constructor_declaration") {
+          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
+        } else if (c.type === "enum_constant") {
+          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)
+        } else if (c.type === "enum_body_declarations") {
+          for (const d of named(c)) if (d.type === "enum_constant") { const nm = fieldName(d, "name"); if (nm) push(owner!, nm) }
+        } else if (TYPE(c.type)) {
+          const nm = fieldName(c, "name"); if (nm) push(owner!, nm)     // a nested type is a member too
+        }
+      }
+    }
+    for (const c of named(n)) walk(c)
+  }
+  walk(root)
+  return edges
+}
+
 const KOTLIN_STDLIB_PREFIXES = ["kotlin.", "kotlinx.", "java.", "javax.", "android.", "androidx."]
 const KOTLIN_STDLIB_EXACT = new Set([
   "println", "print", "readLine", "require", "check", "error",
@@ -15688,6 +15789,15 @@ async function main() {
         for (const e of deriveJavaUsesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // JD-J4 (M60 java deep review, 2026-09-27): CONTAINMENT, the third
+        // orphan and the second-largest measured class (810 edges per 60-file
+        // draw, 12% of the analyzer's whole output). JavaScript's `contains`
+        // joined its audited set in the previous wave (JD14) precisely because
+        // an unaudited label cannot be caught going missing even once; java's
+        // had the same gap and the same size of blind spot.
+        for (const e of deriveJavaContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "kotlin") {
         // M37.21 #610: kotlin calls oracle (JD-oracle gap, java precedent).
@@ -16092,7 +16202,7 @@ async function main() {
           // deriveJavaScriptEdges from the two language rules, in a pre-pass
           // outside the decorator-skipping walk, so it audits those nodes rather
           // than stepping around them.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
