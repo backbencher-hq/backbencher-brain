@@ -241,8 +241,23 @@ export namespace ASTEngine {
       startColumn: number
       endLine: number
       endColumn: number
+      /**
+       * Start of the range as reported by the parser. For web-tree-sitter this is a UTF-16
+       * CODE-UNIT offset, NOT a byte offset -- the two coincide for ASCII and diverge by
+       * the surplus UTF-8 bytes before the position otherwise, and upstream tree-sitter
+       * reports bytes. Passed through unchanged so existing consumers do not move; use
+       * `byteStart` when a byte offset is what is needed.
+       *
+       * NOTE: a second, near-identical `UniversalSymbol` exists in src/ast/types.ts and is
+       * imported by nothing. This declaration is the live one.
+       */
       startIndex?: number
+      /** End of the range, in the same unit as `startIndex`. */
       endIndex?: number
+      /** Start of the range in BYTES. Optional: populated per analyzer. */
+      byteStart?: number
+      /** End of the range in BYTES. Optional: populated per analyzer. */
+      byteEnd?: number
     }
     scope?: string // Class/namespace/module scope
     visibility?: "public" | "private" | "protected" | "internal" | "global" | "local" | string

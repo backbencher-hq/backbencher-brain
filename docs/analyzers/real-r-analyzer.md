@@ -406,10 +406,34 @@ a byte offset, and a remedy has to convert the range itself. The number is in th
 record under `unitFinding.REFUTED`, because a refuted hypothesis with a number attached is
 worth more than a plausible story, and it is what stopped the wrong fix being proposed.
 
-**Not fixed here.** The remedy is additive — `byteStart`/`byteEnd` alongside the existing
-fields, or one conversion at the engine boundary — and that touches a shared contract that
-~15 lanes and every downstream consumer read while other lanes are actively being worked
-on. It is a cross-lane decision, not this lane's to take alone.
+**Resolved, additively.** The decision was to add `byteStart`/`byteEnd` *alongside* the
+existing fields rather than convert them, so nothing that already reads
+`startIndex`/`endIndex` moves. `src/ast/engine.ts` declares them as optional, the unit of
+the existing fields is documented where they are declared, and
+`src/types/web-tree-sitter.d.ts` now states plainly that the library reports **UTF-16 code
+units** — which is the single most load-bearing fact in that file and was previously
+unstated.
+
+The result is measured on the same symbols with the same query, differing only in the unit:
+
+| range used | symbols located correctly |
+|---|---|
+| existing `startIndex`/`endIndex` (UTF-16) | 16,283 of 16,290 |
+| new `byteStart`/`byteEnd` (bytes) | **16,290 of 16,290** |
+
+All 16,290 symbols carry the byte fields, and every one resolves. **So the unit was the
+whole defect**, not a contributing factor — which the refuted hypothesis above had made
+uncertain, and which no amount of reasoning would have settled.
+
+The 7 non-ASCII symbols still fail through the *existing* fields. That is a decision, not
+an oversight: ~15 lanes read those fields today, and changing them is a breaking change
+made while other lanes are mid-flight. A consumer that needs a correct byte offset now has
+one.
+
+**One thing found on the way:** a second, near-identical `UniversalSymbol` exists in
+`src/ast/types.ts` and is imported by **nothing**. The first edit landed there, had no
+effect, and produced a type error that looked like the change was wrong. Two declarations of
+one contract is how they drift; the live one now says which it is.
 
 The existing range audit cannot see this: it recomputes offsets in the same unit the
 analyzer reports, so it is self-consistent by construction. **Two harnesses sharing a
