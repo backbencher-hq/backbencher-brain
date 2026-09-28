@@ -192,10 +192,7 @@ when it uses a regex. That artifact is **not committed here**: the census is
 HEAD-anchored by design (`script/m12/census-truth.ts` — the committed state is
 the truth, the working tree is "a disclosed preview, never the source of
 truth"), and regenerating it while other lanes have uncommitted analyzer work
-would record their preview as HEAD. The M12 gate owner regenerates it once those
-lanes land; `script/m12/verify-regex-census.ts` will report
-`MISSING real-cpp-analyzer.ts:1220` and `:1242` until then, and that is the gate
-correctly noticing that HEAD has changed.
+would record their preview as HEAD.
 
 This was **false until this round**, and the false claim was the more serious
 defect. The doc previously read:
@@ -319,10 +316,16 @@ lookups on a 123-entry set. No O(n²) or per-symbol O(n) scans.
   tree-sitter-cpp, not more analyzer code — and the analyzer-side amplification
   it caused is already fixed (D5).
 - **`validation/m12/results/regex-census.json` is stale for this lane** and is
-  deliberately left uncommitted here (see Regex inventory). It will report
-  `MISSING real-cpp-analyzer.ts:1220`/`:1242` — the gate noticing that HEAD
-  changed — until the M12 gate owner regenerates it after the other lanes' work
-  lands. The cpp lane's own zero is already gated by D6.
+  deliberately left uncommitted here (see Regex inventory). The committed census
+  still describes the previous HEAD, so
+  `script/m12/verify-regex-census.ts` now reports — measured, not predicted —
+  `STALE real-cpp-analyzer.ts:1220:/::|\s+/` and `:1242:/::|\s+/`: entries the
+  census lists that HEAD no longer has, which is the gate correctly noticing
+  that HEAD changed. It also reports 2 stale entries from other lanes
+  (`real-go-analyzer.ts:774`, `real-makefile-analyzer.ts:643`), so the gate is
+  red for more than this lane; the M12 gate owner regenerates the census once
+  those land. The cpp lane's own zero is gated by D6 meanwhile, which re-derives
+  it from the analyzer source on every run.
 - **The M14 whole-repo evidence artifacts (F1/F2/F3/F5) are stale** because they
   pin input hashes and this round changed `differential.ts` and the analyzer
   (alongside other lanes' work). They need regeneration on a machine holding the
