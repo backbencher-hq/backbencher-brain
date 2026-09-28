@@ -1,8 +1,8 @@
 {
   "probe": "M59.O1",
-  "at": "2026-09-27T00:35:56.010Z",
-  "atCommit": "c3c9490744e4de39d17df358fba93d60f3ac8c4d",
-  "treeModifiedInputs": 34,
+  "at": "2026-09-28T18:49:30.417Z",
+  "atCommit": "09a3150e7bda332e779510bf6a3e9411f8314d33",
+  "treeModifiedInputs": 18,
   "corpus": "$HOME/fixtures/repositories",
   "filesPerLang": 40,
   "oracleIndependence": {
@@ -34,6 +34,10 @@
       "importBareModuleUnchanged": true,
       "nonImportCallKeepsSeparator": true,
       "nonImportReferenceKeepsSeparator": true,
+      "cssNamespaceRefTakesTheSelectorLeaf": true,
+      "cssNamespaceTokenNeedsTheMarker": true,
+      "cssFontFaceUsesTakesTheFamily": true,
+      "cssFontFaceTokenNeedsTheMarker": true,
       "cssSelectorStripsSigil": true,
       "cssIdSelectorStripsSigil": true,
       "cssCommaGroupTakesFirstPart": true,
@@ -46,7 +50,11 @@
       "cssSynthesizedNameIsUncheckable": true,
       "cssScopeEdgeUsesTheRule": true,
       "cssNonScopeEdgeIsNotAScopeEdge": true,
-      "cssPlainEdgeIsNotAScopeEdge": true
+      "cssPlainEdgeIsNotAScopeEdge": true,
+      "cssLaneIsCssNamed": true,
+      "scssLaneIsCssNamed": true,
+      "svelteLaneIsNotCssNamed": true,
+      "scssCommaGroupYieldsTheFirstPart": true
     },
     "resolutionSelfTest": {
       "selfNewIsUncheckable": true,
@@ -69,10 +77,10 @@
   "totals": {
     "java": {
       "files": 40,
-      "rels": 6406,
-      "withLine": 6406,
+      "rels": 6424,
+      "withLine": 6424,
       "noLine": 0,
-      "consistent": 6387,
+      "consistent": 6405,
       "inconsistent": 0,
       "notCheckable": 19
     },
@@ -105,21 +113,21 @@
     },
     "typescript": {
       "files": 40,
-      "rels": 2074,
-      "withLine": 2074,
+      "rels": 2076,
+      "withLine": 2076,
       "noLine": 0,
-      "consistent": 2064,
+      "consistent": 2070,
       "inconsistent": 0,
-      "notCheckable": 10
+      "notCheckable": 6
     },
     "javascript": {
       "files": 40,
       "rels": 2066,
       "withLine": 2066,
       "noLine": 0,
-      "consistent": 2058,
+      "consistent": 2054,
       "inconsistent": 0,
-      "notCheckable": 8
+      "notCheckable": 12
     },
     "vue": {
       "files": 40,
@@ -132,10 +140,10 @@
     },
     "svelte": {
       "files": 40,
-      "rels": 111,
-      "withLine": 111,
+      "rels": 126,
+      "withLine": 126,
       "noLine": 0,
-      "consistent": 109,
+      "consistent": 124,
       "inconsistent": 0,
       "notCheckable": 2
     },
@@ -180,9 +188,9 @@
       "rels": 1976,
       "withLine": 1976,
       "noLine": 0,
-      "consistent": 1972,
+      "consistent": 1976,
       "inconsistent": 0,
-      "notCheckable": 4
+      "notCheckable": 0
     },
     "csharp": {
       "files": 40,
@@ -252,9 +260,9 @@
       "rels": 10682,
       "withLine": 10682,
       "noLine": 0,
-      "consistent": 10638,
+      "consistent": 10641,
       "inconsistent": 0,
-      "notCheckable": 44
+      "notCheckable": 41
     },
     "xml": {
       "files": 40,
@@ -267,12 +275,21 @@
     },
     "css": {
       "files": 40,
-      "rels": 84,
-      "withLine": 84,
+      "rels": 86,
+      "withLine": 86,
       "noLine": 0,
-      "consistent": 84,
+      "consistent": 86,
       "inconsistent": 0,
       "notCheckable": 0
+    },
+    "scss": {
+      "files": 40,
+      "rels": 973,
+      "withLine": 140,
+      "noLine": 833,
+      "consistent": 132,
+      "inconsistent": 0,
+      "notCheckable": 8
     }
   },
   "sampleHash": {
@@ -298,7 +315,8 @@
     "python": "fdad75a53a2d",
     "haskell": "188887c0827d",
     "xml": "c45fb1dcfac9",
-    "css": "5224314926ca"
+    "css": "5224314926ca",
+    "scss": "9f22c60424be"
   },
   "samplePins": {
     "java": [
@@ -4026,6 +4044,168 @@
         "file": "zig/lib/build-web/time_report.css",
         "contentSha": "08b8334a6e72"
       }
+    ],
+    "scss": [
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_alert.scss",
+        "contentSha": "af2e7c8c46fe"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_breadcrumb.scss",
+        "contentSha": "92939001561f"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_card.scss",
+        "contentSha": "05cb532ce289"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_common.scss",
+        "contentSha": "795dd16211d5"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_forms.scss",
+        "contentSha": "942b8182c7a9"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_icons.scss",
+        "contentSha": "8c8f74fab6d3"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_list-group.scss",
+        "contentSha": "56f438007f86"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_modal.scss",
+        "contentSha": "4c1fd7cfd62a"
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_nav.scss",
+        "contentSha": "6129d23f7833"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_alert.scss",
+        "contentSha": "57f14654a284"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_breadcrumb.scss",
+        "contentSha": "4c167ef0f756"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_buttons.scss",
+        "contentSha": "d803fc62afb4"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_card.scss",
+        "contentSha": "7c1962b1472d"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_codemirror.scss",
+        "contentSha": "61520d083deb"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_common.scss",
+        "contentSha": "638a9dcab9ab"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_designer.scss",
+        "contentSha": "8f08d231131a"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_enum-editor.scss",
+        "contentSha": "1ace0915af4f"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_forms.scss",
+        "contentSha": "daf91dbb6ed9"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_icons.scss",
+        "contentSha": "c90472c92c5d"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_list-group.scss",
+        "contentSha": "fa56d8bab6cc"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_modal.scss",
+        "contentSha": "df2a58de6b36"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_nav.scss",
+        "contentSha": "37a494f731e0"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_navbar.scss",
+        "contentSha": "b7be1d918282"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_navigation.scss",
+        "contentSha": "fadde14f3733"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_pagination.scss",
+        "contentSha": "d7b563d49f0d"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_print.scss",
+        "contentSha": "98c3ba09c2d5"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_reboot.scss",
+        "contentSha": "9aaa1153cb24"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_tables.scss",
+        "contentSha": "e96be9a5e648"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_variables.scss",
+        "contentSha": "e2105275e18a"
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/theme.scss",
+        "contentSha": "cd56d8e48073"
+      },
+      {
+        "file": "vue-core/packages/compiler-sfc/__tests__/fixture/import.scss",
+        "contentSha": "7f0b908f1513"
+      },
+      {
+        "file": "vue-element-admin/src/styles/btn.scss",
+        "contentSha": "c53beca56b50"
+      },
+      {
+        "file": "vue-element-admin/src/styles/element-ui.scss",
+        "contentSha": "51e792b283cb"
+      },
+      {
+        "file": "vue-element-admin/src/styles/element-variables.scss",
+        "contentSha": "b43b3310a049"
+      },
+      {
+        "file": "vue-element-admin/src/styles/index.scss",
+        "contentSha": "d740f3d60aec"
+      },
+      {
+        "file": "vue-element-admin/src/styles/mixin.scss",
+        "contentSha": "2586cfdc36c9"
+      },
+      {
+        "file": "vue-element-admin/src/styles/sidebar.scss",
+        "contentSha": "8ac7f5b1ec13"
+      },
+      {
+        "file": "vue-element-admin/src/styles/transition.scss",
+        "contentSha": "0fe79df226ae"
+      },
+      {
+        "file": "vue-element-admin/src/styles/variables.scss",
+        "contentSha": "aac56c3bb5e5"
+      },
+      {
+        "file": "vue-element-admin/src/views/dashboard/admin/components/TodoList/index.scss",
+        "contentSha": "b43a36aa18c1"
+      }
     ]
   },
   "sampleDrift": {
@@ -4142,6 +4322,11 @@
     "css": {
       "prev": "5224314926ca",
       "now": "5224314926ca",
+      "same": true
+    },
+    "scss": {
+      "prev": "9f22c60424be",
+      "now": "9f22c60424be",
       "same": true
     }
   },
@@ -4391,10 +4576,10 @@
       {
         "file": "sqlite/ext/jni/src/org/sqlite/jni/capi/SQLTester.java",
         "language": "java",
-        "rels": 969,
-        "withLine": 969,
+        "rels": 975,
+        "withLine": 975,
         "noLine": 0,
-        "consistent": 968,
+        "consistent": 974,
         "inconsistent": 0,
         "notCheckable": 1,
         "inconsistentSample": [],
@@ -4615,10 +4800,10 @@
       {
         "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/Sqlite.java",
         "language": "java",
-        "rels": 1364,
-        "withLine": 1364,
+        "rels": 1365,
+        "withLine": 1365,
         "noLine": 0,
-        "consistent": 1364,
+        "consistent": 1365,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -4639,10 +4824,10 @@
       {
         "file": "sqlite/ext/jni/src/org/sqlite/jni/wrapper1/Tester2.java",
         "language": "java",
-        "rels": 1079,
-        "withLine": 1079,
+        "rels": 1090,
+        "withLine": 1090,
         "noLine": 0,
-        "consistent": 1075,
+        "consistent": 1086,
         "inconsistent": 0,
         "notCheckable": 4,
         "inconsistentSample": [],
@@ -6407,10 +6592,10 @@
       {
         "file": "vue-core/packages-private/dts-test/setupHelpers.test-d.ts",
         "language": "typescript",
-        "rels": 264,
-        "withLine": 264,
+        "rels": 266,
+        "withLine": 266,
         "noLine": 0,
-        "consistent": 264,
+        "consistent": 266,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -6443,10 +6628,10 @@
       {
         "file": "vue-core/packages-private/global.d.ts",
         "language": "typescript",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 1,
+        "withLine": 1,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 1,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -6515,22 +6700,14 @@
       {
         "file": "vue-core/packages-private/sfc-playground/vite.config.ts",
         "language": "typescript",
-        "rels": 26,
-        "withLine": 26,
+        "rels": 25,
+        "withLine": 25,
         "noLine": 0,
         "consistent": 25,
         "inconsistent": 0,
-        "notCheckable": 1,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "exports",
-            "callee": "default",
-            "claimedLine": 11,
-            "sourceLine": "export default defineConfig({",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       },
       {
         "file": "vue-core/packages-private/template-explorer/src/index.ts",
@@ -6547,10 +6724,10 @@
       {
         "file": "vue-core/packages-private/template-explorer/src/options.ts",
         "language": "typescript",
-        "rels": 64,
-        "withLine": 64,
+        "rels": 66,
+        "withLine": 66,
         "noLine": 0,
-        "consistent": 64,
+        "consistent": 66,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -6559,22 +6736,14 @@
       {
         "file": "vue-core/packages-private/template-explorer/src/theme.ts",
         "language": "typescript",
-        "rels": 1,
-        "withLine": 1,
+        "rels": 0,
+        "withLine": 0,
         "noLine": 0,
         "consistent": 0,
         "inconsistent": 0,
-        "notCheckable": 1,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "exports",
-            "callee": "default",
-            "claimedLine": 1,
-            "sourceLine": "export default {",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       },
       {
         "file": "vue-core/packages-private/vite-debug/main.ts",
@@ -6591,30 +6760,22 @@
       {
         "file": "vue-core/packages-private/vite-debug/vite.config.ts",
         "language": "typescript",
-        "rels": 5,
-        "withLine": 5,
+        "rels": 4,
+        "withLine": 4,
         "noLine": 0,
         "consistent": 4,
         "inconsistent": 0,
-        "notCheckable": 1,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "exports",
-            "callee": "default",
-            "claimedLine": 4,
-            "sourceLine": "export default defineConfig({",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       },
       {
         "file": "vue-core/packages/global.d.ts",
         "language": "typescript",
-        "rels": 3,
-        "withLine": 3,
+        "rels": 4,
+        "withLine": 4,
         "noLine": 0,
-        "consistent": 3,
+        "consistent": 4,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -6768,22 +6929,14 @@
       {
         "file": "vue-core/vitest.config.ts",
         "language": "typescript",
-        "rels": 7,
-        "withLine": 7,
+        "rels": 6,
+        "withLine": 6,
         "noLine": 0,
         "consistent": 6,
         "inconsistent": 0,
-        "notCheckable": 1,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "exports",
-            "callee": "default",
-            "claimedLine": 5,
-            "sourceLine": "export default defineConfig({",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       }
     ],
     "javascript": [
@@ -7021,11 +7174,19 @@
         "rels": 20,
         "withLine": 20,
         "noLine": 0,
-        "consistent": 20,
+        "consistent": 19,
         "inconsistent": 0,
-        "notCheckable": 0,
+        "notCheckable": 1,
         "inconsistentSample": [],
-        "notCheckableSample": []
+        "notCheckableSample": [
+          {
+            "type": "exports",
+            "callee": "default",
+            "claimedLine": 19,
+            "sourceLine": "export default function handleClipboard(text, event) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
       },
       {
         "file": "vue-element-admin/src/utils/error-log.js",
@@ -7045,11 +7206,19 @@
         "rels": 7,
         "withLine": 7,
         "noLine": 0,
-        "consistent": 7,
+        "consistent": 6,
         "inconsistent": 0,
-        "notCheckable": 0,
+        "notCheckable": 1,
         "inconsistentSample": [],
-        "notCheckableSample": []
+        "notCheckableSample": [
+          {
+            "type": "exports",
+            "callee": "default",
+            "claimedLine": 5,
+            "sourceLine": "export default function getPageTitle(pageTitle) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
       },
       {
         "file": "vue-element-admin/src/utils/index.js",
@@ -7077,11 +7246,19 @@
         "rels": 28,
         "withLine": 28,
         "noLine": 0,
-        "consistent": 28,
+        "consistent": 27,
         "inconsistent": 0,
-        "notCheckable": 0,
+        "notCheckable": 1,
         "inconsistentSample": [],
-        "notCheckableSample": []
+        "notCheckableSample": [
+          {
+            "type": "exports",
+            "callee": "default",
+            "claimedLine": 8,
+            "sourceLine": "export default function openWindow(url, title, w, h) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
       },
       {
         "file": "vue-element-admin/src/utils/permission.js",
@@ -7089,11 +7266,19 @@
         "rels": 13,
         "withLine": 13,
         "noLine": 0,
-        "consistent": 13,
+        "consistent": 12,
         "inconsistent": 0,
-        "notCheckable": 0,
+        "notCheckable": 1,
         "inconsistentSample": [],
-        "notCheckableSample": []
+        "notCheckableSample": [
+          {
+            "type": "exports",
+            "callee": "default",
+            "claimedLine": 8,
+            "sourceLine": "export default function checkPermission(value) {",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
       },
       {
         "file": "vue-element-admin/src/utils/request.js",
@@ -8273,10 +8458,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in-transition/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8285,10 +8470,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-in/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8297,10 +8482,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out-transition/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8309,10 +8494,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-out/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8321,10 +8506,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-in/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8333,10 +8518,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition-out/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8345,10 +8530,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-duplicate-transition/input.svelte",
         "language": "svelte",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 2,
+        "withLine": 2,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 2,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -8357,10 +8542,10 @@
       {
         "file": "svelte/packages/svelte/tests/validator/samples/transition-on-component/input.svelte",
         "language": "svelte",
-        "rels": 2,
-        "withLine": 2,
+        "rels": 3,
+        "withLine": 3,
         "noLine": 0,
-        "consistent": 2,
+        "consistent": 3,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -11527,19 +11712,11 @@
         "rels": 183,
         "withLine": 183,
         "noLine": 0,
-        "consistent": 182,
+        "consistent": 183,
         "inconsistent": 0,
-        "notCheckable": 1,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "references",
-            "callee": "",
-            "claimedLine": 11,
-            "sourceLine": "encoding: offsets.Encoding = .@\"utf-16\",",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       },
       {
         "file": "zls/tests/add_analysis_cases.zig",
@@ -11919,33 +12096,11 @@
         "rels": 89,
         "withLine": 89,
         "noLine": 0,
-        "consistent": 86,
+        "consistent": 89,
         "inconsistent": 0,
-        "notCheckable": 3,
+        "notCheckable": 0,
         "inconsistentSample": [],
-        "notCheckableSample": [
-          {
-            "type": "uses",
-            "callee": "",
-            "claimedLine": 2199,
-            "sourceLine": "try error_builder.msgAtIndex(\"expected a `{s}` token here\", uri.raw, last_token_index, .err, .{expec",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          },
-          {
-            "type": "uses",
-            "callee": "",
-            "claimedLine": 2207,
-            "sourceLine": "const expected_token_type = expected_token.@\"1\";",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          },
-          {
-            "type": "uses",
-            "callee": "",
-            "claimedLine": 2208,
-            "sourceLine": "const expected_token_modifiers = expected_token.@\"2\";",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          }
-        ]
+        "notCheckableSample": []
       },
       {
         "file": "zls/tests/lsp_features/signature_help.zig",
@@ -17987,9 +18142,9 @@
         "rels": 586,
         "withLine": 586,
         "noLine": 0,
-        "consistent": 578,
+        "consistent": 581,
         "inconsistent": 0,
-        "notCheckable": 8,
+        "notCheckable": 5,
         "inconsistentSample": [],
         "notCheckableSample": [
           {
@@ -18009,13 +18164,6 @@
           {
             "type": "contains",
             "callee": "",
-            "claimedLine": 396,
-            "sourceLine": "instance (Show k, Show v) => Show (VersionedMap k v) where",
-            "reason": "target is not a written token (synthetic or unresolved-name shape)"
-          },
-          {
-            "type": "contains",
-            "callee": "",
             "claimedLine": 400,
             "sourceLine": "(==) a b = stateIsQuickEqual a b || stateIsSlowEqual a b",
             "reason": "target is not a written token (synthetic or unresolved-name shape)"
@@ -18023,8 +18171,15 @@
           {
             "type": "contains",
             "callee": "",
-            "claimedLine": 402,
-            "sourceLine": "instance (Eq k, Eq v) => Eq (VersionedMap k v) where",
+            "claimedLine": 403,
+            "sourceLine": "(==) a b = vmIsQuickEqual a b || mapStorage a == mapStorage b",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "contains",
+            "callee": "",
+            "claimedLine": 812,
+            "sourceLine": "lookupStack' functionOnly get dep def ctx key = do",
             "reason": "target is not a written token (synthetic or unresolved-name shape)"
           }
         ]
@@ -18942,10 +19097,10 @@
       {
         "file": "svelte/packages/svelte/tests/css/samples/supports-namespace/expected.css",
         "language": "css",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 1,
+        "withLine": 1,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 1,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -18978,10 +19133,10 @@
       {
         "file": "svelte/packages/svelte/tests/css/samples/supports-query/expected.css",
         "language": "css",
-        "rels": 0,
-        "withLine": 0,
+        "rels": 1,
+        "withLine": 1,
         "noLine": 0,
-        "consistent": 0,
+        "consistent": 1,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],
@@ -19330,6 +19485,532 @@
         "withLine": 2,
         "noLine": 0,
         "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      }
+    ],
+    "scss": [
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_alert.scss",
+        "language": "scss",
+        "rels": 4,
+        "withLine": 0,
+        "noLine": 4,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_breadcrumb.scss",
+        "language": "scss",
+        "rels": 3,
+        "withLine": 2,
+        "noLine": 1,
+        "consistent": 2,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_card.scss",
+        "language": "scss",
+        "rels": 7,
+        "withLine": 1,
+        "noLine": 6,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_common.scss",
+        "language": "scss",
+        "rels": 275,
+        "withLine": 18,
+        "noLine": 257,
+        "consistent": 18,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_forms.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_icons.scss",
+        "language": "scss",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_list-group.scss",
+        "language": "scss",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_modal.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/original/scss/_nav.scss",
+        "language": "scss",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_alert.scss",
+        "language": "scss",
+        "rels": 5,
+        "withLine": 0,
+        "noLine": 5,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_breadcrumb.scss",
+        "language": "scss",
+        "rels": 5,
+        "withLine": 1,
+        "noLine": 4,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_buttons.scss",
+        "language": "scss",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_card.scss",
+        "language": "scss",
+        "rels": 8,
+        "withLine": 1,
+        "noLine": 7,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_codemirror.scss",
+        "language": "scss",
+        "rels": 5,
+        "withLine": 3,
+        "noLine": 2,
+        "consistent": 3,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_common.scss",
+        "language": "scss",
+        "rels": 299,
+        "withLine": 16,
+        "noLine": 283,
+        "consistent": 16,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_designer.scss",
+        "language": "scss",
+        "rels": 41,
+        "withLine": 15,
+        "noLine": 26,
+        "consistent": 15,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_enum-editor.scss",
+        "language": "scss",
+        "rels": 10,
+        "withLine": 0,
+        "noLine": 10,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_forms.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_icons.scss",
+        "language": "scss",
+        "rels": 1,
+        "withLine": 0,
+        "noLine": 1,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_list-group.scss",
+        "language": "scss",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_modal.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_nav.scss",
+        "language": "scss",
+        "rels": 8,
+        "withLine": 0,
+        "noLine": 8,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_navbar.scss",
+        "language": "scss",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_navigation.scss",
+        "language": "scss",
+        "rels": 50,
+        "withLine": 0,
+        "noLine": 50,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_pagination.scss",
+        "language": "scss",
+        "rels": 3,
+        "withLine": 0,
+        "noLine": 3,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_print.scss",
+        "language": "scss",
+        "rels": 22,
+        "withLine": 14,
+        "noLine": 8,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_reboot.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_tables.scss",
+        "language": "scss",
+        "rels": 12,
+        "withLine": 1,
+        "noLine": 11,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/_variables.scss",
+        "language": "scss",
+        "rels": 9,
+        "withLine": 9,
+        "noLine": 0,
+        "consistent": 9,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "phpmyadmin/public/themes/pmahomme/scss/theme.scss",
+        "language": "scss",
+        "rels": 21,
+        "withLine": 21,
+        "noLine": 0,
+        "consistent": 21,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-core/packages/compiler-sfc/__tests__/fixture/import.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/btn.scss",
+        "language": "scss",
+        "rels": 12,
+        "withLine": 8,
+        "noLine": 4,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 7,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 17,
+            "sourceLine": "@include colorBtn($blue)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 21,
+            "sourceLine": "@include colorBtn($light-blue)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 25,
+            "sourceLine": "@include colorBtn($red)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 29,
+            "sourceLine": "@include colorBtn($pink)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          },
+          {
+            "type": "uses",
+            "callee": "",
+            "claimedLine": 33,
+            "sourceLine": "@include colorBtn($green)",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "vue-element-admin/src/styles/element-ui.scss",
+        "language": "scss",
+        "rels": 9,
+        "withLine": 0,
+        "noLine": 9,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/element-variables.scss",
+        "language": "scss",
+        "rels": 2,
+        "withLine": 2,
+        "noLine": 0,
+        "consistent": 1,
+        "inconsistent": 0,
+        "notCheckable": 1,
+        "inconsistentSample": [],
+        "notCheckableSample": [
+          {
+            "type": "imports",
+            "callee": "",
+            "claimedLine": 25,
+            "sourceLine": "@import \"~element-ui/packages/theme-chalk/src/index\";",
+            "reason": "target is not a written token (synthetic or unresolved-name shape)"
+          }
+        ]
+      },
+      {
+        "file": "vue-element-admin/src/styles/index.scss",
+        "language": "scss",
+        "rels": 14,
+        "withLine": 6,
+        "noLine": 8,
+        "consistent": 6,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/mixin.scss",
+        "language": "scss",
+        "rels": 14,
+        "withLine": 14,
+        "noLine": 0,
+        "consistent": 14,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/sidebar.scss",
+        "language": "scss",
+        "rels": 51,
+        "withLine": 0,
+        "noLine": 51,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/transition.scss",
+        "language": "scss",
+        "rels": 0,
+        "withLine": 0,
+        "noLine": 0,
+        "consistent": 0,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/styles/variables.scss",
+        "language": "scss",
+        "rels": 8,
+        "withLine": 8,
+        "noLine": 0,
+        "consistent": 8,
+        "inconsistent": 0,
+        "notCheckable": 0,
+        "inconsistentSample": [],
+        "notCheckableSample": []
+      },
+      {
+        "file": "vue-element-admin/src/views/dashboard/admin/components/TodoList/index.scss",
+        "language": "scss",
+        "rels": 56,
+        "withLine": 0,
+        "noLine": 56,
+        "consistent": 0,
         "inconsistent": 0,
         "notCheckable": 0,
         "inconsistentSample": [],

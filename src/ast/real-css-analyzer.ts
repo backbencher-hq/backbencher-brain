@@ -1621,13 +1621,39 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // would be the same as the selector's here — but the SELECTOR is the name,
     // and taking the name is the rule that survives a formatting change.
     const selectorLine = this.lineOf(selectorsNode)
+    //
+    // …and that claim is TRUE only when the name is actually written on that line,
+    // which it is not for a NESTED rule. `selectorText` is the RESOLVED name: a
+    // nested rule composes to parent + own (`th` under `table … tr:nth-child(odd)`
+    // resolves to `table … tr:nth-child(odd) th`), so its line writes only `th`.
+    // The five scope edges below claimed the line regardless, and asserted a name
+    // the line does not contain.
+    //
+    // This is not new behaviour being invented here — it is the lane's OWN rule,
+    // applied one edge too few. The nested-selector edge below already compared
+    // the written text with the composed name and dropped the line when they
+    // differed; testing for `&` is not enough, because an implicit descendant
+    // (`.a { .b { … } }`, no `&` at all) composes too. The scope edges were the
+    // same case with the test missing, which is why they were the last ones to
+    // fail: nothing in pure CSS nests the way SCSS does, so the CSS corpus rarely
+    // reaches them, and the 40-file M59 sample read 86/86 on the strength of that
+    // rarity. The SCSS lane, whose entire corpus nests, exposed all 10 at once.
+    //
+    // So the test is hoisted here and both families consume one answer. A name the
+    // line does not write gets NO line, which is the same choice the nested edge
+    // already made and for the same stated reason: never checkable rather than
+    // silently unaccused, and never a claim that accuses a correct edge.
+    const asWritten = selectorsNode.text.trim()
+    const composedName = collapseWhitespace(asWritten) !== selectorText
+    const nameLine = composedName ? {} : { line_number: selectorLine }
+    const nameProvenance = composedName ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}
     if (media) {
       ctx.relationships.push({
         source: media,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isMediaScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isMediaScope: true, ...nameProvenance },
       })
     }
     // `@supports` is a conditional scope: the same shape as `@media`, so the same
@@ -1639,8 +1665,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: supports,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isSupportsScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isSupportsScope: true, ...nameProvenance },
       })
     }
     if (layer) {
@@ -1648,8 +1674,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: layer,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isLayerScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isLayerScope: true, ...nameProvenance },
       })
     }
     if (container) {
@@ -1657,8 +1683,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: container,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isContainerScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isContainerScope: true, ...nameProvenance },
       })
     }
     if (scope) {
@@ -1666,8 +1692,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: scope,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isScopeScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isScopeScope: true, ...nameProvenance },
       })
     }
     if (parentSelector) {
@@ -1692,17 +1718,21 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // INCONSISTENT edges left after the `&` test. The exact test is whether the
       // two texts coincide — cheap, and it keeps a real line in the one case
       // where the name genuinely is written.
-      const asWritten = selectorsNode.text.trim()
-      const synthesized = collapseWhitespace(asWritten) !== selectorText
+      //
+      // That test, and the two answers it drives, are the ones hoisted above as
+      // `asWritten` / `composedName` / `nameLine` / `nameProvenance`: this edge and
+      // the five scope edges ask the same question of the same two strings, so they
+      // read one answer rather than each re-deriving it. Two copies of a
+      // correctness rule is one copy waiting for the other to be edited.
       ctx.relationships.push({
         source: parentSelector,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        ...(synthesized ? {} : { line_number: selectorLine }),
+        ...nameLine,
         metadata: {
           cssSpecific: true,
           isNestedSelector: true,
-          ...(synthesized ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}),
+          ...nameProvenance,
         },
       })
     }
