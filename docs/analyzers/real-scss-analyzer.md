@@ -151,11 +151,58 @@ per read would be publishing a use as a declaration.
 
 ### Not yet verified
 
-- **No independent oracle.** The CSS lane's differential derives its truth from the
-  parse tree without importing the analyzer; the SCSS lane has **no equivalent**, so its
-  output is currently checked only against its own fixtures and mutants. Both of those
-  are pins this lane wrote, which is a weaker guarantee than a second derivation.
 - **No completeness spec** and no F3 ladder position for this lane.
+
+### The differential runs, and it is NOT green — with a measured cause
+
+`deriveScssEdges` exists (in `script/m14/differential.ts`, importing nothing from
+`RealScssAnalyzer`) and the lane is registered in the differential. On element-plus,
+40 files:
+
+```
+TR=231  cov=122 (52.8%)  MISSING=109  unexplained=11 (9.6%)
+```
+
+That row is **not** 52.8% good, and the cause is measured rather than guessed. Every
+divergence is in two classes, and both are the **CSS oracle's**, not this lane's:
+
+| class | count | cause |
+| --- | --- | --- |
+| `contains` | 44 missing, 7 unexplained | the CSS oracle does not resolve a comma group through a nesting parent |
+| `references` | 9 unexplained | the analyzer emits a `var(--x)` read unconditionally; the oracle only derives a read whose property the file declares |
+
+The first has a four-line minimal reproduction that is **grammar-independent** — it
+reproduces identically under `tree-sitter-css` and `tree-sitter-scss`:
+
+```scss
+.doc-content {
+  h1, h2 { color: red; }
+}
+```
+
+```
+analyzer publishes   .doc-content h1, .doc-content h2   <- each item resolved
+CSS oracle derives   .doc-content h1, h2                 <- the authored text
+```
+
+The analyzer's spelling is the correct one: it is what makes both ends of the edge
+resolve, and resolving each item is why a comma group's members are individually
+addressable at all. The CSS lane's own differential is 100% because its corpora do not
+exercise this shape — which is the same lesson the lane has learned twice today, in a
+third place. It is a real defect in a **shared, gated** component, discovered by a lane
+that is not the one that owns it.
+
+It has deliberately **not** been fixed here. `deriveCssEdges` is shared with a gated
+lane that currently passes 8/8 and 100%, it lives in a file another lane is editing, and
+the change needs to be measured against **both** lanes at once — a fix that improves
+SCSS and moves CSS is not obviously a fix. That is a deliberate, declared deferral with
+a reproduction attached, not an oversight.
+
+The registration itself is still correct and was needed to get here: with `scss` in no
+comparable-label allowlist, **every** analyzer edge was filtered out and the row read
+`cov=0 MISSING=45` — which looks like an analyzer that emits nothing rather than a
+comparison that was never switched on. That is the fourth instance of the same harness
+gap the `#910` (c imports), `G7` (groovy uses) and powershell-`contains` notes record.
 
 ## Three defects the fixtures found in the first implementation
 
