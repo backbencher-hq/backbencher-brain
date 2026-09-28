@@ -62,6 +62,16 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   // that shape. For CSS it confirms all 94 distinct types the corpus produces are
   // covered by script/m14/spec/css-completeness.json.
   css: { wasm: "tree-sitter-css.wasm", ext: [".css"], repo: "svelte" },
+  // scss joins the census on `element-plus`, NOT on svelte. That is deliberate and it
+  // is the opposite choice from css: `.scss` files exist in 4 corpora and 170 of the
+  // 254 are element-plus, which is also the HARD one — 90 of 160 parse clean after
+  // the two grammar patches, against 52 of 74 for phpmyadmin. Pointing the census at
+  // an easy corpus would confirm the lane against the shapes it already handles.
+  //
+  // F8 is the gate that finds a node type the CORPUS produces which the analyzer AND
+  // the oracle both skip — a fixture is written from what its author already knew to
+  // write, so only the corpus can see a shape nobody thought to pin.
+  scss: { wasm: "tree-sitter-scss.wasm", ext: [".scss"], repo: "element-plus" },
   c: { wasm: "tree-sitter-c.wasm", ext: [".c", ".h"], repo: "sqlite" },
   cpp: { wasm: "tree-sitter-cpp.wasm", ext: [".cc", ".cpp", ".h", ".hpp"], repo: "fmt" },
   rust: { wasm: "tree-sitter-rust.wasm", ext: [".rs"], repo: "ripgrep" },
@@ -151,9 +161,23 @@ async function main() {
     // Spec-classified types: every category counts as "known" — the census
     // demands a RULING, not a specific verdict.
     const classified = new Set<string>()
-    for (const t of spec.handled_verified?.types ?? []) classified.add(t)
-    for (const t of spec.internal_silent?.types ?? []) classified.add(t)
-    for (const t of spec.gap?.types ?? []) classified.add(t)
+    // `types` is a LIST in the css/jvm-family specs and a keyed OBJECT in the scss
+    // one, which carries per-type evidence (`inCorpus`, `note`, `reachedBy`). The
+    // first version assumed the list shape and threw `TypeError: {} is not iterable`
+    // on the scss spec — so the lane could not be registered at all, which is the gate
+    // refusing a format rather than a lane.
+    //
+    // Both shapes are read here rather than by normalising the scss spec down to a
+    // list, because the per-type evidence is the part that makes the spec worth having:
+    // a list of names cannot say which types the corpus has never exercised, and that
+    // distinction is the one this gate exists to surface.
+    const addTypes = (v: any): void => {
+      if (Array.isArray(v)) for (const t of v) classified.add(String(t))
+      else if (v && typeof v === "object") for (const k of Object.keys(v)) classified.add(k)
+    }
+    addTypes(spec.handled_verified?.types)
+    addTypes(spec.internal_silent?.types)
+    addTypes(spec.gap?.types)
     for (const t of spec.design_decision?.types ?? []) classified.add(t)
     for (const d of spec.design_decision?.decisions ?? []) {
       for (const t of String(d.node_type ?? "").split(",")) {
