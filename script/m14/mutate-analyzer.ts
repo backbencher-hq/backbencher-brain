@@ -23,6 +23,7 @@ import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
 import { YAML_MUTANTS } from "../m60/yaml-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
 import { SCSS_MUTANTS } from "../m60/scss-mutants"
+import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2121,6 +2122,70 @@ function dropBashAssignedInFileLabel(r: any) {
   }
 }
 
+/**
+ * JSON mutants — one per defect class this lane actually found, because a mutant
+ * suite that is not derived from real defects is a suite that proves the suite.
+ *
+ * Every transform below re-introduces a bug that was measured, in the form it took.
+ * The descriptions name the class and the file, so a survivor is traceable to the
+ * measurement that said it was fixed.
+ */
+const stripJsonLines = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; void line_number; return rest }),
+})
+/** BD-ontology / the imports finding: drop the file-naming `$ref` dependency. */
+const dropJsonImports = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "imports"),
+})
+/** BD-ref-target: resolve a `$ref` to the bare NAME at that location instead of the location. */
+const jsonRefTargetIsName = (r: any) => {
+  const pathToName = new Map<string, string>()
+  for (const s of r.symbols ?? []) {
+    const q = String(s.qualifiedName ?? "")
+    if (q) pathToName.set(q, String(s.name))
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (String(x.type ?? "").toLowerCase() !== "references") return x
+      const name = pathToName.get(String(x.target))
+      return name ? { ...x, target: name } : x
+    }),
+  }
+}
+/** BD-owner: a nested key's owner becomes its qualified PATH again. */
+const jsonOwnerIsPath = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    String(x.type ?? "").toLowerCase() === "contains" && String(x.source).includes(".")
+      ? { ...x, source: String(x.source).split(".").slice(0, -1).join(".") }
+      : x,
+  ),
+})
+/** BD-array-identity: an array item named by the PATH's last dot-segment, dotted modules and all. */
+const jsonArrayItemByPathSegment = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    String(x.type ?? "").toLowerCase() === "contains" && /\[\d+\]$/.test(String(x.target))
+      ? { ...x, target: String(x.target).split(".").slice(-1)[0] }
+      : x,
+  ),
+})
+/** BD-array-identity: an array's keys attributed to the ARRAY rather than to the element. */
+const jsonArrayChildOwnerIsArray = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "contains") return x
+    // The SOURCE is the array element (`objs[0] -> a`), so the SOURCE is what
+    // carries `[n]`. Testing the target made this a no-op: it survived because it
+    // never fired, which is the worst way for a mutant to survive — it looks like
+    // the analyzer is right when the mutant was simply broken.
+    const src = String(x.source)
+    return /\[\d+\]$/.test(src) ? { ...x, source: src.split("[")[0] } : x
+  }),
+})
 /** BD8b: drop the `overrides` edge a redefinition earns, restoring the state the
  *  ontology gate falsified. A redeclared function goes back to being two
  *  unconnected `contains` rows, which is exactly what the lane shipped for the
@@ -2652,6 +2717,45 @@ function svelteRuneInvocationDropped() {
   })
 }
 
+/** D12, obligation 1 of 2: the MEMBER-READ carriers are dropped. `bind:`, `class:`
+ *  and `style:` each read a component member in the template, which is the S1 case,
+ *  and every one of them was silent before the ruling — about 1,857 corpus
+ *  occurrences, including `bind:value` at 581, the most common attribute
+ *  interaction in the corpus. Removing them drops the component's primary data-flow
+ *  surface while the document still looks analysed.
+ *
+ *  Caught by svelte/directive-carriers.
+ */
+function svelteMemberReadCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((e: any) => {
+      const c = String(e?.metadata?.context ?? "")
+      return !(e.type === "uses" && /Svelte (bind|class|style) directive/.test(c))
+    }),
+  })
+}
+
+/** D12, obligation 2 of 2: the FRAMEWORK-INVOKED carriers are dropped. `use:`,
+ *  `transition:`, `in:`, `out:` and `animate:` are call sites on exactly the
+ *  argument that made `on:click` one under D8 — Svelte calls an action on mount and
+ *  a transition on state change by the same mechanism. Their silence was an
+ *  internal inconsistency rather than a position, and the mutant restores it.
+ *
+ *  Selective by metadata marker, so the `on:` handler edges survive and a failure is
+ *  attributable to this family rather than to the D8 pass.
+ *
+ *  Caught by svelte/directive-carriers.
+ */
+function svelteInvokedCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (e: any) => !(e.type === "calls" && /Svelte (use|transition|in|out|animate) directive/.test(String(e?.metadata?.context ?? ""))),
+    ),
+  })
+}
+
 export const MUTANTS: Mutant[] = [
   // ---------------------------------------------------------------- bash (#277)
   {
@@ -2807,6 +2911,48 @@ export const MUTANTS: Mutant[] = [
     defectClass: "missing-relationship-type",
     description: "BD8b regression: a function redefinition no longer emits `overrides`, restoring the omission the ontology-coverage gate falsified — two unconnected `contains` rows for one name, and `overrides` back to zero across the ontology (redefinition-overrides)",
     transform: dropBashOverridesEdge,
+  },
+  {
+    id: "json/edge-lines-dropped",
+    language: "json",
+    defectClass: "dishonest-payload",
+    description: "the original state: `line_number` occurred ZERO times in the analyzer, so every json edge was stored with a NULL line while symbols carried `range` throughout (json-contract)",
+    transform: stripJsonLines,
+  },
+  {
+    id: "json/imports-dropped",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description: "BD-ontology regression: a `$ref` naming another file stops emitting `imports`, restoring the omission the ontology gate falsified — 58 file-to-file $refs across 12 files (json-contract)",
+    transform: dropJsonImports,
+  },
+  {
+    id: "json/ref-target-is-name",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-ref-target regression: a `$ref` resolves to the bare NAME at that location rather than the LOCATION, which disagrees with the analyzer on 91% of every references edge in the corpus (json-contract)",
+    transform: jsonRefTargetIsName,
+  },
+  {
+    id: "json/contains-source-is-path",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-owner regression: a nested key's owner is its qualified PATH again, so its `contains` edges resolve to nothing — invisible at the top level, which is why it survived a whole wave (json-contract)",
+    transform: jsonOwnerIsPath,
+  },
+  {
+    id: "json/array-item-by-path-segment",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-array-identity regression: an array item is named by the PATH's last dot-segment, so any dotted module name truncates — `index.svelte.warnings.json` gave owners of `warnings` (json-contract)",
+    transform: jsonArrayItemByPathSegment,
+  },
+  {
+    id: "json/array-child-owner-is-array",
+    language: "json",
+    defectClass: "dishonest-identity",
+    description: "BD-array-identity regression: an element's own keys are attributed to the ARRAY rather than to the element, so `a` reads as inside `objs` when it is inside `objs[0]` (json-contract)",
+    transform: jsonArrayChildOwnerIsArray,
   },
   {
     id: "bash/orphan-edge-source",
@@ -6803,6 +6949,20 @@ export const MUTANTS: Mutant[] = [
     defectClass: "underclaim",
     description: "ERROR RECOVERY: the walk STOPS at the first recovery node. Nothing counts symbols-per-file against a floor, so a silently half-analysed document reads as analysed — and the module symbol spans the whole root, so a truncated document still has an identity and every visible count stays plausible. Svelte makes it sharper than html: an unclosed `{#if}` does not clip the damage to the broken line, the parser's ERROR span swallows the REST OF THE FILE, so the tail is valid markup inside the error region. Measured on the real corpus, 2.44% of files carry recovery nodes, and when one does what follows is usually good content — a stopping walk discards the majority of a damaged document. Modelled by dropping every relationship and symbol at or after the FIRST reported error, reading the analyzer's own diagnostic rather than the engine's so the mutated result still looks correctly reported. Caught by svelte/error-recovery, whose `Beta` at L12 and `uses shared` at L12 sit after the error and inside its span.",
     transform: svelteRecoveryStopsWalk(),
+  },
+  {
+    id: "svelte/member-read-carriers-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D12 obligation 1 of 2: the MEMBER-READ carriers are dropped. `bind:`, `class:` and `style:` each read a component member in the template, which is the S1 case, and every one was silent before the ruling — roughly 1,857 corpus occurrences including `bind:value` at 581, the most common attribute interaction in the corpus. Removing them drops the component's primary data-flow surface while the document still looks analysed. Caught by svelte/directive-carriers.",
+    transform: svelteMemberReadCarriersDropped(),
+  },
+  {
+    id: "svelte/invoked-carriers-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D12 obligation 2 of 2: the FRAMEWORK-INVOKED carriers are dropped. `use:`, `transition:`, `in:`, `out:` and `animate:` are call sites on exactly the argument that made `on:click` one under D8 — Svelte calls an action on mount and a transition on state change by the same mechanism. Their silence was an internal inconsistency rather than a position, and the mutant restores it. Selective by metadata marker so the `on:` handler edges survive and a failure is attributable to this family rather than to the D8 pass. Caught by svelte/directive-carriers.",
+    transform: svelteInvokedCarriersDropped(),
   },
   {
     id: "svelte/rune-invocation-dropped",
@@ -12547,6 +12707,7 @@ export const MUTANTS: Mutant[] = [
   ...YAML_MUTANTS,
   ...CSS_MUTANTS,
   ...SCSS_MUTANTS,
+  ...MARKDOWN_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

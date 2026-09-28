@@ -41,37 +41,129 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     const errors: ASTEngine.ParseError[] = []
     const patterns: string[] = []
 
-    // O(1) identity dedupe for symbols (qualified by owner chain) and
-    // relationships (source + type + target triples).
-    const symbolIds = new Set<string>()
+    // A heading, a table and a code fence are SITES, not declarations: the same
+    // construct can legitimately appear twice under one owner (two `scala` examples
+    // in one section, `## Example` in every section). Keying them by `owner + name`
+    // dropped every repeat, and it dropped the repeat's `contains` edge with it —
+    // measured on this lane's own pinned corpus (scala3@18df09c0, 738 tracked .md
+    // files) at 1,584 of 3,742 fenced code blocks erased, across 406 of 738 files.
+    //
+    // The first occurrence therefore keeps its EXACT previous spelling, so every
+    // existing fixture, ground-truth fact and doc claim survives byte-for-byte, and
+    // only the Nth repeat is disambiguated — the `uniquePath` rule yaml already
+    // uses for duplicate mapping keys (real-yaml-analyzer.ts), on the same principle:
+    // a name that repeats is a fact about the document, and hiding it is worse than
+    // spelling it.
+    const siteOccurrences = new Map<string, number>()
+    // Relationship identity, per the M59 #822 rule stated below. O(1) per edge.
     const relIds = new Set<string>()
 
-    const addRel = (source: string, type: string, target: string, metadata: Record<string, unknown>) => {
+    /**
+     * A site's identity, in the two spellings the store and the graph need.
+     *
+     * `id` is the fully-qualified, ordinaled path — published as the symbol's `id` and
+     * `qualifiedName`, so two occurrences of the same construct never share a row key.
+     *
+     * `target` is the spelling an EDGE addresses the site by, and it is the CONTRACT
+     * spelling for a first occurrence: the bare construct name, exactly as the lane
+     * always wrote it. Only a repeat is ordinaled. This split is what keeps the round
+     * additive — the 59 hand-audited M12 ground-truth facts and 31 contract checks
+     * name bare targets, and a fix that cannot see the defect is not allowed to break
+     * the evidence that could not see it either.
+     *
+     * yaml's `uniquePath` is the same rule one level up: `if (!isDuplicate) return base`.
+     */
+    const siteId = (qualifiedBase: string, name: string): { id: string; target: string; repeat: boolean } => {
+      const n = (siteOccurrences.get(qualifiedBase) ?? 0) + 1
+      siteOccurrences.set(qualifiedBase, n)
+      return {
+        id: n === 1 ? qualifiedBase : `${qualifiedBase}#${n}`,
+        target: n === 1 ? name : `${name}#${n}`,
+        repeat: n > 1,
+      }
+    }
+
+    // A relationship's identity is (source, type, target, SITE LINE) — the M59 #822
+    // rule, and the same key the store's own relationship primary key uses. Without
+    // the line, the two `heading -> code_block.scala` edges of a two-block section
+    // are byte-identical strings and `INSERT OR IGNORE` keeps one of them, so a
+    // per-site symbol would still be unreachable from the graph.
+    const addRel = (
+      source: string,
+      type: string,
+      target: string,
+      metadata: Record<string, unknown>,
+      line?: number,
+    ) => {
       if (!source || !target || source === target) return
-      const id = `${source}\u0000${type}\u0000${target}`
+      const at = typeof line === "number" && line > 0 ? line : 0
+      const id = `${source}\u0000${type}\u0000${target}\u0000${at}`
       if (relIds.has(id)) return
       relIds.add(id)
-      relationships.push({ source, target, type: type as ASTEngine.RelationshipType, confidence: 1.0, metadata })
+      // M59 (#825) one-line base: 1-based, taken from the node that CARRIES THE NAME
+      // the edge is about — the same rule typescript documents at its own
+      // `line_number` emission. Written as a spread on the literal rather than an
+      // assignment afterwards, because that is the spelling 32 sibling lanes use and
+      // because M60.P1 measures a lane's emission with the source needle
+      // `/\bline_number\s*:/` against the analyzer file: an assignment satisfies the
+      // behaviour and not the measurement, and a matrix that cannot see a field a
+      // lane genuinely publishes is a matrix that will call the field absent.
+      relationships.push({
+        source,
+        target,
+        type: type as ASTEngine.RelationshipType,
+        confidence: 1.0,
+        metadata,
+        ...(at > 0 ? { line_number: at } : {}),
+      })
     }
 
-    // Inline trees from the engine: aligned arrays of parsed inline trees and
-    // the byte offset of the corresponding `inline` node in `content`.
+    // Inline trees from the engine: aligned arrays of parsed inline trees, the byte
+    // offset of the corresponding `inline` node in `content`, and that block's 1-based
+    // FILE line. `mdInlineLines` was already computed by the engine and read by nobody;
+    // it is the only way to put a real line on an edge whose node lives in a SUB-PARSE
+    // of a substring, because a node row inside that sub-tree is relative to the
+    // substring, not to the file.
     const mdInlineTrees: any[] = context?.mdInlineTrees ?? []
     const mdInlineStarts: number[] = context?.mdInlineStarts ?? []
-    const inlineByStart = new Map<number, any>()
+    const mdInlineLines: number[] = context?.mdInlineLines ?? []
+    const inlineByStart = new Map<number, { tree: any; line: number }>()
     for (let i = 0; i < mdInlineStarts.length; i++) {
-      inlineByStart.set(mdInlineStarts[i], mdInlineTrees[i])
+      // Defensive: a hand-built context (a probe, a mutant) may omit the lines array.
+      // Absent means unknown, never 0 — 0 is not a line and R6 forbids a mirror base.
+      inlineByStart.set(mdInlineStarts[i], { tree: mdInlineTrees[i], line: mdInlineLines[i] })
     }
 
-    // Heading hierarchy: stack of (name, level) for owner assignment.
-    const headingStack: { name: string; level: number }[] = []
-    // Current heading owner for block-level facts (tables/code/front matter).
+    // Heading hierarchy, carrying BOTH spellings on purpose.
+    //
+    //   `name` is the CONTRACT spelling — the heading text — and is what `ownerName`
+    //     and a `contains` edge's SOURCE are written as. This is the M11 contract the
+    //     M12 ground truth (59 facts) and the contract probe (31 checks) pin, and it
+    //     is unchanged by this round.
+    //   `id` is IDENTITY — the owner-qualified path, with an `#N` ordinal on a repeat.
+    //
+    // Conflating the two is what made the first attempt at this fix fail: publishing
+    // the qualified id as `ownerName` changed every endpoint spelling in the lane and
+    // broke 59 hand-audited facts to fix a defect those facts could not see. Identity
+    // and spelling are different questions and get different fields.
+    const headingStack: { name: string; id: string; level: number }[] = []
+    // Current heading owner for block-level facts (tables/code/front matter): the
+    // contract spelling for `ownerName` and edge sources, the id for the base path.
     let currentOwner: string | undefined = undefined
+    let currentOwnerId: string | undefined = undefined
     // Document-level container for top-level facts.
     const DOC = "document"
 
     // Collect all inline node byte offsets in source order for matching.
     const inlineStarts = new Set<number>(mdInlineStarts)
+
+    // Link reference definitions are BLOCK-level and may sit after the references
+    // that use them, so they are collected before the single emit pass rather than
+    // during it. One extra walk of the block tree that never enters an inline subtree:
+    // O(block nodes), leaving the complexity envelope's "O(block nodes + inline facts)"
+    // intact and the inline half — the expensive half — walked exactly once.
+    const definitions = new Map<string, { destination: string; line: number }>()
+    this.collectReferenceDefinitions(rootNode, definitions)
 
     // Single iterative DFS over the block tree.
     const stack: Node[] = [rootNode]
@@ -87,26 +179,40 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
             headingStack.pop()
           }
           const owner = headingStack.length > 0 ? headingStack[headingStack.length - 1].name : undefined
-          const symId = owner ? `${owner}.${name}` : name
-          if (!symbolIds.has(symId)) {
-            symbolIds.add(symId)
-            symbols.push({
-              name,
-              kind: ASTEngine.SymbolKind.Type,
-              range: this.nodeToRange(node),
-              visibility: "public",
-              ownerName: owner,
-              ownerKind: owner ? ASTEngine.SymbolKind.Type : undefined,
-              metadata: { nodeType: type, headingLevel: level, isMarkdownHeading: true },
-            })
-          }
-          if (owner) addRel(owner, ASTEngine.RelationshipType.Contains, name, { role: "heading_hierarchy" })
-          headingStack.push({ name, level })
+          const ownerId = headingStack.length > 0 ? headingStack[headingStack.length - 1].id : undefined
+          const base = ownerId ? `${ownerId}.${name}` : name
+          const { id, target, repeat } = siteId(base, name)
+          const range = this.nodeToRange(node)
+          symbols.push({
+            name,
+            kind: ASTEngine.SymbolKind.Type,
+            id,
+            qualifiedName: id,
+            range,
+            visibility: "public",
+            ownerName: owner,
+            ownerKind: owner ? ASTEngine.SymbolKind.Type : undefined,
+            scope: owner,
+            metadata: {
+              nodeType: type,
+              headingLevel: level,
+              isMarkdownHeading: true,
+              // A repeated heading is a fact about the document (`## Example` in
+              // every section), not a duplicate to be swallowed.
+              isRepeatedSite: repeat || undefined,
+            },
+          })
+          // The edge's SOURCE is the parent's contract spelling and its TARGET is the
+          // child's identity, so a repeated child is addressable while a first
+          // occurrence reads exactly as it always did.
+          if (owner) addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "heading_hierarchy" }, range.startLine)
+          headingStack.push({ name, id, level })
           currentOwner = name
+          currentOwnerId = id
         }
         patterns.push("Markdown headings")
         // Emit inline-derived uses for this heading's inline content.
-        this.emitInlineUses(node, inlineByStart, addRel, name)
+        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions)
         continue
       }
 
@@ -114,10 +220,10 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       // inline block that is NOT a heading's direct inline child. Source is
       // the current heading owner (or the document).
       if (type === "inline") {
-        const inlineTree = inlineByStart.get(node.startIndex)
-        if (inlineTree?.rootNode) {
+        const inline = inlineByStart.get(node.startIndex)
+        if (inline?.tree?.rootNode) {
           const source = currentOwner ?? DOC
-          this.walkInlineTree(inlineTree.rootNode, addRel, source)
+          this.walkInlineTree(inline.tree.rootNode, addRel, source, inline.line, definitions)
         }
         continue
       }
@@ -125,20 +231,27 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "pipe_table") {
         const name = this.tableName(node, content)
         const owner = currentOwner ?? DOC
-        const symId = `${owner}.${name}`
-        if (!symbolIds.has(symId)) {
-          symbolIds.add(symId)
-          symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Class,
-            range: this.nodeToRange(node),
-            visibility: "public",
-            ownerName: owner,
-            ownerKind: owner === DOC ? undefined : ASTEngine.SymbolKind.Type,
-            metadata: { nodeType: type, isMarkdownTable: true },
-          })
-        }
-        addRel(owner, ASTEngine.RelationshipType.Contains, name, { role: "table_under_heading" })
+        const ownerId = currentOwnerId ?? DOC
+        const base = ownerId === DOC ? name : `${ownerId}.${name}`
+        const { id, target, repeat } = siteId(base, name)
+        const range = this.nodeToRange(node)
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Class,
+          id,
+          qualifiedName: id,
+          range,
+          visibility: "public",
+          ownerName: owner === DOC ? undefined : owner,
+          ownerKind: owner === DOC ? undefined : ASTEngine.SymbolKind.Type,
+          scope: owner === DOC ? undefined : owner,
+          metadata: {
+            nodeType: type,
+            isMarkdownTable: true,
+            isRepeatedSite: repeat || undefined,
+          },
+        })
+        addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "table_under_heading" }, range.startLine)
         // Column names from the header row.
         const header = this.findChildByType(node, new Set(["pipe_table_header"]))
         if (header) {
@@ -146,7 +259,10 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
             const cell = header.namedChild(i)
             if (cell?.type === "pipe_table_cell") {
               const col = cell.text.trim()
-              if (col) addRel(name, ASTEngine.RelationshipType.Contains, col, { role: "table_column" })
+              // A column is a site too, and a table's columns are addressed by the
+              // table's OWN disambiguated id so two same-header tables never share
+              // a column endpoint.
+              if (col) addRel(target, ASTEngine.RelationshipType.Contains, col, { role: "table_column" }, range.startLine)
             }
           }
         }
@@ -159,21 +275,29 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const langNode = infoNode ? this.findChildByType(infoNode, new Set(["language"])) : null
         const lang = langNode?.text?.trim() ?? infoNode?.text?.trim() ?? "text"
         const owner = currentOwner ?? DOC
+        const ownerId = currentOwnerId ?? DOC
         const name = lang === "text" ? "code_block" : `code_block.${lang}`
-        const symId = `${owner}.${name}`
-        if (!symbolIds.has(symId)) {
-          symbolIds.add(symId)
-          symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Function,
-            range: this.nodeToRange(node),
-            visibility: "public",
-            ownerName: owner,
-            ownerKind: owner === DOC ? undefined : ASTEngine.SymbolKind.Type,
-            metadata: { nodeType: type, language: lang, isMarkdownCodeBlock: true },
-          })
-        }
-        addRel(owner, ASTEngine.RelationshipType.Contains, name, { role: "code_block_under_heading" })
+        const base = ownerId === DOC ? name : `${ownerId}.${name}`
+        const { id, target, repeat } = siteId(base, name)
+        const range = this.nodeToRange(node)
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Function,
+          id,
+          qualifiedName: id,
+          range,
+          visibility: "public",
+          ownerName: owner === DOC ? undefined : owner,
+          ownerKind: owner === DOC ? undefined : ASTEngine.SymbolKind.Type,
+          scope: owner === DOC ? undefined : owner,
+          metadata: {
+            nodeType: type,
+            language: lang,
+            isMarkdownCodeBlock: true,
+            isRepeatedSite: repeat || undefined,
+          },
+        })
+        addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "code_block_under_heading" }, range.startLine)
         patterns.push("Markdown code blocks")
         continue
       }
@@ -181,19 +305,23 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (type === "minus_metadata") {
         const name = "front_matter"
         const owner = DOC
-        const symId = `${owner}.${name}`
-        if (!symbolIds.has(symId)) {
-          symbolIds.add(symId)
-          symbols.push({
-            name,
-            kind: ASTEngine.SymbolKind.Namespace,
-            range: this.nodeToRange(node),
-            visibility: "public",
-            ownerName: owner,
-            ownerKind: undefined,
-            metadata: { nodeType: type, isMarkdownFrontMatter: true },
-          })
-        }
+        const { id, target, repeat } = siteId(`${owner}.${name}`, name)
+        const range = this.nodeToRange(node)
+        symbols.push({
+          name,
+          kind: ASTEngine.SymbolKind.Namespace,
+          id,
+          qualifiedName: id,
+          range,
+          visibility: "public",
+          ownerName: owner,
+          ownerKind: undefined,
+          metadata: {
+            nodeType: type,
+            isMarkdownFrontMatter: true,
+            isRepeatedSite: repeat || undefined,
+          },
+        })
         patterns.push("Markdown front matter")
         continue
       }
@@ -204,6 +332,8 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push(child)
       }
     }
+
+    this.classifyEvidenceTier(relationships)
 
     return {
       language: "markdown",
@@ -224,43 +354,260 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * M14 #419-D: assign `metadata.evidenceClass` from the closed five-tier vocabulary,
+   * applied centrally so an emission site cannot skip it (the shape 22 sibling lanes
+   * use; typescript's `classifyEvidenceTier` is the reference).
+   *
+   * This lane's absence was not cosmetic. With no stored class, the read-time
+   * derivation in `graph-core.ts` decides instead, and its `STRUCTURAL_TYPES` set is
+   * `{calls, inherits, implements, overrides}` — it does NOT contain `contains`. So
+   * every heading-hierarchy, table and code-block edge, which is a direct AST
+   * parent/child relation and cannot be anything but structural, was rendered to
+   * users as `inferred`: "a guess (heuristic or confidence < 0.7) — treat as a hint,
+   * never as fact". The graph was telling the reader to distrust the one class of edge
+   * in this lane that is derived from the tree itself.
+   *
+   * The markdown mapping, and why each row is what it is:
+   *   contains -> structural       a parent/child relation read off the block tree.
+   *   uses     -> reference_qualified
+   *     A link destination is not a guess about a NAME: the destination is a node's
+   *     own text and, for a reference link, it is the destination the document's own
+   *     `link_reference_definition` declares. That is qualifier evidence — stronger
+   *     than `usage_contextual` ("the name appears in context"), weaker than structure
+   *     — which is exactly what the tier is for. Every published `uses` edge in this
+   *     lane resolves a destination the grammar read out of a node, so the
+   *     `resolved === false` arm that other lanes need is unreachable here and is
+   *     deliberately not invented.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const md = r.metadata ?? (r.metadata = {})
+      if (md.evidenceClass) continue
+      const t = String(r.type ?? "")
+      if (t === "contains") {
+        md.evidenceClass = "structural"
+        continue
+      }
+      if (t === "uses") {
+        md.evidenceClass = "reference_qualified"
+        continue
+      }
+      md.evidenceClass = "usage_contextual"
+    }
+  }
+
+  /**
+   * Collect `link_reference_definition` nodes into `label -> destination`.
+   *
+   * A reference link (`[text][ref]`, `[ref][]`, `[ref]`) carries only its LABEL; the
+   * destination lives in a definition elsewhere in the document, and CommonMark puts
+   * definitions at BLOCK level, so they are found here rather than in the inline tree.
+   * Before this, a document's reference links produced no `uses` edge at all —
+   * measured on this lane's pinned corpus (scala3@18df09c0, 738 tracked .md files) at
+   * 671 sites (44 uses + 627 definitions) across 66 files, while the lane doc claimed
+   * "Links (inline and reference destinations)".
+   *
+   * The walk descends named children but SKIPS `inline` subtrees: a definition cannot
+   * live inside one, and skipping keeps this pass off the inline grammar's node count,
+   * which is the expensive half of a markdown file. First definition of a label wins,
+   * which is CommonMark's own rule.
+   */
+  private collectReferenceDefinitions(root: Node, into: Map<string, { destination: string; line: number }>): void {
+    const s: Node[] = [root]
+    while (s.length > 0) {
+      const n = s.pop()!
+      if (n.type === "inline") continue
+      if (n.type === "link_reference_definition") {
+        const labelNode = this.findChildByType(n, new Set(["link_label"]))
+        const destNode = this.findChildByType(n, new Set(["link_destination"]))
+        if (labelNode && destNode) {
+          const label = this.stripBrackets(labelNode.text)
+          const destination = destNode.text.trim()
+          if (label && destination && !into.has(label)) {
+            into.set(label, { destination, line: labelNode.startPosition.row + 1 })
+          }
+        }
+        continue
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) s.push(c)
+      }
+    }
+  }
+
+  /**
    * Walk a heading node's own inline child and emit `uses` edges for every
    * link/image/autolink in the companion inline tree matched by byte offset.
    */
   private emitInlineUses(
     node: Node,
-    inlineByStart: Map<number, any>,
-    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>) => void,
+    inlineByStart: Map<number, { tree: any; line: number }>,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
     source: string,
+    definitions: Map<string, { destination: string; line: number }>,
   ): void {
     const inline = this.findChildByType(node, new Set(["inline"]))
     if (!inline) return
-    const inlineTree = inlineByStart.get(inline.startIndex)
-    if (inlineTree?.rootNode) this.walkInlineTree(inlineTree.rootNode, addRel, source)
+    const entry = inlineByStart.get(inline.startIndex)
+    if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions)
   }
 
-  /** Walk a parsed inline tree and emit uses edges for links/autolinks. */
+  /**
+   * Walk a parsed inline tree and emit `uses` edges for links, images, autolinks and
+   * reference links.
+   *
+   * Two structural facts about the companion inline grammar make this correct rather
+   * than merely working, and both were measured against the pinned wasm rather than
+   * read off a spec:
+   *
+   * 1. A link inside a `code_span` is UNREACHABLE here, structurally. The grammar
+   *    gives `code_span` only ANONYMOUS children (`[`, `]`, `(`, `:`, `/`, `.`,
+   *    `code_span_delimiter`) — no `link_destination` — and this walk descends NAMED
+   *    children only. A `[nope](https://bad.example)` inside backticks therefore
+   *    cannot be emitted, which is correct, and it is correct for a reason a reader
+   *    can check rather than for the absence of a filter.
+   *
+   * 2. A link inside `strong_emphasis`/`emphasis` IS reachable, because those are
+   *    named nodes with named children. That is also correct: `**a [x](u)**` is a link.
+   *
+   * `baseLine` is the 1-based FILE line of this inline block. A node row inside this
+   * sub-tree is relative to the SUBSTRING the engine parsed, so `baseLine + row` is
+   * the file line, and it is the only correct conversion available — which is why the
+   * engine hands `mdInlineLines` over at all.
+   */
   private walkInlineTree(
     root: any,
-    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>) => void,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
     source: string,
+    baseLine: number,
+    definitions: Map<string, { destination: string; line: number }>,
   ): void {
+    const fileLine = (node: any): number | undefined => {
+      if (typeof baseLine !== "number" || baseLine <= 0) return undefined
+      return baseLine + (typeof node.startPosition?.row === "number" ? node.startPosition.row : 0)
+    }
     const s: any[] = [root]
     while (s.length > 0) {
       const inn = s.pop()!
-      if (inn.type === "link_destination") {
-        addRel(source, ASTEngine.RelationshipType.Uses, inn.text.trim(), { role: "markdown_link", linkText: inn.text.trim() })
-      } else if (inn.type === "uri_autolink" || inn.type === "email_autolink") {
-        // The grammar exposes the URI/email only as the node's raw text in
-        // angle brackets (no child node) — strip the brackets by position.
-        const target = this.stripAngleBrackets(inn.text)
-        if (target) addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_autolink" })
+      switch (inn.type) {
+        case "link_destination": {
+          // Only reached as a NAMED child of inline_link / image, so it is a real
+          // destination and never a code span's punctuation.
+          const target = inn.text.trim()
+          if (target) {
+            addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_link", linkText: target }, fileLine(inn))
+          }
+          break
+        }
+        case "uri_autolink":
+        case "email_autolink": {
+          // The grammar exposes the URI/email only as the node's raw text in angle
+          // brackets (no child node) — strip the brackets by position.
+          const target = this.stripAngleBrackets(inn.text)
+          if (target) addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_autolink" }, fileLine(inn))
+          break
+        }
+        case "full_reference_link":
+        case "collapsed_reference_link":
+        case "shortcut_link": {
+          this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn))
+          break
+        }
+        case "image": {
+          // An image in reference form carries a `link_label` instead of a
+          // `link_destination`; in inline form the destination is a named child and
+          // was already handled by the `link_destination` arm above.
+          const labelNode = this.findChildByTypeAny(inn, new Set(["link_label"]))
+          if (labelNode) {
+            this.emitReferenceLink(inn, addRel, source, definitions, fileLine(inn), this.stripBrackets(labelNode.text))
+          }
+          break
+        }
       }
       for (let i = inn.namedChildCount - 1; i >= 0; i--) {
         const c = inn.namedChild(i)
         if (c) s.push(c)
       }
     }
+  }
+
+  /**
+   * A reference link's edge points at the DESTINATION the document declares.
+   *
+   * A reference link with NO matching `link_reference_definition` is NOT published,
+   * and that is the specification rather than a noise heuristic. CommonMark: "If a
+   * link reference definition has not been defined for the link label, then it is not
+   * a link" — the construct renders as literal text. So `[1]` in a legal notice, or
+   * `[missing closing paren](url` with the paren never closed, is not a link and
+   * emitting an edge to a target named `1` would be a fabricated endpoint.
+   *
+   * Measured, not assumed: publishing the undefined case produced 171 edges across 34
+   * of the lane's 738 corpus files, and sampling them showed them dominated by bare
+   * bracketed citation markers — `NOTICE.md: document -> 1` six times over. Those are
+   * also an R10 target-spelling problem: `1` is not a name this lane spells its
+   * symbols with. Suppressing the undefined case removed 171 fabricated endpoints and
+   * left the 213 genuinely-resolved reference links, which are the whole point.
+   *
+   * The consequence worth stating: an undefined reference is invisible rather than
+   * flagged. That is a real limitation and it is a DECISION, taken because the
+   * alternative measures as fabrication.
+   */
+  private emitReferenceLink(
+    node: any,
+    addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
+    source: string,
+    definitions: Map<string, { destination: string; line: number }>,
+    line: number | undefined,
+    knownLabel?: string,
+  ): void {
+    // `[text][ref]` carries the reference in a `link_label`; `[ref][]` and `[ref]`
+    // carry it in the link text, which IS the label.
+    const label = knownLabel ?? this.referenceLabelOf(node)
+    if (!label) return
+    const defined = definitions.get(label)
+    // Undefined => literal text, not a link. See the method comment.
+    if (!defined) return
+    addRel(
+      source,
+      ASTEngine.RelationshipType.Uses,
+      defined.destination,
+      { role: "markdown_link", linkText: label, linkForm: node.type, resolvedVia: "link_reference_definition" },
+      line,
+    )
+  }
+
+  /** The reference label of a reference link: its `link_label`, else its link text. */
+  private referenceLabelOf(node: any): string | undefined {
+    const labelNode = this.findChildByTypeAny(node, new Set(["link_label"]))
+    if (labelNode) {
+      const t = this.stripBrackets(labelNode.text)
+      if (t) return t
+    }
+    const textNode = this.findChildByTypeAny(node, new Set(["link_text"]))
+    if (textNode) {
+      const t = textNode.text.trim()
+      if (t) return t
+    }
+    return undefined
+  }
+
+  /** Strip surrounding square brackets by position, no regex. */
+  private stripBrackets(text: string): string {
+    const t = text.trim()
+    if (t.length >= 2 && t.charCodeAt(0) === 91 && t.charCodeAt(t.length - 1) === 93) {
+      return t.slice(1, -1).trim()
+    }
+    return t
+  }
+
+  /** `findChildByType` over a sub-parse node, which is typed `any` not `Node`. */
+  private findChildByTypeAny(node: any, types: Set<string>): any {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (child && types.has(child.type)) return child
+    }
+    return null
   }
 
   /** Strip surrounding angle brackets by position, no regex. */
@@ -294,17 +641,77 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** Heading display text: the inline child's raw text (no marker, no regex). */
-  private headingText(node: Node): string {
-    const inline = this.findChildByType(node, new Set(["inline"]))
-    if (inline) {
-      const text = inline.text.trim()
-      if (text) return text
+  /**
+   * A heading's display text.
+   *
+   * Three grammar facts, each a defect before this round, all resolved by position
+   * rather than by pattern (the lane's zero-regex property is the reason these reads
+   * exist at all, and none of them needed a regex to fix).
+   *
+   * 1. ATX CLOSING SEQUENCE. `# H #` is the heading `H`. The grammar already splits
+   *    the marker out as a named `atx_hN_marker` child, so the closing run is removed
+   *    by position: everything after the last space, when that remainder is only `#`
+   *    characters. Before this, such a heading published a symbol named `H #`, so a
+   *    document that closed its headings and one that did not produced two different
+   *    symbols for the same section.
+   *
+   * 2. A NAME NEVER CONTAINS A NEWLINE. A multi-line setext heading's text is its
+   *    PARAGRAPH, and the paragraph holds the text plus the underline, so the
+   *    previous "node text minus the last line" fallback returned every line but the
+   *    underline. Measured: a two-line setext heading published
+   *    `"Multi Line Title\nsecond line of paragraph"` — a name carrying an embedded
+   *    newline into `ownerName`, the qualified path and every display surface. Only
+   *    the first line is the heading.
+   *
+   * 3. AN EMPTY HEADING IS ABSENCE, NOT A NAME. `#` with no content returns undefined
+   *    here, so nothing is published for it. The previous fallback returned the marker
+   *    itself, so a document of empty headings published a `contains` chain of
+   *    symbols named `#`, `##`, `###` — which is the M60 R7 class (a name that is
+   *    not a name), one step short of the register's own `MARKER` pattern, and two
+   *    sibling `##` headings named `##` collided and lost a level of hierarchy.
+   *
+   *    The empty case has to be caught by TYPE, not by an empty inline child: a bare
+   *    `#` is `atx_heading > atx_h1_marker` with NO `inline` child at all (measured on
+   *    the pinned wasm), so a guard written as "if the inline text is empty, stop"
+   *    never runs for the one case it was written for, and the setext fallback
+   *    rescues the marker. That is why the first attempt at this fix appeared to do
+   *    nothing.
+   */
+  private headingText(node: Node): string | undefined {
+    // ATX: the text is the inline child and nothing else. No inline child means no
+    // heading, and the node's own text is the marker, which is never a name.
+    if (node.type === "atx_heading") {
+      const inline = this.findChildByType(node, new Set(["inline"]))
+      if (!inline) return undefined
+      const text = this.stripAtxClosingSequence(inline.text.trim())
+      return text ? text : undefined
     }
-    // Setext headings have no inline marker stripping — the paragraph child
-    // holds the text; fall back to node text minus the underline line.
-    const text = node.text.trim()
-    const nl = text.lastIndexOf("\n")
-    return nl >= 0 ? text.slice(0, nl).trim() : text
+    // Setext: the text is the paragraph's FIRST line. The underline is the last line,
+    // and everything between them is continuation, not heading.
+    const raw = node.text.trim()
+    if (!raw) return undefined
+    const nl = raw.indexOf("\n")
+    const first = (nl >= 0 ? raw.slice(0, nl) : raw).trim()
+    return first ? first : undefined
+  }
+
+  /**
+   * Remove an ATX heading's optional closing `#` run, by position and by
+   * character code — no regex. CommonMark: "The optional closing sequence of #s
+   * must be preceded by spaces or tabs and may be followed by spaces or tabs only."
+   * A `#` that is preceded by no space (`a#b`) is part of the text and is kept; a run
+   * that is followed by other text is part of the text and is kept.
+   */
+  private stripAtxClosingSequence(text: string): string {
+    if (text.length === 0 || text.charCodeAt(text.length - 1) !== 35 /* # */) return text
+    let end = text.length
+    while (end > 0 && text.charCodeAt(end - 1) === 35) end--
+    if (end === text.length) return text
+    // Everything before the run must END in a space or tab for the run to be a
+    // closing sequence rather than part of the heading text.
+    const before = text.charCodeAt(end - 1)
+    if (before !== 32 /* space */ && before !== 9 /* tab */) return text
+    return text.slice(0, end).trim()
   }
 
   /** Table identity: header cell text joined by `/` (no regex). */
