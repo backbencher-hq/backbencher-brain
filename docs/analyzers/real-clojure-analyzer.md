@@ -40,8 +40,16 @@ so every name the list omitted was a **mirrored fabrication** — the analyzer e
 0 unexplained. Measured: **2,525** such edges in the clojure corpus (30% of all 8,391 call
 edges), **999** in clj-kondo, **151** in core.async.
 
-`script/m14/tmp/clj-core-derive.ts` derives the real surface from the language's own definition
-using the pinned wasm: parse `clojure/clojure/src/clj/clojure/*.clj`, keep only the files whose
+**This is a gate, not a script.** `script/m49/verify-clj-core-list.ts` re-derives on every
+run and fails in both directions — `MISSING` (a real core var the constant does not know, the
+fabrication class returning), `UNDECLARED` (a suppressed name that is neither derived nor a
+declared extra), and `STALE-EXTRA` (the declared list drifting from the code). It is chained
+into `bun run verify` after `verify-r2-regex.ts`, and its `--selftest` mode proves it can fail
+(4/4 negatives, including the literal 2026-09-20 condition). It holds no committed artifact,
+so there is nothing to go stale; a missing corpus is a disclosed `SKIP`, never a pass.
+`script/m14/tmp/clj-core-derive.ts` is a thin printer over the same `deriveFromCorpus`.
+
+The derivation itself, using the pinned wasm: parse `clojure/clojure/src/clj/clojure/*.clj`, keep only the files whose
 `ns`/`in-ns` is `clojure.core` / `clojure.core.protocols` / `clojure.core.reducers`, keep only
 **top-level** def-family forms (an internal helper inside a `defn` body is not public API), and
 drop whatever the analyzer's own privacy rule calls private (`defn-`, `^:private`,
