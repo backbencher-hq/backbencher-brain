@@ -15101,6 +15101,30 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
         }
         break
       }
+      // A `@function` CALLED in a value: `width: double(4px)`.
+      //
+      // Added after the M12 independent hand audit of validation/m12/fixtures/scss/
+      // Theme.scss reported the lane emitting no edge here (9 expected, 8 observed,
+      // recall 0.889, the one false negative being `uses .panel -> @function double`).
+      // The analyzer was fixed to emit it, and this is the ORACLE's half of that fix:
+      // an edge class the analyzer produces and the truth cannot derive reads as
+      // `unexplained` — which is the signal that says the truth is blind, not that the
+      // analyzer invented something. Measured without this case, `unexplained` sat at 8
+      // with every new call edge counted against the lane.
+      //
+      // The same both-ends-resolve rule as `@include` above: only a name this file
+      // DECLARES as a `@function` becomes an edge, so `calc()`, `var()`, `rgba()`,
+      // `min()` and `url()` stay silent — they are builtins, not referents. Only
+      // `functions` is consulted, never `mixins`, because a bare `name(…)` in a value
+      // is a function call; a mixin is reached through `@include`, the case above.
+      case "call_expression": {
+        const fn = kidOfType(n, "function_name")
+        if (fn) {
+          const b = collapse(textOf(fn))
+          if (functions.has(`@function ${b}`)) push("uses", nextOwner, `@function ${b}`)
+        }
+        break
+      }
       default:
         break
     }

@@ -416,4 +416,33 @@ export const SCSS_MUTANTS = [
       "REVERT: the markers that say which SCSS construct DECLARED a symbol are stripped, so a `$variable` is indistinguishable from a registered `@property` and a control-flow `interface` from a `@supports` one. Caught by variables-flags-and-identity's `meta.isScssVariable` and control-flow-and-extend's `meta.isScssControlFlow` rows.",
     transform: dropSymMeta("isScssVariable"),
   },
+  {
+    id: "scss/function-call-edge-dropped",
+    language: "scss",
+    defectClass: "recall",
+    description:
+      "REVERT: every `uses` edge to a `@function` CALLED in a value disappears, so a declared function can never be reached from its call site and the graph cannot answer \"who calls double\". Found by the M12 independent hand audit of validation/m12/fixtures/scss/Theme.scss — 9 facts expected, 8 observed, recall 0.889, and the single false negative was this edge. It survived because a `@var` read on the line above was caught and a call on the line below was not: the two are the same class of claim and only one of them was implemented, so no count-based gate could see the gap.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => x.metadata?.isScssFunctionCall !== true,
+      ),
+    }),
+  },
+  {
+    id: "scss/error-recovery-marker-dropped",
+    language: "scss",
+    defectClass: "metadata-loss",
+    description:
+      "REVERT: `metadata.scssRecoveredFromError` is stripped, so a claim the analyzer only recovered from inside a broken region becomes indistinguishable from one it read cleanly. The EDGES all survive this mutant, so every count-based gate passes; what is lost is the ability to tell a consumer which claims rest on a region the grammar could not read. The control for it is the same variable read twice in one fixture, once recovered and once clean.",
+    transform: dropRelMeta("scssRecoveredFromError"),
+  },
+  {
+    id: "scss/function-call-marker-dropped",
+    language: "scss",
+    defectClass: "metadata-loss",
+    description:
+      "REVERT: `metadata.isScssFunctionCall` is stripped, so a call to a user function is indistinguishable from an `@include` of a mixin — both are `uses`. A consumer could no longer tell a value-position call from a statement-position include, which is the difference between \"this function is called\" and \"this block is included\".",
+    transform: dropRelMeta("isScssFunctionCall"),
+  },
 ]

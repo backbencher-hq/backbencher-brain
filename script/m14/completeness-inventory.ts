@@ -678,9 +678,23 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     title: "css pass (#419)",
   },
   // scss walks the ladder at 7/8 and is NOT in GATED_LANGS. Section E is the open
-  // one, and it is open HONESTLY: the lane's differential reports unexplained=4 (1.0%)
-  // and missing=64 against a full-extent draw of all 149 corpus files, and the floor
+  // one, and it is open HONESTLY: the lane's differential reports unexplained=4 (0.9%)
+  // and missing=60 against a full-extent draw of all 149 corpus files, and the floor
   // ruling below pins that rather than leaving the section to fail on a rotation.
+  //
+  // The floor MOVED DOWN, from 64/4 to 60/4, and the reason belongs here rather than
+  // only in the baseline JSON. Two defects, both found by checking against something
+  // INDEPENDENT rather than against this lane's own fixtures:
+  //   1. A `@function` CALLED in a value (`width: double(4px)`) produced no edge, while
+  //      a `$var` read on the line above did. The M12 independent hand audit of
+  //      validation/m12/fixtures/scss/Theme.scss found it — 9 expected, 8 observed,
+  //      recall 0.889, and the single false negative was that edge.
+  //   2. The walk that resolves reads and calls STOPPED at an ERROR node, so every
+  //      claim nested inside a region the grammar had lost was invisible, while the
+  //      differential's own SCSS oracle descends into errors on purpose. On
+  //      `tag.scss` that cost 4 relationships the oracle had already derived.
+  // Fixing both took truth from 1586 to 1606, covered from 1522 to 1546, and missing
+  // from 64 to 60, at 13.8 ms/file against the 17.5 it cost before.
   //
   // The floor is FULL-EXTENT on purpose. A 60-file sample is a rotation — the same
   // corpus produced MISSING=32, 36 and 106 across three draws — so a floor pinned to
@@ -699,7 +713,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   //
   // Registering a lane at 7/8 with a pinned residual is the point of the ladder. What
   // this entry does NOT do is claim section E passes: the floor is the FLOOR, and the
-  // row is checked against it exactly, so a regression above 64/4 fails.
+  // row is checked against it exactly, so a regression above 60/4 fails.
   scss: {
     id: "scss",
     wasm: "tree-sitter-scss.wasm",
@@ -709,7 +723,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     differentialCheck: "differential-scss",
     perfKey: "element-plus:scss",
     floorResidual: {
-      missing: 64,
+      missing: 60,
       unexplained: 4,
       ruling: "SCSS-D1",
     },
