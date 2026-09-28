@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (34/41 languages pass)",
+      "description": "per-literal shrink-only register with reasons (38/43 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,37 +24,16 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "1f10f1283c0dc460f19c2a20590e715639c6090b",
-  "committedAt": "2026-09-26T16:52:18-04:00",
+  "commit": "ebd900d1b67a168de5df756d0279dbd08313d4be",
+  "committedAt": "2026-09-28T14:01:15-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [
-          {
-            "from": 0,
-            "lang": "fsharp",
-            "to": 2
-          }
-        ],
-        "ok": false,
+        "countRegressions": [],
+        "ok": true,
         "recordIsV1": false,
         "shrunk": [],
-        "unregistered": [
-          {
-            "context": "real-fsharp-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "fsharp",
-            "line": 352,
-            "literal": "tuple_pattern"
-          },
-          {
-            "context": "real-fsharp-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "fsharp",
-            "line": 357,
-            "literal": "bound_arguments"
-          }
-        ]
+        "unregistered": []
       },
       "counts": {
         "bash": 0,
@@ -80,7 +59,7 @@
         "kotlin": 0,
         "lua": 5,
         "makefile": 1,
-        "markdown": 2,
+        "markdown": 0,
         "objective-c": 0,
         "perl": 1,
         "php": 0,
@@ -142,20 +121,7 @@
             "reason": "real-makefile-analyzer.ts:276, inside the BOUNDARY_TYPES const array. The pinned tree-sitter-make wasm does not enumerate it, so the entry is inert. Count unchanged from the v1 baseline of 2026-08-23 (1). Repayment: read the grammar's real conditional-directive nodes, then fix or delete."
           }
         ],
-        "markdown": [
-          {
-            "kind": "type",
-            "literal": "uri_autolink",
-            "owner": "markdown lane",
-            "reason": "real-markdown-analyzer.ts:253. Not enumerated by the pinned tree-sitter-markdown wasm (the autolinks live on the inline grammar, which the lane does not load as an oracle). Count unchanged from the v1 baseline of 2026-08-23 (2). Repayment: either load tree-sitter-markdown_inline into the oracle for this lane (EXTRA_GRAMMARS) or delete the branch."
-          },
-          {
-            "kind": "type",
-            "literal": "email_autolink",
-            "owner": "markdown lane",
-            "reason": "real-markdown-analyzer.ts:253, same line and same root cause as uri_autolink. Count unchanged from the v1 baseline of 2026-08-23 (2)."
-          }
-        ],
+        "markdown": [],
         "perl": [
           {
             "kind": "field",
@@ -262,7 +228,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 238,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 31,
+        "referencedTypeLiterals": 33,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -299,8 +265,8 @@
         "oracleFieldCount": 28,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 278,
-        "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 37,
+        "referencedFieldLiterals": 13,
+        "referencedTypeLiterals": 70,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -374,9 +340,9 @@
         "fieldless": true,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 131,
+        "oracleNodeTypeCount": 133,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 33,
+        "referencedTypeLiterals": 37,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -414,7 +380,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 204,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 32,
+        "referencedTypeLiterals": 33,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -452,21 +418,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 43,
-        "status": "fail",
+        "referencedTypeLiterals": 41,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-fsharp-analyzer.ts:comparison",
-            "line": 352,
-            "literal": "tuple_pattern"
-          },
-          {
-            "context": "real-fsharp-analyzer.ts:comparison",
-            "line": 357,
-            "literal": "bound_arguments"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-fsharp.wasm"
@@ -539,7 +494,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 452,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 54,
+        "referencedTypeLiterals": 55,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -617,7 +572,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 261,
         "referencedFieldLiterals": 16,
-        "referencedTypeLiterals": 62,
+        "referencedTypeLiterals": 64,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -741,30 +696,21 @@
         "analyzer": "src/ast/real-markdown-analyzer.ts",
         "fieldless": false,
         "oracleFieldCount": 1,
-        "oracleGrammars": 1,
-        "oracleNodeTypeCount": 196,
+        "oracleGrammars": 2,
+        "oracleNodeTypeCount": 282,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 4,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-markdown-analyzer.ts:comparison",
-            "line": 253,
-            "literal": "uri_autolink"
-          },
-          {
-            "context": "real-markdown-analyzer.ts:comparison",
-            "line": 253,
-            "literal": "email_autolink"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
-          "tree-sitter-markdown.wasm"
+          "tree-sitter-markdown.wasm",
+          "tree-sitter-markdown_inline.wasm"
         ],
         "wasmFieldCounts": [
-          1
+          1,
+          0
         ]
       },
       "objective-c": {
@@ -835,9 +781,9 @@
         "fieldless": false,
         "oracleFieldCount": 14,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 412,
+        "oracleNodeTypeCount": 423,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 18,
+        "referencedTypeLiterals": 34,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -937,8 +883,8 @@
         "oracleFieldCount": 35,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
-        "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 83,
+        "referencedFieldLiterals": 9,
+        "referencedTypeLiterals": 85,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -948,6 +894,25 @@
         ],
         "wasmFieldCounts": [
           35
+        ]
+      },
+      "scss": {
+        "analyzer": "src/ast/real-scss-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 7,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 187,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 22,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-scss.wasm"
+        ],
+        "wasmFieldCounts": [
+          7
         ]
       },
       "sql": {
@@ -1041,7 +1006,7 @@
         "oracleFieldCount": 48,
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 457,
-        "referencedFieldLiterals": 4,
+        "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 32,
         "status": "pass",
         "unknownFields": [],
@@ -1158,6 +1123,25 @@
           45
         ]
       },
+      "toml": {
+        "analyzer": "src/ast/real-toml-analyzer.ts",
+        "fieldless": true,
+        "oracleFieldCount": 0,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 65,
+        "referencedFieldLiterals": 0,
+        "referencedTypeLiterals": 8,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-toml.wasm"
+        ],
+        "wasmFieldCounts": [
+          0
+        ]
+      },
       "typescript": {
         "analyzer": "src/ast/real-typescript-analyzer.ts",
         "fieldless": false,
@@ -1165,11 +1149,17 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 93,
+        "referencedTypeLiterals": 98,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
-        "waivedFindings": [],
+        "waivedFindings": [
+          {
+            "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
+            "line": 5072,
+            "literal": "default_export_expression"
+          }
+        ],
         "wasm": [
           "tree-sitter-typescript.wasm",
           "tree-sitter-tsx.wasm",
@@ -1230,7 +1220,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 142,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 23,
+        "referencedTypeLiterals": 31,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1263,10 +1253,10 @@
       }
     },
     "summary": {
-      "fail": 7,
-      "languagesAudited": 41,
-      "pass": 34,
-      "totalUnknownReferences": 25
+      "fail": 5,
+      "languagesAudited": 43,
+      "pass": 38,
+      "totalUnknownReferences": 21
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1294,8 +1284,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-26T21:06:54.243Z",
-  "regeneratedAtCommit": "1f10f1283c0dc460f19c2a20590e715639c6090b",
+  "regeneratedAt": "2026-09-28T18:10:03.246Z",
+  "regeneratedAtCommit": "ebd900d1b67a168de5df756d0279dbd08313d4be",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
