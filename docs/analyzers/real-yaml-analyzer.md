@@ -143,34 +143,63 @@ analyzer file carries no dead analyzer literals.
 
 ## Complexity envelope
 
-From `validation/m12/results/yaml-complexity.json` (primary corpus, `--ext=.yaml,.yml`):
+**The per-file average is the wrong instrument, and this lane proved it.** The M12 envelope
+(`validation/m12/results/yaml-complexity.json`, 400 kubernetes files, `--ext=.yaml,.yml`)
+reads **41.7 ms userCpu/file** at load1 25.8 — statistically indistinguishable from the
+43.5 ms it read before the fix below. Nothing changed in that number, because those files
+average 145 symbols each and the defect only fires on large ones. A corpus average cannot
+see a per-file quadratic; that is what it is for.
 
-| Run | files | symbols | relationships | wall ms | userCpu ms/file | symbols/s | relationships/s | peak RSS | load1 | quiet |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| fixtures | 4 | 45 | 42 | 649.8 | 73.3 | — | — | 210.1 MB | 30.57 | **false** |
-| kubernetes | 400 | 58,099 | 58,078 | 29,528.0 | 43.50 | 1,968 | 1,967 | 434.3 MB | 30.82 | **false** |
-| ansible | 400 | 27,208 | 26,948 | 19,933.4 | 36.58 | 1,365 | 1,352 | 481.8 MB | 31.56 | **false** |
+So the claim is made as a **scaling exponent**, which contention cannot touch: time is
+`k · n^e`, load inflates `k`, and only `e` says whether the code is linear. Measured by
+`script/m60/yaml-scaling-probe.ts` with the **minimum** of N interleaved passes and the
+verdict taken from **paired per-doubling ratios** (1.0 = linear, 2.0 = quadratic) rather
+than an absolute cost, because a longer run accumulates more descheduling and "per-key cost
+rises with size" is precisely the artefact that bias manufactures.
 
-Declared budget: **no nested-loop scan over a symbol list; O(n) in nodes with O(1) edge
-lookups.** Stated as a structural budget rather than a millisecond number on purpose: both
-runs above were measured at load1 ≈ 31 (`quiet: false`), so per the artifact's own load rule
-their wall/throughput figures are **advisory** and `userCpuMsPerFile` is the comparable
-figure. A millisecond budget measured on a 6×-loaded box would be a claim about the box.
+| shape | exponent before | exponent after | worst per-doubling |
+|---|---|---|---|
+| wide (n sibling scalars) | 0.98 | 0.87 | 1.68 |
+| nested2 (n object children) | **1.74** | 1.11 | 1.41 |
+| anchorsOnly (n objects, no aliases) | **1.74** | 1.02 | 1.24 |
+| aliasOne (n aliases → 1 anchor) | 0.97 | 0.84 | 1.01 |
+| aliasDistinct (n anchors + n aliases) | **1.73** | 0.99 | 1.38 |
+| mergeHeavy (n merge keys) | **1.56** | 1.11 | 1.22 |
 
-Hot-path audit — two O(n·m) scans were removed in this wave and replaced with walk-built
-indexes, so the hot path is a single traversal plus O(1) map/set lookups:
+**What the quadratic actually was — and it was not in this file.** Every shape containing
+object-valued keys was ~1.9 per doubling; every flat shape was linear. A CPU profile put
+**81% of all sampled time in `stringSplitFast`**, and the only caller was
+`src/ast/pool-worker.ts:606`:
 
-- qualified-name resolution: a `Map` built during the walk, not a per-symbol rescan
-- duplicate-key disambiguation: counted during the walk, not by scanning siblings per pair
+```ts
+.map((s: any) => {
+  let snippet = ""
+  if (["function", "class", "method", "interface"].includes(s.kind)) {
+    const lines = content.split("
+")   // once PER SYMBOL
+```
 
-No nesting guard was added, and that is a measured decision rather than an omission: over
-299,478 corpus symbols the **maximum qualified-name length is 218 and the maximum depth is
-20**, both far inside any recursion that matters, and a guard would be a bound nothing
-reaches.
+A file with n class-kind symbols split the whole source n times — O(n²) in file size, on the
+**production path, for every language**. YAML exposed it rather than causing it: yaml
+publishes a `class` symbol for every object-valued key, so a 4,096-key nested document
+produced 4,096 class symbols and 4,096 whole-file splits. Hoisting the split out of the
+`.map` (lazily, via `??=`, so a file with no such symbol still never pays for it) took a
+4,096→8,192-key nested document from **5,777 ms → 1,941 ms** and **22,268 ms → 1,900 ms**:
+doubling the input now costs the *same* time, and the 8,192-key case is **11.7× faster**.
 
-The pre/post comparison that motivated the rewrite: back-to-back under equal load, CPU per
-file went 23.2 → 28.4 ms (**1.22×**) while the payload grew by 3.3% relationships and five
-new relationship families. The cost is the extra payload, not a worse algorithm.
+Declared budget, restated as a structural property rather than a millisecond figure:
+**O(n) in nodes with O(1) edge lookups, at any file size.** Two O(n·m) scans introduced by
+the rewrite were replaced with walk-built indexes; this production-path quadratic was found
+by a scaling probe and not by reading, because reading the analyzer would never have shown
+it — the defect was 1,500 lines away in a shared file, in a `.map` callback.
+
+No nesting guard was added, and that is measured rather than assumed: over 299k corpus
+symbols the maximum qualified-name length is 218 and the maximum depth is 20, both far
+inside any recursion that matters.
+
+The rewrite's own before/after, back-to-back at equal load: 23.2 → 28.4 ms CPU/file (1.22×)
+for 1.03× more relationships and five new payload families. The cost there is the extra
+payload, not a worse algorithm.
 
 ## Differential ground truth
 
