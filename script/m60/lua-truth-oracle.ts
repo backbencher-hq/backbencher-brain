@@ -276,6 +276,17 @@ function collectTables(root: any, out: Set<string>): void {
 // declaration — the analyzer skips it and is right. So the oracle resolves a
 // name against the whole enclosing SCOPE CHAIN, which is what lexical scope
 // means.
+// M60 LUA-33: the ONE rule for "does this node carry a name", shared by the
+// callee path (LUA-27/LUA-30) and the setmetatable path (LUA-33), so the two
+// cannot drift the way `table_index_expression` did. Three forms carry a name;
+// nil, a call, a binary expression and a table constructor do not.
+function nameBearing(node: any): string | undefined {
+  if (!node) return undefined
+  if (node.type === "identifier") return node.text
+  if (node.type === "dot_index_expression" || node.type === "method_index_expression") return node.text
+  return undefined
+}
+
 function visibleInChain(w: Walk, scope: string, name: string): boolean {
   let s: string | undefined = scope
   const seen = new Set<string>()
@@ -471,16 +482,32 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
       if (callee.name === "setmetatable") {
         const target = argAt(node, 0)
         const meta = argAt(node, 1)
-        // The metatable may be ANY expression, not only a bare identifier.
-        // `setmetatable(e, Emitter.meta)` — luvit/deps/hooks.lua:37 — is a real
-        // inheritance edge, and the first version of this oracle required
-        // `meta.type === "identifier"`, so it called 3 genuine edges on luvit
-        // FABRICATIONS and recorded the analyzer's precision as 0.7. The defect
-        // was the oracle's. Requiring an identifier was never justified: the
-        // second argument of setmetatable is a table-valued expression by
-        // definition, and a member expression names one perfectly well.
-        if (target && meta && target.type !== "table_constructor" && meta.type !== "table_constructor") {
-          w.edges.push({ label: "extends", from: target.text, target: meta.text, line: meta.startPosition.row + 1, rule: "setmetatable", rel })
+        // M60 LUA-33: the relaxation that fixed LUA-18 overcorrected, and the
+        // oracle became the mirror image of the defect it was correcting.
+        //
+        // LUA-18 retracted an `extends` over-fabrication claim: the oracle had
+        // required `meta.type === "identifier"`, called 3 genuine edges
+        // fabrications, and recorded the analyzer's precision as 0.7. The
+        // correction — "the second argument of setmetatable is a table-valued
+        // expression by definition" — was right about MEMBER expressions
+        // (`Emitter.meta`) and wrong about everything else. Dropping the type
+        // requirement entirely let `setmetatable(_G, nil)` derive
+        // `extends _G -> nil` (5 sites on kong), `setmetatable(opts or {}, defaults)`
+        // derive a SOURCE that is a binary expression, and
+        // `setmetatable(env.ngx, getmetatable(ngx))` derive a call as a target.
+        //
+        // The rule is the LUA-32 one, which the analyzer adopted in the same pass
+        // and this rule missed: an endpoint must be a NAME. identifier,
+        // dot_index_expression and method_index_expression carry one; nil, a
+        // binary expression, a call and a table constructor do not. `nil` is not a
+        // superclass and `getmetatable(ngx)` is not a name.
+        //
+        // 16 kong edges were the difference, and they were the ORACLE's — the
+        // analyzer was right to refuse all of them.
+        const srcName = nameBearing(target)
+        const mtName = nameBearing(meta)
+        if (target && meta && target.type !== "table_constructor" && meta.type !== "table_constructor" && srcName && mtName) {
+          w.edges.push({ label: "extends", from: srcName, target: mtName, line: meta.startPosition.row + 1, rule: "setmetatable", rel })
         }
       }
 
@@ -611,7 +638,16 @@ async function main(): Promise<void> {
   const repoRoot = join(REPOS, repo)
   const sampleArg = arg("--sample")
   const selftest = process.argv.includes("--selftest")
-  const outPath = arg("--out", join(ROOT, "validation", "m60", "results", `lua-truth-oracle-${repo}${sampleArg ? `-${sampleArg}` : ""}.json`))
+  // The default artifact name must distinguish EVERY way the file set can be
+  // narrowed, not just --sample. It did not: a `--files` run and a full-corpus run
+  // both wrote `lua-truth-oracle-kong.json`, so the corpus mutation harness —
+  // which runs ~10 narrowed passes and passes no --out — overwrote the
+  // authoritative corpus artifact with a 14-file slice, and that slice was
+  // committed as the corpus result. `filesDrawn: 14` in a file named for 1,309
+  // is exactly the kind of quiet mislabel this lane keeps catching elsewhere.
+  const filesArg0 = arg("--files")
+  const sliceTag = sampleArg ? `-${sampleArg}` : filesArg0 ? `-files${filesArg0.replace(/\W+/g, "")}` : ""
+  const outPath = arg("--out", join(ROOT, "validation", "m60", "results", `lua-truth-oracle-${repo}${sliceTag}.json`))
 
   let files = execFileSync("git", ["-C", repoRoot, "ls-files", "*.lua", "*.luau"], { encoding: "utf8", maxBuffer: 1 << 28 })
     .trim().split("\n").filter(Boolean)
@@ -623,7 +659,7 @@ async function main(): Promise<void> {
   // them measures nothing and reports its mutants as SURVIVING when they simply
   // had no trigger. "Inconclusive" and "survived" are different facts and the
   // harness has to be able to tell them apart.
-  const filesArg = arg("--files")
+  const filesArg = filesArg0
   if (filesArg) {
     const want = new Set(readFileSync(filesArg, "utf8").split("\n").map((x) => x.trim()).filter(Boolean))
     const keep = files.filter((f) => want.has(f.replace(`${repoRoot}/`, "")) || want.has(f))
