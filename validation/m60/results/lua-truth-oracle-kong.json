@@ -3,8 +3,8 @@
   "kind": "lua_truth_oracle_differential",
   "repo": "kong",
   "sample": null,
-  "filesDrawn": 14,
-  "parseErrorFiles": 0,
+  "filesDrawn": 1309,
+  "parseErrorFiles": 1,
   "method": "truth derived from the wasm parse tree by script/m60/lua-truth-oracle.ts; the analyzer's own output is never an input to the truth side",
   "mirroredPolicy": [
     {
@@ -21,24 +21,15 @@
     }
   ],
   "totals": {
-    "truthEdges": 1873,
-    "observedEdges": 1828,
-    "missing": 45,
-    "missingFromAnalyzer": [
-      {
-        "label": "extends",
-        "from": "_G",
-        "target": "nil",
-        "line": 34,
-        "rule": "setmetatable",
-        "rel": "kong/globalpatches.lua"
-      }
-    ],
+    "truthEdges": 60995,
+    "observedEdges": 58616,
+    "missing": 2380,
+    "missingFromAnalyzer": [],
     "exportsDirectPath": {
       "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
-      "filesProbed": 14,
-      "truth": 23,
-      "hit": 23,
+      "filesProbed": 150,
+      "truth": 317,
+      "hit": 317,
       "missed": 0,
       "spurious": 0,
       "recall": 1,
@@ -48,7 +39,7 @@
     },
     "pipelineDiscardEvidence": {
       "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
-      "filesProbed": 14,
+      "filesProbed": 150,
       "cap": 150,
       "provenDiscarded": [
         "exports"
@@ -56,303 +47,311 @@
       "observedOnBothSides": [
         "calls",
         "contains",
+        "extends",
         "imports",
         "instantiates"
       ]
     },
     "missingByPipelineDiscard": {
-      "total": 23,
+      "total": 1577,
       "byLabel": [
         {
           "shape": "return <identifier> at file scope",
-          "n": 23
+          "n": 1577
         }
       ],
       "labelsAbsentFromPipeline": [
         "exports"
       ]
     },
-    "missingByPipelineNoiseFilter": 21,
+    "missingByPipelineNoiseFilter": 803,
     "noiseTargetsHit": [
+      "parent",
+      "text",
       "type"
     ],
-    "unexplained": 0,
-    "lineChecked": 1828,
-    "lineExact": 1828,
+    "unexplained": 1,
+    "lineChecked": 58615,
+    "lineExact": 58615,
     "lineWrong": 0,
     "lineAccuracy": 1
   },
   "byLabel": {
     "calls": {
-      "truth": 793,
-      "observed": 774,
-      "missing": 19,
+      "truth": 26313,
+      "observed": 25650,
+      "missing": 663,
       "unexplained": 0,
       "precision": 1,
-      "recall": 0.976
+      "recall": 0.9748
     },
     "contains": {
-      "truth": 937,
-      "observed": 935,
-      "missing": 2,
-      "unexplained": 0,
+      "truth": 29483,
+      "observed": 29346,
+      "missing": 138,
+      "unexplained": 1,
       "precision": 1,
-      "recall": 0.9979
+      "recall": 0.9953
     },
     "extends": {
-      "truth": 1,
-      "observed": 0,
-      "missing": 1,
+      "truth": 87,
+      "observed": 87,
+      "missing": 0,
       "unexplained": 0,
       "precision": 1,
-      "recall": 0
+      "recall": 1
     },
     "instantiates": {
-      "truth": 1,
-      "observed": 1,
+      "truth": 10,
+      "observed": 10,
       "missing": 0,
       "unexplained": 0,
       "precision": 1,
       "recall": 1
     },
     "imports": {
-      "truth": 118,
-      "observed": 118,
+      "truth": 3523,
+      "observed": 3523,
       "missing": 0,
       "unexplained": 0,
       "precision": 1,
       "recall": 1
     },
     "exports": {
-      "truth": 23,
+      "truth": 1579,
       "observed": 0,
-      "missing": 23,
+      "missing": 1579,
       "unexplained": 0,
       "precision": 1,
       "recall": 0
     }
   },
-  "missingByShape": [
+  "missingByShape": [],
+  "unexplainedByShape": [
     {
-      "shape": "extends other",
+      "shape": "ordinary name",
       "n": 1
     }
   ],
-  "unexplainedByShape": [],
-  "analyzerAttributableSample": [
+  "analyzerAttributableSample": [],
+  "analyzerAttributableUnexplainedSample": [
     {
-      "label": "extends",
-      "from": "_G",
-      "target": "nil",
-      "line": 34,
-      "rule": "setmetatable",
-      "rel": "kong/globalpatches.lua"
+      "label": "contains",
+      "from": "Schema:errors_to_string",
+      "target": "err",
+      "rel": "kong/db/schema/init.lua"
     }
   ],
-  "analyzerAttributableUnexplainedSample": [],
   "missingSample": [
     {
-      "label": "contains",
-      "from": "global",
-      "target": "type",
-      "line": 14,
-      "rule": "local-decl",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "DeclarativeConfig.pk_string",
-      "target": "type",
-      "line": 66,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "add_top_level_entities",
-      "target": "type",
-      "line": 133,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "populate_references",
-      "target": "type",
-      "line": 386,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "validate_references",
-      "target": "type",
-      "line": 484,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "DeclarativeConfig.validate_references_sync",
-      "target": "type",
-      "line": 556,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "build_cache_key",
-      "target": "type",
-      "line": 589,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "generate_ids",
-      "target": "type",
-      "line": 688,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "populate_ids_for_validation",
-      "target": "type",
-      "line": 725,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "extract_null_errors",
-      "target": "type",
-      "line": 795,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "get_unique_key",
-      "target": "type",
-      "line": 844,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "calls",
-      "from": "flatten",
-      "target": "type",
-      "line": 918,
-      "rule": "call",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
       "label": "exports",
       "from": "global",
-      "target": "DeclarativeConfig",
-      "line": 1050,
+      "target": "data",
+      "line": 43,
       "rule": "return-id",
-      "rel": "kong/db/schema/others/declarative_config.lua"
-    },
-    {
-      "label": "extends",
-      "from": "_G",
-      "target": "nil",
-      "line": 34,
-      "rule": "setmetatable",
-      "rel": "kong/globalpatches.lua"
-    },
-    {
-      "label": "calls",
-      "from": "SharedDict:incr",
-      "target": "type",
-      "line": 334,
-      "rule": "call",
-      "rel": "kong/globalpatches.lua"
+      "rel": "autodoc/cli/data.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "init",
-      "line": 52,
+      "target": "nav",
+      "line": 5,
       "rule": "return-table-member",
-      "rel": "kong/init.lua"
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "json",
+      "line": 18,
+      "rule": "return-table-member",
+      "rel": "autodoc/pdk/ldoc/filters.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 35,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/init.lua"
+    },
+    {
+      "label": "exports",
+      "from": "global",
+      "target": "_M",
+      "line": 32,
+      "rule": "return-id",
+      "rel": "kong/admin_gui/utils.lua"
     },
     {
       "label": "contains",
       "from": "global",
       "target": "type",
-      "line": 115,
+      "line": 16,
       "rule": "local-decl",
-      "rel": "kong/init.lua"
+      "rel": "kong/api/api_helpers.lua"
     },
     {
       "label": "calls",
-      "from": "flush_delayed_response",
+      "from": "parse_value",
       "target": "type",
-      "line": 508,
+      "line": 44,
       "rule": "call",
-      "rel": "kong/init.lua"
+      "rel": "kong/api/api_helpers.lua"
     },
     {
       "label": "calls",
-      "from": "Kong.init_worker",
+      "from": "_M.normalize_nested_params",
       "target": "type",
-      "line": 902,
+      "line": 96,
       "rule": "call",
-      "rel": "kong/init.lua"
+      "rel": "kong/api/api_helpers.lua"
     },
     {
       "label": "calls",
-      "from": "Kong.exit_worker",
+      "from": "global",
       "target": "type",
-      "line": 1028,
+      "line": 186,
       "rule": "call",
-      "rel": "kong/init.lua"
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.before_filter",
+      "target": "type",
+      "line": 260,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "new_db_on_error",
+      "target": "type",
+      "line": 354,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "on_error",
+      "target": "type",
+      "line": 399,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.handle_error",
+      "target": "type",
+      "line": 553,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "calls",
+      "from": "_M.is_new_db_routes",
+      "target": "type",
+      "line": 571,
+      "rule": "call",
+      "rel": "kong/api/api_helpers.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "Kong",
-      "line": 2008,
+      "target": "_M",
+      "line": 578,
       "rule": "return-id",
-      "rel": "kong/init.lua"
+      "rel": "kong/api/api_helpers.lua"
+    },
+    {
+      "label": "contains",
+      "from": "global",
+      "target": "type",
+      "line": 15,
+      "rule": "local-decl",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "combine_arg",
+      "target": "type",
+      "line": 112,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "combine",
+      "target": "type",
+      "line": 139,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "infer_value",
+      "target": "type",
+      "line": 155,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "parse_multipart_stream",
+      "target": "type",
+      "line": 351,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
+    },
+    {
+      "label": "calls",
+      "from": "load",
+      "target": "type",
+      "line": 546,
+      "rule": "call",
+      "rel": "kong/api/arguments.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "FileLogHandler",
-      "line": 82,
-      "rule": "return-id",
-      "rel": "kong/plugins/file-log/handler.lua"
+      "target": "load",
+      "line": 587,
+      "rule": "return-table-member",
+      "rel": "kong/api/arguments.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "HttpLogHandler",
-      "line": 202,
-      "rule": "return-id",
-      "rel": "kong/plugins/http-log/handler.lua"
+      "target": "infer_value",
+      "line": 588,
+      "rule": "return-table-member",
+      "rel": "kong/api/arguments.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "LogglyLogHandler",
-      "line": 140,
-      "rule": "return-id",
-      "rel": "kong/plugins/loggly/handler.lua"
+      "target": "decode",
+      "line": 589,
+      "rule": "return-table-member",
+      "rel": "kong/api/arguments.lua"
     },
     {
       "label": "exports",
       "from": "global",
-      "target": "SysLogHandler",
-      "line": 106,
-      "rule": "return-id",
-      "rel": "kong/plugins/syslog/handler.lua"
+      "target": "_infer",
+      "line": 590,
+      "rule": "return-table-member",
+      "rel": "kong/api/arguments.lua"
     }
   ],
-  "unexplainedSample": [],
+  "unexplainedSample": [
+    {
+      "label": "contains",
+      "from": "Schema:errors_to_string",
+      "target": "err",
+      "rel": "kong/db/schema/init.lua"
+    }
+  ],
   "lineWrongSample": [],
   "selftest": {
     "ran": false
