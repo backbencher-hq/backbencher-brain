@@ -207,6 +207,33 @@ const isSpaceCode = (code: number): boolean =>
   code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
   code === 0x3000 || code === 0xfeff
 
+/**
+ * F9 — could this string be a SYMBOL NAME at all?
+ *
+ * Not a reserved-word test and not an identifier test: the question is only whether
+ * the text could name a stored symbol, and the answer is used to DROP an edge rather
+ * than to keep one. Letters, digits, `_`, `.`, `:` and `-` are allowed because real
+ * PowerShell names use all of them (`$script:x`, `$a.b`, `Get-ChildItem`, a COM
+ * ProgID). Whitespace, a newline, a sigil or a quote is not a name, and an edge
+ * carrying one is a target nothing can ever resolve to.
+ *
+ * This exists because `unknownTargets` did not catch it. That metric asks whether a
+ * target MATCHES a symbol, and a target containing a newline matches nothing exactly
+ * as quietly as a correct target matches something — so the malformed here-string
+ * targets sat at 0 unknown for as long as they existed.
+ */
+const isPlausibleSymbolName = (name: string): boolean => {
+  if (name.length === 0) return false
+  for (let i = 0; i < name.length; i++) {
+    const c = name.charCodeAt(i)
+    const ok =
+      (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) ||
+      c === 95 /* _ */ || c === 46 /* . */ || c === 58 /* : */ || c === 45 /* - */
+    if (!ok) return false
+  }
+  return true
+}
+
 /** `/^-/` — one leading dash, so `-ErrorAction` and `ErrorAction` compare equal. */
 const stripLeadingDash = (text: string): string =>
   text.length > 0 && text.charCodeAt(0) === 45 ? text.slice(1) : text
@@ -456,8 +483,25 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       relationships.push({ source, target, type, confidence, line_number: line, metadata })
     }
 
-    const stripDollar = (text: string): string =>
-      text.length > 1 && text.charCodeAt(0) === 36 ? text.slice(1) : text
+    // F9 (M60 #278): a BRACED variable — `${a}` — is the SAME variable as `$a`, and
+    // this helper used to return `{a}` for it, so the two spellings became two
+    // different symbols. Measured on a probe: `$a = 1` declared `a`, and
+    // `"... ${a}"` published `uses -> {a}`, a read naming a symbol nothing declares
+    // and nothing can own. The braced form is how PowerShell writes a variable whose
+    // name would otherwise run into adjacent text, so it is not rare — and a graph
+    // that gives one variable two names has lost the reference.
+    //
+    // Fixed in `stripDollar` rather than at the two call sites, because a variable's
+    // name is normalized on many paths and the scope-qualified check (`isQualified`)
+    // reads the RAW text, so `$env:FOO` is still recognised as qualified and
+    // suppressed exactly as before.
+    const stripDollar = (text: string): string => {
+      if (text.length < 2 || text.charCodeAt(0) !== 36 /* $ */) return text
+      if (text.charCodeAt(1) === 123 /* { */ && text.charCodeAt(text.length - 1) === 125 /* } */) {
+        return text.slice(2, -1)
+      }
+      return text.slice(1)
+    }
 
     /** PS8 — a scope-qualified name (`$global:x`) is never a local declaration. */
     const isQualified = (raw: string): boolean => {
@@ -599,19 +643,116 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * interpolation subexpressions, where the pre-wave lane read only the
      * method call and never the variable.
      */
-    const emitVariableReads = (node: Node) => {
+    // `marker` names WHAT KIND of read this pass is, so each kind is independently
+    // attributable in the output and a mutant can revert one without touching the
+    // others. Without it an argument read and a here-string read are the same row
+    // shape — `uses` + `isVariableReference` — and reverting either from the result
+    // alone would silently revert both. Two of the five PS-A4 mutants cannot be
+    // written faithfully without it, and a mutant that cannot fail is decoration,
+    // which is the standard this file already states.
+    const emitVariableReads = (node: Node, skipBlocks = false, marker?: string) => {
       const work: Node[] = [node]
       const seen = new Set<number>()
       while (work.length > 0) {
         const n = work.pop()!
         if (n.type === "comment") continue
-        if (n.type === "variable") {
+        // A script block is a SCOPE. When this pass runs over a command's arguments,
+        // descending into one would attribute the block's locals to the CALLER —
+        // `ForEach-Object { $x }` would publish `uses $x` from the command's owner.
+        // The block's own body is read by the main switch, which pushes the frame, so
+        // skipping here loses nothing and gains correct attribution.
+        if (skipBlocks && (n.type === "script_block_expression" || n.type === "named_block")) continue
+        // An ELEMENT ACCESS is likewise not this pass's business, and reading into it
+        // is actively wrong rather than merely redundant. `$names[$index]` has two
+        // variables in it, and PS9's ruling is that the readable one is the KEY:
+        // `uses -> index`. This pass would also read the RECEIVER, publishing
+        // `uses -> names` beside it, which `member-reads-psb5` forbids by name as
+        // the pre-fix shape of form 4 ("the RECEIVER instead of the key"). The
+        // dedicated `element_access` case already reads the key with the right grain,
+        // so the correct behaviour here is to skip the node entirely.
+        //
+        // Caught by the fixture on the run that introduced this pass, which is the
+        // gate working: +15,354 edges is not a licence to add a shape a fixture has
+        // already ruled on.
+        if (skipBlocks && n.type === "element_access") continue
+        // F9: a `braced_variable` (`${a}`) is the same node the analyzer must read
+        // as `${a}`, and it is a DIFFERENT node type from `variable`, so the read
+        // pass walked straight past it: `Write-Host ${braced}` published no `uses` at
+        // all. Both spellings now enter the same branch, and `stripDollar` collapses
+        // them to one name.
+        if (n.type === "variable" || n.type === "braced_variable") {
           if (seen.has(n.startIndex)) continue
           seen.add(n.startIndex)
-          const name = stripDollar(n.text)
-          if (!name || isQualified(n.text) || isAutomatic(name)) continue
-          addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9, n.startPosition.row + 1, {
+          // F9: SPLATTING. The grammar models `@name` as a `variable` node whose
+          // text is `@name` — no sigil — so `stripDollar` left it alone and
+          // `New-PSOptions @OptionsArguments` published `uses -> @OptionsArguments`.
+          // That is the same dangling-target defect as the braced form, in the same
+          // family, and `@name` and `$name` are one variable in PowerShell.
+          //
+          // Found by a line-level check over all 25,205 variable-reference edges in
+          // the corpora, asking whether the declared line actually contains
+          // `$<target>`: 96.75% did, and the residue was dominated by braced
+          // variables (a false negative in the CHECK, since `"${x}"` does not
+          // contain `$x`) with splatting as the one real defect in it.
+          //
+          // Only a leading `@` on a `variable` node is stripped. `@()` and `@{}` are
+          // array- and hashtable literals and arrive as `array_literal_expression`
+          // and `hash_literal_expression`, never as `variable`, so they cannot reach
+          // here.
+          // F9, the here-string half. A `variable` inside an EXPANDABLE HERE-STRING
+          // carries the surrounding line break in its own span: the grammar reports
+          // `variable [6,8]-[7,8]` for `$message` on its own line, so `n.text` is
+          // "\n$message\n". Two things went wrong from that. `stripDollar` did
+          // nothing, because the text does not START with `$`; and the resulting edge
+          // published `uses -> "\n$message"`, a target no symbol can have.
+          //
+          // The grammar was not fixed and should not be: the span is the text the
+          // interpolation occupies, and trimming the TEXT is the whole correction.
+          // Verified on a reproduction built from build.psm1:2248-2254, where the
+          // emitted targets were `"\n$message"` and `"\n$stack_trace"`.
+          const trimmed = n.text.trim()
+          const rawName = stripDollar(trimmed)
+          const name = rawName.length > 1 && rawName.charCodeAt(0) === 64 /* @ */
+            ? rawName.slice(1)
+            : rawName
+          // And a GUARD, so a name that is still not a plausible identifier is
+          // dropped rather than published. Every surface metric stayed at 0 while
+          // these two malformed targets were being emitted — `unknownTargets` counts
+          // a target that matches no symbol, and a target with a newline in it
+          // matches nothing just as silently as a correct one. A line-level check
+          // over all 25,202 variable-reference edges is what found them, at
+          // 99.98% justified and 5 residue.
+          if (!isPlausibleSymbolName(name)) continue
+          // The qualified check runs against BOTH the raw text and the name with
+          // its sigil restored, because `QUALIFIED_PREFIXES` are written WITH the
+          // `$` (`"$env:"`) and a braced qualified variable arrives as `${env:FOO}`,
+          // which matches neither form on its own. Without the second check a
+          // `${env:FOO}` read would be published as a project variable — trading one
+          // gap for a worse one, since the whole point of PS8 was to suppress these.
+          if (!name || isQualified(n.text) || isQualified(`$${name}`) || isAutomatic(name)) continue
+          // The LINE must skip the leading break too, not just the name. A
+          // here-string interpolation's node starts at the END of the previous line
+          // (the grammar reports `variable [6,8]-[7,8]` for a `$message` written on
+          // line 7), so `startPosition.row + 1` published the edge one line ABOVE the
+          // variable — measured as `build.psm1:2251 -> message` when `$message` is
+          // on line 2252. This lane has a fixture (`per-site-lines-psb2`) and a
+          // mutant for exactly this class of error, so an off-by-one here is not a
+          // rounding matter.
+          const lead = n.text.length - n.text.trimStart().length
+          let skippedLines = 0
+          for (let i = 0; i < lead; i++) {
+            if (n.text.charCodeAt(i) === 10 /* \n */) skippedLines++
+          }
+          addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9,
+            n.startPosition.row + 1 + skippedLines, {
             powershellSpecific: true, isVariableReference: true,
+            ...(marker ? { [marker]: true } : {}),
+            // A read written in the BRACED spelling. The marker's job is to make the
+            // normalization independently revertible: once `${a}` and `$a` are the
+            // same string in the result, nothing distinguishes them, so a mutant for
+            // "the braces come back" has nothing to key on and would be a no-op — a
+            // mutant that cannot fail is decoration.
+            ...(trimmed.charCodeAt(0) === 36 && trimmed.charCodeAt(1) === 123 ? { isBracedVariable: true } : {}),
           })
           continue
         }
@@ -1165,6 +1306,40 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ----------------------------------------------------- assignments
         case "assignment_expression": {
           const left = findFirstChild(node, "left_assignment_expression")
+          // F9: a COMPOUND assignment reads its left side. `$m += 1` is a read of
+          // `$m` and a write to it; the write is the declaration, and the read was
+          // published nowhere, so the same variable that `$m = 1` declares had a use
+          // the graph could not see. The operator is what decides it: `=` writes only,
+          // and every `+=`/`-=`/`*=`/`/=`/`%=` reads first. Reading the operator's
+          // own text is what keeps the plain assignment from gaining a read edge it
+          // does not have — the distinction is the whole point and is pinned by the
+          // fixture's two rows on the same construct.
+          if (left) {
+            const op = findFirstChild(node, "assignement_operator")
+            const opText = op ? op.text.trim() : "="
+            if (opText.length > 1) {
+              // `findDescendantVariable`, not a depth guess: the left side of an
+              // assignment sits at the BOTTOM of the expression ladder
+              // (left_assignment_expression > logical > bitwise > comparison >
+              // additive > multiplicative > format > range > array_literal >
+              // unary > variable — eleven levels), and the neighbouring member-write
+              // search uses depth 14 for the same reason. The helper is the one the
+              // declaration path already uses, so the read and the declaration cannot
+              // drift apart on a different depth constant.
+              const lhsVar = findDescendantVariable(left)
+              if (lhsVar) {
+                const lname = stripDollar(lhsVar.text.trim())
+                if (isPlausibleSymbolName(lname) && !isQualified(lhsVar.text) && !isAutomatic(lname)) {
+                  addRel(top().scope, lname, ASTEngine.RelationshipType.Uses, 0.9, lhsVar.startPosition.row + 1, {
+                    powershellSpecific: true,
+                    isVariableReference: true,
+                    isCompoundAssignmentRead: true,
+                    assignmentOperator: opText,
+                  })
+                }
+              }
+            }
+          }
           if (left) {
             // PS9 — a member WRITE (`$this.Name = …`, `$cfg.Retries = 3`) is a
             // use of the member, at the member's own line. The pre-wave lane
@@ -1379,6 +1554,59 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        // F9: an INCREMENT or DECREMENT reads its operand. `$n++` / `++$n` are the
+        // one remaining place a variable is read and nothing was published — the F9
+        // audit found these four types in the "the analyzer never names it" set, and
+        // probing them confirmed all four emit nothing at all, so `$n++` left the
+        // graph with `contains -> n` and no read.
+        //
+        // A `uses` is the right edge and not a weaker one: the operand is genuinely
+        // read, and the WRITE half has no edge in this lane's model because a write to
+        // a local is not a fact the graph can express (a member write can, which is
+        // what `isMemberWrite` is for). The metadata says which operation it was so a
+        // reader is not left guessing, and so a fixture can pin the distinction.
+        case "post_increment_expression":
+        case "post_decrement_expression":
+        case "pre_increment_expression":
+        case "pre_decrement_expression": {
+          // A DESCENDANT search, not a direct child, and the reason is the prefix
+          // forms: `++$n` nests its operand as
+          // `pre_increment_expression > unary_expression > variable`, while `$n++`
+          // puts it directly under the increment node. A direct-child lookup found the
+          // postfix pair and silently missed the prefix pair — the same shape of
+          // miss as `sub_expression` (PS16) and `left_assignment_expression` (PS2),
+          // both of which this lane has already been bitten by.
+          const operand = findDescendant(node, "variable", 6)
+          if (operand) {
+            const name = stripDollar(operand.text.trim())
+            if (isPlausibleSymbolName(name) && !isQualified(operand.text) && !isAutomatic(name)) {
+              addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9, operand.startPosition.row + 1, {
+                powershellSpecific: true,
+                isVariableReference: true,
+                isCounterUpdate: true,
+                isPostfix: node.type.startsWith("post_"),
+              })
+            }
+          }
+          break
+        }
+
+        case "expandable_here_string_literal": {
+          // F9: a HERE-STRING interpolates exactly as a double-quoted string does,
+          // and this node type was simply not in the switch — so `@"… $name …"@`
+          // published no read at all while the identical text in `"… $name …"` did.
+          // It is a distinct node type from `expandable_string_literal`, which is why
+          // the existing case could not have caught it: the grammar parses
+          // `variable [6,8]-[7,8]` for a here-string's `$message`, a span that starts
+          // at the END of the previous line, and the read pass now trims that and
+          // skips the leading break when it stamps the line. The marker makes this
+          // read independently revertible: without it an argument read and a
+          // here-string read are the same row shape, so a mutant for either would
+          // silently revert both.
+          emitVariableReads(node, false, "isHereStringInterpolation")
+          break
+        }
+
         // ---------------------------------------- invocation (PS17/PS18/PS19)
         case "invokation_expression": {
           const typeLit = findFirstChild(node, "type_literal")
@@ -1403,6 +1631,23 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // METHOD, not the class.
           const receiver = findFirstChild(node, "variable")
           if (member) {
+            // F9: a DYNAMIC method target — `$type::$method()` — has a `$`-prefixed
+            // member, and publishing it as a `calls` edge wrote the sigil into the
+            // target: `calls -> $method`, a name no symbol can have, measured on the
+            // same ConstrainedLanguageRestriction.Tests.ps1 line as the residue
+            // above. A `$`-prefixed member is not a method name at all — it is a
+            // VARIABLE holding one — so it is published as a `uses` of that variable,
+            // which is what the source says.
+            const dynamicTarget = member.text.length > 0 && member.text.charCodeAt(0) === 36 /* $ */
+            if (dynamicTarget) {
+              const dynName = stripDollar(member.text)
+              if (isPlausibleSymbolName(dynName)) {
+                addRel(top().scope, dynName, ASTEngine.RelationshipType.Uses, 0.9, member.startPosition.row + 1, {
+                  powershellSpecific: true, isDynamicMethodTarget: true, isVariableReference: true,
+                })
+              }
+              break
+            }
             addRel(top().scope, member.text, ASTEngine.RelationshipType.Calls, 0.6, line, {
               powershellSpecific: true, methodCall: true,
               on: receiver ? stripDollar(receiver.text) : "",
@@ -1561,9 +1806,18 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const op = findFirstChild(node, "command_invokation_operator")
           if (op) {
             if (leaf.startsWith("$")) {
-              addRel(top().scope, stripDollar(leaf), ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
-                powershellSpecific: true, isInvokedVariable: true, isVariableReference: true,
-              })
+              // F9: guard the name. `$type::$method()` leaves the command-name node
+              // holding `$method()` plus the rest of the recovered line, so the
+              // stripped text was `method()\n                }` — published as a
+              // `uses` target that no symbol can have, on
+              // ConstrainedLanguageRestriction.Tests.ps1:513. Found by the
+              // line-level check, the last of its residue at 100.00% justified.
+              const invoked = stripDollar(leaf)
+              if (isPlausibleSymbolName(invoked)) {
+                addRel(top().scope, invoked, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
+                  powershellSpecific: true, isInvokedVariable: true, isVariableReference: true,
+                })
+              }
             } else if (looksLikeModulePath(leaf)) {
               addRel(top().scope, leaf, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
                 powershellSpecific: true, invokationOperator: op.text,
@@ -1699,6 +1953,19 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             break
           }
 
+          // F9 (M60 #278): a bare VARIABLE passed as a command argument is a USE,
+          // and it was emitting nothing. Measured on a probe: `$a = 1` then
+          // `Write-Host $a` published `calls -> Write-Host` and no `uses -> a` at
+          // all — so every variable handed to a cmdlet was invisible in the graph,
+          // while the same variable interpolated in a string was read. Passing a
+          // variable to a cmdlet is one of the commonest things PowerShell does.
+          //
+          // Read from `command_elements` rather than the whole `command` node, and
+          // with `skipBlocks`, so a nested script block's locals stay with the block
+          // that declares them. `addRel` dedupes on source|type|target|line, so a
+          // variable that is also interpolated on the same line is published once.
+          const argElements = findFirstChild(node, "command_elements")
+          if (argElements) emitVariableReads(argElements, true, "isArgumentReference")
           addRel(top().scope, leaf, ASTEngine.RelationshipType.Calls, leaf.includes("-") ? 0.9 : 0.6, nameLine, {
             powershellSpecific: true,
           })
