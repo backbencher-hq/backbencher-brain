@@ -198,6 +198,71 @@ measurement.)
   property P13, scored per corpus slice in
   `script/m14/tmp/c-audit/p13-baseline.json`: 44 over a 200-file `curl/lib` slice,
   28 over `redis/deps/jemalloc`, reported every run and failing only on growth.
+- **The layout payload was never verified against anything until this wave, and
+  it was wrong.** `metadata.memorySize` / `metadata.alignment` are computed by a
+  hand-rolled model, and the lane's own fixtures were written *from the analyzer's
+  output* — a payload checked against itself is not checked. The first independent
+  check, against `clang -Xclang -ast-dump=json`
+  (`script/m14/tmp/c-audit/layout-vs-clang.ts`), measured **46.9%** agreement with
+  clang on redis. The decisive part is what the same run measured: the member
+  **SETS** the numbers were computed from were **97.1% identical** to clang's, so
+  the defect was the *arithmetic*, not extraction. The arithmetic matched a
+  member's type **spelling** against two hand-maintained whitelists that had
+  already drifted apart from each other, so every legal C primitive not
+  individually enumerated fell through to a 4/4 default — **1027 of 2056
+  member-type spellings (50%)** across the redis corpus, led by `long long`
+  (130x, 8 bytes, computed as 4) and `unsigned char` (45x, 1 byte, computed as 4).
+  Fixed by `primitiveClass`, which reads the keyword sequence the grammar already
+  parsed and is therefore **complete** for primitives rather than enumerable, and
+  by four further defects the probe then exposed:
+
+  | # | Defect | clang said | we said |
+  |---|---|---|---|
+  | #936 | `long long`, `unsigned char`, `short int` and every other unlisted spelling | 16/8, 2/1, 8/4 | 8/4, 8/4, 6/4 |
+  | #937 | a **same-file** `typedef uint16_t fingerprint_t;` above its use | 4/2 | 8/1 |
+  | #938 | the two passes disagreed on the unknown-type fallback (4/4 vs align 1) | — | self-contradictory |
+  | #939 | an array dimension written as a macro or an enumerator | 7/1 | 4/1 (dimension defaulted to 1) |
+  | #941 | a **flexible array member** `T x[]` charged one byte (C99 6.7.2.1p16: zero) | 4/4 | 8/4 |
+
+  Result, measured on both corpora that clang can fully compile:
+
+  | Corpus | Compared | Agreed (overall) | Agreed, **types the analyzer claims to model** |
+  |---|---|---|---|
+  | `redis/src` | 49 | 37 (75.5%) | **32/32 (100.0%)** |
+  | `libgit2/include` | 69 | 40 (58.0%) | **20/20 (100.0%)** |
+
+- **`layoutUnknownMembers` — a number that was partly invented is now marked.**
+  Every remaining disagreement with clang is a width the model **declines to
+  guess**, and before this wave it was published as if it had been computed: one
+  rate conflated "our arithmetic is wrong" with "we refused and guessed", and a
+  consumer could not tell a measurement from an invention. Each struct now
+  publishes `metadata.layoutUnknownMembers`, counting every member whose width
+  **or array count** was not computed. It counts, deliberately:
+
+  - a named type declared in **another file** (C-D2 — the model is per-file);
+  - a width deliberately refused, `long double` above all, which is 8 bytes on
+    some ABIs, 12 on i386 and 16 on x86-64 SysV, so a guess would be wrong twice
+    out of three;
+  - a **bitfield**. `uint32_t iskey:1;` is not a 4-byte member, and redis's
+    `raxNode` declares three 1-bit flags plus a 29-bit counter that clang packs
+    into ONE 4-byte unit where the model computed 16. Bitfield packing is a real
+    algorithm this model does not implement, so the published size is a **lower
+    bound** and the flag says so;
+  - a member whose members sit inside a **`#ifdef`**, which the extractor skips
+    entirely — redis's `eventNotifier` is `#ifdef HAVE_EVENT_FD int efd; #else int
+    pipefd[2]; #endif`, so which branch is live depends on build configuration
+    the per-file model does not have;
+  - a by-value **cycle**, where no size exists.
+
+  The counter **propagates through the recursive descent**, because a member of
+  type `rax` is only as well known as `rax` itself. The first version of the flag
+  did not, and flattered the analyzer: 8 redis types reported
+  `layoutUnknownMembers == 0` while their own miss class read "a named type whose
+  width the model cannot know" — the metric and the classification contradicting
+  each other inside one report. A `layoutUnknownMembers == 0` type is now correct
+  in **100% of comparable cases on both corpora**; that is the number worth
+  trusting, and the overall rate is the number worth quoting honestly.
+
 - **A by-value self-referential type has no computable size.** C forbids an object
   type containing itself, so `metadata.memorySize` for one is not a number anyone
   can justify; the layout descent is bounded and contributes 0. **The crash this
@@ -242,10 +307,44 @@ that disclosure and the CPU figures are the ones to compare.
 
 | corpus | files | nodes | symbols | relationships | error files | crashes | ms/file (wall) | ms/k-node (wall) | load1 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| curl | 900 | 931,077 | 16,445 | 68,273 | 144 (16.0%) | **0** | 16.7 | 16.1 | 28.7 |
-| libgit2 | 900 | 1,459,927 | 27,705 | 111,787 | 153 (17.0%) | **0** | 42.0 | 25.9 | 31.6 |
-| redis | 698 | 1,654,679 | 29,735 | 132,576 | 196 (28.1%) | **0** | 77.6 | 32.8 | 35.4 |
-| **total** | **2,498** | **4,045,683** | **73,885** | **312,636** | 493 (19.7%) | **0** | — | — | — |
+| curl | 900 | 931,077 | 16,445 | 68,275 | 144 (16.0%) | **0** | 8.3 | 8.0 | 7.4 |
+| libgit2 | 900 | 1,459,927 | 27,705 | 111,793 | 153 (17.0%) | **0** | 12.8 | 7.9 | 7.5 |
+| redis | 698 | 1,654,679 | 29,733 | 132,633 | 196 (28.1%) | **0** | 19.6 | 8.3 | 8.5 |
+| **total** | **2,498** | **4,045,683** | **73,883** | **312,701** | 493 (19.7%) | **0** | — | — | — |
+
+Reproduce with the scope spelled out, because the count moves with it and a
+census whose denominator depends on whatever else is checked out is not evidence:
+
+```
+bun run script/m14/tmp/c-audit/census.ts \
+  --repos $HOME/ishaq/fixtures/repositories/{curl,libgit2,redis} \
+  --ext .c,.h --limit 900
+```
+
+At **full** scope (no `--limit`, so 2,778 files) the same invariants hold —
+0 crashes, 0 unknown kinds, 0 empty names, 0 members without an owner, 0
+macro-named members, 0 edges without a line, 0 dangling `contains` — and two
+classes appear that the 2,498-file scope does not reach, recorded here rather
+than left to a later reader:
+
+- **1 symbol-free file**, `libgit2/script/user_nodefs.h`, whose entire content is
+  wrapped in `#nodef` — a deliberately invalid directive libgit2 uses to switch
+  code off. A compiler skips it too, so the analyzer emitting nothing is correct
+  and the census's "HAS CODE" verdict is a text heuristic disagreeing with the
+  language. 4 more appear in `zig/`'s vendored libc, which is outside this lane's
+  declared corpora: 2 are genuinely directive-only, and 2 are a bare prototype
+  carrying a trailing macro attribute (`void _start(char *, ...) __dead2;`) and a
+  file-scope macro invocation (`DEFINE_GUID(...)`). Neither is a crash and neither
+  is in this wave's diff, which touches layout metadata, array dimensions and
+  typedef aliasing — none of which mints or suppresses a function symbol.
+- **`duplicateMemberNames` 73** at full scope (13 curl / 41 libgit2 / 19 redis).
+  Every row inspected is a member of an **anonymous aggregate** or a
+  macro-generated type — `anonymous_struct.type x4` in `redis/src/bio.c`,
+  `once_s.begun x2` in zlib's `crc32.c` — where a repeated name is a property of
+  the source and not a defect. The counter's definition does not yet match the
+  property it is named for: it does not distinguish "two members with one name in
+  the SAME struct" (real) from "one name in two DIFFERENT anonymous aggregates"
+  (legal C). Stated as an open instrument defect, not as a clean zero.
 
 Full artifact with the per-file rows, the size-band breakdown, the
 scaling-by-quartile curve and the load1 reading of each run:
@@ -353,10 +452,11 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **24/24 pass** (18 pre-existing + 6 new) | `bun run script/m14/run-fixtures.ts --lang c` |
-| M14.0.F1 grammar conformance | **PASS**, 57 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F3 fixtures | **25/25 pass** (18 pre-existing + 7 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F1 grammar conformance | **PASS**, 60 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 22/22 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 28/28 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| layout vs clang (independent reference) | **100.0% (32/32)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 75.5% / 58.0% overall | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
 
@@ -367,6 +467,25 @@ reason. A defect class with no gate is the disease this repository keeps finding
 so the lane owns the gate rather than leaving the class ungated. The shared
 registry's C mutants were **not** modified; the new C mutants live in the lane's
 own file with the same faithful-revert discipline.
+
+The six mutants this wave added (`936`, `937`, `938`, `940`, `941`, `944`) cover
+the layout payload, and two of them exist because **the gate caught me** rather
+than the code:
+
+- `#936`'s first revert anchored on the branch head *plus* the assignment two
+  lines below. A comment sits between them, so the revert never fired and the gate
+  reported an anchor error rather than a result — the correct failure, and the
+  reason the gate refuses to pass a mutant whose revert it could not apply.
+- `#940`'s first revert swapped the *initial* guess count, which is equivalent to
+  the original for every type in the fixture (none has a `#ifdef` body), so the
+  mutant **SURVIVED while removing nothing**. A mutant that cannot fail is not a
+  mutant; it was re-aimed at the accounting the fixture can actually see.
+
+A third correction belongs to the probe rather than the gate: it initially
+classified each miss from a 4000-character window after the type name and labelled
+15 of 22 misses "array member" because a bracket appeared *somewhere in the file*.
+The class is now computed from the type's own body, which is what moved the
+diagnosis from "array padding looks wrong" to "the width table is incomplete".
 
 ### What the lane's own gate can and cannot see
 
@@ -405,14 +524,16 @@ A member-name bug that keeps the name and corrupts the ownership needs an
 
 ## Evidence pointers
 
-- Lane fixtures: `validation/m14/fixtures/c/` (24 pairs, 6 added this wave)
+- Lane fixtures: `validation/m14/fixtures/c/` (25 pairs, 7 added this wave)
 - Lane gate: `script/m14/tmp/c-audit/verify-c-lane.ts` + `p13-baseline.json`
 - Lane probes (all re-runnable): `script/m14/tmp/c-audit/` —
-  `census.ts` (the 2,498-file census), `duplicate-classes.ts` (provable vs
-  unprovable duplicate edges), `line-edges.ts` (every edge on one source line,
-  with the metadata that identifies its branch), `truncation-shape.ts` (the parse
-  shapes behind the removed regex), `macro-field-probe.ts`,
-  `perf-attribution.ts`, `line-index-parity.ts`
+  `census.ts` (the 2,498-file census), **`layout-vs-clang.ts`** (the layout payload
+  against an independent `clang -ast-dump=json` reference: size, alignment, member
+  SETS, agreement split by `layoutUnknownMembers`, and every miss classed),
+  `duplicate-classes.ts` (provable vs unprovable duplicate edges), `line-edges.ts`
+  (every edge on one source line, with the metadata that identifies its branch),
+  `truncation-shape.ts` (the parse shapes behind the removed regex),
+  `macro-field-probe.ts`, `perf-attribution.ts`, `line-index-parity.ts`
 - Corpus census artifact: `validation/m12/results/c-corpus-census.json`
 - M12 ground truth: `validation/m12/ground-truth/c.json`
 - M12 differential: `validation/m12/results/c-differential.json`

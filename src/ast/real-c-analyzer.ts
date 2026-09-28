@@ -897,6 +897,21 @@ class CScopeManager {
 }
 
 export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * #937: per-file typedef tables, rebuilt at the top of every `analyze` call.
+   * Instance state rather than parameters because the layout maths is reached
+   * from four call sites and threading a seventh argument through two recursive
+   * functions to carry a per-file lookup would obscure the recursion that #927
+   * already had to reason about. They are ASSIGNED, never accumulated, so a
+   * second file on the same analyzer cannot see the first file's aliases.
+   */
+  private primitiveAliases: Map<string, string> = new Map()
+  /** `typedef A B;` -> `A`, for chains, including non-primitive targets. */
+  private aliasTargets: Map<string, string> = new Map()
+  /** #939: same-file `#define` replacement text, and same-file enum values. */
+  private macroValueTexts: Map<string, string> = new Map()
+  private enumConstantValues: Map<string, number> = new Map()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     // 1. ISOLATED STATE (Thread-Safe)
     // HC5 (deepest review): the CGD19 per-ERROR-span memo is instance state
@@ -930,6 +945,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const functionLocals = new Map<string, Set<string>>()
     // #383 payload: call targets per enclosing function
     const qcByFunction = new Map<string, string[]>()
+
+    // #937: same-file `typedef <primitive> <alias>;` and plain `typedef A B;`
+    // chains, both rebuilt per file so nothing leaks between analyses.
+    this.primitiveAliases = this.buildPrimitiveAliases(rootNode)
+    this.aliasTargets = this.buildAliasTargets(rootNode)
 
     const structs: Record<string, any[]> = {}
     const globalVars: Record<string, boolean> = {}
@@ -1155,6 +1175,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // function-like macro's use -- while a DAMAGED field declaration can merge
     // one in, which is the #933 case.
     const allMacroNames = new Set<string>()
+    // #939: `#define NAME <replacement text>`, same-file only. Feeds the array
+    // dimension resolver; a macro defined in another header stays unknown, which
+    // is C-D2 again and is why the resolver returns null rather than a guess.
+    const macroValueTexts = new Map<string, string>()
+    this.macroValueTexts = macroValueTexts
+    // #939: same-file enumerator values, for `[MAX_FDS]`-shaped dimensions.
+    this.enumConstantValues = this.buildEnumConstantValues(rootNode)
     {
       const preStack: Node[] = [rootNode]
       while (preStack.length > 0) {
@@ -1168,6 +1195,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
             if (n.type !== "preproc_function_def") objectMacroNames.add(nm.text.trim())
             allMacroNames.add(nm.text.trim())
+            // #939: the macro's REPLACEMENT text, kept only for object macros. A
+            // function macro's replacement is a parameter list plus a body, and
+            // treating that as a value is how a "dimension" turns into a number
+            // nobody wrote.
+            if (n.type === "preproc_def") {
+              const val = n.childForFieldName("value")
+              if (val && !macroValueTexts.has(nm.text.trim())) macroValueTexts.set(nm.text.trim(), val.text)
+            }
           }
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -2514,6 +2549,25 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const fields: any[] = []
     const bodyList = node.childForFieldName("body")
+    // #943: a body whose members sit inside a preprocessor conditional. The
+    // extractor iterates the body's DIRECT children, and a `preproc_ifdef` is not
+    // a `field_declaration`, so those members are skipped entirely -- redis's
+    // eventNotifier published 0 bytes and NO members against clang's 4, because
+    // all it has is `#ifdef HAVE_EVENT_FD int efd; #else int pipefd[2]; #endif`.
+    // Which branch is live depends on the build configuration, which the
+    // per-file model does not have (C-D2), so the members cannot be recovered --
+    // but a size of 0 is a CLAIM, and the flag has to say the payload is not a
+    // measurement rather than a computed zero.
+    let bodyIsConditional = false
+    if (bodyList) {
+      for (let i = 0; i < bodyList.namedChildCount; i++) {
+        const t = bodyList.namedChild(i)?.type ?? ""
+        if (t === "preproc_if" || t === "preproc_ifdef" || t === "preproc_else") {
+          bodyIsConditional = true
+          break
+        }
+      }
+    }
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
@@ -2570,14 +2624,53 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               )
             ) {
               let arraySize = 1
+              let unresolvableDimensions = false
+              // #944: a BITFIELD. `uint32_t iskey:1;` is not a 4-byte member, and
+              // the bitfields in redis's raxNode (three 1-bit flags plus a 29-bit
+              // counter) pack into ONE 4-byte unit where the model charged 16.
+              // The packing rule is a real algorithm and this model does not
+              // implement it, so the width is unknown -- but a wrong width is
+              // worse than a marked lower bound, and the type must not be
+              // published as measured.
+              let isBitfield = false
               let isPointer = this.isPointerType(rawDecl)
               let declNode: Node | null = rawDecl
+
+              if (this.findChild(field, (c: any) => c?.type === "bitfield_clause")) isBitfield = true
 
               while (declNode && declNode.type !== "field_identifier" && declNode.type !== "identifier") {
                 if (declNode.type === "array_declarator") {
                   const sizeNode =
                     declNode.childForFieldName("size") || this.findChild(declNode, (c) => c?.type === "number_literal")
-                  if (sizeNode && !isNaN(parseInt(sizeNode.text))) arraySize *= parseInt(sizeNode.text)
+                  // #939: a dimension spelled as a same-file macro resolves too.
+                  const dim = this.arrayDimension(sizeNode)
+                  if (dim !== null) {
+                    arraySize *= dim
+                  } else if (!sizeNode) {
+                    // #941: a FLEXIBLE ARRAY MEMBER, `T name[]` with no dimension.
+                    // C99 6.7.2.1p16 says it is ignored when the size of the
+                    // containing struct is computed, so it contributes ZERO bytes
+                    // -- and the default of 1 invented a byte. redis's `intset` is
+                    // `{ uint32_t encoding; intsetLevel length; uint8_t contents[]; }`
+                    // and published 12 bytes where clang says 8: the two real
+                    // members plus one byte of imagination, padded out to 4.
+                    //
+                    // Zero rather than 1 because zero is the DEFINED answer, not a
+                    // guess, so this stays a computation and is deliberately NOT
+                    // counted by `layoutUnknownMembers`. A sizeless array that is
+                    // not a flexible array member is invalid C, and zero is the
+                    // right answer for that too.
+                    arraySize = 0
+                  } else {
+                    // #942: a dimension that EXISTS but cannot be resolved -- an
+                    // enum constant, or a macro defined in another file. The
+                    // count silently defaulted to 1, and 1 is a CLAIM, not a
+                    // default: redis's `int metaSize[NUM_MSTR_FLAGS]` published as
+                    // a 1-element array (16 bytes) where clang says 72, with
+                    // nothing marking the guess. Counted as unknown for that
+                    // reason, and 1 is kept as the working value.
+                    unresolvableDimensions = true
+                  }
                 }
                 declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
               }
@@ -2590,7 +2683,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   // respect C's tag/ordinary namespace split instead of matching
                   // bare text against both maps.
                   typeKind: this.memberTypeKind(typeNode),
+                  // #936: the member's WIDTH, taken from the AST rather than
+                  // from its spelling. See `primitiveClass` for why the two
+                  // text tables this replaces could not do this job.
+                  primitive: this.primitiveClass(typeNode),
                   arraySize,
+                  unresolvableDimensions,
+                  isBitfield,
                   isPointer,
                 })
                 symbols.push({
@@ -2629,8 +2728,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         cSpecific: true,
         isPacked,
         isConditional,
-        memorySize: this.calculateMemorySize(fields, isPacked, structs, unions, is64Bit, isLLP64),
-        alignment: this.calculateAlignment(fields, structs, unions, is64Bit, isLLP64),
+        ...this.layoutPayload(fields, isPacked, structs, unions, is64Bit, isLLP64, bodyIsConditional),
       },
     })
   }
@@ -2712,6 +2810,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               )
             ) {
               let arraySize = 1
+              let unresolvableDimensions = false
+              let isBitfield = false
               let isPointer = this.isPointerType(rawDecl)
               let declNode: any = rawDecl
 
@@ -2720,7 +2820,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   const sizeNode =
                     declNode.childForFieldName("size") ||
                     this.findChild(declNode, (c: any) => c?.type === "number_literal")
-                  if (sizeNode && !isNaN(parseInt(sizeNode.text))) arraySize *= parseInt(sizeNode.text)
+                  // #939: a dimension spelled as a same-file macro resolves too.
+                  const dim = this.arrayDimension(sizeNode)
+                  if (dim !== null) {
+                    arraySize *= dim
+                  } else if (!sizeNode) {
+                    // #941: a FLEXIBLE ARRAY MEMBER, `T name[]` with no dimension.
+                    // C99 6.7.2.1p16 says it is ignored when the size of the
+                    // containing struct is computed, so it contributes ZERO bytes
+                    // -- and the default of 1 invented a byte. redis's `intset` is
+                    // `{ uint32_t encoding; intsetLevel length; uint8_t contents[]; }`
+                    // and published 12 bytes where clang says 8: the two real
+                    // members plus one byte of imagination, padded out to 4.
+                    //
+                    // Zero rather than 1 because zero is the DEFINED answer, not a
+                    // guess, so this stays a computation and is deliberately NOT
+                    // counted by `layoutUnknownMembers`. A sizeless array that is
+                    // not a flexible array member is invalid C, and zero is the
+                    // right answer for that too.
+                    arraySize = 0
+                  } else {
+                    // #942: a dimension that EXISTS but cannot be resolved -- an
+                    // enum constant, or a macro defined in another file. The
+                    // count silently defaulted to 1, and 1 is a CLAIM, not a
+                    // default: redis's `int metaSize[NUM_MSTR_FLAGS]` published as
+                    // a 1-element array (16 bytes) where clang says 72, with
+                    // nothing marking the guess. Counted as unknown for that
+                    // reason, and 1 is kept as the working value.
+                    unresolvableDimensions = true
+                  }
                 }
                 declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
               }
@@ -2731,7 +2859,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   type: typeNode ? typeNode.text : "unknown",
                   // #927: the struct extractor's classification, for the same reason.
                   typeKind: this.memberTypeKind(typeNode),
+                  // #936: the member's WIDTH, taken from the AST rather than
+                  // from its spelling. See `primitiveClass` for why the two
+                  // text tables this replaces could not do this job.
+                  primitive: this.primitiveClass(typeNode),
                   arraySize,
+                  unresolvableDimensions,
+                  isBitfield,
                   isPointer,
                 })
                 symbols.push({
@@ -3120,6 +3254,494 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * exceeded", one crash in 900 curl files against a lane that documents a
    * crash guarantee of 0.
    */
+  /**
+   * The WIDTH CLASS of a primitive member type, or null when the AST does not
+   * determine one.
+   *
+   * This method exists because of a measurement, not a reading of the C
+   * standard. The layout maths used to match a member's type SPELLING against
+   * two hand-maintained whitelists -- one in `calculateMemorySize` and a
+   * different one in `calculateAlignment`, which had already drifted apart. Both
+   * accepted only exact spellings, so every legal C primitive the author had not
+   * thought to enumerate fell through to a 4/4 default. Counting the
+   * occurrences in the redis corpus: 1027 of 2056 member-type spellings (50%)
+   * took that fall-through, led by `long long` (130x, 8 bytes wide, computed as
+   * 4) and `unsigned char` (45x, 1 byte wide, computed as 4).
+   *
+   * An independent check against `clang -ast-dump=json` put the whole payload at
+   * 46.9% agreement on size AND alignment over 49 comparable structs -- while
+   * the field SETS the sizes were computed from were 97.1% identical to clang's.
+   * That split is what identified the arithmetic, rather than member
+   * extraction, as the defect; see `script/m14/tmp/c-audit/layout-vs-clang.ts`.
+   *
+   * Two properties matter more than the win rate:
+   *
+   *   - It is COMPLETE for primitives, because it reads the keyword sequence the
+   *     grammar already parsed rather than a list of spellings. `long long`,
+   *     `unsigned long long`, `signed char`, `short int`, `unsigned` and
+   *     `long int` are all classified, including ones never enumerated.
+   *   - It REFUSES everything else, returning null. A `type_identifier` is a
+   *     named type whose width this per-file model does not know (cross-file
+   *     resolution is a declared non-goal, C-D2), and inventing a width for
+   *     `sds` or `mstime_t` is precisely the "a heuristic wearing a number's
+   *     clothes" failure the probe exists to catch. `long double` is refused for
+   *     the same reason: it is 8 bytes here, 12 on x86-64 SysV, 16 on i386, and a
+   *     model that guessed would be wrong on two of the three.
+   */
+  private primitiveClass(typeNode: any): string | null {
+    if (!typeNode) return null
+    // Peel the macro wrappers a type may legitimately be spelled through, so
+    // `redisAtomic long long` classifies as `long long` instead of as a name.
+    //
+    // An `attributed_type_specifier` was in this loop once, from memory of a
+    // NEWER tree-sitter-c. F1 caught it immediately: the node type does not exist
+    // in this grammar at all -- `__attribute__((aligned(8))) int a;` parses with
+    // the attribute as a SIBLING of the type, not a wrapper around it -- so the
+    // literal could never match. Dead literals are the failure mode the audit
+    // exists for, and the right response to one is deletion, not a waiver entry.
+    let node = typeNode
+    for (let hop = 0; hop < 8; hop++) {
+      if (node.type === "type_identifier") {
+        // C99's `_Bool` and C23's `bool` are keywords and one byte wide. Every
+        // other name spelled this way has an unknown width here.
+        return node.text === "_Bool" || node.text === "bool" ? "bool" : null
+      }
+      if (node.type !== "macro_type_specifier" && node.type !== "macro_prefixed_type_specifier") break
+      const next = (node.namedChildren ?? []).filter(
+        (c: Node | null): c is Node => !!c && c.type !== "identifier" && c.type !== "type_identifier",
+      )
+      if (next.length !== 1) return null
+      node = next[0]
+    }
+    // Only a real primitive specifier reaches the keyword test. A struct, union
+    // or enum specifier must return null so the caller's existing descent runs.
+    if (node.type !== "primitive_type" && node.type !== "sized_type_specifier") return null
+    return this.primitiveClassFromWords(node.text)
+  }
+
+  /**
+   * The width class for a primitive type's KEYWORD SEQUENCE, or null.
+   *
+   * Split out from `primitiveClass` so a typedef alias of a primitive is judged
+   * by the identical rules as the primitive itself (#937) rather than by a second,
+   * inevitably-divergent table.
+   */
+  private primitiveClassFromWords(specText: string): string | null {
+    // The specifier's own text is the keyword sequence; `sized_type_specifier`
+    // holds `long long`, `unsigned char` and `short int` whole, so the width
+    // words are countable without descending.
+    const words = this.splitOnWhitespace(specText)
+    const set = new Set(words)
+    if (set.has("double")) return set.has("long") ? null : "double"
+    if (set.has("float")) return "float"
+    if (set.has("char")) return "char"
+    if (set.has("void")) return null
+    const longs = words.filter((w: string) => w === "long").length
+    if (longs >= 2) return "longlong"
+    if (longs === 1) return "long"
+    if (set.has("short")) return "short"
+    // `int`, `unsigned`, `signed` and a bare `unsigned` all land on 4 bytes.
+    if (set.has("int") || set.has("unsigned") || set.has("signed") || words.length === 0) return "int"
+    return null
+  }
+
+  /**
+   * `typedef <primitive> <alias>;` declared in THIS file, mapped to the width
+   * class of the primitive it names.
+   *
+   * This is deliberately not cross-file resolution -- C-D2 keeps that a declared
+   * non-goal, and a `fingerprint_t` defined in another header stays unknown. But
+   * a same-file alias is not a cross-file problem at all, and redis is full of
+   * them: `typedef uint16_t fingerprint_t;` sits two lines above the
+   * `fingerprint_t fp;` member that needs it, and `uint16_t` was already in the
+   * model's tables. Measured cost of not looking: `chkLobbyEntry` was published
+   * as 8 bytes / align 1 where clang says 4 / 2.
+   *
+   * An alias chain (`typedef uint16_t a; typedef a b;`) resolves through, and
+   * `typedef A B; typedef B A;` -- legal C, meaningless C -- terminates on the
+   * hop cap rather than recursing.
+   */
+  private buildPrimitiveAliases(rootNode: Node): Map<string, string> {
+    const aliases = new Map<string, string>()
+    const stack: Node[] = [rootNode]
+    const seen = new Set<number>()
+    while (stack.length) {
+      const n = stack.pop() as Node
+      // No numeric ids on every binding, so identity is tracked on the node
+      // objects the walk actually yields.
+      if (seen.has((n as any).id)) continue
+      if (n.id !== undefined) seen.add(n.id)
+      if (n.type === "type_definition") {
+        const typeNode = n.childForFieldName("type")
+        const decl = n.childForFieldName("declarator")
+        if (typeNode && decl && decl.type === "type_identifier" && !decl.childForFieldName("declarator")) {
+          // Classify the target, which is usually a NAME (`uint16_t`) rather than
+          // a keyword -- so the fixed-width table is consulted here too, or every
+          // `typedef <stdint name> <alias>;` in the corpus would resolve to nothing.
+          const spec = typeNode.text
+          const cls =
+            this.primitiveClass(typeNode) ??
+            (typeNode.type === "type_identifier" ? RealCAnalyzer.FIXED_WIDTH_NAMES[spec] : undefined)
+          // A named target that resolves to nothing (`typedef robj *objRef;`) is
+          // not a primitive alias and must not shadow the real definition.
+          if (cls && !aliases.has(decl.text)) aliases.set(decl.text, cls)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    // Chains, resolved to a terminal primitive class where one exists.
+    for (const alias of [...aliases.keys()]) {
+      let cur: string | undefined = alias
+      const hops = new Set<string>()
+      for (let i = 0; i < 8 && cur; i++) {
+        if (hops.has(cur)) break
+        hops.add(cur)
+        const next = this.aliasTargets.get(cur)
+        if (!next) break
+        cur = next
+      }
+      const direct = this.primitiveClassFromWords(cur ?? "")
+      if (direct) aliases.set(alias, direct)
+    }
+    return aliases
+  }
+
+  /**
+   * `typedef A B;` -> `A` for every same-file alias, whatever `A` is.
+   *
+   * Separate from `primitiveAliases` because the two answer different questions:
+   * this one is for walking a chain, the other for the terminal width. A chain
+   * that ends in a name the file never defines simply stops, and the member stays
+   * unknown -- which is the correct answer for a cross-file type, not a failure.
+   */
+  private buildAliasTargets(rootNode: Node): Map<string, string> {
+    const out = new Map<string, string>()
+    const stack: Node[] = [rootNode]
+    while (stack.length) {
+      const n = stack.pop() as Node
+      if (n.type === "type_definition") {
+        const typeNode = n.childForFieldName("type")
+        const decl = n.childForFieldName("declarator")
+        // Only the direct `typedef A B;` form: a function-pointer or array
+        // declarator means B is a pointer/array alias, and treating it as a plain
+        // name alias would invent a width.
+        if (typeNode && decl && decl.type === "type_identifier" && !decl.childForFieldName("declarator")) {
+          if (!out.has(decl.text)) out.set(decl.text, typeNode.text)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  /**
+   * `<stdint.h>`-family names, as width classes.
+   *
+   * These are NAMES, not keywords, so `primitiveClass` refuses them by design --
+   * but the layout tables already hardcoded them (`int16_t` alongside `short`,
+   * `size_t` at pointer width), so this is not a new assumption. It is the same
+   * assumption made REACHABLE, which is what let
+   * `typedef uint16_t fingerprint_t;` defeat it: the alias pointed at a name the
+   * tables knew and the keyword classifier could not see.
+   *
+   * Deliberately absent: `time_t`, `off_t`, `intptr_t` and friends. Their width
+   * is a property of the platform AND of which header won, so guessing is exactly
+   * the failure this class was written to refuse. A member of such a type stays
+   * unknown, which is the honest answer.
+   */
+  private static readonly FIXED_WIDTH_NAMES: Record<string, string> = {
+    int8_t: "char",
+    uint8_t: "char",
+    int16_t: "short",
+    uint16_t: "short",
+    int32_t: "int",
+    uint32_t: "int",
+    int64_t: "long",
+    uint64_t: "long",
+    // Pointer-width on every target the lane models, which is the same
+    // assumption `calculateAlignment` already made for these two.
+    size_t: "long",
+    ssize_t: "long",
+    ptrdiff_t: "long",
+  }
+
+  /**
+   * The width class for a member whose type is a NAME, following same-file
+   * primitive typedef aliases, or null when the width stays unknown.
+   */
+  private resolveMemberPrimitive(field: any): string | null {
+    if (field.primitive) return field.primitive
+    if (!field.type || field.typeKind === "tag_struct" || field.typeKind === "tag_union" || field.typeKind === "tag_enum") return null
+    const direct = this.primitiveClassFromWords(field.type)
+    if (direct) return direct
+    // Follow the alias chain, bounded.
+    let name: string | undefined = field.type
+    const hops = new Set<string>()
+    for (let i = 0; i < 8 && name; i++) {
+      if (hops.has(name)) return null
+      hops.add(name)
+      const viaAlias = this.primitiveAliases.get(name)
+      if (viaAlias) return viaAlias
+      const fixed = RealCAnalyzer.FIXED_WIDTH_NAMES[name]
+      if (fixed) return fixed
+      name = this.aliasTargets.get(name)
+    }
+    return null
+  }
+
+  /**
+   * The layout of a member whose width the per-file model cannot determine.
+   *
+   * ONE constant, used by both the size and the alignment pass, because they used
+   * to disagree: `calculateMemorySize` fell back to 4 bytes / align 4 while
+   * `calculateAlignment` fell back to align 1. A struct whose members were sized
+   * as 4 bytes while its own alignment claimed 1 was the observable result --
+   * `chkLobbyEntry` measured 8B/1A against clang's 4B/2A. Two functions cannot be
+   * allowed to hold two opinions about the same unknown, so the fallback is now a
+   * single value and the pairing can no longer drift.
+   *
+   * It is a fabricated number and is documented as one: the model has no width
+   * for a named type it cannot resolve (C-D2). What it is NOT allowed to be is
+   * self-contradictory.
+   */
+  private static readonly UNKNOWN_MEMBER = { size: 4, align: 4 }
+
+  /**
+   * A type's `memorySize` / `alignment`, plus the count of members that had to be
+   * guessed (#940).
+   *
+   * One call site for both numbers and the count, so the three cannot disagree --
+   * the same lesson as #938, applied one step earlier in the same code.
+   */
+  private layoutPayload(
+    fields: any[],
+    isPacked: boolean,
+    structs: Record<string, any[]>,
+    unions: Record<string, any[]>,
+    is64Bit: boolean,
+    isLLP64: boolean,
+    // #943: the body had members inside a preprocessor conditional, so no
+    // measurement of this type was possible at all.
+    bodyIsConditional = false,
+  ): { memorySize: number; alignment: number; layoutUnknownMembers: number } {
+    // A conditional body is counted once: its members were never extracted, so
+    // the per-member loop below has nothing to account for and would report 0.
+    const unknown = { count: bodyIsConditional ? 1 : 0 }
+    const memorySize = this.calculateMemorySize(fields, isPacked, structs, unions, is64Bit, isLLP64, false, undefined, unknown)
+    return {
+      memorySize,
+      alignment: this.calculateAlignment(fields, structs, unions, is64Bit, isLLP64),
+      layoutUnknownMembers: unknown.count,
+    }
+  }
+
+  /**
+   * Split on whitespace WITHOUT a regex.
+   *
+   * The lane's P11 property holds this file to zero regex literals, and it caught
+   * three I had just added: `split(/\s+/)` and two character-class tests. The
+   * property is right and the code was wrong -- a file that has already been
+   * audited for regex-based syntax recognition does not get to reintroduce it
+   * through a "harmless" tokenizer. Relaxing the gate because this instance was
+   * small would be the exact move the gate exists to prevent.
+   */
+  private splitOnWhitespace(text: string): string[] {
+    const out: string[] = []
+    let cur = ""
+    for (const ch of text) {
+      if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f" || ch === "\v") {
+        if (cur.length > 0) {
+          out.push(cur)
+          cur = ""
+        }
+      } else {
+        cur += ch
+      }
+    }
+    if (cur.length > 0) out.push(cur)
+    return out
+  }
+
+  /** `123`, `0`, `42u`, `42U`, `42l`, `42ULL` -- a decimal integer, nothing else. */
+  private isDecimalInteger(text: string): boolean {
+    if (text.length === 0) return false
+    let i = 0
+    while (i < text.length && text[i] >= "0" && text[i] <= "9") i++
+    if (i === 0) return false
+    for (; i < text.length; i++) {
+      const c = text[i]
+      if (c !== "u" && c !== "U" && c !== "l" && c !== "L") return false
+    }
+    return true
+  }
+
+  private startsWithIdentifierChar(c: string | undefined): boolean {
+    if (!c) return false
+    return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_"
+  }
+
+  /** True when every character is arithmetic this method is willing to evaluate. */
+  private isArithmeticOnly(text: string): boolean {
+    const allowed = "0123456789+-*/|&<>() \t"
+    for (const ch of text) if (!allowed.includes(ch)) return false
+    return text.length > 0
+  }
+
+  /**
+   * The integer value of a same-file `#define`, or null.
+   *
+   * #939 exists because `int heavy_entries[CHK_HEAVY_ENTRIES_PER_BUCKET];` was
+   * measured as a ONE-element array. The old code read an array dimension only
+   * from a `number_literal`, so a dimension spelled as a macro silently became
+   * 1 -- which is not a small error, because a fixed-size array is usually the
+   * largest member in the struct that holds it. `chkBucket` published 24 bytes
+   * where clang says 40.
+   *
+   * What it will NOT do is evaluate an arbitrary expression. Only an integer
+   * literal, and the four integer operators over already-resolved integers, are
+   * accepted; anything mentioning an identifier, a cast, a function call or a
+   * float yields null and the dimension stays 1. A wrong dimension is worse
+   * than an unknown one, and "1" is at least visibly the default.
+   */
+  private macroIntValue(name: string, depth = 0): number | null {
+    if (depth > 6) return null
+    const text = this.macroValueTexts.get(name)
+    if (text === undefined) return null
+    const trimmed = text.trim()
+    // A plain integer literal, with the integer-suffix spellings C allows.
+    if (this.isDecimalInteger(trimmed)) return parseInt(trimmed, 10)
+    // `(N * 2)`, `2 * N`, `N + 1` ... only over names this file can resolve, and
+    // only arithmetic. Tokenising first and rejecting any token that is neither a
+    // number, an operator nor a resolvable name is stricter than a character-class
+    // test, because a token like `0x10` or `1u` or `1.5f` is rejected as a WHOLE
+    // rather than having its odd characters quietly accepted.
+    const tokens = this.splitOnWhitespace(trimmed)
+    if (tokens.length === 0) return null
+    let expr = ""
+    for (const tok of tokens) {
+      if (this.isDecimalInteger(tok)) {
+        expr += tok
+        continue
+      }
+      if (tok.length === 1 && "()+-*/|&<>".includes(tok)) {
+        expr += tok
+        continue
+      }
+      // Multi-character runs of arithmetic characters: `((`, `))`, `<<`, `>>`.
+      if (this.isArithmeticOnly(tok) && !this.startsWithIdentifierChar(tok[0])) {
+        expr += tok
+        continue
+      }
+      if (!this.startsWithIdentifierChar(tok[0])) return null
+      const v = this.macroIntValue(tok, depth + 1)
+      if (v === null) return null
+      // Substitute as a parenthesised integer so precedence cannot shift.
+      expr += `(${v})`
+    }
+    if (expr.length === 0 || !this.isArithmeticOnly(expr)) return null
+    try {
+      // No identifiers remain, so this is a fixed integer expression, and
+      // `isArithmeticOnly` has already excluded everything that is not arithmetic.
+      const value = Function(`"use strict";return (${expr})`)()
+      return typeof value === "number" && Number.isFinite(value) && Math.abs(value) <= 1 << 24 ? value : null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * An array dimension from a `size` node: a literal, or a same-file macro.
+   * Returns null when the dimension is genuinely unknown.
+   */
+  private arrayDimension(sizeNode: Node | null): number | null {
+    if (!sizeNode) return null
+    if (sizeNode.type === "number_literal") {
+      const v = parseInt(sizeNode.text, 10)
+      return isNaN(v) ? null : v
+    }
+    if (sizeNode.type === "identifier" || sizeNode.type === "type_identifier") {
+      const viaMacro = this.macroIntValue(sizeNode.text)
+      if (viaMacro !== null) return viaMacro
+      // A dimension may also be an enumeration constant, and a same-file enum is
+      // resolvable the same way a macro is.
+      const viaEnum = this.enumConstantValues.get(sizeNode.text)
+      return viaEnum ?? null
+    }
+    return null
+  }
+
+  /**
+   * Same-file enumerator values, so `[MAX_EVENTS]` resolves like `[8]`.
+   *
+   * Both forms count: an enumerator with `= 12`, and one that continues from the
+   * previous enumerator (`enum { A, B = 12, C }` gives C = 13). An enumerator
+   * whose value is not an integer literal ends that enum's chain rather than
+   * guessing a position, because continuing from an unknown value produces a
+   * confidently wrong number -- the same refusal `macroIntValue` makes.
+   */
+  private buildEnumConstantValues(rootNode: Node): Map<string, number> {
+    const out = new Map<string, number>()
+    const stack: Node[] = [rootNode]
+    while (stack.length) {
+      const n = stack.pop() as Node
+      if (n.type === "enumerator_list") {
+        let next = 0
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const e = n.namedChild(i)
+          if (!e || e.type !== "enumerator") continue
+          const nm = e.childForFieldName("name") || e.namedChild(0)
+          const val = e.childForFieldName("value")
+          if (val) {
+            const literal = /^\d+[uUlL]*$/.test(val.text.trim())
+            if (!literal) {
+              next = Number.NaN // unknown: the chain stops here
+              continue
+            }
+            next = parseInt(val.text.trim(), 10)
+          }
+          if (nm && !Number.isNaN(next)) out.set(nm.text.trim(), next)
+          if (!Number.isNaN(next)) next++
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
+  /** Bytes and alignment for a width class from `primitiveClass`. */
+  private primitiveLayout(cls: string, is64Bit: boolean, isLLP64: boolean): { size: number; align: number } {
+    const longSize = is64Bit && !isLLP64 ? 8 : 4
+    switch (cls) {
+      // C requires `long long` to be at least 64 bits, so 8 is a standard
+      // guarantee rather than a platform guess -- which is why this one ignores
+      // `is64Bit` the way `long` cannot.
+      case "bool":
+      case "char":
+        return { size: 1, align: 1 }
+      case "short":
+        return { size: 2, align: 2 }
+      case "long":
+        return { size: longSize, align: longSize }
+      case "longlong":
+        return { size: 8, align: 8 }
+      case "float":
+        return { size: 4, align: 4 }
+      case "double":
+        return { size: 8, align: 8 }
+      default:
+        return { size: 4, align: 4 }
+    }
+  }
+
   private calculateMemorySize(
     fields: any[],
     isPacked: boolean,
@@ -3129,6 +3751,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     isLLP64: boolean,
     isUnion: boolean = false,
     inProgress?: Set<string>,
+    // #940: how many members this pass had to charge at UNKNOWN_MEMBER. The size
+    // is still published, because a consumer needs a number -- but a number that
+    // was partly INVENTED must not be indistinguishable from one that was
+    // computed. `struct { long double d; }` is the clean case: `long double` is 8
+    // on some ABIs, 12 on i386 and 16 on x86-64 SysV, so `primitiveClass` refuses
+    // it, and that refusal used to become a silent 4 bytes -- published as 4/4
+    // with nothing marking that a guess had been made.
+    unknown?: { count: number },
   ): number {
     const active = inProgress ?? new Set<string>()
     let currentOffset = 0
@@ -3140,12 +3770,43 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
       const type = field.type
-      let fieldSize = 4
-      let align = 4
+      // #938: the one unknown-member layout, shared with the alignment pass, so
+      // a struct can never size its members as 4 bytes while claiming align 1.
+      let fieldSize = RealCAnalyzer.UNKNOWN_MEMBER.size
+      let align = RealCAnalyzer.UNKNOWN_MEMBER.align
+      // #937: the member's width may come from a same-file typedef alias, so this
+      // is resolved per member rather than read off the field record once.
+      const primitive = this.resolveMemberPrimitive(field)
+      if (field.isBitfield && unknown) {
+        // #944: a bitfield's width is a PACKING result, not its declared type's
+        // width, and this model does not implement the packing. Counted so the
+        // type is never reported as measured; the size it does publish is a lower
+        // bound, which the doc now says out loud.
+        unknown.count++
+      }
+      if (field.unresolvableDimensions && unknown) {
+        // #942: the member's TYPE was known, its array COUNT was not, so the
+        // width that went into the total is as invented as any refused one.
+        unknown.count++
+      }
+      if (!field.isPointer && !primitive && unknown) {
+        // A named type this file cannot resolve, or a width deliberately refused.
+        // Enums and by-value structs/UNIONS are resolved by descent and are not
+        // guesses, so they do not count.
+        const descended = this.structKeyForMember(field, structs) !== null || this.unionKeyForMember(field, unions) !== null
+        if (field.typeKind !== "tag_enum" && !descended) unknown.count++
+      }
 
       if (field.isPointer) {
         fieldSize = ptrSize
         align = ptrSize
+      } else if (primitive) {
+        // #936: the AST-derived width, ahead of the spelling tables. Those stay
+        // for the fixed-width typedefs (`int64_t`, `ssize_t`), which are NAMED
+        // types and so deliberately return null from `primitiveClass`.
+        const p = this.primitiveLayout(primitive, is64Bit, isLLP64)
+        fieldSize = p.size
+        align = p.align
       } else if (inArray(["char", "int8_t", "uint8_t", "bool"], type)) {
         fieldSize = 1
         align = 1
@@ -3173,10 +3834,21 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // A by-value cycle: C forbids the construct, so no size exists. Bounded, not followed.
             fieldSize = 0
             align = 1
+            // #940: a cycle is a REFUSAL, so it counts as a member whose width was
+            // not computed. `eventnotifier.h`'s eventNotifier published 0 bytes
+            // against clang's 4, and the flag has to say so rather than report 0.
+            if (unknown) unknown.count++
           } else {
             active.add(key)
             const list = structKey ? structs[key] : unions[key]
-            fieldSize = this.calculateMemorySize(list, false, structs, unions, is64Bit, isLLP64, !structKey, active)
+            // The SAME counter goes down the recursion. A member of type `rax` is
+            // only as well known as `rax` itself, so a nested guess has to
+            // propagate to the parent or the flag flatters the analyzer: measured
+            // before this was threaded, 8 redis types were reported as
+            // `layoutUnknownMembers == 0` while their miss class said
+            // "a named type whose width the model cannot know" -- the metric and
+            // the classification contradicting each other inside one report.
+            fieldSize = this.calculateMemorySize(list, false, structs, unions, is64Bit, isLLP64, !structKey, active, unknown)
             align = this.calculateAlignment(list, structs, unions, is64Bit, isLLP64, active)
             active.delete(key)
           }
@@ -3186,7 +3858,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (isPacked) align = 1
       maxAlign = Math.max(maxAlign, align)
 
-      const totalFieldSize = fieldSize * (field.arraySize || 1)
+      // #941: `|| 1` would turn a FLEXIBLE ARRAY MEMBER's deliberate 0 back into
+      // 1, so the default is taken on the ABSENCE of a number rather than on
+      // falsiness. A zero-length array is a real, meaningful count here.
+      const count = typeof field.arraySize === "number" ? field.arraySize : 1
+      const totalFieldSize = fieldSize * count
       if (isUnion) {
         maxSize = Math.max(maxSize, totalFieldSize)
       } else {
@@ -3262,7 +3938,14 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     let align = 1
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
+      // #936/#937: the SAME resolution the size pass uses -- the AST-derived
+      // primitive class, then same-file typedef aliases. These two functions used
+      // to carry independent spelling whitelists that had already drifted, and
+      // then independent fallbacks that drifted too (4/4 against 1). One
+      // resolver and one fallback, so neither can disagree with the other.
+      const primitive = this.resolveMemberPrimitive(field)
       if (field.isPointer || inArray(["size_t", "ssize_t"], field.type)) align = Math.max(align, is64Bit ? 8 : 4)
+      else if (primitive) align = Math.max(align, this.primitiveLayout(primitive, is64Bit, isLLP64).align)
       else if (field.type === "long") align = Math.max(align, is64Bit && !isLLP64 ? 8 : 4)
       else if (inArray(["double", "int64_t", "uint64_t"], field.type)) align = Math.max(align, 8)
       else if (inArray(["int", "float", "int32_t", "uint32_t"], field.type)) align = Math.max(align, 4)
@@ -3280,6 +3963,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             align = Math.max(align, this.calculateAlignment(list, structs, unions, is64Bit, isLLP64, active))
             active.delete(key)
           }
+        } else {
+          // #938: an unresolvable member. It is missing the align-1 the old code
+          // implied, which is the fix: the size pass was already charging it 4
+          // bytes, and a member cannot be 4 bytes wide with alignment 1.
+          align = Math.max(align, RealCAnalyzer.UNKNOWN_MEMBER.align)
         }
       }
     }
