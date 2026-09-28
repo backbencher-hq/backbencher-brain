@@ -24,6 +24,11 @@ import * as path from "path"
 import { createHash } from "crypto"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
+// The typescript CONTAINMENT oracle is lane-owned, like the JSON one: it lives in
+// oracles/ so this shared file keeps one import and one registration of it rather
+// than a second copy of the rule that this lane would then have to keep editing
+// here in parallel.
+import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -16560,6 +16565,17 @@ async function main() {
         }
       }
       if (lang === "typescript") {
+        // CONTAINMENT, the surface the graph is navigated by. It had no
+        // independent truth for this lane while java's had existed since JD-J4
+        // (810 edges per 60-file draw, 12% of java's whole output), so the one
+        // class of defect that matters most here — a member attributed to the
+        // wrong container — could not be caught even once. Building the oracle is
+        // what found five false `contains` edges on an external corpus, two of
+        // them from a scope-pop imbalance that had been there the whole time.
+        // The rule and every mirror it makes are documented in the module.
+        for (const e of deriveTypeScriptContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
         // M37.21 #611: dedicated typescript calls/instantiates oracle (web
         // family precedent — the generic tree walker never audited the call
         // surface; truth was 25 edges per 60 files vs java's 739).
@@ -17236,7 +17252,10 @@ async function main() {
           // deriveJavaScriptEdges from the two language rules, in a pre-pass
           // outside the decorator-skipping walk, so it audits those nodes rather
           // than stepping around them.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : []),
+          // typescript joins the contains-audited set for the same reason java
+          // and javascript did: an unaudited label cannot be caught going missing
+          // even once, and its own oracle now exists.
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
