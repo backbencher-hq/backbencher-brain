@@ -31,7 +31,7 @@ import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 // builtin added to the analyzer cannot read as a phantom call on the truth
 // side (the #917/#919 precedent, applied to a language whose builtin gap was
 // 10 words wide and produced phantom `say`/`system` edges).
-import { PERL_BUILTINS, perlArgumentNodes, perlWordValues } from "../../src/ast/real-perl-analyzer"
+import { PERL_BUILTINS, hasArgumentSyntax, perlArgumentNodes, perlWordValues } from "../../src/ast/real-perl-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
@@ -9883,7 +9883,18 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
             const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
             push("instantiates", src(), inst)
           }
-        } else if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no") {
+        } else if (
+          target &&
+          // A `&`-sigil callee with no argument syntax is a code-slot REFERENCE,
+          // not an invocation: `defined &builtin::is_bool` is a definedness test
+          // and `new POSIX::SigSet &SIGINT` passes a handler reference as an
+          // argument. With argument syntax it is perl's explicit-call syntax and
+          // IS a call. This handler is the FILE-SCOPE one and the in-sub chain is
+          // a separate branch, so the rule has to be stated in both — stating it
+          // once cost a mojo row, which is how the duplication was found.
+          !(target.startsWith("&") && !hasArgumentSyntax(n)) &&
+          !PERL_BUILTINS.has(target) && target !== "use" && target !== "no"
+        ) {
           push("calls", src(), leaf(target))
         }
       }
@@ -9941,12 +9952,14 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
         }
       } else if (
         target &&
-        // A `&`-sigil callee with NO argument list is a code-slot REFERENCE,
-        // not an invocation: `defined &DynaLoader::boot_DynaLoader` is a
-        // definedness test. With an argument list it is perl's explicit-call
-        // syntax and IS a call — suppressing on the `&` alone cost 323 truth
-        // rows on perl5, which is how the distinction got pinned down.
-        !(target.startsWith("&") && argumentNodes(n).length === 0) &&
+        // Same rule as the file-scope branch above. `argumentNodes` is the wrong
+        // probe for it: it keeps an argument only when the argument contributes a
+        // WORD, so `&foo($y)` and `&foo(@y)` — both real calls — come back empty
+        // and are indistinguishable from a bare `&SIGINT`. That mistake cost 243
+        // truth rows on perl5 before the grammar's own `arguments` field was used
+        // instead; `hasArgumentSyntax` is exported from the analyzer so the two
+        // sides cannot drift on the rule again.
+        !(target.startsWith("&") && !hasArgumentSyntax(n)) &&
         !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends"
       ) {
         push("calls", src(), leaf(target))
