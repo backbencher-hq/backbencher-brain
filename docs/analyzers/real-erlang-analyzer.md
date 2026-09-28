@@ -134,23 +134,42 @@ arity strip, function-name strip, parse-type strip) are pure char scans:
 
 ## Measured envelope
 
-`bun run script/m14/tmp/erlang-perf.ts --files 300 --ab` — run alone, no
-concurrent census (a row measured under load is unscored, not evidence). Parse
-held constant and not compared; the pre-ER3 analyzer was restored from git onto
-the same 300 files.
+**RED on cost, and the row carries its load context.** Measured with the
+interleaved-minimum design (`bun run script/m14/tmp/erlang-scaling-robust.ts
+--reps 5`): the two analyzers alternate inside one loop on the same trees, so
+host interference can only add time and the minimum of each is the
+interference-free estimate. This matters because the naive measurement on this
+host — five other agent processes, 12 of 15 GB resident — produced a number that
+was wrong in the WRONG DIRECTION (it reported the rewrite as faster; the
+interference did not scale the two analyzers equally, so the ratio inverted).
+Those naive rows are discarded, not reported.
 
-| | pre-ER3 | ER3 |
-|---|---|---|
-| analyze | 21,987 ms | **11,335 ms** |
-| ms/file | 43.4 | **37.8** |
-| ms per 1k lines | 70.3 | **61.2** |
-| relationships emitted | 34,982 | **75,892** |
-| ms per emitted relationship | 0.63 | **0.15** |
-| slowest single file | 828 ms | 549 ms |
+Per-node cost by file-size quartile, against the pre-ER3 analyzer restored from
+git:
 
-Output volume: 253 relationships and 45 symbols per file. Single pass over
-per-file structures, plus one bounded walk per type declaration and one pre-pass
-over the top level — no nested loop over symbols.
+| node-count quartile | files | node range | ER3 us/node | pre-ER3 us/node | ratio |
+|---|---|---|---|---|---|
+| Q1 | 30 | 17 - 338 | 1.0 | 0.0 | - |
+| Q2 | 30 | 382 - 1,375 | 2.2 | 0.6 | 3.8x |
+| Q3 | 30 | 1,388 - 3,766 | 3.3 | 0.9 | 3.7x |
+| Q4 | 30 | 3,793 - 49,028 | **5.5** | **0.8** | **6.7x** |
+
+**The pre-ER3 analyzer's per-node cost is flat in file size; this one's rises.**
+There is a super-linear term, and six feature ablations (type-reference walks,
+the pattern ancestor climb, the parameter payload, the `contains` pass, edge
+emission, the per-node `isMissing` read, the scope `Set` lookups, the exit
+markers) each moved the total by less than the run-to-run noise — so the cause is
+**unattributed**, and named as such in `reviews/erlang/m49-er3-grammar-truth.md`
+§9 rather than guessed at. The pre-ER3 flatness is the clue: it walked the same
+trees with the same loop and cost 0.8 us/node on a 49,028-node file, so the term
+is in the per-node work this rewrite added, not in the walk.
+
+Output volume: 253 relationships and 45 symbols per file (vs 117 and 40 before),
+i.e. 2.08x the relationships for 3.7-6.7x the per-node cost. The parts that are
+attributed: the main walk is a single DFS, the pre-pass reads the top level
+rather than re-walking the tree, each type declaration's reference walk covers
+only its own subtree, and the pattern test climbs to the nearest boundary. No
+nested loop over symbols.
 
 ## Corpus validation
 
