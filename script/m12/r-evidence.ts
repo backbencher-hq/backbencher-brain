@@ -270,6 +270,48 @@ console.log(
 // everyone to ignore a red gate.
 if (positions?.vacuousPass) process.exitCode = 1
 
+// ---------------------------------------------------------------- 1a0. the fixture set, pinned
+// The differential and the mutation run are only evidence if a reader can re-run them, so
+// the fixture sources and the ground truth they are scored against are committed AND pinned
+// by hash. They lived only in an unversioned scratch directory, which made 251/251 and
+// 26/26 assertions rather than results -- the same defect fixed for the oracle scripts, and
+// missed here until the spot-check step went looking for them.
+const FIXTURE_DIR = path.join(ROOT, "validation/m14/fixtures/r")
+const TRUTH_FILE = path.join(ROOT, "validation/m12/ground-truth/r-differential.json")
+const fixtureFiles = (() => {
+  try { return fs.readdirSync(FIXTURE_DIR).filter((f) => f.endsWith(".R")).sort() } catch { return [] as string[] }
+})()
+const fixtureDigests = fixtureFiles.map((f) => ({
+  file: f,
+  sha256: createHash("sha256").update(fs.readFileSync(path.join(FIXTURE_DIR, f))).digest("hex"),
+}))
+writeSealed(path.join(OUT, "r-fixture-set.json"), {
+  schemaVersion: 1,
+  kind: "r_fixture_set",
+  why: "the differential and the mutation run are only evidence if they can be re-run; the fixture sources and the ground truth are committed and pinned by hash",
+  dir: "validation/m14/fixtures/r",
+  groundTruth: "validation/m12/ground-truth/r-differential.json",
+  groundTruthSha256: (() => {
+    try { return createHash("sha256").update(fs.readFileSync(TRUTH_FILE)).digest("hex") } catch { return null }
+  })(),
+  fixtureCount: fixtureFiles.length,
+  fixtures: fixtureDigests,
+  setSha256: createHash("sha256").update(fixtureDigests.map((d) => d.sha256).join("")).digest("hex"),
+  truthSource: "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
+  reRun: "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
+  spotCheck: "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
+  currentCommit: commit,
+})
+console.log(
+  `r-fixture-set.json           ${fixtureFiles.length} fixtures committed, setSha256=${createHash("sha256").update(fixtureDigests.map((d) => d.sha256).join("")).digest("hex").slice(0, 12)}`
+)
+// A differential scored against fixtures that are not in the repository is an assertion.
+// Failing when the committed set is missing is what stops that from recurring quietly.
+if (fixtureFiles.length === 0) {
+  console.log(`r-fixture-set.json          MISSING committed fixtures at ${FIXTURE_DIR}`)
+  process.exitCode = 1
+}
+
 // ---------------------------------------------------------------- 1a3. the production path
 // Every other check in this lane constructs RealRAnalyzer directly, which skips grammar
 // resolution, the analyzer registry and the temp copy the engine hands to web-tree-sitter.

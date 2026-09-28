@@ -505,6 +505,20 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 Regenerate with `bun run script/m12/r-evidence.ts`; every record is sealed and
 refuses a hand edit.
 
+- **fixture set (pinned)** — `validation/m12/results/r-fixture-set.json`: the 15 fixture
+  sources and the ground truth they are scored against, both committed and hashed, so the
+  two headline numbers below can be re-run rather than believed. `setSha256` covers the
+  whole set; each fixture carries its own digest. The set lives in
+  `validation/m14/fixtures/r/`, which is where `script/m14/owner-spot-check.ts` inventories
+  a lane's fixtures from — one canonical copy, because two copies of a fixture set is how
+  they drift. `validation/m12/results/SPOT-CHECK-PACK-r.md` is the human-sampling pack.
+
+  These lived only in an unversioned scratch directory until now, which meant **251/251 and
+  26/26 were assertions rather than results** — the same defect already fixed for the two
+  oracle scripts, and missed here until the closure step went looking for them. Both
+  harnesses now prefer the committed paths and *report which they used*, so a future run
+  against the scratch copy cannot be mistaken for a reproducible one.
+
 - **R-oracle differential (the strongest check in this lane)** —
   `validation/m12/results/r-oracle-differential.json`: **R 4.4.3 itself decides
   which top-level names each of the 997 comparable corpus files binds, and the
