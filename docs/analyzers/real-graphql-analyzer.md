@@ -271,6 +271,42 @@ pre-order the recursion produced — the conversions are behaviour-preserving, a
 differential is unchanged at P=1.000 / R=1.000. A 20,000-clause `implements` chain
 now yields 40,002 symbols and 60,002 relationships instead of throwing.
 
+Gate 8e asserts three further properties, and each of them was a dimension **no
+other gate touched**:
+
+- **Linearity, counted rather than timed.** "A single iterative DFS" is a claim
+  about complexity, and a complexity claim needs a curve. The same schema shape is
+  generated at six sizes spanning **32×**, and
+  **accessor calls per symbol is flat to 1% across a 32× size range** (54.67 →
+  55.47). The milliseconds in the same run
+  swing 719 → 284 → 400 ms/1k symbols, and two sessions of the identical binary
+  disagreed on the direction — one falling 457 → 241, the next rising 120 → 366 — so
+  a time-based linearity gate here would be a flaky gate, and a flaky gate gets
+  disabled. Counted calls are exact and machine-independent, which is the same
+  reason gate 10b counts rather than times.
+- **Idempotence, including on a shared instance.** The analyzer keeps its
+  `node.type` memo on the *instance*, and the engine happens to build a fresh
+  analyzer per file — a caller invariant, not a guarantee. One shared instance
+  running every fixture in four orders plus twenty repeats of one file is
+  **identical across four orderings and twenty repeats on one shared instance** —
+  byte-identical to a fresh instance per file, so a memo that outlived a call would
+  be caught.
+- **The production engine path.** Every gate here calls the analyzer *directly*.
+  Production does not: `ASTEngine.parseFile` inserts timeout handling, the
+  `ERROR`/`MISSING` walk and the ambiguity counters between the tree and the result.
+  The two are compared identity by identity over the fixtures, and
+  **the production engine path preserves every identity**, including the damaged
+  fixture whose five grammar errors the engine surfaces and the direct analyzer never
+  sees by design.
+
+  The first version of that check reported **all seven fixtures differing**, with a
+  syntax error at line 1 columns 1–8 on every one — a result that reads exactly
+  like a catastrophic production defect. It was the check's own fault:
+  `parseFile(filePath, content, context?)` takes the file's **content** second, and
+  the language string had been passed there, so the engine parsed the seven
+  characters `graphql` as a document. The wasm hash and the signature were both
+  checked before any of it was reported.
+
 Gate 8e also runs twelve **degenerate** files that no other gate would produce: an
 empty file, whitespace only, comment only, no trailing newline, a UTF-8 **BOM**,
 **CRLF** line endings, tabs, non-ASCII before a name, invalid UTF-8 in a comment,
