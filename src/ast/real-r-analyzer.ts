@@ -106,6 +106,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       callsUnresolvedScope: 0,
       callsAttributedThroughClosure: 0,
       heuristicS3Generic: 0,
+      // A call whose callee is not a name at all -- `(if (uplo == "U") triu else
+      // tril)(x)`. Counted, because the alternative is that these vanish from the totals
+      // and a reader cannot tell "no such calls" from "not measured".
+      callsToUnnameableCallee: 0,
     }
 
     if (rootNode.hasError) {
@@ -321,6 +325,24 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       `r.ambiguity.callsAttributedThroughClosure=${ambiguity.callsAttributedThroughClosure}`,
       `r.ambiguity.heuristicS3Generic=${ambiguity.heuristicS3Generic}`,
     ]
+
+    // The comment on the counter's declaration has claimed these are "surfaced in
+    // metadata so a claim of completeness can be audited" since the counter was
+    // introduced. They were not: the object was created, incremented, and dropped on the
+    // floor. That is not a cosmetic gap. `callsUnresolvedScope` is the count of calls the
+    // analyzer could not attribute to any symbol, and because 55.6% of call sites in R sit
+    // at FILE SCOPE -- R packages are mostly top-level code -- it is the single largest
+    // hole in this lane's coverage. A completeness claim that cannot be read is not
+    // auditable, and the number that would have exposed it was being discarded.
+    //
+    // Surfaced as a copy so a later increment cannot mutate the metadata a caller already
+    // holds, and under a name that says what it is rather than repeating the internal one.
+    ;(metadata as any).callAttribution = {
+      unresolvedScope: ambiguity.callsUnresolvedScope,
+      throughClosure: ambiguity.callsAttributedThroughClosure,
+      heuristicS3Generic: ambiguity.heuristicS3Generic,
+      unnameableCallee: ambiguity.callsToUnnameableCallee ?? 0,
+    }
 
     return {
       symbols,
@@ -1438,7 +1460,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
     declaredTypes: Set<string>,
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee: number },
     fnStack: Array<{ node: Node; attribution: CallAttribution | null }>,
   ): void {
     const fnNode = node.childForFieldName("function")
@@ -1504,7 +1526,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const callTarget = this.callTargetName(fnNode, fnName)
       // An unnameable callee produces no edge. Counting it keeps the gap visible instead
       // of letting it vanish into a total.
-      if (!callTarget) ambiguity.callsToUnnameableCallee = (ambiguity.callsToUnnameableCallee ?? 0) + 1
+      if (!callTarget) ambiguity.callsToUnnameableCallee++
       else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, this.callTargetNode(fnNode, callTarget))
       if (attribution.confidence < 1.0) ambiguity.callsAttributedThroughClosure++
 
@@ -1729,7 +1751,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee: number },
   ) {
     if (!args) return
     const fnName = this.calleeName(node.childForFieldName("function"))

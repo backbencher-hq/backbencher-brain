@@ -297,6 +297,45 @@ and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The exp
 was corrected to match R, not the analyzer** — and the reason is recorded in the ground
 truth's own notes.
 
+### Call coverage — the largest gap, finally a number
+
+Every other check in this lane measures what the analyzer **produced**. None measured what
+it did not, and in R that difference is the biggest number here. The denominator is counted
+by walking the parse tree for `call` nodes, independently of the analyzer, so the ratio
+cannot be moved by changing the numerator.
+
+| | |
+|---|---|
+| call sites in the parse tree | **107,534** |
+| …at file scope | **59,840** (55.6%) |
+| …inside a function | 47,694 (44.4%) |
+| `calls` edges emitted | **27,753** |
+| edge per call site | **25.8%** |
+| calls the analyzer could not attribute to any symbol | **66,592** |
+
+R packages are mostly top-level code, so more than half of all calls have no enclosing
+function, and `source` in this framework's relationship model is a symbol name — there is
+no symbol to name. Those calls get no edge. **That is a design limitation, not a bug**, and
+it is now recorded as one with its number attached.
+
+Per repo, the file-scope share runs 49–74%: dplyr is 74% top-level, shiny 49%.
+
+**The interesting part is how invisible this was.** The analyzer has counted
+`callsUnresolvedScope` on every call since the counter was introduced, and the comment on
+its own declaration says:
+
+> Ambiguity counters, surfaced in metadata so a claim of completeness can be audited.
+
+They were not surfaced. The object was created, incremented, and dropped on the floor of the
+function. The number that would have exposed the lane's largest completeness gap was being
+discarded on the way out. That is worse than an unrecorded limitation: a comment asserting
+an auditability the code did not provide, which reads as a guarantee to anyone who greps
+for the word.
+
+The counters are now attached to `metadata.callAttribution`, and the coverage harness
+**fails** if any file stops surfacing them — so the gap cannot quietly go dark a second
+time. A completeness claim that cannot be read is not auditable.
+
 ### The production path — the check every other harness here is blind to
 
 Every other R check constructs `new RealRAnalyzer()` and loads `wasm/tree-sitter-r.wasm`

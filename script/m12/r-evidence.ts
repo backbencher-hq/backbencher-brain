@@ -304,6 +304,46 @@ console.log(
 // product does not do what the rest of this lane measured.
 if (!production || production.problems.length) process.exitCode = 1
 
+// ---------------------------------------------------------------- 1a4. call coverage
+// Everything else in this lane measures what the analyzer PRODUCED. This records what it
+// did not, with the denominator taken from the parse tree so the ratio cannot be moved by
+// changing the numerator. In R the difference is the largest number in the lane: 55.6% of
+// all call sites sit at FILE SCOPE, and a file-scope call has no enclosing symbol to be the
+// edge's `source`, so it gets no edge.
+let coverage: any = null
+try {
+  coverage = JSON.parse(fs.readFileSync(
+    process.env.BB_R_CALL_COVERAGE_RECORD ?? "$HOME/fixtures/census/r-call-coverage.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-call-coverage.json"), {
+  schemaVersion: 1,
+  kind: "r_call_coverage",
+  why: coverage?.why ?? "call sites from the parse tree vs calls relationships emitted",
+  present: coverage !== null,
+  method: coverage?.method ?? null,
+  denominatorIsAnalyzerIndependent: coverage?.denominatorIsAnalyzerIndependent ?? null,
+  totals: coverage?.totals ?? null,
+  edgePerCallSite: coverage?.edgePerCallSite ?? null,
+  counters: coverage?.counters ?? null,
+  filesAnalyzed: coverage?.filesAnalyzed ?? null,
+  filesSurfacingCounters: coverage?.filesSurfacingCounters ?? null,
+  perRepo: coverage?.perRepo ?? null,
+  knownLimitation: coverage?.knownLimitation ?? null,
+  problems: coverage?.problems ?? ["CALL COVERAGE WAS NOT MEASURED; run fixtures/corpus/r-call-coverage.mts"],
+  currentCommit: commit,
+})
+console.log(
+  coverage
+    ? `r-call-coverage.json          sites=${coverage.totals.callSites} fileScope=${coverage.totals.callSitesAtFileScope} ` +
+      `edges=${coverage.totals.callsEdges} edgePerSite=${coverage.edgePerCallSite} ` +
+      `unresolvedScope=${coverage.counters.unresolvedScope} problems=${coverage.problems.length}`
+    : `r-call-coverage.json          ABSENT - run fixtures/corpus/r-call-coverage.mts first`,
+)
+// The known limitation is a recorded, bounded DESIGN decision, so it does not fail the
+// gate. The counters going dark again DOES: a completeness claim that cannot be read is
+// the failure mode this lane has already produced once.
+if (!coverage || coverage.problems.length) process.exitCode = 1
+
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not
 // "is a name this grammar produced". Both are re-derived here from the parse
