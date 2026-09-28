@@ -338,6 +338,48 @@ export const LANES: Record<string, LaneDecision> = {
     copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-hcl.wasm") }],
   },
 
+  // M60 Make wave (2026-09-27). The website advertises a Make analyzer through
+  // `SUPPORTED_LANGUAGES` (website/src/data/truth.generated.ts is derived from
+  // it), and the lane had NO entry here at all — so the one artifact a reader
+  // would consult to answer "which grammar is this?" had no Make row, while the
+  // grammar itself turned out to be the cleanest in the family.
+  make: {
+    wired: "wasm/tree-sitter-make.wasm",
+    provenance: {
+      kind: "byte-identical-to-vendored-upstream-source",
+      package: "tree-sitter-make",
+      version: "1.1.1",
+      upstream: {
+        repo: "tree-sitter-grammars/tree-sitter-make",
+        version: "1.1.1",
+        rev: "70613f3d812cbabbd7f38d104d60a409c4008b43",
+        builtWith: "tree-sitter-cli 0.26.5; the generated src/parser.c declares LANGUAGE_VERSION 15",
+      },
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-make",
+      note:
+        "grammar.js + package.json + LICENSE + PIN.md + src/ (grammar.json, node-types.json, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-make@70613f3d kept at /tmp/opencode/ts-make. src/parser.c IS vendored (928 KB) even though the xml/hcl/sql lanes skip the generated file, because this lane's central claim IS the source<->wasm identity proof and that proof is not checkable without the generated source.",
+    },
+    decision:
+      "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 188 ids / 44 named / 130 anonymous / 24 fields; the vendored src/node-types.json at 70613f3d declares exactly 44 named types and exactly those 24 fields. The set difference is ZERO in both directions, on the named set and on the field set, so the wired bytes ARE a build of this source and the Groovy situation does NOT apply. The ANONYMOUS counts differ (91 declared vs 130 in the wasm) only because node-types.json deduplicates identical anonymous tokens that the id table lists once per id; that difference is recorded here rather than hidden, and it is not part of the proof. There is no newer published alternative — 1.1.1 is the current HEAD of the only maintained tree-sitter-make in the grammars org — so the pin's value is provenance and drift detection, not an upgrade.",
+    alternatives: [
+      {
+        option: "hand-repair the wasm the way groovy's was repaired",
+        measured:
+          "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. Make's does not — 0 missing and 0 extra named types, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
+        artifact: "fixtures/make/out/grammar-conformance.json",
+      },
+    ],
+    evidence: [
+      "fixtures/make/out/grammar-conformance.json",
+      "grammars/tree-sitter-make/PIN.md",
+      "reviews/make/master-review.md",
+    ],
+    copies: [{ label: "mirror", path: path.join(MIRROR, "tree-sitter-make.wasm") }],
+  },
+
   // M14.6 perl wave (2026-09-26). The perl lane's own review is what put it
   // here: it read the pinned grammar's enumerable surface directly and found
   // that the wired build gives ONE field name to SEVERAL children of a
