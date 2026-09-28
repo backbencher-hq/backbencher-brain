@@ -103,6 +103,8 @@ interface ScssContext {
   namespaces: Record<string, string>
   /** symbol names already published, so a repeated declaration is not published twice */
   published: Record<string, boolean>
+  /** the owner each published name was published under, so a scope can be told apart */
+  publishedOwner: Record<string, string>
   /** the file debugs / warns / forwards content / escapes scope at least once */
   sawDiagnostic: boolean
   sawContent: boolean
@@ -128,6 +130,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       variableNames: {},
       namespaces: {},
       published: {},
+      publishedOwner: {},
       sawDiagnostic: false,
       sawContent: false,
       sawAtRoot: false,
@@ -252,11 +255,44 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * symbol that exists twice with one name is the identity collision this project has
    * been removing all along, and `.scss` is full of re-assignments.
    */
-  private publishOnce(ctx: ScssContext, symbol: ASTEngine.UniversalSymbol): boolean {
+  private publishOnce(ctx: ScssContext, symbol: ASTEngine.UniversalSymbol, owner = ""): boolean {
     const key = `${symbol.kind} ${symbol.name}`
-    if (ctx.published[key]) return false
-    ctx.published[key] = true
-    ctx.symbols.push(symbol)
+    if (!ctx.published[key]) {
+      ctx.published[key] = true
+      ctx.publishedOwner[key] = owner
+      ctx.symbols.push(symbol)
+      return true
+    }
+    // SAME name, DIFFERENT scope. For a `$variable` the scope key is empty, so every
+    // assignment of one name collapses to one symbol — which is the ruling, and is
+    // right because a Sass variable is one thing assigned in several places.
+    //
+    // For a control-flow scope the key carries the owner AND the line, and the
+    // difference matters. Two `@each $size in (large, small)` in two nesting contexts
+    // iterate the same values and are nonetheless two constructs at two places in the
+    // file. Measured on
+    // `element-plus/packages/theme-chalk/src/checkbox.scss`: TWO `each_statement`s
+    // (L76 and L266) with identical text, collapsed into one — so the second published
+    // nothing, its rules published nothing, and every `$var` read inside it had no
+    // owner and emitted no edge. The differential caught it as 7 MISSING rows that were
+    // the ANALYZER losing information, not the truth being wrong.
+    //
+    // The LINE is in the key because the owner alone was not enough there: both loops
+    // sat inside `@include` content blocks whose rules are unnameable `&` templates,
+    // so nothing was published around either and both owners were empty. Position is
+    // what distinguishes two constructs that are textually and contextually identical.
+    //
+    // The disambiguated name follows the convention the dart lane already uses
+    // (`root.child` / `root.child#2`): the first occurrence keeps the plain name and a
+    // collision in a different scope gets `#2`, `#3`, … A repeat in the SAME scope is
+    // still a duplicate and is still dropped.
+    if (ctx.publishedOwner[key] === owner) return false
+    let n = 2
+    while (ctx.published[`${key}#${n}`]) n++
+    const disambiguated = { ...symbol, name: `${symbol.name}#${n}` }
+    ctx.published[`${key}#${n}`] = true
+    ctx.publishedOwner[`${key}#${n}`] = owner
+    ctx.symbols.push(disambiguated)
     return true
   }
 
@@ -360,11 +396,27 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "each_statement":
         case "for_statement":
         case "while_statement":
-          this.processControlFlow(child, ctx)
+          this.processControlFlow(child, ctx, this.ownerForNode(child, ctx))
           this.emitVariableReadEdges(child, ctx)
           break
         case "include_statement":
           this.processInclude(child, ctx)
+          this.emitVariableReadEdges(child, ctx)
+          break
+        // `@return` and an `@use … with (…)` configuration are the two remaining
+        // places a `$var` can be READ outside a declaration's value, and both were
+        // silent. The `return_statement` case was removed when the self-edge was
+        // fixed — the edge went, the read scan went with it because the two shared a
+        // case — and nothing replaced it.
+        //
+        // Measured: `element-plus/packages/theme-chalk/src/color/index.scss` reads
+        // `$red`, `$green` and `$blue` in a `@return rgb2hex(rgb($red, $green, $blue))`
+        // at L19, and the differential reported them MISSING. A function's own body
+        // variables were unreadable in the graph: the function published them, and
+        // nothing recorded that it consumed them.
+        case "return_statement":
+        case "use_statement":
+        case "forward_statement":
           this.emitVariableReadEdges(child, ctx)
           break
         default:
@@ -598,13 +650,19 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * multi-line `@each` still yields a stable symbol name (M60 R10 — a target must be
    * spelled the way the lane spells its own symbols, deterministically).
    */
-  private processControlFlow(node: Node, ctx: ScssContext): void {
+  private processControlFlow(node: Node, ctx: ScssContext, owner: string): void {
     const keyword = node.type.replace("_statement", "")
     const raw = collapseWhitespace(node.text.split("{")[0] ?? node.text)
-    const name = `@${keyword} ${raw.replace(new RegExp(`^@${keyword}\\s*`), "").trim()}`
+    // strip the leading `@keyword` by LENGTH rather than by a pattern: the keyword is
+    // known here, so a pattern would be a second statement of the same string
+    const atKeyword = `@${keyword}`
+    const prelude = raw.startsWith(atKeyword) ? raw.slice(atKeyword.length).trim() : raw
+    const name = `${atKeyword} ${prelude}`
     if (name.length <= `@${keyword} `.length) return
 
-    this.publishOnce(ctx, {
+    this.publishOnce(
+      ctx,
+      {
       name,
       kind: ASTEngine.SymbolKind.Interface,
       range: this.nodeToRange(node),
@@ -629,8 +687,12 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           ? { scssForFrom: this.fieldText(node, "from"), scssForThrough: this.fieldText(node, "through") }
           : {}),
         ...(node.type === "if_statement" ? { scssCondition: this.fieldText(node, "condition") } : {}),
+        ...(owner ? { scssOwner: owner } : {}),
       },
-    })
+      },
+      // owner AND line: see the note on `publishOnce`
+      `${owner}@${this.lineOf(node) ?? 0}`,
+    )
   }
 
   private fieldText(node: Node, field: string): string | undefined {
