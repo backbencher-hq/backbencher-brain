@@ -1,10 +1,6 @@
 {
   "samplePerLang": 60,
-  "loadContext": {
-    "loadAvgStart": 42.05,
-    "loadAvgEnd": 44.07,
-    "sliceCount": 1
-  },
+  "samplePerLangOfThisPin": 40,
   "counts": {
     "java": {
       "missing": 0,
@@ -1474,6 +1470,45 @@
         "loadAvg1": 44.07
       },
       "sampleSetHash": "7c80eed7b9f98324"
+    },
+    "tf-aws-components:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 0.7,
+        "maxMsPerFile": 16.2,
+        "samplesTimed": 53,
+        "loadAvgRetried": true,
+        "loadAvg1": 39.88
+      },
+      "sampleSetHash": "00ec53d40fe79068"
+    },
+    "consul:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 27.1,
+        "maxMsPerFile": 82.8,
+        "samplesTimed": 5,
+        "loadAvgRetried": true,
+        "loadAvg1": 42.65
+      },
+      "sampleSetHash": "abac0ebd75471c84"
+    },
+    "grails-core:xml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 28,
+        "maxMsPerFile": 570.2,
+        "samplesTimed": 40,
+        "loadAvgRetried": true,
+        "loadAvg1": 22.53
+      },
+      "sampleSetHash": "ca66a7bb0706a21a"
     }
   },
   "hashes": {
@@ -1526,9 +1561,12 @@
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
     "terraform:hcl": "f31a3e00122c4639",
-    "tf-aws-components:hcl": "7c80eed7b9f98324"
+    "tf-aws-components:hcl": "7c80eed7b9f98324",
+    "tf-aws-components:make": "00ec53d40fe79068",
+    "consul:make": "abac0ebd75471c84",
+    "grails-core:xml": "ca66a7bb0706a21a"
   },
   "pinProvenance": {
-    "scoped run (--pin-baseline)": "2026-09-27T23:56:32.010Z"
+    "scoped run (--pin-baseline)": "2026-09-28T09:33:51.215Z"
   }
 }
