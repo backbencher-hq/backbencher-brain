@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T02:35:13.792Z",
-  "commit": "39be5b62b747bb10ad57d6e8bebd469bad7e6906",
+  "generatedAt": "2026-09-28T21:12:40.863Z",
+  "commit": "e9d2c0b93afcbe5d4d643e5ba578b4ca78386edb",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -556,6 +556,92 @@
         "declaredSupertypes": 0,
         "wasmNamedUnique": 64,
         "wasmUniqueNames": 121,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "make": {
+      "wired": {
+        "file": "wasm/tree-sitter-make.wasm",
+        "sha256": "ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12",
+        "bytes": 165855
+      },
+      "surface": {
+        "ids": 189,
+        "uniqueNames": 174,
+        "namedIds": 46,
+        "namedUnique": 44,
+        "anonIds": 143,
+        "anonUnique": 131,
+        "fieldCount": 24,
+        "idOrderDigest": "46902d08056088dac9a62b53c2b8eb947826da419c3bc5d3cff229850acdc64a",
+        "typeSetDigest": "20a2a46c33562f84b0cc42352576c22256ade4b1cfa7ed985e67ce12403c1dd8",
+        "fieldSetDigest": "92babc5a63edcab9b4372f39cb9a2a5f9f9b45f846fd13612acdd21ea2a544a2"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-make.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-make",
+        "files": {
+          "grammar.js": {
+            "sha256": "f84fc5fa39a8dfa9bafd73eeba21cc6af3233466f2480b61acbbe869baeb7eec",
+            "bytes": 17032
+          },
+          "LICENSE": {
+            "sha256": "28eecdb75b6de2d9020603531461444bf54db827ee2fb345a8fcf4dbee7c2ad1",
+            "bytes": 1076
+          },
+          "package.json": {
+            "sha256": "44cd00cbcbffa6f862e715ba2ed9ff81f346b08836ea75947f890a7f417a7a85",
+            "bytes": 1159
+          },
+          "PIN.md": {
+            "sha256": "e50c996cb9948821dcb3d35daf4cd8168a7b63d0517694cad99a6efa2661511a",
+            "bytes": 7412
+          },
+          "src/grammar.json": {
+            "sha256": "692c5256c2d805e5f7bad2f0a718b85cb63ae04451b437407992f2fb4c653078",
+            "bytes": 118980
+          },
+          "src/node-types.json": {
+            "sha256": "a83879f8ada41149aa1c7b9ac435ed3353635966e73638685b124d6a3e7a2cff",
+            "bytes": 47818
+          },
+          "src/parser.c": {
+            "sha256": "91abfcda38bb9a800a3231c1e7846d6470c91605bde50fc43dbfa2281eb71541",
+            "bytes": 1084442
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          }
+        },
+        "digest": "1c8f7abea02101941e7a1f613e629fc50dac7c5ecfcf424dce4e8acf2e47ff24",
+        "fileCount": 10
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-make/src/node-types.json",
+        "declaredNamedTypes": 44,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 44,
+        "wasmUniqueNames": 174,
         "missingInWasm": [],
         "allowedWasmExtras": [],
         "namedOnlyInWasm": []
@@ -1117,50 +1203,6 @@
         "typeSetDigest": "f98f965bb1ee21ad8efc29051dfeab0fb7925e192cd45f97e6d9598a279aeb2f",
         "fieldSetDigest": "6e6552aef40f6a89d1c9b34be84041f2813009ff7acced8429e3dfe41d08418b"
       },
-      "provenance": {
-        "kind": "local-rebuild-from-patched-upstream-source",
-        "base": {
-          "package": "@derekstride/tree-sitter-sql",
-          "version": "0.3.11"
-        },
-        "patches": [
-          "P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.",
-          "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.",
-          "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).",
-          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it.",
-          "P5 (grammar/statements/plpgsql.js + grammar/statements/create-function.js + grammar.js, 2026-09-27): PL/pgSQL procedural statement scaffolding \u2014 IF/ELSIF/ELSE/END IF, LOOP, WHILE, FOR ... IN, BEGIN/EXCEPTION/END, assignment, RETURN, RAISE, EXECUTE, PERFORM, ASSERT, EXIT/CONTINUE, plus a DECLARE section reusing the existing `function_declaration`. 16 new keywords. The dollar-quoted body forms of `function_body` route through the new `_plpgsql_body_item`; `do_statement` gained a structured body with the opaque token retained as a fallback. Three conflicts are DECLARED rather than resolved by deleting a capability: [$.plpgsql_block, $._plpgsql_body_item], [$.function_body, $.plpgsql_declarations], and [$.plpgsql_block]."
-        ],
-        "patchEvidence": "Shape A/B over 6 dialects plus two corpora, re-runnable via fixtures/sql/probe/grammar-ab.mts and fixtures/sql/probe/contract-battery.mts. P1-P4: 9 shapes fixed, 0 regressions, corpus tree level error files 320 -> 256 and error nodes 6533 -> 5544. P5 (plpgsql): ProxiCall tree error nodes 5170 -> 3305 (-36.0%) and named nodes 245,847 -> 268,968 (+9.4%); on the PostgreSQL extension corpus error nodes 93,944 -> 82,087 (-12.6%) and named nodes +8.4%, with NO structure collapse anywhere \u2014 which is the distinction from the rejected V3 candidate, which lost up to 95.8% of the tree in 49 files. The construct battery went from 2/8 to 6/8 clean with no regression in it, and the `block-declarations` contract case passes. The surface moved 786 -> 825 node types and 53 -> 62 fields, so unlike P1-P4 this patch is NOT field-neutral: it adds `query`, `condition`, `range`, `variable`, `target`, `value`, `option`, `format` and `argument` fields.",
-        "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."
-      },
-      "sourceVsWasm": {
-        "nodeTypesJson": null,
-        "note": "NOT REPRODUCIBLE, and this is a recorded negative result rather than an untested assumption. `tree-sitter generate` on the patched tree emits a 43,568,124-byte parser.c; the wired build's is 43,456,567 -- a 111,557-byte difference -- so the exact source revision behind the wired bytes is not recoverable from the tree kept here. The attempt is falsifiable and it FAILED, which is why this pin is by sha256 + surface + provenance (the treatment perl gets) and does not claim source rebuildability. The two hidden `alias($._dollar_quoted_string, $.dollar_quote)` alternatives reinstated in create-function.js / create-procedure.js for that test are annotated in place with the negative result. The tree at fixtures/sql/grammar/src is AHEAD of the wired bytes; building and installing it without a full A/B would change the lane's grammar unmeasured."
-      },
-      "decision": "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
-      "alternatives": [
-        {
-          "option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)",
-          "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.",
-          "artifact": "validation/m60/sql/v3-rejection.json",
-          "rejected": true,
-          "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."
-        },
-        {
-          "option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11",
-          "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.",
-          "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
-          "rejected": true,
-          "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."
-        }
-      ],
-      "evidence": [
-        "fixtures/sql/REVIEW.md",
-        "validation/m60/sql/v3-rejection.json",
-        "fixtures/sql/probe/grammar-ab.mts",
-        "script/m60/measure-grammar-recovery.ts",
-        "script/m14/spec/sql-completeness.json"
-      ],
       "copies": [
         {
           "label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)",
@@ -1193,20 +1235,13 @@
           "byteIdentical": false
         }
       ],
-      "notVendored": [
-        {
-          "path": "src/parser.c",
-          "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"
-        },
-        {
-          "path": "src/grammar.json, src/node-types.json",
-          "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"
-        },
-        {
-          "path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/",
-          "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"
-        }
-      ]
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
     }
   },
   "decisions": {
@@ -1432,6 +1467,51 @@
         "fixtures/hcl/out/grammar-conformance.json",
         "grammars/tree-sitter-hcl/PIN.md",
         "reviews/hcl/master-review.md"
+      ],
+      "notVendored": null
+    },
+    "make": {
+      "provenance": {
+        "kind": "local-rebuild-from-patched-upstream-source",
+        "package": "tree-sitter-make",
+        "version": "1.1.1",
+        "upstream": {
+          "repo": "tree-sitter-grammars/tree-sitter-make",
+          "version": "1.1.1",
+          "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
+          "builtWith": "tree-sitter-cli generate + build --wasm (rebuildable from grammars/tree-sitter-make)"
+        },
+        "patches": [
+          "P1 (grammar.js `_ordinary_rule`): a second branch for the TARGET-SCOPED form `target: export VAR = value`. `variable_assignment` already accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` places the `export` keyword BEFORE the assignment and nothing allowed it after the colon. Measured: 8 of the corpus's 11 ERROR nodes, and 9 variable names the analyzer could not see (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH).",
+          "P2 (grammar.js `_shell_escape`): `$$( ... )` is Make's ESCAPED dollar — Make does not expand it and hands `$( ... )` to the shell. The grammar routed `$$` into variable_reference / substitution_reference / automatic_variable / function_call, none of which can parse a shell command head (spaces, pipes). A hidden rule keyed on `$$` ONLY, so `$(FOO)` is still a variable reference, with the variable_reference/_paren_text ambiguity DECLARED as a conflict and resolved by dynamic precedence rather than a static one."
+        ],
+        "patchEvidence": "Surface A/B over all 99 pinned corpus files, plus a PRODUCT-level A/B through RealMakefileAnalyzer: 11 -> 0 error nodes, 3 files improved, 0 regressed; 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The named node-type set and the field set are IDENTICAL before and after (44 / 24, zero added, zero removed), which is why no analyzer change was required. A control build of the UNPATCHED source with the same toolchain is functionally identical to the wired pristine build (same 188 ids, 44 named, 24 fields, 6 error files, 11 error nodes), so every difference is the patch and not the toolchain. Re-runnable: fixtures/make/probes/grammar-ab.mts over fixtures/make/ab/pristine-make.wasm.",
+        "retained": "fixtures/make/ab/{pristine-src,pristine-make.wasm,grammar.patch} — the pristine tree and build are kept so the A/B above can be repeated rather than believed."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-make",
+        "note": "grammar.js (PATCHED — it is the patched grammar.js that is vendored, because the pin must describe what is actually wired) + package.json + LICENSE + PIN.md + src/ (grammar.json, node-types.json, parser.c, tree_sitter/ headers). src/parser.c IS vendored (1,084,442 bytes) so the source<->wasm proof is re-checkable offline; unlike the xml/sql lanes this lane's central claim IS that proof."
+      },
+      "decision": "ADOPT the patched local build, and keep the pristine one forever. The pristine build is not merely 'not good enough' — it loses 9 declarations the product can see and invents facts like a `?` used as a variable name. The patches add no node type and no field, so the source<->wasm identity proof is fully preserved and re-measured for the patched source: 189 ids / 44 named / 131 anonymous / 24 fields against 44 declared named types and 24 declared fields, zero missing and zero extra in both directions. Adopting an upstream SWAP was never on the table — 1.1.1 is the current HEAD of the only maintained tree-sitter-make, so the pin's value is correctness of the model, not novelty of the version.",
+      "alternatives": [
+        {
+          "option": "keep the pristine build and the two gaps open",
+          "measured": "REJECTED on measurement, having been the lane's position for a day. 11 ERROR nodes over 99 files, 9 invisible variable declarations, and error-recovery artefacts published as facts (a `?` as a name; `BOUNDARY_INSTALL_BINARY=1` as a name). The argument for it — that patching costs the identity proof — is answered by the patches adding no node type and no field, so the proof costs nothing.",
+          "artifact": "fixtures/make/out/grammar-ab.json"
+        },
+        {
+          "option": "hand-repair the wasm the way groovy's was repaired",
+          "measured": "unnecessary and wrong here: that repair exists because a vendored wasm had drifted from its source. This lane regenerates from source with a recorded toolchain and keeps the pristine build for A/B, so the drift cannot recur unobserved.",
+          "artifact": "fixtures/make/out/grammar-ab.json"
+        }
+      ],
+      "evidence": [
+        "fixtures/make/out/grammar-ab.json",
+        "fixtures/make/out/grammar-ab-product.json",
+        "fixtures/make/out/grammar-conformance.json",
+        "grammars/tree-sitter-make/PIN.md",
+        "reviews/make/master-review.md"
       ],
       "notVendored": null
     },
@@ -1769,6 +1849,65 @@
         "reviews/xml/master-review.md"
       ],
       "notVendored": null
+    },
+    "sql": {
+      "provenance": {
+        "kind": "local-rebuild-from-patched-upstream-source",
+        "base": {
+          "package": "@derekstride/tree-sitter-sql",
+          "version": "0.3.11"
+        },
+        "patches": [
+          "P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.",
+          "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.",
+          "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).",
+          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."
+        ],
+        "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via fixtures/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.",
+        "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "NOT VENDORED, and not merely un-vendored: the exact source revision behind the wired bytes could not be recovered. `tree-sitter generate` on the patched tree at $HOME/fixtures/sql/grammar/src emits a 43,568,124-byte parser.c against the wired build's 43,456,567, so the wired bytes are pinned by sha256 + surface + provenance (the treatment perl gets) and this lane has NO offline source<->wasm proof. Pristine upstream source is kept at fixtures/sql/grammar/pristine-src and the patched tree at fixtures/sql/grammar/src; both are outside the repo, and the tree there is AHEAD of the wired bytes. Building and installing from it without a full A/B would change the lane's grammar unmeasured."
+      },
+      "decision": "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
+      "alternatives": [
+        {
+          "option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)",
+          "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.",
+          "artifact": "validation/m60/sql/v3-rejection.json",
+          "rejected": true,
+          "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."
+        },
+        {
+          "option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11",
+          "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.",
+          "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+          "rejected": true,
+          "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."
+        }
+      ],
+      "evidence": [
+        "fixtures/sql/REVIEW.md",
+        "validation/m60/sql/v3-rejection.json",
+        "fixtures/sql/probe/grammar-ab.mts",
+        "script/m60/measure-grammar-recovery.ts",
+        "script/m14/spec/sql-completeness.json"
+      ],
+      "notVendored": [
+        {
+          "path": "src/parser.c",
+          "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"
+        },
+        {
+          "path": "src/grammar.json, src/node-types.json",
+          "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"
+        },
+        {
+          "path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/",
+          "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"
+        }
+      ]
     }
   }
 }

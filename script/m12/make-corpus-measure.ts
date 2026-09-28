@@ -68,18 +68,28 @@ measurement.acceptanceFiles = files.length - measurement.errorFiles - crashes.le
 measurement.filesPerSecond = measurement.wallTimeMs ? files.length / (measurement.wallTimeMs / 1000) : null
 measurement.symbolsPerSecond = measurement.wallTimeMs ? value.symbols / (measurement.wallTimeMs / 1000) : null
 measurement.relationshipsPerSecond = measurement.wallTimeMs ? value.relationships / (measurement.wallTimeMs / 1000) : null
-// A PINNED residual, not a demand for zero, and the same reasoning as
-// make-corpus-errors.ts: the gate's policy asks for "zero ERROR/MISSING nodes" and
-// the honest answer on this corpus is 2 of 14 files with REAL grammar errors, both
-// documented in script/m14/spec/make-completeness.json (MAKE-G3, and the vault
-// `$$($(GO_CMD) …)` construct). Pinning the exact set means the gate is GREEN
-// while the residual matches the ruling and goes RED the moment it grows — which is
-// strictly stronger than staying red forever, because a permanently red gate is a
-// gate nobody reads.
-const RESIDUAL_EXPECTED = [
-  { file: "boundary/Makefile", errorNodes: 8, cause: "target-scoped `target: export VAR = value`, unparsed by tree-sitter-make 1.1.1 — spec gap MAKE-G3" },
-  { file: "vault/Makefile", errorNodes: 1, cause: "`MAIN_PACKAGES=$$($(GO_CMD) list …)` — a shell command inside an escaped-dollar expansion" },
-]
+  // A PINNED residual, not a demand for zero, and the same reasoning as
+  // make-corpus-errors.ts: the gate's policy asks for "zero ERROR/MISSING nodes" and
+  // the honest answer on this corpus was 2 of 14 files with REAL grammar errors, both
+  // documented in script/m14/spec/make-completeness.json (MAKE-G3, and the vault
+  // `$$($(GO_CMD) …)` construct). Pinning the exact set means the gate is GREEN
+  // while the residual matches the ruling and goes RED the moment it grows — which is
+  // strictly stronger than staying red forever, because a permanently red gate is a
+  // gate nobody reads. Both of those files are now clean, so the pin is empty;
+  // the comment below records what it used to hold, because a pin that cannot be
+  // seen to have changed is a pin nobody trusts.
+// The grammar residual is now EMPTY, and it is the pin that says so rather than the
+// constant having been quietly edited: this expectation previously read 2 files /
+// 9 nodes, and the patched grammar took it to 0 — at which point this gate went
+// RED, because the recorded residual no longer matched the measurement. A pin that
+// can only report "no worse" is not a pin. This one failed on an improvement.
+//
+// Pre-patch, for the record (fixtures/make/out/grammar-ab.json):
+//   boundary/Makefile  8 ERROR nodes  target-scoped `target: export VAR = value`  (was spec gap MAKE-G3)
+//   vault/Makefile     1 ERROR node   `$$($(GO_CMD) list … | grep -v vendor/)`      (was spec gap MAKE-G4)
+// Both are FIXED by the two grammar patches in grammars/tree-sitter-make, which
+// add no node type and no field, so the source<->wasm proof is unaffected.
+const RESIDUAL_EXPECTED: { file: string; errorNodes: number; cause?: string }[] = []
 const erroredFiles = Object.entries(perFile).filter(([, v]) => v.errors > 0).map(([k]) => k).sort()
 const residualMatches = erroredFiles.length === RESIDUAL_EXPECTED.length
   && erroredFiles.every((f, i) => f === RESIDUAL_EXPECTED[i].file)

@@ -8,8 +8,8 @@
     "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
     "package": "tree-sitter-make@1.1.1 (MIT)",
     "vendored": "grammars/tree-sitter-make (incl. the 928 KB generated parser.c)",
-    "wiredSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
-    "wiredBytes": 148909,
+    "wiredSha256": "ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12",
+    "wiredBytes": 165855,
     "sourceVsWasm": {
       "declaredNamed": 44,
       "wasmNamed": 44,
@@ -20,7 +20,16 @@
       "matches": true,
       "anonymousNote": "130 anonymous ids in the wasm vs 91 declared: node-types.json deduplicates identical anonymous tokens the id table lists once per id. Not part of the proof, and recorded rather than hidden.",
       "namedIdNote": "46 named IDS for 44 unique names (`word` and `text` each hold 2 ids) — which is why the inventory prints 46 against a 44-entry spec."
-    }
+    },
+    "kind": "local-rebuild-from-patched-upstream-source",
+    "pristineSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
+    "pristineBytes": 148909,
+    "patches": [
+      "P1 `_ordinary_rule`: target-scoped `target: export VAR = value` (closed MAKE-G3)",
+      "P2 `_shell_escape`: `$$( ... )` as a shell command, not a make expansion (closed MAKE-G4)"
+    ],
+    "patchDecision": "ADOPT. Both gaps were originally recorded as deliberately unpatched to protect the source<->wasm identity proof; that trade was then priced and does not hold, because the patches add NO node type and NO field (44 named / 24 fields before and after, zero added, zero removed) so the proof loses nothing and is re-measured for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing, 0 extra. Measured 11 -> 0 ERROR nodes over the 99-file corpus with 0 files regressed, and at the PRODUCT level 1,772 -> 1,781 symbols / 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer required NO change, which is the strongest evidence the patch is well-founded. A control build of the unpatched source with the same toolchain is functionally identical to the pristine wired build, so every difference is the patch and not the toolchain.",
+    "retained": "fixtures/make/ab/{pristine-src,pristine-make.wasm,grammar.patch} — the A/B stays re-runnable, not merely asserted."
   },
   "corpus": {
     "files": 99,
@@ -74,17 +83,19 @@
     "precision": 1,
     "missing": 0,
     "spurious": 0,
-    "truthEdges": 5447,
-    "lineAgreement": "2427/2427",
+    "truthEdges": 5456,
+    "lineAgreement": "2418/2418",
     "harnessF5": {
       "tf-aws-components": "100% covered, 0 missing, 0 unexplained",
       "consul": "100% covered, 0 missing, 0 unexplained"
     },
-    "independence": "the oracle derives names by a THIRD route (node text + delimiters, regex for assignments) and is two-phase with a per-frame owner; of the 5 rounds it took to reach 1.0, FOUR were oracle bugs and ONE was a real analyzer defect (the ${VAR} form), which is the argument for running it."
+    "independence": "the oracle derives names by a THIRD route (node text + delimiters, regex for assignments) and is two-phase with a per-frame owner; of the 5 rounds it took to reach 1.0, FOUR were oracle bugs and ONE was a real analyzer defect (the ${VAR} form), which is the argument for running it.",
+    "files": 99,
+    "nodes": 23488
   },
   "census": {
-    "symbols": 1772,
-    "relationships": 5870,
+    "symbols": 1781,
+    "relationships": 5880,
     "imports": 4,
     "unknownKind": 0,
     "emptyName": 0,
@@ -92,23 +103,25 @@
     "badRange": 0,
     "ownerless": 0,
     "symbolFree": 0,
-    "relNoLineNumber": "0/5870",
+    "relNoLineNumber": "0/5880",
     "operatorInName": 0,
     "sameSiteDuplicates": 0,
     "relTypes": {
-      "contains": 1742,
-      "references": 1971,
-      "exports": 1347,
-      "uses": 805,
+      "contains": 1752,
+      "references": 1976,
+      "exports": 1357,
+      "uses": 790,
       "imports": 4,
       "calls": 1
     },
     "symbolKinds": {
       "module": 99,
       "function": 1329,
-      "constant": 344
+      "constant": 353
     },
-    "danglingEndpoints": 342
+    "danglingEndpoints": 342,
+    "filesWithErrorOrMissing": 0,
+    "undeclaredNodeTypesSeen": "(none)"
   },
   "dangleAdjudication": {
     "classes": {
@@ -204,15 +217,17 @@
     "M14.0.F4 mutants": "17/17 caught",
     "M14.0.F5 differential (harness)": "both corpora 100% covered, 0 missing, 0 unexplained",
     "M14.0 completeness": "44/44 types classified; sections A-H 8/8",
-    "zero-unknown census": "0 unknown / 0 empty / 0 bad ranges / 0 ownerless / 0 symbol-free; 5,870/5,870 line_number",
+    "zero-unknown census": "0 unknown / 0 empty / 0 bad ranges / 0 ownerless / 0 symbol-free; 5,880/5,880 line_number; 0 files with ERROR/MISSING",
     "doc-truth audit": "49 claims, 0 stale, self-test green",
     "regex": "zero",
     "M12.0.F3 fixtures": "6/6 pass",
     "M12.0.F4 mutants": "18/18 caught",
     "M12 contract probe": "44/44 — was 25/34 on first execution",
     "M12 node-types compare": "passed — 35 live references, 0 phantom",
-    "M12 corpus errors": "passed — 12/14 clean, 0 crashes, grammar residual PINNED",
-    "M12 corpus measure": "passed — 622 symbols / 2,480 relationships"
+    "M12 corpus errors": "passed — 14/14 clean, 0 crashes, 0 error nodes, grammar residual PINNED TO ZERO",
+    "M12 corpus measure": "passed — 630 symbols / 2,490 relationships",
+    "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
+    "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately."
   },
   "notClosed": {
     "gaps": [
@@ -227,21 +242,17 @@
         "summary": "`.RECIPEPREFIX = >` changes what a recipe line looks like, so ignoring it means recipe lines using a non-default prefix are not recognized as recipes. 0 occurrences in this corpus (every one of the 99 files uses a tab), "
       },
       {
-        "id": "MAKE-G3",
-        "status": "OPEN",
-        "summary": "GRAMMAR limitation, not an analyzer defect, and deliberately NOT patched. The target-scoped form `target: export VAR = value` — 10 lines across 2 of 99 files (boundary/Makefile, tf-aws-components/.../runner/Makefile) — i"
-      },
-      {
-        "id": "MAKE-G4",
-        "status": "OPEN",
-        "summary": "SECOND grammar limitation, found by the same gate run and likewise not patched. `MAIN_PACKAGES=$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` in vault/Makefile line 5 — a shell command inside an escaped-dol"
+        "id": "MAKE-G3 / MAKE-G4",
+        "status": "CLOSED (2026-09-28)",
+        "summary": "Both grammar limitations fixed by two measured patches to the vendored grammar, which add no node type and no field. 11 -> 0 ERROR nodes over the 99-file corpus; 9 previously invisible declarations are now visible; the error-recovery artefacts the recovery had published as facts (a `?` as a variable name, a whole `VAR=value` as a name) are gone. The analyzer needed no change. The pristine build and the patch are retained under fixtures/make/ab/ so the comparison is re-runnable. See reviews/make/master-review.md section 11."
       }
     ],
     "notClaimed": [
       "any absolute performance budget: the box ran at load 49-50 throughout with nine agents on it, so every timing here is relative with the load recorded",
       "that MAKE-G3 is fixed",
       "any weight behind `calls`: it rests on ONE corpus site, and the count says so"
-    ]
+    ],
+    "summary": "Only MAKE-G1 and MAKE-G2 remain open, and both are corpus-COVERAGE gaps rather than correctness defects: 0 occurrences in 99 files means there is no evidence to design against and no regression to guard. The two grammar gaps that were open are closed and the corpus ERROR residual is pinned to zero."
   },
   "incidents": [
     "the hcl LANG_CONFIGS entry was NEVER COMMITTED — it lived only in a dirty worktree and a concurrent `git checkout` deleted it, after which `--lang hcl` threw `unknown language hcl`. Restored here and marked as a restoration; the gate itself then caught my reconstruction being wrong (I had required `calls`, which hcl rules N/A), so the restored entry is verified rather than assumed.",
