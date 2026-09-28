@@ -102,6 +102,13 @@ const duplicateFirstExportsRel = (rels: any[]): any[] => {
 
 import type { Mutant } from "../m14/mutate-analyzer"
 
+/** Drop every relationship of one type. PS-A2: written generically so it reverts
+ *  whatever the fixture declares rather than a hard-coded target. */
+const psDropRelType = (type: string) => (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => x.type !== type),
+})
+
 export const POWERSHELL_MUTANTS: Mutant[] = [
   {
     id: "powershell/global-file-owner",
@@ -705,5 +712,84 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       imports: (r.imports ?? []).map((i: any) =>
         i.metadata?.via?.startsWith("using") ? { ...i, module: String(i.metadata.via).split(" ")[1] ?? "using" } : i),
     }),
+  },
+  {
+    id: "powershell/drop-class-implements",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a class's interface list publishes no `implements` edge. This is the lane's widest hole and it was found by an AUDIT, not a report: asked whether all relationship types were carried out, `implements` turned out to be emitted by live code with ZERO fixture rows and ZERO mutants, so deleting the loop that produces it would have left every gate in the repository green. The class header cannot say which base is a class and which are interfaces — PowerShell resolves that at runtime — so the grammar's positional shape is the only information there is. Caught by class-inherit-psa2's `implements Circle -> IShape` row and by its `implements == 1` count, which is the half that survives a fix that keeps the row but also emits the base class as an interface.",
+    transform: psDropRelType("implements"),
+  },
+  {
+    id: "powershell/drop-class-extends",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a class's base publishes no `extends` edge. `extends` had a fixture row (method-scope-psb3) but no mutant that could fail it, so the row was documentation rather than a gate. Caught by class-inherit-psa2's two `extends` rows and its `extends == 2` count.",
+    transform: psDropRelType("extends"),
+  },
+  {
+    id: "powershell/drop-class-overrides",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a same-named subclass member publishes no `overrides` edge. The pre-wave lane emitted ZERO `overrides` edges in the language, so this is the revert verbatim. `overrides` had two fixture rows and no mutant; it also carries the `overridesMember` metadata that says WHICH member is overridden, and dropping the edges drops the evidence with them. Caught by class-inherit-psa2's three `overrides` rows (each pinning `overridesMember`) and its `overrides == 3` count, whose value is chosen so that a rule matching 'the base has a member of any name' emits 4 and fails — `Area` is in the base and overridden in `Circle` but deliberately absent from `Square`.",
+    transform: psDropRelType("overrides"),
+  },
+  {
+    id: "powershell/interface-keyword-as-call",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS-A2 REVERT: the `interface` KEYWORD is published as a callable again. The grammar has no node for a PowerShell 5.0 interface, so `interface IShape { … }` parses as a plain `command` named `interface` and reaches the generic call edge — the PS5 keyword-fabrication class reached through a grammar gap rather than a missing guard, which is why `interface` was absent from LANGUAGE_KEYWORD_COMMANDS while its siblings `class` and `enum` were both present. The GRAMMAR-side fix was built and REJECTED (an `interface_statement` rule with an optional method body reshaped 491 of 550 clean corpus files), so the guard is analyzer-side. The transform keys on the presence of an `interface` SYMBOL, so it re-derives the pre-fix state from the result without hard-coding this fixture's names. Caught by class-inherit-psa2's two `calls -> interface` / `calls -> IShape` forbid rows and its `interface` forbidSymbol row.",
+    transform: (r: any) => {
+      const ifaces = (r.symbols ?? []).filter((s: any) => s.kind === "interface").map((s: any) => s.name)
+      if (ifaces.length === 0) return r
+      const file = psFileName(r)
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...ifaces.map((n: any) => ({
+            type: "calls", source: file, target: "interface", line_number: 0, confidence: 0.6,
+            metadata: { powershellSpecific: true },
+          })),
+          ...ifaces.map((n: any) => ({
+            type: "calls", source: file, target: n, line_number: 0, confidence: 0.6,
+            metadata: { powershellSpecific: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "powershell/interface-scope-leak",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A2 REVERT, the regression: an interface's scope frame is pushed and never popped, so every class declared AFTER an interface in the same file is re-owned by the interface. This is the defect the FIX introduced, recorded as a mutant rather than quietly corrected, because it is the reason the fixture puts a class after an interface and pins three `contains IShape -> <class>` forbid rows: scoping without an exit is not a narrower fix, it is a different defect, and it was invisible until a file exercised the order. The first version of the fix leaked exactly this way and the measured damage was `contains IShape -> Shape`, `-> Circle` and `-> Square`. Caught by class-inherit-psa2's three forbid rows.",
+    transform: (r: any) => {
+      const ifaces = (r.symbols ?? []).filter((s: any) => s.kind === "interface")
+      if (ifaces.length === 0) return r
+      const file = psFileName(r)
+      const leaked = (r.symbols ?? [])
+        .filter((s: any) => s.kind === "class" && (s.ownerName ?? s.owner) === file)
+        .map((s: any) => s.name)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.kind === "class" && (s.ownerName ?? s.owner) === file
+            ? { ...s, ownerName: ifaces[0].name, owner: ifaces[0].name }
+            : s),
+        relationships: [
+          ...(r.relationships ?? []).filter((x: any) => x.type !== "contains" || x.source !== file || !leaked.includes(x.target)),
+          ...leaked.map((n: any) => ({
+            type: "contains", source: ifaces[0].name, target: n, line_number: 0, confidence: 1.0,
+            metadata: {},
+          })),
+        ],
+      }
+    },
   },
 ]

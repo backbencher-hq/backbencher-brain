@@ -304,6 +304,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * pair is a sound identity for this use.
      */
     const dscBlocks = new Set<string>()
+    // PS-A2 — the same push/pop discipline for an INTERFACE declaration block. The
+    // first version pushed a frame and never popped it, and the measured damage was
+    // worse than the bug being fixed: every class declared after an interface in the
+    // same file was re-owned by the interface (`contains IShape -> Circle`), because
+    // the leaked frame made the interface the attribution scope for the rest of the
+    // file. Scoping without an exit is not a narrower fix, it is a different defect.
+    const interfaceBlocks = new Set<string>()
     const nodeKey = (n: Node): string => `${n.startIndex}:${n.endIndex}`
     /**
      * A DSC block's DECLARED NAME, so the frame it pushes can be popped on the
@@ -849,6 +856,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (declared !== undefined) frames.pop()
           dscDepth--
         }
+        // PS-A2 — leaving an interface block, mirroring the DSC exit above.
+        if (interfaceBlocks.has(nodeKey(node))) {
+          interfaceBlocks.delete(nodeKey(node))
+          frames.pop()
+        }
         // PS3 — a method is a SCOPE whose OWNER stays the class, so popping its
         // frame restores the class as the attribution scope.
         if (
@@ -1317,6 +1329,47 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const leaf = cmdName.includes("::") ? cmdName.slice(cmdName.lastIndexOf("::") + 2) : cmdName
           const lowerLeaf = leaf.toLowerCase()
           const nameLine = (findFirstChild(node, "command_name") ?? node).startPosition.row + 1
+
+          // PS-A2 — a class INTERFACE declaration. `interface IShape { … }` is a
+          // PowerShell 5.0 construct the GRAMMAR does not model at all: it parses as
+          // a plain `command` named `interface`. Two consequences, and the second is
+          // the worse one. (1) The analyzer published `calls -> interface` — a
+          // language keyword promoted to a call edge, which is the PS5 defect class
+          // reached through a grammar gap rather than a missing guard, and the reason
+          // `interface` is missing from LANGUAGE_KEYWORD_COMMANDS while its siblings
+          // `class` and `enum` are both present. (2) `IShape` was never DECLARED, so
+          // every `implements` edge pointed at a target no symbol could ever have —
+          // a permanently dangling row the store cannot resolve. Authoring the
+          // fixture that pins `implements` is what found this: the type had zero
+          // fixture rows and zero mutants, so the path was live and unguarded.
+          //
+          // The GRAMMAR can fix it, and that version was built, measured and
+          // REJECTED. An `interface_statement` rule plus an optional method body
+          // reshaped 491 of 550 clean corpus files — making a body optional in a hot
+          // rule shifts global tie-breaking, and the visible symptom was zero-width
+          // `command_argument_sep` nodes appearing throughout otherwise-untouched
+          // files. Removing the `reserved()` wrapper did not help (491 either way), so
+          // the cost is the optional, not the keyword. This branch is therefore keyed
+          // on STRUCTURE, the same way the DSC branch below is: the keyword as command
+          // name, plus a first positional argument, plus a script block. The tree is
+          // unchanged from G9, so F11's G2 gate has nothing to object to.
+          if (lowerLeaf === "interface") {
+            const ifaceElements = findFirstChild(node, "command_elements")
+            const ifaceBlock = ifaceElements ? findDescendant(ifaceElements, "script_block_expression") : null
+            const ifaceName = ifaceElements
+              ? this.collectChildrenByType(ifaceElements, "generic_token")[0] ?? null
+              : null
+            if (ifaceBlock && ifaceName) {
+              const ifaceLine = ifaceName.startPosition.row + 1
+              declareSymbol(ifaceName.text, ASTEngine.SymbolKind.Interface, ifaceName, ifaceLine, {
+                powershellSpecific: true,
+                docstring: this.docstringAbove(ifaceName.startPosition.row, lines),
+              })
+              interfaceBlocks.add(nodeKey(node))
+              frames.push({ owner: ifaceName.text, scope: ifaceName.text, containerLine: ifaceLine })
+            }
+            break
+          }
 
           // PS5 — a reserved word is not a command. The named blocks come first
           // because the grammar models them as `command` nodes; the keyword set
