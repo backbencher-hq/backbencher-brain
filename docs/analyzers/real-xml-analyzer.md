@@ -104,10 +104,27 @@ written so a tier cannot drift from the rule that produced it:
 | `structural` | containment read off the tree, DTD→declaration, declaration→notation, PI→target | the large majority |
 | `import_based` | the target is a FILE: `ExternalID`, stylesheet `href`, `schemaLocation` | 964 |
 | `reference_qualified` | the target is a NAME reached through a declared prefix, or a named XSLT template | 11,145 |
-| `usage_contextual` | the document stating what an element MAY contain through an attribute, e.g. `<!ELEMENT catalog (entry+)>` | 821 |
+| `usage_contextual` | the document stating what an element MAY contain through an attribute, e.g. `<!ELEMENT catalog (entry+)>` | 665 |
 | `inferred` | the honest default for a role the table does not name | 0 |
 
-`usage_contextual` is deliberately not folded into `structural`.
+`evidenceClass` is the tier of the edge's **primary** role. A merged edge carries
+its other roles in `meta.alsoRoles`, and their tiers are not separately recorded —
+so a consumer asking "is this edge *also* a usage claim?" has to read
+`alsoRoles`, not `evidenceClass`.
+
+That is not a hypothetical: `<!ELEMENT catalog (entry+)>` inside a document that
+also contains a real `<entry/>` produces `contains catalog -> entry` twice — once
+read off the tree, once from the DTD — and the two collapse onto one edge because
+edge identity is `source|type|target`. Whichever rule wrote first becomes the
+primary role. Measured over 2,500 corpus files: **665** content-model edges carry
+`tier: usage_contextual`, and a further **148** carry `tier: structural` with
+`alsoRoles: ["dtd_content_model"]`. So the content-model claim is never *lost* —
+it is counted and preserved — but on 148 of 813 sites the edge's own tier
+describes the tree reading rather than the usage one.
+
+`dtd_notation_reference` also maps to `usage_contextual` and is exercised by
+`xml/dtd-declarations`, but it occurs **zero** times across the 8,889-file corpus.
+The tier is reachable; it is not common.
 `<!ELEMENT catalog (entry+)>` says catalog MAY admit entry; `contains
 catalog -> entry` read off an actual `<entry/>` child is nesting. They are
 different claims, and because edge identity is `source|type|target` they collapse
