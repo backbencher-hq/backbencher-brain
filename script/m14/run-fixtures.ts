@@ -116,13 +116,26 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // declared `@font-face`; and an `@layer a, b, c;` that published a name with no
   // referent. Every one of those was a green lane.
   //
-  // `ext` carries ONLY `css`. The ROUTER also sends `.scss`, `.sass` and `.less`
-  // here (script/m13/corpus-map.ts and src/ast/parallel-indexer.ts), but the CSS
-  // grammar does not support those dialects — 42 of 244 real `.scss` files parse
-  // clean, 17.2% — so a fixture written in them would pin a broken state as
-  // expected. That gap is DECLARED as CSS-L1 rather than papered over with a
-  // fixture that cannot fail.
+  // `ext` carries ONLY `css`, and the comment that used to explain why has been
+  // REPLACED because its claim became false. It said: "the ROUTER also sends `.scss`,
+  // `.sass` and `.less` here … the CSS grammar does not support those dialects — 42 of
+  // 244 real `.scss` files parse clean, 17.2% … That gap is DECLARED as CSS-L1."
+  //
+  // It did not stay declared. `.scss` is now its own language with its own grammar
+  // (tree-sitter-scss@1.0.0 plus two measured patches), its own analyzer
+  // (RealScssAnalyzer) and its own fixtures, and the router no longer sends it here.
+  // Measured after: 149 of 244 `.scss` files parse clean (61.1%), from 43 (17.6%).
+  // `.sass` and `.less` STILL come here and are still DECLARED — 0 files of each
+  // across 13 corpora, so this lane can neither support nor refute a claim about them,
+  // and inventing a fixture for a dialect with no corpus would be a pin with nothing
+  // behind it.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  // scss joins the fixture lane with its own wasm and its own analyzer. It is here
+  // rather than folded into the css entry because the two dialects have genuinely
+  // different contracts: a `$variable`, a `@mixin` and an `@use` namespace are entities
+  // the CSS grammar has no node for, and a fixture that could not fail would be worse
+  // than no fixture.
+  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
   // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
   // runner entry, so nothing could have caught a regression in any of them —
   // and the four are a differential whose truth was authored by the same hand

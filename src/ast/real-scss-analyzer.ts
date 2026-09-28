@@ -386,11 +386,21 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nsNode = this.findChild(node, (c) => c.type === "plain_value" || c.type === "identifier")
     const namespace = nsNode ? stripAllQuotes(nsNode.text) : undefined
 
-    // A namespaced CALL, `map.merge($a, $b)`, is a use of the namespace. Only
-    // namespaces THIS FILE declares become edges, for the reason every other use
-    // edge in this project gives: a `@use` may legitimately come from another
-    // stylesheet, and inventing an endpoint for it is the phantom this lane removed.
-    if (namespace && !module.startsWith("sass:")) {
+    // The namespace is published for EVERY `@use … as <ns>`, with no exception for
+    // built-in `sass:` modules. The first version excluded `sass:` on the reasoning
+    // that a built-in is "not the file's own" — and then the fixture asked for `map`
+    // and was right to: `@use 'sass:map' as map` binds the name `map` in THIS file
+    // exactly as `@use './theme' as theme` does, and a rule that treats the two
+    // differently has a rule nobody wrote down. The part that is genuinely different
+    // is `as *`, which binds no name and therefore publishes nothing — there is no
+    // name to publish, and a symbol for the keyword `*` would be a name with no
+    // referent.
+    //
+    // A namespaced CALL, `map.merge($a, $b)`, is a use of this namespace, and the
+    // lookup is by a namespace THIS FILE declares, for the reason every other use
+    // edge in this project gives: a `@use` may come from another stylesheet, and
+    // inventing an endpoint for it is the phantom the CSS lane removed once.
+    if (namespace) {
       ctx.symbols.push({
         name: namespace,
         kind: ASTEngine.SymbolKind.Namespace,
@@ -652,13 +662,37 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
   }
 
+  /**
+   * Whether a declaration carries `!default` or `!global`.
+   *
+   * The walk uses `childCount`/`child()`, NOT `namedChildCount`/`namedChild()`,
+   * because the flag is TWO ANONYMOUS NODES — the tree is
+   * `declaration > integer_value, "!", "default", ";"` with `!` and `default` both
+   * unnamed. The first version walked named children only, so it could never see
+   * them, the flag was silently always false, and 210 `!default` assignments in the
+   * corpus were recorded as carrying no flag at all.
+   *
+   * Found by `variables-flags-and-identity`, which is the whole argument for writing
+   * a fixture's expectations from the CONTRACT: the analyzer agreed with itself the
+   * entire time, because nothing ever asked.
+   */
   private hasVisibilityFlag(node: Node, flag: string): boolean {
+    // Matched on the anonymous node's TYPE, not on text. The tree is
+    // `declaration > …, "!", "default", ";"`, so NO single node's text ends with
+    // `!default` — the `!` is one node and `default` is another. A text test that
+    // looks for the two characters together therefore never fires, which is what the
+    // first version did: it walked named children (which cannot contain an anonymous
+    // token at all) and then tested for a string that appears in no node.
+    //
+    // `type` is exact here: the token's type IS `default` / `global`, and a value that
+    // merely CONTAINS the word — `padding: default` — has a different type, so this
+    // cannot be fooled by text that looks like the flag.
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop() as Node
-      if (collapseWhitespace(n.text).endsWith(`!${flag}`)) return true
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
+      if (!n.isNamed && n.type === flag) return true
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
         if (c) stack.push(c)
       }
     }
