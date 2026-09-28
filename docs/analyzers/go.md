@@ -141,12 +141,20 @@ impossible. `classifyEvidenceTier` now runs over every emitted relationship
 (metadata already tagged by the emitter is left intact):
 
 - contains/exports → `structural`
-- references → `import_based` (import dep / isImport), `reference_qualified`
-  (declared_type / return_type), else `usage_contextual`
+- **imports** → `import_based` (round 5: the go import edge moved to the
+  family's first-class `imports` label in the #799 round, which is what made
+  the old `references`/`isImport` arm below unreachable; it is removed rather
+  than left as a branch nothing can reach)
+- references → `reference_qualified` (declared_type / return_type), else
+  `usage_contextual`
 - extends/implements/overrides → confidence ≥1 `structural`, ≥0.85
   `usage_contextual`, else `inferred`
 - instantiates → `structural`
 - everything else → `usage_contextual`
+
+`exports` has no arm go can reach — the analyzer emits no `exports` edge. The
+line is kept as a family-contract mirror (rust/c/cpp carry it) and is
+commented in the source as a mirror rather than a live path.
 
 ## Per-symbol complexity (family standard)
 
@@ -179,6 +187,18 @@ contains/imports), payload pins (complexity + qualified_calls via
   function/package-scope/stdlib, instantiates via `NewShape`, uses via
   selector access, contains, references declared_type + import dep,
   complexity equals, qualified_calls leaf targets).
+- `validation/m14/fixtures/go/round5-surfaces.*` (round 5) — the export rule
+  (`Ünï`/`Ö`/`Ä` public and exported), the predeclared set (`comparable` must
+  NOT become a `declared_type` target, and `interface{ comparable }` still
+  DOES embed), parameter-vs-result by field, the Module range under a
+  `//go:build` header, var/const name-node ranges, alias-to-struct `extends`,
+  the framework vocabulary (`gorm` detected) and the struct-design score
+  bonus. Valid, compilable Go — the two shapes no valid file can reach are
+  pinned by the probe battery instead.
+- Round 5's pins that are probes, not fixtures: `F9-PROBE-GO-BARE-CALLABLE-SET`
+  (an interface-method name is not callable; a type does not implement itself)
+  and `script/m14/tmp/go-round5-proto-names.ts` (the prototype-name crash
+  class). Both carry the reason they cannot be fixtures.
 
 ## Differential floor
 
@@ -186,6 +206,92 @@ contains/imports), payload pins (complexity + qualified_calls via
 `validation/m14/differential-baseline.json` (822/822 files, 100% coverage,
 0 unexplained at the pinned floor). The differential's regression gate
 enforces the floor.
+
+## Round 5 (2026-09-28): the read the gates could not do
+
+Recorded in full in `reviews/go/sixth-review.md`. What belongs in the analyzer
+doc is the *contract* — the rules a consumer of this analyzer can now rely on,
+and the ones that changed.
+
+### Corpus, at full extent
+
+| tree | files | truth | MISSING | unexplained |
+| --- | --- | --- | --- | --- |
+| `go-tools` @`bf54bcd2` | 1,931 | 30,695 | 0 | 0 |
+| `terraform` @`2e1710bf` | 1,993 | 40,913 | 0 | 0 |
+| `prometheus` | 736 | 22,993 | 0 | 0 |
+| `grpc-go` | 1,071 | 27,415 | 0 | 0 |
+| `etcd` | 1,105 | 22,351 | 0 | 0 |
+
+6,836 files, every label the harness compares for go, 0 skipped files. The
+three new trees are read for a reason: the compared surface was already clean
+on the pinned pair, so a defect had to be one the pair does not contain.
+
+### What the differential cannot see
+
+The harness offers go exactly five compared labels — `extends`, `implements`,
+`instantiates`, `overrides`, `calls`. `uses`, `references`, `imports` and
+`contains` are **excluded**, so a wrong edge on them can be neither MISSING nor
+UNEXPLAINED. Across the three new trees that is **166,720 edges** with no
+oracle. Four of the round's fifteen defects live on that surface; the rest live
+in metadata.
+
+### Contracts that changed in round 5
+
+| rule | before | now |
+| --- | --- | --- |
+| **exported** | ASCII `A`-`Z`; a non-ASCII identifier was `private` and therefore absent from the export list | Go's spec: a **Unicode upper-case** test on the first code point (`toUpperCase(c) === c ∧ toLowerCase(c) !== c`) |
+| **bare callee** | any `Function`/`Method` **by name**, including an interface method | a **declared function or method** only; an interface-method name is not callable (GO25) |
+| **implements** | no self-pair guard (the oracle had one) | a type never implements itself (GO26) |
+| **parameter vs result** | decided by `namedChildCount === 1` | read from the enclosing declaration's `result` **field**; a variadic parameter now reaches the declared-type graph at all (GO29) |
+| **predeclared identifiers** | `any`, `error`, the numerics — no `comparable` | includes `comparable`, so a generic constraint no longer yields a dangling target (GO28) |
+| **Module range** | hand-built at line 1 / byte 0 from the package name's length | `nodeToRange(packageClause)` — identical for a clause at byte 0, correct under any `//go:build` header (GO30a) |
+| **var/const range** | the whole `var_spec` | the **name node's** range, the #919 rule the struct-field path already used (GO30b) |
+| **struct embedding** | `type_spec` only | `type_spec` **and `type_alias`**, on the analyzer *and* the oracle — so `type A = struct{ *Inner }` emits `extends`, not just a member (GO31a) |
+| **framework vocabulary** | two independently written lists that disagreed in both directions | one `GO_FRAMEWORK_RULES` table read by both; `golang.org/x/…` is `listed: false` (a namespace, not a framework) (GO31c) |
+| **struct kind** | five predicates tested `SymbolKind.Class`, never emitted | `SymbolKind.Struct` — which is what activated the `struct_design` insight and its score bonus (GO31b) |
+| **name-keyed maps** | four plain `{}` objects | `Object.create(null)`, so a type named `constructor`/`toString`/`__proto__` cannot crash the pass (GO35) |
+| **regex** | 1 literal, unregistered | **0** |
+
+### Performance
+
+The implements pass's promoted-method closure is computed once per candidate
+rather than once per (interface × candidate) pair, method signatures are
+memoized per node, and each candidate's method set is indexed once. Emitted
+edge sets are identical at every size measured. On a deterministic synthetic
+shape (n interfaces × n candidates, 5 methods each, a 3-deep embedding chain),
+cost per KB rose to 7.67× the smallest file before and 3.91× after; the ratio
+at the largest size is 2.36×. On a real corpus (go-tools, 260 files in the
+8–40 KB band) the ratio is **1.02–1.18×**, because a typical Go file never
+reaches the quadratic term. The residual 3.9× is real and is named in the
+review rather than rounded away.
+
+### Round 5's own limits
+
+- The canonical M14.0.F5 sweep was **not** re-run: it records
+  `codeInputs.clean` and the commit it read, and the shared tree carries other
+  lanes' in-flight work. The lane's F5 obligation is met by a strictly larger
+  read (6,836 files at full extent against the canonical draw's 120).
+- `GO-GAP-1` stands: two legal Go constructs have no representation in the
+  pinned grammar, and error recovery swallows the declarations after them.
+- The lane's `tracker` cell is not addressed. Tracker state is the owner's.
+- R2 is red on **other lanes'** rows; this file's literal is no longer among
+  them. The policy doc's declared survivor count still disagrees with the
+  census, and correcting that number is M49's file, not this lane's.
+- Three round-5 classes have a pin and deliberately **no mutant**, because the
+  pre-fix emission is not reconstructible from the analyzer's output. The
+  reasons are in `go-completeness.json` (GO25, GO26, GO30b) and in the review.
+
+### New instruments
+
+| script | what it answers |
+| --- | --- |
+| `go-round5-verify.ts` | 28 falsifiable cases, each declared as a DEFECT claim or a CONTROL; reads a comment-stripped analyzer for its code-shape cases |
+| `go-round5-proto-names.ts` | the prototype-name crash class, against both analyzers (8/8 throw before, 8/8 publish after) |
+| `go-round5-unknown-symbols.ts` | LANE-AUDIT-FORMULA §5 through the **production entry** (`parseFile`) |
+| `go-round5-perf.ts` | §9: analyzer vs product entry, per 1k nodes, in a fixed size band, **with a measured load context** |
+| `go-round5-perf-implements.ts` | §9's scaling check on the shape the implements cost lives in; pre/post interleaved, so the ratio is load-independent |
+| `go-round5-fixture-dump.ts` | the emission in expectation-file shape, so a pin is derived from a probe and never from theory |
 
 ## Evidence pointers
 
