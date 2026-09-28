@@ -44,12 +44,12 @@
     {
       "name": "F. the fixture set is present and non-empty",
       "passed": true,
-      "detail": "10 fixtures"
+      "detail": "11 fixtures"
     },
     {
       "name": "G. one symbol per tree element and per tree attribute, per file",
       "passed": true,
-      "detail": "14 sources, 47 elements and 54 attributes, all exact"
+      "detail": "15 sources, 52 elements and 63 attributes, all exact"
     }
   ],
   "passed": true,
@@ -119,22 +119,22 @@
     "PublicID"
   ],
   "observed": {
-    "Name": 120946,
-    "CharData": 81487,
-    "element": 46688,
-    "STag": 36250,
-    "ETag": 36226,
-    "content": 36031,
-    "Attribute": 35572,
-    "AttValue": 35572,
-    "EmptyElemTag": 10462,
-    "Comment": 2000,
-    "document": 1203,
-    "prolog": 1164,
-    "XMLDecl": 1151,
-    "VersionNum": 1151,
+    "Name": 120961,
+    "CharData": 81492,
+    "element": 46693,
+    "STag": 36251,
+    "ETag": 36227,
+    "content": 36032,
+    "Attribute": 35581,
+    "AttValue": 35581,
+    "EmptyElemTag": 10466,
+    "Comment": 2001,
+    "document": 1204,
+    "prolog": 1165,
+    "XMLDecl": 1152,
+    "VersionNum": 1152,
     "ERROR": 559,
-    "EncName": 543,
+    "EncName": 544,
     "TokenizedType": 295,
     "EntityRef": 133,
     "AttDef": 48,
@@ -260,7 +260,7 @@
       "fixture:Catalog.xml",
       "fixture:ExternalReference.xsd",
       "fixture:ImplicitXmlPrefix.xsd",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:IncludedReference.xsd"
     ],
     "VersionNum": [
       "fixture:Catalog.xml",
@@ -369,9 +369,9 @@
       "probe:DTD_SHAPE_PROBE"
     ],
     "Comment": [
-      "corpus:cxf",
       "fixture:ExternalReference.xsd",
       "fixture:ImplicitXmlPrefix.xsd",
+      "fixture:IncludedReference.xsd",
       "probe:CDATA_SHAPE_PROBE"
     ],
     "ERROR": [
@@ -475,6 +475,13 @@
       "symbolAttributes": 4
     },
     {
+      "file": "fixture:IncludedReference.xsd",
+      "treeElements": 5,
+      "symbolElements": 5,
+      "treeAttributes": 9,
+      "symbolAttributes": 9
+    },
+    {
       "file": "fixture:Negative.xml",
       "treeElements": 0,
       "symbolElements": 0,
@@ -538,6 +545,7 @@
     "DtdDeclarations.xml",
     "ExternalReference.xsd",
     "ImplicitXmlPrefix.xsd",
+    "IncludedReference.xsd",
     "Negative.xml",
     "ProcessingInstruction.xml",
     "Schema.xsd",
