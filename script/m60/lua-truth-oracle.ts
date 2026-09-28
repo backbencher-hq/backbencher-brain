@@ -280,6 +280,19 @@ function collectTables(root: any, out: Set<string>): void {
 // callee path (LUA-27/LUA-30) and the setmetatable path (LUA-33), so the two
 // cannot drift the way `table_index_expression` did. Three forms carry a name;
 // nil, a call, a binary expression and a table constructor do not.
+function* walkNodes(node: any): Generator<any> {
+  const stack = [node]
+  while (stack.length) {
+    const n = stack.pop()
+    yield n
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+}
+
+const forBoundVars = new Set<string>()
+let loopCoincidence = 0
+const loopCoincidenceSample: string[] = []
+
 function nameBearing(node: any): string | undefined {
   if (!node) return undefined
   if (node.type === "identifier") return node.text
@@ -695,6 +708,14 @@ async function main(): Promise<void> {
   const dualAgrees = new Set<string>()
   let dualMeasured = 0
   let exportTruth = 0, exportHit = 0, exportSpurious = 0, exportFilesProbed = 0
+  // M60 LUA-34: the DIRECT-path relationship comparison. Counters are declared
+  // beside the export ones because they answer the same question for a different
+  // payload, and `spurious` is the leg that catches a target the tree never
+  // derived — which is precisely what a payload target is.
+  let relTruth = 0, relHit = 0, relSpurious = 0, relFilesProbed = 0
+  const relMissed: string[] = []
+  const relExtra: string[] = []
+  const directRelTruth = new Set<string>()
   const exportMissed: string[] = []
   const exportExtra: string[] = []
   const exportTruthNames = new Set<string>()
@@ -715,9 +736,30 @@ async function main(): Promise<void> {
 
     const tree = parser.parse(src)
     if (tree.rootNode.hasError) { parseErrors++; continue }
+    // Every name bound by a for-clause in THIS file, used only for the LUA-26
+    // exemption above. Structural: read off the tree, not matched by name.
+    forBoundVars.clear()
+    for (const n of walkNodes(tree.rootNode)) {
+      if (n.type === "for_numeric_clause") {
+        const id = n.childForFieldName("name")
+        if (id?.type === "identifier") forBoundVars.add(id.text)
+      } else if (n.type === "for_generic_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type !== "variable_list") continue
+          for (let j = 0; j < c.childCount; j++) {
+            const fn = typeof c.fieldNameForChild === "function" ? c.fieldNameForChild(j) : null
+            if (fn !== "name") continue
+            const id = c.child(j)
+            if (id?.type === "identifier") forBoundVars.add(id.text)
+          }
+        }
+      }
+    }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) {
       truth.set(`${rel}|${key(e)}`, e)
       if (e.label === "exports") exportTruthNames.add(`${rel}|${e.target}`)
+      directRelTruth.add(`${rel}|${e.label}\u001f${e.from}\u001f${e.target}`)
     }
 
     const r: any = await parseFile(abs, repoRoot)
@@ -792,8 +834,79 @@ async function main(): Promise<void> {
         }
       }
       exportFilesProbed++
-    }
-  }
+
+      // ── relationships on the DIRECT path, for the same reason as exports ────
+      // M60 LUA-34. The export comparison above exists because the pipeline drops
+      // the whole field. The SAME blindness exists for relationships and it is
+      // worse, because the filter is not a missing field — it is a CONTENT rule.
+      // pool-worker rejects any relationship target containing a NEWLINE, so an
+      // edge whose target is a multi-line payload is deleted on the way to the
+      // store. The differential reads relationships through the pipeline, so such
+      // an edge is simply ABSENT: indistinguishable from one that was never
+      // derived.
+      //
+      // That is not hypothetical. LUA-32 was exactly this defect — `setmetatable(X,
+      // { … })` publishing a five-line table constructor as the extends target —
+      // and it survived an entire lane of review reading `extends 103/103, zero
+      // missing, zero unexplained`. It was found only by a direct-vs-pipeline seam
+      // probe comparing the two paths per file, which is a diagnostic, not a gate.
+      //
+      // Measured on a 42-file slice by mutation: reintroducing the LUA-32 payload
+      // moves NO number this instrument reports. Missing, unexplained, line
+      // accuracy and direct-path exports are all byte-identical. A mutant that
+      // provably changes the analyzer's output (15 of 260 corpus files change)
+      // and provably changes nothing the differential can see is the definition
+      // of a blind spot, and it is the last one in this instrument.
+      //
+      // So relationships get the same two-path treatment: the analyzer's own
+      // output against the same tree-derived truth, with no pipeline filter in
+      // between. `spurious` is the leg that matters here — a payload target the
+      // truth never derives is exactly what LUA-32 produced.
+      const directKeys = new Set<string>()
+      for (const e of direct.relationships ?? []) {
+        if (!e.type) continue
+        const k = `${e.type}\u001f${e.source}\u001f${e.target}`
+        directKeys.add(k)
+        if (directRelTruth.has(`${rel}|${k}`)) continue
+        // The ONE exemption, and it is structural rather than by name. LUA-26 is
+        // open: the oracle deliberately derives no edge for a for-loop's control
+        // variable, because whether one belongs in the symbol graph is a product
+        // decision. The analyzer, meanwhile, emits `contains <fn> -> <var>` for
+        // such a variable whenever the loop body also ASSIGNS it — the assignment
+        // creates the symbol, and the for-clause is not why the edge exists. On
+        // kong that is exactly one edge, `contains Schema:errors_to_string -> err`
+        // at kong/db/schema/init.lua, and it is a true statement reached by a
+        // different route than the one the oracle does not take.
+        //
+        // Exempted on the STRUCTURAL test — the target is bound by a for-clause
+        // somewhere in this file — not by matching the name. A name-based
+        // exemption would be a hole shaped exactly like the next bug; this one is
+        // closed the moment the loop binding goes away, and every exemption is
+        // counted and reported rather than silently dropped.
+        if (e.type === "contains" && forBoundVars.has(e.target)) {
+          loopCoincidence++
+          if (loopCoincidenceSample.length < 10) loopCoincidenceSample.push(`${e.source} -> ${e.target}  ${rel}`)
+          continue
+        }
+        relSpurious++
+        if (relExtra.length < 25) relExtra.push(`${e.type} ${e.source} -> ${JSON.stringify(e.target).slice(0, 90)}  ${rel}`)
+      }
+      // Exports are a SEPARATE array on the direct result, not an entry in
+      // `relationships`. Without this the relationship leg demanded an
+      // `exports global -> x` key that the direct relationship list can never
+      // contain, and reported every export as missed — 317 of them on kong, which
+      // is exactly the export truth count. The leg was measuring its own blind
+      // spot and calling it a recall gap.
+      for (const ex of direct.exports ?? []) {
+        directKeys.add(`exports\u001fglobal\u001f${ex.name}`)
+      }
+      for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+        relTruth++
+        if (directKeys.has(`${e.label}\u001f${e.from}\u001f${e.target}`)) relHit++
+        else if (relMissed.length < 25) relMissed.push(`${e.label} ${e.from} -> ${e.target} (${e.rule}, L${e.line})  ${rel}`)
+      }
+      relFilesProbed++
+    }  }
 
   // ── the two directions ─────────────────────────────────────────────────────
   const missing: any[] = []
@@ -928,7 +1041,11 @@ async function main(): Promise<void> {
   // The direct-path export comparison is part of the verdict, not decoration: it is
   // the ONLY place an export defect can show up at all while LUA-14 stands.
   const exportsDirectBad = exportTruth > 0 && (exportHit !== exportTruth || exportSpurious > 0)
-  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad
+  // LUA-34: a direct-path relationship that the tree never derived is a fabricated
+  // target, and a fabricated target is the defect class this lane has spent its
+  // life on. It is part of the verdict, not a diagnostic.
+  const relDirectBad = relSpurious > 0
+  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad || relDirectBad
   const report = {
     schemaVersion: 1,
     kind: "lua_truth_oracle_differential",
@@ -957,6 +1074,20 @@ async function main(): Promise<void> {
         precision: exportHit + exportSpurious ? Number((exportHit / (exportHit + exportSpurious)).toFixed(6)) : 1,
         missedSample: exportMissed,
         spuriousSample: exportExtra,
+      },
+      relationshipsDirectPath: {
+        note: "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+        filesProbed: relFilesProbed,
+        truth: relTruth,
+        hit: relHit,
+        missed: relTruth - relHit,
+        spurious: relSpurious,
+        loopCoincidenceExempted: loopCoincidence,
+        loopCoincidenceSample,
+        recall: relTruth ? Number((relHit / relTruth).toFixed(6)) : 1,
+        precision: relHit + relSpurious ? Number((relHit / (relHit + relSpurious)).toFixed(6)) : 1,
+        missedSample: relMissed,
+        spuriousSample: relExtra,
       },
       pipelineDiscardEvidence: {
         note: "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
@@ -1005,6 +1136,7 @@ async function main(): Promise<void> {
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
   console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
+  console.log(`relationships (DIRECT path, ${relFilesProbed} files): truth=${relTruth} hit=${relHit} missed=${relTruth - relHit} SPURIOUS=${relSpurious} recall=${report.totals.relationshipsDirectPath.recall} precision=${report.totals.relationshipsDirectPath.precision}`)
   console.log("\nper label:")
   for (const L of LABELS) {
     const b = byLabel[L]
