@@ -331,12 +331,40 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // A `$ref` that names ANOTHER FILE is a file dependency, which is what
+    // `imports` is for. Found by the ontology gate: the first ruling for `imports`
+    // said JSON has no imports, on the ground that the grammar has no import node —
+    // which is the wrong question, because a `$ref` is a STRING and the grammar cannot
+    // see what a string names. Measured over the corpus it is real: 58 file-to-file
+    // `$ref`s across 12 files, e.g. sigstore/rekor's
+    // `v0.0.1/dsse_v0_0_1_schema.json`. A local pointer (`#/a/b`) and a URL (a
+    // JSON-Schema draft identifier, i.e. a VOCABULARY reference) are neither, and are
+    // left as `references`.
     for (const ref of ctx.referenceSymbols) {
       const refPath = ref.metadata?.refPath as string | undefined
       if (!refPath) continue
       const target = this.referenceTarget(ctx, refPath)
+      const source = String(ref.metadata?.fullPath || ref.name)
+      // A file-naming `$ref` is BOTH a dependency and a reference. Emitting only
+      // `references` was the omission; emitting only `imports` would lose the
+      // pointer, so a `$ref` that names a file now carries both, which is what it is.
+      if (this.isFileNamingRef(refPath)) {
+        ctx.relationships.push({
+          source,
+          target: refPath,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1,
+          line_number: this.declLine(ref),
+          metadata: {
+            jsonSpecific: true,
+            importForm: "json_schema_ref",
+            resolvedPath: false,
+            evidenceClass: "structural",
+          },
+        })
+      }
       ctx.relationships.push({
-        source: String(ref.metadata?.fullPath || ref.name),
+        source,
         target,
         type: ASTEngine.RelationshipType.References,
         confidence: target === refPath ? 0.8 : 1,
@@ -388,6 +416,29 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const parent = parts.slice(0, -1).join(".")
     const version = ctx.symbolMap.get(`${parent}.${dependency.name}`)
     return version?.returnType || "unknown"
+  }
+
+  /**
+   * Does this `$ref` value name ANOTHER FILE rather than something inside this one?
+   *
+   * Three shapes, and they are genuinely different things: a local pointer (`#/a/b`)
+   * names a location in THIS document; a URL names a vocabulary (a JSON-Schema draft
+   * identifier); a relative path with a document extension names a FILE, and that is a
+   * dependency. Decided structurally — an extension and a path separator or a leading
+   * `./` — with no regex, so the lane's zero-regex contract holds.
+   */
+  private isFileNamingRef(refPath: string): boolean {
+    if (refPath.length === 0) return false
+    if (refPath.startsWith("#/")) return false
+    if (refPath.startsWith("http://") || refPath.startsWith("https://")) return false
+    const DOCUMENT_EXTENSIONS = ["json", "jsonc", "json5", "yaml", "yml", "avsc", "avdl", "proto"]
+    const withoutFragment = refPath.split("#")[0]
+    const dot = withoutFragment.lastIndexOf(".")
+    if (dot < 0) return false
+    const ext = withoutFragment.slice(dot + 1)
+    if (!DOCUMENT_EXTENSIONS.includes(ext)) return false
+    // It must look like a PATH, not a bare word that happens to end in `.json`.
+    return withoutFragment.includes("/") || withoutFragment.startsWith(".")
   }
 
   private referenceTarget(ctx: JsonContext, refPath: string): string {
