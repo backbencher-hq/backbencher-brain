@@ -9602,6 +9602,58 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
   const isOption = (v: string): boolean => v.length > 0 && v[0] === "-"
   /** Perl's compile-time tokens; as an invocant they name no class. */
   const MAGIC = new Set(["__PACKAGE__", "__FILE__", "__LINE__", "__SUB__", "__DATA__", "__END__"])
+  // Inner `ambiguous_function_call_expression` nodes that are the CLASS half of an
+  // indirect-object call. Keyed by byte POSITION: web-tree-sitter hands out a
+  // fresh JS wrapper on every access, so an identity Set silently matches nothing.
+  const indirectCarriers = new Set<string>()
+  const nodeKey = (n: any) => `${n?.startIndex}:${n?.endIndex}:${n?.type}`
+  /**
+   * The CLASS half of an indirect-object call: `new Class @args` is
+   * `Class->new(@args)`, spelled by the grammar as a nested
+   * `ambiguous_function_call_expression` whose `function` FIELD is the class.
+   *
+   * Read STRUCTURALLY, and mark the carrier so the nested node is not ALSO filed
+   * as a call. Two traps, both measured:
+   *   - reading it through `argumentNodes` returns the class only when the
+   *     nested call happens to contribute a WORD, so it worked for
+   *     `new Win32::ODBC $x->{DSN}` (kept by a hash KEY — the very thing that
+   *     made `DSN` a phantom class) and returned nothing for
+   *     `new Win32::ODBC $dbname` or `new Foo 1, 2`;
+   *   - not marking the carrier files the class twice under two labels.
+   */
+  const indirectClassOf = (n: any): string | undefined => {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c?.type !== "ambiguous_function_call_expression") continue
+      const f = c.childForFieldName?.("function")
+      if (!f?.text) continue
+      indirectCarriers.add(nodeKey(c))
+      return f.text
+    }
+    return undefined
+  }
+  /**
+   * Does this receiver node NAME a class? A positive allowlist, because a
+   * negative test can only enumerate the dynamic receivers someone has already
+   * hit. `function_call_expression` is absent on purpose: its `function` field
+   * names a FUNCTION, and `use_module('X')->new(@a)` constructs nothing
+   * knowable. `ambiguous_function_call_expression` is present because that is
+   * the indirect-object spelling, where `function` IS the class.
+   */
+  const namesAClass = (n: any): boolean => {
+    switch (n?.type) {
+      case "bareword":
+      case "autoquoted_bareword":
+      case "package":
+      case "ambiguous_function_call_expression":
+        return true
+      case "string_literal":
+      case "interpolated_string_literal":
+        return !String(n.text ?? "").includes("$")
+      default:
+        return false
+    }
+  }
 
   // Two passes: declarations first (a package's bases and methods decide the
   // extends/implements/overrides truth), then the call/instantiation walk.
@@ -9709,6 +9761,11 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
   // ---- pass 2: relationships ------------------------------------------
   type S = { pkg: string; fn?: string; inSub: boolean; inClass: boolean }
   const walk = (n: any, st: S): string => {
+    // The CLASS half of an indirect-object call is not also a call. Without this
+    // the oracle filed `new Win32::ODBC $dbname` twice — once as the construction
+    // it is, and once as `calls ODBC` — and the analyzer, which suppresses the
+    // carrier, then looked like it had dropped a truth row.
+    if (indirectCarriers.has(nodeKey(n))) return st.pkg
     let pkg = st.pkg
     let fn = st.fn
     let inSub = st.inSub
@@ -9779,10 +9836,19 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
             if (v) push(target === "with" ? "implements" : "extends", pkg || "global", leaf(v))
           }
         } else if (target === "new") {
-          const argNodes = argumentNodes(n)
-          const requested = argNodes[0] ? words(argNodes[0])[0] : undefined
-          const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
-          push("instantiates", src(), inst)
+          // Indirect object syntax: `new Class @args` is `Class->new(@args)`, and
+          // the grammar spells the class as the `function` FIELD of the inner
+          // ambiguous call. Reading words out of the whole argument subtree is
+          // what published a phantom class `DSN` from `$h->{DSN}` — a hash KEY.
+          const innerName = indirectClassOf(n)
+          if (innerName) {
+            push("instantiates", src(), `${leaf(innerName)}.constructor`)
+          } else {
+            const argNodes = argumentNodes(n)
+            const requested = argNodes[0] ? words(argNodes[0])[0] : undefined
+            const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
+            push("instantiates", src(), inst)
+          }
         } else if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no") {
           push("calls", src(), leaf(target))
         }
@@ -9805,7 +9871,17 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           // `__PACKAGE__->new` constructs the CURRENT package; with a package in
           // scope that is the honest target, and with none it is not derivable.
           if (pkg && pkg !== "main") push("instantiates", src(), `${leaf(pkg)}.constructor`)
-        } else if (t && !t.includes("$") && !t.includes("->")) {
+        } else if (invocant && namesAClass(invocant) && t && !t.includes("$") && !t.includes("->")) {
+          // A POSITIVE allowlist, matching the analyzer's rule. The previous
+          // guard here was `!t.includes("$") && !t.includes("->")` — IDENTICAL to
+          // the analyzer's, which is the second time this pair has agreed on a
+          // wrong premise (the first was the `use constant { ... }` dead
+          // branch). It expected `shift.constructor` from `shift->new(...)`,
+          // publishing a class literally named `shift`; `shift` is perl's idiom
+          // for the implicit invocant, so a real receiver exists and its class is
+          // not statically nameable. Two files on mojo were the only rows that
+          // kept this wrong rule alive, and they were keeping it alive by
+          // MOCKING it.
           push("instantiates", src(), `${leaf(t)}.constructor`)
         }
       } else if (method && !PERL_BUILTINS.has(method)) {
@@ -9814,7 +9890,23 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
     } else if (inSub && (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression")) {
       const fnNode = n.childForFieldName?.("function") || byType(n, "function")
       const target = fnNode?.text ?? ""
-      if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends" && target !== "new") {
+      if (target === "new") {
+        // M14.6 perl: the whole `has` / `with` / `extends` / `new` block above
+        // sits inside `if (!inSub)`, so at FILE SCOPE it derived these and
+        // INSIDE A SUB it derived none. `new Win32::ODBC $dbname` in DBI's
+        // `sub connect` therefore produced no truth row at all, the generic
+        // branch below filed the class as `calls ODBC`, and the analyzer — which
+        // handles `new` everywhere — looked like it had invented a class. The
+        // rule is not scope-dependent; the derivation was.
+        const innerName = indirectClassOf(n)
+        if (innerName) push("instantiates", src(), `${leaf(innerName)}.constructor`)
+        else {
+          const args = argumentNodes(n)
+          const requested = args[0] ? words(args[0])[0] : undefined
+          const inst = requested && !requested.includes("$") ? `${leaf(requested)}.constructor` : "constructor"
+          push("instantiates", src(), inst)
+        }
+      } else if (target && !PERL_BUILTINS.has(target) && target !== "use" && target !== "no" && target !== "has" && target !== "with" && target !== "extends") {
         push("calls", src(), leaf(target))
       }
     }
