@@ -161,7 +161,8 @@ would make the gate permanently red on a defect this lane does not own.
 | F1 grammar audit | PASS — 32 refs, 0 unknown, 0 unknown fields |
 | F3 fixtures | **34/34** |
 | F4 mutation | **29/29 caught** |
-| F5 differential | 100%, `MISSING=0`, `unexplained=0` on both corpora |
+| F5 differential (60/corpus) | 100%, `MISSING=0`, `unexplained=0` on both corpora |
+| F5 differential (**1,000/corpus**) | 99.7–99.9% — the only `MISSING` is gap `X2`, a typescript-oracle defect |
 | F6 fixture coverage | PASS — 34 handled, 78 types, 0 uncovered, 0 dead literals |
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
 | SPEC A–H | **8/8** — 76 types classified, gap list 16 CLOSED + 1 open cross-lane |
@@ -190,10 +191,49 @@ because a dedupe on `(source, target, type)` would otherwise let one of the two 
 lost and the seam would still pass. Negative control: demanding a second rune call
 fails naming it.
 
+## F5 at depth — the 60-file sample was not enough
+
+The canonical differential measures **60 files per corpus**. Against a 6,143-file
+corpus that is **2%**, and it *resumes from a journal* rather than re-measuring, so
+it cannot see a shape the rotation never sampled. TOML, by contrast, was measured
+across 100% of its pool. Running svelte at **1,000 files per corpus** found
+something the 60-file draw never did:
+
+```
+[svelte]        files=1000 tree-truth=720 covered=719 (99.9%) MISSING=1  analyzer-edges=701 unexplained=2
+[shadcn-svelte] files=1000 tree-truth=6954 covered=6954 (100%)  MISSING=0  analyzer-edges=6901 unexplained=0
+```
+
+The single `MISSING` is **`instantiates (expr) -> class { … }`** — a target that is
+a span of source text. It is not a svelte defect. It is `X2`: the **typescript
+oracle** reads `ctor.text` from a `new_expression` with no nameability guard, so
+`const a = new class { foo = $state(0) }` publishes the anonymous class body as a
+name. The **javascript** oracle already refuses exactly this, and its comment
+records why — *"deriving their raw expression text fabricated unmatchable oracle
+edges (lodash corpus)"*. The twins drifted: on this input the javascript grammar
+emits no `new_expression` at all, so only the TS side is ever asked the question.
+
+That direction matters more than the count. A truth-side defect is worse than an
+analyzer defect, because a differential charges the analyzer for the oracle's
+mistake — and it means the svelte analyzer neither produces the bad edge nor misses
+a real one on this evidence.
+
+Two honest limits. The figure **rotates** between runs (one read 2 MISSING /
+0 unexplained, the next 1 MISSING / 2 unexplained), so a single run is not evidence
+of stability in either direction. And the **2 unexplained** rows were not yet
+identified when the shared tree went unstable — `real-typescript-analyzer.ts` is
+mid-edit with syntax errors, and svelte delegates its scripts to it, so the depth
+run cannot complete until that lands. Reporting 100% here would mean quietly
+excluding the one disagreement that exists.
+
 ## Not closed
 
 - The canonical F5 ceremony has not run at a stable tree, so
   `differential-baseline.json`'s svelte rows carry no truth totals and SPEC
   sections E/F rest on the scoped run rather than a pinned sweep. That is the
   user's ceremony, as for html and toml.
-- `X1` above, owned by the javascript lane.
+- `X1` above, owned by the javascript analyzer, and `X2` above, owned by the
+  typescript oracle. Both are recorded with the fix specified rather than applied,
+  because both live in files under active parallel edit.
+- The **2 unexplained** rows from the depth run, and any further depth rotation,
+  are blocked on a stable tree — not on anything in this lane.

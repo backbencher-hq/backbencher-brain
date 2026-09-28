@@ -95,14 +95,19 @@ Each with its fixture under `validation/m14/fixtures/yaml/` (27 fixtures, all gr
 - **`timestamp_scalar` is in the grammar and unproducible from the wired core-schema
   build** (`grammars/tree-sitter-yaml/src/scanner.c:7-11`). Ruled `internal_silent` with
   the mechanism recorded (YAML-D6), not left silent.
-- **The grammar cannot lex a multi-line double-quoted scalar.** When it meets one, the
-  `ERROR` it produces is 58 bytes wide and sits at the **document root**, so the whole
-  file's containment is lost even though the file is valid YAML. Measured on
-  `docker/api/docs/v1.25.yaml`–`v1.38.yaml` plus one Cloud Build file; attributed by an
-  independent parser (PyYAML) reading those same files cleanly. **This is the grammar's
-  defect, not the analyzer's**, and it is filed against tree-sitter-yaml under the M60 fork
-  policy rather than worked around in this lane — a workaround here would hide an upstream
-  bug from the one measurement that can see it.
+- **The grammar cannot lex a multi-line double-quoted scalar, and the parse then STOPS.**
+  Corrected 2026-09-28 by `script/m60/yaml-bucket-audit.ts`; an earlier version of this file
+  said the trigger "produces a 58-byte ERROR at the document root". The 58-byte node is real
+  but **nested** (v1.28: bytes 79,218–79,276, line 2453, depth 4). The truth is worse and
+  simpler: **the root node itself is the `ERROR`**, and the resulting tree covers only
+  **27.6–31.1%** of the file (measured over `docker/api/docs/v1.25.yaml`–`v1.38.yaml`:
+  root ERROR spans 72,809–110,341 bytes). Between **69% and 72% of each file is never parsed
+  at all**, which is why the analyzer publishes 1,991–2,637 key-tree paths where PyYAML finds
+  7,249–9,001. Plus one Cloud Build file. **This is the grammar's defect, not the analyzer's**
+  — attributed by an independent parser reading those same files cleanly, and by a path-level
+  audit that explains **88,675 lost paths with 0 unexplained** — and it is filed against
+  tree-sitter-yaml under the M60 fork policy rather than worked around here, because a
+  workaround would hide an upstream bug from the one measurement that can see it.
 - **Merge keys are not applied** (see above) and a merged mapping's inherited members are
   not re-emitted as the merger's children.
 - **No callable, no expression, no `depends`/`uses`/`exports`/`overrides`** — the format

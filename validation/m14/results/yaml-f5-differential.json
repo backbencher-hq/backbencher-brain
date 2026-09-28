@@ -1,7 +1,7 @@
 {
  "gate": "M14.0.F5",
  "lane": "yaml",
- "at": "2026-09-27T21:06:37.137Z",
+ "at": "2026-09-28T01:33:40.849Z",
  "issue": "M14.7-DataConfigDocs.yaml (#286)",
  "method": "analyzer key tree (tree-sitter-yaml 0.7.1, concrete syntax, YAML 1.2 core schema) compared against an INDEPENDENT document-model oracle (PyYAML 6.0.1 compose, YAML 1.1). Only the key tree is compared, because that is the most both implementations can independently see; scalar type resolution differs BY DESIGN between a 1.1 and a 1.2 schema and is a known fact about YAML rather than a defect in either. Merge keys are not applied on either side (PyYAML's flatten_mapping runs in the constructor, which compose never reaches). Every disagreement is adjudicated into one of nine declared buckets; anything not explained by a bucket is reported as a defect.",
  "samplingRule": "deterministic stride over each corpus's sorted file list, stride = floor(files/draw), so a head-slice's alphabetical bias cannot pick one subtree; 200 files per corpus",
@@ -102,24 +102,24 @@
    "coverage": 0.007137,
    "medianLines": 9124,
    "fileList": [
-    "docker/docker/api/docs/v1.25.yaml",
-    "docker/docker/api/docs/v1.26.yaml",
-    "docker/docker/api/docs/v1.27.yaml",
-    "docker/docker/api/docs/v1.28.yaml",
-    "docker/docker/api/docs/v1.29.yaml",
-    "docker/docker/api/docs/v1.30.yaml",
-    "docker/docker/api/docs/v1.31.yaml",
-    "docker/docker/api/docs/v1.32.yaml",
-    "docker/docker/api/docs/v1.33.yaml",
-    "docker/docker/api/docs/v1.34.yaml",
-    "docker/docker/api/docs/v1.35.yaml",
-    "docker/docker/api/docs/v1.36.yaml",
-    "docker/docker/api/docs/v1.37.yaml",
-    "docker/docker/api/docs/v1.38.yaml",
-    "docker/docker/vendor/github.com/google/certificate-transparency-go/cloudbuild.yaml"
+    "docker/api/docs/v1.25.yaml",
+    "docker/api/docs/v1.26.yaml",
+    "docker/api/docs/v1.27.yaml",
+    "docker/api/docs/v1.28.yaml",
+    "docker/api/docs/v1.29.yaml",
+    "docker/api/docs/v1.30.yaml",
+    "docker/api/docs/v1.31.yaml",
+    "docker/api/docs/v1.32.yaml",
+    "docker/api/docs/v1.33.yaml",
+    "docker/api/docs/v1.34.yaml",
+    "docker/api/docs/v1.35.yaml",
+    "docker/api/docs/v1.36.yaml",
+    "docker/api/docs/v1.37.yaml",
+    "docker/api/docs/v1.38.yaml",
+    "docker/vendor/github.com/google/certificate-transparency-go/cloudbuild.yaml"
    ]
   },
-  "note": "tree-sitter-yaml 0.7.1 cannot lex a MULTI-LINE DOUBLE-QUOTED SCALAR (a `description:` broken across a line break). When it meets one, the ERROR it produces is 58 bytes wide and sits at the document ROOT, so the whole file's containment is lost even though every block_mapping_pair survives as a direct child of that ERROR. Measured trigger: docker/api/docs/v1.27.yaml .. v1.36.yaml, which PyYAML parses cleanly. This is filed against the GRAMMAR under the M60 fork policy and is NOT charged to the analyzer; what the analyzer does about it is measured above."
+  "note": "tree-sitter-yaml 0.7.1 cannot lex a MULTI-LINE DOUBLE-QUOTED SCALAR (a `description:` broken across a line break). CORRECTED 2026-09-28 by script/m60/yaml-bucket-audit.ts: an earlier version of this note said the trigger produces a 58-byte ERROR at the document root. The 58-byte node is real but NESTED (v1.28: bytes 79,218-79,276, line 2453, depth 4). The ROOT node itself is the ERROR, and it is large: measured over docker/api/docs/v1.25..v1.38 the root ERROR spans 72,809-110,341 bytes and the resulting tree covers only 27.6-31.1% of the file, so 69-72% of each file is NEVER PARSED. That is the actual mechanism of the loss — the parser stops, rather than one token eating containment — and it is why the analyzer publishes 1,991-2,637 key-tree paths where PyYAML finds 7,249-9,001. A path-level audit (yaml-bucket-audit.ts) attributes 88,675 lost paths across the 15 files with 0 that the grammar does not explain. Measured trigger: docker/api/docs/v1.25.yaml .. v1.38.yaml plus one Cloud Build file, all of which PyYAML parses cleanly. Filed against the GRAMMAR under the M60 fork policy and NOT charged to the analyzer; what the analyzer does about the damage it does receive is measured above."
  },
  "totals": {
   "comparedFiles": 1004,

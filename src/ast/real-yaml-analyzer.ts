@@ -726,13 +726,10 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * under that prefix. It stopped ids colliding — which was the actual defect — but it
    * renamed the ENTIRE key tree of the file, and the F5 differential then reported
    * 45,990 "unexplained" disagreements that were this one decision, not a disagreement
-   * between the two parsers. Measured on `docker/api/docs/v1.27.yaml`: PyYAML parses
-   * that 271 KB file cleanly, tree-sitter-yaml puts an ERROR at the root, and every
-   * `block_mapping_pair` SURVIVES as a direct child of that ERROR — a single 58-byte
-   * multi-line double-quoted scalar (a `description:` broken across a line break) is
-   * what the grammar cannot lex. Nothing is lost, so nothing should be renamed.
+   * between the two parsers. Nothing is lost by keeping identity, so nothing should be
+   * renamed.
    *
-   * So: the pairs keep the document's identity, the symbols carry `recovered: true` plus
+   * SO: the pairs keep the document's identity, the symbols carry `recovered: true` plus
    * the line and width of the damage that was passed through, and the file keeps the
    * pattern. The damage is still declared — on the symbols and in the pattern list —
    * but it is declared as METADATA rather than baked into every name.
@@ -740,6 +737,27 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * A root-level ERROR has no `document` node, so the file would otherwise have no
    * identity at all; that case synthesises the document symbol from the stem, marked
    * recovered, which is what keeps `v1.27.swagger` instead of `[13].swagger`.
+   *
+   * WHAT THE DAMAGE ACTUALLY IS — corrected 2026-09-28 by script/m60/yaml-bucket-audit.ts,
+   * which overturned the description this comment previously gave. It used to say "a
+   * single 58-byte multi-line double-quoted scalar … at the document root", and the
+   * 58-byte figure is real but it is a DIFFERENT node: in v1.28 it is a nested ERROR at
+   * bytes 79,218-79,276, line 2453, depth 4. The root node ITSELF is the ERROR, and it
+   * is enormous. Measured over `docker/api/docs/v1.25.yaml`..`v1.38.yaml`:
+   *
+   *     file      fileBytes  treeEnd   coverage  rootType
+   *     v1.25        260,742    72,809     27.9%  ERROR
+   *     v1.28        278,336    79,276     28.5%  ERROR
+   *     v1.38        354,991   110,341     31.1%  ERROR
+   *
+   * So the parser does not lose containment to one bad token — it STOPS. Between 69%
+   * and 72% of each file is never parsed at all, which is why the analyzer publishes
+   * 1,991-2,637 key-tree paths where an independent reader finds 7,249-9,001. The
+   * distinction is not cosmetic: "one 58-byte token" is a narrow upstream bug report,
+   * "the root node is an ERROR and 70% of the file is unparsed" says the parser gives
+   * up, and only the second is true. The trigger is still the multi-line double-quoted
+   * scalar — the 58-byte node is where it starts.
+
    */
   private descendThroughDamage(node: Node, current: VisitContext, ctx: YamlContext, stack: { node: Node; context: VisitContext }[]): void {
     const site = { line: node.startPosition.row + 1, width: node.endIndex - node.startIndex }

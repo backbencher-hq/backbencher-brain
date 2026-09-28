@@ -172,7 +172,13 @@ function templateMarkers(content: string): string[] {
   return found
 }
 
-const grammarLimitation = "multi-line double-quoted scalar (a `description:` folded across a line break) puts a 58-byte ERROR at the document root"
+// CORRECTED 2026-09-28 by script/m60/yaml-bucket-audit.ts. This string said the trigger
+// "puts a 58-byte ERROR at the document root". The 58-byte node is real but it is NESTED
+// (v1.28: bytes 79,218-79,276, line 2453, depth 4). The ROOT node itself is the ERROR and
+// it is 72,809-110,341 bytes: the parser STOPS, and only 27.6-31.1% of each affected file is
+// ever parsed. "One bad token" and "the parser gives up 70% of the way through" are different
+// upstream bug reports, and only the second is true.
+const grammarLimitation = "a multi-line double-quoted scalar (a `description:` folded across a line break) makes the DOCUMENT ROOT an ERROR node, and the parse stops there: measured over docker/api/docs/v1.25..v1.38 the root ERROR spans 72,809-110,341 bytes and the tree covers only 27.6-31.1% of the file, so 69-72% is never parsed (the 58-byte node is a separate NESTED error where the trigger begins)"
 // Compared BY PATH STRING, not by object identity: the first version built this list
 // from `errorFiles` and tested it with `.includes()` against entries of
 // `nonTemplateErrorFiles`, so the check was never true and 14 known-limitation files
