@@ -22,7 +22,7 @@ ERROR nodes. It now has its own grammar, its own analyzer and its own fixtures.
 | symbols / relationships / imports | 5,170 / 2,829 / 714 |
 | `contains` both-ends resolve | 2,225 / 2,225 (100%) |
 | `uses` both-ends resolve | 41 / 41 (100%) |
-| fixtures | 5 / 5 |
+| fixtures | 7 / 7 |
 | mutants | 15 / 15 caught |
 
 Per corpus, because an aggregate that averages a hard corpus with an easy one is how a
@@ -137,7 +137,7 @@ per read would be publishing a use as a declaration.
 - **grammar**: `script/m14/verify-grammar-pins.ts` — source↔wasm exact on all 84 declared
   names; A/B at `validation/m14/results/scss-grammar-ab.json` (76 fixed, 0 regressed,
   3 regression controls unchanged-clean).
-- **fixtures**: 6 / 6 in `run-fixtures.ts`. Expectations are authored from the rulings,
+- **fixtures**: 7 / 7 in `run-fixtures.ts`. Expectations are authored from the rulings,
   never transcribed from analyzer output — which is the only reason three of them could
   fail, and they did.
 - **mutants**: 15 / 15 in `script/m60/scss-mutants.ts`. Four survived the first run and
@@ -232,11 +232,42 @@ registering a second lane against a shared oracle found **four defects in that o
 unquoted `url()` branch — none of which its own corpora could see. A fixed sample
 proves the sample.
 
+### F3 A–H: 8/8, and GATED — with a declared floor, not a clean one
+
+```
+scss: 92 types classified; sections A-H: 8/8 pass
+```
+
+and `scss` is in `GATED_LANGS`. It is the **second** lane to arrive with a documented
+residual floor rather than a clean 0/0 — `c` (C-D4) is the first, on the same grounds: a
+language whose honest floor carries ruled residuals records them, and the gate checks the
+row against the ruling exactly, so a regression above **64/4** fails while the declared
+residue does not.
+
+The floor is FULL-EXTENT — all 149 corpus files — because a 60-file sample is a
+**rotation**: the same corpus produced `MISSING=32`, `36` and `106` across three draws,
+and a gate that fails at random teaches people to re-run it.
+
+Three sections needed real work to reach green, and each found something:
+
+- **B (relationship kinds)** reported `imports` unpinned for a lane whose fixtures pin
+  it correctly. The check read `expectRelationships` only, and an `imports` edge is
+  pinned through the result's `imports` array — a gate checking the wrong channel
+  produces a false failure, which is worse than no gate.
+- **C (payload matrix)** wanted a complexity pin, and the CSS matrix fixture is written
+  in CSS — it cannot exercise a mixin's parameter count or an `@if`/`@else` chain, which
+  are exactly the constructs that make SCSS complexity differ. New fixture
+  `scope-containment-and-complexity` pins both, and the `contains` edge it adds is the
+  one thing a **delegation** can silently stop doing without any local test noticing.
+- **Loading the spec** failed four times on `spec.gap.gaps` and
+  `spec.design_decision.decisions` being absent. A spec with no gaps is the GOOD case,
+  and the loader was reading it as a crash.
+
 ### Not yet verified
 
-- **No F3 ladder position.** The CSS lane sits at A-H 8/8 and is in `GATED_LANGS`; the
-  SCSS lane has a spec, F1 and F8, but has not been walked through sections A-H, and
-  its differential row is not green, so it is not eligible.
+- **The remaining residue is characterised, not eliminated.** 8 unexplained rows are the
+  declared `var()` class, 3 are a `&` whose referent is a call site outside the file,
+  and the rest are in the file with 400+ ERROR spans. See the table above.
 
 ### The differential runs, and it is NOT green — with a measured cause
 
