@@ -482,6 +482,27 @@ its import paths rewritten so the snapshot loads, and the commit printed in the 
 baseline that fails to load aborts the run, because a baseline that silently analyzes zero
 files reports "nothing was removed" — the most flattering possible false result.
 
+## The red-team pass
+
+`reviews/r/adversarial-2026-09-28.md` is the full record. The short version: the
+differential's 1.000000 was *agreement*, because the oracle that produced it shares an
+author with the analyzer. Asking R a different question — evaluate the file, then ask the
+environment what it holds — found three classes no amount of fixture work would have:
+
+- a **quoted assignment target** (`"%+replace%" <- …`, which ggplot2 writes) published
+  nothing at all;
+- a **statically dead `if (FALSE)` branch** published declarations R never makes;
+- a **top-level `rm()`** left the removed helper published, 59 names across the corpora.
+
+With the oracle corrected to stop sharing those blind spots, precision read **0.990219** —
+not 1.0 — and the binding count fell 8,798 → 8,707. All three are fixed, pinned by
+`F16-runtime-semantics.R` and four new mutants (30/30 caught), and the 1.0 is now earned:
+an oracle cross-checked against R's own runtime on 321 files with 0 disagreements.
+
+The pass is **self-directed, not independent**, and the log says so. It covers 27% of the
+corpus, checks only bindings rather than `imports`/`exports`/`overrides`, and the exec
+oracle's own assumptions are unexamined. Those are the honest limits of the result.
+
 ## Text operations (the complete inventory)
 
 There are **no regex literals** in the analyzer. Every text-level operation is
@@ -533,6 +554,15 @@ refuses a hand edit.
   This is the check that earned its place: it found **two errors a fixture suite
   structurally could not** — a wrong belief about `->` that the fixtures had been
   written to match, and an identifier the grammar split in half.
+
+  **But its 1.000000 was agreement, not verification** — see
+  [the red-team pass](../reviews/r/adversarial-2026-09-28.md). The oracle is a walk over
+  R's AST written by the same author as the analyzer, so it can share a wrong belief about
+  R's *semantics* even while being immune to a wrong belief about the *grammar*. A second
+  R method that EVALUATES each file and asks the environment what it holds disagrees with
+  the oracle on 8 of 321 overlapping files, and all 8 were the oracle reporting names R
+  never binds. Three real defect classes came out of it, and the honest precision before
+  they were fixed was **0.990219**, not 1.0.
 
 - **Grammar conformance (L2)** — `validation/m12/results/r-grammar-conformance.json`:
   **0 unknown node types, 0 unknown fields, 0 regex literals**, against node types
