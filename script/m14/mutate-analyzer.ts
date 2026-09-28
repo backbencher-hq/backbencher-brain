@@ -10659,6 +10659,100 @@ export const MUTANTS: Mutant[] = [
       symbols: (r.symbols ?? []).map((s: any) => (typeof s.name === "string" && s.name.startsWith("operator checked ") ? { ...s, name: `operator ${s.name.slice("operator checked ".length)}` } : s)),
     }),
   },
+  // The 2026-09-28 deep round: a TYPE EXPRESSION published where the position publishes a
+  // NAME. Four mutants, one per claim, each reverting the fix it names. The rule they exist
+  // to satisfy is the lane's own (reviews/csharp/m49-804-verification-pack.md): a claim whose
+  // revert is not CAUGHT is not a proven claim, and a fixture whose expectations happen to
+  // hold under the pre-fix output proves nothing.
+  {
+    id: "csharp/qualified-generic-arguments-dropped",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "D1 revert: the leaf-only walk of a QUALIFIED name comes back, so a qualified generic's type arguments are never walked and the declared-type graph publishes only the base — the dependency this graph's own header calls \"the real dependency\", lost because the source wrote the path out. tree-sitter-c-sharp spells `System.Collections.Generic.Dictionary<string, Widget>` as `qualified_name [ …, generic_name [ identifier, type_argument_list ] ]`, so the leaf descent reaches the identifier and never the argument list. Simulated from the SOURCE (the result no longer records which declaration was written qualified): every argument of a qualified generic base on the same line as a base edge is dropped. Caught by csharp/generic-name-positions' expectRelationships for QualifiedHolder.Map / Pair / Nested / Tupled and the parameter, return and property positions — the PLAIN twin PlainHolder.Map keeps its argument, so the pair is the pin.",
+    transform: (r: any, source?: string) => {
+      // The lines that write a QUALIFIED generic base in a declared-type position: a
+      // dotted path whose LAST segment is immediately followed by `<`.
+      const qualifiedGenericLines = new Set<number>()
+      for (let i = 0; i < (source ?? "").split("\n").length; i++) {
+        const line = (source ?? "").split("\n")[i]
+        if (/[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+\s*<[^;]*>/.test(line) && /^\s*(public|private|protected|internal)/.test(line)) {
+          qualifiedGenericLines.add(i + 1)
+        }
+      }
+      if (qualifiedGenericLines.size === 0) return r
+      // The base edge on such a line is the one whose target is a known type NAME; the
+      // arguments are the remaining declared_type edges on it. Keep the first, drop the rest
+      // on a qualified line — which is exactly what the leaf-only walk produced.
+      const byLine = new Map<string, any[]>()
+      for (const rel of r.relationships ?? []) {
+        if (!["declared_type", "return_type"].includes(String((rel.metadata ?? {}).relationshipType))) continue
+        if (!qualifiedGenericLines.has(Number(rel.line_number))) continue
+        const k = `${rel.source}|${rel.line_number}`
+        const arr = byLine.get(k) ?? []
+        arr.push(rel)
+        byLine.set(k, arr)
+      }
+      const drop = new Set<any>()
+      for (const arr of byLine.values()) {
+        // keep one base (the longest target is the qualified leaf as written), drop the arguments
+        arr.sort((a, b) => String(b.target).length - String(a.target).length)
+        for (let i = 1; i < arr.length; i++) drop.add(arr[i])
+      }
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !drop.has(x)) }
+    },
+  },
+  {
+    id: "csharp/generic-attribute-published-as-expression",
+    language: "csharp",
+    defectClass: "name-fabrication",
+    description:
+      "D2 revert, both halves at once because they are one cause: the attribute-name predicate goes back to naming three node types (so a GENERIC attribute's `generic_name` name child matches none and the decorator is DROPPED), and the payload goes back to the raw node text (so the qualified twin that still matches publishes the WHOLE generic spelling, `System.Marker<int>`). Simulated from the result: every decorator carrying a type argument is truncated to the raw spelling, and one decorator per symbol is deleted to reproduce the dropped half. Caught by csharp/generic-name-positions' expectDecorators (the generic shapes must be present at all) AND its forbidDecorators entries for `<` — the negative half is what makes it catchable, because `System.Marker<int>` CONTAINS `System.Marker` and an expect alone can never fail on this revert (CSD16's exact finding).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any, i: number) => {
+        const decs = s.decorators as string[] | undefined
+        if (!Array.isArray(decs) || decs.length === 0) return s
+        // half 1: publish the raw spelling (type arguments welded on)
+        const raw = decs.map((d: string) => (d.indexOf("<") >= 0 ? `${d}<Widget>` : d))
+        // half 2: drop one decorator entirely, the way an unmatched `generic_name` did
+        return { ...s, decorators: i % 2 === 0 ? raw.slice(0, Math.max(1, raw.length - 1)) : raw }
+      }),
+    }),
+  },
+  {
+    id: "csharp/using-alias-type-expression-module",
+    language: "csharp",
+    defectClass: "name-fabrication",
+    description:
+      "D3 revert: a using ALIAS whose target is a type expression publishes the EXPRESSION as the module and the `references` target again — `Dictionary<string,Widget>`, and with a tuple argument the element NAMES too — and the separate argument edges go away. Simulated off the result: every import module carrying a type argument is restored to the full spelling, and the `using_type_argument` edges are dropped. Caught by csharp/generic-name-positions' forbidRelationships on the three expression spellings and its expectRelationships for the argument edges — the arguments are the half that a strip-only fix would silently lose, so they are pinned positively, not just negatively.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((im: any) =>
+        typeof im.module === "string" && im.module.indexOf("<") >= 0
+          ? { ...im, module: `${im.module}<string,Widget>` }
+          : im),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String((x.metadata ?? {}).relationshipType) === "using_type_argument") return null
+        if (x.type !== "references" || !(x.metadata ?? {}).isUsingAlias) return x
+        return { ...x, target: `${x.target}<string,Widget>` }
+      }).filter(Boolean),
+    }),
+  },
+  {
+    id: "csharp/using-type-argument-marked-as-import",
+    language: "csharp",
+    defectClass: "relationship-metadata",
+    description:
+      "D3's second half, and the one a reviewer would call cosmetic until it is read: the `using_type_argument` edge copies the module edge's `isUsingDirective`/`isImport` flags, so classifyEvidenceTier stamps a TYPE reference with the import evidence class. THIS MUTANT SURVIVED ITS FIRST RUN — the fixture pinned `meta.relationshipType` on the argument edges and a test written only on TARGETS cannot see an evidence class at all, so the claim it names was unpinnable. Rather than delete the claim, the fixture now pins `meta.evidenceClass` on all four using rows (the module's `import_based` and the argument's `reference_qualified`), which is the contract `classifyEvidenceTier` actually keys on. Caught by csharp/generic-name-positions' expectRelationships `meta.evidenceClass` rows.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String((x.metadata ?? {}).relationshipType) === "using_type_argument"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), isUsingDirective: true, isImport: true, evidenceClass: "import_based" } }
+          : x),
+    }),
+  },
   // M60 clean `.dcl` ruling (the declaration contract, the operator callable, and
   // the export surface). Seven mutants, each a revert of a measured state.
   {
