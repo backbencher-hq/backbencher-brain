@@ -630,7 +630,20 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       const right = field(node, "right")
       const leafText = right && (right.type === "identifier" || right.type === "accent_quoted") ? right.text : ""
       const inCallee = node.parent && (node.parent.type === "call" || node.parent.type === "dot_generic_call")
-      if (leafText && leafText !== "_" && !inCallee && resolvable(leafText) && !KEYWORD_LIKE.has(leafText)) {
+      // A member leaf that names a CALLABLE this file declares is a PARENLESS
+      // UFCS CALL: `r.describe` invokes `describe(r)`, written with no
+      // parentheses and no call node, so the `inCallee` test never fires for it.
+      // It is a `calls` edge and NOT a `uses` read — a callee is not a value
+      // read, and emitting both is the double-count a fixture forbids.
+      //
+      // This oracle had the same omission as the analyzer, so the differential
+      // agreed with a wrong shape and reported 0% unexplained. It was found by
+      // the M12 ground truth, whose audit asserted the `calls` row from reading
+      // the source — which is precisely the case an oracle that mirrors the
+      // analyzer cannot make, because both would be wrong in the same direction.
+      if (leafText && leafText !== "_" && !inCallee && inv.callables.has(leafText)) {
+        push("calls", currentFn(), leafText)
+      } else if (leafText && leafText !== "_" && !inCallee && resolvable(leafText) && !KEYWORD_LIKE.has(leafText)) {
         push("uses", currentFn(), leafText)
       }
     }

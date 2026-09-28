@@ -279,6 +279,40 @@ comparable across grammar versions.
 - **Grammar pin** (`bun run script/m14/verify-grammar-pins.ts`): 10 lanes match
   their record, including the NIM source<->wasm proof and the 72/72 conformance
   suite.
+- **M12 hand-audit ground truth** (`script/m12/verify-analyzer.ts nim`,
+  `validation/m12/ground-truth/nim.json`): **precision 1.000, recall 1.000** over
+  106 facts on 4 compiler-validated fixtures. Every fact's `evidence` field cites
+  the construct it asserts, so the audit can catch the analyzer rather than
+  confirm it — and on the first run it did, three times over:
+  - it **asserted** `calls exercise -> describe` for `r.describe`, a *parenless
+    UFCS call*, which the analyzer did not emit at all. Verified in a minimal
+    repro, fixed, and the differential oracle turned out to omit it too — so the
+    lane had been reporting 0% unexplained on a shape both implementations got
+    wrong in the same direction. That is the one failure mode an oracle that
+    mirrors the analyzer structurally cannot catch, and it is what the
+    independent audit is for.
+  - it **asserted** `uses (global) -> x` was absent, because `type Addable =
+    concept x` writes a concept's formal parameter with no `symbol_declaration`
+    and no type annotation — the one binder in Nim that nothing else recognises.
+    A concept is now a scope frame, so its body reads attribute to the concept
+    and its parameters shadow.
+  - it **missed** `calls exercise -> build`, which the analyzer emitted: `b.build`
+    is as much a parenless call as `r.describe` is. Recall is the hard
+    direction, so the audit absorbed the analyzer's row rather than the other way
+    round.
+  - it **asserted** two rows the analyzer had deliberately refused —
+    `extends`/`references` to `RootObj`, one of the four `NIM_COMPILER_ROOTS`
+    that no analyzed file declares, where an edge could never resolve. The
+    analyzer's refusal is the better judgement and the audit adopts it; that
+    reversal is recorded in the ground truth's `auditNote` rather than left
+    implicit.
+  - it also **corrected a fixture line**: the first `shared.nim` read
+    `export proc helper*(x: int)`, which the Nim 2.2.12 compiler rejects with 9
+    errors and which appears 0 times across all 12 corpora. The grammar's ERROR
+    node and the compiler agreed; the fixture was wrong.
+  Both new fixes carry a mutant (`nim/parenless-ufcs-call-lost`,
+  `nim/concept-parameter-read`), so the gate is 42/42 rather than trusting a
+  green suite.
 - **Full-corpus oracle sweep** (the standing tool this lane needs): the
   differential's 60-file rotation reported 0 unexplained on nearly every draw,
   which is a COVERAGE limit, not a clean bill — two defect classes hid in files
