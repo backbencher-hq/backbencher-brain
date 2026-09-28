@@ -11553,6 +11553,82 @@ export const MUTANTS: Mutant[] = [
           : x),
     }),
   },
+  // The 2026-09-28 `uses`-oracle round: two fabrications the new truth derivation named, and the
+  // two mutants that keep them named. Both were invisible to 55 mutants and 16 fixtures, because
+  // nothing could see a MISSING row — an oracle that agrees with the lane finds nothing.
+  {
+    id: "csharp/read-dropped-by-same-named-call",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "CS-D6 revert: the field-access `uses` pass drops a member READ whenever the enclosing function already has a `calls` edge to the same member NAME — the pre-fix guard `!emittedCalls.has(`${src}->${tgt}`)`, keyed with no site. It duplicates `isCallee`, which already decides this structurally by span, and in C# a static member and a call can share a name, so real reads vanish. Simulated off the RESULT, the way the pre-fix output is derived: for every function that has both a `uses` and a `calls` edge to the same target, the `uses` row is removed. Caught by csharp/read-collides-with-call's expectRelationships for ReadAndCallSameName.Count, ReadAndCallMember.Report, ReadAndCallNegate.Negate and CallOnly.Negate.",
+    transform: r => {
+      const calledBy = new Map<string, Set<string>>()
+      for (const rel of r.relationships ?? []) {
+        if ((rel.type ?? rel.relationshipType) !== "calls") continue
+        let s = calledBy.get(rel.source)
+        if (!s) { s = new Set<string>(); calledBy.set(rel.source, s) }
+        s.add(String(rel.target))
+      }
+      if (calledBy.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return true
+          if (String((x.metadata ?? {}).relationshipType) !== "csharp_field_access") return true
+          return !calledBy.get(x.source)?.has(String(x.target))
+        }),
+      }
+    },
+  },
+  {
+    id: "csharp/declared-type-published-as-member-read",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description:
+      "CS-D7 revert: a declared TYPE is published as a `uses` read of the member that declares it, in two positions. A FIELD's type is not a direct child of `field_declaration` (the grammar nests it under `variable_declaration`), so the old `isCSharpEntityName` first-direct-identifier rule never saw it; and for a PROPERTY the first direct identifier is the TYPE, so the rule took the type and let the property's own NAME through. Both fabrications resolve precisely because the type name collides with a member of the same class, and the shadowing frame cannot help — the shadow and the read are the same identifier. Simulated from the SHAPE the pre-fix analyzer published, which is why it reads off the declared-type edges rather than off existing `uses` rows: a `declared_type` reference whose target is ALSO a member name of the same owner is exactly the collision that made the pre-fix bare-identifier pass resolve, and the pre-fix pass stamped it with the DECLARATION's line. Caught by csharp/read-collides-with-call's forbidRelationships for `Collides -> Widget` (the field) and `Widget -> Widget` (the property's own name) — both already covered as `references` by the declared-type graph, which is why losing them costs no coverage.",
+    transform: r => {
+      const members = new Map<string, Set<string>>()
+      for (const s of r.symbols ?? []) {
+        if (s?.kind !== "property" || !s.ownerName) continue
+        let set = members.get(String(s.ownerName))
+        if (!set) { set = new Set<string>(); members.set(String(s.ownerName), set) }
+        set.add(String(s.name))
+      }
+      if (members.size === 0) return r
+      // Dedupe against OTHER `uses` ROWS ONLY. The first version of this mutant deduped against
+      // every relationship, and the declared-type edge `Collides -> Widget` — which the
+      // pre-fix analyzer ALSO published, alongside the fabrication — silently occupied the key, so
+      // the mutant added nothing and SURVIVED. A surviving mutant is the suite telling the truth
+      // about itself, and the truth here was that the simulation was wrong, not the gate.
+      const existing = new Set(
+        (r.relationships ?? [])
+          .filter((x: any) => (x.type ?? x.relationshipType) === "uses")
+          .map((x: any) => `${x.source}->${x.target}`),
+      )
+      const added: any[] = []
+      for (const rel of r.relationships ?? []) {
+        const md = (rel.metadata ?? {})
+        if ((rel.type ?? rel.relationshipType) !== "references") continue
+        if (md.relationshipType !== "declared_type") continue
+        const owner = String(rel.source)
+        if (!members.get(owner)?.has(String(rel.target))) continue
+        const key = `${owner}->${rel.target}`
+        if (existing.has(key)) continue
+        existing.add(key)
+        added.push({
+          type: "uses",
+          source: owner,
+          target: rel.target,
+          confidence: 1.0,
+          line_number: rel.line_number ?? null,
+          metadata: { relationshipType: "identifier_usage", nodeType: "identifier", evidenceClass: "usage_contextual" },
+        })
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+    },
+  },
   // M60 clean `.dcl` ruling (the declaration contract, the operator callable, and
   // the export surface). Seven mutants, each a revert of a measured state.
   {
