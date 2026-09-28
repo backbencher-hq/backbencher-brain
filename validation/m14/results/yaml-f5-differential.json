@@ -1,11 +1,30 @@
 {
  "gate": "M14.0.F5",
  "lane": "yaml",
- "at": "2026-09-28T01:33:40.849Z",
+ "at": "2026-09-28T17:19:54.944Z",
  "issue": "M14.7-DataConfigDocs.yaml (#286)",
  "method": "analyzer key tree (tree-sitter-yaml 0.7.1, concrete syntax, YAML 1.2 core schema) compared against an INDEPENDENT document-model oracle (PyYAML 6.0.1 compose, YAML 1.1). Only the key tree is compared, because that is the most both implementations can independently see; scalar type resolution differs BY DESIGN between a 1.1 and a 1.2 schema and is a known fact about YAML rather than a defect in either. Merge keys are not applied on either side (PyYAML's flatten_mapping runs in the constructor, which compose never reaches). Every disagreement is adjudicated into one of nine declared buckets; anything not explained by a bucket is reported as a defect.",
  "samplingRule": "deterministic stride over each corpus's sorted file list, stride = floor(files/draw), so a head-slice's alphabetical bias cannot pick one subtree; 200 files per corpus",
  "drawLimitPerCorpus": 200,
+ "bucketIndependence": {
+  "pathLevelAudited": "grammarLossProvenByOracle",
+  "verifiedSound": [
+   "documentModule"
+  ],
+  "convergedOnTheAnalyzer": [
+   "grammarContainmentLoss"
+  ],
+  "policyDifferences": [
+   "duplicateKeySuffix",
+   "anchorConstant",
+   "mergeAliasExpansion",
+   "scalarSequenceItem"
+  ],
+  "notChargedToTheAnalyzer": [
+   "analyzerDefect = 0",
+   "analyzerVsTree = 0"
+  ]
+ },
  "oracle": {
   "implementation": "PyYAML 6.0.1",
   "api": "yaml.compose_all",
