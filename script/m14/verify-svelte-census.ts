@@ -111,6 +111,65 @@ const USER_NAMESPACE_PROBES: Array<{ decl: string; leaf: string; count: number }
   { decl: "$my.pending", leaf: "pending", count: 0 },
 ]
 
+// --- DIMENSION 2: TEMPLATE CONSTRUCTS AND THE RESERVED NAMESPACE -----------
+// The rune census above asks "is every `$`-form ruled". This dimension asks the
+// same question of the template: is every `svelte:` tag and every block construct
+// ruled, and — the part with teeth — is the reserved namespace actually RESERVED?
+//
+// It exists because of what it found. The corpus carries
+// `<svelte:selfdestructive x="{x - 1}"/>` in its own
+// `compiler-errors/samples/svelte-selfdestructive/`: a deliberate near-miss of
+// `svelte:self`, in a file the Svelte compiler REJECTS. The analyzer published
+// `instantiates -> svelte:selfdestructive` and reported zero errors, because the
+// grammar parses an unknown element name perfectly well.
+//
+// AND THE ORACLE DID THE SAME, because its emit condition is
+// `!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)` and that name is
+// in neither set. Both sides agreed, so the differential reported 0 missing and 0
+// unexplained and the lane read clean. That is the worst kind of defect there is:
+// the one gate that compares the two sides is blind to it BY CONSTRUCTION, which
+// is the whole reason this file exists.
+//
+// So the ruling is now a gate rather than a code comment: the `svelte:` prefix is
+// reserved, the eleven below are its only members, and any other `svelte:*` in the
+// corpus must be declared here as rejected — which makes a future unknown element a
+// census failure rather than a quietly published edge both sides agree on.
+const DECLARED_SVELTE_BUILTINS = new Set([
+  "svelte:component", "svelte:element", "svelte:self", "svelte:window",
+  "svelte:document", "svelte:body", "svelte:head", "svelte:options",
+  "svelte:fragment", "svelte:boundary",
+])
+
+// Block constructs, with what each is FOR. Every one discovered in the corpus must
+// be declared, so a block type Svelte adds later fails here instead of being
+// silently unhandled on both sides.
+const DECLARED_BLOCKS = new Map<string, string>([
+  ["{#each}", "keyed or unkeyed list; the collection is a member read, the binding shadows"],
+  ["{#if}", "conditional; head is a member read and counts as a decision point"],
+  ["{:else}", "the negative arm of an if"],
+  ["{#await}", "a promise; the expression is a member read"],
+  ["{:then}", "the resolved arm, whose binding shadows within it"],
+  ["{:catch}", "the rejected arm, whose binding shadows within it"],
+  ["{#key}", "re-keys a block when its expression changes"],
+  ["{#snippet}", "a named template function, published as a Method"],
+  ["{@render}", "calls a snippet — a call site, per the D8 ruling"],
+  ["{@const}", "a block-local declaration; local to its block and shadows after it"],
+  ["{@html}", "raw HTML injection; data, not an identity"],
+  ["{@debug}", "dev-only inspection; no graph edge"],
+  ["{@attach}", "an attachment action; the handler is a call site per the attach fixture"],
+])
+
+// Constructs the corpus contains that are NOT valid Svelte, each found in the
+// project's own `compiler-errors/samples/` and each rejected for a stated reason.
+// Declaring them is the point: an undeclared construct fails this gate, and a
+// REJECTED construct is a ruling that must be argued for, not a shape to be
+// quietly tolerated. Every entry here was found by a gate run, not by inspection.
+const REJECTED = new Map<string, string>([
+  ["svelte:selfdestructive", "REJECTED — an undeclared member of the reserved `svelte:` namespace, and a deliberate near-miss of `svelte:self` in `compiler-errors/samples/svelte-selfdestructive/`, a file the Svelte compiler REJECTS. Before the reserved-namespace ruling the analyzer published `instantiates -> svelte:selfdestructive` and reported zero errors, because the grammar parses an unknown element name perfectly well. It cannot name a component: there is no such element to import."],
+  ["{@htmlfoo}", "REJECTED — an `{@html}` tag with no separating whitespace, in `compiler-errors/samples/raw-mustaches-whitespace/`, which exists to assert the compiler rejects exactly this spelling. Not a distinct construct and not a call site."],
+  ["{@constfoo}", "REJECTED — the same invalid-`{@tag}`-spelling shape, in a compiler-error sample. `{@const}` requires whitespace before its name."],
+])
+
 // --- CORPUS DISCOVERY ------------------------------------------------------
 function walk(dir: string, out: string[]): void {
   let entries: fs.Dirent[]
@@ -133,6 +192,8 @@ files.sort()
 
 const bare = new Map<string, number>()
 const dotted = new Map<string, number>()
+const svelteTags = new Map<string, number>()
+const blocks = new Map<string, number>()
 for (const f of files) {
   let src: string
   try {
@@ -144,6 +205,11 @@ for (const f of files) {
     const full = m[2] ? `$${m[1]}.${m[2]}` : `$${m[1]}`
     const bucket = m[2] ? dotted : bare
     bucket.set(full, (bucket.get(full) ?? 0) + 1)
+  }
+  for (const m of src.matchAll(/<(svelte:[a-zA-Z]+)/g)) svelteTags.set(m[1], (svelteTags.get(m[1]) ?? 0) + 1)
+  for (const m of src.matchAll(/\{([#:@])\s*([a-zA-Z_$][\w$]*)/g)) {
+    const k = "{" + m[1] + m[2] + "}"
+    blocks.set(k, (blocks.get(k) ?? 0) + 1)
   }
 }
 
@@ -184,7 +250,63 @@ for (const [form] of NON_RUNES) {
   note(observed.has(form), `declared non-rune ${form} does not occur in the corpus — its disposition is stale and proves nothing`)
 }
 
-// 4. Declared rune bases must each be a real base, or the completeness rule in
+// 4. THE RESERVED NAMESPACE. Every `svelte:*` tag in the corpus must be a declared
+//    builtin. Anything else is an undeclared member of a reserved namespace, which
+//    the Svelte compiler rejects — so it can never name a component, and the
+//    analyzer must not publish it.
+//
+//    This is the check that found the defect, and the reason it has teeth even
+//    though the analyzer and the oracle AGREE on the wrong answer: agreement between
+//    two readings of the same spec is not evidence when the spec itself says the
+//    name is illegal. A construct that cannot exist is not a "both sides got it
+//    wrong" case, it is a case where the corpus is authoritative and the premise
+//    is checkable. `{@htmlfoo}` and `{@constfoo}` in the corpus are the same shape
+//    for block constructs — invalid `{@tag}` spellings in compiler-error samples —
+//    and are declared rejected for the same reason.
+const undeclaredTags: Array<[string, number]> = []
+for (const [tag, count] of svelteTags) {
+  if (!DECLARED_SVELTE_BUILTINS.has(tag) && !REJECTED.has(tag)) undeclaredTags.push([tag, count])
+}
+note(
+  undeclaredTags.length === 0,
+  `${undeclaredTags.length} undeclared member(s) of the RESERVED \`svelte:\` namespace: ` +
+    undeclaredTags.map(([t, c]) => `${t}(${c})`).join(", ") +
+    " — the Svelte compiler rejects an unknown svelte:* element, so it cannot name a component and must not be published " +
+    "as one. Add it to DECLARED_SVELTE_BUILTINS if it is a real element, or leave it out if it is not.",
+)
+
+// 5. Every block construct in the corpus must carry a disposition, for the same
+//    reason: a block type Svelte adds later must fail HERE rather than being
+//    silently unhandled on both sides.
+const undeclaredBlocks: Array<[string, number]> = []
+for (const [k, count] of blocks) {
+  if (!DECLARED_BLOCKS.has(k) && !REJECTED.has(k)) undeclaredBlocks.push([k, count])
+}
+note(
+  undeclaredBlocks.length === 0,
+  `${undeclaredBlocks.length} block construct(s) in the corpus carry no disposition: ` +
+    undeclaredBlocks.map(([k, c]) => `${k}(${c})`).join(", ") +
+    " — declare it in DECLARED_BLOCKS with what it is FOR, or rule it rejected if the corpus occurrence is an invalid " +
+    "spelling in a compiler-error sample.",
+)
+
+// 5b. A REJECTED ruling must still describe something the corpus contains, or it
+//     is a stale excuse for a construct that has since been fixed or removed.
+for (const [k] of REJECTED) {
+  note(
+    svelteTags.has(k) || blocks.has(k),
+    `REJECTED ruling for ${k} no longer matches anything in the corpus — either the invalid construct was fixed upstream, ` +
+      `or the ruling is stale and should be deleted rather than left to excuse a name that is now legal`,
+  )
+}
+
+// 6. Declared svelte builtins must be a real reserved-namespace reading: each must
+//    actually occur in the corpus, or the table carries a member nothing exercises.
+for (const t of DECLARED_SVELTE_BUILTINS) {
+  note(svelteTags.has(t), `declared svelte builtin ${t} does not occur in the corpus — its disposition is stale and proves nothing`)
+}
+
+// 7. Declared rune bases must each be a real base, or the completeness rule in
 //    (1) is quietly narrower than it reads.
 for (const base of RUNE_BASES) {
   note(RUNES.has(base), `declared rune base ${base} is not itself a declared rune`)
@@ -240,6 +362,25 @@ for (const p of USER_NAMESPACE_PROBES) {
   )
 }
 console.log(`  probes: ${probedRunes} runes asserted suppressed, ${USER_NAMESPACE_PROBES.length} user namespaces asserted preserved`)
+console.log(
+  `  template dimension: ${svelteTags.size} svelte:* tags (${DECLARED_SVELTE_BUILTINS.size} declared builtins, ` +
+    `${[...REJECTED.keys()].filter((k) => svelteTags.has(k)).length} ruled rejected), ` +
+    `${blocks.size} block constructs (${DECLARED_BLOCKS.size} declared, ` +
+    `${[...REJECTED.keys()].filter((k) => blocks.has(k)).length} ruled rejected)`,
+)
+
+// Reserved-namespace probe: an undeclared `svelte:*` must publish NOTHING, and a
+// declared builtin must also publish nothing. Asserted separately so a rule that
+// simply suppressed EVERY `svelte:` tag would pass the first and be caught by the
+// fixture, which requires real components to still be published.
+const nsDoc = `<script>\n  import Child from "./Child.svelte"\n</script>\n<Child />\n<svelte:self />\n<svelte:bogus />\n<svelte:component this={Child} />\n`
+const nsFile = path.join("/tmp", `svelte-census-ns-${Math.random().toString(36).slice(2)}.svelte`)
+fs.writeFileSync(nsFile, nsDoc)
+const nsResult: any = await ASTEngine.parseFile(nsFile, nsDoc)
+const nsInst = (nsResult.relationships ?? []).filter((e: any) => e.type === "instantiates").map((e: any) => e.target)
+try { fs.unlinkSync(nsFile) } catch {}
+note(!nsInst.includes("svelte:bogus"), `an undeclared member of the reserved namespace was PUBLISHED as a component: ${nsInst.join(", ")}`)
+note(nsInst.includes("Child"), "the reserved-namespace rule suppressed real components — it must reject undeclared svelte:* only, not the whole neighbourhood")
 
 // --- REPORT ----------------------------------------------------------------
 if (failures.length > 0) {
@@ -281,6 +422,11 @@ const evidence = {
     declaredRunes: RUNES.size,
     declaredNonRunes: NON_RUNES.size,
     userNamespaceProbes: USER_NAMESPACE_PROBES.length,
+    svelteTagForms: svelteTags.size,
+    declaredSvelteBuiltins: DECLARED_SVELTE_BUILTINS.size,
+    blockConstructs: blocks.size,
+    declaredBlocks: DECLARED_BLOCKS.size,
+    rejectedRulings: REJECTED.size,
     unclassified: 0,
   },
   checks: [
@@ -306,6 +452,33 @@ const evidence = {
         `that a bare-leaf fix for the missing runes would have silently swallowed`,
     },
     {
+      id: "census-reserved-namespace",
+      status: "pass",
+      description:
+        `every \`svelte:*\` tag in the corpus is a declared builtin (${DECLARED_SVELTE_BUILTINS.size}) or carries a REJECTED ` +
+        `ruling (${[...REJECTED.keys()].filter((k) => svelteTags.has(k)).length}); 0 undeclared of ${svelteTags.size} tags. The ` +
+        `prefix is reserved, so an undeclared member cannot name a component. FOUND BY THIS CHECK: the corpus's own ` +
+        `compiler-errors sample \`svelte:selfdestructive\` was being published as \`instantiates\` AND derived identically by ` +
+        `the F5 oracle, so both sides agreed and the differential reported it clean.`,
+    },
+    {
+      id: "census-block-dispositions",
+      status: "pass",
+      description:
+        `every block construct in the corpus carries a disposition (${DECLARED_BLOCKS.size} declared, ` +
+        `${[...REJECTED.keys()].filter((k) => blocks.has(k)).length} ruled rejected as invalid spellings in compiler-error ` +
+        `samples); 0 undeclared of ${blocks.size} constructs, so a block type Svelte adds later fails here rather than ` +
+        `being silently unhandled on both sides.`,
+    },
+    {
+      id: "census-rejected-rulings-fresh",
+      status: "pass",
+      description:
+        `every REJECTED ruling still matches something in the corpus. A ruling that no longer describes a real occurrence ` +
+        `is deleted rather than left to excuse a name that has since become legal — otherwise the rejection table becomes ` +
+        `a place to hide a newly-valid construct.`,
+    },
+    {
       id: "census-non-runes-fresh",
       status: "pass",
       description: `all ${NON_RUNES.size} declared non-runes ($lib, $app, $$props, $$restProps, $$slots) confirmed present in the corpus, so no disposition is stale and doing no work`,
@@ -321,6 +494,9 @@ const evidence = {
       "un-declaring $state.eager exits 1 naming it (completeness rule)",
       "adding the bare leaf `eager`/`pending` to the segment set exits 1 naming $my.eager and $my.pending as SUPPRESSED",
       "declaring a non-rune absent from the corpus exits 1 naming it stale",
+      "dropping the REJECTED ruling for svelte:selfdestructive exits 1 naming it an undeclared member of the reserved namespace",
+      "renaming a REJECTED ruling to a name the corpus lacks exits 1 naming the ruling stale",
+      "reverting the analyzer's reserved-namespace rule exits 1 reporting the undeclared member as PUBLISHED",
     ],
   },
   limitations: [

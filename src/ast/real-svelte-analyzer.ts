@@ -383,7 +383,25 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
-        if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
+        // D9/D11 (RULED 2026-09-27): the `svelte:` prefix is a RESERVED NAMESPACE.
+        // Only the elements in SVELTE_BUILTIN_TAGS exist; an undeclared `svelte:*`
+        // is a compile error and cannot name a component, so it must not become an
+        // `instantiates` target. Without this, `<svelte:selfdestructive x="{x-1}"/>`
+        // — a deliberate near-miss of `svelte:self` in the corpus's own
+        // `compiler-errors/samples/` — published `instantiates ->
+        // svelte:selfdestructive`, naming a component that cannot exist.
+        //
+        // THE INTERESTING PART IS THAT NO GATE COULD SEE IT. The F5 oracle's emit
+        // condition is `!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)`,
+        // and that name is in neither set either — so the oracle derived the SAME
+        // edge. Both sides agreed, the differential reported 0 missing and 0
+        // unexplained, and the lane read clean. A shared-premise defect is strictly
+        // worse than an ordinary one: it is invisible to the only gate that compares
+        // the two sides, which is why the construct census exists. Recorded as gap
+        // X4, owner the oracle; the analyzer is the side that can be fixed here.
+        if (tag && tag.startsWith("svelte:") && !SVELTE_BUILTIN_TAGS.has(tag)) {
+          // reserved namespace, undeclared member — deliberately not a component
+        } else if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
           const tagNode = this.elementTagNameNode(n)
           relationships.push({

@@ -159,12 +159,12 @@ would make the gate permanently red on a defect this lane does not own.
 | Gate | Result |
 |---|---|
 | F1 grammar audit | PASS — 32 refs, 0 unknown, 0 unknown fields |
-| F3 fixtures | **35/35** |
+| F3 fixtures | **36/36** |
 | F4 mutation | **29/29 caught** (one class deliberately unmutated — see below) |
 | F5 differential (60/corpus) | 100%, `MISSING=0`, `unexplained=0` on both corpora |
 | F5 differential (**1,000/corpus**) | 99.7–99.9% — the only `MISSING` is gap `X2`, a typescript-oracle defect |
 | F6 fixture coverage | PASS — 34 handled, 78 types, 0 uncovered, 0 dead literals |
-| Construct census | **PASS** — 20 runes, 5 non-runes, 0 unclassified over 6,143 files |
+| Construct census | **PASS** — 20 runes, 5 non-runes, 10 `svelte:` builtins, 13 blocks, 3 rejected, 0 unclassified over 6,143 files |
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
 | SPEC A–H | **8/8** — 76 types classified, gap list 16 CLOSED + 1 open cross-lane |
 | Regex census | **0** |
@@ -222,6 +222,46 @@ The rule that gives the gate teeth: **a form whose base is a declared rune base
 must itself be a declared rune.** A plain "classify everything" would be vacuous
 with a user-data fallback; this is not, and it is what caught the omission.
 
+### The second dimension: the reserved namespace
+
+The census's first dimension asked "is every `$`-form ruled". The second asks the
+same of the template, and it found the worst kind of defect there is.
+
+The corpus carries `<svelte:selfdestructive x="{x - 1}"/>` in its own
+`compiler-errors/samples/svelte-selfdestructive/` — a deliberate near-miss of
+`svelte:self`, in a file the Svelte compiler **rejects**. The analyzer published
+`instantiates -> svelte:selfdestructive` and reported **zero errors**, because the
+grammar parses an unknown element name perfectly well. A name being *illegal* is not
+a parse failure.
+
+**And no gate could see it.** The oracle's condition is
+`!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)`, and that name is in
+neither set — so the oracle derived the *same* edge. Both sides agreed, the
+differential reported 0 missing and 0 unexplained, and the lane read clean. **The one
+gate that compares the two sides is blind to this by construction** — which is the
+whole argument for a census that consults neither.
+
+**Ruling (`D11`): the `svelte:` prefix is reserved.** Only the ten declared builtins
+exist; an undeclared `svelte:*` cannot name a component. The analyzer is fixed. The
+oracle is recorded as gap `X4` — not fixable from here, since `differential.ts` is
+under active parallel edit.
+
+**The ruling is a gate, not a comment.** Every `svelte:*` tag in the corpus must be a
+declared builtin or carry a `REJECTED` ruling — and a `REJECTED` ruling that no
+longer matches anything in the corpus **fails as stale**, so the rejection table
+cannot become a place to hide a construct that has since become legal.
+
+**Three more negative controls, each exiting 1:** dropping the `REJECTED` ruling for
+`svelte:selfdestructive`; renaming a ruling to a name the corpus lacks; and
+reverting the analyzer's rule (caught as *"an undeclared member of the reserved
+namespace was PUBLISHED"*).
+
+**Expected consequence, stated so the number isn't misread:** once the analyzer
+stops publishing the edge, the oracle's row reads as **MISSING** rather than
+agreement, because a differential charges the analyzer for the truth's mistake. So
+svelte's depth figure is expected to read 1 MISSING on any rotation containing that
+file, and that MISSING is `X4`, not an under-claim.
+
 **Three negative controls, each exiting 1:** un-declaring `$state.eager`; adding
 the bare leaves; declaring a non-rune absent from the corpus. The third control was
 initially written backwards by me — I removed a declaration, but that check fires on
@@ -276,8 +316,9 @@ excluding the one disagreement that exists.
   `differential-baseline.json`'s svelte rows carry no truth totals and SPEC
   sections E/F rest on the scoped run rather than a pinned sweep. That is the
   user's ceremony, as for html and toml.
-- `X1` above, owned by the javascript analyzer, and `X2` above, owned by the
-  typescript oracle. Both are recorded with the fix specified rather than applied,
+- `X1` above, owned by the javascript analyzer; `X2` above, owned by the typescript
+  oracle; and `X4` above, owned by the svelte oracle — the reserved-namespace
+  condition, one condition wide. Both are recorded with the fix specified rather than applied,
   because both live in files under active parallel edit.
 - The **2 unexplained** rows from the depth run, and any further depth rotation,
   are blocked on a stable tree — not on anything in this lane.
