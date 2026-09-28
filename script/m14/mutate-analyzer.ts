@@ -3472,6 +3472,186 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/anonymous-container-owns",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z21 regression: a container declaration reached as an EXPRESSION (an `if`/`switch` branch, a struct literal in a prune, a struct type inside a nullable/array type) stops establishing an anonymous scope, so its declarations are published as members of the enclosing container again — the payload of a union variant becomes a member of the UNION, and two variants declaring the same field produce two symbols under ONE (owner, name) identity. Measured: 422 symbols and 308 fabricated `contains` edges over 800 corpus files, 0 added by the fix. Caught by zig/kinds-and-owners' forbidSymbols (`libc`, `framework`, `helper`, `assert`) and forbidRelationships on the four `contains` shapes.",
+    transform: r => {
+      const anon = ["libc", "framework", "helper", "assert"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...anon.map((n, i) => ({ name: n, kind: n === "helper" || n === "assert" ? "function" : "property", visibility: "public", range: { startLine: 91 + i, startColumn: 9, endLine: 91 + i, endColumn: 13 }, scope: "Payload", ownerName: "Payload", ownerKind: "union", metadata: { zigField: true } }))],
+        relationships: [...(r.relationships ?? []), { type: "contains", source: "Payload", target: "libc", confidence: 1, metadata: {} }, { type: "contains", source: "Payload", target: "framework", confidence: 1, metadata: {} }],
+      }
+    },
+  },
+  {
+    id: "zig/type-alias-as-constant",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11 regression: reverts the kind dispatch's TYPE side — an alias to a builtin (`const Pos = c_long;`) is published as a `constant` again, which is the pre-fix state (440 measured sites, 160 upper-case). The revert is read off the emitted KIND rather than by re-deriving the rule, so it cannot silently stop matching when the fixture grows. Caught by zig/kinds-and-owners, which expects `Pos`, `Id`, `Buf`, `Opt` and `small` as `type`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: ["Pos", "Id", "Buf", "Opt", "small"].includes(s.name) && s.kind === "type" ? "constant" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/value-rhs-as-type",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11 regression, the other direction: a value expression with an upper-case name is published as a `type` again (`const SHIFT = 1 << 10;` — 838 measured sites for binary_expression alone, plus unary/null_coercion/index/catch). Caught by zig/kinds-and-owners, which expects `SHIFT`, `MASK`, `NEG`, `Tuple`, `TUPLE` and `NAMES` as `constant`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: ["SHIFT", "MASK", "NEG", "Tuple", "TUPLE", "NAMES"].includes(s.name) && s.kind === "constant" ? "type" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/labeled-block-as-type",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11/Z19 regression: a labeled block (`const Labeled = blk: { … break :blk scratch; }`) is published as a `type` again, and with it the block's own value reads go silent, because a type does not resolve as a bare value. Caught by zig/kinds-and-owners (`Labeled`/`Packed` as `constant`, and the two `uses reader ->` rows).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: (s.name === "Labeled" || s.name === "Packed") && s.kind === "constant" ? "type" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/opaque-not-a-container",
+    language: "zig",
+    defectClass: "symbol-ownership-loss",
+    description:
+      "Z12 regression: `opaque {}` stops being a container, so every declaration inside an opaque type reverts to the pre-fix state — a free file-scope `function` with no `scope`/`ownerName` and no `contains` edge (123 opaque containers / 352 declarations measured in the pinned corpora). Caught by zig/kinds-and-owners, which expects `create`/`destroy` as `method` owned by `Handle`, `tag` as a `constant` owned by `Handle`, and the three `contains` rows.",
+    transform: r => {
+      const names = new Set(["create", "destroy", "tag"])
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map(s => names.has(s.name) ? { ...s, kind: s.kind === "method" ? "function" : s.kind, scope: undefined, ownerName: undefined, ownerKind: undefined } : s),
+        relationships: (r.relationships ?? []).filter(x => !(x.type === "contains" && x.source === "Handle" && names.has(x.target))),
+      }
+    },
+  },
+  {
+    id: "zig/block-locals-leak",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z19 regression: a labeled block stops being an executable body, so its comptime locals are published as file-scope symbols again (`scratch`, `total`, `step`) with a `contains` edge attributing them to the enclosing container. That is the pre-fix state and the shape the class was found on: `Action contains key_fields` for a local of a `cvalue: { … }` block inside an enum (70 symbols / 27 fabricated containment edges over 400 corpus files). Caught by zig/kinds-and-owners' forbidSymbols and forbidRelationships.",
+    transform: r => {
+      const locals: Array<[string, string]> = [["scratch", "variable"], ["total", "variable"], ["step", "constant"]]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...locals.map(([n, k], i) => ({ name: n, kind: k, visibility: "private", range: { startLine: 56 + i, startColumn: 5, endLine: 56 + i, endColumn: 12 }, metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...locals.map(([n]) => ({ type: "contains", source: "Handle", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
+    id: "zig/default-value-as-type",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z13 regression: a declaration's DEFAULT VALUE becomes its declared type again — `size: Size = .byte` publishes a reference to the enum member `byte`, `mode: Mode = .a` to `a`, and `var p: Fmt = undefined` to `undefined`. The pre-fix leaf was the last identifier anywhere under the declaration, so the value's identifiers won. Caught by zig/declared-type-leaf, whose forbid rows name all three and whose expect rows name `Size`/`Mode`/`Slice`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const rt = (x.metadata ?? {}).relationshipType
+        if (rt !== "declared_type") return x
+        if (x.target === "Size" && x.line_number === 18) return { ...x, target: "byte" }
+        if (x.target === "Mode" && x.line_number === 19) return { ...x, target: "a" }
+        if (x.target === "Slice" && x.line_number === 21) return { ...x, target: "undefined" }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "zig/unnamed-type-publishes",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z13b regression: a type that NAMES NOTHING publishes a reference anyway — an anonymous struct type in a parameter position publishes its FIELD name (`references -> FLAG`), and an error set publishes a member (`-> NotFound`). Caught by zig/declared-type-leaf's forbid rows.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "references", source: "(declared-type)", target: "FLAG", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+        { type: "references", source: "(declared-type)", target: "NotFound", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+      ],
+    }),
+  },
+  {
+    id: "zig/local-annotation-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z16 regression: the LOCAL annotation position goes away — `var o: Only = undefined;` inside a function body publishes no declared-type reference (the family declares four positions: field, parameter, return, local; the collector covered three). Caught by zig/declared-type-leaf, which uses a type named nowhere else in the file so the per-file dedupe cannot hide the position.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "references" && x.target === "Only" && x.source === "(declared-type)")),
+    }),
+  },
+  {
+    id: "zig/quoted-identifier-mangled",
+    language: "zig",
+    defectClass: "payload-corruption",
+    description:
+      "Z18 regression: re-introduces the removed junk-strip on a declared-type leaf. Its receiver can only be an `identifier` node's text, so on a plain identifier it is provably a no-op — and on a QUOTED identifier it corrupts a legitimate name: `@\"weird type\"` is published as `@\"weirdtype\"` (1,348 of the pinned corpora's quoted type-position names carry a character from that class, e.g. the upstream compiler's `@\"fatal error\"` diagnostics field). Caught by zig/declared-type-leaf, whose forbid row names the corrupted spelling and whose expect row names the correct one.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const t = String(x.target ?? "")
+        if (t.startsWith('@"') && t.endsWith('"') && /[!*\s[\]{}]/.test(t)) {
+          return { ...x, target: '@"' + t.slice(2, -1).replace(/[!*\s[\]{}]+/g, "") + '"' }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "zig/compound-write-gate",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z15 regression: the write gate stops testing the OPERATOR, so a compound assignment's read is swallowed again — `self.n += 1` publishes no `uses`, and neither does the `while (i < n) : (i += 1)` idiom (280 compound field/index/dereference assignments in the pinned corpora). Caught by zig/calls-uses-complexity, which now expects `uses bump -> n` and forbids only the PLAIN write `uses set -> n`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "uses" && x.source === "bump" && x.target === "n")),
+    }),
+  },
+  {
+    id: "zig/container-member-exported",
+    language: "zig",
+    defectClass: "payload-seam",
+    description:
+      "Z20 regression: a `pub const` inside a container is published in the `exports` array again. An export must name an IMPORTABLE unit; a member is reached as `Container.member`, which is the `contains` edge's job, so the pre-fix export invented a binding no importer can use. Caught by the fixture runner's export invariant (the export does not resolve to a top-level symbol), which is what found the class.",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "tag", kind: "constant" }] }),
+  },
+  {
+    id: "zig/field-type-list",
+    language: "zig",
+    defectClass: "payload-loss",
+    description:
+      "Z17b regression: a property's declared type goes back to the five-node-type list, so every NAMED type publishes no `returnType` at all (`size: Size`, `fixed: [4]Size`, `view: Slice`). Hover and call-hierarchy signatures read that field. Caught by zig/declared-type-leaf's expectSymbols rows, which pin `returnType` on the named-type and array-type properties.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => (s.name === "size" || s.name === "fixed" || s.name === "view") && s.returnType ? { ...s, returnType: undefined } : s),
+    }),
+  },
+  {
+    id: "zig/param-type-list",
+    language: "zig",
+    defectClass: "payload-loss",
+    description:
+      "Z17c regression: a parameter's type goes back to the five-node-type list, so `fn qualified(w: std2.mem.Allocator)` and `fn usesQuoted(x: @\"weird type\")` publish parameters with no type. Caught by zig/declared-type-leaf's expectParameters rows.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => (s.name === "qualified" || s.name === "usesQuoted") && s.parameters ? { ...s, parameters: s.parameters.map((p: any) => ({ ...p, type: undefined })) } : s),
+    }),
+  },
+  {
     id: "java/argument-count-inflation",
     language: "java",
     defectClass: "payload-drift",
