@@ -2057,6 +2057,28 @@ class TypeScriptAnalysisRunner {
           skipChildren = this.extractClass(node, symbols, stack)
           break
 
+        // A NAMED class expression (`const K = class Inner { m(){} }`) is a class
+        // DECLARATION named `Inner`: the name is written in the file, it is in
+        // scope inside its own body, and `new Inner()` inside that body already
+        // resolved to it. There was no `case "class"` at all, so the expression
+        // was walked as a bare bag of members and LOST, measurably:
+        //   * no `Inner` Class symbol \u2014 the class was invisible as a type;
+        //   * therefore no `contains` edge either: the member extraction
+        //     attributes `m` to owner `Inner`, and addContainmentRelationships
+        //     drops an edge whose owner is not a symbol, so a named class
+        //     expression contributed NO members to the hierarchy at all, while
+        //     the javascript twin emitted a dangling `Inner->m` for the very
+        //     same construct;
+        //   * and `extends` / `implements` were lost with it, though heritage
+        //     is clause structure the generic oracle derives.
+        // Anonymous class expressions deliberately keep their existing path:
+        // they have no name of their own, so their members belong to the binding
+        // that holds the value (`const K = class { m(){} }` -> `K contains m`),
+        // which resolves and is reachable.
+        case "class":
+          skipChildren = this.extractNamedClassExpression(node, symbols, stack)
+          break
+
         case "interface_declaration":
           skipChildren = this.extractInterface(node, symbols, stack)
           break
@@ -2132,7 +2154,18 @@ class TypeScriptAnalysisRunner {
       }
 
       if (!skipChildren) {
+        // A class \u2014 DECLARATION, or an EXPRESSION that carries a name \u2014 is
+        // fully handled by extractClass, which walks its own body, so the generic
+        // descent must not descend into it or every member is extracted TWICE.
+        // That exclusion has always covered `class_declaration`; the class
+        // EXPRESSION node type was missing from it, which is exactly why R1 had
+        // to reach class-expression members through the descent instead. An
+        // ANONYMOUS class expression is deliberately NOT excluded: it has no
+        // name, so its members belong to the binding that holds the value and
+        // the descent is what finds them.
+        const classOwnsItsMembers = node.type === "class" && !!node.childForFieldName("name")
         if (
+          !classOwnsItsMembers &&
           ![
             "class_declaration",
             "abstract_class_declaration",
@@ -2226,6 +2259,16 @@ class TypeScriptAnalysisRunner {
       stack.push({ node: body })
     }
     return true
+  }
+
+  /**
+   * A class EXPRESSION that carries a name is a class declaration, and routes to
+   * the audited class extractor. An anonymous one keeps the existing path: its
+   * members belong to the binding that holds the value, which already resolves.
+   */
+  private extractNamedClassExpression(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
+    if (!node.childForFieldName("name")) return false
+    return this.extractClass(node, symbols, stack)
   }
 
   private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
