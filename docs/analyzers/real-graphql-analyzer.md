@@ -221,6 +221,47 @@ block-string escape.
 > left as written, because rewriting a dated milestone record to match today's
 > counts falsifies it. The current truth is the census plus this section.
 
+## Imports and exports
+
+GraphQL has no `import` syntax, so **`imports` is always empty** and that is not a
+gap to be filled. `#import` is a non-standard comment convention, not GraphQL, and
+is not parsed.
+
+**`exports` is the schema's public type surface**: every top-level type-system
+declaration, marked `metadata.topLevel` at emit time rather than re-derived from a
+string vocabulary afterwards. That includes the `schema` namespace, object /
+interface / union / scalar / enum / input types, **and directive definitions** — a
+schema's directives are part of what it offers a client as surely as its types. The
+GitHub public schema yields 540 exports from its 540 top-level declarations, and
+1,472 across the corpus. The rule is pinned by the differential, whose truth lists
+`schema`, `@auth` and `@tag` as expected exports of `01-sdl-core.graphql`, so
+narrowing the rule to object types would fail rather than pass quietly.
+
+## The metadata surface
+
+Every key the analyzer sets, so a consumer does not have to read the source to find
+out what is available:
+
+| key | on | meaning |
+|---|---|---|
+| `graphqlType` | symbol | the grammar's node type for that construct |
+| `graphqlCategory` | symbol | the **specification's** word for the same thing |
+| `graphqlRole` | symbol | the construct's role: `operation`, `fragment`, `variable`, `field`, `input_field`, `enum_value`, `directive_definition`, `root_operation_type` |
+| `topLevel` | symbol | a type-system declaration, so it is an export |
+| `droppedExtensionSymbol` | — | **not on a symbol**: set on a symbol that was *withdrawn* because the file also declares the type, so `extend type X` cannot mint a second `X`. It is the audit trail for a symbol that is deliberately absent — without it, "absent" and "suppressed as a duplicate" are indistinguishable |
+| `directiveName` | symbol | a directive definition's **bare** name (`auth` for `@auth`), so the name and the reference spelling do not have to be un-mangled downstream |
+| `graphqlDirectives` | symbol | the directive applications on that declaration, structured (name, arguments, line) |
+| `rawType` | symbol | the declared type's **source spelling**, for when the resolved name is not enough (`[Foo!]!`) |
+| `nullable` | symbol | read off the `NonNullType` node, not off the text |
+| `inExtension` / `extension` | symbol / relationship | the declaration came from an `extend` |
+| `repeatable`, `locations` | symbol | a directive definition's `repeatable` keyword and its locations |
+| `selectionPath` | relationship | the dotted path of an executable selection, so a qualified and a bare target are distinguishable |
+| `enclosingType` | relationship | the type the **document** states for a selection — present only when it stated one, which is exactly when the target is qualified |
+| `alias` | relationship | `nick: name` references `name`; the alias is recorded, not published |
+| `arguments` | relationship | a directive application's argument name → literal source text |
+| `within` | relationship | the executable root a directive application sits inside |
+| `argument`, `declaration`, `enumType`, `directive` | relationship | which argument, which declaration site, the enum the document stated, and the directive an argument belongs to |
+
 ## Explicit boundaries
 
 - A directive argument is a **constant** in GraphQL (the specification forbids
@@ -257,7 +298,12 @@ deliberately external: the 1.2 GB third-party corpus, fetched by
 `script/m14/tmp/graphql/clone.sh` at the exact revisions
 `script/m14/tmp/graphql/repositories.json` records.
 
-Run it with `script/m14/tmp/graphql/run-all.sh --corpus`.
+Run it with `script/m14/tmp/graphql/run-all.sh --corpus`. Every probe invocation in
+that runner is relative to the lane directory, and a claim enforces it: when gate
+8c was first added, a gate still pointed at the **old** `fixtures` fixture path:
+it passed in the working tree because the two copies were identical at the time,
+and it failed in the suite the moment they diverged. A gate that reads
+a copy of its own fixture is a gate that can pass without testing anything.
 **Gate 11 runs last and that ordering is load-bearing**: it re-derives every number
 above from the artifacts, four of which (corpus-sweep, project-resolution,
 perf-accessors, extraction-ab) are produced by gates 8, 8b, 9 and 10b. It used to
