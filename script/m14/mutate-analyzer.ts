@@ -2864,6 +2864,107 @@ export const MUTANTS: Mutant[] = [
         ]),
     }),
   },
+  // ── D1–D5 (the C++ deep review, 2026-09-28) ──────────────────────────────
+  // Each mutant re-introduces ONE class of the six the register measured over
+  // 1,722 real C++ files, and each is caught by the fixture written for it in
+  // the same round. The point of a mutant is to prove the fixture can fail: a
+  // fixture that passes with the defect present pins nothing.
+  {
+    id: "cpp/d1-keyword-call-targets",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D1 (#957) regression: restores `calls` edges to C++ KEYWORD targets — the cast family (`static_cast`, `reinterpret_cast`, `const_cast`, `dynamic_cast`, `typeid`, `sizeof`, `alignof`, `noexcept`, `throw`) and the control-flow keywords (`if`, `for`, `switch`) the grammar's ERROR recovery invents call_expression nodes for. This is the pre-fix state: 6,940 keyword-named rows over 1,722 real files, led by static_cast at 5,534. A keyword is not a name in any position, and a control-flow keyword as a callee is a fabrication with no reading at all.",
+    transform: r => {
+      const kw = new Set(["static_cast", "reinterpret_cast", "const_cast", "dynamic_cast", "typeid", "sizeof", "alignof", "noexcept", "throw", "if", "for", "switch", "return", "defined", "__has_include"])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).concat(
+          [...kw].map(t => ({ source: "main", target: t, type: "calls", fromSymbol: "main", toSymbol: t })),
+        ),
+      }
+    },
+  },
+  {
+    id: "cpp/d1-keyword-symbol-names",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D1 (#957) regression, the DECLARED-NAME and ROSTER halves: re-publishes symbols whose names are keywords. The pre-fix corpus carried `variable static_cast`, `variable if`, `method for`, `method switch`, `property friend`, `function noexcept` — a declared name is an identifier, and a keyword declarator is a macro or a damaged region, never a declaration. Separate from d1-keyword-call-targets because it exercises a different gate position (the extraction funnels), and a mutant that only removes one edge kind would leave the other half of the class unpinned.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "static_cast", kind: "variable", range: { startLine: 30, startColumn: 1, endLine: 30, endColumn: 1 }, visibility: "public" },
+        { name: "if", kind: "variable", range: { startLine: 20, startColumn: 1, endLine: 20, endColumn: 1 }, visibility: "public" },
+        { name: "noexcept", kind: "function", range: { startLine: 55, startColumn: 1, endLine: 55, endColumn: 1 }, visibility: "public" },
+        { name: "friend", kind: "property", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 }, visibility: "public" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d2-self-extends",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D2 (#958) regression: re-adds extends edges whose target equals their source — `char_traits : std::char_traits<T>` cleaned to `char_traits extends char_traits`, and `priority_tag : priority_tag<N-1>` likewise. 49 rows over 1,722 real files. The second is worse than an impossible edge: the inheritance is REAL and the leaf clean discarded the qualifier that said which class was inherited from. Caught by cpp/extends-self-base-958, whose forbid entries name both, while its Circle/Box/Poly controls stay green either way.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat([
+        { source: "priority_tag", target: "priority_tag", type: "extends", confidence: 1 },
+        { source: "char_traits", target: "char_traits", type: "extends", confidence: 1 },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d3-duplicate-contains-and-references",
+    language: "cpp",
+    defectClass: "relationship-duplication",
+    description: "D3 (#959) regression: re-duplicates `contains` and `references`. 841 excess contains rows and 87 excess references rows over 554 real files — 14 constructors normalizing to one name published 14 identical `person contains constructor` rows, and six `#include <vector>` lines published six identical `global -> vector` rows. `calls` is deliberately untouched: two call sites are two facts (distinct M59.A7 line_number), the C/TypeScript/Java lanes emit both, and the first cut of the register that deduped them reported 29,708 and was wrong.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat(
+        (r.relationships ?? []).filter(x => x.type === "contains" || x.type === "references").map(x => ({ ...x })),
+      ),
+    }),
+  },
+  {
+    id: "cpp/d4-type-published-as-name",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D4 (#960) regression: re-publishes the error-displaced declarator under the source's TYPE. A macro access-specifier label (`JSON_PRIVATE_UNLESS_TESTED:`) is legal C++ with no node type, so the grammar reads the label as a `type`, the declarator field lands on `difference_type`, and the real name (`m_it`) is pushed into an adjacent ERROR. The pre-fix analyzer published `property difference_type` — colliding with the real alias of that name in the same class, which is what produced the duplicate contains edge (D3) — while `m_it` was absent from the graph entirely.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "distance_type", kind: "property", range: { startLine: 41, startColumn: 1, endLine: 41, endColumn: 1 }, visibility: "private", ownerName: "Counted", ownerKind: "class" },
+        { name: "difference_type", kind: "property", range: { startLine: 72, startColumn: 1, endLine: 72, endColumn: 1 }, visibility: "private", ownerName: "Wrapped", ownerKind: "class" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d5-nested-function-definitions",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D5 (#961) regression: re-publishes local variables written with direct-initialization parentheses as FUNCTION symbols owned by the enclosing function — `std::string contents(ReadEntireFile(f));` became `function contents owner=compute`. 619 over 554 real files. C++ has no nested function definition, so the shape is provably not one, and the graph's answer to 'what does this function contain' was a set of sibling functions. Also re-adds the block-scoped aliases the C lane's CGD20 refuses ('function-local typedefs are execution artifacts') — 173 sites, half owned by macro-heading functions whose name is the literal heading text.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "contents", kind: "function", range: { startLine: 46, startColumn: 1, endLine: 46, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "raw_stack", kind: "function", range: { startLine: 47, startColumn: 1, endLine: 47, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "left", kind: "function", range: { startLine: 51, startColumn: 1, endLine: 51, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "local_alias", kind: "type", range: { startLine: 67, startColumn: 1, endLine: 67, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "local_typedef", kind: "type", range: { startLine: 68, startColumn: 1, endLine: 68, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d5-constructor-in-value-roster",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D5 (#961) ROSTER regression: re-adds the `uses` edge a constructor's presence in the value roster produced. A constructor is not a callable value — `Handle(int)` defines a name that spells the class, and C++ never lets you call it unqualified — so `Handle parent_handle(7);` published `uses Handle -> Handle` at confidence 1.0, an edge asserting the class reads itself. A separate mutant from d5-nested-function-definitions because it is an EDGE, not a symbol, and exercises the pre-pass roster rather than the walk.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat([
+        { source: "compute", target: "Handle", type: "uses", confidence: 1, line_number: 48, metadata: { relationshipType: "identifier_usage" } },
+      ]),
+    }),
+  },
   {
     id: "rust/drop-scoped-struct-literal-leaf",
     language: "rust",
