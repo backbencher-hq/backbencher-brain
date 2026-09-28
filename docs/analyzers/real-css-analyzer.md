@@ -418,6 +418,46 @@ A fixture only proves what its author thought to write down. The mutants ask the
 opposite question — what can the suite NOT fail on — and that is how the largest
 defect in the lane turned out to be untested.
 
+### Ten more, found by registering the lane that DELEGATES to this one
+
+The mutants above all ask about CSS. The sharpest question about a delegating lane is
+whether the delegate's rules were actually applied to it, and until 2026-09-28 nothing was
+asking that: `scss` was absent from the M59 line oracle, whose name-reading rules were
+selected with `lang === "css"`. So the SCSS lane's scope edges — emitted by *this*
+analyzer, through delegation — were never checked by the CSS name rules, and when they
+were, ten of them failed.
+
+The defect was here, not there. The five scope edges (`@media`, `@supports`, `@layer`,
+`@container`, `@scope`) claimed the `selectors` node's line unconditionally, on the
+comment's own reasoning that the edge "is named by the rule's SELECTOR". That is true
+only when the name is written on that line, and for a **nested** rule it is not: the
+target is the *resolved* name, which composes to parent + own, so
+
+```scss
+table tbody:first-of-type tr {
+  &:nth-child(odd) { … }   /* this line */
+  th { … }                /* the edge named table … tr:nth-child(odd) th */
+}
+```
+
+The fix was already in this file, one edge below: the nested-selector edge compared the
+written text with the composed name and dropped the line when they differed, with a
+comment explaining that testing for `&` is not enough because an implicit descendant
+(`.a { .b { … } }`, no `&` at all) composes too. The scope edges were the same case with
+that test missing, and both families now read one hoisted answer.
+
+Ten edges moved from with-line to no-line, which is the correct outcome and not a
+regression: a name the line does not write is never checkable rather than silently
+unaccused. The differential is unmoved (0/0 on both corpora) because it compares
+relationships, not line provenance.
+
+Worth stating as a measurement: this class is rare in pure CSS, which is why the CSS
+corpus read `86/86` and this survived. The SCSS corpus, which nests throughout, exposed
+all ten at once. **A corpus chosen because it parses cleanly measures the grammar's
+comfort, not the lane's health** — the same sentence the SCSS doc reaches from the other
+direction, which is a fair measure of how much these two lanes have been teaching each
+other.
+
 ## Differential ground truth
 
 - Ground truth: `validation/m12/ground-truth/css.json`
