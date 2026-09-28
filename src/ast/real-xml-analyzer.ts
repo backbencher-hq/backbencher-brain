@@ -1245,7 +1245,24 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
-    const qname = this.asQName(value)
+    // XML Schema's `QName` datatype carries the `collapse` whiteSpace facet
+    // (XSD 1.0 §3.3.13 / Part 2 §3.3.5.2), so a QName-typed attribute value has
+    // its whitespace runs collapsed and trimmed BEFORE it is read as a name.
+    // M60 X10: the analyzer did not, so `type="CT_GeoHierarchyEntity "` — a
+    // trailing space, written by a human and perfectly legal, because XML only
+    // normalises tab and newline in an attribute value and leaves inner spaces
+    // alone — failed `asQName` and the reference was REFUSED. One such site in
+    // the corpus, in office_drawing_2014_chartex.xsd, where a complex type
+    // declared 7 lines above went unreferenced because of one space.
+    //
+    // Collapse-and-trim, not trim: the facet replaces every whitespace RUN with a
+    // single space and then trims the ends, and `asQName` still rejects a value
+    // with an interior space — which is the point, because `type="CT_ T"` is
+    // genuinely not a QName and no amount of whitespace folding makes it one. A
+    // fix that simply stripped the ends would accept neither more nor fewer
+    // wrong values, and would be wrong about why.
+    const collapsed = RealXmlAnalyzer.collapseWhitespace(value)
+    const qname = this.asQName(collapsed)
     if (!qname || !nameNode || !valueNode) return
     // A PREFIX is the primary signal, and it is a signal the DOCUMENT supplies:
     // `tns:X` names a declaration, and no list of attribute names is consulted.
@@ -1273,7 +1290,15 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     referenceCandidates.push({
       ownerName,
       attributeName,
-      value,
+      // The COLLAPSED value, not the raw one. The deferred pass re-parses
+      // `candidate.value` with `asQName`, so storing the raw text meant the
+      // facet was applied once for the push-site check and then thrown away —
+      // the candidate passed the collapsed test here and failed the raw one
+      // there, and the edge was refused exactly as before. One transformation,
+      // at the point the value enters the queue, and both readers see the same
+      // string. It also makes `metadata.qname` the reading the spec defines
+      // rather than the bytes a human typed.
+      value: collapsed,
       nameNode,
       valueNode,
       binding,
@@ -1405,6 +1430,35 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * behaviour is pinned to a stated set — space, tab, LF, CR, the XML `S`
    * production — instead of to a regex dialect.
    */
+  /**
+   * XML Schema's `collapse` whiteSpace facet, as a char walk.
+   *
+   * Every run of space/tab/LF/CR becomes ONE space, and the ends are trimmed.
+   * This is the transformation the `collapse` facet defines, and it is NOT the
+   * same as trimming: `"a  b"` collapses to `"a b"` rather than `"ab"`. Applied to
+   * a QName-typed attribute value before the value is read as a name — see the
+   * call site in the reference pass for why that matters and why an interior
+   * space must still be refused afterwards.
+   */
+  private static collapseWhitespace(text: string): string {
+    const out: string[] = []
+    let pendingSpace = false
+    let sawAny = false
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i)
+      if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) {
+        // A leading run produces nothing at all; an interior one produces exactly
+        // one space, however long the run was.
+        if (sawAny) pendingSpace = true
+        continue
+      }
+      if (pendingSpace) { out.push(" "); pendingSpace = false }
+      out.push(text[i])
+      sawAny = true
+    }
+    return out.join("")
+  }
+
   private static splitOnWhitespace(text: string): string[] {
     const parts: string[] = []
     let start = -1
