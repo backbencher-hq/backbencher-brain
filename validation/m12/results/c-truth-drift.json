@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
  "instrument": "script/m14/tmp/c-audit/m12-truth-drift.ts",
- "generatedAt": "2026-09-28T19:53:05.028Z",
- "commit": "4cbb66604dbdcf557b7c42572c77c7b2fa84c1bd",
+ "generatedAt": "2026-09-28T22:23:12.673Z",
+ "commit": "30ad5346af18ef2ebce98d271d06d8a3406c520f",
  "purpose": "Per-row comparison of the PINNED M12 ground truth against the LIVE analyzer, on the four M12 fixtures. The M12 differential is a fixture differential, so this needs no corpus -- which is what makes it runnable at all in a checkout where the F5 harness's corpus root ($HOME/fixtures/repositories) does not exist.",
  "why": "validation/m12/results/c-differential.json asserts passed:true at 92/92 and lists rel:Module.c:instantiates:buffer_create:malloc and rel:Module.c:references:global:stdlib.h among its TRUE POSITIVES. The analyzer emits neither: Module.c produces imports 2 / calls 6 / uses 8, with no `instantiates` (the allocator edge was deliberately removed as noise) and includes in the first-class `imports` kind since M60/#910. A row the analyzer cannot produce cannot be a true positive, so the artifact is green on something that cannot fail.",
  "totals": {
@@ -12,7 +12,12 @@
    "produced-under-another-type": 7,
    "not-produced": 5
   },
-  "unmentionedEmittedRows": 17
+  "unmentionedEmittedRows": 17,
+  "unmentionedByClass": {
+   "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind": 6,
+   "a value-less `#define` (include guard), which the truth lists as NOISE and the analyzer mints deliberately (#901: dropping it lost two real edges)": 3,
+   "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct": 8
+  }
  },
  "rows": [
   {
@@ -845,22 +850,73 @@
   }
  ],
  "unmentionedEmittedRows": [
-  "rel:Module.c:imports:global:Module.h",
-  "rel:Module.c:imports:global:stdlib.h",
-  "sym:Module.h:5:constant:MODULE_H",
-  "rel:Module.h:imports:global:stddef.h",
-  "rel:Module.h:imports:global:module_config.h",
-  "rel:Module.h:references:global:Buffer",
-  "rel:Module.h:references:global:Value",
-  "rel:Module.h:references:global:Status",
-  "rel:Module.h:references:global:CompareFn",
-  "rel:Module.h:references:global:Point2D",
-  "sym:Negative.c:8:constant:NEGATIVE_H",
-  "rel:Negative.c:imports:global:module_config.h",
-  "rel:Negative.c:imports:global:stdio.h",
-  "rel:Negative.c:references:global:Record",
-  "rel:Negative.c:references:global:Color",
-  "rel:Negative.c:references:record_lookup:Record",
-  "sym:module_config.h:4:constant:MODULE_CONFIG_H"
+  {
+   "row": "rel:Module.c:imports:global:Module.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "rel:Module.c:imports:global:stdlib.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "sym:Module.h:5:constant:MODULE_H",
+   "classification": "a value-less `#define` (include guard), which the truth lists as NOISE and the analyzer mints deliberately (#901: dropping it lost two real edges)"
+  },
+  {
+   "row": "rel:Module.h:imports:global:stddef.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "rel:Module.h:imports:global:module_config.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "rel:Module.h:references:global:Buffer",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Module.h:references:global:Value",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Module.h:references:global:Status",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Module.h:references:global:CompareFn",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Module.h:references:global:Point2D",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "sym:Negative.c:8:constant:NEGATIVE_H",
+   "classification": "a value-less `#define` (include guard), which the truth lists as NOISE and the analyzer mints deliberately (#901: dropping it lost two real edges)"
+  },
+  {
+   "row": "rel:Negative.c:imports:global:module_config.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "rel:Negative.c:imports:global:stdio.h",
+   "classification": "include edge under the first-class `imports` kind (M60/#910) -- the truth's own row is the same fact under the old `references` kind"
+  },
+  {
+   "row": "rel:Negative.c:references:global:Record",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Negative.c:references:global:Color",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "rel:Negative.c:references:record_lookup:Record",
+   "classification": "a type reference the truth does not mention (a typedef declaration site, or a parameter type) -- emitted and correct"
+  },
+  {
+   "row": "sym:module_config.h:4:constant:MODULE_CONFIG_H",
+   "classification": "a value-less `#define` (include guard), which the truth lists as NOISE and the analyzer mints deliberately (#901: dropping it lost two real edges)"
+  }
  ]
 }
