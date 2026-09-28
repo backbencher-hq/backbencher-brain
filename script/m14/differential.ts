@@ -9418,7 +9418,19 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
     let list: any = n
     if (n.type !== "list_expression") {
       list = byType(n, "list_expression")
-      if (!list && n.type === "anonymous_hash_expression") list = byType(n, "list_expression")
+      // `use constant { A => 1, B => 2 }` nests the list one level deeper than
+      // the bare form, inside an anonymous_hash_expression. Both this oracle and
+      // the analyzer carried the same dead `n.type === "anonymous_hash_expression"`
+      // branch — the caller passes the use_statement, never the hash — so the
+      // brace form's 13 constants on mojo (Mojo::Util's PC_* table and
+      // Mojo::WebSocket's WS_* set) were lost on BOTH sides, and the agreement
+      // between two independent implementations was agreement on a wrong reading
+      // of the grammar. validation/m14/fixtures/perl/imports-and-exports.pm line
+      // 8 is what broke the tie.
+      if (!list) {
+        const hash = byType(n, "anonymous_hash_expression")
+        if (hash) list = byType(hash, "list_expression")
+      }
       if (!list) return []
     }
     const keys: any[] = []
