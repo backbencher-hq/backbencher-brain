@@ -80,6 +80,8 @@ export const PERL_REASON_CODES = {
   isaArray: "isa-array",
   mojoBaseDeclaration: "mojo-base-declaration",
   mooRoleComposition: "moo-role-composition",
+  mooExtendsKeyword: "moo-extends-keyword",
+  indirectObjectInvocation: "indirect-object-invocation",
   useRoleComposition: "use-role-composition",
   baseDeclaresMethod: "base-declares-method",
   firstParentGuess: "first-parent-guess",
@@ -238,6 +240,18 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const packageBaseLine = new Map<string, Node>()
     const packageMethods = new Map<string, Set<string>>()
     const deferredIsa: { owner: string; right: Node }[] = []
+    // Inner `ambiguous_function_call_expression` nodes that are the CLASS
+    // half of an indirect-object call (`new Class @args`). They are visited
+    // by the walk because they are real children, but their only content is
+    // the class name, so visiting them as calls files that name under a
+    // second, wrong label.
+    //
+    // Keyed by byte POSITION, not by node identity: web-tree-sitter hands out a
+    // fresh JS wrapper on every access, so the node `argumentNodes()` returned
+    // is never `===` the node `namedChild()` yields later, and an identity Set
+    // silently matched nothing.
+    const indirectObjectClassNodes = new Set<string>()
+    const nodeKey = (n: Node) => `${n.startIndex}:${n.endIndex}:${n.type}`
     const versionRequirements: string[] = []
 
     if (!rootNode) return this.result(symbols, relationships, imports, exports, errors, content, frameworks, patterns)
@@ -647,21 +661,71 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const arg of this.argumentNodes(node)) {
               const value = this.wordValues(arg)[0]
               if (!value) continue
-              addRelationship(
-                state.packageName || "global",
-                this.leafName(value),
-                isWith ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
-                { reasonCode: isWith ? REASON.mooRoleComposition : REASON.useParentDeclaration, mooseKeyword: target },
-                0.9,
-                arg,
-              )
+              if (isWith) {
+                addRelationship(
+                  state.packageName || "global",
+                  this.leafName(value),
+                  ASTEngine.RelationshipType.Implements,
+                  { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
+                  0.9,
+                  arg,
+                )
+                continue
+              }
+              // A bare `extends 'Base::Class';` is the Moose spelling of
+              // `use parent`. It used to call addRelationship DIRECTLY, which
+              // emitted a correct `extends` edge and left `packageBases` empty —
+              // so the override resolver below found no base and emitted NO
+              // `overrides` edge for any of the class's methods. Every class
+              // inheriting by this spelling had its inheritance graph stop one
+              // hop short.
+              //
+              // This is why two differential corpora never saw it: mojo and
+              // plack contain ZERO bare-`extends` files, and the spelling is
+              // overwhelmingly a Moose idiom — 401 of the 7-corpus census's
+              // 5,774 files, concentrated in Moose (314), Catalyst (52) and Moo
+              // (34). Auditing the corpora the census walks but the F5 lane
+              // never sampled is what named it.
+              //
+              // Routing through addBase is the fix, and it is also the
+              // consistent one: all FIVE inheritance spellings (`use parent`,
+              // `use base`, `our @ISA`, `use Mojo::Base`, bare `extends`) now
+              // reach the extends emitter and the override resolver by the same
+              // path, so `extends` cannot be emitted by a route that `overrides`
+              // cannot see. The edge is byte-identical to the direct call —
+              // same leaf target, same 0.9 — and the line comes from
+              // `packageBaseLine`, the same argument node.
+              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg)
             }
             frameworks.add("Moose/Moo OOP")
           } else if (target === "new") {
+            // Perl's INDIRECT OBJECT syntax: `new Class @args` is exactly
+            // `Class->new(@args)`. The grammar spells it as an
+            // ambiguous_function_call_expression whose `function` is the METHOD
+            // and whose single argument is a second ambiguous call whose
+            // `function` is the CLASS.
+            //
+            // The pre-fix read took `firstValue(node)`, which harvested WORDS
+            // from the whole argument subtree, so `new Win32::ODBC $h->{DSN}`
+            // published a phantom class `DSN` — a hash KEY — and the inner
+            // ambiguous call separately emitted `calls ODBC`, filing the real
+            // class under the wrong label. The class is the inner `function`
+            // field and nothing else.
+            const indirect = this.indirectObjectClass(node)
+            const inner = indirect?.carrier
+            if (inner && indirect?.name) {
+              // The inner node's only job was to carry the class name. It must
+              // not also be walked as a call of its own, or the class is filed
+              // twice under two labels.
+              indirectObjectClassNodes.add(nodeKey(inner))
+              addRelationship(state.functionName || state.packageName || "global", `${this.leafName(indirect.name)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.indirectObjectInvocation }, 0.9, node)
+              break
+            }
             const requestedType = this.firstValue(node)
             const instanceTarget = requestedType && !requestedType.includes("$") ? `${this.leafName(requestedType)}.constructor` : "constructor"
             addRelationship(state.functionName || state.packageName || "global", instanceTarget, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, node)
           } else {
+            if (indirectObjectClassNodes.has(nodeKey(node))) break
             addCall(target, state, functionNode ?? node, false)
           }
           break
@@ -685,9 +749,17 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // edge is not derivable and is not emitted.
               const owner = state.packageName
               if (owner && owner !== "main") addRelationship(state.functionName || owner, `${this.leafName(owner)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.magicTokenInvocant }, 0.9, invocant ?? node)
-            } else if (target && !target.includes("$") && !target.includes("->")) {
-              // A concrete package invocant is resolvable; a scalar or chained
-              // method receiver is dynamic and must not become a phantom type.
+            } else if (invocant && this.namesAClass(invocant) && target && !target.includes("$") && !target.includes("->")) {
+              // A POSITIVE allowlist, not a "does the text look wrong" test.
+              //
+              // The old guard only rejected receivers containing `$` or `->`, so
+              // anything else became a phantom type. `use_module('X')->new(@a)`
+              // in Moose's Class::MOP::Class::Immutable::Trait is the measured
+              // case: `use_module` is a function that loads a module at runtime,
+              // the receiver is its return VALUE, and the edge published a class
+              // named `use_module`. A negative test can only enumerate the
+              // dynamic cases someone already hit; this enumerates the cases
+              // that actually NAME a class, and everything else is a value.
               addRelationship(state.functionName || state.packageName || "global", `${this.leafName(target)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, invocant ?? node)
             }
           } else {
@@ -1095,6 +1167,59 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (name) result.push(name)
     }
     return result
+  }
+
+  /**
+   * Does this receiver node NAME a class, as opposed to being a runtime value?
+   *
+   * The allowlist is the set of node types whose entire content is a name. A
+   * `function_call_expression` is deliberately absent: its `function` field is
+   * the name of a FUNCTION, and calling it yields a value, so
+   * `use_module('X')->new` constructs nothing knowable. `ambiguous_function_
+   * call_expression` IS present because that is the indirect-object spelling,
+   * where the node's `function` field is the class.
+   */
+  /**
+   * The CLASS half of an indirect-object call: `new Class @args` is exactly
+   * `Class->new(@args)`, and the grammar spells the class as the `function`
+   * FIELD of a nested `ambiguous_function_call_expression`.
+   *
+   * Read STRUCTURALLY, from the node's named children, rather than through
+   * `argumentNodes` — that helper keeps an argument only when it contributes at
+   * least one WORD, and this nested call contributes none whenever its own
+   * arguments are a plain scalar or a list of literals. Measured: it returned
+   * `[]` for `new Win32::ODBC $dbname` and `new Foo 1, 2` but DID return the
+   * call for `new Win32::ODBC $x->{DSN}` — kept only because of a hash KEY, which
+   * is the same accident that published the phantom class `DSN`. A structural
+   * read is right for all three, and for the third shape (`new Foo;`, where the
+   * class is a direct `bareword` child and there is no nested call at all) the
+   * caller's existing path already reads the bareword correctly.
+   */
+  private indirectObjectClass(node: Node): { name: string; carrier: Node } | undefined {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child || child.type !== "ambiguous_function_call_expression") continue
+      const fn = child.childForFieldName("function") || this.findChildByType(child, "function")
+      if (fn?.text) return { name: fn.text, carrier: child }
+    }
+    return undefined
+  }
+
+  private namesAClass(node: Node): boolean {
+    switch (node.type) {
+      case "bareword":
+      case "autoquoted_bareword":
+      case "package":
+      case "ambiguous_function_call_expression":
+        return true
+      case "string_literal":
+      case "interpolated_string_literal":
+        // A quoted class name is a name; an INTERPOLATED one is only a name if
+        // nothing was interpolated into it.
+        return !node.text.includes("$")
+      default:
+        return false
+    }
   }
 
   private invocantName(node: Node): string {
