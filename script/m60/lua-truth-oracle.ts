@@ -52,6 +52,7 @@ import { join, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 import { createHash } from "node:crypto"
 import { parseFile } from "../../src/ast/pool-worker"
+import { parseWithAnalyzer } from "./lua-analyzer-direct"
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..")
 const REPOS = "$HOME/fixtures/repositories"
@@ -615,6 +616,23 @@ async function main(): Promise<void> {
   let files = execFileSync("git", ["-C", repoRoot, "ls-files", "*.lua", "*.luau"], { encoding: "utf8", maxBuffer: 1 << 28 })
     .trim().split("\n").filter(Boolean)
   if (sampleArg) files = files.slice(0, Number(sampleArg))
+  // --files <path> : a newline-separated list of corpus-relative paths. Added for
+  // the corpus mutation harness, which must fire on a construct rather than on
+  // whatever happens to sort first: the first 25 kong files contain ZERO
+  // call-on-call and ZERO literal-index calls, so a mutation harness pointed at
+  // them measures nothing and reports its mutants as SURVIVING when they simply
+  // had no trigger. "Inconclusive" and "survived" are different facts and the
+  // harness has to be able to tell them apart.
+  const filesArg = arg("--files")
+  if (filesArg) {
+    const want = new Set(readFileSync(filesArg, "utf8").split("\n").map((x) => x.trim()).filter(Boolean))
+    const keep = files.filter((f) => want.has(f.replace(`${repoRoot}/`, "")) || want.has(f))
+    if (keep.length === 0) {
+      console.error(`--files matched none of ${files.length} corpus files; check the list is repo-relative`)
+      process.exit(2)
+    }
+    files = keep
+  }
 
   loadNoiseTargets(readFileSync(join(ROOT, "src", "ast", "pool-worker.ts"), "utf8"))
   const { loadWebTreeSitter, resolveWasmAsset } = await import("../../src/util/wasm")
@@ -631,6 +649,19 @@ async function main(): Promise<void> {
 
   const truth = new Map<string, TruthEdge>()
   const observed = new Map<string, any>()
+  // LUA-31: which labels the pipeline DISCARDS, PROVEN rather than inferred.
+  // The direct path costs a second parse per file, so the probe is capped, and the
+  // cap is reported with the verdict: a conclusion drawn from 150 files and
+  // presented as a property of 1,309 is the quiet extrapolation this lane keeps
+  // catching itself doing.
+  const DUAL_SAMPLE_CAP = 150
+  const dualProvesDiscard = new Set<string>()
+  const dualAgrees = new Set<string>()
+  let dualMeasured = 0
+  let exportTruth = 0, exportHit = 0, exportSpurious = 0, exportFilesProbed = 0
+  const exportMissed: string[] = []
+  const exportExtra: string[] = []
+  const exportTruthNames = new Set<string>()
   const perLabelTruth = new Map<string, number>()
   const perLabelObs = new Map<string, number>()
   const missingSamples: any[] = []
@@ -648,7 +679,10 @@ async function main(): Promise<void> {
 
     const tree = parser.parse(src)
     if (tree.rootNode.hasError) { parseErrors++; continue }
-    for (const e of deriveLuaTruth(tree.rootNode, rel)) truth.set(`${rel}|${key(e)}`, e)
+    for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+      truth.set(`${rel}|${key(e)}`, e)
+      if (e.label === "exports") exportTruthNames.add(`${rel}|${e.target}`)
+    }
 
     const r: any = await parseFile(abs, repoRoot)
     if (r.errors?.length) parseErrors++
@@ -658,6 +692,71 @@ async function main(): Promise<void> {
       perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
     }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) perLabelTruth.set(e.label, (perLabelTruth.get(e.label) ?? 0) + 1)
+
+    // ── LUA-31: PROVE which labels the pipeline discards; never infer it ───────
+    // A label the pipeline emitted zero times across the corpus used to be
+    // classified "structurally undeliverable", i.e. excused. That inference fails
+    // in the one direction that matters most: if the analyzer emits NOTHING for a
+    // label, the pipeline also emits nothing, the label looks discarded, and every
+    // truth edge for it is excused. A collapsed analyzer and a dropped field become
+    // indistinguishable.
+    //
+    // Caught by mutation, not by reading. Neutering addContainsRelationships —
+    // dropping EVERY synthesized contains edge — moved kong's missing from 3 to 47
+    // on a 5-file slice and STILL reported `analyzer=0`, with all 47 filed as
+    // pipeline-discarded. The differential passed a totally broken analyzer, which
+    // is the exact failure this lane exists to prevent, committed by the very fix
+    // that was supposed to improve the split.
+    //
+    // So the verdict must be evidence. Parse the same file through the DIRECT path
+    // too: a label is discarded only where the analyzer supplies it and the
+    // pipeline does not, on that same file. Absence on both sides is not evidence.
+    if (dualMeasured < DUAL_SAMPLE_CAP) {
+      dualMeasured++
+      const direct: any = await parseWithAnalyzer(abs)
+      const dLabels = new Set<string>()
+      for (const e of direct.relationships ?? []) if (e.type) dLabels.add(e.type)
+      if ((direct.exports ?? []).length > 0) dLabels.add("exports")
+      const pLabels = new Set<string>()
+      for (const e of r.relationships ?? []) if (e.type) pLabels.add(e.type)
+      if ((r.exports ?? []).length > 0) pLabels.add("exports")
+      for (const l of dLabels) {
+        if (pLabels.has(l)) dualAgrees.add(l)
+        else dualProvesDiscard.add(l)
+      }
+      for (const l of pLabels) dualAgrees.add(l)
+
+      // ── exports on the DIRECT path, because the pipeline cannot see them ────
+      // LUA-14 drops the `exports` field at the worker boundary, so every export
+      // comparison this instrument makes through parseFile is a comparison against
+      // an empty set. That is not a weak signal, it is NO signal: a corpus
+      // mutation that deletes the entire returned-table export branch (LUA-09) or
+      // republishes every in-function return as a file export (LUA-20) leaves the
+      // pipeline output byte-identical, because the pipeline was never carrying
+      // exports to begin with. Both mutants SURVIVED the corpus differential for
+      // exactly that reason.
+      //
+      // So exports get their own comparison against the same tree-derived truth,
+      // read through parseWithAnalyzer. This is the same measurement
+      // script/m60/lua-export-census.ts makes, and having it here as well as there
+      // was the duplication that let the two drift apart into a 218-edge
+      // disagreement (LUA-24). One instrument, two paths, one truth.
+      const dExports = new Set<string>((direct.exports ?? []).map((e: any) => e.name))
+      for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+        if (e.label !== "exports") continue
+        exportTruth++
+        if (dExports.has(e.target)) exportHit++
+        else if (exportMissed.length < 25) exportMissed.push(`${e.target} (${e.rule}, L${e.line}) ${rel}`)
+      }
+      for (const n of dExports) {
+        if (!exportTruthNames.has(`${rel}|${n}`)) {
+          let anyTruth = false
+          for (const e of deriveLuaTruth(tree.rootNode, rel)) if (e.label === "exports" && e.target === n) { anyTruth = true; break }
+          if (!anyTruth) { exportSpurious++; if (exportExtra.length < 25) exportExtra.push(`${n} ${rel}`) }
+        }
+      }
+      exportFilesProbed++
+    }
   }
 
   // ── the two directions ─────────────────────────────────────────────────────
@@ -694,7 +793,10 @@ async function main(): Promise<void> {
     if (!o) {
       missing.push(t)
       if (NOISE_TARGETS.has(leafOf(t.target))) missingByNoiseFilter.push(t)
-      else if (!labelsSeenInPipeline.has(t.label)) missingByPipelineDiscard.push(t)
+      // LUA-31: excused ONLY on evidence that the pipeline drops the label, never
+      // on its absence. `labelsSeenInPipeline` survives as a cross-check and is no
+      // longer load-bearing.
+      else if (dualProvesDiscard.has(t.label)) missingByPipelineDiscard.push(t)
       else missingFromAnalyzer.push(t)
       continue
     }
@@ -787,7 +889,10 @@ async function main(): Promise<void> {
   // reported and excluded from the analyzer verdict. Counting it as an analyzer
   // failure would be a false accusation; ignoring it would hide a real user-facing
   // hole. It gets its own number and its own finding.
-  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0
+  // The direct-path export comparison is part of the verdict, not decoration: it is
+  // the ONLY place an export defect can show up at all while LUA-14 stands.
+  const exportsDirectBad = exportTruth > 0 && (exportHit !== exportTruth || exportSpurious > 0)
+  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad
   const report = {
     schemaVersion: 1,
     kind: "lua_truth_oracle_differential",
@@ -805,6 +910,25 @@ async function main(): Promise<void> {
       // LUA-14, measured per run: labels the pipeline never emitted at all. Their
       // edges are the pipeline's, not the analyzer's, and calling them the
       // analyzer's is what produced a "1,797 vs 1,579" phantom disagreement.
+      exportsDirectPath: {
+        note: "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
+        filesProbed: exportFilesProbed,
+        truth: exportTruth,
+        hit: exportHit,
+        missed: exportTruth - exportHit,
+        spurious: exportSpurious,
+        recall: exportTruth ? Number((exportHit / exportTruth).toFixed(6)) : 1,
+        precision: exportHit + exportSpurious ? Number((exportHit / (exportHit + exportSpurious)).toFixed(6)) : 1,
+        missedSample: exportMissed,
+        spuriousSample: exportExtra,
+      },
+      pipelineDiscardEvidence: {
+        note: "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
+        filesProbed: dualMeasured,
+        cap: DUAL_SAMPLE_CAP,
+        provenDiscarded: [...dualProvesDiscard].sort(),
+        observedOnBothSides: [...dualAgrees].sort(),
+      },
       missingByPipelineDiscard: {
         total: missingByPipelineDiscard.length,
         byLabel: shapes(missingByPipelineDiscard),
@@ -840,9 +964,11 @@ async function main(): Promise<void> {
   console.log(`repo=${repo} files=${files.length} parseErrorFiles=${parseErrors}`)
   console.log(`truth=${truth.size} observed=${observed.size}`)
   console.log(`MISSING=${missing.length} (analyzer=${missingFromAnalyzer.length}, pipelineNoiseFilter=${missingByNoiseFilter.length}, pipelineDiscardedLabel=${missingByPipelineDiscard.length}) UNEXPLAINED=${unexplained.length}`)
-  if (missingByPipelineDiscard.length) console.log(`  labels the pipeline emitted ZERO times, so their recall is unjudgeable: ${[...new Set(missingByPipelineDiscard.map((e) => e.label))].sort().join(", ")}`)
+  if (missingByPipelineDiscard.length) console.log(`  PROVEN pipeline-discarded: ${[...new Set(missingByPipelineDiscard.map((e) => e.label))].sort().join(", ")}  (direct path supplied these and the pipeline did not, on ${dualMeasured} probed files)`)
+  if (dualProvesDiscard.size === 0) console.log(`  WARNING: no label could be PROVEN discarded from ${dualMeasured} probed files — every missing edge is charged to the analyzer`)
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
+  console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
   console.log("\nper label:")
   for (const L of LABELS) {
     const b = byLabel[L]
