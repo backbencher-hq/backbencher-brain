@@ -45,9 +45,11 @@ two-command rebuild sequence. `.nim` is the only routed extension — see
 | `macro f()` | `macro` | `macro_declaration` |
 | `type O = object` | `struct` | `object_declaration`, non-ref |
 | `type C = ref object` | `class` | `object_declaration` under a `ref_type` |
-| `type T = tuple[int, string]` | `struct` | `tuple_type` / `tuple_deconstruct_declaration` |
+| `type T = (int, string)` (unnamed tuple) | `struct` | `tuple_construction` |
+| `type T = tuple[a, b: int]` (named tuple) | `struct` | `tuple_type` |
 | `type I = concept` | `interface` | `concept_declaration` — a structural, compile-time contract satisfied by implicit dispatch, which is what `Interface` means in this codebase |
 | `type E = enum` | `enum` | `enum_declaration` |
+| `type C = concept` | `interface` | `concept_declaration` |
 | `field` in an object body | `property` | `object_declaration` field |
 | `const X = …` | `constant` | `const_section` |
 | `let` / `var` / `using` at file scope | `variable` | `let_section` / `var_section` / `using_section` |
@@ -123,6 +125,37 @@ The written path is therefore the node's own text, which preserves depth,
 **The `operator` node is an `as` alias, not a separator, when it reads `as`.**
 `import ./shapes as S` binds a *local* name; the right side is never a module.
 The oracle and the analyzer both test for it before testing for a separator.
+
+**A type RHS is wrapped in `type_expression`, and the three shapes are not
+parallel.** The classifier has to see through the wrapper, because the trees differ:
+
+```
+type Color = enum …      -> enum_declaration        (no wrapper)
+type A = concept x       -> concept_declaration     (no wrapper)
+type U = tuple[a: int]   -> type_expression / tuple_type
+type T = (int, string)   -> type_expression / tuple_construction
+```
+
+`unwrapTypeExpression` is a bounded walk that names the shapes it unwraps rather
+than taking the first child. Before it existed, the classifier compared the
+wrapper's own type, so `tuple_type` was never seen and **every tuple type in the
+language was published as a bare `type`** while its fields went unpublished — a
+documented rule that was simply false, and false in the ordinary spelling:
+`(int, string)` is how Nim writes an unnamed tuple (the compiler accepts it with
+0 errors and rejects `tuple[int, string]` with 3). Found by the mutation run, not
+by inspection.
+
+**An unnamed tuple element declares a TYPE, not a field.** The grammar builds the
+same `symbol_declaration_list` for `tuple[x, y: int]` and for `tuple[int, string]`
+— in the second the "names" *are* the types — so the analyzer published
+`property:int` and `property:string`, two properties named after builtin types,
+each with a `contains` edge. Nothing else could have caught it: both names are
+real identifiers, so no dangling check fires, and a symbol count sees two extra
+rows rather than two wrong ones. The discriminator is structural rather than a
+builtin-name guess: a real field has the declaration's own `type` field and an
+unnamed tuple element has none. The rule is scoped by ancestor to `tuple_type`,
+because a `variant_discriminator_declaration` (`case isCircle`) also carries no
+type field and applying it everywhere silently dropped the discriminator.
 
 **Layout is an external scanner.** `scanner.c` owns Nim's indentation state
 (`_layout_start` / `_layout_end` / `_inhibit_layout_end`); without it
@@ -246,9 +279,28 @@ comparable across grammar versions.
 - **Grammar pin** (`bun run script/m14/verify-grammar-pins.ts`): 10 lanes match
   their record, including the NIM source<->wasm proof and the 72/72 conformance
   suite.
+- **Mutation** (`script/m14/mutate-analyzer.ts`, `BB_MUTANT_ONLY="nim/"`):
+  **40 mutants, 40 caught, exit 0.** One per symbol kind, per relationship kind,
+  per ruled rule in the table below, and per payload row — each a revert of a fix
+  this lane actually made, or of a rule this document claims. Five fixtures
+  passing is not evidence that the suite can fail; this is. The first run caught
+  27 and left 13 survivors, and a survivor is defined by the gate as a hole in
+  the suite rather than a weak mutant. Chasing the 13 found **two real analyzer
+  defects**: a tuple type was never published as a `struct` in *either* of the
+  two ways Nim spells one (so the symbol table above was false), and an unnamed
+  tuple element published properties named after builtin types. Both are fixed and
+  both are pinned in both directions. The other eleven were missing pins — a
+  three-segment import, the `from`-form spelling, the object-construction label,
+  the destructuring shadow, the assignment target, the call-callee double count,
+  the generic-parameter and blank-identifier leaks, and **zero line_number,
+  docstring or decorator pins**, which is why a mutant that deleted every line in
+  the language had survived. Two pins are deliberately *paired*: the
+  `uses stemOf -> fileStem` forbid only means something because
+  `expectSymbols {fileStem, property}` pins that the field exists, since a fix
+  that deleted the field would otherwise satisfy the forbid vacuously.
 - **Completeness classification** (`script/m14/spec/nim-completeness.json`): all
   **127** named node types the pinned wasm declares are classified, so nothing is
-  silently absent — 94 `handled_verified`, 32 `internal_silent` (each with the
+  silently absent — 95 `handled_verified`, 31 `internal_silent` (each with the
   reason it is silent rather than merely unreferenced), 0 `gap`, and 5
   `design_decision` rulings (NIMD1 file-scope pragma statements, NIMD2 cross-file
   overrides, NIMD3 concept satisfaction, NIMD4 `.nimble` routing, NIMD5 `.nims`
