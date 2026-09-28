@@ -3880,6 +3880,248 @@ export function deriveCSharpUsingReferences(root: any): { label: string; from: s
  * `seen` is keyed per (source, target) because the analyzer dedupes the same way and the harness
  * compares (label, target) site-agnostically, so a per-site row would read as fabrication.
  */
+/**
+ * 2026-09-28: csharp's `contains` truth — the LAST unoracled label (12.9% of the lane's
+ * output, 3,262 edges over 300 roslyn files).
+ *
+ * WHY IT IS WORTH WRITING, and why it is harder than it looks. The analyzer derives
+ * containment from `symbol.ownerName` — a field set during its own walk — so the class is
+ * STRUCTURALLY SELF-AGREEING: it cannot disagree with the symbol table, because it is built
+ * from it. That is exactly why nothing has ever adjudicated it, and exactly why an independent
+ * derivation is the only thing that can: this one walks the TREE and rebuilds the owner chain
+ * from declaration nesting, never touching a symbol.
+ *
+ * THE CONTRACT BEING RE-DERIVED (each row read off the analyzer's own emission rules, not off
+ * its output):
+ *   * a TYPE is contained by the NAMESPACE it sits in — a block namespace it is lexically
+ *     inside, or the file-scoped one in effect for it (which covers SIBLING declarations, not
+ *     descendants, so the scope has to survive its own subtree — the CSD1 rule);
+ *   * a MEMBER is contained by the TYPE it is declared in;
+ *   * a NESTED TYPE is contained by the TYPE it is declared in, not by the namespace;
+ *   * a record's POSITIONAL PARAMETERS are members (Roslyn makes them properties);
+ *   * a constructor is named `constructor`, a destructor `Finalize`, an indexer `this` — the
+ *     analyzer's own spellings, and the reason a symbol name is not always text in the file;
+ *   * a NAMESPACE has no owner in the published payload, so a nested namespace emits nothing.
+ *
+ * The owner is published as the SIMPLE name at every level, because that is what `ownerName`
+ * carries — the lane publishes full dotted paths for RELATIONSHIP TARGETS and simple names for
+ * containment sources, and an independent truth has to know which is which.
+ */
+export function deriveCSharpContains(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+
+  // The declaration shapes that become SYMBOLS whose name is a `name` field (or, for an
+  // indexer, the `this` keyword). Deliberately the analyzer's own set: a truth that emitted a
+  // shape the analyzer does not symbolise would read as MISSING for its own extra precision.
+  const SYMBOL_DECLS = new Set([
+    "class_declaration", "struct_declaration", "interface_declaration",
+    "record_declaration", "enum_declaration", "enum_member_declaration",
+    "delegate_declaration", "event_declaration", "event_field_declaration",
+    "operator_declaration", "conversion_operator_declaration",
+    "method_declaration", "constructor_declaration", "destructor_declaration",
+    "property_declaration", "indexer_declaration", "field_declaration",
+  ])
+  const TYPE_DECLS = new Set([
+    "class_declaration", "struct_declaration", "interface_declaration", "record_declaration",
+  ])
+
+  const nameOf = (n: any): string | null => {
+    if (n.type === "constructor_declaration") return "constructor"
+    if (n.type === "destructor_declaration") return "Finalize"
+    if (n.type === "indexer_declaration") return "this"
+    if (n.type === "operator_declaration" || n.type === "conversion_operator_declaration") {
+      // CSD3/M60.R1: an operator member's name is NOT written anywhere in the file as a name —
+      // the grammar carries the token in the FIELD `operator` and a conversion's target in the
+      // FIELD `type`, with `implicit`/`explicit`/`checked` as ANONYMOUS siblings. The analyzer
+      // spells them `operator +`, `operator checked +`, `implicit int`; so does this, and a 120-file
+      // draw that omitted them read 6 UNEXPLAINED `contains` rows (`LinePosition -> operator ==`)
+      // before the omission was found here. Same convention, same grammar fields, one spelling.
+      const conv = n.type === "conversion_operator_declaration" ? n.childForFieldName?.("type") : null
+      const anon = (want: string): any => {
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c && !c.isNamed && c.type === want) return c }
+        return null
+      }
+      const mod = anon("implicit") ?? anon("explicit")
+      if (conv) return `${mod ? mod.type : "conversion"}${typeof conv.text === "string" ? ` ${conv.text}` : ""}`
+      const op = n.childForFieldName?.("operator")
+      if (op && typeof op.text === "string") return `operator ${anon("checked") ? "checked " : ""}${op.text}`
+      return "operator"
+    }
+    const field = n.childForFieldName?.("name")
+    if (field && typeof field.text === "string") return field.text
+    if (n.type === "field_declaration" || n.type === "event_field_declaration") {
+      // A FIELD's name lives on the DECLARATOR, and one field_declaration can declare several
+      // (`int a, b;`) — each declarator is its own symbol, so each is its own containment edge.
+      // An EVENT FIELD is the same shape (`public event EventDele01 OnEvent01;` writes its name
+      // on the declarator too), and the first version of this truth read only the field form, so
+      // three `contains` rows in a roslyn metadata-interop fixture came out ANALYZER-only. The
+      // gate caught it as 3 UNEXPLAINED on a 28,727-row draw — which is the class working.
+      const vd = (n.namedChildren ?? []).find((c: any) => c.type === "variable_declaration")
+      const names: string[] = []
+      for (const d of vd?.namedChildren ?? []) {
+        if (d?.type !== "variable_declarator") continue
+        const id = (d.namedChildren ?? []).find((c: any) => c.type === "identifier")
+        if (id && typeof id.text === "string" && id.text) names.push(id.text)
+      }
+      // EVERY declarator is its own symbol and its own containment edge. Returning a name only
+      // when there is exactly one dropped the multi-declarator form wholesale: 14 UNEXPLAINED
+      // `contains` rows in a roslyn symbol test (`private NamedTypeSymbol _a, _b, _c;` is one
+      // field_declaration and three symbols), which is the same shape the analyzer's own
+      // field_declaration branch already loops over.
+      return names
+    }
+    return null
+  }
+
+  /** One declaration's published symbol name(s). A single declaration can publish several — a
+   *  record's positional parameters, a multi-declarator field — and each is its own symbol. */
+  const namesOf = (n: any): string[] => {
+    const t = n.type
+    if (t === "record_declaration") {
+      const recName = n.childForFieldName?.("name")?.text
+      const pl = (n.namedChildren ?? []).find((c: any) => c.type === "parameter_list")
+      if (!recName || !pl) return []
+      const out: string[] = []
+      for (const p of pl.namedChildren ?? []) {
+        if (p?.type !== "parameter") continue
+        const pn = p.childForFieldName?.("name")?.text
+        if (pn) out.push(pn)
+      }
+      return out
+    }
+    if (t === "field_declaration" || t === "event_field_declaration") {
+      const vd = (n.namedChildren ?? []).find((c: any) => c.type === "variable_declaration")
+      const out: string[] = []
+      for (const d of vd?.namedChildren ?? []) {
+        if (d?.type !== "variable_declarator") continue
+        const id = (d.namedChildren ?? []).find((c: any) => c.type === "identifier")
+        if (id && typeof id.text === "string" && id.text) out.push(id.text)
+      }
+      return out
+    }
+    const one = nameOf(n)
+    return one ? [one] : []
+  }
+
+  /** Owner = the nearest enclosing scope, tracked as a STACK for true nesting plus a side
+   *  variable for a file-scoped namespace, whose scope covers SIBLING declarations rather than
+   *  descendants — the CSD1 shape, and the reason a plain stack would name every bare top-level
+   *  type to the file instead of to the namespace. */
+  const stack: Array<{ node: any; name: string; isType: boolean; exit?: boolean }> = []
+  let fileScopedNs: string | undefined
+
+  /**
+   * The owner is the NEAREST enclosing scope, of whatever kind — one rule, not two.
+   *
+   * The first version of this truth asked for "the nearest scope of the OTHER kind" (a type takes
+   * the namespace around it, a member takes the type). That is wrong, and 42 rows named why: for a
+   * NESTED type the nearest enclosing scope is the outer TYPE, and asking for a namespace skipped
+   * straight past it to the file's namespace — so `class LocalizableStringWithArguments` nested
+   * inside `DiagnosticHelper` was attributed to `Microsoft.CodeAnalysis.Diagnostics` instead. The
+   * analyzer was right in all 42. A uniform rule gets both cases for free: a top-level type's
+   * nearest scope IS its block namespace, a nested type's nearest scope is its outer type, a
+   * member's is its type, and with an empty stack the file-scoped namespace is the answer.
+   */
+  const ownerOf = (isType: boolean): string | undefined => {
+    for (let i = stack.length - 1; i >= 0; i--) {
+      const s = stack[i]
+      if (s.exit) continue
+      return s.name
+    }
+    // A file-scoped namespace covers the TYPE DECLARATIONS that follow it as SIBLINGS — that is
+    // the whole point of the C# 10 form, and it is why the scope has to outlive its own subtree.
+    // It does NOT cover a MEMBER: in valid C# a field or method cannot be a sibling of a
+    // file-scoped namespace, so a member-shaped declaration found at the root is a fragment the
+    // grammar's error recovery FLATTENED out of a class it failed to parse.
+    //
+    // This matters, and the corpus said so: a 120-file draw produced 17 MISSING rows on
+    // `AbstractMetadataAsSourceTests.TestContext.cs`, a deliberately-malformed roslyn test whose
+    // class declaration does not parse (its root children are a flat run of `modifier`,
+    // `identifier`, `field_declaration` with ERROR nodes among them). The analyzer publishes no
+    // containment there — correctly, it has no class to own anything — while the first version
+    // of this truth attributed all 17 members to the file-scoped namespace, which is a WRONG
+    // OWNER claim. The harness could not have caught it: its match is label+target, never owner.
+    // The (owner, target) reconcile could, and did.
+    return isType ? fileScopedNs : undefined
+  }
+
+  const walk = (n: any): void => {
+    const t = n.type
+
+    if (t === "file_scoped_namespace_declaration") {
+      const raw = (n.namedChildren ?? []).find((c: any) => c.type === "qualified_name" || c.type === "identifier")
+      // A NEW file-scoped section replaces the old one (CSD10) — otherwise a second section
+      // would keep nesting to the first namespace's name.
+      fileScopedNs = raw ? String(raw.text) : undefined
+      // NO stack push and NO exit item: the scope must outlive its own subtree.
+      for (const c of n.namedChildren ?? []) walk(c)
+      return
+    }
+    if (t === "namespace_declaration") {
+      const raw = (n.namedChildren ?? []).find((c: any) => c.type === "qualified_name" || c.type === "identifier")
+      const nm = raw ? String(raw.text) : "anonymous"
+      const before = fileScopedNs
+      fileScopedNs = undefined
+      stack.push({ node: n, name: nm, isType: false })
+      for (const c of n.namedChildren ?? []) walk(c)
+      stack.pop()
+      fileScopedNs = before
+      return
+    }
+
+    if (SYMBOL_DECLS.has(t)) {
+      const isType = TYPE_DECLS.has(t) || t === "enum_declaration" || t === "delegate_declaration"
+      const names = namesOf(n)
+      // A record's POSITIONAL PARAMETERS are members too (Roslyn makes them properties) and are
+      // read by `namesOf`, so one declaration yields one edge per published symbol.
+      // A record's POSITIONAL PARAMETERS are members OF THE RECORD (Roslyn makes them
+      // properties), so their owner is the record's OWN NAME — not the record's enclosing scope.
+      // A top-level record in a file with no namespace therefore still owns them, which is the
+      // only reading that gives `internal record Kitten(string Name, int Lives);` a member at
+      // all. The gate caught the first version of this, which routed the parameters through the
+      // enclosing-scope rule and dropped them: 9 UNEXPLAINED `contains Kitten -> Name` rows on an
+      // aspnetcore union-schema test.
+      const ownName = t === "record_declaration" ? (n.childForFieldName?.("name")?.text ?? null) : null
+      for (const nm of names) {
+        const owner = ownName ?? ownerOf(isType)
+        if (!owner) continue
+        const key = `${owner}|${nm}`
+        if (!seen.has(key)) { seen.add(key); out.push({ label: "contains", from: owner, target: nm }) }
+      }
+      // A record publishes its OWN containment edge as well as its positionals'. `namesOf`
+      // returns the positionals for a record, so without this the record itself was never
+      // contained by anything — the 1 UNEXPLAINED row on roslyn's ErrorLogger.cs, where
+      // `DiagnosticDescriptorErrorLoggerInfo` is a SIBLING of `ErrorLogger` inside the namespace
+      // (not nested in it — the shape is worth stating, because the first two attempts to
+      // reproduce it assumed it was nested and were both wrong).
+      if (ownName) {
+        const owner = ownerOf(isType)
+        if (owner) {
+          const key = `${owner}|${ownName}`
+          if (!seen.has(key)) { seen.add(key); out.push({ label: "contains", from: owner, target: ownName }) }
+        }
+      }
+      const name = names.length === 1 ? names[0] : ownName
+      // An ENUM and a DELEGATE own members exactly as a class does (its members, its nested
+      // types), so they push a scope too. The first version pushed only for TYPE_DECLS, and 53
+      // ANALYZER-only rows named it: every enum member came out ownerless because the enum never
+      // entered the stack.
+      if ((TYPE_DECLS.has(t) || t === "enum_declaration" || t === "delegate_declaration") && name) {
+        stack.push({ node: n, name, isType: true })
+        for (const c of n.namedChildren ?? []) walk(c)
+        stack.pop()
+        return
+      }
+    }
+
+    for (const c of n.namedChildren ?? []) walk(c)
+  }
+
+  walk(root)
+  return out
+}
+
 export function deriveCSharpFieldAccessUses(root: any): { label: string; from: string; target: string }[] {
   const out: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -4084,7 +4326,18 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
             const tn = b.type === "primary_constructor_base_type"
               ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
               : b
-            if (tn && typeof tn.text === "string") bases.push(leafOf(tn.text))
+            // A record with a PRIMARY CONSTRUCTOR passes arguments to its base:
+            // `record Dachshund(string Name) : Beast(Name)`. The grammar puts the base CALL's
+            // argument list in the base_list as a sibling, and the arguments are not part of the
+            // base TYPE — `Beast(Name)` is `Beast`. The analyzer strips them (D5's rule); the
+            // first version of this truth did not, and the gate caught it as 2 MISSING rows on
+            // the same aspnetcore file.
+            if (tn && typeof tn.text === "string") {
+              let text = tn.text
+              const call = text.indexOf("(")
+              if (call > 0) text = text.slice(0, call)
+              bases.push(leafOf(text))
+            }
           }
           if (!typeBaseLeaves.has(nm)) typeBaseLeaves.set(nm, bases)
         }
@@ -14698,6 +14951,24 @@ async function main() {
         for (const e of deriveCSharpFieldAccessUses(root)) {
           ;(truth as any[]).push(e)
         }
+
+        // 2026-09-28: `contains` joins the compared set — the LAST unoracled label. It was the
+        // one class nothing could adjudicate and the one most likely to be wrong for a structural
+        // reason: the analyzer derives containment from `symbol.ownerName`, a field set during its
+        // own walk, so the class is SELF-AGREEING — it cannot disagree with the symbol table
+        // because it is built from it. This truth walks the TREE and rebuilds the owner chain from
+        // declaration nesting, never touching a symbol.
+        //
+        // Measured over 200 roslyn files: 2,442 / 2,442, 0 either way — and on (owner, target),
+        // which is STRONGER than the harness's own label+target match, since a containment edge
+        // with a right member and a wrong owner would be invisible to the gate and visible here.
+        // It is reconciled, so this is a RULED class, and the two bugs the first version of the
+        // truth had (a nested type attributed to the file's namespace instead of its outer type;
+        // an enum pushing no scope, so every enum member came out ownerless) are recorded at the
+        // derivation as the reason a truth needs a corpus before it is believed.
+        for (const e of deriveCSharpContains(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "dart") {
         for (const e of deriveDartEdges(root)) {
@@ -14975,7 +15246,7 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "references", "uses"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label)
+        ...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label)
         // 2026-09-28: `uses` is compared for csharp on the FIELD-ACCESS half only. The
         // bare-identifier half (marker `identifier_usage`, confidence 1.0) has no truth
         // derivation, so letting it through would report those rows UNEXPLAINED for the truth's
