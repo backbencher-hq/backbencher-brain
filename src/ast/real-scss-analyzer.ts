@@ -779,6 +779,11 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `type` is exact here: the token's type IS `default` / `global`, and a value that
     // merely CONTAINS the word — `padding: default` — has a different type, so this
     // cannot be fooled by text that looks like the flag.
+    // The stack carries WHETHER THE NODE IS INSIDE AN ERROR REGION alongside the node itself, so an
+    // edge recovered from a broken region can say so. A recovered claim is still a real claim —
+    // the differential's oracle descends into errors for the same reason — but a consumer deserves
+    // to know it was recovered rather than read cleanly, and a marker is what makes that legible
+    // to a gate instead of to a reader of this comment.
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop() as Node
@@ -822,10 +827,44 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       "return_statement",
       "extend_statement",
     ])
-    const stack: Node[] = [node]
+    // The stack carries WHETHER THE NODE IS INSIDE AN ERROR REGION alongside the node
+    // itself, so an edge recovered from a broken region can say so. A recovered claim
+    // is still a real claim — the differential's oracle descends into errors for the
+    // same reason — but a consumer deserves to know it was recovered rather than read
+    // cleanly, and a marker is what makes that legible to a GATE instead of to a
+    // reader of this comment. A fixture can assert it; a mutant can remove it.
+    const stack: Array<{ node: Node; recovered: boolean }> = [{ node, recovered: false }]
     while (stack.length > 0) {
-      const n = stack.pop() as Node
-      if (this.isErrorNode(n)) continue
+      const { node: n, recovered } = stack.pop() as { node: Node; recovered: boolean }
+      if (this.isErrorNode(n)) {
+        // DESCEND THROUGH ERROR, DO NOT STOP AT IT.
+        //
+        // This walk used to `continue` on an error node, which made everything INSIDE
+        // a broken region invisible to the read scan — while the rest of this lane
+        // recovers through errors, and the differential's SCSS oracle descends into
+        // them deliberately. That asymmetry is not neutral: it made the analyzer miss
+        // reads and calls wherever the grammar had already given up, which is exactly
+        // where element-plus concentrates its residue (`common/var.scss` alone carries
+        // over 400 error spans). Measured on `tag.scss`: `@include css-var-from-global(
+        // ('tag', 'bg-color'), returnVarList($backgroundColorWeight) )` parses its
+        // first argument as an ERROR — a `list_value` in an argument slot is the
+        // declared map-literal class — and the `returnVarList(…)` call nested inside
+        // that error produced no edge, so the truth reported it MISSING while the
+        // oracle, which walks through errors, had already derived it.
+        //
+        // A tree is visited once, so descending costs nothing and duplicates nothing:
+        // the `seen` problem this walk was written to avoid (a `declaration` reached
+        // both by its own walk and by an enclosing one) is about STATEMENT boundaries,
+        // which the `NESTED_STATEMENT` filter below still enforces. Recovering here is
+        // the same choice the rest of the lane makes; refusing to look inside the
+        // region the grammar lost was this walk's own exception, and the differential
+        // is what caught it.
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && !NESTED_STATEMENT.has(c.type)) stack.push({ node: c, recovered: true })
+        }
+        continue
+      }
       if (n.type === "variable" && ctx.variableNames[n.text]) {
         // the declaration's own left-hand side is not a read of itself
         const isOwnLhs = n.parent?.type === "declaration" && this.findChild(n.parent, (c) => c.type === "property_name")?.text === n.text
@@ -837,13 +876,61 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
             target: n.text,
             type: ASTEngine.RelationshipType.References,
             line_number: this.lineOf(n),
-            metadata: { evidenceClass: "usage_contextual", cssSpecific: true, isScssVarRef: true },
+            metadata: {
+              evidenceClass: "usage_contextual",
+              cssSpecific: true,
+              isScssVarRef: true,
+              ...(recovered ? { scssRecoveredFromError: true } : {}),
+            },
           })
+        }
+      }
+      // A FUNCTION CALL in a value, found in the same walk for the same reason a
+      // `$var` read is: `width: double(4px)` names a `@function` this file declares,
+      // exactly as `width: $radius` names a variable it declares, and the two sit on
+      // the same line of the same declaration. Emitting one and not the other left
+      // the graph unable to answer "who calls double" — and the M12 independent
+      // hand audit found precisely that, as the single false negative in the first
+      // run of this lane against it (9 expected, 8 observed, recall 0.889).
+      //
+      // BOTH ends must resolve, which is the whole discipline: the name is looked up
+      // in `functionNames`, so only a function this file DECLARES produces an edge.
+      // That is what keeps `calc(100% - 2px)`, `var(--x)`, `rgba(0,0,0,.1)`,
+      // `url(...)` and `min(1px, 2px)` silent — they are builtins and plain CSS
+      // functions, not referents, and an edge to them would invent the phantom
+      // endpoints this lane removed once. It is also Sass's own precedence: a user
+      // function shadows a builtin of the same name, so a declared `double` IS the
+      // thing `double(4px)` calls.
+      //
+      // `mixinNames` is deliberately NOT consulted. A mixin is invoked by
+      // `@include name(...)`, which has its own node type and its own emitter
+      // (`isScssInclude`); a bare `name(...)` in a value is a function call, and
+      // treating it as a mixin call would make one call site claim to be two
+      // different relationships.
+      if (n.type === "call_expression") {
+        const fn = this.findChild(n, (c) => c.type === "function_name")
+        const declared = fn ? ctx.functionNames[stripAllQuotes(fn.text)] : undefined
+        if (fn && declared) {
+          const owner = this.ownerForNode(n, ctx)
+          if (owner) {
+            ctx.relationships.push({
+              source: owner,
+              target: declared,
+              type: ASTEngine.RelationshipType.Uses,
+              line_number: this.lineOf(n),
+              metadata: {
+                evidenceClass: "usage_contextual",
+                cssSpecific: true,
+                isScssFunctionCall: true,
+                ...(recovered ? { scssRecoveredFromError: true } : {}),
+              },
+            })
+          }
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && !NESTED_STATEMENT.has(c.type)) stack.push(c)
+        if (c && !NESTED_STATEMENT.has(c.type)) stack.push({ node: c, recovered })
       }
     }
   }

@@ -20,7 +20,7 @@
     ]
   },
   "handled_verified": {
-    "count": 14,
+    "count": 16,
     "types": {
       "each_statement": {
         "inCorpus": true,
@@ -91,11 +91,21 @@
         "inCorpus": false,
         "reachedBy": "walked",
         "note": "as `if_statement`. ZERO corpus occurrences — recorded as handled on the strength of a reproduction, which is a different claim from a corpus observation and is labelled as one."
+      },
+      "call_expression": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "a `@function` CALLED in a value (`width: double(4px)`), which is the same class of claim as a `$var` read and was silently unreached until the M12 independent hand audit of validation/m12/fixtures/scss/Theme.scss reported it MISSING (9 expected, 8 observed, recall 0.889). The call's NAME is the part that decides whether a call is real, and a name is looked up in what the file DECLARES: builtins (`calc`, `var`, `rgba`, `min`, `url`) are not referents and produce no edge, which is the both-ends-resolve rule and the reason this type is reached rather than always-fired."
+      },
+      "function_name": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "the CALLED name inside a `call_expression`. Reached only to decide whether a call resolves; a name this file does not declare as a `@function` is walked past, because the alternative is an edge to every CSS builtin in every stylesheet."
       }
     }
   },
   "internal_silent": {
-    "count": 72,
+    "count": 70,
     "types": {
       "ERROR": {
         "kind": "universal",
@@ -164,12 +174,6 @@
       "block": {
         "inCorpus": true,
         "note": "a container; its contents are reached by walking into it."
-      },
-      "call_expression": {
-        "inCorpus": true,
-        "adjudicated": "inherited",
-        "inheritedFrom": "script/m14/spec/css-completeness.json",
-        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
       },
       "charset_statement": {
         "inCorpus": false,
@@ -254,12 +258,6 @@
         "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
       },
       "from": {
-        "inCorpus": true,
-        "adjudicated": "inherited",
-        "inheritedFrom": "script/m14/spec/css-completeness.json",
-        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
-      },
-      "function_name": {
         "inCorpus": true,
         "adjudicated": "inherited",
         "inheritedFrom": "script/m14/spec/css-completeness.json",
@@ -547,6 +545,10 @@
       "construct": "delegated CSS `var()` reads of externally-provided custom properties",
       "measured": "14 of 220 resolve (6%) in the element-plus corpus, which consumes Element Plus theme tokens defined in another file. The behaviour is the CSS lane's own — verified by running identical input through both lanes — and this lane's own `$var` reads are 223/223 = 100%.",
       "artifact": "validation/m14/results/scss-analyzer-census.json"
+    },
+    {
+      "id": "SCSS-L7",
+      "note": "A `@function` call is resolved ONLY against functions the same file declares. A call into a module (`@use 'tokens' as t` then `t.$brand`, or a function defined in another partial) has no local declaration to resolve against, so it publishes no edge — the same no-phantom rule that keeps an undeclared `$var` or `@include` silent. Cross-file call resolution is not implemented and is not claimed: on element-plus the full-extent floor stands at MISSING 60 / unexplained 4."
     }
   ]
 }
