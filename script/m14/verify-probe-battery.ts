@@ -252,6 +252,7 @@ async function main() {
   const haskellCfg = { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: ".hs" }
   const phpCfg = { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: ".php" }
   const javaCfg = { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: ".java" }
+  const kotlinCfg = { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: ".kt" }
 
   // ── CSD11: assignment-form target-typed new() ───────────────────────────
   // ── html (M14 #288) ─────────────────────────────────────────────────────
@@ -481,6 +482,44 @@ useGives x = (1, 2) \`gives\` x
 `),
     ["calls:useGives->gives"],
     ["calls:gives->gives"])
+
+  // ── kotlin #924: quoting syntax is not part of a NAME ─────────────────────
+  // This probe exists because the lane's own repair was HALF DEAD and every other
+  // instrument read clean for a full round. The analyzer stripped the quoting
+  // correctly; the oracle's strip call had been merged onto the tail of a `//` line, so
+  // it was a comment — dead code. The census-surface probe reads the ANALYZER, so it saw
+  // nothing wrong; the 12-file lane draws happened to contain no backticked callee, so
+  // they read MISSING=0. One instrument saw it: the 60-file draw, as a single missing
+  // truth row (`calls -> `in`` on Exposed exposed-r2dbc BinaryTypeMapper.kt, where
+  // `Parameters.`in`(...)` is a qualified call with a backticked selector). So this probe
+  // asserts BOTH sides at once, and `oracleForbid` is the half that fails on that exact
+  // mistake: an oracle still deriving the quoted spelling reports `oracle colludes`.
+  //
+  // TWO probes, not one, because the two surfaces have different owners: the declaration
+  // surface (`contains`) is derived by the GENERIC walker (deriveTreeEdges) while the call
+  // surface is the dedicated kotlin oracle's (deriveKotlinEdges), and probeLang checks one
+  // oracle per probe. Writing it as a single probe with `contains:in` in the expect set
+  // failed as "oracle no longer derives: contains:in" — a true statement about a function
+  // that never derived it, i.e. the instrument reporting its own scope, not a defect.
+  const KT_QUOTED = `
+object Parameters {
+    fun \`in\`(x: Int): Int = x
+}
+
+fun useQuoted(param: Parameters): Int = param.\`in\`(1)
+`
+  await probeLang("F9-PROBE-KT-QUOTED-NAME-924", "kotlin",
+    "#924 kotlin half (analyzer surface): a quoted identifier's quoting syntax is not part of the name — a backticked DECLARATION is contained as `in`, and `Parameters.`in`(1)` calls `in`, never the source spelling",
+    kotlinCfg, null, KT_QUOTED,
+    ["contains:in", "calls:in"],
+    ["contains:\`in\`", "calls:\`in\`", "calls:param.\`in\`"])
+
+  await probeLang("F9-PROBE-KT-QUOTED-NAME-924-ORACLE", "kotlin",
+    "#924 kotlin half (LOCKSTEP): the kotlin calls oracle strips the same quoting — its truth spells the backticked selector `in`, so a repair that publishes the bare name is an agreement rather than a mask (this is the assertion the shipped half-dead strip would have failed: `oracle colludes` on calls -> `in`)",
+    kotlinCfg, "deriveKotlinEdges", KT_QUOTED,
+    ["calls:in"],
+    ["calls:\`in\`"],
+    { oracleForbid: true })
 
   // ── php relative_scope: new self/static/parent (the original F6-class bug)
   await probeLang("F9-PROBE-PHP-RS", "php",
