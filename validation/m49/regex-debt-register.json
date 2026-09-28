@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 18 established 2026-09-08). Rows are keyed by (file, source); `line` is re-anchored to HEAD by M49.G6, and each row's note history records every shift it has survived.",
-  "baselineTotal": 13,
+  "baselineTotal": 12,
   "establishedAt": "2026-09-08",
   "entries": [
     {
@@ -26,7 +26,7 @@
       "source": "/^module\\.exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
     },
     {
       "file": "real-javascript-analyzer.ts",
@@ -34,7 +34,7 @@
       "source": "/^exports\\./",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [W13: line shifted by the class-expression/private-member identity fixes; regex retained] [W15: line shifted by the #813/#814 rulings' fixes; regex retained, identity is file+source] [M49.W21: line corrected 586 -> 587 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 587 -> 635 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 635 -> 646 from the HEAD-blob census]"
     },
     {
       "file": "real-svelte-analyzer.ts",
@@ -42,7 +42,7 @@
       "source": "/line/i",
       "operation": "test",
       "classification": "needs_review",
-      "note": "M49/#868: the SFC seam's metadata-line mirror \u2014 tests a metadata KEY NAME for 'line' (decoratorLine/decoratorLines/line) to apply the script-block offset to every line-valued key. No AST field enumerates arbitrary metadata key names, so this is a key-name classifier, not content parsing; pinned by the #868 svelte fixture + its seam mutant (revert the mirror and the mutant is CAUGHT)."
+      "note": "M49/#868: the SFC seam's metadata-line mirror — tests a metadata KEY NAME for 'line' (decoratorLine/decoratorLines/line) to apply the script-block offset to every line-valued key. No AST field enumerates arbitrary metadata key names, so this is a key-name classifier, not content parsing; pinned by the #868 svelte fixture + its seam mutant (revert the mirror and the mutant is CAUGHT)."
     },
     {
       "file": "real-svelte-analyzer.ts",
@@ -50,7 +50,7 @@
       "source": "/^(.*?)\\s+(?:then|as)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986] [M49.W21: line corrected 986 -> 1051 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1051 -> 1083 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1083 -> 1187 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family svelte rounds; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986] [M49.W21: line corrected 986 -> 1051 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1051 -> 1083 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1083 -> 1187 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family svelte rounds; regex retained]"
     },
     {
       "file": "real-vue-analyzer.ts",
@@ -58,7 +58,7 @@
       "source": "/line/i",
       "operation": "test",
       "classification": "needs_review",
-      "note": "M49/#868: the SFC seam's metadata-line mirror \u2014 tests a metadata KEY NAME for 'line' (decoratorLine/decoratorLines/line) to apply the script-block offset to every line-valued key. No AST field enumerates arbitrary metadata key names, so this is a key-name classifier, not content parsing; pinned by the #868 vue fixture + its seam mutant (revert the mirror and the mutant is CAUGHT)."
+      "note": "M49/#868: the SFC seam's metadata-line mirror — tests a metadata KEY NAME for 'line' (decoratorLine/decoratorLines/line) to apply the script-block offset to every line-valued key. No AST field enumerates arbitrary metadata key names, so this is a key-name classifier, not content parsing; pinned by the #868 vue fixture + its seam mutant (revert the mirror and the mutant is CAUGHT)."
     },
     {
       "file": "real-vue-analyzer.ts",
@@ -74,7 +74,7 @@
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 978 -> 1033 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1033 -> 1065 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1065 -> 1100 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 978 -> 1033 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1033 -> 1065 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1065 -> 1100 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
     },
     {
       "file": "real-vue-analyzer.ts",
@@ -82,7 +82,7 @@
       "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
       "operation": "test",
       "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 988 -> 1047 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1047 -> 1079 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1079 -> 1114 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
+      "note": "text micro-parse on node/source text — no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 988 -> 1047 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1047 -> 1079 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1079 -> 1114 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
     },
     {
       "file": "real-vue-analyzer.ts",
@@ -99,14 +99,6 @@
       "operation": "replace",
       "classification": "needs_review",
       "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained]"
-    },
-    {
-      "file": "real-clojure-analyzer.ts",
-      "line": 724,
-      "source": "/^%(\\d+|&)?$/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "M49.R2 freshness fix 2026-09-20 (census regenerated from HEAD blobs at 840ffbbb): found UNREGISTERED. Clojure anonymous-argument shorthands (`%`, `%1`..`%9`, `%&`) tested against a symbol's name string. Mechanically convertible to a structural symbol-name check; NOT converted in this wave because the clojure analyzer is its authoring lane's file (the CC1 clojure<->elixir wave was active). Registered so the review-class total and its register stay one-to-one."
     }
   ],
   "shrunkBy": [
@@ -134,10 +126,10 @@
     {
       "wave": "M60.R10/regex",
       "removed": 1,
-      "note": "real-php-analyzer.ts `/^\\\\+/` (review-class, needs_review) replaced by `phpStripLeadingBackslashes`, a prefix scan on charCode 92 \u2014 its own register note had named that replacement since M49, so this is a designed paydown rather than a new ruling. Equivalence proved before landing by script/m14/tmp/r1-regex-removal-probe.ts over every backslash-qualified name in 1,200 real `.php` files, and php re-ran at FULL EXTENT to the same hash and counts. The SAME wave removed a `normalization`-class literal in real-ruby-analyzer.ts (`/^<\\s*/`), which is not a register row: ruby's canonical draw came back bit-identical (hash 0c505b9b4aeda127). Census 27 -> 25, review-class 18 -> 15; the policy doc's declared count and this register were both re-emitted, and R2 read 16/19 until each of the three was paid."
+      "note": "real-php-analyzer.ts `/^\\\\+/` (review-class, needs_review) replaced by `phpStripLeadingBackslashes`, a prefix scan on charCode 92 — its own register note had named that replacement since M49, so this is a designed paydown rather than a new ruling. Equivalence proved before landing by script/m14/tmp/r1-regex-removal-probe.ts over every backslash-qualified name in 1,200 real `.php` files, and php re-ran at FULL EXTENT to the same hash and counts. The SAME wave removed a `normalization`-class literal in real-ruby-analyzer.ts (`/^<\\s*/`), which is not a register row: ruby's canonical draw came back bit-identical (hash 0c505b9b4aeda127). Census 27 -> 25, review-class 18 -> 15; the policy doc's declared count and this register were both re-emitted, and R2 read 16/19 until each of the three was paid."
     },
     {
-      "wave": "M49.R2 2026-09-24 \u2014 rust's two name-set tests become char scans (#798)",
+      "wave": "M49.R2 2026-09-24 — rust's two name-set tests become char scans (#798)",
       "removed": 2,
       "removedRows": [
         {
@@ -153,7 +145,21 @@
       ],
       "baselineTotalBefore": 15,
       "baselineTotalAfter": 13,
-      "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP \u2014 which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
+      "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP — which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
+    },
+    {
+      "wave": "M60 clojure deep round 2026-09-28 — the clojure lane becomes ZERO-REGEX (CLJ-D20)",
+      "removed": 1,
+      "removedRows": [
+        {
+          "file": "real-clojure-analyzer.ts",
+          "source": "/^%(\\d+|&)?$/",
+          "class": null
+        }
+      ],
+      "baselineTotalBefore": 13,
+      "baselineTotalAfter": 12,
+      "note": "A row may only disappear when the source no longer holds the regex, and this one is a CODE FIX, not a reclassification: /^%(\\d+|&)?$/ tested a Clojure anonymous-argument shorthand (%, %1..%N, %&) against a symbol's name string, and it is now isAnonArgShorthand, a char walk. The conversion is PROVED, not asserted — script/m14/tmp/clj-regex-equiv.ts runs the regex and the scan over every sym_lit name in three corpora (633 files, 187,678 symbol nodes, 13,363 distinct names) plus a 42-case adversarial battery and reports 0 mismatches. The row's own note said 'mechanically convertible to a structural symbol-name check; NOT converted in this wave because the clojure analyzer is its authoring lane's file' — that reason expired when the file became this lane's authoring lane. reviews/regex-policy.md's clojure table is updated to 0 in the same commit. Record: reviews/clojure/deep-review-2026-09-28.md, finding CLJ-D20; fixture clojure/anon-shorthand; mutant clojure/anon-shorthand-greedy (CAUGHT)."
     }
   ]
 }
