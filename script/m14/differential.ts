@@ -1495,7 +1495,8 @@ export function deriveKotlinEdges(root: any): { label: string; from: string; tar
     if (!target) return
     // M60 (#924, kotlin half): quoting syntax is not part of the published name.
     // Mirrors RealKotlinAnalyzer.canonicalizePublishedNames; F5 compares this
-    // oracle's leaf against the analyzer's, so both sides must strip together.      target = stripNameQuoting(target)
+    // oracle's leaf against the analyzer's, so both sides must strip together.
+    target = stripNameQuoting(target)
     const k = label + "|" + target
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
