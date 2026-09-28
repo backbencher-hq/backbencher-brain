@@ -11310,6 +11310,18 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
   },
   {
+    id: "typescript/ambient-signature-drop",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "R8 regression: bodyless function DECLARATIONS stop emitting. `declare function f(): T` parses to `function_signature`, not `function_declaration`, and the pre-fix analyzer had no reference to that node type at all \u2014 while the spec listed it as handled_verified and the coverage gate was satisfied by a fixture that merely PARSED one. Every exported function in a .d.ts was therefore invisible: no symbol, no call edge, no complexity, no api-contract row. The transform reproduces that by dropping every function symbol that is marked as an ambient declaration, and it also clears the flag itself, because pre-fix nothing could have set it (the `declare` keyword is not a child of the node; it sits on a wrapping ambient_declaration). ambient-function-signature kills it.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: ((r as any).symbols ?? [])
+        .filter((s: any) => !((s?.metadata ?? {}).isDeclare === true && String(s.kind) === "function"))
+        .map((s: any) => ((s?.metadata ?? {}).isDeclare ? { ...s, metadata: { ...s.metadata, isDeclare: false } } : s)),
+    }),
+  },
+  {
     id: "typescript/accessor-pair-duplicate",
     language: "typescript",
     defectClass: "noise-fabrication",
