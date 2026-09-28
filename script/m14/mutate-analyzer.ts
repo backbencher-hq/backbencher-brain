@@ -1174,6 +1174,43 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vb/interface-members-unvisited",
+    language: "vb",
+    defectClass: "missing-whole-kind",
+    description:
+      "PRE-FIX: `interface_method_declaration`, `interface_property_declaration` and `interface_event_declaration` were in NEITHER DECLARATION_NODES nor SILENT_INTERNAL, which is the whole defect -- nothing visited them, so every interface was published as an EMPTY SHELL with a name and no members, while the class implementing it had all of them. Found by the F8 node-type census, which counted 146 distinct named node types in the corpus against 42 classified: the `every construct is accounted for` claim was 29% true and nothing had measured it. Simulated as a faithful revert by dropping interface-owned members. Caught by vb/declaration-shapes, which expects `IMeasurable` to own `Area` and `Label`.",
+    transform: (r: any) => {
+      const owners = new Set((r.symbols ?? []).map((s: any) => String(s.name)))
+      const ifaces = new Set((r.symbols ?? []).filter((s: any) => String(s.kind).toLowerCase() === "interface").map((s: any) => String(s.name)))
+      if (ifaces.size === 0) return r
+      const owned = new Set(
+        (r.symbols ?? []).filter((s: any) => s.ownerName && ifaces.has(String(s.ownerName)) && owners.has(String(s.ownerName))).map((s: any) => String(s.name)),
+      )
+      if (owned.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !(s.ownerName && ifaces.has(String(s.ownerName)))),
+        relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "contains" && owned.has(String(x.target)))),
+      }
+    },
+  },
+  {
+    id: "vb/operators-never-emitted",
+    language: "vb",
+    defectClass: "missing-whole-kind",
+    description:
+      "PRE-FIX: NO OPERATOR WAS EVER PUBLISHED, for two independent reasons. `operator_declaration` has no `name` field -- the operator is an anonymous token -- so the same empty-name guard that hid constructors hid every operator; and `visitOperator` then skipped that very token because `isKeyword` returns true for any token not starting with a letter, which was meant to reject `(` but also rejected every operator SYMBOL. Word operators (`Operator CType`) fail a second time: the keyword and the word are inlined away and exist nowhere in the tree, so there is no node to name from. Found by the F8 census, which found `operator_declaration` classified as a declaration while the walker never produced one. Simulated as a faithful revert by dropping symbols named by the operator contract literal. Caught by vb/declaration-shapes, which expects an `operator` symbol owned by `Square` and its containment edge.",
+    transform: (r: any) => {
+      const ops = (r.symbols ?? []).filter((s: any) => String(s.name) === "operator" && s.metadata?.grammarNode === "operator_declaration")
+      if (ops.length === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !ops.includes(s)),
+        relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "contains" && String(x.target) === "operator")),
+      }
+    },
+  },
+  {
     id: "vb/member-level-heritage-unread",
     language: "vb",
     defectClass: "missing-relationship",

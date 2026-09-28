@@ -87,6 +87,11 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     "interface_declaration",
     "module_declaration",
     "enum_declaration",
+    // An enum member is a declaration, and `visitEnum` reads it directly rather
+    // than dispatching it, so it was never in this set. The behaviour was right
+    // and the classification was absent, which is precisely the state a census
+    // exists to make visible rather than to fix.
+    "enum_member_declaration",
     "delegate_declaration",
     "method_declaration",
     "constructor_declaration",
@@ -96,21 +101,134 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     "declare_statement",
     "field_declaration",
     "imports_statement",
+    // An INTERFACE's members are declarations, and for a long time they were in
+    // neither this set nor SILENT_INTERNAL, which is the whole defect: nothing
+    // visited them, so an interface was published as an EMPTY SHELL. `IShape`
+    // appeared with a name and no members, while the class implementing it had
+    // all three. Found by the F8 node-type census, which found 104 unclassified
+    // node types against 42 classified -- the "every construct is accounted for"
+    // claim was 29% true and nothing had ever measured it.
+    //
+    // In an interface-driven codebase this is not a rare shape. DISMTools and
+    // P3D are both Windows Forms applications where the designer emits
+    // interfaces for every dialog, so a large fraction of the corpus's types had
+    // invisible members.
+    "interface_method_declaration",
+    "interface_property_declaration",
+    "interface_event_declaration",
   ])
 
   /** Nodes the grammar produces that carry no symbol of their own: they are
    *  containers, modifiers, or the parts of a declaration already read. They are
    *  classified here so the spec's "every node type is classified" rule is
    *  satisfied by this list rather than by an omission. */
+    // A node type that publishes NO SYMBOL but DOES derive a relationship. This set
+    // exists because the census it feeds found two whole kinds of defect that a
+    // two-way classification could not express, and both were invisible:
+    //
+    //   - `array_creation_expression` sat in NEITHER set, which is what let the
+    //     analyzer read a construction's callee from a `function` field the node
+    //     does not have. 15,577 `New Foo(a, b)` calls went unpublished.
+    //   - `implements_member_clause` sat in SILENT_INTERNAL, which is a claim
+    //     that the node carries nothing. It carries a relationship, and the
+    //     member-level heritage form was therefore uncollected on every member in
+    //     the language.
+    //
+    // "Classified" is not the same as "handled", and the difference between those
+    // two words is what a two-way split threw away.
+    private static readonly RELATIONSHIP_SOURCES: ReadonlySet<string> = new Set([
+    "invocation_expression",
+    "object_creation_expression",
+    "array_creation_expression",
+    "generic_invocation_expression",
+    "implements_member_clause",
+    "inherits_member_clause",
+    "inherits_clause",
+    "implements_clause",
+    "inherits_statement",
+    "implements_statement",
+    "operator_declaration",
+    "constructor_declaration",
+  ])
+
+  // Classified as carrying nothing today, but a KNOWN candidate: the construct
+  // does name or bind something, and saying so here is what keeps "silent" from
+  // quietly meaning "nobody has looked". Each is a real relationship or symbol a
+  // future wave could derive; none is claimed to be derived now.
+  private static readonly RELATIONSHIP_CANDIDATES: ReadonlySet<string> = new Set([
+    // `: base(...)` / `: Me(...)` -- names the constructor being chained to. A
+    // `calls` edge, and the one call form this analyzer does not yet read.
+    "constructor_initializer",
+    // `AddHandler o.E, AddressOf h` -- an event binding between two names.
+    "add_handler_statement",
+    "remove_handler_statement",
+    // A lambda is a callable value: `AddressOf`, or an argument to `For Each`.
+    "lambda_expression",
+    // A property's accessors are members of the property.
+    "property_getter",
+    "property_setter",
+    // `RaiseEvent E` names the event being raised.
+    "raiseevent_statement",
+    // `Handles Me.Startup` -- the `Object.Event` half of a Handles clause, which
+    // names the event a handler is wired to. 2,602 in the corpus and a real
+    // `references` edge to each, so it is a candidate and not silence.
+    "event_member",
+  ])
+
   private static readonly SILENT_INTERNAL: ReadonlySet<string> = new Set([
     "source_file", "identifier", "comment", "preprocessor_directive", "blank_line",
     "type_parameter_list", "type_parameter", "parameter_list", "parameter",
     "modifiers", "member_modifier", "attribute_list", "attribute", "attribute_target",
-    "attribute_argument_list", "named_argument", "as_clause", "implements_member_clause",
-    "inherits_statement", "implements_statement", "handles_clause", "variable_declarator",
+    "attribute_argument_list", "named_argument", "as_clause",
+    "handles_clause", "variable_declarator",
     "array_rank_specifier", "array_initializer", "collection_initializer",
     "dictionary_initializer", "dictionary_element", "object_initializer",
-    "member_initializer", "implements_clause", "inherits_clause",
+    "member_initializer",
+    // The types below were UNCLASSIFIED when the F8 census first ran -- 101 of
+    // them, against 45 classified. None of them declares a symbol and none of
+    // them names a relationship this analyzer derives; the list is here so that
+    // "every construct in the corpus is accounted for" is a checked statement
+    // rather than an assumption, and so a new grammar node shows up as a FAILING
+    // census instead of as silence.
+    //
+    // Literals: a literal names nothing, so there is no symbol and no target.
+    "boolean_literal", "character_literal", "floating_point_literal",
+    "integer_literal", "string_literal", "nothing_literal",
+    // Name and type syntax: read by whichever construct owns it; declares nothing.
+    "predefined_type", "simple_name", "qualified_name", "global_qualified_name",
+    "generic_name", "type_argument_list", "array_type", "nullable_type",
+    "tuple_type", "tuple_element", "type_declaration_in_type",
+    "type_parameter_constraint", "type_parameter_constraints_clause",
+    // Expressions: their names are read by the constructs above; they are not
+    // structure. (The construction and invocation EXPRESSIONS are relationship
+    // SOURCES and are classified as such, which is the distinction that matters.)
+    "argument_list", "array_access_expression", "assignment_expression",
+    "binary_expression", "cast_expression", "conditional_expression",
+    "if_expression", "member_access_expression", "me_expression",
+    "mybase_expression", "parenthesized_expression", "unary_expression",
+    "typeof_expression", "typeof_is_expression", "with_expression",
+    "with_member_access_expression", "lambda_parameter", "lambda_parameter_list",
+    "omitted_argument", "collection_range_variable",
+    // Control flow. The contract is a project SYMBOL TABLE: a `While` is not a
+    // symbol, and the family does not publish locals or control-flow statements.
+    "assignment_statement", "declaration_statement", "expression_statement",
+    "if_statement", "elseif_clause", "else_clause", "case_clause",
+    "case_else_clause", "case_value", "select_statement", "select_clause",
+    "select_element", "select_or_group_clause", "for_statement",
+    "for_each_statement", "while_statement", "do_statement", "exit_statement",
+    "continue_statement", "goto_statement", "labeled_statement",
+    "return_statement", "throw_statement", "try_statement", "catch_block",
+    "finally_block", "with_statement", "using_statement", "synclock_statement",
+    "on_error_statement", "call_statement", "stop_statement", "redim_statement",
+    "redim_clause", "yield_statement", "await_expression", "empty_statement",
+    "end_statement",
+    // Modifiers, attributes, options.
+    "local_declaration_modifier", "global_attribute_section", "option_statement",
+    "option_statements",
+    // LINQ query syntax, which this grammar surfaces as clauses rather than
+    // structure.
+    "query_expression", "query_body_clause", "from_clause", "order_by_clause",
+    "ordering", "where_clause",
   ])
 
   // -------------------------------------------------------------------------
@@ -440,9 +558,17 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       case "imports_statement": return this.visitImports(node)
       case "method_declaration":
       case "constructor_declaration":
+      // An interface method has the SAME shape as a class method -- `name`,
+      // `parameters`, `as_clause` -- and no body, so the visitor is reused
+      // unchanged. The one thing it must not do is invent a body: `collectCalls`
+      // and the member-heritage read both walk children, and an interface member
+      // has none to walk.
+      case "interface_method_declaration":
       case "declare_statement": return this.visitMethod(node, content, context)
-      case "property_declaration": return this.visitProperty(node, content, context)
-      case "event_declaration": return this.visitEvent(node, content, context)
+      case "property_declaration":
+      case "interface_property_declaration": return this.visitProperty(node, content, context)
+      case "event_declaration":
+      case "interface_event_declaration": return this.visitEvent(node, content, context)
       case "operator_declaration": return this.visitOperator(node, content, context)
       case "field_declaration": return this.visitField(node, content)
       default: break
@@ -1178,6 +1304,7 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     this.ownerStack.push(sym)
+    this.visitMemberHeritage(node, sym, context)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
   }
@@ -1187,24 +1314,71 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `Public Shared Operator +(a As T, b As T) As T`. The symbol is therefore
     // named by the operator token, and the distinction from an ordinary method is
     // recorded rather than left to be guessed from the name.
+    // THIS FUNCTION NEVER PRODUCED A SYMBOL, for two independent reasons, and the
+    // census is what found it: `operator_declaration` is classified in
+    // DECLARATION_NODES and has a dedicated visitor, so a node-type count said
+    // the kind was handled while the index held no operators at all.
+    //
+    // One: the guard used `isKeyword`, and `isKeyword` returns TRUE for any
+    // token that does not START with a letter -- `if (!sawAlpha) return true` --
+    // which was meant to reject punctuation like `(`. But every SYMBOLIC
+    // operator is also a non-letter token, so `Operator +` had its own symbol
+    // skipped as punctuation, found nothing, and returned. The guard rejected
+    // precisely the tokens it was looking for.
+    //
+    // Two: for a WORD operator the symbol is not in the tree at all.
+    // `Operator CType(ByVal x As Integer)` has children modifiers,
+    // parameter_list, as_clause and body -- the `Operator` keyword and `CType`
+    // are neither of them, having been inlined away. So there is nothing to read
+    // a name from, and no amount of scanning the children finds it.
+    //
+    // So: a symbolic operator is named by its own token, and a word operator
+    // takes the same CONTRACT LITERAL a constructor takes, since its name is not
+    // derivable from the tree. Several operators of one type are therefore
+    // several `operator` symbols distinguished by range, exactly as several
+    // constructors are -- and the rows where the symbol IS known carry it in
+    // metadata, so nothing is lost that the grammar kept.
+    const STRUCTURAL = new Set(["(", ")", ",", ":", "=", "New", "Operator"])
     let opName = ""
     for (const c of this.allKids(node)) {
       if (c.isNamed) continue
-      if (c.type === "(" || c.type === ")" || c.type === ",") continue
       const t = c.text.trim()
-      if (t.length > 0 && !RealVbAnalyzer.isKeyword(t)) { opName = t; break }
+      if (t.length === 0) continue
+      if (STRUCTURAL.has(t)) continue
+      if (c.type === "=") continue
+      // A modifier word (`Public`, `Shared`, `Widening`) is alphabetic, so it is
+      // the alphabetic branch of the keyword test that applies here. A
+      // non-alphabetic token is the operator SYMBOL and must be kept.
+      if (RealVbAnalyzer.isWordLike(t) && RealVbAnalyzer.isKeyword(t)) continue
+      opName = t
+      break
     }
-    if (opName.length === 0) { this.note("operator-without-name"); return }
-    const sym = this.pushSymbol(`Operator ${opName}`, SymbolKind.Method, node, {
+    // The NAME is the contract literal, always -- not `Operator +` when the
+    // symbol happens to be recoverable. A conditional name would be a better
+    // name, but it is a contract with a second implementation (the F5 oracle has
+    // to derive the same string) whose behaviour depends on whether the grammar
+    // kept a token, and a contract that changes when the grammar changes is not a
+    // contract. The symbol is not lost: it is in `operatorSymbol` below wherever
+    // the tree kept it.
+    const sym = this.pushSymbol("operator", SymbolKind.Method, node, {
       visibility: this.visibilityOf(node),
       isStatic: this.isStatic(node),
-      metadata: { grammarNode: node.type, operator: opName },
+      metadata: {
+        grammarNode: node.type,
+        ...(opName.length > 0 ? { operatorSymbol: opName } : {}),
+      },
     })
     if (!sym) return
     const owner = this.currentOwner()
     this.ownerStack.push(sym)
     for (const child of this.kids(node)) this.walk(child, content, context)
     this.ownerStack.pop()
+  }
+
+  /** Does this token start with a letter or underscore? */
+  private static isWordLike(t: string): boolean {
+    const c = t.charCodeAt(0)
+    return Number.isFinite(c) && ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95)
   }
 
   /** A char-set membership test, not a keyword list lookup by regex. */

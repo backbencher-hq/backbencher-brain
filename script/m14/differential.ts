@@ -376,6 +376,11 @@ export const LANG_REPOS: Record<string, string> = {
   // (validation/m12/corpus-manifest.json) and is ALSO go's second corpus, so the
   // checkout does double duty: 2,363 tracked .tf/.tfvars/.hcl files at db4eef4.
   hcl: "terraform",
+  // M60 Make wave (2026-09-27): tf-aws-components holds 53 of the 99 Makefiles
+  // in this corpus set and is written in a different idiom from consul's and
+  // nomad's (per-component targets, deep variable files, computed targets), so
+  // it is the stronger primary of the two.
+  make: "tf-aws-components",
   // NIM wave (2026-09-27): the Nim compiler + the whole standard library. Every
   // construct the analyzer must know appears under compiler/ or lib/, and it is the
   // language's own reference implementation rather than a user of it.
@@ -526,7 +531,7 @@ const BATCH_SIZE = process.env.BB_F5_BATCH_SIZE ? parseInt(process.env.BB_F5_BAT
 const ROUTER_LANGUAGE: Record<string, string> = { objc: "objective-c" }
 const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).toLowerCase()
 
-export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
+export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[]; fileNames?: readonly string[] }> = {
   // XML, and the only lane whose `ext` is seven globs rather than one. The
   // wired grammar names XML documents; `.xsd`/`.dtd`/`.xsl`/`.xslt`/`.svg`/
   // `.rng` are all XML documents, and a lane that measured only `*.xml` would
@@ -640,6 +645,13 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // language-detection.ts routes .tf/.tfvars/.tofu/.hcl, and the corpora hold
   // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
+  make: {
+    wasm: "tree-sitter-make.wasm",
+    analyzerFile: "real-makefile-analyzer",
+    className: "RealMakefileAnalyzer",
+    ext: "mk",
+    fileNames: ["Makefile", "makefile", "GNUmakefile", "Makefile.am", "Makefile.in"],
+  },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -12589,6 +12601,234 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
 
     return edges.filter((e, i) => edges.findIndex((x) => x.label === e.label && x.target === e.target) === i)
   }
+
+  // ---------------------------------------------------------------- MAKE
+  // M60 Make wave (2026-09-27). Two things make Make's oracle different from the
+  // analyzer's, and both are the point:
+  //
+  //  1. TWO PHASES. A label is a fact about the WHOLE file, not about the point
+  //     in the walk where the reference sits: `references` means "this file
+  //     declares it". An oracle that decides during a single sweep gets it wrong
+  //     for every target declared further down, which is most of them. The
+  //     analyzer meets the same requirement by staging edges and classifying
+  //     after; here phase 1 collects declarations and phase 2 emits.
+  //  2. OWNER PER FRAME. A rule whose target is an EXPRESSION
+  //     (`$(archive) : $(objects)`, 6 files in the make corpus) declares no
+  //     literal name, so a single mutable owner across a LIFO stack credits its
+  //     recipe to whichever rule the stack happened to visit before it. That was
+  //     measured as a 0.9306 recall before the frame carried its owner.
+  //
+  // Names are read by a THIRD route again — the node's own text with the
+  // delimiters stripped — where the analyzer reads the child `word` node and the
+  // assignment name by character-code trimming. Three routes, so agreement is
+  // evidence rather than a tautology.
+  if (lang === "make") {
+    // The coverage match below is SITE-AGNOSTIC — it compares label+target and
+    // never the source line — so the oracle's line numbers are not part of the
+    // contract and are not carried. The call sites below pass one anyway, because
+    // they are written to be read next to the tree they came from; the parameter
+    // is accepted and dropped rather than every call site being rewritten to
+    // look like it lost information it never had.
+    const push = (from: string, label: string, target: string, _line?: number): void => {
+      if (!from || !target || from === target) return
+      edges.push({ label, from, target })
+    }
+    const BUILTIN_FN = new Set([
+      "subst", "patsubst", "strip", "findstring", "filter", "filter-out", "sort", "word", "wordlist",
+      "words", "firstword", "lastword", "dir", "notdir", "suffix", "basename", "addsuffix", "addprefix",
+      "join", "wildcard", "realpath", "abspath", "if", "or", "and", "foreach", "file", "call", "value",
+      "eval", "origin", "flavor", "shell", "error", "warning", "info",
+    ])
+    const KW = new Set([
+      "export", "unexport", "override", "private", "define", "endef", "include", "-include", "sinclude",
+      "vpath", "undefine", "ifeq", "ifneq", "ifdef", "ifndef", "else", "endif",
+    ])
+    const allDigits = (t: string) => t.length > 0 && [...t].every((c) => c >= "0" && c <= "9")
+    /** Strip Make's expansion delimiters. A `$(` that does not CLOSE at the end
+     *  is a glued path (`$(git-dir)/hooks/pre-push`), not a reference. */
+    const delims = (text: string): string => {
+      const t = (text ?? "").trim()
+      if (t.startsWith("$(") && !t.endsWith(")")) return t
+      if (t.startsWith("${") && !t.endsWith("}")) return t
+      if ((t.startsWith("$(") && t.endsWith(")")) || (t.startsWith("${") && t.endsWith("}"))) return t.slice(2, -1).trim()
+      if (t.startsWith("$")) return t.slice(1).trim()
+      return t
+    }
+    /** An assignment's name. A regex is fine in the oracle and forbidden in the
+     *  analyzer; the fall-back to the `word` child covers the target-scoped
+     *  shape `build: TAGS+=ui`, where the whole line is ONE variable_assignment
+     *  and a start-anchored pattern cannot see past the leading target. */
+    const assignName = (n: any): string => {
+      const m = /^[\s]*([A-Za-z0-9_.${}()\-/]+?)\s*(::=|:=|\?=|\+=|!=|=)/.exec(n.text ?? "")
+      if (m && !KW.has(m[1].trim())) return m[1].trim()
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c?.type !== "word") continue
+        const t = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+        if (t && !KW.has(t)) return t
+      }
+      return ""
+    }
+
+    // ---- phase 1: declarations only, no labels decided ----
+    const declared = new Set<string>()
+    const targets = new Set<string>()
+    const exported = new Set<string>()
+    {
+      const st: any[] = [root]
+      while (st.length) {
+        const n = st.pop()
+        if (!n) continue
+        // The oracle does not model the grammar's partial recovery inside an
+        // ERROR node, so anything the analyzer recovers there is outside its
+        // model; saying so explicitly beats letting it show up as a phantom
+        // difference in both directions.
+        if (n.type === "ERROR") continue
+        if (n.type === "variable_assignment" || n.type === "shell_assignment") {
+          const nm = assignName(n)
+          if (nm) declared.add(nm)
+        } else if (n.type === "define_directive") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c?.type !== "word") continue
+            const nm = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+            if (nm) declared.add(nm)
+          }
+        } else if (n.type === "rule") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const tg = n.namedChild(i)
+            if (tg?.type !== "targets") continue
+            for (let j = 0; j < tg.namedChildCount; j++) {
+              const c = tg.namedChild(j)
+              const t = (c?.text ?? "").trim()
+              if (c?.type === "word" && t && !KW.has(t) && !t.startsWith(".")) { targets.add(t); declared.add(t) }
+            }
+          }
+        } else if (n.type === "export_directive") {
+          let li: any = null
+          for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "list") { li = n.namedChild(i); break }
+          if (li) {
+            for (let i = 0; i < li.namedChildCount; i++) {
+              const t = (li.namedChild(i)?.text ?? "").trim().replace(/[?!+:]+$/, "")
+              if (t && !KW.has(t)) { declared.add(t); exported.add(t) }
+            }
+          } else {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const a = n.namedChild(i)
+              if (a?.type !== "variable_assignment" && a?.type !== "shell_assignment") continue
+              const nm = assignName(a)
+              if (nm) { declared.add(nm); exported.add(nm) }
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+      }
+    }
+
+    // ---- phase 2: edges, owner per frame ----
+    const mod = "makefile"
+    type Frame = { n: any; owner: string }
+    const st2: Frame[] = [{ n: root, owner: mod }]
+    while (st2.length) {
+      const { n, owner } = st2.pop()!
+      if (!n) continue
+      if (n.type === "ERROR") continue
+      const line = n.startPosition.row + 1
+      let childOwner = owner
+      if (n.type === "variable_assignment" || n.type === "shell_assignment") {
+        const nm = assignName(n)
+        if (nm) childOwner = nm
+      } else if (n.type === "define_directive") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type !== "word") continue
+          const nm = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+          if (nm) { childOwner = nm; break }
+        }
+      } else if (n.type === "rule") {
+        const lits: string[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const tg = n.namedChild(i)
+          if (tg?.type !== "targets") continue
+          for (let j = 0; j < tg.namedChildCount; j++) {
+            const c = tg.namedChild(j)
+            const t = (c?.text ?? "").trim()
+            if (c?.type === "word" && t && !KW.has(t) && !t.startsWith(".")) lits.push(t)
+            else if (c && (c.type === "variable_reference" || c.type === "substitution_reference" || c.type === "function_call")) {
+              const nm = delims(c.text)
+              if (nm && !allDigits(nm)) push(mod, declared.has(nm) ? "references" : "uses", nm, c.startPosition.row + 1)
+            }
+          }
+        }
+        // every `|`-separated prerequisite group, order-only included
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const pr = n.namedChild(i)
+          if (pr?.type !== "prerequisites") continue
+          for (let j = 0; j < pr.namedChildCount; j++) {
+            const pc = pr.namedChild(j)
+            const nm = delims(pc?.text ?? "")
+            if (!nm || KW.has(nm)) continue
+            for (const t of lits) push(t, declared.has(nm) ? "references" : "uses", nm, pc.startPosition.row + 1)
+          }
+        }
+        if (lits.length) childOwner = lits[0]
+      } else if (n.type === "include_directive") {
+        let li: any = null
+        for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "list") { li = n.namedChild(i); break }
+        const kids: any[] = []
+        if (li) for (let i = 0; i < li.namedChildCount; i++) kids.push(li.namedChild(i))
+        else for (let i = 1; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+        for (const c of kids) {
+          if (!c) continue
+          const t = (c.text ?? "").trim()
+          // A literal path is a `word` and is recorded as itself. A COMPUTED one
+          // (`include $(shell …)`) names no file this parse can know, and the
+          // documented contract is that the EXPRESSION is recorded and flagged
+          // rather than dropped — an unresolved import is a fact, a silently
+          // absent one is not. The wrapper is part of that expression, so the
+          // oracle records the node's own text. Stripping the delimiters here
+          // would model the IMPLEMENTATION instead of the contract, and the two
+          // disagreed on exactly the 1 residual row of 1,997.
+          const target = c.type === "word" ? t : t
+          if (target && !KW.has(target)) push(mod, "imports", target, c.startPosition.row + 1)
+        }
+      } else if (n.type === "variable_reference" || n.type === "substitution_reference") {
+        const par = n.parent ? String(n.parent.type) : ""
+        if (par !== "prerequisites" && par !== "targets" && !(n.text ?? "").startsWith("$$")) {
+          // a SUBSTITUTION names its variable in the first `word` child; the
+          // `:pattern=replacement` tail is the spec, not part of any name
+          let nm = ""
+          if (n.type === "substitution_reference") {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c?.type === "word") { nm = (c.text ?? "").trim(); break }
+            }
+          }
+          if (!nm) nm = delims(n.text)
+          if (nm && !allDigits(nm)) push(owner, declared.has(nm) ? "references" : "uses", nm, line)
+        }
+      } else if (n.type === "automatic_variable") {
+        push(owner, "uses", (n.text ?? "").trim(), line)
+      } else if (n.type === "function_call") {
+        let args: any = null
+        for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "arguments") { args = n.namedChild(i); break }
+        const nameEnd = args ? args.startIndex - n.startIndex : Math.max(0, (n.text ?? "").length - 1)
+        const head = ((n.text ?? "").slice(2, nameEnd).trim().split(/[\s,(]/)[0] ?? "")
+        if (head === "call") {
+          const callee = ((args?.text ?? "").split(",")[0] ?? "").trim()
+          if (callee && !BUILTIN_FN.has(callee) && !allDigits(callee)) push(owner, "calls", callee, line)
+        } else if (head && !BUILTIN_FN.has(head)) {
+          push(owner, declared.has(head) ? "references" : "uses", head, line)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) st2.push({ n: c, owner: childOwner }) }
+    }
+    for (const d of declared) push(mod, "contains", d, 0)
+    for (const t of targets) push(mod, "exports", t, 0)
+    for (const e of exported) push(mod, "exports", e, 0)
+
+    return edges.filter((e, i) => edges.findIndex((x) => x.label === e.label && x.target === e.target) === i)
+  }
   const collect = (x: any, label: string, clsName: string) => {
     if (!x) return
     // DAD3 fix (dart): the flat dart parse (`_i1.SmartFake` -> two adjacent
@@ -13979,7 +14219,13 @@ async function main() {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
         else {
-          if (!cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) continue
+          // A dotted suffix OR an exact filename. Make is the lane that needs
+          // the second form: its files are named `Makefile`/`GNUmakefile` and
+          // carry no extension at all, so a `.ext` rule matches none of them
+          // and the lane reads as EMPTY rather than as unchecked. The form is
+          // additive and opt-in, so no other lane's matching changes.
+          if (!(cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))
+            || (cfg.fileNames ?? []).includes(e.name))) continue
           // A content-routed extension cannot be admitted by name. `h` is C, C++
           // and Objective-C at once: language-detection.ts sniffs
           // @interface/@protocol and hands the file to objective-c. Admitting
@@ -14770,7 +15016,18 @@ async function main() {
           // shape the house precedent suppresses (java and groovy carry explicit
           // builtin filters for println/printf). Adjudication:
           // fixtures/hcl/out/calls-feasibility.json.
-          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          ...(lang === "hcl" ? ["uses"] : []),
+          // M60 Make wave (2026-09-27): all SIX labels the make oracle derives are
+          // comparable, so all six are audited. Partial registration is the #910
+          // failure in its other direction and it read exactly like a broken lane:
+          // with only uses/references/calls listed, the analyzer's 754 `contains`,
+          // 744 `exports` and 2 `imports` edges were filtered off the analyzer side
+          // and reported as 1,498 MISSING — 92 % of the truth — while the analyzer
+          // was in fact emitting 2,109 edges for those 53 files. `exports` is the
+          // one worth stating: it is the only label where the analyzer's module node
+          // is the source, so without it the lane cannot audit the one relationship
+          // that answers "what does this Makefile offer?".
+          ...(lang === "make" ? ["contains", "references", "uses", "imports", "exports", "calls"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
