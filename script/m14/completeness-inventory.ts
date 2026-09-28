@@ -598,7 +598,27 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // the gate NAMES" shape. The cost is not visible in the output: the gate prints
 // nothing for a lane it does not visit, so a lane with 8 section checks and 9
 // fixtures was reading as absent rather than as unchecked.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make"]
+// M14.6 perl reached CONFORMANT on 2026-09-28 and joins the gated set. What
+// qualified it, and why the join is the last step rather than the first:
+//
+//   8 of 8 #419 sections. E and F were red until the sanctioned scoped pin
+//   (`differential.ts --lang perl --pin-baseline`) recorded the `mojo:perl` floor
+//   at 0 missing / 0 unexplained and 26.4 ms/file — mid-pack (rank 37 of 81) with
+//   its load context recorded, so it scores rather than being disclosed unscored.
+//   That flag exists for exactly this case and was built for the HCL lane, whose
+//   problem was identical to this one.
+//
+//   A lane belongs here only when it can FAIL here, so the promotion is also the
+//   point at which perl starts being checked by `npm run verify`. Its own gates
+//   are not the fragile part: `script/m14/tmp/perl-head-gate.sh` checks out HEAD
+//   and re-runs 20 checks there, and has been proven red as well as green (a
+//   committed sabotage of the tier pins and the zero-regex instrument gives exit 1
+//   with five named failures).
+//
+//   `audit:fixtures` and `audit:mutations` are NOT gated by this list — they run
+//   every lane already, so perl's 7 fixtures and 23 mutants were in `verify`
+//   before this line changed.
+const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
