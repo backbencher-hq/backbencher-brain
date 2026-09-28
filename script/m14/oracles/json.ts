@@ -221,7 +221,6 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
     const dot = withoutFragment.lastIndexOf(".")
     if (dot < 0) continue
     if (!DOCUMENT_EXTENSIONS.includes(withoutFragment.slice(dot + 1))) continue
-    if (!withoutFragment.includes("/") && !withoutFragment.startsWith(".")) continue
     edges.push({ label: "imports", from: r.from, target: r.refPath })
   }
 
