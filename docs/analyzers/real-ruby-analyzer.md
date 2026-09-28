@@ -26,11 +26,13 @@ Two consequences worth keeping in this file rather than only in the review:
 1. **The grammar has exactly one call node type.** Every call shape — `foo(1)`, `foo 1`, `foo 1 do … end`
    — is a `call`. `command` and `command_call` are **not** node types the pinned grammar can produce;
    branches on them were dead and have been removed.
-2. **M14.0.F1's `unknown=0` audits 40 of this file's 60 node-type comparisons — and which 40 is decided by
-   spelling.** The audit recognises `x.type === "lit"`, and this file dispatches on a destructured local
-   `type` for its main walk, so 20 comparisons are unread. **Do not cite F1 as proof that a node-type
-   literal in this file is live.** Proof comes from the grammar enumeration and the corpus sweep. Measured
-   by `script/m14/tmp/rb-f1-vacuity-probe.ts`, which reproduces F1's predicate and reports both sets.
+2. **M14.0.F1 now audits ALL 60 of this file's node-type comparisons, and it used to audit 40.** The audit
+   recognised only `x.type === "lit"`, and this file dispatches on a destructured local `type` for its main
+   walk, so 20 comparisons went unread — which is how two dead branches here could cite the audit as proof.
+   Fixed at the oracle: ruby **42 → 60, unknown=0**, with cpp +14 and csharp +14 and **zero new findings
+   across all 32 lanes**. The rule that survives the fix: **proof for a node-type literal in this file comes
+   from the grammar enumeration and the corpus sweep, not from the audit's summary line** — see
+   `script/m14/tmp/rb-f1-vacuity-probe.ts`, which reports both sets.
 
 **No regular expressions.** The analyzer contains **0** regex literals and **0** `new RegExp`; the one
 expression it once had (the superclass-marker strip) is a character scan, and the superclass-name predicate
@@ -74,8 +76,8 @@ The enum has 11 distinct values. This is what the analyzer does with **each** of
 | `overrides` | 0.95 when the base's method is verifiable from local declarations or the project companion index; 0.5 with `reasonCode: "first-parent-guess"` when the base is external and unverifiable. |
 | `references` | `require` / `require_relative` / `load` / `autoload` string paths, source `Global`. |
 | `contains` | one edge per owned symbol, from `ownerName`. |
-| `imports` | **never emitted as a relationship.** `require` / `autoload` push to the `imports: ImportInfo[]` array. This is the family norm (11 of 13 analyzers). |
-| `exports` | **never emitted.** Ruby has no module-level export construct. Also the family norm (10 of 13; of the OO lanes only java emits it, at one site). |
+| `imports` | **never emitted as a relationship — but COVERED, by measurement.** `require` / `autoload` push to the `imports: ImportInfo[]` array, which parallel-indexer writes to the import table the file-dependency engine reads. Measured on the **production path** (`ASTEngine.parseFile`) at `route_set.rb`: **7 requires → 7 `references` edges and 7 import records, one for one.** Emitting an `imports` edge too would put the same facts in the graph a third time under a second label. The `imports` *kind* is a minority construct: 2 of 14 OO-family analyzers. |
+| `exports` | **never emitted, and correctly so.** Ruby has no module-level export construct — every constant and method in a module is public unless `private_constant` / `private` says otherwise — so there is nothing for an `exports` edge to name. Minority construct: 3 of 14, and of the OO lanes only java emits it, at one site. |
 | `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
 
 **Which of those the differential actually audits for ruby:** `extends`, `implements`, `instantiates`,
@@ -121,12 +123,13 @@ single post-pass. No nested symbol/relationship scan is used for ordinary extrac
   `metadata.classAndGlobalVarsSkipped`.
 - **`def` inside a method body declares no symbol.** `walkBody` walks nested defs' bodies for calls but
   does not declare them, because Ruby defines them when the outer method runs.
-- **A bare write target in a multiple assignment is published as a read.** `@a, @b = 1, 2` parses with the
-  ivars under a `left_assignment_list`, so the write-guard's `parent is assignment` test is false and each
-  target emits a `uses` read. Compound assignment (`@n ||= v`) *is* handled under SCD1, so the gap is the
-  multiple form only. **66 edges in 23 files across 1,200 sampled.** Deliberately unfixed: the read
-  oracle derives the same reads as truth, and fixing the analyzer alone would turn two of them into F5
-  `MISSING` for a strictly-more-correct change — see the review, §3.5.
+- **A bare write target in a multiple assignment was published as a read — FIXED.** `@a, @b = 1, 2` parses
+  with the ivars under a `left_assignment_list`, so the old guard's `parent is assignment` test was false and
+  each target emitted a `uses` read. **66 edges in 23 files across 1,200 sampled → 0.** Compound assignment
+  (`@n ||= v`) was already handled under SCD1, so the gap was the multiple form only. The rule now lives in
+  one exported predicate, `isRubyInstanceVariableWrite`, which the read oracle **imports** rather than
+  re-deriving. The oracle mirror is staged as a patch (review §14), and until it lands the differential
+  scores this strictly-more-correct analyzer as a regression — disclosed, with the affected files enumerated.
 - **`element_reference` targets spell as `[]`.** `params[:tag]` emits `calls:[]`, a target that names no
   resolvable method. Flagged, not ruled.
 - **`module_function` copies are not modelled.** Instance-to-module copies are beyond static scope.

@@ -176,6 +176,70 @@ export const RUBY_BUILTINS = new Set([
  * and the differential oracle share ONE source of truth — a duplicated
  * regex literal previously drifted into junk targets on the oracle side.
  */
+/**
+ * Is this instance_variable node a WRITE target rather than a READ?
+ *
+ * RUBD1/RUBD5/SCD1 already say the answer for the single-target forms: both
+ * `assignment` (@x = v) and `operator_assignment` (@x += / -= / ||= v) put a
+ * write on the left, and the family contract gates compound assignment too. The
+ * MULTIPLE form escaped, and it escaped on BOTH sides of the differential — the
+ * analyzer and the oracle carry the same two-line predicate — so the read
+ * oracle agreed with the analyzer and the lane measured 100%/0% while false
+ * edges sat in the payload.
+ *
+ * `@height, @width = h, w` parses as
+ *
+ *   assignment
+ *     left_assignment_list      <- the two instance_variables: WRITES
+ *     right_assignment_list     <- `h, w`: the values
+ *
+ * so a write target's parent is the LIST, never the `assignment`, and a test
+ * that requires `parent.type === "assignment"` is simply false for it.
+ *
+ * Two shapes must NOT be swept in with it, and the reason is that they genuinely
+ * READ: you cannot assign through a receiver without reading it.
+ *
+ *   @cfg.limit = x      left is a `call`;            @cfg is read
+ *   @list[i] = v        left is an `element_reference`; @list is read
+ *
+ * A first draft of the fix took "anything in the LHS subtree" and reported 426
+ * false reads on the rails stride — 7x the true count, because it caught those
+ * two. See reviews/ruby/m60-deep-round.md §9a.
+ *
+ * Measured once fixed: rails 59, rubocop 3, mastodon 4 — 66 edges in 23 files
+ * per 1,200 sampled.
+ */
+export function isRubyInstanceVariableWrite(node: Node): boolean {
+  const parent = node.parent
+  if (!parent) return false
+
+  // FORM 1 — the node IS the assignment's `left`: `@x = v`, `@x += v`.
+  if (parent.type === "assignment" || parent.type === "operator_assignment") {
+    const left = parent.childForFieldName("left")
+    if (!left || left.id !== node.id) return false
+    // A receiver is READ even when the assignment writes through it, so
+    // `@cfg.limit = x` and `@list[i] = v` must stay reads.
+    return left.type !== "call" && left.type !== "element_reference"
+  }
+
+  // FORM 2 — the node is a BARE target inside the `left` LIST of a multiple
+  // assignment: `@a, @b = …`, `@a, * = …`. The list is `assignment.left`, and
+  // a list has no `left` field of its own, so the check has to go UP one level
+  // and confirm the list really is the target side.
+  if (parent.type === "left_assignment_list") {
+    const grand = parent.parent
+    if (!grand || (grand.type !== "assignment" && grand.type !== "operator_assignment")) return false
+    const left = grand.childForFieldName("left")
+    if (!left || left.id !== parent.id) return false
+    for (let i = 0; i < parent.namedChildCount; i++) {
+      const c = parent.namedChild(i)
+      if (c && c.id === node.id) return c.type !== "call" && c.type !== "element_reference"
+    }
+  }
+
+  return false
+}
+
 export function isRubyStaticSuperclassName(text: string): boolean {
   if (!text) return false
   const t = text.trim()
@@ -778,10 +842,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // use, so analyzer and truth stay in parity on spec/DSL-heavy corpora
       // (rack wave: @content_type/@app reads in minitest specs).
       if (type === "instance_variable") {
-        const parentType = node.parent?.type
-        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
-          node.parent?.childForFieldName("left")?.id === node.id
-        if (!isLhsOfAssign) {
+        if (!isRubyInstanceVariableWrite(node)) {
           relationships.push({
             source: owner || FILE_SCOPE_OWNER,
             target: node.text,
@@ -1258,10 +1319,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // mentions, matching every other family member.
       // tree-sitter-ruby node type is `instance_variable`.
       if (type === "instance_variable") {
-        const parentType = n.parent?.type
-        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
-          n.parent?.childForFieldName("left")?.id === n.id
-        if (!isLhsOfAssign) {
+        if (!isRubyInstanceVariableWrite(n)) {
           const src = enclosingMethod || owner || FILE_SCOPE_OWNER
           relationships.push({
             source: src,
