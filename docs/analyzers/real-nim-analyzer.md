@@ -343,58 +343,112 @@ comparable across grammar versions.
 Two things this evidence does **not** cover, stated so they are not read as
 covered: cross-file method overrides, and the do-pragma grammar gap below.
 
-## Complexity envelope
+## Performance
+
+Two tools, and the second one exists because the first could not be trusted on
+its own.
+
+`script/m12/nim-perf-profile.ts` attributes cost *within* the analyzer per phase.
+It exists because a CPU profile is not a budget: sampling attributes
+tree-sitter's WASM work to `(idle)`, and a profile of this analyzer reported
+**"94% idle, 0.00s in real-nim-analyzer"** while the analyzer was in fact **82% of
+wall time**. The measured split is parse ~22% / analyze ~78%.
+
+`script/m12/nim-perf-ab.mts` compares two analyzer versions in one process,
+interleaved, each one's **minimum** over repeated trials, and compares their
+outputs field by field. Both halves are load-bearing. On this box the same
+200-file sample read 91.5 and 91.1 ms/file back to back and the per-phase
+distribution swung from 28.9% to 20.3% with no code change in between — the
+machine's noise is larger than the effects available, so "it got faster" is
+unfalsifiable unless the comparison cannot see the noise. And the output diff is
+what makes an optimization safe to land: a change that moves one symbol kind, one
+relationship type, target, line or confidence fails in the harness rather than in
+a fixture three commits later.
+
+### Where the time went, and what it cost to fix
+
+The analyzer ran **seven independent full-tree walks**. The cost was never one
+slow function — it was paying the JS↔WASM boundary on the same nodes seven times:
+
+| Walk | Share before |
+| --- | --- |
+| `collectCallsAndUses` | 20–29% |
+| `collectDeclarations` | 15–20% |
+| `collectModules` | 8–19% |
+| `nimCyclomaticComplexity` | 4–19% |
+| `collectDeclaredTypeRefs` | 7–16% |
+| `collectInstantiations` | 8–9% |
+| `collectDocComments` | 5–9% |
+| *containment / inheritance / overrides (symbol table, not tree)* | **0.04%** |
+
+Fusing them to **four** — the three symbol-table passes were already free — gives
+**1.618x, 35.8 → 22.1 ms/file, 544 symbols/s** measured end to end, with
+**byte-identical output** at every step.
+
+Two optimizations were **measured and rejected**, which is the more useful half of
+this record:
+
+- **Memoizing the cyclomatic counter** in one post-order pass keyed by node id,
+  replacing N+1 subtree walks with 1: **23.7% SLOWER**. A `Map` with one entry per
+  node per file costs more than re-walking the handful of nodes inside a small
+  callable body. It also nearly shipped a wrong answer — descending into
+  *anonymous* children double-counts every branch, because an anonymous keyword
+  token carries the same type string as the statement that owns it, which an
+  equivalence check caught on 6,730 of 209,114 nodes.
+- **Fusing the declared-type pass inline** rather than as a hoisted handler:
+  **5.5% SLOWER**, byte-identical output, because `ownerOf` and the recursive
+  `collectFromTypeExpression` were rebuilt on every node visit instead of once per
+  file.
+
+Both point the same way, and it is the design rule for the whole walk: **one
+stack, one local counter, closures built once, and nothing allocated per node.**
+The win is fewer node *visits*; per-node allocation of any kind costs more than
+the traversal it rides on.
+
+### Complexity envelope
 
 `script/m12/nim-corpus-measure.ts`, artifact
 `validation/m12/results/nim-corpus-complexity.json`. Two numbers are deliberately
-kept apart, because they are different claims and the artifact records which one
+kept apart because they are different claims, and the artifact records which one
 it is making as `measurementPath`:
 
 - **`direct-single-parser`** (the recorded run): 5,056 tracked `.nim`/`.nims`
-  files, one parser in one process. 91,079 symbols, 203,410 relationships,
-  620.7 s wall (229.2 s user CPU), **147 symbols/s, 328 relationships/s, 8.15
-  files/s**. Yield: 18.0 symbols and 40.2 relationships per file.
-- **`production-pool-worker`**: the route the indexer itself takes. It is a
-  separate claim and the run is not recorded in this artifact — the pool stalls
-  at worker startup on a machine where other work is in flight, and a stalled
-  pool writes no artifact at all, which reads as "never ran" rather than as
-  "died". Run it on a quiet machine; the script supports it as the default.
+  files, one parser in one process. 91,079 symbols, 203,410 relationships.
+  Yield: 18.0 symbols and 40.2 relationships per file.
+- **`production-pool-worker`**: the route the indexer itself takes. A separate
+  claim, and the run is not recorded in this artifact — the pool stalls at worker
+  startup on a machine where other work is in flight, and a stalled pool writes no
+  artifact at all, which reads as "never ran" rather than as "died". Run it on a
+  quiet machine; the script supports it as the default.
 
 Relationship mix over the corpus: `calls` 87,244, `references` 44,545, `uses`
-34,937, `contains` 21,784, `imports` 12,090, `instantiates` 2,085, `extends`
-657, `overrides` 68. Symbol mix: `function` 31,816, `property` 13,836,
-`variable` 13,213, `constant` 9,639, `enum_member` 8,471, `struct` 4,284,
-`macro` 3,792, `type` 2,881, `method` 989.
+34,937, `contains` 21,784, `imports` 12,090, `instantiates` 2,085, `extends` 657,
+`overrides` 68. Symbol mix: `function` 31,816, `property` 13,836, `variable`
+13,213, `constant` 9,639, `enum_member` 8,471, `struct` 4,284, `macro` 3,792,
+`type` 2,881, `method` 989.
 
-Cyclomatic complexity is the analyzer's own per-symbol measure. Mean across
-files 1.82; max 1,460, and the worst files are named rather than left as an
-average — `htmlparser.nim` 1,460 (per-file mean 11.89), `vm.nim` 747,
-`sigmatch.nim` 542, `commands.nim` 327, `renderer.nim` 313. A corpus mean of
-1.82 with a max of 1,460 is the reason the artifact carries the worst-file list:
-an average over mostly-small files hides the fact that one proc scored 1,460.
+Cyclomatic complexity is the analyzer's own per-symbol measure: mean 1.82 across
+files, max 1,460, and the worst files are named rather than left as an average —
+`htmlparser.nim` 1,460, `vm.nim` 747, `sigmatch.nim` 542. A mean of 1.82 with a
+max of 1,460 is why the artifact carries the list: an average over mostly-small
+files hides the fact that one proc scored 1,460.
 
 ### Two records that do not fully agree, and why that is stated
-
-The parse record and the complexity record measure **different file sets through
-different paths**, and they are not interchangeable:
 
 | Record | Path | Files | Symbols | Relationships |
 | --- | --- | --- | --- | --- |
 | `nim-corpus-errors.json` | production pool-worker | 5,227 (incl. 171 `.nimble`) | 91,011 | 202,256 |
 | `nim-corpus-complexity.json` | direct single parser | 5,056 (`.nim`/`.nims`) | 91,079 | 203,410 |
 
-The file-set difference is measured, not assumed: the 171 tracked `.nimble`
-files were run through the direct path on their own and contribute **26 symbols
-and 315 relationships**. So 5,056 + 171 files on one path would be 91,105 /
-203,725, and the pool-worker record is still **94 symbols and 1,469
-relationships lower**. The residue is therefore a *path* difference — the engine
-route post-processes the analyzer's output before it is counted (it drops
-relationships that do not resolve, which is the same rule the seam gate asserts)
-— and it is recorded here as an open reconciliation item rather than smoothed
-into a single number. `.nimble` is excluded from the complexity artifact on
-purpose: it is not routed to this analyzer (decision NIMD4), so measuring it
-inside the NIM complexity envelope would report coverage the router does not
-have.
+The file-set difference is measured, not assumed: the 171 tracked `.nimble` files
+were run through the direct path alone and contribute **26 symbols and 315
+relationships**. The residue is therefore a *path* difference — the engine route
+post-processes the analyzer's output before counting (it drops relationships that
+do not resolve, the same rule the seam gate asserts) — and it is recorded as an
+open reconciliation item rather than smoothed into one number. `.nimble` is
+excluded from the complexity artifact on purpose: it is not routed to this
+analyzer (decision NIMD4), so measuring it inside the NIM envelope would report
+coverage the router does not have.
 
 ## Honest limitations
 

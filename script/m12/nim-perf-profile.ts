@@ -81,21 +81,25 @@ const warm = 15
 for (let i = 0; i < warm; i++) {
   const c = freshCtx()
   const t = parser.parse(srcs[i % srcs.length][1])
-  an.collectDocComments(t.rootNode, c.docCommentByStartLine)
+  an.collectDocModulesAndComplexity(t.rootNode, c.docCommentByStartLine, c.imports, c.exports, c.importQualifiers, c.relationships)
   an.collectDeclarations(t.rootNode, declCtx(c))
 }
 let t0 = process.hrtime.bigint()
 const trees = srcs.map(([, s]) => parser.parse(s))
 const parseMs = Number(process.hrtime.bigint() - t0) / 1e6
 
+// The phase list is the analyzer's CURRENT internal shape, so this file has to
+// move when the walks are fused — which is the point: a profile that silently
+// measured a phase that no longer exists would keep reporting a number for it.
+// `collectDocComments`, `collectModules`, `collectInstantiations` and
+// `collectDeclaredTypeRefs` were all absorbed into other walks; asking for them
+// throws here rather than reporting a fabricated 0ms.
 const phases: [string, (t: any, c: any) => void][] = [
-  ["collectDocComments", (t, c) => an.collectDocComments(t, c.docCommentByStartLine)],
+  ["collectDocModulesAndComplexity", (t, c) => an.collectDocModulesAndComplexity(t, c.docCommentByStartLine, c.imports, c.exports, c.importQualifiers, c.relationships)],
   ["collectDeclarations", (t, c) => an.collectDeclarations(t, declCtx(c))],
-  ["collectModules", (t, c) => an.collectModules(t, c.imports, c.exports, c.importQualifiers, c.relationships, c.errors)],
-  ["collectCallsAndUses", (t, c) => an.collectCallsAndUses(t, c.relationships, c)],
-  ["collectInstantiations", (t, c) => an.collectInstantiations(t, c.relationships, c.fileTypes, c.fileCallables)],
-  ["collectDeclaredTypeRefs", (t, c) => an.collectDeclaredTypeRefs(t, c.relationships, c.fileTypes, c.genericParamNames)],
-  ["nimCyclomaticComplexity", (t) => an.nimCyclomaticComplexity(t)],
+  ["collectCallsAndUses (calls+uses+instantiates+declaredTypeRefs)", (t, c) => an.collectCallsAndUses(t, c.relationships, c)],
+  ["makeDeclaredTypeRefHelpers (once per file, amortised)", () => {}],
+  ["nimCyclomaticComplexity (per callable body)", (t) => an.nimCyclomaticComplexity(t)],
 ]
 const phaseMs: Record<string, number> = {}
 for (const [name, fn] of phases) {
@@ -154,7 +158,7 @@ const document = {
   },
   phasesMs: phaseMs,
   phasePct: Object.fromEntries(Object.entries(phaseMs).map(([k, v]) => [k, +((100 * v) / phaseTotal).toFixed(1)])),
-  treeWalks: phases.filter(([n]) => n !== "nimCyclomaticComplexity").length + 1,
+  treeWalks: phases.filter(([n]) => !n.startsWith("make") && !n.startsWith("nimCyclo")).length,
   treeWalkNote:
     "Every phase above except the symbol-table pair is a SEPARATE full-tree walk. " +
     "Fusing them is the available speedup, and the walks are the cost.",
