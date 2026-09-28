@@ -10943,8 +10943,8 @@ export const MUTANTS: Mutant[] = [
     id: "nim/destructuring-binding-not-shadowed",
     language: "nim",
     defectClass: "scope-blindness",
-    description: "A destructuring binding never enters its scope frame, so a later read of that name is attributed to a same-named field elsewhere in the file. `let (_, name, _) = splitFile(f)` is a tuple_deconstruct_declaration WRAPPING its bindings, and the pre-fix binder took only children typed symbol_declaration, so the whole node was skipped. Measured on pixie: `name` was unbound, and the read at `images.add((name, image))` was published as `uses renderEmojiSet -> name`, pointing at a struct property declared 26 lines earlier and unrelated to the binding. Caught by nim/contract's forbidRelationships {uses, target: fileStem} plus its expectSymbols {fileStem, property}.",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "build", target: "fileStem", confidence: 1, line_number: 42, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+    description: "A destructuring binding never enters its scope frame, so a later read of that name is attributed to a same-named field elsewhere in the file. `let (_, name, _) = splitFile(f)` is a tuple_deconstruct_declaration WRAPPING its bindings, and the pre-fix binder took only children typed symbol_declaration, so the whole node was skipped. Measured on pixie: `name` was unbound, and the read at `images.add((name, image))` was published as `uses renderEmojiSet -> name`, pointing at a struct property declared 26 lines earlier and unrelated to the binding. Caught by nim/contract's forbidRelationships {uses, from: stemOf, target: fileStem}, which is only a real assertion because the paired expectSymbols {fileStem, property} pins that the field exists — otherwise a fix that deleted the field would satisfy the forbid vacuously.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "stemOf", target: "fileStem", confidence: 1, line_number: 88, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
   },
   {
     id: "nim/callee-counted-twice",
@@ -10957,8 +10957,8 @@ export const MUTANTS: Mutant[] = [
     id: "nim/assignment-target-read",
     language: "nim",
     defectClass: "relationship-fabrication",
-    description: "The left side of an assignment is published as a value read. `counter = counter + 1` would then carry two `uses` edges to `counter` where the language has one read and one write. Caught by nim/contract's forbidRelationships {uses, from: exercise, target: counter} — the pin has to be on the SOURCE because the legitimate read of `counter` on the right-hand side keeps the edge alive otherwise.",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "counterSetter", target: "counter", confidence: 1, line_number: 94, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
+    description: "The left side of an assignment is published as a value read. `written = b.parts.len` would then carry a `uses build -> written` edge where the language has one write and one read of something else. Caught by nim/contract's forbidRelationships {uses, from: build, target: written} — the pin has to be on the SOURCE because a target-only pin would also forbid the legitimate reads of `written` elsewhere in the file.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "build", target: "written", confidence: 1, line_number: 79, metadata: { relationshipType: "nim_identifier_usage", evidenceClass: "usage_contextual" } }] }),
   },
   {
     id: "nim/builtin-call-emitted",
