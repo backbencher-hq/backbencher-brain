@@ -15570,7 +15570,11 @@ async function main() {
         // makes a MATCH mean something. The module name is the file's basename
         // WITHOUT its extension, which is JSON's identity and differs from bash's.
         const jsonModule = (relPath.split("/").pop() ?? "document.json").replace(/\.[^.]+$/, "")
-        for (const e of deriveJsonEdges(root, jsonModule)) {
+        // A manifest is identified by its FILENAME. Any JSON with a `dependencies`
+        // key would otherwise acquire npm semantics it does not have, and the
+        // analyzer gates its dependency edges on the same two names.
+        const isManifest = /(^|\/)(package|composer)\.json$/.test(relPath)
+        for (const e of deriveJsonEdges(root, jsonModule, { manifest: isManifest })) {
           ;(truth as any[]).push(e)
         }
       }
@@ -17116,10 +17120,18 @@ export function derivePowershellEdges(root: any, moduleName: string): { label: s
  * the F5 harness. Module name is the file's basename WITHOUT its extension, which is
  * what the analyzer emits and what the contract probe pins.
  */
-export function deriveJsonEdges(root: any, scriptName: string): { label: string; from: string; target: string }[] {
+export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest?: boolean }): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
+  // An npm manifest declares, under these four keys, a map of package name to
+  // version RANGE. Each entry is a genuine `uses` relationship: the manifest uses
+  // that package. Encoded here from the npm manifest format rather than from the
+  // analyzer's `isDependencyContainerPath`, so the two agreeing means something —
+  // they are the same four keys because the FORMAT names those four, not because
+  // the analyzer did.
+  const MANIFEST_DEPENDENCY_KEYS = new Set(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
   const pathToName = new Map<string, string>()
   const refs: { from: string; refPath: string }[] = []
+  const deps: { from: string; name: string }[] = []
 
   const keyText = (pair: any): string | null => {
     const k = pair.childForFieldName?.("key")
@@ -17144,7 +17156,27 @@ export function deriveJsonEdges(root: any, scriptName: string): { label: string;
   // Pass 1 — walk, recording CONTAINMENT and every path at which a name is declared,
   // plus every `$ref` with the path it was written at.
   const walk = (node: any, parentPath: string, parentName: string): void => {
-    if (isArray(node)) return // an array is a LEAF: its elements are positional and unnamed
+    if (isArray(node)) {
+      // An array's SCALAR elements are leaves — positional, unnamed, nothing to
+      // contain. But an array of OBJECTS carries real containment, and this oracle's
+      // first version returned early for every array, which is how 18,283
+      // analyzer edges came to read as fabrications when the truth simply had not
+      // modelled them. Being wrong in the oracle's direction is still wrong: it
+      // would have convicted correct edges, which is the one failure a differential
+      // must never produce.
+      const items = (node.namedChildren ?? []).filter((c: any) => c.type !== "[")
+      items.forEach((item: any, i: number) => {
+        if (!isObject(item)) return // a scalar element has no named children
+        const itemPath = `${parentPath}[${i}]`
+        const lastDot = parentPath.lastIndexOf(".")
+        const itemName = `${itemPath.slice(lastDot + 1)}`
+        if (parentName) edges.push({ label: "contains", from: parentName, target: itemName })
+        pathToName.set(itemPath, itemName)
+        walk(item, itemPath, itemName)
+      })
+      return
+    }
+
     if (!isObject(node)) return
     const pairs = (node.namedChildren ?? []).filter((c: any) => c.type === "pair")
     for (const pair of pairs) {
@@ -17158,6 +17190,12 @@ export function deriveJsonEdges(root: any, scriptName: string): { label: string;
       // probe caught.
       if (parentName) edges.push({ label: "contains", from: parentName, target: key })
       pathToName.set(here, key)
+      if (opts?.manifest && MANIFEST_DEPENDENCY_KEYS.has(key) && isObject(value)) {
+        for (const dep of (value.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
+          const depKey = keyText(dep)
+          if (depKey) deps.push({ from: scriptName, name: depKey })
+        }
+      }
       if (key === "$ref" && value.type === "string") {
         refs.push({ from: here, refPath: unquote(value) })
       } else if (isObject(value) || isArray(value)) {
@@ -17169,6 +17207,24 @@ export function deriveJsonEdges(root: any, scriptName: string): { label: string;
   const doc = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
   if (doc) walk(doc, scriptName, scriptName)
 
+  // The document's top level may be an OBJECT or an ARRAY, and an earlier version of
+  // this oracle only handled the object — so all 1,380 array-rooted files returned
+  // zero truth edges and every analyzer edge on them read as a fabrication.
+  // terraform's `apply.json` equivalence outputs are arrays at the top level, which
+  // is how it surfaced: the analyzer emitted 65 correct `contains` edges on a file
+  // where the oracle had nothing to say. A differential that is SILENT is worse than
+  // one that is wrong, because silence reads as corroboration.
+  //
+  // This invocation was also deleted by accident while the manifest rule above was
+  // being added — a `replace` whose anchor spanned it — and the symptom was
+  // WORSE NUMBERS (files-with-truth 2,201 -> 1,884), which read like an analyzer
+  // regression rather than a broken instrument. An instrument that fails by being
+  // absent is the hardest kind of failure to notice and the easiest to misattribute.
+  const topLevel =
+    (root?.namedChildren ?? []).find((c: any) => c.type === "object" || c.type === "array") ??
+    (root?.type === "object" || root?.type === "array" ? root : null)
+  if (topLevel) walk(topLevel, scriptName, scriptName)
+
   // Pass 2 — resolve each `$ref` against the index Pass 1 built. A local ref
   // (`#/a/b`) is a JSON Pointer from the document root; anything else is external
   // and has no target in this file, so it is left for the analyzer to label.
@@ -17178,6 +17234,9 @@ export function deriveJsonEdges(root: any, scriptName: string): { label: string;
     const target = pathToName.get(pointer)
     if (target !== undefined) edges.push({ label: "references", from: r.from, target })
   }
+
+  // The manifest's dependencies are `uses`, sourced by the file's own module.
+  for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
 
   return edges
 }
