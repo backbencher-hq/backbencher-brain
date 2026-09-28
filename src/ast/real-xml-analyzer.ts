@@ -380,7 +380,29 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `xml/dtd-declarations` pins `contains catalog -> catalog` and
       // `xml/conditional-section` pins it again at a different line, so a rule
       // that reads as a blanket invariant and is not one is now caught by a gate.
-      if (type === ASTEngine.RelationshipType.References || type === ASTEngine.RelationshipType.Imports) {
+      //
+      // The self-loop guard, and it applies to REFERENCES ONLY.
+      //
+      // It was `References || Imports`, on the reasoning that a thing cannot
+      // reference or import itself. That is sound for a reference — a
+      // declaration naming itself is a cycle in the document, not a link — and
+      // unsound for an import, because the two ends of an `imports` edge are
+      // DIFFERENT KINDS OF THING: `source` is a symbol name and `target` is a
+      // path read out of a SYSTEM identifier. When the two strings coincide they
+      // still denote a symbol and a file, and the file is real.
+      //
+      // `<!ENTITY emc2.gif SYSTEM "emc2.gif" NDATA GIF>` names a file called
+      // `emc2.gif`. The guard dropped the edge, and dropped it ASYMMETRICALLY:
+      // `extractExternalId` had already pushed the `ImportInfo` a few lines
+      // earlier, so the file was present in `imports` and absent from the
+      // relationship graph — the analyzer contradicting itself inside one call.
+      // 46 such edges in the corpus, 4 of them entity external ids and the rest
+      // notation external ids (`<!NOTATION GIF SYSTEM "GIF">`).
+      //
+      // Nothing is lost by dropping the guard from `imports`: there is no
+      // "meaningless self-import" for it to prevent, since a file that is named
+      // after the declaration that names it is still a second thing.
+      if (type === ASTEngine.RelationshipType.References) {
         if (source === target) return
       }
       const key = `${source}\u0000${type}\u0000${target}`
