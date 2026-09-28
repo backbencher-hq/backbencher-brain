@@ -50,10 +50,20 @@ Every relationship carries `metadata.evidenceClass`. Fixtures pin three:
 ## Error recovery — measured, not inherited
 
 Svelte's grammar is **ERROR- and MISSING-live on the real corpus**, and that is
-why both types are classified `handled_verified` rather than silent. Over **410
-sampled files of the 6,143-file corpus, 10 files (2.44%)** carry recovery nodes:
-**55 ERROR** and **5 MISSING**, every MISSING being the grammar's expected `>` tag
-terminator. Eight of twelve deliberately malformed documents also produce ERROR.
+why both types are classified `handled_verified` rather than silent. Measured across the **full 6,143-file corpus: 131 files (2.13%)** carry
+recovery nodes — **1,002 ERROR** and **17 MISSING**, every MISSING being the
+grammar's expected `>` tag terminator. Eight of twelve deliberately malformed
+documents also produce ERROR.
+
+An earlier version of this page said **410 sampled files, 10 files, 55 ERROR,
+5 MISSING**. The *ruling* never depended on magnitude — it needed only "does
+this occur" — so it stands. But the number was wrong by **~18x**: the sample was
+representative of how *often* a file has a recovery node and wildly
+unrepresentative of how *many* it has, because files with many errors were
+undersampled. This is the same error the toml lane had made hours earlier, and
+the generalisation is worth keeping: **a sample can be representative of
+frequency and still useless for magnitude, and any ruling that turns on "never
+happens" must be measured on the whole population, not on a rotation.**
 
 This is where the html and toml precedent points the *other* way — html ruled
 MISSING silent after twelve malformed documents produced none, and toml ruled both
@@ -168,6 +178,7 @@ would make the gate permanently red on a defect this lane does not own.
 | M12 hand-audited truth | **precision 1.000, recall 1.000** (81 facts, FP=0, FN=0) |
 | SPEC A–H | **8/8** — 76 types classified, gap list 16 CLOSED + 1 open cross-lane |
 | Regex census | **0** |
+| Performance | **17.7 ms/file · 37.5 ms/KiB** — see the gap below; the pinned baseline disagrees |
 | PIPE store seam | 11 assertions against the real `brain.db` |
 
 **Corpus:** 6,143 `.svelte` files — 4,462 in `svelte` and 1,681 in `shadcn-svelte`,
@@ -310,6 +321,40 @@ mid-edit with syntax errors, and svelte delegates its scripts to it, so the dept
 run cannot complete until that lands. Reporting 100% here would mean quietly
 excluding the one disagreement that exists.
 
+## Performance — measured here for the first time
+
+The lane had **no cost row at all**, and taking one on the production path
+(`ASTEngine.parseFile`, so the script sub-parse and every seam are included)
+disagreed with the pinned baseline by **2.5× to 4.7×**:
+
+| corpus | measured | pinned baseline |
+|---|---|---|
+| `svelte` | 16.81 ms/file · 84.29 ms/KiB | **3.6** |
+| `shadcn-svelte` | 42.10 ms/file · 27.99 ms/KiB | **16.7** |
+
+**The two populations are very different.** svelte's own repo is mostly files under
+0.5 KiB, where a large *fixed* cost dominates and ms/KiB looks terrible;
+shadcn's files are larger and amortise it. A single mixed figure (37.54 ms/KiB over
+410 files) is therefore less informative than the split.
+
+**Within a population the cost is linear in size** — ms/KiB falls monotonically as
+files grow (65.5 → 38.9 → 24.2 → 19.2 → 12.7), which is the signature of a constant
+overhead rather than superlinearity.
+
+**The gap cannot be explained from the artefact.** Both baseline rows record
+`avgMsPerFile` and **no method**, no `filesMeasured`, no load figure. toml's rows
+record all three. So the file cannot say whether it was measured on the production
+path, on the analyzer alone, or on an earlier build. **The html lane fell into this
+exact trap once** — 1.4 ms/KiB was measured calling the analyzer directly, omitting
+the inline-block seam and its JS sub-parse, and the real figure was 4.7–5.3. A 4.7×
+understatement has the same shape, and html's fix was to record the *method* so the
+number can be read.
+
+**Not rewritten here, deliberately.** `differential-baseline.json` is canonical
+evidence written by the canonical sweep; overwriting a pinned baseline from a scoped
+run would replace a claim with a smaller one — the rule the differential itself
+enforces when it refuses to write `M14.0.F5` from a probe. Recorded as gap `X5`.
+
 ## Not closed
 
 - The canonical F5 ceremony has not run at a stable tree, so
@@ -320,5 +365,7 @@ excluding the one disagreement that exists.
   oracle; and `X4` above, owned by the svelte oracle — the reserved-namespace
   condition, one condition wide. Both are recorded with the fix specified rather than applied,
   because both live in files under active parallel edit.
+- `X5` above: the perf baseline is unreconciled, so SPEC section F's green rests on a
+  number this lane cannot reproduce. The canonical sweep must record a method.
 - The **2 unexplained** rows from the depth run, and any further depth rotation,
-  are blocked on a stable tree — not on anything in this lane.
+  need a stable tree — not on anything in this lane.
