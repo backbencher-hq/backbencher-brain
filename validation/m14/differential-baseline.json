@@ -1,6 +1,6 @@
 {
   "samplePerLang": 60,
-  "samplePerLangOfThisPin": 40,
+  "samplePerLangOfThisPin": 60,
   "counts": {
     "java": {
       "missing": 0,
@@ -1476,11 +1476,11 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 0.7,
-        "maxMsPerFile": 16.2,
+        "avgMsPerFile": 1.7,
+        "maxMsPerFile": 6.3,
         "samplesTimed": 53,
         "loadAvgRetried": true,
-        "loadAvg1": 39.88
+        "loadAvg1": 31.56
       },
       "sampleSetHash": "00ec53d40fe79068"
     },
@@ -1489,11 +1489,11 @@
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 27.1,
-        "maxMsPerFile": 82.8,
+        "avgMsPerFile": 4.9,
+        "maxMsPerFile": 78.5,
         "samplesTimed": 5,
         "loadAvgRetried": true,
-        "loadAvg1": 42.65
+        "loadAvg1": 31.55
       },
       "sampleSetHash": "abac0ebd75471c84"
     },
@@ -1509,6 +1509,32 @@
         "loadAvg1": 22.53
       },
       "sampleSetHash": "ca66a7bb0706a21a"
+    },
+    "mojo:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 26.4,
+        "maxMsPerFile": 3759.9,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 38.81
+      },
+      "sampleSetHash": "da4a4167f2b51e42"
+    },
+    "plack:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 7.2,
+        "maxMsPerFile": 216.5,
+        "samplesTimed": 60,
+        "loadAvgRetried": true,
+        "loadAvg1": 41.52
+      },
+      "sampleSetHash": "2503e48eb336f10f"
     }
   },
   "hashes": {
@@ -1564,9 +1590,11 @@
     "tf-aws-components:hcl": "7c80eed7b9f98324",
     "tf-aws-components:make": "00ec53d40fe79068",
     "consul:make": "abac0ebd75471c84",
-    "grails-core:xml": "ca66a7bb0706a21a"
+    "grails-core:xml": "ca66a7bb0706a21a",
+    "mojo:perl": "da4a4167f2b51e42",
+    "plack:perl": "2503e48eb336f10f"
   },
   "pinProvenance": {
-    "scoped run (--pin-baseline)": "2026-09-28T09:33:51.215Z"
+    "scoped run (--pin-baseline)": "2026-09-28T18:58:31.203Z"
   }
 }
