@@ -1,0 +1,62 @@
+{
+  "issue": "M55.T3",
+  "code": "T3",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 52,
+  "passed": 52,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 3,
+  "mutants": {
+    "total": 3,
+    "caught": 3
+  },
+  "currentCommit": "c53a90abfc4d4042c3e8d260168f8fbdec274b3b",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-relations.ts",
+  "evidenceFile": "T3.json",
+  "generatedAt": "2026-09-19T02:54:03.575Z",
+  "fixture": {
+    "workspace": "/tmp/m55-t3-ws-79bzNK",
+    "projectId": "3a25404dc80611745f7c76bdd878593dcf1d7b77",
+    "symbols": 7,
+    "rows": 12,
+    "expect": {
+      "greet": [
+        "main",
+        "describe",
+        "greetAll"
+      ],
+      "greetAll": [],
+      "greeter": [
+        "main",
+        "describe"
+      ]
+    }
+  },
+  "observed": {
+    "greetUsageCount": 3,
+    "greetRenderedRows": [
+      "main@app.ts:4",
+      "describe@report.ts:4",
+      "greetAll@greeter.ts:14"
+    ],
+    "greetSqlCount": 3,
+    "greetAllUsageCount": 0,
+    "greeterUsageCount": 2,
+    "referencesNoDecl": 3,
+    "referencesWithDecl": 4
+  },
+  "failures": [],
+  "limitations": [
+    "The analyzers of the confirmatory languages store line_number = 0 for call rows (verified on the demo index: every TypeScript/Java usage row carries 0), so a usage row's file:line is the REFERENCING symbol's indexed location — where the call is — and the rendered copy says so. Invocation-column precision needs the analyzers to store call-site lines; the gate asserts the stored-line case only if the index carries one (it does not today).",
+    "The wire legs run the real dist server against a real seeded index in an isolated BB_DATA_DIR; a stale dist is rebuilt first (lsp-wire.ts), never silently used.",
+    "bb/graph declares its own traversal profile (calls/callers by default): the gate asserts callers are a SUBSET of the usage-site set and equality where the usage sites are all `calls` rows — a graph row that is not a stored usage site would fail."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-19T02:54:03.577Z",
+    "contentSha256": "04503387eb26832eef10c081064977aa96dbe89886212fa7639fa0b375849864"
+  }
+}

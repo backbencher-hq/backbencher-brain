@@ -1,0 +1,229 @@
+{
+  "language": "vue",
+  "grammar": "tree-sitter-vue.wasm",
+  "handled_verified": {
+    "types": [
+      "attribute",
+      "attribute_name",
+      "attribute_value",
+      "comment",
+      "component",
+      "directive_argument",
+      "directive_attribute",
+      "directive_name",
+      "element",
+      "end_tag",
+      "interpolation",
+      "quoted_attribute_value",
+      "raw_text",
+      "script_element",
+      "self_closing_tag",
+      "start_tag",
+      "style_element",
+      "tag_name",
+      "template_element",
+      "text"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "directive_dynamic_argument",
+      "directive_dynamic_argument_value",
+      "directive_modifier",
+      "directive_modifiers",
+      "erroneous_end_tag",
+      "erroneous_end_tag_name"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+    "gaps": [
+      {
+        "id": "V1",
+        "node_type": "directive_attribute (defineProps/defineEmits generic)",
+        "severity": "high",
+        "missing": "script-setup compiler macros in the TYPE-LITERAL generic form \u2014 defineProps<{ id: string }>() and defineEmits<{ (e: 'save'): void }>() \u2014 emit NO prop/event symbols. Only the runtime object/array form ({ size: Number } / ['change']) is extracted; the standard Vue 3.3+ generic form loses the entire public contract.",
+        "evidence": "probe: defineProps<{ id: string }>() -> no Property symbol for id; defineEmits<{ (e: 'save'): void }>() -> no Event symbol for save (TS tree: type_arguments -> object_type -> property_signature / call_signature)",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (vue/generic-props-emits) + mutant vue/drop-generic-macro-symbols CAUGHT (2026-08-27). The type-literal generic form defineProps<{ id: string }>() / defineEmits<{ (e: 'save'): void }>() now extracts Property/Event symbols via the type_arguments -> object_type walk (property_identifier for props, first string literal per call_signature for emits). The component's public contract is no longer lost in the standard Vue 3.3+ shape. Extension (same session, post-wave review): union literal emit types now extract EVERY member (V1b, fixture vue/generic-union-emits + mutant vue/drop-union-emit-names CAUGHT)."
+      },
+      {
+        "id": "V2",
+        "node_type": "interpolation,directive_attribute",
+        "severity": "high",
+        "missing": "template expressions emit NO references to the component's own members \u2014 {{ count }}, @click=\"onSave\", :label=\"label\", v-model=\"count\", v-if=\"show\" read script-side state but no Uses/references edge is emitted. The template<->script data-flow is entirely silent.",
+        "evidence": "probe: <span>{{ count }}</span> <MyButton :label=\"label\" @click=\"onSave\" v-if=\"show\" /> <input v-model=\"count\" /> -> only instantiates for MyButton; zero edges to count/label/onSave/show",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (vue/template-member-uses) + mutant vue/drop-template-member-uses CAUGHT (2026-08-27). Template expressions ({{ count }}, :label, @click, v-model, v-if) now emit Uses edges (isTemplateExpression) from the component to its member symbols; identifiers are collected from interpolation raw_text and directive attribute_value, resolved only against known script members (no junk edges to intrinsics). Extension (same session, post-wave review): scope-aware \u2014 template-local bindings (v-for loop vars, slot props) shadow same-named members and are suppressed (V4, fixture vue/template-scope-shadow + mutant vue/reemit-shadowed-uses CAUGHT)."
+      },
+      {
+        "id": "V3",
+        "node_type": "contains (vue merge)",
+        "severity": "medium",
+        "missing": "duplicate contains edges \u2014 the JS/TS sub-analyzer already emits contains for script-side symbols (class -> method), and the vue analyzer's own contains pass re-emitted them, doubling every class member's containment edge in the analyzer output (the store dedupes at INSERT, but the analyzer result and any consumer of it saw 2x).",
+        "evidence": "probe: <script>class Base { go() {} }</script> -> contains: Base -> go emitted TWICE (once from the sub-analyzer merge, once from the vue pass)",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (vue/script-relations expectRelationshipCount == 1) + mutant vue/reduplicate-contains CAUGHT (2026-08-27). The vue contains pass now skips (owner, member) pairs the sub-analyzer already covered, so vue-owned members (props/emits/options) still get contains while script-side class members keep exactly one edge. Harness gained expectRelationshipCount (exact-edge pinning) so relationship duplication is a permanent gate class."
+      },
+      {
+        "id": "V4",
+        "node_type": "interpolation,directive_attribute (template scope)",
+        "severity": "medium",
+        "missing": "scope-blind template uses \u2014 v-for loop variables (v-for=\"item in items\") and slot props (#default=\"{ row }\") are template-LOCAL bindings, but the V2 collector emitted Uses to them whenever a same-named script member existed. False edges: the template reads the local item/row, not the member. The TS T6 shadowed-local bug class, unguarded in the template surface.",
+        "evidence": "probe: v-for=\"item in items\" + const item = ref(...) -> uses: comp -> item emitted (FALSE); #default=\"{ row }\" + const row = ref(...) -> uses: comp -> row emitted (FALSE)",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (vue/template-scope-shadow forbid item/row uses) + mutant vue/reemit-shadowed-uses CAUGHT (2026-08-27). The template walk now carries a shadow scope: v-for loop vars and slot-prop destructures are registered per-subtree and suppressed from Uses collection; the v-for collection expression (items) and unshadowed members (index, rowClick) still emit."
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "style_element",
+        "status": "RULED",
+        "question": "style blocks (CSS) are skipped entirely \u2014 no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script).",
+        "resolution": "RULED \u2014 DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script. Section A records style_element as handled_verified (structure) with the extraction limitation declared here."
+      },
+      {
+        "id": "D2",
+        "node_type": "directive_modifier,directive_modifiers",
+        "status": "RULED",
+        "question": "v-on modifier tokens (.prevent, .stop) and dynamic directive arguments ([expr]) are structure-only \u2014 recommend INTERNAL SILENT.",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): v-on modifier tokens (.prevent, .stop) and dynamic directive arguments ([expr]) are syntax structure only; the binding VALUE expressions are covered by V2 uses. Slot-prop destructuring (#default=\"{ row }\") is a LOCAL binding \u2014 shadowed per V4, not a member use."
+      },
+      {
+        "id": "D3",
+        "node_type": "erroneous_end_tag,erroneous_end_tag_name",
+        "status": "RULED",
+        "question": "error-recovery end-tag nodes \u2014 recommend INTERNAL SILENT (error handling).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed."
+      },
+      {
+        "id": "D4",
+        "node_type": "typeParameters",
+        "status": "RULED",
+        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level.",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the vue Matrix (family contract)."
+      },
+      {
+        "id": "D5",
+        "node_type": "apiContract",
+        "status": "RULED",
+        "question": "apiContract payload: Vue has no framework API-contract concept (like groovy/JS) \u2014 recommend DECLARED N/A.",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): Vue has no framework API-contract concept (like groovy/JS); the apiContract payload row is omitted from the vue Matrix."
+      },
+      {
+        "id": "D10",
+        "node_type": "HTML builtin tag set drift (analyzer vs F5 oracle)",
+        "status": "FIXED",
+        "question": "Can modern HTML (search) or camelCase SVG tags surface as component usages?",
+        "ruling": "NO \u2014 analyzer HTML_BUILTIN_TAGS = 134 tags incl. 2023 <search> and SVG camelCase; the F5 oracle's ORACLE_HTML_TAGS carried only 126 and faked MISSING instantiates->search (Navbar.vue). Oracle extended to the identical list; the drift is now pinned by vue/modern-html-svg-builtin-tags (forbids 8 native tags) + mutant vue/reemit-filtered-kebab-tags."
+      },
+      {
+        "id": "VSD11",
+        "node_type": "Options data state keys (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H1: Vue-2 object-form data and factory return keys never became symbols, so their template refs vanished.",
+        "decision": "One Property symbol per key (pair ranges; string keys unquoted) for both the object form and the first returned object of data() factories (documented approximation; nested functions not descended). Metadata isDataKey. Fixtures vue/data-keys + vue/data-factory-keys (uses controls); mutant vue/data-keys-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD12",
+        "node_type": "script error/export/import ranges (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H2: sub-analyzer errors/exports/imports pushed raw (script coordinates) while symbols pointed at SFC coordinates.",
+        "decision": "Full shift helper (lines always; first-line columns; single-line end columns): scriptStartLine/Cols behavior for symbols unchanged, errors/exports/imports now share it. Fixture vue/script-error-offset pins the error line; mutant vue/error-offset-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD13",
+        "node_type": "script symbol byte indices (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review H3: ranges carried SFC lines with script-local startIndex, incoherent dimensions for every span consumer.",
+        "decision": "Engine context gains sfcScriptStartIndex (block byte base, from the already-available raw_text node); the analyzer adds it to every script-derived startIndex/endIndex (absent in hand-built contexts it defaults to 0, preserving old behavior exactly). Fixture vue/range-coherence pins byte-exact ground truth via the new expectSymbolRanges gate; mutant vue/index-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD14",
+        "node_type": "template member-chain receivers (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M1: flat tokenizing emitted every identifier, so {{ item.id }} fabricated a Uses edge to a same-named member (family receiver-only rule).",
+        "decision": "Character-walk tokenizer emitting only chain roots (dot/?./#-preceded tokens skipped; shadow set still honored), no regex. Fixture vue/member-chain (uses control + forbid); mutant vue/chain-root-revert.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD15",
+        "node_type": "quoted/computed option keys (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M2: quoted keys dropped entirely; computed [dyn] keys kept raw as unresolvable symbol names.",
+        "decision": "Unquote string keys; skip bracket-led computed keys (variables, statically unknowable). Fixture vue/quoted-keys (presence + forbid); mutant vue/quoted-keys-revert covers both directions.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD16",
+        "node_type": "serverPrefetch lifecycle membership (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M3: the Vue 3 SSR hook was missing from the lifecycle list, leaving such methods invisible.",
+        "decision": "One-line list addition. Fixture vue/lifecycle-server-prefetch; mutant vue/lifecycle-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD17",
+        "node_type": "commented export default detection (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M4: the text-prefix check missed `export /*c*/ default`, so methods surfaced ownerless through the JS fallback (no ownerName, no Contains).",
+        "decision": "Structural check (first two children are the export/default keywords, comments skipped). Fixture vue/commented-default pins ownerName; mutant vue/default-text-revert strips it.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD18",
+        "node_type": "Options-member payloads (M49.V1 wave)",
+        "status": "FIXED",
+        "question": "Review M5 (TS-path expansion finding): Options methods/computed emitted bare signatures, the sub-analyzer versions holding parameters/returns were filtered and replaced.",
+        "decision": "Index filtered method symbols by bare name and copy parameters/returnType/complexity/qualified_calls on re-emission (first wins; collisions pathological). Fixture vue/options-payload (params + returnType); mutant vue/payload-drop.",
+        "date": "2026-09-10"
+      },
+      {
+        "id": "VSD19",
+        "node_type": "template string-literal contents (deeper review D1)",
+        "status": "FIXED",
+        "question": "Deeper review D1: @click=\"go('save')\" fabricated Uses(save) \u2014 string contents tokenized as identifiers (the old regex shared the flaw).",
+        "decision": "Stack-machine tokenizer: quote states with escapes, backtick ${...} re-enters code (brace-tracked), chain-root rule preserved. Fixture vue/template-string-args (uses controls + forbid); mutant vue/string-args-revert.",
+        "date": "2026-09-11"
+      },
+      {
+        "id": "VSD20",
+        "node_type": "arrow/pair-function data factories (deeper review D2)",
+        "status": "FIXED",
+        "question": "Deeper review D2: data: () => ({...}) and data: function() {...} never reached the return-object search (method bodies only).",
+        "decision": "Run the search on function-valued pair values too; direct-object rule (ancestors limited to parens/arrow/function) covers expression bodies, return rule covers blocks. Span-compared (KAD2 rule \u2014 wrapper identity never matches). Fixture vue/arrow-data; mutant vue/arrow-data-drop.",
+        "date": "2026-09-11"
+      },
+      {
+        "id": "VSD21",
+        "node_type": "decorated default exports (deeper review D3)",
+        "status": "FIXED",
+        "question": "Deeper review D3: @Dec export default bailed on the leading decorator node, losing component ownership.",
+        "decision": "Skip decorator-type leading siblings in the structural check (same treatment as comments). Fixture vue/decorated-default (ownerName pin); mutant vue/decorated-default-revert.",
+        "date": "2026-09-11"
+      },
+      {
+        "id": "D10",
+        "node_type": "Options-API prop-default factory body calls (#762)",
+        "status": "RULED",
+        "question": "vue-element-admin MarkdownEditor deep-diff MISSING: member calls inside prop default() factory bodies (Math.random(), .toFixed(0)) emitted no calls edges. Fix the walk or verify already-fixed?",
+        "decision": "RULED - VERIFIED ALREADY-FIXED at HEAD (V1/V2 embedded-script walk broadening covers the factory body): probe of the exact corpus expression emits default->toFixed + default->random; control method call (ping->helper) unchanged. Pinned by vue/prop-default-factory-calls so the contract cannot silently regress; mutant vue/prop-default-call-drop re-drops the edges and is caught.",
+        "date": "2026-09-12"
+      },
+      {
+        "id": "D11",
+        "node_type": "Options-API object member duplicate keys (#745, M49 web-family dup-key ruling)",
+        "status": "RULED",
+        "question": "emitObjectMembers/emitDataKeys were first-wins (`seen.has(name)` skipped later declarations) while JS at runtime executes the LAST same-key declaration and the JS analyzer's J3 contract is last-wins \u2014 vue's graph disagreed with both runtime and its own embedded-JS sub-analyzer. Found via the web-family dup-key convergence sweep (#745).",
+        "ruling": "Option A \u2014 last-wins family-wide. emitObjectMembers and emitDataKeys record the symbol index per key; a later duplicate REPLACES the earlier symbol in place (one symbol per key, keyed to the surviving LAST declaration). Pinned by fixtures/vue/dupkey-last-wins; mutant vue/dupkey-revert-first-wins dies on it.",
+        "evidence": "dupkey-verify.ts (line-of surviving symbol moved first->last), F3 vue 29/29, F4 437/437"
+      }
+    ]
+  }
+}

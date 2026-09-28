@@ -1,0 +1,190 @@
+{
+  "issue": "516",
+  "code": "X1",
+  "milestone": "M26",
+  "status": "verified",
+  "checks": 50,
+  "passed": 50,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 3,
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "verifierCommand": "npx tsx script/m26/verify-closure.ts",
+  "barViolations": [],
+  "perMutantRecords": {
+    "W1": [
+      {
+        "name": "M1 hidden truncation",
+        "caught": true
+      },
+      {
+        "name": "M2 wrong tier label (sub-floor calls as structural)",
+        "caught": true
+      },
+      {
+        "name": "M3 stored class ignored",
+        "caught": true
+      },
+      {
+        "name": "M4 nondeterminism",
+        "caught": true
+      },
+      {
+        "name": "M5 fabricated rowId",
+        "caught": true
+      },
+      {
+        "name": "M6 budget lifted",
+        "caught": true
+      }
+    ],
+    "W2": [
+      {
+        "name": "M1 silent version coercion",
+        "caught": true
+      },
+      {
+        "name": "M2 fabricated rowId gate stripped",
+        "caught": true
+      },
+      {
+        "name": "M3 empty-result unindexed",
+        "caught": true
+      },
+      {
+        "name": "M4 silent param drift",
+        "caught": true
+      },
+      {
+        "name": "M5 advertisement gone",
+        "caught": true
+      }
+    ],
+    "W3": [
+      {
+        "name": "M1 absence rendered",
+        "caught": true
+      },
+      {
+        "name": "M2 bridge fabricated",
+        "caught": true
+      },
+      {
+        "name": "M3 tier floor broken",
+        "caught": true
+      },
+      {
+        "name": "M4 non-cross rows leak",
+        "caught": true
+      },
+      {
+        "name": "M5 stored class ignored",
+        "caught": true
+      }
+    ],
+    "W4": [
+      {
+        "name": "M1 inferred rendered as structural",
+        "caught": true
+      },
+      {
+        "name": "M2 badge tier decoupled from edge",
+        "caught": true
+      },
+      {
+        "name": "M3 legend tier dropped",
+        "caught": true
+      },
+      {
+        "name": "M4 threshold drifted",
+        "caught": true
+      },
+      {
+        "name": "M5 stored class ignored",
+        "caught": true
+      }
+    ],
+    "W5": [
+      {
+        "name": "M1 silent truncation",
+        "caught": true
+      },
+      {
+        "name": "M1b empty-state dropped",
+        "caught": true
+      },
+      {
+        "name": "M2 fabricated total",
+        "caught": true
+      },
+      {
+        "name": "M3 unbounded impact",
+        "caught": true
+      },
+      {
+        "name": "M4 differential break (containment dropped from total)",
+        "caught": true
+      },
+      {
+        "name": "M5 truncation state lost",
+        "caught": true
+      }
+    ],
+    "W6": [
+      {
+        "name": "M1 removed escaping",
+        "caught": true
+      },
+      {
+        "name": "M2 relaxed CSP",
+        "caught": true
+      },
+      {
+        "name": "M3 raw markdown injection",
+        "caught": true
+      }
+    ],
+    "V1": [
+      {
+        "name": "M1 fabricated edge",
+        "caught": true
+      },
+      {
+        "name": "M2 dropped edge",
+        "caught": true
+      },
+      {
+        "name": "M3 wrong tier label",
+        "caught": true
+      },
+      {
+        "name": "M4 wrong count",
+        "caught": true
+      },
+      {
+        "name": "M5 missing truncation marker",
+        "caught": true
+      }
+    ],
+    "D1": [
+      {
+        "name": "M1 doctored embedded fact (drift rule)",
+        "caught": true
+      },
+      {
+        "name": "M2 fabricated reality row",
+        "caught": true
+      },
+      {
+        "name": "M3 ambient leak (leaky control)",
+        "caught": true
+      }
+    ]
+  },
+  "generatedAt": "2026-09-20T02:23:20.505Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:23:20.506Z",
+    "contentSha256": "17330ceefef465dded3756691a23dc73d34a1db9e64d84eea2e3de055a01aca7"
+  }
+}

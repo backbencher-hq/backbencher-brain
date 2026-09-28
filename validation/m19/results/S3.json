@@ -1,0 +1,146 @@
+{
+  "issue": "M19.S3",
+  "code": "S3",
+  "tool": "indexing pipeline (mega corpus)",
+  "title": "stress-test intellij-community (273k total files; supported source subset) - worker pool + memory + parallelism",
+  "verified": true,
+  "checks": 23,
+  "passed": 23,
+  "failed": 0,
+  "measured": {
+    "repo": "intellij-community",
+    "path": "$HOME/intellij-community",
+    "candidateFilesOnDisk": 83051,
+    "indexedFiles": 69509,
+    "symbols": 1071964,
+    "rels": 3524679,
+    "languages": [
+      {
+        "l": "java",
+        "c": 38831
+      },
+      {
+        "l": "kotlin",
+        "c": 30678
+      }
+    ],
+    "machine": {
+      "platform": "linux",
+      "arch": "x64",
+      "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz | Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
+      "ramGb": 15.5
+    },
+    "repository": {
+      "head": "cfda6881ef1c86081f9ad4f993906b84004b65f2",
+      "dirtyFiles": 1
+    },
+    "controls": {
+      "repo": "$HOME/intellij-community",
+      "sampleSize": 100,
+      "samplesAreDisjoint": true,
+      "deferredFinalization": true,
+      "runs": [
+        {
+          "label": "workers-1-control",
+          "workers": 1,
+          "offset": 1000,
+          "files": 100,
+          "wallMs": 22767,
+          "successFiles": 100,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0,
+          "peakRssKb": null,
+          "log": "/tmp/m19-s3-workers-1.log"
+        },
+        {
+          "label": "workers-12-control",
+          "workers": 12,
+          "offset": 1100,
+          "files": 100,
+          "wallMs": 20705,
+          "successFiles": 100,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0,
+          "peakRssKb": null,
+          "log": "/tmp/m19-s3-workers-12.log"
+        },
+        {
+          "label": "rss-workers-1-control",
+          "workers": 1,
+          "offset": 1400,
+          "files": 100,
+          "wallMs": 25482,
+          "successFiles": 100,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0,
+          "peakRssKb": 282328,
+          "log": "/tmp/m19-s3-rss-1b.log"
+        },
+        {
+          "label": "rss-workers-12-control",
+          "workers": 12,
+          "offset": 1500,
+          "files": 100,
+          "wallMs": 39775,
+          "successFiles": 100,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0,
+          "peakRssKb": 240692,
+          "log": "/tmp/m19-s3-rss-12b.log"
+        }
+      ],
+      "limitations": [
+        "The two RSS runs used disjoint samples and are sequential, so they are not a same-input benchmark.",
+        "The control samples measure deferred-finalization ingestion only; they do not establish full-corpus cold timing.",
+        "The /tmp log paths are local provenance; the numeric values are copied from the successful JSON summaries and /usr/bin/time output recorded during this run."
+      ]
+    },
+    "freshBatch": {
+      "ok": true,
+      "slice": 0,
+      "totalSlices": 10,
+      "candidateFiles": 8306,
+      "eligibleFiles": 8301,
+      "filesInSlice": 8301,
+      "batchSize": 1000,
+      "batchCount": 9,
+      "batchIndex": 0,
+      "batches": [
+        {
+          "batch": 0,
+          "files": 1000,
+          "wallMs": 1216877,
+          "successFiles": 1000,
+          "skippedFiles": 0,
+          "timeoutFiles": 0,
+          "errorFiles": 0
+        }
+      ],
+      "wallMs": 1216877,
+      "wallSec": 1217,
+      "deferredFinalization": true,
+      "totalSymbols": 1071964,
+      "totalRels": 3519557
+    },
+    "timing": null,
+    "fullColdTimingComplete": false,
+    "note": "full cold ten-slice timing not completed: the first fresh 1,000-file batch took 1216877 ms, so a complete cold run is outside the bounded verification window"
+  },
+  "negatives": [
+    "This is an honest partial timing result permitted by the issue: the live full-index totals are verified, but a complete cold ten-slice wall-time ledger is not claimed.",
+    "Wall-time is this machine's number (i7-8650U, 15.5GB); not portable.",
+    "The four controls use disjoint 100-file samples; their timings are observations, not a universal worker-performance guarantee.",
+    "Embeddings were bounded off during the fresh batch (BB_EMBEDDING_BATCH_LIMIT=1); semantic coverage is Q1/Q2 scope.",
+    "Analyzer-kind precision is M14's lane; this issue verifies scale/index substrate, not analyzer correctness."
+  ],
+  "generatedAt": "2026-08-26T17:15:36.308Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.368Z",
+    "contentSha256": "689e8cce11c7d9515f23f787f81eb6bde72f387c649c75325752033364e8b661"
+  }
+}

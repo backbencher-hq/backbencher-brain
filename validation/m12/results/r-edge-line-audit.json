@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_edge_line_and_name_audit",
+  "edges": {
+    "relationships": 153,
+    "withLine": 153,
+    "lineNamesTarget": 152,
+    "lineWrong": 0,
+    "noLine": 0,
+    "wrongExamples": []
+  },
+  "names": {
+    "symbols": 89,
+    "unknownNames": 0,
+    "unknownExamples": []
+  },
+  "ranges": {
+    "symbols": 89,
+    "consistent": 89,
+    "inconsistent": 0,
+    "examples": []
+  },
+  "relationshipTypesEmitted": [
+    "calls",
+    "contains",
+    "exports",
+    "extends",
+    "implements",
+    "imports",
+    "instantiates",
+    "overrides",
+    "references"
+  ],
+  "universalRelationshipTypeValues": [
+    "calls",
+    "contains",
+    "exports",
+    "extends",
+    "implements",
+    "imports",
+    "instantiates",
+    "overrides",
+    "references",
+    "uses"
+  ],
+  "notApplicable": {
+    "uses": "R has no import-binding indirection distinct from the dependency itself; `references` and `imports` cover it, and evidence_tier counts `references` as a usage context."
+  },
+  "note": "Every number here is re-derived from the parse tree and the fixture source in this run. `lineNamesTarget` counts edges whose line actually contains the edge's target, which is the M59.A7/#825 correctness condition, not just the presence of a line. Names are validated against the identifiers the GRAMMAR produced, so R's real infix names ([, +, %&%, diag<-) are not mistaken for unknown symbols.",
+  "currentCommit": "df610c61b6ae821e365833526f10a76a3fe3f08e",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-27T17:20:06.379Z",
+    "contentSha256": "0abf96a888fe2815b9acb135e86732ed2e35aed9c3b9cf9691e26f3092138caf"
+  }
+}

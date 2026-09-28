@@ -1,0 +1,238 @@
+{
+  "language": "zig",
+  "grammar": "tree-sitter-zig.wasm",
+  "handled_verified": {
+    "types": [
+      "variable_declaration",
+      "struct_declaration",
+      "enum_declaration",
+      "union_declaration",
+      "error_set_declaration",
+      "container_field",
+      "function_declaration",
+      "call_expression",
+      "field_expression"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "address_space",
+      "anonymous_struct_initializer",
+      "anyframe_type",
+      "arguments",
+      "array_type",
+      "asm_clobbers",
+      "asm_expression",
+      "asm_input",
+      "asm_input_item",
+      "asm_output",
+      "asm_output_item",
+      "assignment_expression",
+      "async_expression",
+      "await_expression",
+      "binary_expression",
+      "block",
+      "block_expression",
+      "block_label",
+      "boolean",
+      "break_expression",
+      "break_label",
+      "builtin_function",
+      "builtin_identifier",
+      "builtin_type",
+      "byte_alignment",
+      "calling_convention",
+      "catch_expression",
+      "character",
+      "character_content",
+      "comment",
+      "comptime_declaration",
+      "comptime_expression",
+      "comptime_statement",
+      "comptime_type_expression",
+      "continue_expression",
+      "defer_statement",
+      "dereference_expression",
+      "else_clause",
+      "errdefer_statement",
+      "error_type",
+      "error_union_type",
+      "escape_sequence",
+      "expression_statement",
+      "field_initializer",
+      "float",
+      "for_expression",
+      "for_statement",
+      "identifier",
+      "if_expression",
+      "if_statement",
+      "if_type_expression",
+      "index_expression",
+      "initializer_list",
+      "integer",
+      "labeled_statement",
+      "labeled_type_expression",
+      "link_section",
+      "multiline_string",
+      "nosuspend_expression",
+      "nosuspend_statement",
+      "null_coercion_expression",
+      "nullable_type",
+      "parameter",
+      "parameters",
+      "parenthesized_expression",
+      "payload",
+      "pointer_type",
+      "range_expression",
+      "resume_expression",
+      "return_expression",
+      "slice_type",
+      "source_file",
+      "string",
+      "string_content",
+      "struct_initializer",
+      "suspend_statement",
+      "switch_case",
+      "switch_expression",
+      "try_expression",
+      "unary_expression",
+      "using_namespace_declaration",
+      "while_expression",
+      "while_statement"
+    ]
+  },
+  "gap": {
+    "_description": "Zig declaration surface modeled from the pinched tree-sitter-zig AST (probe-verified 2026-08-29 against the upstream Zig compiler corpus, 2,950 .zig files). opaque_declaration and test_declaration parse cleanly but are NOT emitted as standalone symbols: opaque types have no members to surface (Zig models interfaces via vtables, not class inheritance), and `test` blocks are anonymous scoped bodies without a stable callable name. Their internal call/use edges ARE captured (source '(global)'). differential zig:zig is 0 missing / 0 unexplained at the pinned floor. No analyzer literal references a non-existent grammar node type (dead literals boolean_literal/char_literal/number_literal/type_identifier removed in the zig wave). ZGD-wave (M37 #600, 2026-09-04): ZGD1 write gate, ZGD3 test/comptime scope, ZGD4 usingnamespace imports, ZGD2 bare/qualified return-type declared-type refs, ZGD5/5b enum-literal + type-position uses suppression \u2014 all probe-verified, fixture-pinned, mutant-locked (4 new mutants).",
+    "gaps": [
+      {
+        "id": "ZIG.GAP.1",
+        "node_type": "opaque_declaration",
+        "severity": "info",
+        "missing": "`opaque {}` types parse cleanly but emit no symbol. Zig models runtime interfaces via opaque types + function pointers (no class inheritance), so there are no fields/extends to surface; the type is intentionally not indexed."
+      },
+      {
+        "id": "ZIG.GAP.2",
+        "node_type": "test_declaration",
+        "severity": "info",
+        "missing": "`test \"name\" {}` blocks emit no function symbol (anonymous, unstable scope). Calls and field-uses inside a test body are still captured with source '(global)', so the code-intel graph does not lose them."
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "ZIG.D.1",
+        "node_type": "extends,implements,overrides,instantiates",
+        "status": "RULED",
+        "question": "Zig has no class inheritance, no interfaces with implements clauses, no overrides, and no implicit type instantiation the way C++/Java do \u2014 how are these relationship kinds handled?",
+        "resolution": "By design, Zig emits NO extends/implements/overrides/instantiates edges. Composition is expressed through struct fields and opaque vtables; generics are compile-time monomorphized without a runtime type dispatch the analyzer can attribute statically. requiredKinds for zig reflect only the emitted kinds: calls, uses, contains, references."
+      },
+      {
+        "id": "ZIG.D.2",
+        "node_type": "comptime_declaration,test_declaration,top-level call",
+        "status": "RULED",
+        "question": "Zig evaluates top-level `const`, `comptime`, and `test` block initializers at compile time \u2014 these are call sites outside any function body.",
+        "resolution": "Field-accesses and calls in any non-function context (top-level const initializers, comptime blocks, test bodies) emit with source '(global)', mirroring the go family package-scope-call contract. Without this, fmt.zig's `const assert = std.debug.assert;` (a real dependency) would be silently dropped \u2014 measured 745 edges were lost before this fix (zig wave 2026-08-29)."
+      },
+      {
+        "id": "ZIG.D.3",
+        "node_type": "identifier (error set members),builtin_function",
+        "status": "RULED",
+        "question": "Error-set members (`error{ A, B }`) are identifiers, and @-prefixed builtins are intrinsics, not user symbols.",
+        "resolution": "An identifier whose parent is error_set_declaration is emitted as an EnumMember (members cannot collide with the declaring variable's LHS). @builtin_function callees (@import/@intCast/@as) are compile-time intrinsics and emit NO calls edge \u2014 they are never user symbols."
+      },
+      {
+        "id": "ZIGD2",
+        "node_type": "function_signature",
+        "status": "RULED",
+        "question": "Is function_signature a real, fixture-coverable shape in the pinned grammar?",
+        "resolution": "No. Probe-verified 2026-09-02: extern fn parses as function_declaration; comptime fn at container level parses as container_field + ERROR and poisons the rest of the file. The analyzer's function_signature branch is retained as defensive coverage for grammar variants but no valid Zig source produces it. Reclassified from handled_verified per the F6 gate (M14.0.F6)."
+      },
+      {
+        "id": "ZIG.D.4",
+        "node_type": "test_declaration, comptime_declaration",
+        "status": "RULED",
+        "question": "test/comptime blocks contain block bodies \u2014 are their locals declaration symbols?",
+        "resolution": "ZGD3: NO \u2014 the walk previously fell through with inFunction=false and every test body leaked file-scope Variable symbols (violating the analyzer's own execution-artifact contract). Both blocks now set the executable-scope flag; their call/use edges still emit with source '(global)' per ZIG.D.2."
+      },
+      {
+        "id": "ZIG.D.5",
+        "node_type": "using_namespace_declaration",
+        "status": "RULED",
+        "question": "Is `usingnamespace @import(\"x.zig\");` an import fact?",
+        "resolution": "ZGD4: YES \u2014 first-class import (imports array + references edge, meta.usingnamespace). The walk previously dropped these declarations entirely. Process lesson recorded: an earlier fix draft targeted an assignment-RHS usingnamespace form that is NOT valid Zig (grammar error-recovers it into call_expression + ERROR child); the pinned grammar + probe exposed the invented form before it shipped. Fixture authored from the probed declaration shape."
+      },
+      {
+        "id": "Z1",
+        "node_type": "synthetic per-symbol complexity",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): every symbol reported the synthetic complexity 3 regardless of body \u2014 the removed-everywhere-else disease was still live in zig.",
+        "resolution": "FIXED + GATED: per-symbol complexity is the real zigBodyComplexity (if/for/while/switch/catch/else + and/or/orelse operator tokens). Fixture zig/bare-value-reads pins score=5, guard=4; mutants zig/synthetic-complexity and zig/drop-symbol-complexity CAUGHT."
+      },
+      {
+        "id": "Z2",
+        "node_type": "parse-error ranges",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): parse-error ranges carried raw 0-based startColumn/endColumn (the svelte-wave class) while every other zig range is 1-based.",
+        "resolution": "FIXED + GATED: errors now 1-based like nodeRange. Fixture zig/bare-value-reads pins the stray-brace error at line 103 column 1; mutant zig/error-columns-0based CAUGHT."
+      },
+      {
+        "id": "Z3",
+        "node_type": "bare value reads",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): `return Limit` / `return counter` emitted NOTHING \u2014 the analyzer and the differential oracle were BOTH blind to bare identifier reads of file-scope values.",
+        "resolution": "FIXED + GATED: analyzeZigBareIdentifierUses walks with walk-order lexical scopes (params, blocks, payload captures, var/const bindings only \u2014 C6: assignments write, never bind); resolves only file-scope Constant/Variable/Function/EnumMember names; suppresses defining positions, callees, member leaves, labels, blanks, shadowed names. Fixture zig/bare-value-reads pins the positive surface; mutants zig/drop-bare-uses and zig/reemit-shadowed-reads CAUGHT."
+      },
+      {
+        "id": "Z4",
+        "node_type": "error-set member resolution",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): two error-member defects \u2014 (a) declaration sites read themselves (`pub const Error = error{ WriteFailed, OutOfMemory };` emitted uses WriteFailed at its own declaration; probe-verified on zls src/print_zoir.zig), and (b) the analyzer resolved EVERY enum member by name globally while the oracle only resolved value-position error leaves (`return error.Timeout`), so payload binding names and struct type positions collided with enum members on zls.",
+        "resolution": "FIXED + GATED both sides: error_set_declaration direct identifiers are defining occurrences; enum members resolve ONLY as value-position error-type leaves (parameter/field/container_field error types are declared-type facts, never reads). Fixture zig/bare-value-reads (expects fail->Timeout, handle->Fatal; forbids Unused/Widget/identifier_usage->fast); mutants zig/reemit-error-set-declaration, zig/drop-error-member-uses, zig/global-enum-member-uses CAUGHT. Lane differential zig:zig and zig:zls both 0 missing / 0 unexplained."
+      },
+      {
+        "id": "Z5",
+        "node_type": "oracle name inventory (differential)",
+        "status": "RULED",
+        "question": "Zig review (2026-09-12): the Z3 oracle re-derived its own name table (owner-blind pre-pass, kind-dispatch order, container attribution) and diverged from the analyzer by 70+ phantom MISSING edges across the upstream zig corpus.",
+        "resolution": "FIXED: deriveZigBareUses takes the analyzer's OWN symbols as its name inventory (file-scope kinds + global EnumMember set); truth still derives every EDGE independently from tree structure \u2014 only the inventory is shared ground truth, exactly like the grammar. Lane replica script/m14/tmp/zig-lane-pairs.ts: zig 0/0, zls 0/0."
+      },
+      {
+        "id": "Z6",
+        "node_type": "switch-arm capture scope",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): switch-arm captures bound into the enclosing block/function frame (and file-scope switches had no frame at all) \u2014 a global capture name emitted a junk bare read, and an arm capture leaked past its arm and swallowed a post-switch genuine read of a same-named file value (probe-verified: scopeF->K missing).",
+        "resolution": "FIXED + GATED both sides: a scope frame is pushed on switch_case entry (empty at entry, so arm patterns still resolve outward); the payload binds into it and it pops at case exit. Fixture zig/bare-value-reads expects scopeF->K/scopeF->Limit and forbids Clue; mutant zig/switch-payload-scope CAUGHT. Lane replicas (pinned + 2 rotated seeds, zig + zls) 0/0."
+      },
+      {
+        "id": "Z7",
+        "node_type": "parameter binding granularity",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): the function-entry walk bound EVERY identifier under a parameter node, so a name appearing only in a parameter's type, comptime type use, or default value shadowed the real file-level value for the whole function (the registered W9 defect: `s: struct { Flag: u8 }` swallowed `_ = Flag`; `x: T` swallowed the type use; `x: u32 = Def` swallowed the default read \u2014 all probe-verified missing pairs on both sides).",
+        "resolution": "FIXED + GATED both sides: a parameter binds its declared NAME only (first identifier child); payload binding unchanged (payload subtrees carry only capture names, probe-verified). Fixture zig/bare-value-reads expects typeField->Flag, takeT->T, withDefault->Def; mutant zig/param-subtree-bindings CAUGHT."
+      },
+      {
+        "id": "Z8",
+        "node_type": "blank identifier symbols",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): `var _ = 1;` minted a `_` Variable symbol (GO5 class, probe-verified) \u2014 the read discipline already skipped blanks, but extraction did not.",
+        "resolution": "FIXED + GATED: blank names skipped at all three declaration sites (variable, container field, function). Fixture zig/bare-value-reads forbids any `_` symbol; mutant zig/blank-symbol CAUGHT."
+      },
+      {
+        "id": "Z9",
+        "node_type": "function-local @import",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): an @import inside a function body was dropped entirely (locals-are-artifacts overreach) while calls in function bodies are captured \u2014 inconsistent evidence.",
+        "resolution": "FIXED + GATED: the import fact and its reference edge are recorded exactly like the top-level branch, without minting a local symbol. Fixture zig/bare-value-reads expects the helper.zig import; mutant zig/drop-local-import CAUGHT."
+      },
+      {
+        "id": "Z10",
+        "node_type": "if/while payload else-arm scope",
+        "status": "RULED",
+        "question": "Extreme review (2026-09-12): an if/while capture is bound into the enclosing frame, so a same-named file value read in the ELSE arm is suppressed (probe-verified: else-branch `v` reads nothing though the capture is not in scope there).",
+        "resolution": "DOCUMENTED LIMITATION, not changed: scoping captures out of else-arms needs arm-level frames the single-pass walk cannot place (the capture is bound before the then/else split is known), and pushing a construct-level frame would trade one false negative for another. Both sides behave identically (lane-stable), and the shape needs a file value colliding with a capture name plus a same-named else-arm read to be observable."
+      }
+    ],
+    "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by F6 fixture-coverage gate)"
+  }
+}

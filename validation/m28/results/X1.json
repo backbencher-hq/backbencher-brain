@@ -1,0 +1,27 @@
+{
+  "issue": "629",
+  "code": "X1",
+  "milestone": "M28",
+  "status": "verified",
+  "checks": 31,
+  "passed": 31,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 4,
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "verifierCommand": "npx tsx script/m28/verify-closure.ts",
+  "barViolations": [],
+  "perMutantRecords": {
+    "T1": [],
+    "U1": [],
+    "A1": [],
+    "A2": [],
+    "V1": []
+  },
+  "generatedAt": "2026-09-20T02:25:14.067Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:25:14.068Z",
+    "contentSha256": "7b92ed9841bef474a8058602781b33e8ae8770df93b0cbd9c8a3b895a9911e83"
+  }
+}

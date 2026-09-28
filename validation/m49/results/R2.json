@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M49",
+  "issueId": "R2",
+  "runCommand": "bun run script/m49/verify-r2-regex.ts",
+  "verifiedAtCommit": "bb2c631e",
+  "status": "pass",
+  "verdictLine": "see rawOutput tail below",
+  "rawOutput": "R2: 6/6 checks passed, 1 negative(s) exercised | 55 committed / 55 fresh | review-class 22 (baseline 22)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.572Z",
+    "contentSha256": "89e50b93af500197a9de1882294377a05c037d6db2eec5c42a009534bde21dc2"
+  }
+}

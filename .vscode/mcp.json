@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "bb-brain": {
+      "type": "stdio",
+      "version": "0.2.5",
+      "command": "node",
+      "cwd": "${workspaceFolder}",
+      "args": [
+        "$HOME/mcp/backbencher-brain/bin/bb",
+        "mcp",
+        "--dir",
+        "${workspaceFolder}"
+      ],
+      "env": {
+        "BB_DATA_DIR": "${workspaceFolder}/.bb-data",
+        "BB_CONFIG_FILE": "${workspaceFolder}/bb.json"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "issue": "M31.D3",
+  "gate": "verify-tools-overview.ts",
+  "status": "verified",
+  "passed": 109,
+  "failed": 0,
+  "checks": 109,
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "bun run script/m31/verify-tools-overview.ts",
+  "evidenceFile": "D3.json",
+  "generatedAt": "2026-09-03T23:08:05.274Z",
+  "surfaces": {
+    "doc": "docs/TOOLS_OVERVIEW.md",
+    "registryTools": 11,
+    "dbArtifacts": [
+      "brain_analysis_finding",
+      "brain_analysis_occurrence",
+      "brain_analysis_run",
+      "brain_file",
+      "brain_import",
+      "brain_index_status",
+      "brain_project_health",
+      "brain_query_cache",
+      "brain_relationship",
+      "brain_schema_version",
+      "brain_semantic_embedding",
+      "brain_symbol",
+      "brain_taint_flow"
+    ]
+  },
+  "negativeCases": 4,
+  "negativeCasesDescription": "self-test mutations: phantom tool section, wrong mode list, phantom DB artifact, corrupted cross-link row",
+  "currentCommit": "48f27f0b2ffb945b59efc1cb93626f4ef8f1f9a7",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.466Z",
+    "contentSha256": "e43f1c9a6b7ecf0b3d3675f72f624631fd6f7d1a3fc20a71acabe39ddaa54ab4"
+  }
+}

@@ -1,0 +1,47 @@
+# Lane protection: closed-milestone artifacts must never be deleted from main
+# without an owner-approved "retire-approved" commit tag.
+#
+# Background (2026-09-06 incident): a laptop-sync commit published the
+# deletion of the entire closed M42 milestone (src, verifiers, evidence,
+# docs) to main. Neither agent intended it; nothing in CI checked. This
+# workflow makes that class of accident impossible to merge silently.
+#
+# Note: pull_request runs on the merge commit, so a deletion introduced by a
+# PR branch fails its own check AND the required check on the PR.
+
+name: lane-protection
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  protected-paths:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Block unapproved deletions of closed-milestone artifacts
+        run: |
+          BASE=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}" --depth=50
+          else
+            BASE="${{ github.event.before }}"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="HEAD~20"
+            fi
+          fi
+          npx tsx script/verify-lane-protection.ts --base "$BASE"
+
+      - name: Upload protection evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lane-protection
+          path: validation/lane-protection/results.json
+          if-no-files-found: ignore

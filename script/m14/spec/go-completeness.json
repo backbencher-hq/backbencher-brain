@@ -1,0 +1,368 @@
+{
+  "language": "go",
+  "grammar": "tree-sitter-go.wasm",
+  "handled_verified": {
+    "types": [
+      "block",
+      "call_expression",
+      "communication_case",
+      "const_declaration",
+      "const_spec",
+      "defer_statement",
+      "field_declaration",
+      "field_declaration_list",
+      "field_identifier",
+      "func_literal",
+      "function_declaration",
+      "go_statement",
+      "import_declaration",
+      "import_spec",
+      "interface_type",
+      "method_declaration",
+      "method_spec",
+      "package_clause",
+      "parameter_declaration",
+      "parameter_list",
+      "qualified_type",
+      "receive_statement",
+      "select_statement",
+      "selector_expression",
+      "send_statement",
+      "struct_type",
+      "type_alias",
+      "type_declaration",
+      "type_identifier",
+      "type_parameter_list",
+      "type_spec",
+      "unary_expression",
+      "var_declaration",
+      "var_spec",
+      "variadic_argument",
+      "expression_list"
+    ]
+  },
+  "internal_silent": {
+    "types": [
+      "argument_list",
+      "array_type",
+      "assignment_statement",
+      "binary_expression",
+      "blank_identifier",
+      "break_statement",
+      "channel_type",
+      "comment",
+      "composite_literal",
+      "constraint_elem",
+      "continue_statement",
+      "dec_statement",
+      "default_case",
+      "dot",
+      "empty_statement",
+      "escape_sequence",
+      "expression_case",
+      "expression_statement",
+      "expression_switch_statement",
+      "fallthrough_statement",
+      "false",
+      "float_literal",
+      "for_clause",
+      "for_statement",
+      "function_type",
+      "generic_type",
+      "goto_statement",
+      "identifier",
+      "if_statement",
+      "imaginary_literal",
+      "implicit_length_array_type",
+      "import_spec_list",
+      "inc_statement",
+      "index_expression",
+      "int_literal",
+      "iota",
+      "keyed_element",
+      "label_name",
+      "labeled_statement",
+      "literal_element",
+      "literal_value",
+      "map_type",
+      "negated_type",
+      "nil",
+      "package_identifier",
+      "parenthesized_expression",
+      "parenthesized_type",
+      "pointer_type",
+      "range_clause",
+      "raw_string_literal",
+      "return_statement",
+      "rune_literal",
+      "short_var_declaration",
+      "slice_expression",
+      "slice_type",
+      "source_file",
+      "interpreted_string_literal",
+      "struct_elem",
+      "struct_term",
+      "true",
+      "type_arguments",
+      "type_assertion_expression",
+      "type_case",
+      "type_conversion_expression",
+      "type_switch_statement",
+      "union_type",
+      "variadic_parameter_declaration"
+    ]
+  },
+  "gap": {
+    "_description": "Go declared-type reference graph is fixture-pinned (go/type-usage-graph). Remaining declaration-ish nodes \u2014 type_parameter_list (generics bounds), function_type (callback types) \u2014 are parsed but not emitted as standalone symbols; they are structural, not declaration sites. differential go-tools:go is 0 missing / 0 unexplained at the pinned floor; at FULL extent (#914 round, script/m14/tmp/go-799-surface.ts and script/m14/tmp/go-914-sweep.ts) go-tools reads 1,931 files / truth 30,695 / MISSING 0 / unexplained 0, terraform 1,993 files / truth 40,913 / MISSING 0 / unexplained 0, and kubernetes 13,488 files / MISSING 0 / unexplained 0 in four index-range chunks with 0 parse skips \u2014 the 10+2 and 22 name-only `implements` rows GO24 describes are gone, not rounded away. analyzer literals that are structural-internal (func_type/function_type, string_literal/interpreted_string_literal) are internal_silent by contract.",
+    "gaps": [
+      {
+        "id": "GO-GAP-1",
+        "kind": "grammar capability (registered, NOT hidable)",
+        "statement": "Two LEGAL Go constructs have no representation in the pinned tree-sitter-go grammar \u2014 a package-scope generic function VALUE and a method on an INSTANTIATED GENERIC RECEIVER \u2014 and error recovery swallows the declarations that follow: 3 of 1,931 go-tools files, 92 declarations, 0 of 1,993 terraform files. Those declarations are not symbols and carry no `contains` edges in either direction.",
+        "why_not_a_fixture_expectation": "Writing the loss into an expectation is how a defect becomes a contract. The round fixed what it CAN fix (the fabricated construction, GO15), and pinned that the loss STOPS at the declaration: the calls inside a recovered body are published again (GO16). Fixture go/grammar-error-not-a-construction-889 deliberately does NOT assert the swallowed `caller` symbol, and go/error-region-callee-descend-799 asserts the calls without asserting the recovered declarations as symbols.",
+        "evidence": "script/m14/tmp/go-799-grammar-gap.ts (blast radius from the tree's ERROR regions) + go-799-lockcall2.ts, go-799-region-tree.ts (the recovered-shape probes)"
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "GOD1",
+        "node_type": "interface implementation",
+        "status": "RULED",
+        "question": "Go uses implicit interface satisfaction (duck typing), not explicit implements clauses.",
+        "resolution": "The analyzer derives implements from method-set matching (all interface methods present on the struct's receiver set); no explicit `implements`/`: I` clause exists in the grammar. The oracle (deriveGoImplements) mirrors this name-set check."
+      },
+      {
+        "id": "GOD2",
+        "node_type": "struct embedding / calls",
+        "status": "RULED",
+        "question": "Struct embedding (anonymous fields) is Go's composition mechanism; bare-callee calls must resolve to in-file declared functions/methods.",
+        "resolution": "Embedded anonymous fields emit one extends edge (family composition contract, no contains twin). Calls use leaf targets; bare identifiers emit only when they name an in-file declared function/method (type conversions string(x)/float64(x) and closure vars are NOT call truth)."
+      },
+      {
+        "id": "GOD3",
+        "node_type": "callback/closure semantics",
+        "status": "RULED",
+        "question": "Anonymous func_literal bodies and goroutine/defer closures have no static callable name.",
+        "resolution": "func_literal in call position emits NO calls target (no static name, same class as Rust's (self.0)); goroutine/defer handler emits only named leaf callees that resolve to a declared function/method. Scope tied to the pinned tree-sitter-go grammar."
+      },
+      {
+        "id": "GOD4",
+        "node_type": "selector field uses: assignment-LHS writes; interface embedding extends",
+        "status": "FIXED",
+        "question": "M37 #604 dual-lens (go-tools + terraform, 3,924 files): (a) analyzeGoSelectorUses emitted `uses` for assignment-LHS field WRITES and inc/dec operands \u2014 5,202 write-only (fn, field) bogus edges; the family write-gate (cpp/c/php/ruby/python/groovy/objc/ts) was missing in go. (b) `interface { Reader; io.Closer }` emitted only a member-symbol contains, never an inheritance edge \u2014 156 embedding sites; struct embedding already gave extends, java/rust give superinterfaces extends.",
+        "resolution": "(a) write-gate: a selector whose parent is the FIRST expression_list child of an assignment_statement (`=` AND `+=` \u2014 both writes per SCD1 family parity) or an inc/dec_statement operand emits no uses; chained operand reads (`r.cfg` inside `r.cfg.V = v`) stay genuine reads. (b) interface embedding emits extends to the type LEAF (Reader, Closer) with relationshipType go_interface_embedding, mirroring go_struct_embedding and the rust trait-supertrait/java interface-extends contract. Both mirrored in the oracle; pinned by relationship-and-payloads (persist->writeOnly forbid) and implements-params (ReadCloser->Reader go_interface_embedding)."
+      },
+      {
+        "id": "GOD5",
+        "node_type": "implements: non-struct method-bearing types, named-result signatures, generics",
+        "status": "FIXED",
+        "question": "M37 #604 dual-lens implements gaps on go-tools @200 (6 MISSING): (a) only isStruct symbols were checked as implementors, so `type HandlerFunc func(...)` / `type subcommands []command` with methods never satisfied interfaces (jsonrpc2 HandlerFunc/PreempterFunc, gopls subcommands); (b) the raw-text result signature compare treated named results `(result any, err error)` as different from unnamed `(any, error)` (defaultHandler vs Handler/Preempter); (c) generic receivers `MapLattice[Key, Elem, L]` never matched the declared name; and the name-only oracle over-claimed function-local (`interface hasCommands` in a func body) and generic-instantiation (MapLattice -> Semilattice[map[Key]Elem]) pairs.",
+        "resolution": "Analyzer: implementor candidates now include all non-interface declared types (Struct + Type); result extraction reduces named-result parameter_lists to canonical TYPE text (`T` / `(T1, T2)`); receivers strip generic brackets `[`. Oracle mirrors: receiver strip `[`/`<`, no descent into function/method/func_literal bodies (LocalsAreNotSymbols), and generic type_spec pairs are skipped on BOTH sides (satisfaction needs type unification \u2014 refusal over fabrication). Pinned by implements-params (RunnerFn->Runner2, HandlerImpl->NamedResulter, Box->GenericIface forbid). go-tools @200 and terraform @120 both 100%/0/0."
+      },
+      {
+        "id": "GOD6",
+        "node_type": "composite-literal construction instantiates",
+        "status": "FIXED",
+        "question": "M37 #604: Go's primary construction syntax `Foo{...}` / `&Foo{...}` / `pkg.Foo{...}` emitted NO instantiates \u2014 only NewXxx calls did (65,843 composite literals across go-tools+terraform with zero construction edges). Rust emits instantiates for struct literals, csharp for `new Foo()` \u2014 family parity gap.",
+        "resolution": "New analyzeGoCompositeLiteralConstruction emits instantiates (go_composite_literal_construction) sourced to the containing fn/method (\"global\" at package scope) with the literal's type LEAF as target; slice/map/array literals (wrapper type child) and elided element literals (no type child) are skipped. Stored package-scope closures are NOT descended (template, not run at init \u2014 mirrors the package-scope call contract); local closures inside bodies keep the enclosing fn. Oracle mirrored; pinned by relationship-and-payloads (NewShape->Shape, work->Worker composite pins)."
+      },
+      {
+        "id": "GOD7",
+        "status": "FIXED",
+        "node_type": "framework detection (import-path based)",
+        "question": "M37 #604 wave-2 (RSD7 lesson carried from rust wave-6): framework truth is differential-invisible \u2014 deriveGoEdges derives no framework truth \u2014 and NO go fixture pinned detectedFrameworks, so dropping detection could never fail a gate. The go analyzer detects frameworks from canonical import paths only (gin/echo/fiber/net_http/gorilla_mux/grpc/testify \u2014 deterministic, zero code string-matching). Verified on go-tools+terraform (3,924 files): net_http 86, grpc 50, zero false positives. Now fixture-gated: framework-detection.go asserts the EXACT set [gin, net_http, gorilla_mux, grpc] plus constructor-call/composite-literal pins, and mutant go/drop-framework-detection dies.",
+        "ruling": "FIXED \u2014 import-path framework detection is genuine (net_http/grpc hits verified against real imports in go-tools); no false positives on either corpus. Fixture framework-detection.go + 272nd mutant now gate it permanently."
+      },
+      {
+        "id": "GOD8",
+        "status": "FIXED",
+        "node_type": "channel send/receive/select uses (go_channel_operation)",
+        "question": "M37 #604 wave-3 (full read of analyzeGoSpecificPatterns + extractGoChannelVariable): channel-op uses were differential-INVISIBLE (uses is NOT in go's compared-label set; deriveGoEdges derives no uses truth) and pinned nowhere, so two defects ran uncaught: (a) NO dedup \u2014 every send site pushed a row, 79 duplicate (fn,channel,direction) rows across go-tools+terraform; (b) RAW OPERAND TEXT targets \u2014 member channels as dotted `h.jobs`, method-result channels as `ctx.Done()` (a call!), bare locals/params as `c` (LocalsAreNotSymbols), 327 garbage/non-leaf targets. Family contract: uses targets = declared leaf names only. Ruling: channel ops emit ONE deduped uses row per (fn, channel-leaf, direction) ONLY when the operand resolves to a declared channel \u2014 bare package-scope var/const (27/160 bare identifiers measured) or a member selector (leaf + send/receive direction, owned by the channel pass; the selector pass skips channel operands so members get one row not two). Bare locals/params, anonymous channels, and call results emit NOTHING. Parse shapes probe-verified: communication_case wraps receive_statement > unary_expression, so send/receive/unary branches cover select cases (no separate case branch \u2014 pre-fix double-counted).",
+        "ruling": "FIXED \u2014 corpus: 79 dup rows -> 0, 327 garbage targets -> 0, 109 files with channel uses -> 50. type-usage-graph fixture pins worker->jobs(send+receive)/doneAll(receive) channel ops + forbids pump->ch/done locals and dotted h.jobs; 273rd mutant go/reemit-dotted-channel-uses dies. 4/4 go fixtures, differential go-tools @60 100%/0/0."
+      },
+      {
+        "id": "GOD9",
+        "status": "FIXED",
+        "node_type": "qualified_calls payload dedup",
+        "question": "M37 #604 wave-3 (payload audit of qualified_calls on go-tools+terraform): findGoFunctionCalls pushed one entry per CALL SITE with no dedup \u2014 a function calling the same callee N times carried N identical entries (29,463 excess rows on 4,719 symbols; total 103,339 -> 73,876 entries after fix). The rust #383 lesson: qualified_calls is a UNIQUE set of callee paths per function symbol (rust dedupes at attach with [...new Set()]). Chain-call forms like `time.Now().Format` and `exec.Command(...).CombinedOutput` are NOT junk \u2014 rust parity keeps full chain paths (`String::from(\"x\").trim().to_uppercase`); only the duplicate multiplicity was wrong.",
+        "ruling": "FIXED \u2014 findGoFunctionCalls dedupes via a seen set; corpus 4,719 dup symbols -> 0, 29,463 excess rows removed. relationship-and-payloads fixture pins startWork countEquals s.startWork:1 (two self-call sites: go + defer); 274th mutant go/duplicate-qualified-calls dies. Fixtures 4/4 go, differential go-tools @60 100%/0/0."
+      },
+      {
+        "id": "GO1",
+        "node_type": "bare identifier value reads",
+        "status": "RULED",
+        "question": "Go review (#736): the analyzer emitted NO bare-identifier edges (`return G` produced zero relationships) while call args, index operands and return expressions all read file-visible values.",
+        "resolution": "FIXED + GATED (2026-09-11): file-visible VALUE reads (package var/const/func) emit Uses with lexical scope stacks (params/receiver/block/short-var/range/for/if-init/select-assign/type-switch bindings), declaration positions, call/member/channel/LHS/label exclusions, composite struct-key skips, and resolvability required. Uses/references are uncompared labels for go, so fixtures+mutants gate (no oracle change needed). Fixture go/bare-value-reads + mutants go/drop-bare-uses, go/reemit-shadowed-reads CAUGHT."
+      },
+      {
+        "id": "GO2",
+        "node_type": "tilde/union constraint members",
+        "status": "RULED",
+        "question": "Go review (#736): `~int | ~string` / `int | string` constraint members minted Interface symbols named after operator soup plus extends edges to it.",
+        "resolution": "FIXED + GATED (2026-09-11): only plain type references (type_identifier/qualified_type with clean leaves) embed; union members as individuals are a wave of their own. Oracle interface-embedding mirror gated identically. Fixture forbids + mutant go/tilde-garbage CAUGHT."
+      },
+      {
+        "id": "GO3",
+        "node_type": "dot-imported calls",
+        "status": "RULED",
+        "question": "Go review (#736): dot-imported calls (`Println` via `import . \"fmt\"`) dropped as unresolvable bare callees on both sides. Bare READS stay strict under dot-imports (documented asymmetry: call targets are few and high-signal).",
+        "resolution": "FIXED + GATED (2026-09-11): with a dot-import in the file, bare callees resolve leniently (builtins still excluded) in body, package-scope, go and defer paths; oracle bare-leaf rule mirrors. Fixture go/dot-import-calls + mutant go/dotimport-drop CAUGHT."
+      },
+      {
+        "id": "GO4",
+        "node_type": "package symbol endIndex",
+        "status": "RULED",
+        "question": "Go review (#736): hand-built package range used length+9 for exclusive endIndex (correct only for 1-based endColumn) \u2014 off by one.",
+        "resolution": "FIXED + GATED (2026-09-11): endIndex length+8; fixture expectSymbolRanges pin + mutant go/package-endindex CAUGHT."
+      },
+      {
+        "id": "GO5",
+        "node_type": "blank identifier symbols",
+        "status": "RULED",
+        "question": "Go review (#736): `var _ = f()` minted a `_` Variable symbol (blank parses as identifier).",
+        "resolution": "FIXED + GATED (2026-09-11): blank skipped in var/const extraction and everywhere in the read discipline (binder + emission); fixture forbid + mutant go/blank-symbol CAUGHT."
+      },
+      {
+        "id": "GO6",
+        "node_type": "synthetic complexity field",
+        "status": "RULED",
+        "question": "Go review (#736): metadata.complexity was the symbols+relationships heuristic beside a real cyclomaticComplexity \u2014 the removed-everywhere-else disease.",
+        "resolution": "FIXED (2026-09-11): both fields report the real cyclomatic number. Probe-verified (discriminating case 8 vs 1); file-level metadata has no fixture gate class \u2014 documented, tsc-clean."
+      },
+      {
+        "id": "GO7",
+        "node_type": "owned struct fields exported",
+        "status": "RULED",
+        "question": "Go review (#736): every PUBLIC struct field exported (owner-blind predicate), tripping the harness-global export-uniqueness invariant on the first fixture with an uppercase field.",
+        "resolution": "FIXED + GATED (2026-09-11): ownerName members excluded (membership rides Contains, same rule as methods); fixture forbid + mutant go/owned-field-exports CAUGHT."
+      },
+      {
+        "id": "G12",
+        "node_type": "cyclic interface embedding hangs analyzer",
+        "status": "RULED",
+        "question": "Go review (#736): `interface A { B }; interface B { A }` (invalid Go, parseable tree) recursed getGoInterfaceMethods forever \u2192 stack overflow. The promoted-methods collector already had a visiting set; this one did not.",
+        "resolution": "FIXED + PROBE-PINNED (2026-09-11): visiting set threaded through; 16ms, no edges (correct refusal \u2014 a hang cannot be fixture-pinned since the pre-fix behavior never terminates; probe script/m14/tmp/go-cycle-probe.ts cited)."
+      },
+      {
+        "id": "GO8",
+        "node_type": "generic composite literals (Box[int]{...})",
+        "status": "RULED",
+        "question": "Go review (#736): generic composite literals carry a generic_type child, so no construction edge fired.",
+        "resolution": "FIXED + GATED: unwrapped to the base type_identifier on both sides (analyzer + oracle mirror). Fixture go/generic-construction + mutant go/generic-composite-drop CAUGHT."
+      },
+      {
+        "id": "GO9",
+        "node_type": "assignment LHS write gate",
+        "status": "RULED",
+        "question": "Go second review (2026-09-13): every side of every assignment wraps in expression_list, so the direct-parent LHS check never fired and every written name leaked as a use whenever it resolved (probe: `a, b = 1, 2` with no reads at all emitted f->a, f->b; even single `a = 1` leaked).",
+        "resolution": "FIXED + GATED: climb through expression_lists only \u2014 landing in the first-child subtree of an assignment_statement is a write, stopping anywhere else (index/call/selector/unary) is a read; `=` and `+=` both write (selector-pass parity). Fixture forbids writeonly->wa/wb and writeplain->wa; mutant go/assign-lhs-reads CAUGHT."
+      },
+      {
+        "id": "GO10",
+        "node_type": "parameter binding granularity",
+        "status": "RULED",
+        "question": "Go second review (2026-09-13): parameter binding swallowed whole subtrees, so an array length (`f(a [N]int)`) bound the file const N and suppressed the genuine `return N` read (probe-verified missing pair).",
+        "resolution": "FIXED + GATED: bind leading name identifiers only (Go params are names-first; `a, b int` binds both, `f(int)` binds nothing, array lengths stay unbound and read). Fixture expects sized->N; mutant go/arraylen-param-shadow CAUGHT."
+      },
+      {
+        "id": "GO11",
+        "node_type": "map-literal key reads",
+        "status": "RULED",
+        "question": "Go second review (2026-09-13): every keyed-element first child was treated as a struct key, so map-literal keys (`map[Color]int{Red: 1}`) stayed silent though key expressions genuinely read (probe-verified missing pair; the old comment claimed the shapes were identical).",
+        "resolution": "FIXED + GATED: the enclosing composite literal's type decides \u2014 map_type literals read their keys, everything else (struct/slice/elided) keeps the old silence. Fixture expects keyed->Red; mutant go/map-key-silence CAUGHT."
+      },
+      {
+        "id": "GO13",
+        "node_type": "builtin-receiver call filter",
+        "status": "RULED",
+        "question": "Go second review (2026-09-13): the builtin guard matched the RECEIVER segment, dropping every qualified call on a builtin-named package (`copy.DeepCopyValue` from terraform/internal/copy never emitted \u2014 terraform rotation MISSING; every other call site already used leaf semantics, including the oracle).",
+        "resolution": "FIXED + GATED: isGoBuiltin matches the callee leaf (identical behavior at all leaf-passing sites; preserves the deliberate `v.len()` rule). Fixture expects calls duplicate->DeepCopyValue; mutant go/builtin-receiver-drop CAUGHT. Lane rot-2 clean after."
+      },
+      {
+        "id": "GO14",
+        "node_type": "generic type-parameter binding",
+        "status": "RULED",
+        "question": "Go second review (2026-09-13): generic type parameters never bound (the entry loop visited parameter_list only, though params parse as parameter_declaration under type_parameter_list too), so a colliding file value misattributed on invalid code (`return T` emitted f->T for the const).",
+        "resolution": "FIXED, explicitly unpinned: no valid-Go observable exists (a value-position use of a type-param name does not compile; type positions never read), so no fixture/mutant covers it \u2014 the shared bindParamsOf path is fixture-pinned via GO10, and lanes + F3 confirm zero valid-code impact. Kept for robustness on error-tolerant parses (3 lines)."
+      },
+      {
+        "id": "GO15",
+        "node_type": "grammar ERROR regions (composite literal, call/selector chains)",
+        "status": "FIXED",
+        "question": "The pinned tree-sitter-go errors on two LEGAL constructs \u2014 a package-scope generic function VALUE (`var _ = slices.Backward[[]int]`, Go 1.21+) and a method on an INSTANTIATED GENERIC RECEIVER (`func (Either[A, B]) A() A`, Go 1.18+) \u2014 and its error RECOVERY re-reads the FOLLOWING declaration's text as a composite literal (`func caller(s []int) {` -> `composite_literal \"s []int) { _ = s }\"`). Both sides derived `instantiates -> s` from it: a construction of a name the source never constructs, named after a PARAMETER.",
+        "resolution": "FIXED + PINNED (#799 round): a grammar error region is not evidence of a construction. The analyzer's composite-literal pass skips ERROR/isMissing subtrees, and the oracle's `composite_literal` branch refuses to read a literal inside one \u2014 while STILL DESCENDING, because real declarations sit deeper inside recovered regions (the `!leaf` prune of GO16 is the second half of that rule). Blast radius measured from the tree's own ERROR regions, not from a line count: 20 of 1,931 go-tools files parse with an error and 3 of them swallow declarations (92 in total, 37 from the generic-value shape: slicesbackward.go 37, slicescontains.go 31, internal/gcimporter/testdata/genmeth/a.go 24); terraform 0 of 1,993. 15 fabricated rows removed on go-tools. Fixture go/grammar-error-not-a-construction-889 (forbidRelationships names the fabricated edge) + mutant go/error-region-construction CAUGHT."
+      },
+      {
+        "id": "GO16",
+        "node_type": "package-scope call walk (callee that cannot be NAMED)",
+        "status": "FIXED",
+        "question": "`analyzeGoPackageScopeCalls` returned on any call_expression whose callee it could not name (parenthesized, index/generic instantiation, or parse-recovery debris), abandoning the node's whole SUBTREE. Measured at full extent: the only two non-implements MISSING rows the lane had were `s[i].Lock()` / `s[i].Unlock()` in go-tools/go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go \u2014 lost while `s[i].String()`, twelve lines later in the SAME recovery region, was emitted. The difference was recovery luck, not source.",
+        "resolution": "FIXED + PINNED (#799 round): an unnameable callee claims no edge (it names no target) but the walk DESCENDS, exactly like the oracle's flat DFS. Full extent: MISSING 12 -> 10, analyzer edges +2, unexplained unchanged (2, both the #914 implements class). Fixture go/error-region-callee-descend-799 (expects calls -> Lock and calls -> Unlock; also pins `Backward[[]int](tail(nil))` -> calls -> tail, the generic-callee form of the same rule) + mutant go/error-region-callee-prunes-subtree CAUGHT."
+      },
+      {
+        "id": "GO17",
+        "node_type": "qualified type USE (references/declared_type, references/return_type)",
+        "status": "FIXED",
+        "question": "A qualified type use was published as SOURCE TEXT \u2014 `io.Reader`, `testing.T`, `types.Importer`, `template.Template` (1,162 + 56 rows on a 400-file draw) \u2014 while the lane's own `uses` targeted selector LEAVES (`pkg.Fn` -> `Fn`) and struct/interface embedding's `extends` had just been moved to the leaf. One node kind, two answers; and `.` is a character no Go declaration may contain, which is how `references|.` entered the lane's R10 separator vocabulary.",
+        "resolution": "FIXED + PINNED (#799 round, R10): a qualified type use is published under the LEAF the lane would declare for that type (`Reader`, `T`, `Importer`, `Template`) with the package-qualified spelling kept in `metadata.qualifiedType`. Fixtures go/type-usage-graph + go/relationship-and-payloads pin leaf + metadata; mutant go/qualified-type-raw-text CAUGHT by both. Separator targets 39,280 -> 11,933 over the full draw."
+      },
+      {
+        "id": "GO18",
+        "node_type": "import dependency (the import_spec edge)",
+        "status": "FIXED",
+        "question": "The dependency edge carried the `references` label with the module SPECIFIER as its target (`net/http`, `github.com/google/go-cmp/cmp`), which put `/`, `.` and `-` into the references TARGET surface \u2014 a vocabulary that could only be excused by an R10 ruling which would then also excuse a real spelling defect on the same label. A module specifier is not a name: it is a string literal naming a module.",
+        "resolution": "FIXED + PINNED (#799 round, R10): the dependency now rides the family's FIRST-CLASS `imports` kind (the direction #910 took for c; go's own requiredKinds has named `imports` since the systems wave), with `metadata.isImport` + `isGoImportDep` KEPT \u2014 completeness section B pins the kind from the marker, and classifyEvidenceTier gained the `imports` -> import_based branch (the seam the kotlin/T1 regression class lives in). The references surface is now separator-free, so a future foreign spelling there fails R10 immediately. Fixtures go/relationship-and-payloads (imports -> fmt) + go/callsite-lines-825 (the import_spec's line) + mutant go/import-dep-labeled-reference CAUGHT."
+      },
+      {
+        "id": "GO19",
+        "node_type": "struct embedding of an INSTANTIATED GENERIC (extends, oracle side)",
+        "status": "FIXED",
+        "question": "An embedded field that instantiates a generic (`listers.ResourceIndexer[*crv1.Example]`, `*gentype.ClientWithListAndApply[*crv1.Example, *crv1.ExampleList, *applyconfigurationcrv1.ExampleApplyConfiguration]` \u2014 kubernetes' generated client code is built out of these) was named by the ORACLE as `lastSegment(raw text)`, whose last dot lands INSIDE the type arguments: it published `Example]` and `CustomResourceDefinitionApplyConfiguration]` as the embedded type's NAME. The analyzer, fixed in this round's #889 work, publishes the LEAF of the base type (`ResourceIndexer`, `ClientWithListAndApply`) \u2014 which is what Go promotes. The two sides then disagreed in bulk, and the disagreement was invisible on BOTH pinned corpora, which carry zero generic embedded fields.",
+        "resolution": "FIXED + PINNED (round 3, the go-heavy corpus read): the oracle resolves an embedded field's name through `goEmbeddedLeaf` (differential.ts) \u2014 unwrap pointer_type/generic_type, take the leaf after the last `.`, validate it as an identifier \u2014 mirrored in BOTH oracle places that resolve an embedding (`deriveGoEdges`' extends and `deriveGoImplements`' struct-embedding promotion map, where the pre-fix leaf had also fabricated a promotion from a TYPE ARGUMENT and omitted the real embedded type). Measured on kubernetes @90777f0b (13,488 non-vendor `.go` files, read in chunks): #648 MISSING + 557 UNEXPLAINED `extends` rows -> MISSING 12+54+24 = 90, UNEXPLAINED 0, every remaining row the #914 `implements` class. Unmoved where the shape does not occur: go-tools full extent 1,931 files / truth 30,700 / MISSING 10 / unexplained 2 and terraform 1,993 / 40,927 / 22 / 0 \u2014 byte-identical before and after, and the pinned F5 draw (`--repo terraform --sample 60`) still reads 1,228/1,228 with unexplained 0. PIN: `F9-PROBE-GO-EMBED-GENERIC` in script/m14/verify-probe-battery.ts asserts the leaf on BOTH sides and forbids the bracket text with `oracleForbid`; executed negative \u2014 with the oracle reverted the battery reads `FAIL \u2026 oracle no longer derives: extends:exampleLister->ResourceIndexer, extends:examples->ClientWithListAndApply (oracle regression)` and blocks release.",
+        "why_the_gates_missed_it": "Both pinned corpora carry ZERO generic embedded fields and the canonical F5 gates read DRAWS of them, so no draw could ever contain the shape; and an oracle defect cannot be pinned by a fixture, because fixtures compare the analyzer against an expectation, never the truth against the tree. The class was found by reading a corpus 4.5x their size at full extent (reviews/go/fourth-review.md)."
+      },
+      {
+        "id": "GO20",
+        "node_type": "variadic_parameter_declaration in an INTERFACE method_spec; the parameter payload's isVariadic flag; the implements signature compare",
+        "status": "FIXED",
+        "question": "`extractGoMethodSpecParameters` accepted only `parameter_declaration`, so EVERY variadic interface method lost its last parameter: `Logf(format string, args ...any)` on the DECLARED side became `Logf(string) void` while the implementor kept `args` as a real parameter, and `buildGoMethodSignature` then compared two different signatures \u2014 the pair was silently un-satisfiable. That is not an edge case in Go: every grpc-generated client method ends in `opts ...grpc.CallOption`, and terraform's view interfaces are `Output(code InitMessageCode, args ...any)`. It also FABRICATED: `unimplementedDialer.Dial(ctx, addr)` matched `Dialer.Dial(ctx, addr string, opts ...string)` once the declared side had lost `opts`, so the analyzer declared a fixed-arity server type to implement a variadic client interface Go refuses. Separately, the parameter's `...` marker was dropped in the payload by BOTH extractors (`typeNode?.text` is the ELEMENT type), so `H(x ...string)` and `H(x string)` produced the same canonical signature.",
+        "resolution": "FIXED + PINNED (round 4): `extractGoMethodSpecParameters` reads the same node set as `extractGoParameters` \u2014 `parameter_declaration` OR `variadic_parameter_declaration` \u2014 and both extractors publish `isVariadic: true` on a variadic parameter (the family convention: python/lua do the same; the payload's `type` stays the ELEMENT type, so no existing pin or consumer changes meaning). `buildGoMethodSignature` renders `...` in front of such a parameter, and `normalizeGoSignature` keeps it (`...T` is a DIFFERENT Go type from `T` and from `[]T`). The oracle derives the identical text from the tree (`goSignatureParameterTypes`), so the compare is a comparison of signatures on both sides. Measured: go-tools full extent 1,931 files MISSING 10 -> 0, terraform 1,993 files MISSING 22 -> 0, kubernetes 13,488 files MISSING 90 -> 0. PIN: fixture go/implements-signature-914 (expectParameters name `isVariadic` on the field, forbidParameters name the collapsed spellings) + `F9-PROBE-GO-IMPL-SIGNATURE`; the F3 parameters matcher now enforces EVERY key a pin names, not just name/type, because an unpinnable payload field is exactly where a regression hides. FOUR mutants: go/impl-iface-variadic-param-dropped, go/impl-variadic-marker-stripped (plus the two below) \u2014 all CAUGHT.",
+        "why_the_gates_missed_it": "The canonical F5 draw reads 60 files per lane and neither pinned corpus is grpc-heavy: the shape needs an interface method whose LAST parameter is variadic AND an implementor in the SAME file. It survives a fixture suite too, because every existing implements fixture used non-variadic methods \u2014 the pre-fix analyzer's own fixture (go/implements-params) passes both before and after, and go-tools' 10 MISSING rows were 2 files out of 1,931. The fabrication half is the C5 collusion pattern in its purest form: the ORACLE compared method NAMES only, so it derived `unimplementedDialer -> Dialer` as well, the differential agreed, and a wrong contract reported 0 unexplained."
+      },
+      {
+        "id": "GO21",
+        "node_type": "implements implementor candidates (method receiver type names) vs declared type symbols",
+        "status": "FIXED",
+        "question": "The candidates were the types DECLARED in the file (`kind === Struct || Type`), but a Go method set is a PACKAGE-level property. gopls declares `clientDispatcher` in gopls/internal/protocol/protocol.go and all 21 of `Client`'s methods in tsclient.go, so the file holds every method the interface needs and no declaration of the implementor \u2014 the analyzer emitted NOTHING for a pair it could prove, and the oracle (which has always keyed its implementor map by receiver NAME) emitted it. On go-tools that was 2 rows (tsclient.go, tsserver.go) and on terraform 2 more (internal/collections/cmp.go: Map/Set -> transformerForCmp, whose types are generic instantiations declared elsewhere).",
+        "resolution": "FIXED + PINNED (round 4): the candidate list is declared non-interface types PLUS every receiver type name with no same-file declaration (`analyzeGoInterfaceImplementation`). Mirrored exactly on both sides \u2014 a name with no declaration cannot be a declared generic, so no generics skip applies, and a type whose embedding is declared elsewhere cannot promote, so neither side invents promotion. Measured: go-tools 193 implements truth edges, terraform 295, both sides identical at full extent, 0 MISSING / 0 UNEXPLAINED. PIN: fixture go/implements-signature-914 expects `implements clientDispatcher -> Client` where the type is declared NOWHERE in the file (deliberately); mutant go/impl-receiver-only-candidate-dropped reconstructs the pre-fix reading (an implements source that is not a declared type symbol) and is CAUGHT.",
+        "why_the_gates_missed_it": "Both rows live in ONE file each, and the F5 draw samples 60 of 1,931 files: tsclient.go was never drawn. The oracle already emitted both edges, so at the differential's 60-file resolution the lane read 0/0 either way; only a FULL-EXTENT read (script/m14/tmp/go-799-surface.ts) could see them, and the pinned F5 floor cannot. It is also the asymmetry class the corpus cannot police \u2014 when the truth already knows something the analyzer does not, a draw that misses the file reports perfect agreement."
+      },
+      {
+        "id": "GO22",
+        "node_type": "type_alias with an interface_type (and a struct_type) \u2014 `type A = interface{ M() }`",
+        "status": "FIXED",
+        "question": "The ORACLE registered interfaces from `type_spec` nodes only (`if (!ts || ts.type !== \"type_spec\") continue`), but a type ALIAS parses as `type_alias`. So `type A = interface{ M() }` never entered the oracle's `interfaces` map, and `type T interface { A }` \u2014 whose embedded element folds A's method set \u2014 folded NOTHING. go-tools internal/gcimporter/testdata/issue25301.go was the lane's ONLY unexplained pair at full extent, both rows this one shape (`S -> A`, `S -> T`): the analyzer emitted two correct implements edges the truth could not explain. The alias node declares the same `name` and `type` fields as the spec, so it is read through the identical path; the analyzer had already published `interface:A` and `interface:A@T` (its own alias handling was right).",
+        "resolution": "FIXED + PINNED (round 4): `deriveGoImplements` accepts `type_spec` OR `type_alias` for the interface, struct-embedding and generics bookkeeping. Measured: go-tools unexplained 2 -> 0 at full extent (1,931 files), and the alias case is pinned BOTH ways \u2014 fixture go/implements-signature-914 expects `implements AliasImpl -> Alias` and `implements AliasImpl -> Embedder` (the interface that embeds the alias), and `F9-PROBE-GO-IMPL-SIGNATURE` asserts the same two edges with `oracleForbid`. Executed negative: with HEAD's oracle the probe reads `oracle no longer derives: implements:AliasImpl->Alias, implements:AliasImpl->Embedder (oracle regression)` \u2014 it is the expect-side oracle check that fires first.",
+        "why_the_gates_missed_it": "An alias-to-interface is rare in real code (1 file in 1,931 on go-tools, 0 on terraform and 0 in the kubernetes chunks) and the differential only reports it as UNEXPLAINED when the analyzer's own reading is right \u2014 a lane that had ALSO skipped the alias would have reported 0/0 while both sides were blind."
+      },
+      {
+        "id": "GO23",
+        "node_type": "embedded-interface method folding, DIAMOND shape (`A { B; C }`, `B { D }`, `C { D }`)",
+        "status": "FIXED",
+        "question": "Both sides marked an interface visited and never released the mark, so it was a GLOBAL seen set rather than a path mark: the first branch to reach D consumed it and the second branch's lookup returned nothing. For `A { B; C }` with `B { D }` and `C { D }` that left C (and A) without D's methods by declaration order alone. The analyzer's `getGoInterfaceMethods` threaded one shared `seen` set through the recursion; the oracle's `fold` copied `interfaces[e]` BEFORE folding `e`, so a two-hop embedding only ever contributed through whichever of the pair happened to be visited second. Each side lost it in a DIFFERENT shape, which is why the differential reported perfect agreement on a contract both sides had wrong.",
+        "resolution": "FIXED + PINNED (round 4): the analyzer releases its visiting mark on the way out (a path mark; the entry check still carries the G12 `A { B }; B { A }` cycle guard); the oracle resolves the embedded interface FULLY first and then merges, on both the interface and the struct-promotion folds. PINNED by `F9-PROBE-GO-IMPL-SIGNATURE`, which expects `Diamond -> D/B/C/A` and forbids nothing else: pre-fix the ORACLE derived only D/B/C (losing `Diamond->A`) while the ANALYZER kept A but dropped the forbidden set, so the probe's expect-plus-forbid pair is what makes the shape visible. Executed negative against HEAD's code: 5 of 8 expected edges missing and 5 forbidden edges fabricated; post-fix 8/8 and 0.",
+        "why_the_gates_missed_it": "A diamond needs three interface declarations and an implementor in one file, and it needs the two sides to lose the edge in different ways before the differential can charge anyone. The corpora's embeddings are 1-deep, so the shape never occurred; and where only ONE side lost it, the row would have been a single MISSING in a 1,931-file read with a 50-row sample cap \u2014 invisible at the F5 floor either way."
+      },
+      {
+        "id": "GO24",
+        "node_type": "implements truth derivation (oracle): method NAME set vs canonical method SIGNATURE",
+        "status": "FIXED",
+        "question": "The oracle compared method NAME sets only, documented as a deliberate simplification (`name-set equality is the sufficient, stable truth`). It is a strict SUPERSET of Go's satisfaction rule, so it published pairs Go REFUSES and charged every one of them to the analyzer as a MISSING edge that could never be closed: go-tools `Value -> Type` (`Elem() Value` against `Elem() Type` \u2014 go/ssa/interp/testdata/src/reflect/reflect.go), `VS/VT/mybool/T -> VI` and `VS/VT/mybool -> I` (go/ssa/interp/testdata/coverage.go, where `VT.f(x int, y ...string)` was declared to satisfy `VI.f(x int)`); terraform `InitJSON/InitHuman -> Init` and `StateMigrateHuman -> StateMigrate` (`Output(code InitMessageCode, args ...any)`), `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer`, and every `UnimplementedXServer -> XClient` in the grpc generated code.",
+        "resolution": "FIXED + PINNED (round 4): `deriveGoImplements` compares the analyzer's canonical signature text, derived independently from the tree in the oracle (`goSignatureText` + `normalizeGoSignatureText`: parameters by TYPE only, grouped declarations expanded one parameter per name, a variadic parameter rendered `...T`, named results reduced to their types, no result = `void`, whitespace collapsed and `interface{}` -> `any`). Implementor candidates are receiver type names (GO21) and each pair is compared method-by-method. Measured: go-tools truth 193 implements edges with 0 MISSING and 0 UNEXPLAINED at full extent, terraform 295 / 0 / 0, kubernetes 0/0 over 13,488 files in four index-range chunks with 0 parse skips. PIN: `F9-PROBE-GO-IMPL-SIGNATURE`'s forbid list (StrictType/Elem-return, ArityIface/arity, SliceIface/`[]T`-vs-`...T`, Dialer/variadic, BareIface/`T`-vs-`...T`) with `oracleForbid`, so the truth must refuse all five. Executed negative against HEAD's code: the pre-fix oracle fabricated all five; post-fix it fabricates none and derives all 8 expected edges, and the pre-fix ANALYZER fabricated two of them (`unimplementedDialer -> Dialer`, `VariadicOnly -> BareIface`) which the probe now forbids. Fixture go/implements-signature-914 pins the same five absences on the analyzer side.",
+        "why_the_gates_missed_it": "A name-only truth can only be caught by a pair whose names match and whose signatures do not, and every such row is reported as MISSING \u2014 i.e. as an ANALYZER defect. The lane carried 9 go-tools + 18 terraform + 90 kubernetes 'missing implements' rows for four rounds, and the majority were the TRUTH being wrong; the F5 floor reads the same rows as 0/0 because a 60-file draw almost never contains a same-file name-collision pair. The simplification was documented in the oracle's own comment, which is exactly why no gate could see it: the comment asserted the analyzer 'also satisfies' a superset check, and it does not."
+      }
+    ]
+  }
+}

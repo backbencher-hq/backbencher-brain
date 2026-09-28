@@ -1,0 +1,24 @@
+{
+  "status": "verified",
+  "passed": 19,
+  "failed": 0,
+  "negatives": {
+    "planned": 5
+  },
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 6,
+    "mutantsTotal": 6,
+    "ok": true
+  },
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "verifierCommand": "npx tsx script/m29/verify-precision-ledger.ts",
+  "evidenceFile": "R4-verify.json",
+  "generatedAt": "2026-09-20T02:46:25.508Z",
+  "details": [],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:46:25.508Z",
+    "contentSha256": "afafab473171359a0e0aa3071f6a760c91254c06c134c3d3ef5fccdca7c662f6"
+  }
+}

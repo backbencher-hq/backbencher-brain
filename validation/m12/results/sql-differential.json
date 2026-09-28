@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:sql",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/sql/{Schema,Queries,Negative}.sql",
+  "fixtureDir": "validation/m12/fixtures/sql",
+  "fixtures": [
+    "Negative.sql",
+    "Queries.sql",
+    "Schema.sql"
+  ],
+  "perFile": {
+    "Negative.sql": {
+      "symbols": 0,
+      "relationships": 2
+    },
+    "Queries.sql": {
+      "symbols": 0,
+      "relationships": 4
+    },
+    "Schema.sql": {
+      "symbols": 13,
+      "relationships": 15
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 34,
+      "observedResolved": 34,
+      "truePositive": 34,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:Negative.sql:uses:global:teams",
+      "rel:Negative.sql:uses:global:users",
+      "rel:Queries.sql:calls:global:lookup_user",
+      "rel:Queries.sql:uses:global:audit_log",
+      "rel:Queries.sql:uses:global:teams",
+      "rel:Queries.sql:uses:global:users",
+      "rel:Schema.sql:calls:users_audit:audit_users",
+      "rel:Schema.sql:contains:teams:id",
+      "rel:Schema.sql:contains:teams:name",
+      "rel:Schema.sql:contains:users:active",
+      "rel:Schema.sql:contains:users:email",
+      "rel:Schema.sql:contains:users:id",
+      "rel:Schema.sql:contains:users:team_id",
+      "rel:Schema.sql:contains:users:users_team_idx",
+      "rel:Schema.sql:references:users:teams",
+      "rel:Schema.sql:references:users_audit:users",
+      "rel:Schema.sql:references:users_team_idx:users",
+      "rel:Schema.sql:uses:active_users:teams",
+      "rel:Schema.sql:uses:active_users:users",
+      "rel:Schema.sql:uses:global:users",
+      "rel:Schema.sql:uses:lookup_user:users",
+      "symbol:Schema.sql:10:property:team_id",
+      "symbol:Schema.sql:11:property:email",
+      "symbol:Schema.sql:12:property:active",
+      "symbol:Schema.sql:15:constant:users_team_idx",
+      "symbol:Schema.sql:17:class:active_users",
+      "symbol:Schema.sql:1:namespace:app",
+      "symbol:Schema.sql:23:function:lookup_user",
+      "symbol:Schema.sql:27:function:users_audit",
+      "symbol:Schema.sql:3:class:teams",
+      "symbol:Schema.sql:4:property:id",
+      "symbol:Schema.sql:5:property:name",
+      "symbol:Schema.sql:8:class:users",
+      "symbol:Schema.sql:9:property:id"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:sql",
+      "wallTimeMs": 34.803903,
+      "userCpuMs": 81.409,
+      "systemCpuMs": 10.66,
+      "peakRssBytes": 232964096,
+      "rssDeltaBytes": 7733248,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for sql. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.106Z",
+    "contentSha256": "39378e37de972cebfc24b971fffbc255bf32af576fb2aead4b996c42ca065231"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "issue": "M42.H6",
+  "code": "H6",
+  "milestone": "M42",
+  "status": "verified",
+  "checks": 38,
+  "passed": 38,
+  "failed": 0,
+  "mutantsCaught": 5,
+  "mutantsTotal": 5,
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "verifierCommand": "npx tsx script/m42/verify-hub-navigation.ts",
+  "evidenceFile": "H6.json",
+  "generatedAt": "2026-09-20T02:50:32.211Z",
+  "docDriftGate": "docs/m42/HUB-PROTOCOL.md byte-identical to a fresh generation from src/lsp/hub_protocol.ts",
+  "limitations": [
+    "The full webview round trip (real acquireVsCodeApi postMessage in a live webview) is exercised in the E5 editor leg; this suite drives the SAME handler code headless with a stub editor.",
+    "The bridge script is generated text asserted by content laws (version, attrs, staleness, no remote origins); DOM event dispatch itself is per-editor runtime."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:32.211Z",
+    "contentSha256": "7caa4347967eee5b08124936b411de4fc86b76fbc9771ea6e0d8e3b738467795"
+  }
+}

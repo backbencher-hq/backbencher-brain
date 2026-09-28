@@ -1,0 +1,51 @@
+#!/bin/sh
+# Lane-protection pre-push hook (install: script/git-hooks/install.sh).
+# Blocks pushing to main any commit that deletes a protected closed-milestone
+# artifact without the owner-approval tag "retire-approved" in its message.
+# Read-only gate: fs checks + git log — adds ~1s to a push.
+
+zero="0000000000000000000000000000000000000000"
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      if [ "$remote_sha" = "$zero" ]; then
+        range="$local_sha"
+        # New branch: protect the last 200 commits to stay fast and safe.
+        if git rev-parse --verify --quiet "$local_sha~200" >/dev/null 2>&1; then
+          range="$local_sha~200..$local_sha"
+        fi
+      else
+        range="$remote_sha..$local_sha"
+      fi
+
+      deleted=$(git log --diff-filter=D --name-only --format= "$range" 2>/dev/null | grep -v '^$' | sort -u)
+      if [ -n "$deleted" ]; then
+        blocked=""
+        MANIFEST="$(git rev-parse --show-toplevel)/validation/lane-protection/protected-paths.json"
+        for f in $deleted; do
+          if python3 - "$MANIFEST" "$f" <<'PYEOF' 2>/dev/null
+import json, sys
+manifest, path = sys.argv[1], sys.argv[2]
+protected = [p["path"] for p in json.load(open(manifest))["protected"]]
+sys.exit(0 if any(path == p or path.startswith(p + "/") for p in protected) else 1)
+PYEOF
+          then
+            blocked="$blocked $f"
+          fi
+        done
+        if [ -n "$blocked" ]; then
+          echo ""
+          echo "LANE PROTECTION: push to main blocked."
+          echo "These closed-milestone artifacts are deleted in the range being pushed:$blocked"
+          echo ""
+          echo "If this deletion is intended and owner-approved, re-commit with the"
+          echo "approval tag in the message (\"retire-approved\"), e.g.:"
+          echo "  git commit --amend -m \"... (retire-approved)\""
+          echo "Otherwise restore the files before pushing."
+          exit 1
+        fi
+      fi
+      ;;
+  esac
+done
+exit 0

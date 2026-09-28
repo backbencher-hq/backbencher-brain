@@ -1,0 +1,182 @@
+[
+  {
+    "code": "P1",
+    "githubIssue": 656,
+    "tool": "parallel-indexer",
+    "status": "verified",
+    "scope": "Single-flight index lock per project: refuse-or-wait semantics, stale-lock recovery, declared CLI/MCP error, cancel-safe release",
+    "acceptanceCriteria": [
+      "two concurrent indexProjectParallel calls on one project: exactly one wins, loser gets the declared holder error",
+      "stale lock (killed holder) is reclaimed and the run completes",
+      "cancel (SIGINT) mid-run releases the lock; immediate re-run succeeds",
+      "behavioral gate proves all three paths plus a mutation proof (gate fails with the lock disabled)"
+    ],
+    "closureRequirements": [
+      "evidence file with pass/fail/negative counts and commit stamp",
+      "ledger synced via sync-ledger.ts",
+      "issue closed with the evidence comment"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-p1-index-lock.ts",
+      "evidenceFile": "P1.json",
+      "generatedAt": "2026-09-05T22:36:11.657Z",
+      "passed": 17,
+      "failed": 0,
+      "negativeCases": 1
+    }
+  },
+  {
+    "code": "A1",
+    "githubIssue": 657,
+    "tool": "mcp-tool-handlers",
+    "status": "verified",
+    "scope": "MCP read-path auto-refresh: inline bounded reindex when stale within budget, honest decline with reason otherwise, opt-out, P1 lock non-blocking",
+    "acceptanceCriteria": [
+      "edit outside bb_edit then read: answer reflects the edit with the auto-refresh declaration",
+      "budget exceeded: honest decline naming the reason plus the existing remediation footer",
+      "opt-out (refresh=false / BB_NO_AUTO_REFRESH) honored",
+      "lock held by another indexer: declared-stale answer, no blocking, no corruption",
+      "behavioral gate for all paths + mutation proof; no auto-pass"
+    ],
+    "closureRequirements": [
+      "evidence file + ledger sync + evidence comment",
+      "FRESHNESS_REMEDIATION strings name the automatic behavior"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a1-mcp-auto-refresh.ts",
+      "evidenceFile": "A1.json",
+      "generatedAt": "2026-09-05T22:36:20.623Z",
+      "passed": 25,
+      "failed": 0,
+      "negativeCases": 4
+    }
+  },
+  {
+    "code": "A2",
+    "githubIssue": 658,
+    "tool": "cli",
+    "status": "verified",
+    "scope": "CLI read-path auto-refresh for bb search and bb status, sharing the A1 core module (one mechanism, two surfaces)",
+    "acceptanceCriteria": [
+      "CLI e2e: edit then bb search reflects it with the declaration visible",
+      "--no-auto-refresh answers from existing data with the staleness footer",
+      "parity: CLI and MCP make the same refresh decision on the same fixture state",
+      "behavioral gate + mutation proof"
+    ],
+    "closureRequirements": [
+      "evidence file + ledger sync + evidence comment",
+      "help text updated for the new flag"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a2-cli-auto-refresh.ts",
+      "evidenceFile": "A2.json",
+      "generatedAt": "2026-09-05T22:36:31.290Z",
+      "passed": 18,
+      "failed": 0,
+      "negativeCases": 5
+    }
+  },
+  {
+    "code": "A3",
+    "githubIssue": 659,
+    "tool": "config-freshness",
+    "status": "verified",
+    "scope": "Flag/config semantics: new flags/env enter the whitelist matrix, test hooks quarantined behind BB_TEST_HOOKS, remediation strings updated, docs byte-truth",
+    "acceptanceCriteria": [
+      "whitelist matrix declares or rejects every combination with the new flags",
+      "no test hook works without BB_TEST_HOOKS=1",
+      "docs match observed behavior (doc-truth gates stay green)",
+      "gate: matrix + quarantine + doc-truth checks with negatives"
+    ],
+    "closureRequirements": [
+      "evidence file + ledger sync + evidence comment"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a3-flag-semantics.ts",
+      "evidenceFile": "A3.json",
+      "generatedAt": "2026-09-05T22:36:45.344Z",
+      "passed": 32,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "A4",
+    "githubIssue": 660,
+    "tool": "corpus",
+    "status": "verified",
+    "scope": "E2E corpus on real repos: edit-then-read auto-repair, concurrency under the lock, honest-decline path; per-scenario evidence",
+    "acceptanceCriteria": [
+      "all scenarios pass on a real repo from fixtures, not only synthetic fixtures",
+      "concurrency scenario: zero interleaved writes, zero crashes, all readers declared honest",
+      "corpus gate mode with evidence stamp"
+    ],
+    "closureRequirements": [
+      "evidence file + ledger sync + evidence comment"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-a4-corpus.ts",
+      "evidenceFile": "A4.json",
+      "generatedAt": "2026-09-05T22:37:33.445Z",
+      "passed": 45,
+      "failed": 0,
+      "negativeCases": 1
+    }
+  },
+  {
+    "code": "G1",
+    "githubIssue": 661,
+    "tool": "governance",
+    "status": "verified",
+    "scope": "Governance: ledger, gates registry, mutation gate selftest, evidence policy (M40 pattern)",
+    "acceptanceCriteria": [
+      "governance green on the scaffolded-but-honest world (all open, no evidence claimed, hand-set evidence refused)",
+      "selftest proves each non-infra gate fails when its surface is corrupted",
+      "wired into npm run verify"
+    ],
+    "closureRequirements": [
+      "evidence file + ledger sync + evidence comment"
+    ],
+    "evidence": {
+      "status": "verified",
+      "currentCommit": "a6452bac849dc1b170b7d05614e5f5c92753a258",
+      "workingTreeRelevantChanges": [],
+      "verifierCommand": "bun run script/m43/verify-governance.ts",
+      "evidenceFile": "G1.json",
+      "generatedAt": "2026-09-05T22:40:14.206Z",
+      "passed": 65,
+      "failed": 0,
+      "negativeCases": 2
+    }
+  },
+  {
+    "code": "X1",
+    "githubIssue": 662,
+    "tool": "closure",
+    "status": "open",
+    "scope": "Closure gate: every subordinate gate live-green at HEAD, evidence converged, milestone close with evidence comments",
+    "acceptanceCriteria": [
+      "closure green read-only on the committed final tree",
+      "content evidence stamped at one commit (M31 ancestor rule for infra evidence)",
+      "GitHub milestone 43 closed with all issues closed"
+    ],
+    "closureRequirements": [
+      "closes last with the full-chain evidence comment"
+    ]
+  }
+]

@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_differential:xml",
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/xml/{Catalog,Doctype,Schema}.xml",
+  "fixtureDir": "validation/m12/fixtures/xml",
+  "fixtures": [
+    "Catalog.xml",
+    "Doctype.xml",
+    "Negative.xml",
+    "Schema.xsd"
+  ],
+  "perFile": {
+    "Catalog.xml": {
+      "symbols": 11,
+      "relationships": 9
+    },
+    "Doctype.xml": {
+      "symbols": 5,
+      "relationships": 4
+    },
+    "Negative.xml": {
+      "symbols": 0,
+      "relationships": 0
+    },
+    "Schema.xsd": {
+      "symbols": 11,
+      "relationships": 9
+    }
+  },
+  "passing": {
+    "schemaVersion": 1,
+    "passed": true,
+    "metrics": {
+      "expected": 49,
+      "observedResolved": 49,
+      "truePositive": 49,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
+      "unsupported": 0,
+      "correctlyClassifiedUnknown": 0,
+      "correctlyClassifiedUnsupported": 0,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
+    },
+    "earliestFailingLayer": null,
+    "truePositiveIds": [
+      "rel:Catalog.xml:contains:book:author:name",
+      "rel:Catalog.xml:contains:book:book:available",
+      "rel:Catalog.xml:contains:book:book:book:author",
+      "rel:Catalog.xml:contains:book:book:book:title",
+      "rel:Catalog.xml:contains:book:book:id",
+      "rel:Catalog.xml:contains:catalog:book",
+      "rel:Catalog.xml:contains:catalog:book:book",
+      "rel:Catalog.xml:contains:catalog:default",
+      "rel:Catalog.xml:contains:catalog:version",
+      "rel:Doctype.xml:contains:catalog:id",
+      "rel:Doctype.xml:contains:catalog:item",
+      "rel:Doctype.xml:contains:item:code",
+      "rel:Doctype.xml:imports:catalog:catalog.dtd",
+      "rel:Schema.xsd:contains:xs:complexType:xs:sequence",
+      "rel:Schema.xsd:contains:xs:element:maxOccurs",
+      "rel:Schema.xsd:contains:xs:element:minOccurs",
+      "rel:Schema.xsd:contains:xs:element:name",
+      "rel:Schema.xsd:contains:xs:element:xs:complexType",
+      "rel:Schema.xsd:contains:xs:schema:targetNamespace",
+      "rel:Schema.xsd:contains:xs:schema:xs",
+      "rel:Schema.xsd:contains:xs:schema:xs:element",
+      "rel:Schema.xsd:contains:xs:sequence:xs:element",
+      "symbol:Catalog.xml:2:module:catalog-processing",
+      "symbol:Catalog.xml:3:class:catalog",
+      "symbol:Catalog.xml:3:namespace:book",
+      "symbol:Catalog.xml:3:namespace:default",
+      "symbol:Catalog.xml:3:property:version",
+      "symbol:Catalog.xml:4:class:book:book",
+      "symbol:Catalog.xml:4:property:available",
+      "symbol:Catalog.xml:4:property:id",
+      "symbol:Catalog.xml:5:class:book:title",
+      "symbol:Catalog.xml:6:class:book:author",
+      "symbol:Catalog.xml:6:property:name",
+      "symbol:Doctype.xml:2:type:catalog",
+      "symbol:Doctype.xml:3:class:catalog",
+      "symbol:Doctype.xml:3:property:id",
+      "symbol:Doctype.xml:4:class:item",
+      "symbol:Doctype.xml:4:property:code",
+      "symbol:Schema.xsd:1:class:xs:schema",
+      "symbol:Schema.xsd:1:namespace:xs",
+      "symbol:Schema.xsd:1:property:targetNamespace",
+      "symbol:Schema.xsd:2:class:xs:element",
+      "symbol:Schema.xsd:2:property:name",
+      "symbol:Schema.xsd:3:class:xs:complexType",
+      "symbol:Schema.xsd:4:class:xs:sequence",
+      "symbol:Schema.xsd:5:class:xs:element",
+      "symbol:Schema.xsd:5:property:maxOccurs",
+      "symbol:Schema.xsd:5:property:minOccurs",
+      "symbol:Schema.xsd:5:property:name"
+    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
+    "unsupportedIds": [],
+    "minimizedFailure": null
+  },
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:xml",
+      "wallTimeMs": 16.614988,
+      "userCpuMs": 18.793,
+      "systemCpuMs": 2.18,
+      "peakRssBytes": 214728704,
+      "rssDeltaBytes": 3670016,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for xml. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.117Z",
+    "contentSha256": "3a916896d3f42baab193a7e364b68dc1374925d7cf6b1b3a61cb2ff0d0525077"
+  }
+}

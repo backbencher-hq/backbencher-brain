@@ -1,0 +1,7 @@
+{
+  "name": "ledgerline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Small commerce domain used as the M45 demo filming corpus"
+}

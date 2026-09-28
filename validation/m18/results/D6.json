@@ -1,0 +1,19 @@
+{
+  "issue": "M18.D6",
+  "code": "D6",
+  "tool": "docs truth (EMBEDDINGS / BB_ASK / BB_SEARCH)",
+  "title": "docs truth for the website with evidence-backed claims",
+  "verified": true,
+  "checks": 21,
+  "passed": 21,
+  "failed": 0,
+  "negatives": [
+    "Docs state claims that are either code invariants or M18-measured numbers; they intentionally do NOT promise a coverage target or a fixed recall guarantee (coverage is per-run volatile — see Q4)."
+  ],
+  "generatedAt": "2026-08-25T18:54:07.517Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.357Z",
+    "contentSha256": "d83b779bddc8ae62734c9579acdc00747f9be38b8131ba9756b229cee98380b4"
+  }
+}

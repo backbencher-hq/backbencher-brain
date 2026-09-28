@@ -1,0 +1,311 @@
+{
+  "issue": "M55.V1",
+  "code": "V1",
+  "milestone": "M55",
+  "status": "verified",
+  "checks": 94,
+  "passed": 94,
+  "failed": 0,
+  "realFailed": 0,
+  "negativeCases": 17,
+  "mutants": {
+    "total": 17,
+    "caught": 17
+  },
+  "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
+  "evidenceFile": "V1.json",
+  "generatedAt": "2026-09-19T02:54:51.032Z",
+  "live": {
+    "fixture": "$HOME/bb-demo-hub",
+    "fixturePresent": true,
+    "rigAvailable": true,
+    "rigMissing": [],
+    "captureRun": "live-22",
+    "probeFile": "validation/m55/results/V1-probe.json",
+    "probeStatus": "read",
+    "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
+    "blockedPathStatus": "blocked",
+    "blockedPathReason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
+  },
+  "frameFacts": {
+    "base:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 3066,
+      "textFraction": 0.0015,
+      "textRows": 19
+    },
+    "hover-declaration:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 6588,
+      "textFraction": 0.0032,
+      "textRows": 20
+    },
+    "open-in-graph:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 3324,
+      "textFraction": 0.0016,
+      "textRows": 17
+    },
+    "hover:diff": {
+      "ok": true,
+      "changedPixels": 161577,
+      "changedFraction": 0.0779,
+      "box": [
+        418,
+        30,
+        640,
+        309
+      ]
+    },
+    "hub:panel": {
+      "ok": true,
+      "width": 729,
+      "height": 810,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 741,
+      "textFraction": 0.0013,
+      "textRows": 5
+    },
+    "hub:editor": {
+      "ok": true,
+      "width": 864,
+      "height": 810,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 605,
+      "textFraction": 0.0009,
+      "textRows": 7
+    },
+    "R2: the impact view is not the hub view (distinct surfaces)": {
+      "ok": true,
+      "changedPixels": 12792,
+      "changedFraction": 0.0217,
+      "box": [
+        0,
+        0,
+        448,
+        585
+      ]
+    },
+    "R2: the call-hierarchy view differs from impact (distinct surfaces)": {
+      "ok": true,
+      "changedPixels": 159817,
+      "changedFraction": 0.2707,
+      "box": [
+        0,
+        0,
+        468,
+        810
+      ]
+    },
+    "ctor-hover:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 5541,
+      "textFraction": 0.0027,
+      "textRows": 19
+    },
+    "ctor-hover:diff": {
+      "ok": true,
+      "changedPixels": 115466,
+      "changedFraction": 0.0557,
+      "box": [
+        377,
+        12,
+        1243,
+        1061
+      ]
+    },
+    "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
+      "ok": true,
+      "changedPixels": 14902,
+      "changedFraction": 0.0252,
+      "box": [
+        0,
+        82,
+        448,
+        521
+      ]
+    },
+    "ch-click:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 3616,
+      "textFraction": 0.0017,
+      "textRows": 20
+    },
+    "ch-click:editor-diff": {
+      "ok": true,
+      "changedPixels": 123348,
+      "changedFraction": 0.3506,
+      "box": [
+        0,
+        0,
+        1209,
+        291
+      ]
+    },
+    "ch-click:navigation": {
+      "ok": true,
+      "changedPixels": 123348,
+      "changedFraction": 0.3506,
+      "box": [
+        0,
+        0,
+        1209,
+        291
+      ]
+    },
+    "ch-click:whole-diff": {
+      "ok": true,
+      "changedPixels": 466518,
+      "changedFraction": 0.225,
+      "box": [
+        48,
+        35,
+        1689,
+        1039
+      ]
+    },
+    "zero-usage:stats": {
+      "ok": true,
+      "width": 1920,
+      "height": 1080,
+      "background": [
+        18,
+        19,
+        20
+      ],
+      "textPixels": 6390,
+      "textFraction": 0.0031,
+      "textRows": 19
+    },
+    "zero-usage:diff": {
+      "ok": true,
+      "changedPixels": 213238,
+      "changedFraction": 0.1028,
+      "box": [
+        377,
+        12,
+        1243,
+        1061
+      ]
+    }
+  },
+  "claimTrace": [
+    {
+      "claim": "the hover actions answer a palette invocation as well as a hover link",
+      "source": "component gate V1-action-args (47/47, 7/7 mutants)",
+      "frame": "4-open-in-graph.png, 5-impact.png"
+    },
+    {
+      "claim": "the status facts render on a readable surface, once each, with provenance",
+      "source": "component gate V1-status-panel (42/42, 11/11 mutants)",
+      "frame": "7-status.png"
+    },
+    {
+      "claim": "hover at a declaration and at a call site resolve the same identity",
+      "source": "probe F1 + F2",
+      "frame": "2-hover-declaration.png, 3-hover-call-site.png"
+    },
+    {
+      "claim": "one tier story per symbol, in the legend's vocabulary",
+      "source": "probe F1–F4 provenance.evidenceClass + evidenceTiers",
+      "frame": "2-hover-declaration.png"
+    },
+    {
+      "claim": "the card renders a human signature and no serialization",
+      "source": "probe F1–F4 signature + card text",
+      "frame": "2-hover-declaration.png"
+    },
+    {
+      "claim": "the hub rows agree with the one classifier on the real index",
+      "source": "probe F7 + F8 rows (owner vs core)",
+      "frame": "4-open-in-graph.png"
+    },
+    {
+      "claim": "the panel opens without stealing the editor column",
+      "source": "frame read: editor region text rows",
+      "frame": "4-open-in-graph.png"
+    },
+    {
+      "claim": "the three surfaces are distinct views",
+      "source": "frame diffs: hub vs impact vs call hierarchy",
+      "frame": "4-open-in-graph.png, 5-impact.png, 6-call-hierarchy.png"
+    },
+    {
+      "claim": "a symbol that does not exist is a declared error, not an empty result",
+      "source": "probe F11",
+      "frame": null
+    },
+    {
+      "claim": "every frame is about the bundle built at this HEAD",
+      "source": "R3 bundle-hash comparison",
+      "frame": "all frames"
+    },
+    {
+      "claim": "a missing fixture is a declared blocked session with a reason, never a green run",
+      "source": "R7 + validation/m55/results/V1-blocked-path.json",
+      "frame": null
+    },
+    {
+      "claim": "the hub header's counts are the group counts and account for every listed row (F7)",
+      "source": "R8 over the real F7/F8 responses rendered by the ONE core",
+      "frame": "4-open-in-graph.png"
+    }
+  ],
+  "failures": [],
+  "limitations": [
+    "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
+    "The protocol declares a PINNED VS Code 1.85.0 from .vscode-test; that pin is not present on this machine, so the session runs the system `code` and records its exact version in the evidence. The pin's comparability guarantee is therefore declared but not honored here — recorded, not hidden.",
+    "The flow DRIVING is keyboard-deterministic (`code -g`, the editor's hover chord, the extension's contributed commands through the palette BY ID — see docs/m55/FRAME-FINDINGS.md F9: a palette TITLE is not an identifier, and `>` + an id ranks unrelated commands first, both of which were caught by reading the frames back). The filing rig additionally pixel-clicked the hover card's action links; that path is not re-driven here, and the card's actions are asserted from the probe's card text plus the component gate V1-action-args instead.",
+    "Pixel thresholds (card-size, changed-pixel floors, text-row floors) are declared constants tuned to this display size (1920x1080 @ zoom 0); a different screen size invalidates the frame reads and the gate says so rather than scaling silently."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-19T02:54:51.032Z",
+    "contentSha256": "f897e9d1016d68f1dfc2d3bd43cc8c5642fa302f207d003c5528801bf42a466a"
+  }
+}

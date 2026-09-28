@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "status": "verified",
+  "milestones": {
+    "27": {
+      "state": "closed",
+      "title": "M27: Everywhere (IDE v3)"
+    },
+    "28": {
+      "state": "closed",
+      "title": "M28: The Union (IDE v4)"
+    }
+  },
+  "closedIssues": {
+    "27": [
+      [
+        526,
+        "closed"
+      ],
+      [
+        525,
+        "closed"
+      ],
+      [
+        524,
+        "closed"
+      ],
+      [
+        523,
+        "closed"
+      ],
+      [
+        522,
+        "closed"
+      ],
+      [
+        521,
+        "closed"
+      ],
+      [
+        520,
+        "closed"
+      ],
+      [
+        519,
+        "closed"
+      ],
+      [
+        518,
+        "closed"
+      ],
+      [
+        517,
+        "closed"
+      ]
+    ],
+    "28": [
+      [
+        534,
+        "closed"
+      ],
+      [
+        533,
+        "closed"
+      ],
+      [
+        532,
+        "closed"
+      ],
+      [
+        531,
+        "closed"
+      ],
+      [
+        530,
+        "closed"
+      ],
+      [
+        529,
+        "closed"
+      ],
+      [
+        528,
+        "closed"
+      ],
+      [
+        527,
+        "closed"
+      ]
+    ]
+  },
+  "pointerTo": {
+    "27": "milestone #38 (issues 616-622)",
+    "28": "milestone #39 (issues 623-629)"
+  },
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.549Z",
+    "contentSha256": "ea5c485fe6718aebfb8c5554d96aa2e1da1a92223027ea7ba32ebdc031cfab46"
+  }
+}

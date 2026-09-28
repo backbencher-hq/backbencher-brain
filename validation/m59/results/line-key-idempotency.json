@@ -1,0 +1,68 @@
+{
+  "probe": "M59.P4",
+  "issue": "#822",
+  "at": "2026-09-19T03:11:33.065Z",
+  "atCommit": "295f6fa09b52e19afa71549216c99e19f106e448",
+  "treeModifiedInputs": 52,
+  "command": "npx tsx script/m59/verify-line-key-idempotency.ts",
+  "question": "after making row identity line-keyed, do edits leave stale rows, and does the repair path duplicate a site?",
+  "fullIndex": {
+    "tag": "full",
+    "rows": 4,
+    "lines": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "distinctIds": 4,
+    "idShapes": [
+      "rel"
+    ]
+  },
+  "afterBEdit": {
+    "tag": "after-B-edit",
+    "rows": 4,
+    "lines": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "distinctIds": 4,
+    "idShapes": [
+      "m40"
+    ]
+  },
+  "afterAEdit": {
+    "tag": "after-A-edit",
+    "rows": 4,
+    "lines": [
+      5,
+      6,
+      7,
+      8
+    ],
+    "distinctIds": 4,
+    "idShapes": [
+      "rel"
+    ]
+  },
+  "expectedLines": {
+    "first": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "afterMove": [
+      5,
+      6,
+      7,
+      8
+    ]
+  },
+  "status": "pass",
+  "failures": 0,
+  "checks": 6
+}

@@ -1,0 +1,32 @@
+{
+  "issue": "493",
+  "code": "L4",
+  "status": "verified",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "sourceFingerprint": "16e57df5c96a0602f38de94674c1a4777b40b68b420f5d4acaa40391d7fb535b",
+  "verifierCommand": "npx tsx script/m24/verify-symbols.ts",
+  "evidenceFile": "L4.json",
+  "generatedAt": "2026-09-20T02:43:28.068Z",
+  "passed": 18,
+  "failed": 0,
+  "failures": [],
+  "negativeCases": 0,
+  "verdict": {
+    "realComponentFailures": 0,
+    "mutantsCaught": 4,
+    "mutantsTotal": 4,
+    "ok": true,
+    "note": "`failed` counts real functional failures only; mutant runs are reported separately via the verdict block."
+  },
+  "limitations": [
+    "index-sourced only; hierarchy depth limited to what the analyzer stored via owner_symbol_id",
+    "workspace ranking follows the existing graph-engine convention (exact then fuzzy LIKE, gravity DESC)",
+    "fixture-backed double for the DB layer; live brain.db path covered by upstream freshness verifiers and the V1 harness",
+    "latency measured on this machine only; cross-platform budgets are M25 scope"
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:43:28.068Z",
+    "contentSha256": "174de3d39466fdb654a7253ac8a44c5c877b6e5781942e4b35cd6572f86d51b3"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "probe": "M57.T3-latency-idle",
+  "issue": 791,
+  "milestone": "M57",
+  "at": "2026-09-13T18:46:00Z",
+  "status": "verified",
+  "purpose": "Honest headline latency for bb_patterns scope=all on the current corpus, measured on a QUIET box (the M57 receipt recorded numbers under machine load ~15 from co-agent builds; this re-measure resolves that disclosed caveat).",
+  "corpus": {
+    "files": 3338,
+    "symbols": 180772,
+    "relationships": 189499,
+    "flagged": 0,
+    "digest": "e3b0c44298fc1c14"
+  },
+  "classifierEpoch": "d1af1c1e4ba070dc",
+  "dataDir": "$HOME/.khushal_file/.bb",
+  "dist": "rebuilt at HEAD before measuring (npx tsup, build success)",
+  "method": {
+    "engine": "script/m57/probe-scope-all.ts --mode src (direct engine import, N rounds)",
+    "mcpCold": "script/m57/probe-scope-all.ts --dist (fresh `node bin/bb mcp` per round: includes Node boot + MCP handshake)",
+    "mcpWarm": "script/m57/probe-scope-all-warm.ts (ONE long-lived server, initialize once, N sequential request→response round-trips per tool — what an agent actually experiences)"
+  },
+  "measurements": {
+    "engineWarm": {
+      "rounds": 5,
+      "p50Ms": 825,
+      "digest": "1584d86517ca3445",
+      "loadAverage": 2.75
+    },
+    "mcpWarmSession": {
+      "runA": {
+        "loadAverage": 9.13,
+        "bb_patterns_scope_all": { "minMs": 2133, "p50Ms": 2618, "maxMs": 20694 },
+        "bb_health": { "minMs": 356, "p50Ms": 391, "maxMs": 2363 },
+        "patternsRawMs": [20694, 2618, 2133, 2530, 3216],
+        "healthRawMs": [2363, 391, 478, 356, 368]
+      },
+      "runB": {
+        "loadAverage": 5.0,
+        "bb_patterns_scope_all": { "minMs": 1465, "p50Ms": 1655, "maxMs": 4568 },
+        "bb_health": { "minMs": 210, "p50Ms": 242, "maxMs": 269 },
+        "patternsRawMs": [4568, 1465, 1655, 1485, 1504, 1937],
+        "healthRawMs": [210, 245, 222, 269, 242, 223]
+      }
+    },
+    "mcpColdProcess": {
+      "rounds": 5,
+      "p50Ms": 3490,
+      "digest": "2662f5aea86e4686",
+      "loadAverage": 3.5
+    }
+  },
+  "headline": {
+    "bb_patterns_scope_all_warmPerCall": "1465–2618 ms (p50 1655 ms at load ~5; p50 2618 ms at load ~9)",
+    "bb_patterns_scope_all_coldCli": "~3000–3490 ms end-to-end (includes Node boot + MCP handshake)",
+    "bb_health_warmPerCall": "210–391 ms (p50 242–391 ms)",
+    "engineOnly": "825 ms"
+  },
+  "caveats": [
+    "First call in a fresh MCP server is slower than steady state (lazy engine/analyzer initialization): 4568 ms in runB, 20694 ms in runA under load ~9 (opencode + client-tooling at ~100% CPU). Steady state is the number shown above; the first-call penalty is disclosed, not hidden.",
+    "The box is shared with co-agent processes; load average is recorded per run so every number is attributable.",
+    "Cold-process numbers include Node startup (~1.5–2.5 s) that a long-lived MCP client never pays per call.",
+    "Parity of the findings payload across modes was proven by M57's T3 gate (17/17 on both runtimes); the digests here are recorded for traceability and intentionally differ by mode because the MCP result envelope differs from the engine's raw payload."
+  ],
+  "before": {
+    "note": "M50 receipt recorded scope=all at 1345 ms on the smaller pre-M57 corpus (2867 files) and >90 s (hard timeout) before M50's bounding work.",
+    "reference": "validation/m50/results and docs/m50 receipts"
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "probe": "M50.A2-complexity-phases",
+  "at": "2026-09-12T15:11:17.373Z",
+  "projectId": "1d3d57103be91b8f9716d70199fe28a3f39245d9",
+  "dbPath": "$HOME/.khushal_file/.bb/projects/1d3d57103be91b8f9716d70199fe28a3f39245d9/brain.db",
+  "phases": {
+    "oldFetchAllRowsMs": 1317,
+    "symbolRows": 168629,
+    "oldBuildAndAccumulateMs": 72,
+    "oldSortMs": 14,
+    "oldAggregatesMs": 20,
+    "aggregateQueryMs": 107,
+    "topNRowsMs": 126,
+    "topNRows": 20
+  },
+  "old": {
+    "symbolCount": 168629,
+    "cyclomaticAvg": 1.22,
+    "linesOfCode": 419510,
+    "couplingEdges": 172236,
+    "top20": [
+      {
+        "name": "scan",
+        "type": "function",
+        "complexity": 523,
+        "file": "grammars/tree-sitter-fsharp/common/scanner.h",
+        "line": 551
+      },
+      {
+        "name": "analyze",
+        "type": "method",
+        "complexity": 501,
+        "file": "src/ast/real-cpp-analyzer.ts",
+        "line": 32
+      },
+      {
+        "name": "deriveTreeEdges",
+        "type": "function",
+        "complexity": 362,
+        "file": "script/m14/differential.ts",
+        "line": 4736
+      }
+    ]
+  },
+  "new": {
+    "perCallMs": [
+      228,
+      235
+    ],
+    "symbolCount": 168629,
+    "cyclomaticAvg": 1.22,
+    "linesOfCode": 419510,
+    "couplingEdges": 172236,
+    "maintainability": 0,
+    "top20": [
+      {
+        "name": "scan",
+        "type": "function",
+        "complexity": 523,
+        "file": "grammars/tree-sitter-fsharp/common/scanner.h",
+        "line": 551
+      },
+      {
+        "name": "analyze",
+        "type": "method",
+        "complexity": 501,
+        "file": "src/ast/real-cpp-analyzer.ts",
+        "line": 32
+      },
+      {
+        "name": "deriveTreeEdges",
+        "type": "function",
+        "complexity": 362,
+        "file": "script/m14/differential.ts",
+        "line": 4736
+      }
+    ]
+  },
+  "parity": {
+    "symbolCount": true,
+    "cyclomaticAvg": true,
+    "linesOfCode": true,
+    "couplingEdges": true,
+    "top20SetEqual": true,
+    "rankedSubsetOfOldTop": true
+  }
+}

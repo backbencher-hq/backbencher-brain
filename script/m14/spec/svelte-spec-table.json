@@ -1,0 +1,51 @@
+{
+ "language": "svelte",
+ "grammar": "tree-sitter-svelte.wasm",
+ "sfc_structure": {
+  "component": "root — the SFC file; emits a Class symbol (isSvelteComponent/isSfc)",
+  "template_element": "markup — component usages -> instantiates; on: directives -> calls; {#if}/{#each}/{#await} -> template decision points",
+  "script_element": "script block — delegated to the JS/TS sub-analyzer (engine-provided sfcScriptTrees); multiple blocks allowed (module + instance)",
+  "style_element": "style block — skipped (no AST extraction)"
+ },
+ "template": {
+  "element/self_closing_tag": "instantiates (non-builtin tag, isComponentUsage) — leaf tag name as written",
+  "attribute": "on: directive -> calls (handler leaf); named bindings with expression children (label={x}, this={fn}) -> member Uses via the generic expression path; shorthand {value} and spread {...props} carry the expression in the attribute NAME (no expression child) -> member Uses via the attribute-name scan (H1/H3, Sv1 #736); bare this={X} on svelte:component/svelte:element: member-bound -> template Uses, import-bound -> instantiates dynamic usage (H2, Sv1 #736)",
+  "expression": "{{ expr }} — opaque svelte_raw_text; template member read -> Uses (scope-aware); identifier scan is a char-walk with quote states (string contents never read, M2), comment states (// and /* */ skipped, D3), and receiver-only emission (chain leaves never read, M3) — Sv1/Sv2 #736, Vue D1/M1 contract",
+  "if_statement/else_if_block": "template decision points (complexity); conditions are member Uses reads (D5 Sv2 #736 — opaque raw_text heads, no expression nodes)",
+  "each_statement": "loop decision point (complexity); collection expr -> member Uses; loop vars are template-local and shadow same-named members (S5 collision-gated)",
+  "await_statement": "async decision point (complexity); promise expr -> member Uses; then/catch vars are template-local (shadow); INLINE then/as vars (`then value`, `as d`, no block node) registered as template-locals (M4, Sv1 #736); no phantom shadow entries (M1, Sv1 #736)",
+  "key_statement": "keyed-block decision point (complexity); key expression is a member Uses read (D5 Sv2 #736)",
+  "snippet_statement": "component-owned Method symbol (isSnippet); snippet params are template-local",
+  "render_tag": "calls -> snippet name ({@render row('x')}); dotted targets resolve to the callable LEAF ({@render ns.row()} -> row, D4 Sv2 #736; non-conforming shapes keep the leading-identifier fallback)",
+  "html_tag/const_tag/debug_tag": "template expressions -> member Uses; {@const} binding is block-local and declaration-order-aware (S5)"
+ },
+ "script": {
+  "export let": "Property symbol (component prop API) via the JS export-let reclassification",
+  "$props()": "Property symbols from destructure (isSvelteProp/fromRunes), exactly once; JS sub-analyzer duplicate is dropped (S2)",
+  "$: target = expr": "reactive declaration -> one component-owned Variable symbol (isReactiveDeclaration), deduplicated across repeated targets (S6)",
+  "svelte runes": "$state/$derived/$effect/$props — compiler macros; the initialized vars are symbols, the rune CALLS are filtered"
+ },
+ "expressions_requiring_uses_or_calls": [
+  "{{ count }} / {expr} interpolation — template member use (gap S1)",
+  "attribute bindings label={label} / member this={fn} — template member use (gap S1); shorthand {value} / spread {...props} — template member use (H1/H3); import-bound this={Comp} — instantiates dynamic usage (H2)",
+  "{#each items as item} collection — template member use; loop vars shadow same-named members (S5)",
+  "{#await promise then value} / as d — template member use; block AND inline then/catch vars shadow same-named members (M4)",
+  "{@html raw} / {@const x = expr} / {@debug expr} — template member use; const binding is local to its block",
+  "on: event directives -> calls (WORKS; handler leaf)",
+  "{@render name(...)} -> calls (WORKS; snippet call)",
+  "script expressions — delegated to JS/TS analyzer",
+  "S5/S6 hardening — each/await/snippet/const lexical scopes and repeated `$:` targets are permanently fixture- and mutant-gated",
+  "Sv1 #736 hardening — H1/H2/H3 attribute shapes, H4 SFC range coherence (lines + first-line columns + byte indices), M1 phantom removal, M2/M3 tokenizer are permanently fixture- and mutant-gated",
+  "{#if cond} / {:else if cond} / {#key exp} — template member use (D5)"
+ ],
+ "statements_affecting_complexity": [
+  "script blocks: JS/TS contract (if/for/while/ternary/short-circuit)",
+  "template directives: {#if} / {:else if} / {#each} / {#await} / {#key}"
+ ],
+ "_notes": [
+  "Svelte SFC = template + script + style; the script is parsed by the JS/TS sub-analyzer, so script-side edges (imports/calls/uses/references/contains/exports/extends/overrides) follow those analyzers.",
+  "The svelte grammar exposes template expressions as opaque svelte_raw_text (no child AST) — identifier extraction is by text scan, the documented fallback.",
+  "Component usages in template are instantiates (usage_contextual); HTML + Svelte builtin tags filtered.",
+  "The component symbol (file module name) is the SFC's Class; export-let/exported bindings and $props()/reactive declarations are component-owned."
+ ]
+}

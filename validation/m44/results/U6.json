@@ -1,0 +1,37 @@
+{
+  "issue": "693",
+  "code": "U6",
+  "milestone": "M44",
+  "status": "verified",
+  "checks": 25,
+  "passed": 25,
+  "failed": 0,
+  "negativeCases": 2,
+  "mutantsCaught": 4,
+  "mutantsTotal": 4,
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "workingTreeRelevantChanges": [],
+  "verifierCommand": "npx tsx script/m44/verify-usages-fallback.ts",
+  "evidenceFile": "U6.json",
+  "generatedAt": "2026-09-20T02:50:47.525Z",
+  "fixture": {
+    "root": "$HOME/backbencher-brain/.tools/m44-u6-fixture",
+    "files": [
+      "src/main/java/com/demo/App.java",
+      "src/main/java/com/demo/Extra1.java",
+      "src/main/java/com/demo/Extra2.java"
+    ],
+    "symbol": "render",
+    "shownLinks": 3,
+    "hiddenMore": 1
+  },
+  "limitations": [
+    "The vscode command handler cannot execute headlessly; its wiring is pinned structurally (R3) and executed live by the E5 in-editor leg (click show-all-usages → native peek OR usages fallback, never a bare message).",
+    "The pure core's reveal floor is reachable only for legacy clients that predate the symbol-carrying link; it remains a declared outcome, not a message-only dead end."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-20T02:50:47.526Z",
+    "contentSha256": "8c59a7e613134892ab11a632555cb78de6df1ae56ae4a536f13668cf8495cd3d"
+  }
+}

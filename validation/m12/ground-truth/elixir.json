@@ -1,0 +1,766 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/elixir/ (Service.ex, Negative.ex) \u2014 hand-audited against Elixir semantics: defmodule\u2192module (nested names qualified), defprotocol\u2192interface, defimpl\u2192class named by for-type + implements edge, defstruct\u2192struct + field properties, def/defp\u2192function, defmacro\u2192macro, protocol/impl members\u2192method, @type\u2192type; relationships: contains (module owns types/struct/fields/functions/macros, interface+class own methods, parent module owns nested module), implements (defimpl\u2192protocol, @behaviour\u2192behaviour), calls (function sources; alias-resolved qualified module calls; Kernel builtins + special forms + def heads + attributes + member access excluded), instantiates (%Struct{} literals in body position), references (module \u2192 used/aliased/imported/required deps).",
+  "facts": [
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 1,
+      "attributes": {
+        "name": "MyApp",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 2,
+      "attributes": {
+        "name": "MyApp.User",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 6,
+      "attributes": {
+        "name": "t",
+        "symbolKind": "type"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 7,
+      "attributes": {
+        "name": "email",
+        "symbolKind": "type"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 9,
+      "attributes": {
+        "name": "MyApp.User",
+        "symbolKind": "struct"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 9,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 9,
+      "attributes": {
+        "name": "email",
+        "symbolKind": "property"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 12,
+      "attributes": {
+        "name": "new",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 16,
+      "attributes": {
+        "name": "update",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 22,
+      "attributes": {
+        "name": "validate",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 24,
+      "attributes": {
+        "name": "count_down",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 26,
+      "attributes": {
+        "name": "macro_example",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 30,
+      "attributes": {
+        "name": "Serializable",
+        "symbolKind": "interface"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 31,
+      "attributes": {
+        "name": "to_map",
+        "symbolKind": "method"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 34,
+      "attributes": {
+        "name": "MyApp.User",
+        "symbolKind": "class"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 35,
+      "attributes": {
+        "name": "to_map",
+        "symbolKind": "method"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 40,
+      "attributes": {
+        "name": "MyApp.UserStore",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 46,
+      "attributes": {
+        "name": "find",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 52,
+      "attributes": {
+        "name": "serialize",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 54,
+      "attributes": {
+        "name": "handle_call",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 59,
+      "attributes": {
+        "name": "MyApp.Helpers",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 60,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 63,
+      "attributes": {
+        "name": "MyApp.Behaviour",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Service.ex",
+      "line": 64,
+      "attributes": {
+        "name": "__using__",
+        "symbolKind": "macro"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "MyApp.Behaviour",
+      "attributes": {
+        "type": "implements"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User.new/2",
+      "targetId": "MyApp.User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User.update/2",
+      "targetId": "validate",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User.update/2",
+      "targetId": "Map.merge",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User.count_down/1",
+      "targetId": "count_down",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "Serializable",
+      "attributes": {
+        "type": "implements"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "MyApp.User",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "MyApp.Helpers",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "Logger",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "GenServer",
+      "attributes": {
+        "type": "references"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore.find/1",
+      "targetId": "Logger.info",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore.find/1",
+      "targetId": "serialize",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore.find/1",
+      "targetId": "MyApp.User.new",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore.handle_call/3",
+      "targetId": "find",
+      "attributes": {
+        "type": "calls"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp",
+      "targetId": "MyApp.User",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "t",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "email",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "new",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "update",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "validate",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "count_down",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "macro_example",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "Serializable",
+      "targetId": "to_map",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.User",
+      "targetId": "to_map",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "find",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "serialize",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.UserStore",
+      "targetId": "handle_call",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.Helpers",
+      "targetId": "helper",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Service.ex",
+      "sourceId": "MyApp.Behaviour",
+      "targetId": "__using__",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 1,
+      "attributes": {
+        "name": "Negative",
+        "symbolKind": "module"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 5,
+      "attributes": {
+        "name": "bad_type",
+        "symbolKind": "type"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 7,
+      "attributes": {
+        "name": "builtin_only",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 14,
+      "attributes": {
+        "name": "member_access",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 19,
+      "attributes": {
+        "name": "pattern_struct",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 21,
+      "attributes": {
+        "name": "closure",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 25,
+      "attributes": {
+        "name": "quoted",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.ex",
+      "line": 31,
+      "attributes": {
+        "name": "guard_call",
+        "symbolKind": "function"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "bad_type",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "builtin_only",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "member_access",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "pattern_struct",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "closure",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "quoted",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    },
+    {
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.ex",
+      "sourceId": "Negative",
+      "targetId": "guard_call",
+      "attributes": {
+        "type": "contains"
+      },
+      "state": "resolved"
+    }
+  ]
+}

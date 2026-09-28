@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "per_analyzer_complexity:haskell",
+  "fixtureDir": "validation/m12/fixtures/haskell",
+  "corpusDir": "/tmp/haskell-corpus-copy",
+  "runs": [
+    {
+      "name": "fixtures",
+      "measurement": {
+        "name": "fixtures:haskell",
+        "wallTimeMs": 295.850354,
+        "userCpuMs": 280.609,
+        "systemCpuMs": 161.972,
+        "peakRssBytes": 221356032,
+        "rssDeltaBytes": 178343936,
+        "databaseBytes": null,
+        "files": 2,
+        "symbols": 33,
+        "relationships": 42,
+        "filesPerSecond": 6.760174436025857,
+        "symbolsPerSecond": 111.54287819442663,
+        "relationshipsPerSecond": 141.963663156543
+      },
+      "symbols": 33,
+      "relationships": 42
+    },
+    {
+      "name": "corpus_subset",
+      "measurement": {
+        "name": "corpus_subset:haskell",
+        "wallTimeMs": 16016.823243,
+        "userCpuMs": 22915.734,
+        "systemCpuMs": 1706.988,
+        "peakRssBytes": 416333824,
+        "rssDeltaBytes": 153268224,
+        "databaseBytes": null,
+        "files": 637,
+        "symbols": 17828,
+        "relationships": 34755,
+        "filesPerSecond": 39.77068300846703,
+        "symbolsPerSecond": 1113.0796494112249,
+        "relationshipsPerSecond": 2169.905946560866
+      },
+      "symbols": 17828,
+      "relationships": 34755
+    }
+  ],
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.881Z",
+    "contentSha256": "46224951198c3b9623155284f1734455b174565b534f56ffeaace8569dc49f89"
+  }
+}

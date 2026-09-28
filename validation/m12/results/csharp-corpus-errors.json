@@ -1,0 +1,201 @@
+{
+  "analyzer": "csharp",
+  "corpus": "$HOME/roslyn",
+  "corpusRepo": "roslyn",
+  "revision": "73241b4beaccbdb6e8f7eb78f5377a01c88ddc21",
+  "extensions": [
+    "*.cs"
+  ],
+  "mode": "recorded-m12-sample",
+  "sampleList": "validation/m12/results/csharp-corpus-sample.txt",
+  "trackedFilesInCorpus": 17137,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 10,
+  "cleanFiles": 390,
+  "missingNodeFiles": 5,
+  "errorNodeFiles": 8,
+  "errorRates": {
+    "any": 2.5,
+    "missing": 1.3,
+    "error": 2
+  },
+  "grammarErrorFiles": 10,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 26763,
+  "missingTokens": {
+    "#endif": 2,
+    "!": 2,
+    ")": 2,
+    ">": 1,
+    ":": 1
+  },
+  "errorLineSignatures": {
+    "{": 15,
+    "#:ID ../ID/ID/ID/ID/ID/": 13,
+    "ID ID;": 8,
+    "ID.ID(ID);": 7,
+    "ID = ID;": 6,
+    "ID ID = ID.ID();": 5,
+    "ID ID = ID.ID(ID, ID, ID, ID, ID);": 4,
+    "ID (ID ID (ID.ID) { ID.ID: [ID { ID.ID: (ID)ID.ID }] }": 4,
+    "ID ID(ID);": 4,
+    "ID ID = ID(ID, ID, ID, ID);": 3,
+    "// ID ID ID .ID ID ID ID ID ID ID.": 3,
+    "ID);": 3,
+    "ID(ID, ID.ID, ID, ID ID ID, ID ID ID);": 3,
+    "ID = ID.ID(ID.ID.ID(ID(ID)));": 3,
+    "ID = ID.ID(ID(ID));": 3,
+    "(ID: ID.ID ID ID.ID ID ID.ID),": 3,
+    "}": 2,
+    "ID.ID.ID.ID.ID.ID.ID);": 2,
+    "ID: ID ? [ID.ID] : ID,": 2,
+    "#ID": 2,
+    "ID (ID.ID) { ID.ID.ID: (ID)ID.ID })": 2,
+    "ID.ID(ID(ID, ID: ID, ID: ID));": 2,
+    "ID ID = ID(ID);": 2,
+    "ID ID ID = ID<ID<ID>>.ID(ID ID ID);": 2,
+    "ID (ID.ID(ID, ID.ID) &&": 2,
+    "ID = ID.ID(ID.ID.ID);": 2,
+    "ID ID = ID || ID.ID(ID.ID(), ID.ID);": 2,
+    "ID ID = ID || ID.ID(ID.ID, ID.ID());": 2,
+    "ID = ID.ID(ID, ID.ID(ID.ID(ID.ID - 1)));": 2,
+    "ID ID ID))": 2,
+    ".ID(ID, ID.ID(ID))": 2,
+    "ID (ID == ID)": 2,
+    "ID (ID.ID.ID(ID.ID))": 2,
+    "ID (ID && ID.ID(ID.ID))": 2,
+    "ID ID ID = ID<ID>.ID(ID.ID, ID ID ID);": 2,
+    "ID?.ID() ID ID [.., (ID: ID.ID) ID])": 2,
+    "ID (ID ID [.., (ID: ID.ID)])": 2,
+    "ID (ID ID = 0; ID < ID.ID; ID++)": 1,
+    "ID (ID ID, ID ID, ID ID) ID(ID[] ID)": 1,
+    "ID.ID(ID == 0 ? ID : ID);": 1
+  },
+  "firstErrorLineSignatures": {
+    "// ID ID ID .ID ID ID ID ID ID ID.": 3,
+    "}": 1,
+    "ID: ID ? [ID.ID] : ID,": 1,
+    "#ID": 1,
+    "ID (ID ID (ID.ID ID ID.ID) { ID.ID: ID ID } &&": 1,
+    "ID (ID ID [.., (ID: ID.ID)])": 1
+  },
+  "errorFileList": [
+    {
+      "file": "eng/generate-compiler-code.cs",
+      "nodes": 39,
+      "missingTokens": [],
+      "errorNodes": 39,
+      "firstRow": 124,
+      "firstKind": "ERROR",
+      "firstLine": "}",
+      "pipelineErrors": 72
+    },
+    {
+      "file": "src/Analyzers/Core/CodeFixes/ImplementInterface/ImplementInterfaceGenerator_Property.cs",
+      "nodes": 3,
+      "missingTokens": [],
+      "errorNodes": 3,
+      "firstRow": 142,
+      "firstKind": "ERROR",
+      "firstLine": "explicitInterfaceImplementations: useExplicitInterfaceSymbol ? [property.GetMethod] : default,",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "src/Analyzers/Core/CodeFixes/NamingStyle/NamingStyleCodeFixProvider.cs",
+      "nodes": 4,
+      "missingTokens": [
+        "#endif"
+      ],
+      "errorNodes": 2,
+      "firstRow": 135,
+      "firstKind": "ERROR",
+      "firstLine": "#endif",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "src/Analyzers/CSharp/Analyzers/NewLines/ArrowExpressionClausePlacement/ArrowExpressionClausePlacementDiagnosticAnalyzer.cs",
+      "nodes": 1,
+      "missingTokens": [
+        "!"
+      ],
+      "errorNodes": 0,
+      "firstRow": 101,
+      "firstKind": "MISSING !",
+      "firstLine": "if (token.TrailingTrivia is not [.., SyntaxTrivia(SyntaxKind.EndOfLineTrivia)])",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Analyzers/CSharp/Analyzers/NewLines/ConditionalExpressionPlacement/ConditionalExpressionPlacementDiagnosticAnalyzer.cs",
+      "nodes": 1,
+      "missingTokens": [
+        "!"
+      ],
+      "errorNodes": 0,
+      "firstRow": 77,
+      "firstKind": "MISSING !",
+      "firstLine": "if (token.TrailingTrivia is not [.., SyntaxTrivia(SyntaxKind.EndOfLineTrivia)])",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "src/Analyzers/CSharp/Analyzers/SimplifyPropertyAccessor/CSharpSimplifyPropertyAccessorDiagnosticAnalyzer.cs",
+      "nodes": 10,
+      "missingTokens": [
+        ")"
+      ],
+      "errorNodes": 8,
+      "firstRow": 64,
+      "firstKind": "ERROR",
+      "firstLine": "if (accessor is (SyntaxKind.SetAccessorDeclaration or SyntaxKind.InitAccessorDeclaration) { ExpressionBody.Expression: v",
+      "pipelineErrors": 18
+    },
+    {
+      "file": "src/Analyzers/CSharp/Analyzers/UseCollectionExpression/UseCollectionExpressionHelpers.cs",
+      "nodes": 53,
+      "missingTokens": [],
+      "errorNodes": 53,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Licensed to the .NET Foundation under one or more agreements.",
+      "pipelineErrors": 103
+    },
+    {
+      "file": "src/Analyzers/CSharp/Analyzers/UseExpressionBody/Helpers/UseExpressionBodyHelper`1.cs",
+      "nodes": 53,
+      "missingTokens": [
+        ">",
+        ":"
+      ],
+      "errorNodes": 51,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Licensed to the .NET Foundation under one or more agreements.",
+      "pipelineErrors": 101
+    },
+    {
+      "file": "src/Analyzers/CSharp/CodeFixes/AddInheritdoc/AddInheritdocCodeFixProvider.cs",
+      "nodes": 2,
+      "missingTokens": [],
+      "errorNodes": 2,
+      "firstRow": 107,
+      "firstKind": "ERROR",
+      "firstLine": "if (finalLeadingTrivia is [.., (kind: SyntaxKind.WhitespaceTrivia)])",
+      "pipelineErrors": 4
+    },
+    {
+      "file": "src/Analyzers/CSharp/CodeFixes/ConvertNamespace/ConvertNamespaceTransform.cs",
+      "nodes": 24,
+      "missingTokens": [],
+      "errorNodes": 24,
+      "firstRow": 1,
+      "firstKind": "ERROR",
+      "firstLine": "// Licensed to the .NET Foundation under one or more agreements.",
+      "pipelineErrors": 48
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "Every file in scope is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Failure classes are derived from the parse tree (the demanded token for each MISSING node, the source line for each ERROR node) rather than hard-coded, so nothing in this file can drift from the measurement. The tree walk runs only under the same rootNode.hasError gate the production pipeline uses (the #841 round-2 instrument fix), and the two signals are cross-checked per file; any disagreement is recorded in pipelineMismatchFiles. Clean acceptance files are those with zero parse errors."
+}

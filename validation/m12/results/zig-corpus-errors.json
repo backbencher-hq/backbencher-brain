@@ -1,0 +1,126 @@
+{
+  "analyzer": "zig",
+  "corpus": "$HOME/fixtures/repositories/zig",
+  "corpusRepo": "zig",
+  "revision": "738d2be9d6b6ef3ff3559130c05159ef53336224",
+  "extensions": [
+    "*.zig"
+  ],
+  "mode": "deterministic-first-400-sorted",
+  "trackedFilesInCorpus": 2950,
+  "measuredFiles": 400,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 8,
+  "cleanFiles": 392,
+  "missingNodeFiles": 1,
+  "errorNodeFiles": 3,
+  "errorRates": {
+    "any": 2,
+    "missing": 0.3,
+    "error": 0.8
+  },
+  "grammarErrorFiles": 8,
+  "crashFiles": 0,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 33026,
+  "missingTokens": {
+    ";": 2
+  },
+  "errorLineSignatures": {
+    "ID ID ID (ID": 2,
+    ": .{ .ID = ID, .ID = ID });": 1,
+    "ID ID: ID;": 1
+  },
+  "firstErrorLineSignatures": {
+    ": .{ .ID = ID, .ID = ID });": 1,
+    "ID ID: ID;": 1
+  },
+  "errorFileList": [
+    {
+      "file": "doc/langref/Assembly Syntax Explained.zig",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 56,
+      "firstKind": "ERROR",
+      "firstLine": ": .{ .rcx = true, .r11 = true });",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "doc/langref/checking_null_in_zig.zig",
+      "nodes": 0,
+      "missingTokens": [],
+      "errorNodes": 0,
+      "firstRow": 0,
+      "firstKind": "",
+      "firstLine": "const Foo = struct {};",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "doc/langref/inline_assembly.zig",
+      "nodes": 4,
+      "missingTokens": [
+        ";"
+      ],
+      "errorNodes": 2,
+      "firstRow": 28,
+      "firstKind": "MISSING ;",
+      "firstLine": ": .{ .rcx = true, .r11 = true });",
+      "pipelineErrors": 6
+    },
+    {
+      "file": "doc/langref/struct_name.zig",
+      "nodes": 0,
+      "missingTokens": [],
+      "errorNodes": 0,
+      "firstRow": 0,
+      "firstKind": "",
+      "firstLine": "const std = @import(\"std\");",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "doc/langref/test_opaque.zig",
+      "nodes": 0,
+      "missingTokens": [],
+      "errorNodes": 0,
+      "firstRow": 0,
+      "firstKind": "",
+      "firstLine": "const Derp = opaque {};",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "doc/langref/tldoc_comments.zig",
+      "nodes": 0,
+      "missingTokens": [],
+      "errorNodes": 0,
+      "firstRow": 0,
+      "firstKind": "",
+      "firstLine": "//! This module provides functions for retrieving the current date and",
+      "pipelineErrors": 1
+    },
+    {
+      "file": "doc/langref/var_must_be_initialized.zig",
+      "nodes": 1,
+      "missingTokens": [],
+      "errorNodes": 1,
+      "firstRow": 2,
+      "firstKind": "ERROR",
+      "firstLine": "var x: i32;",
+      "pipelineErrors": 2
+    },
+    {
+      "file": "lib/compiler/aro/aro/Attribute.zig",
+      "nodes": 0,
+      "missingTokens": [],
+      "errorNodes": 0,
+      "firstRow": 0,
+      "firstKind": "",
+      "firstLine": "const std = @import(\"std\");",
+      "pipelineErrors": 1
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}

@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "title": "Family Truth Reconciliation — the standing rules, and the JVM/web remainder",
+  "ownerOrdered": true,
+  "terminalMilestone": true,
+  "purpose": "M14, M37 and M49 each certify the JVM and Web families as done, while 14 M49-CONV issues remain open across every family. The mechanism is scope: each milestone measured its own artifact (M14 the analyzer oracle, M37 the families against each other, M49 external claims against code) and none measured payload truth across the seam emit -> store -> query -> tool, so every new dimension looked like a new phase instead of an unfinished one. M60 closes the remainder, converts 'family closed' from prose into a computed boolean (green gate AND zero non-alive payload cells), and establishes the standing rules that bind every milestone so no new milestone is minted to carry work that belongs to an existing one. Fold target: M49. Hand-off: M14-clean receives one milestone for all remaining analyzers.",
+  "dependsOn": ["M59"],
+  "foldTarget": "M49",
+  "handOff": "M14",
+  "invariant": "A family may be called closed only when its closure gate is green AND every payload cell of every onboarded language in it is alive — produced by the analyzer, preserved by the store, reachable at query, and truthful at the tool. Any closure claim not backed by a live gate is itself a defect. No new milestone may be created to carry work that belongs to an existing one.",
+  "families": {
+    "jvm": {
+      "languages": ["java", "kotlin", "scala", "groovy"],
+      "remainder": "M60.J1",
+      "remainderIssue": 830,
+      "source": "docs/m60/PLAN.md §1 'The JVM remainder (family `jvm`)': #739 java · #740 kotlin · #741 scala · #742 groovy"
+    },
+    "web": {
+      "languages": ["typescript", "javascript", "vue", "svelte"],
+      "remainder": "M60.W1",
+      "remainderIssue": 831,
+      "remainderLanes": ["dart"],
+      "source": "docs/m60/PLAN.md §2 'The Web remainder (family `web`)': #816 (name-resolution FP) · #818 (dart lane re-measure)",
+      "remainderLanesNote": "M60.W1's remainder names #818, a dart F5-lane deferral, alongside #816 — so dart appears in this family's REMAINDER accounting while its analyzer is not one of the family's language set here. Recorded rather than silently absorbed: dart's own review folder and analyzer are tracked by their own wave, and the closure conditions that read this language list (folders closed, analyzers committed, cells alive) must not be widened to languages this family does not own without that being a decision. UPDATE 2026-09-21 (owner decision, reviews/m60-oo-family-plan.md): that decision is now made — dart is a language of the `oo` family below, which owns its review folder, analyzer and closure conditions. This family keeps only the historical #818 remainder reference and does not own dart."
+    },
+    "oo": {
+      "languages": ["csharp", "dart", "objc", "php", "python", "ruby", "swift"],
+      "source": "owner decision 2026-09-21 (reviews/m60-oo-family-plan.md): the ManagedOO family is the M14.4 wave, plans/M14-issues.json #264–#270 — csharp, dart, swift, objective-c, php, ruby, python. Spellings are the analyzer-directory names; `objc` resolves to src/ast/real-objective-c-analyzer.ts via ANALYZER_FILE_ALIAS in script/m60/family-closure.ts, because the real-<lang>-analyzer.ts convention silently found no analyzer for it.",
+      "remainderNote": "No container issue is registered for this family, deliberately. #830 and #831 already showed the circularity: a container issue whose own title names a family language is counted by this gate as that family's remainder, so the family can never close while its own container is open. The OO remainder is instead the plan doc (reviews/m60-oo-family-plan.md) plus the per-lane issues it names: #804 csharp, #812 ruby, #815/#853 objc, #827/#856 dart, #835/#869 php, #836/#838 swift, and the real defects #747/#748/#902/#913 python, #749 ruby, #753 dart."
+    }
+  },
+  "standingRules": [
+    {
+      "id": "R1",
+      "rule": "No new milestone for work that belongs to an existing one; findings become issues under existing milestones.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R2",
+      "rule": "A family is closed only when its closure gate is green AND its payload matrix has zero non-alive cells.",
+      "enforcedBy": "G1+P1"
+    },
+    {
+      "id": "R3",
+      "rule": "Every finding document must be registered as an issue before it is worked. A doc is not a queue.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R4",
+      "rule": "Fold contract: at close, M60's family results are recorded into M49 as the evidence its jvm/web closure claims are true.",
+      "enforcedBy": "X1"
+    },
+    {
+      "id": "R5",
+      "rule": "M14-clean receives one milestone covering all remaining analyzers, each carrying the accumulated checks of every prior milestone.",
+      "enforcedBy": "X1"
+    },
+    {
+      "id": "R6",
+      "rule": "One line base for every line in the payload: `line_number`, `range`, `decoratorLine` and the `metadata.line` mirror are 1-based, and no analyzer may emit a mirror that is not provably so (#873; the cpp/hpp rows carry no `line_number` at all, so a wrong mirror there was the row's entire line).",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R7",
+      "rule": "No analyzer may NAME something with a placeholder literal. When a fallback has nothing truthful to say the honest state is ABSENCE, not the string \"unknown\" — a literal in a name-bearing field becomes a symbol (or an edge endpoint) that does not exist in the source (`source: owner || \"unknown\"` attributes an edge to a symbol named \"unknown\" that no file contains, and every consumer downstream can then match, count and display it). Enforced by an AST census over every analyzer (script/m60/sentinel-census.ts) against an exact-count, shrink-only register (validation/m60/symbol-sentinel-register.json): a new site, a grown site and a vanished site all fail. Owner standard 2026-09-21 (reviews/m60-oo-family-plan.md §3.7/R2): the OO family reaches zero as lane work with fixtures and mutants; the runtime half — no emitted row carries a placeholder as a name — is disclosed as outstanding in the register rather than implied by a green gate.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R8",
+      "rule": "No analyzer may publish a framework capability it does not have, or name one framework twice. The family contract is three metadata keys — `framework` (the deterministic primary pick), `detectedFrameworks` (always an array, [] when none), `frameworkPatterns` (aligned) — plus the `hasFrameworkIntelligence` capability claim; the class the rule measures is every way that surface can be published false (dead trigger surface, append-write duplication, name divergence, dominated trigger, unjustified claim, missing contract key). Enforced by a syntactic census over every analyzer (script/m60/framework-surface-census.ts, 17 self-tests) against an exact-count, shrink-only register (validation/m60/framework-surface-register.json) with a recorded OO target so an OO lane's violations cannot be absorbed into the global baseline; the runtime half is script/m60/framework-surface-probe.ts over fixtures and real corpora. Owner standard 2026-09-22 (reviews/m60-oo-family-plan.md §3, C7).",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R9",
+      "rule": "Every analyzer emits the family's declared-type reference graph: a `references` edge from the declaration that WRITES a type name (field, variable declaration, parameter, return type, property, indexer, event, delegate) to the type it names, marked `metadata.relationshipType === \"declared_type\"` (rust's R13 header names this a family standard, mirrors go/c/zig). The rule exists because an ABSENT capability emits NOTHING: every other gate asks whether an edge that EXISTS is right, so a lane that never emits a whole class of edge reads clean in all of them — csharp's graph was missing while ten sibling lanes had it and survived an entire review wave, recorded in reviews/csharp/master-review.md as a 'recorded gap for its own wave'. Enforced by a runtime census that drives each lane's real analyzer through ASTEngine with a holder-symbol CONTROL, so a snippet the grammar rejects can never read as a missing capability (script/m60/declared-type-refs-census.ts), against a per-lane register (validation/m60/declared-type-register.json): an unregistered lane, a regressed lane, a lane that closes its gap without flipping the register, a lane emitting under a divergent marker, a not-exercised or errored lane, an absent artifact, and OO debt above the recorded target all fail. Measured 2026-09-22: 9 lanes emit it under the family marker, c emits it under `type_reference` (divergent marker, recorded, not convicted), ruby is ruled exempt-dynamic, and 9 lanes emit nothing — five of them OO (csharp, dart, php, swift, objc), the family's largest remaining single axis. Owner standard 2026-09-22.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R10",
+      "rule": "Every relationship TARGET must be spelled the way the lane spells its own symbols. The differential oracle derives its truth from the same rules the analyzer runs, so a spelling that BOTH sides fabricate identically produces AGREEMENT — and every per-edge gate in the family (the M59.A7 line contract, the depth draws, the fixtures) asks whether an edge that EXISTS is right, so none of them can see it. php's `$o->{'lit'}` published the string literal `'lit'` as a member name, `$o->{2}` an integer, and `include $this->baseDir . 'revision-info.php'` a whole expression as a path — all emitted IDENTICALLY by the oracle, invisible to the differential by construction, and invisible to the line oracle too because the quotes and digits really are written on the claimed line. Enforced by a runtime census (script/m60/target-spelling-census.ts) driving each lane's real analyzer through ASTEngine over a spread draw of LANG_REPOS + SECOND_CORPUS, against a per-lane register (validation/m60/target-spelling-register.json): the CONVICTING classes are `literal` (the whole target is a quoted string or a bare number), `whitespace`, and `delimiter` (`;`, `(`, `)`, `{`, `}`, `,`), none of which any language in the family can declare and none of which needs calibration; the REPORTED class is `separator` (a non-alphanumeric character absent from the lane's own symbol alphabet), recorded and ruled rather than convicted, because qualified names legitimately carry `.`, `:`, `/`, `@`, `$`, `?`, `!`, `-` — 21 of 24 lanes carry one, and the first draft's conviction of that class was refuted by its own measurement. Measured 2026-09-23 at sample 30 per draw: 3 lanes clean (php, rust, zig), 11 carry a provable fabricated spelling (javascript, kotlin, scala, java, groovy, cpp, csharp, dart, swift, haskell, elixir), 9 have separator vocabulary measured and owed, and 2 draws could not adjudicate the separator class at all. The php lane's two defects were fixed in the same round; the rest are recorded per lane with owners, and OO debt above the recorded target fails. Owner standard 2026-09-23.",
+      "enforcedBy": "G1"
+    },
+    {
+      "id": "R11",
+      "rule": "No extension may be routed to a grammar that cannot represent its format. The detector routes by EXTENSION, which is right for a dialect (.kts, .cljs, .mm) and wrong for a format that merely lives beside a language: Cython (.pyx/.pxd), Grails Server Pages (.gsp) and literate Haskell (.lhs) are not the language they were mapped to. Handing such a file to the language's grammar is the worst available outcome, because the differential oracle derives its truth from the SAME partial parse — a 68.8 %-unparseable corpus reported 100 % coverage and MISSING=0 (#913, cython:python), and the parse-success gate reads one rate per lane, so it cannot separate that from a weak grammar on its own language. Every extension the detector maps is therefore DECLARED in the routing census's relation table (script/m60/routing-outlier-census.ts) with its ruling recorded beside it, and a format no pinned grammar can represent is retired — not routed and reported as covered. Evidence: validation/m60/results/routing-outliers.json; the class was measured 2026-09-24 and its sibling instance is #926.",
+      "enforcedBy": "G1"
+    }
+  ],
+  "issues": [
+    {
+      "id": "G1",
+      "issue": 828,
+      "title": "Governance: the standing rules R1-R4 and the gate that enforces them",
+      "status": "verified",
+      "evidenceFile": "validation/m60/results/G1.json",
+      "verifiedAtCommit": "HEAD",
+      "notes": "script/m60/verify-standing-rules.ts: rules written where every milestone reads them (ledger standingRules), machinery pure + negative-tested (6 negatives: BLOCKED forbids closed, open-issue forbids closed, empty computes closed; R3 scan flags violation, passes compliant, ignores non-finding). R3 live scan drove real registrations: #839 (W9 zig binding), #840 (W16 sweep-state); #825/#801 citations added. R1 live check found M7/M8/M39 finished-but-open and M56/M58 undocumented — registry docs/milestones.md created, all open milestones now documented. Wired into package.json verify."
+    },
+    {
+      "id": "P1",
+      "issue": 829,
+      "title": "Payload-seam matrix: 33 fields x 21 languages x 4 seam stages, enumerated and wired into the closure gate",
+      "status": "verified",
+      "evidenceFile": "validation/m60/results/P1.json",
+      "verifiedAtCommit": "HEAD",
+      "notes": "script/m60/payload-matrix.ts: fields parsed from types.ts (fatal on undeclared/rotting spec), every needle verified live, fatal two-direction rot-checks (a binding appearing or disappearing both fail). Reproduces the plan's PoC rows and adds: verdict taxonomy alive/alive-partial/ruled-dead/BLOCKED; per-language emit cells (672, 337 alive); two UNDECLARED store bindings surfaced (symbol.docstring, symbol.complexity). Found and fixed #837: scope_kind DDL'd but never INSERTed — bound, live-verified (scope837-verify), negative proven."
+    },
+    {
+      "id": "J1",
+      "issue": 830,
+      "title": "JVM remainder under verify-first: #739 java, #740 kotlin, #741 scala, #742 groovy",
+      "status": "verified",
+      "evidenceFile": "validation/m60/results/J1.json",
+      "verifiedAtCommit": "HEAD",
+      "notes": "#739/#740 fixed+closed earlier waves. #741 fixed+closed this wave (c6df719b: Spring/Jackson/jsoniter/sttp detection, fixture + 2 mutants incl. forbidFrameworks direction, lane 100/0/0). #742 FIXED + CLOSED this wave (bab8342d, M49 W18): the registered environment-blocked remedy was never verified against the vendored tree — the grammar source is in-repo at grammars/tree-sitter-groovy/ and the repo's local tree-sitter CLI builds wasm with its bundled WASI toolchain (no emcc, no emsdk, no network). Measured through the production parseFile pipeline on grails-core (6,564 files): 59.0% -> 25.0% error files (3,874 -> 1,643); the recorded M12 400-file sample 250/400 -> 115/400; the 15-cell construct matrix 11/15 -> 15/15; corpus-wide MISSING ';' 2,698 -> 340. Pins: fixture groovy/grammar-rebuild-constructs, groovy fixtures 46/46, all 550 mutants caught (groovy/as-cast-drop had been silently surviving on the dead as_cast mis-parse marker; re-keyed to the structural cast_type). Residual registered as #841. J1.json carries the per-issue disposition."
+    },
+    {
+      "id": "W1",
+      "issue": 831,
+      "title": "Web remainder: #816 name-resolution FP, #818 dart lane re-measure, closure re-asserted through the matrix",
+      "status": "verified",
+      "evidenceFile": "validation/m60/results/W1.json",
+      "verifiedAtCommit": "HEAD",
+      "notes": "#816 fixed+closed this wave (15c918af: nearest-candidate deterministic target resolution in parallel-indexer, pinned in verify-index.ts incl. manifest-key case, pin proven by revert, no residual path in 3 harder shapes). #818 closed (DT wave landed; dart lane 100/0/0 at HEAD). Web closure re-asserted through the P1 matrix: web-family languages carry zero BLOCKED cells."
+    },
+    {
+      "id": "X1",
+      "issue": 832,
+      "title": "Closure: fold into M49, hand M14 the single analyzer milestone, prove no new milestone is required",
+      "status": "pending",
+      "evidenceFile": "validation/m60/results/X1.json",
+      "notes": "script/m60/verify-family-closure-truth.ts implemented and emitting X1/J1/W1.json; the closure verdict is COMPUTED (closed-computable vs not-closed). Current verdict: not-closed — honest blockers: (1) the M60 container issues #830/#831 are themselves OPEN and their titles match this gate's own family scan — a circularity: they cannot close while the gate counts them as findings, so the fold must record them as containers, not as defects; (2) M49 closure refuses live (X1 5/7: 11 review folders open — dart, rust, go, csharp, ruby, cpp, zig, swift, systems-family, php, objc — i.e. the co-agent's in-flight waves and the unprocessed first-pass folders; G6 census-lineage was red on one stale register position, corrected 1054 -> 1236 in this wave); (3) R4 fold record not yet written into the M49 ledger (lands at milestone close by design). Fold + M14 hand-off decision belong to the owner at close."
+    }
+  ]
+}

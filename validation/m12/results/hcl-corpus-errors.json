@@ -1,0 +1,47 @@
+{
+  "analyzer": "hcl",
+  "corpus": "$HOME/fixtures/repositories/terraform",
+  "revision": "db4eef44f5bbd39a115f939304279caee7cf9b12",
+  "extensions": [
+    "*.tf",
+    "*.tfvars",
+    "*.hcl"
+  ],
+  "trackedFiles": 2361,
+  "errorFiles": 4,
+  "errorNodes": 10,
+  "crashFiles": 0,
+  "intentionalInvalidFiles": 4,
+  "unexpectedErrorFiles": 0,
+  "cleanFiles": 2357,
+  "crashes": [],
+  "intentionalInvalid": [
+    {
+      "file": "internal/command/testdata/init-syntax-invalid-backend-attribute-invalid/main.tf",
+      "count": 3,
+      "intentional": true,
+      "reason": "invalid-backend-attribute diagnostic fixture"
+    },
+    {
+      "file": "internal/command/testdata/init-with-duplicates/secondary.tf",
+      "count": 3,
+      "intentional": true,
+      "reason": "deliberate brace typo (per source comment)"
+    },
+    {
+      "file": "internal/command/testdata/init-with-overrides-and-duplicates/secondary_override.tf",
+      "count": 3,
+      "intentional": true,
+      "reason": "deliberate brace typo (per source comment)"
+    },
+    {
+      "file": "internal/configs/testdata/invalid-files/provider-syntax.tf",
+      "count": 1,
+      "intentional": true,
+      "reason": "invalid-files diagnostic fixture"
+    }
+  ],
+  "unexpectedErrors": [],
+  "passed": true,
+  "policy": "Every tracked .tf/.tfvars/.hcl file in clean terraform@2e1710bf is audited through the production parseFile pipeline. The analyzer never crashes and never synthesizes phantom rows. Terraform's own repository intentionally ships invalid HCL under its diagnostics testdata; those files are classified (by path pattern) as intentional-invalid rather than hidden. Clean acceptance files are those with zero parse errors."
+}
