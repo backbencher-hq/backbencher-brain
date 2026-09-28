@@ -10728,6 +10728,235 @@ export const MUTANTS: Mutant[] = [
     transform: cleanEdgeLinePerSet(),
   },
   // ═══════════════════════════════════════════════════════════════════════
+  // M14.6 perl wave (2026-09-27)
+  //
+  // The perl lane had 7 fixtures and ZERO mutants, so no perl defect could be
+  // detected. Each mutant below reverts ONE measured defect to its exact
+  // pre-fix observable state and names the fixture pin that must catch it.
+  //
+  // The interesting one is brace-use-constant-lost: that defect was INVISIBLE to
+  // the differential, because the independent oracle in derivePerlEdges carried
+  // the same dead branch — analyzer and oracle agreed, 100% covered, zero
+  // unexplained, on a shape both were wrong about. Only a fixture pins it.
+  {
+    id: "perl/brace-use-constant-lost",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `use constant { A => 1, B => 2 }` goes back to declaring NOTHING. fatCommaKeys' `else if (node.type === \"anonymous_hash_expression\")` branch was unreachable — the caller passes the use_statement and findChildByType is shallow, so the list one level down was never found. The bare `use constant A => 1` form kept working, which is why the code looked tested. Measured on mojo: 7 constants lost in Mojo::Util (the PC_* table) and 6 in Mojo::WebSocket (WS_*). Caught by perl/imports-and-exports' expectSymbols {MAX} and {MIN} (expectSymbolCount pins PI at exactly 1, so the bare form cannot go quiet either).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => {
+        // The brace form's names are exactly those declared on the same line as
+        // another constant, which no bare form produces. The SymbolKind value is
+        // the LOWERCASE "constant" — an earlier draft of this mutant tested
+        // "Constant", filtered nothing, and SURVIVED while looking correct.
+        if (s.kind !== "constant") return true
+        const sameLine = (r.symbols ?? []).filter((o: any) => o.kind === "constant" && o.range?.startLine === s.range?.startLine)
+        return !(sameLine.length > 1)
+      }),
+    }),
+  },
+  {
+    id: "perl/interpolated-import-items-lost",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: a double-quoted `use` argument loses its items again. `use feature \"class\"` and `use lib \"./t/lib\"` are interpolated_string_literal, which neither perlWordValues nor perlArgumentNodes accepted, so the import survived with items:[]. Caught by perl/imports-and-exports' expectImports for module `feature` (items [class]) and module `lib` (items [./t/lib]) — the matcher compares the items array, so an empty list cannot satisfy it.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => ((i.items ?? []).length === 0 ? i : { ...i, items: [] })),
+    }),
+  },
+  {
+    id: "perl/no-strict-recorded-as-import",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `no strict` / `no warnings` go back to being dependency imports. `no` is the unnamed first token of the same use_statement node type as `use`, so the pre-review rule read them as module loads and put an edge on a file that loads nothing. Caught by perl/imports-and-exports' forbidImports for module `strict` and its forbidRelationships {type: imports, target: strict}.",
+    transform: r => ({ ...r, imports: [...(r.imports ?? []), { module: "strict", items: ["*"], isDefault: true, range: { startLine: 3, endLine: 3 } }] }),
+  },
+  {
+    id: "perl/version-requirement-recorded-as-import",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `use 5.010` goes back to being an import. A version requirement is language metadata (perlVersion / perlVersions), never a module named \"5.010\". Caught by perl/imports-and-exports' forbidImports for module `5.010`.",
+    transform: r => ({ ...r, imports: [...(r.imports ?? []), { module: "5.010", items: ["*"], isDefault: true, range: { startLine: 2, endLine: 2 } }] }),
+  },
+  {
+    id: "perl/use-constant-becomes-an-import",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `use constant` emits an import named \"constant\" and declares no Constant symbols — the pre-review shape exactly. Caught by perl/imports-and-exports' forbidImports for module `constant` AND its expectSymbols {PI}/{MAX}/{MIN}, so the mutant cannot pass by being quiet about the import alone.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "constant"),
+      imports: [...(r.imports ?? []), { module: "constant", items: ["*"], isDefault: true, range: { startLine: 7, endLine: 8 } }],
+    }),
+  },
+  {
+    id: "perl/require-not-an-import",
+    language: "perl",
+    defectClass: "dependency-loss",
+    description: "M14.6 regression: `require Runtime::Only` stops being an import. A runtime require IS a dependency; the pre-review rule only read `use`, and mojo alone has 39 require sites. Caught by perl/imports-and-exports' expectImports {module: Runtime::Only} and perl/inheritance's import pins.",
+    transform: r => ({ ...r, imports: (r.imports ?? []).filter((i: any) => i.module !== "Runtime::Only") }),
+  },
+  {
+    id: "perl/exporter-optional-half-lost",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: only `@EXPORT` is read, so `@EXPORT_OK` and `%EXPORT_TAGS` stop producing exports — the pre-review shape, which lost the whole optional half of every Exporter module in a corpus. Caught by perl/imports-and-exports' expectExports for gamma, delta and all (and by the harness's exports invariant, since `all` resolves to no symbol once its name is gone from @EXPORT_TAGS).",
+    transform: r => ({ ...r, exports: (r.exports ?? []).filter((e: any) => e.name !== "gamma" && e.name !== "delta" && e.name !== "all") }),
+  },
+  {
+    id: "perl/mojo-base-flag-form-unread",
+    language: "perl",
+    defectClass: "relationship-loss",
+    description: "M14.6 regression: `use Mojo::Base -base` names no parent at all. The pre-review rule skipped every option-bearing form, so the flag-only spelling — used by every Mojo Controller and Plugin — produced no extends edge: 53 of mojo's 118 inheritance sites. The class being subclassed is Mojo::Base ITSELF. Caught by perl/inheritance's expectRelationships {extends, MojoStyle -> Base, line_number 8}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === "MojoStyle")) }),
+  },
+  {
+    id: "perl/parent-option-becomes-a-parent",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: the option token of `use parent -norequire, 'Base'` becomes a base class. Caught by perl/inheritance's forbidRelationships {extends, UsesParent -> norequire}.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "extends", source: "UsesParent", target: "norequire", confidence: 0.9, line_number: 2, metadata: { evidenceClass: "structural" } }] }),
+  },
+  {
+    id: "perl/self-extends-not-suppressed",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: a class naming ITSELF as its base emits the edge. `package SelfNamed; use Mojo::Base 'SelfNamed';` is a real self-reference in the source and a useless edge in a graph. The guard compares FULLY QUALIFIED names; a leaf comparison also fired for `package Foo::Bar` over a different `Other::Bar` and deleted 7 legitimate override edges across mojo and plack. Caught by perl/inheritance's forbidRelationships {extends, SelfNamed -> SelfNamed} and {overrides, SelfNamed.run -> SelfNamed.run}.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "extends", source: "SelfNamed", target: "SelfNamed", confidence: 0.9, line_number: 17, metadata: { evidenceClass: "structural" } },
+        { type: "overrides", source: "SelfNamed.run", target: "SelfNamed.run", confidence: 0.5, metadata: { evidenceClass: "inferred" } }],
+    }),
+  },
+  {
+    id: "perl/package-block-scope-leaks",
+    language: "perl",
+    defectClass: "ownership-error",
+    description: "M14.6 regression: the BLOCK form of `package` leaks past its closing brace, so a file-scope sub is emitted as a method of the block's package. Proved by EXECUTING perl 5.34, not by reading the grammar: after `package Outer { }`, __PACKAGE__ is `main`. Caught by perl/package-block-scope's forbidRelationships {contains, Outer -> after_block} and forbidSymbols {after_block, ownerName Outer} — the statement form on line 5 must STILL change the package, so the mutant cannot be caught by simply never tracking one.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "after_block" ? { ...s, ownerName: "Outer", kind: "method" } : s)),
+      relationships: [...(r.relationships ?? []), { type: "contains", source: "Outer", target: "after_block", confidence: 1, metadata: { evidenceClass: "structural" } }],
+    }),
+  },
+  {
+    id: "perl/signature-dead-field-lookup",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 (#863) regression: the dead `childForFieldName(\"parameters\")` lookup returns, so no sub publishes a parameter list again. The pinned grammar declares no `parameters` field; a signature is the `signature` FIELD of mandatory/optional/slurpy_parameter children. The pre-review lane shipped 0 parameters across 29,640 symbols on 5,866 files. Caught by perl/signatures-and-attributes' expectParameters for mandatory, optional and slurpy, and perl/core-oo-class-role's expectParameters for the two constructors.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.parameters?.length ? { ...s, parameters: [] } : s)) }),
+  },
+  {
+    id: "perl/attributes-unread",
+    language: "perl",
+    defectClass: "payload-loss",
+    description: "M14.6 regression: the grammar's `attributes` field is not read, so `decorators` is never emitted at all — the pre-review state, where the whole attribute surface was absent for every language that has it. Caught by perl/signatures-and-attributes' expectDecorators for lvalue_attr (lvalue, method) and prototyped (prototype).",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.decorators?.length ? { ...s, decorators: [] } : s)) }),
+  },
+  {
+    id: "perl/core-oo-declarations-unread",
+    language: "perl",
+    defectClass: "declaration-loss",
+    description: "M14.6 regression: `class_statement` and `role_statement` produce no symbol at all, so `class Point` / `role Greeter` vanish and their methods become ownerless functions. `field $x` / `field $y` go with them. Caught by perl/core-oo-class-role's expectSymbols {Point, class} and {Greeter, trait} and its expectRelationships {contains, Point -> sum} — an implementation that only stopped reading class statements, but left the block walking intact, still fails the contains pins.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "class" && s.kind !== "trait" && s.kind !== "property"),
+      relationships: (r.relationships ?? []).filter((x: any) => x.source !== "Point" && x.source !== "Greeter"),
+    }),
+  },
+  {
+    id: "perl/field-declared-as-a-lexical",
+    language: "perl",
+    defectClass: "ownership-error",
+    description: "M14.6 regression: `field $x` inside a `class` block is emitted as a bare variable with no owner instead of a Property owned by the class — the same concept as a Moose `has` attribute. Caught by perl/core-oo-class-role's expectSymbols {x, kind property, ownerName Point} and {contains, Point -> x}.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "property" ? { ...s, kind: "variable", ownerName: undefined } : s)),
+    }),
+  },
+  {
+    id: "perl/builtin-calls-emitted",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: the builtin suppression set goes back to its hand-maintained size, which was missing exactly 10 words — say, system, accept, chr and fc among them. Those are core named operators, so each one emitted a `calls` edge to a symbol that cannot exist. The set is now the grammar's own fixed op-token sets intersected with perl 5.38's opcode.h, so it cannot drift from the parser that reads it. Caught by perl/builtins-and-branches' five forbidRelationships (say, system, accept, chr, fc) with bless as the control that must STAY suppressed.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), ...["say", "system", "accept", "chr", "fc"].map((t) => ({ type: "calls", source: "B.builtins", target: t, confidence: 0.9, line_number: 17, metadata: { evidenceClass: "usage_contextual" } }))],
+    }),
+  },
+  {
+    id: "perl/complexity-counter-reverts-to-absent-types",
+    language: "perl",
+    defectClass: "metric-error",
+    description: "M14.6 regression: cyclomaticComplexity collapses to 1. The pre-review counter named six node types the pinned grammar does not declare (if_statement, unless_statement, while_statement, until_statement, foreach_statement, ternary_expression), so only for_statement and conditional_expression ever fired and the metric was 1 for almost every real file. This grammar spells them conditional_statement, elsif, loop_statement, cstyle_for_statement, postfix_conditional_expression and conditional_expression. Caught by perl/builtins-and-branches' expectMetadata {cyclomaticComplexity: 11}.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } }),
+  },
+  {
+    id: "perl/magic-invocant-names-the-token",
+    language: "perl",
+    defectClass: "fabrication",
+    description: "M14.6 regression: `__PACKAGE__->new` emits `instantiates __PACKAGE__.constructor` — a type no source line supports, since __PACKAGE__ is a compile-time token for the CURRENT package, not a class. Caught by perl/magic-invocant's forbidRelationships {instantiates, target __PACKAGE__.constructor} and {instantiates, global -> main.constructor}: line 1 has no package in scope, so the token names nothing derivable and the edge must be omitted rather than invented.",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []),
+        { type: "instantiates", source: "make", target: "__PACKAGE__.constructor", confidence: 0.9, line_number: 3, metadata: { evidenceClass: "structural" } },
+        { type: "instantiates", source: "global", target: "main.constructor", confidence: 0.9, line_number: 1, metadata: { evidenceClass: "structural" } }],
+    }),
+  },
+  {
+    id: "perl/role-composition-lost",
+    language: "perl",
+    defectClass: "relationship-loss",
+    description: "M14.6 regression: `with 'Role::One'` and `use role 'Role::Two'` emit no implements edge, leaving a composed role an undeclared dependency. Caught by perl/imports-and-exports' expectRelationships {implements, Impl -> One, line_number 23} and {implements, Impl -> Two, line_number 24}.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "implements") }),
+  },
+  {
+    id: "perl/overrides-guess-claims-source-confidence",
+    language: "perl",
+    defectClass: "confidence-error",
+    description: "M14.6 regression: the first-parent override guess claims source confidence. `overrides` is the lane's ONLY guessed relationship — inferred from the first parent at 0.5, and a perl class may inherit from several bases with only the first consulted. A 0.5 edge can never clear a 0.7 structural floor, so classifyEvidenceTier labels it `inferred` with no special case. Caught by perl/inheritance's expectRelationships {overrides, UsesParent.run -> Base.run, confidence 0.5, line_number null}: a mutant that raises the confidence fails the pin, and one that keeps it but adds a line fails the line_number:null assertion.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => (x.type === "overrides" ? { ...x, confidence: 0.9, line_number: 1, metadata: { ...(x.metadata ?? {}), evidenceClass: "structural" } } : x)),
+    }),
+  },
+  {
+    id: "perl/relationship-line-numbers-dropped",
+    language: "perl",
+    defectClass: "relationship-identity",
+    description: "M14.6 regression: every source-derived edge loses its line. calls, instantiates, implements and extends are all WRITTEN in the source; only contains (membership) and the guessed overrides ride no line. Caught by the line_number pins in perl/inheritance (extends at 2, 5, 8, 11, 14), perl/core-oo-class-role (calls at 6), perl/imports-and-exports (implements at 23, 24) and perl/magic-invocant (instantiates at 3).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const { line_number, ...rest } = x
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "perl/evidence-tiers-collapsed",
+    language: "perl",
+    defectClass: "metadata-loss",
+    description: "M14.6 regression: every relationship's evidenceClass collapses to `inferred`. src/lsp/evidence_tier.ts rule 1 says a STORED legend-tier value wins and is never re-derived, so a lane that publishes one tier for all edges destroys the distinction the hover legend exists to draw — a source-declared `extends` and a guessed `overrides` become indistinguishable. Caught by the 27 meta.evidenceClass pins across the seven perl fixtures, which span all three tiers the lane emits (structural, usage_contextual, inferred).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "inferred" } })),
+    }),
+  },
+  {
+    id: "perl/has-attribute-range-lost",
+    language: "perl",
+    defectClass: "identity-error",
+    description: "M14.6 regression: a Moose/Moo `has 'name' => (is => 'ro')` attribute loses its property range, so the symbol covers the whole statement. Caught by perl/imports-and-exports' expectSymbolRanges {name at line 22} — the pin is the NAME's line, and expectSymbolCount pins exactly one `name` in owner Impl so the mutant cannot pass by emitting two.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.kind === "property" ? { ...s, range: { ...(s.range ?? {}), startLine: (s.range?.startLine ?? 1) - 1 } } : s)),
+    }),
+  },
+  // ═══════════════════════════════════════════════════════════════════════
   // NIM wave (2026-09-27)
   //
   // Every mutant below is a revert of a fix this lane actually made, or of a
