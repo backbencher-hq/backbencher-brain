@@ -3671,7 +3671,16 @@ export function deriveGoEdges(root: any): { label: string; from: string; target:
     } else if (n.type === "type_declaration") {
       for (let i = 0; i < n.namedChildCount; i++) {
         const ts = n.namedChild(i)
-        if (!ts || ts.type !== "type_spec") continue
+        // GO26 (round 5): `type_alias` accepted alongside `type_spec`, mirroring
+        // the analyzer's analyzeGoStructEmbedding. `type A = struct{ *Inner }`
+        // is legal Go; the pre-fix BOTH sides read `type_spec` only, so the
+        // truth derived no `extends` and the analyzer emitted none — the two
+        // agreeing on an omission, which is the shape no differential can
+        // charge. The member symbol was published all the same, so the graph
+        // said `A` contains `Inner` while `A` extended nothing. The analyzer's
+        // own symbol path already accepted both forms (extractGoTypeSpec), so
+        // this is the embedding half catching up to the symbol half.
+        if (!ts || (ts.type !== "type_spec" && ts.type !== "type_alias")) continue
         const nm = ts.childForFieldName?.("name")
         const structN = ts.namedChildren.find((c: any) => c.type === "struct_type")
         if (nm && structN) {
