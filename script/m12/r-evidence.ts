@@ -312,6 +312,48 @@ if (fixtureFiles.length === 0) {
   process.exitCode = 1
 }
 
+// ---------------------------------------------------------------- 1a2. the exec cross-check
+// The binding differential's 1.000000 is only meaningful if the oracle is not simply
+// agreeing with the analyzer because both share a wrong belief. This compares the oracle
+// against a SECOND R method that answers a different question of a different subsystem:
+// evaluate the file, then ask the environment what it holds. No walk, no binding rules, no
+// reading of R's semantics by anyone.
+//
+// It found three real defect classes that the differential structurally could not see. It
+// covers 27% of the corpus -- a package file calls into its siblings and cannot be evaluated
+// alone -- and the coverage figure is reported rather than implied.
+let crosscheck: any = null
+try {
+  crosscheck = JSON.parse(fs.readFileSync(
+    process.env.BB_R_CROSSCHECK_RECORD ?? "$HOME/fixtures/census/r-exec-crosscheck.json", "utf8"))
+} catch { /* absent is recorded, not hidden */ }
+writeSealed(path.join(OUT, "r-exec-crosscheck.json"), {
+  schemaVersion: 1,
+  kind: "r_exec_crosscheck",
+  why: crosscheck?.method?.why ?? "a second R method, answering a different question, to test the oracle itself",
+  present: crosscheck !== null,
+  method: crosscheck?.method ?? null,
+  totals: crosscheck?.totals ?? null,
+  disagreements: crosscheck?.disagreements ?? [],
+  verdict: crosscheck?.verdict ?? "NOT RUN - the oracle has not been cross-checked against R's runtime",
+  foundByThisCheck: [
+    "a quoted assignment target (`\"%+replace%\" <- ...`) published no symbol, though R binds the name; ggplot2 writes this form at R/theme-current.R:130",
+    "a statically dead `if (FALSE)` branch published declarations R never makes; the R-oracle's walk descended in too, so the two agreed and precision stayed at 1.0",
+    "a top-level `rm()` left the removed helper published: 59 names across the pinned corpora",
+  ],
+  currentCommit: commit,
+})
+console.log(
+  crosscheck
+    ? `r-exec-crosscheck.json      filesBoth=${crosscheck.totals.filesBoth} agreeing=${crosscheck.totals.filesAgreeing} ` +
+      `disagreeing=${crosscheck.totals.filesDisagreeing} coverage=${crosscheck.totals.crosscheckCoverage}`
+    : `r-exec-crosscheck.json      ABSENT - run fixtures/corpus/r-exec-crosscheck.mts first`,
+)
+// A disagreement here means the ORACLE is wrong, which invalidates the differential above.
+// A cross-check that was never run leaves the 1.000000 unverified, which is the state this
+// lane was in for its entire life before this check existed.
+if (!crosscheck || crosscheck.totals.filesDisagreeing > 0) process.exitCode = 1
+
 // ---------------------------------------------------------------- 1a3. the production path
 // Every other check in this lane constructs RealRAnalyzer directly, which skips grammar
 // resolution, the analyzer registry and the temp copy the engine hands to web-tree-sitter.

@@ -4,8 +4,8 @@
   "why": "the differential and the mutation run are only evidence if they can be re-run; the fixture sources and the ground truth are committed and pinned by hash",
   "dir": "validation/m14/fixtures/r",
   "groundTruth": "validation/m12/ground-truth/r-differential.json",
-  "groundTruthSha256": "bae2847348c8c3b337719a1a5b624bef6d923bc45d1981451d0d89a3bc6873a6",
-  "fixtureCount": 15,
+  "groundTruthSha256": "98dc81ba77d14f01b80d81bcf600211d21cf2b48a934814015ece449ada06c7b",
+  "fixtureCount": 16,
   "fixtures": [
     {
       "file": "F01-assignments.R",
@@ -66,16 +66,20 @@
     {
       "file": "F15-dotdot.R",
       "sha256": "838530292a6d616c0c5ab8d106d5fc5e8b71ac069a778ca3498dc2e8223bcf48"
+    },
+    {
+      "file": "F16-runtime-semantics.R",
+      "sha256": "6e4d4474ea75a3c0299c7fbd4f74a8f7f8e96fa079a997b97c4855a27e91e4e4"
     }
   ],
-  "setSha256": "791debbac59469367627cddb1084d096d6f65d6d205b340c4a20a845da06339a",
+  "setSha256": "f112088ca3c83d1490d8284f6dca17318c2a24840f8bf0999a6b72d19b9ca769",
   "truthSource": "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
   "reRun": "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
   "spotCheck": "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
-  "currentCommit": "88dff7629cbc26a2840c0eef90d67e42255c1604",
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T17:55:22.415Z",
-    "contentSha256": "63d652ebfdd9df60231e137b8db8e36839f4f516682250988e4e11afb6b276fb"
+    "sealedAt": "2026-09-28T22:00:48.889Z",
+    "contentSha256": "116a97b990b57d8007ec9114d05d87789d8562429bfddb2b4ca40605485fbc62"
   }
 }

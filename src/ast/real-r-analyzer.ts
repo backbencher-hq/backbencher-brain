@@ -253,6 +253,30 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // A branch R can never execute declares nothing.
+      //
+      //     if (FALSE) { sNms <- c("Dim","i","p","x"); L <- lapply(sNms, ...) }
+      //
+      // is not a declaration, and publishing one is a false positive of a kind the
+      // R-oracle could not see: its walk descended into the branch too, so the two agreed on
+      // the wrong answer and 8,798/8,798 stayed at 1.0. Found by a red-team cross-check that
+      // EVALUATED each file and asked R what it held -- Matrix/data/CAex.R binds `CAex` and
+      // nothing else, and the analyzer published three names for it.
+      //
+      // Only the LITERAL constants FALSE/F/false count. R's parser does not constant-fold, so
+      // a variable that happens to hold FALSE is not statically knowable, and treating it as
+      // dead would silently drop real declarations -- the failure mode of guessing.
+      if (type === "if_statement" && this.isStaticallyFalseCondition(current)) {
+        const elseBranch = current.childForFieldName("alternative")
+        if (elseBranch) {
+          for (let i = elseBranch.childCount - 1; i >= 0; i--) {
+            const c = elseBranch.child(i)
+            if (c) stack.push(c)
+          }
+        }
+        continue
+      }
+
       for (let i = current.childCount - 1; i >= 0; i--) {
         const child = current.child(i)
         if (child) {
@@ -528,8 +552,37 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // Only a plain identifier being bound is a declaration. Subsets and
-    // `$`/`@` extraction targets are mutations, not stable variable identities.
+    // A name being bound is a declaration. Subsets and `$`/`@` extraction targets are
+    // mutations, not stable variable identities, so those are still excluded -- but a
+    // target may be written as a STRING as well as bare or backticked, and R accepts all
+    // three:
+    //
+    //     "%+replace%" <- function(e1, e2) ...      # ggplot2/R/theme-current.R:130
+    //     "plain quoted" <- 42
+    //     `backticked`   <- 1
+    //
+    // Requiring `identifier` dropped the quoted form entirely, so a name R binds was
+    // published by nobody. Found by a red-team cross-check that EXECUTED each file and asked
+    // R what it bound: R reported 4 names, the analyzer reported 2. The R-oracle missed it
+    // too -- its walk also required a name node -- so 8,798/8,798 was blind to this on BOTH
+    // sides, which is the failure mode an oracle written by the same author can have.
+    if (targetNode.type === "string") {
+      // A quoted target cannot be an S3 `generic.class` name: R dispatches on the literal
+      // name, and `"a.b" <- function()` is one name, not a method. So the S3 logic below is
+      // deliberately not reached from here.
+      const strName = this.unquoteString(targetNode.text)
+      if (!strName) return
+      if (insideFunction) return
+      if (this.hasLocalBoundary(node)) return
+      symbols.push({
+        name: strName,
+        kind: value.type === "function_definition" ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable,
+        range: this.getRange(node),
+        docstring: this.extractDocstring(node),
+        metadata: { rSpecific: true, quotedAssignmentTarget: true, declarationOperator: node.childForFieldName("operator")?.text },
+      })
+      return
+    }
     if (targetNode.type !== "identifier") return
     const name = this.unquoteIdentifier(targetNode.text)
     if (!name) return
@@ -1605,6 +1658,29 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
+    // `rm(x)` at file level UNBINDS, so `x` is not a name the file leaves behind.
+    //
+    // A package that defines a helper, uses it to register S4 methods, and removes it is
+    // ordinary practice -- Matrix does it in at least 8 files, and Cholesky.R does it twice
+    // in one file. The analyzer published those helpers as declarations, which R's
+    // cross-check (execute the file, ask the environment) says is wrong: 59 of them.
+    //
+    // This is the same judgement already applied to `local()` and to function-local
+    // assignments -- a name that does not exist at file level when the file has finished is
+    // not a file-level binding -- so handling `rm` makes the analyzer internally consistent
+    // rather than introducing a new rule.
+    //
+    // Only at file level. `rm()` inside a function removes a local, and a local was never
+    // published, so there is nothing to do.
+    if (fnName === "rm" && fnStack.length === 0) {
+      const removed = this.removeTopLevelBindings(node, args, symbols, relationships, metadata)
+      if (removed) {
+        if (metadata.ambiguity === undefined) (metadata as any).ambiguity = {}
+        ;(metadata as any).ambiguity.removedByTopLevelRm = ((metadata as any).ambiguity.removedByTopLevelRm ?? 0) + removed
+      }
+      return
+    }
+
     if (fnName === "sourceCpp") {
       this.pushIfUnique(metadata.patterns, "Rcpp / C++ Integration")
       this.handleSourceCall(node, args, imports, relationships, {
@@ -2443,6 +2519,70 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the only place that has the source text; a node range built outside an analyze call
    * simply omits the byte fields rather than reporting a wrong one.
    */
+  /**
+   * Is this `if` condition the literal FALSE, so the `then` branch never executes?
+   *
+   * Only the literals. A variable holding FALSE is not statically knowable, and R does not
+   * constant-fold, so guessing there would drop real declarations.
+   */
+  /**
+   * Remove the symbols a top-level `rm(...)` unbinds, and any relationship that named one
+   * as its source. Returns how many were removed, so the removal is countable rather than
+   * silent.
+   */
+  private removeTopLevelBindings(
+    node: Node,
+    args: Node | null,
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    metadata: Partial<ASTEngine.FileMetadata>,
+  ): number {
+    if (!args) return 0
+    const doomed = new Set<string>()
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const arg = args.namedChild(i)
+      if (!arg) continue
+      // `rm(x)` and `rm(x = ...)` are both legal; only the former carries a bare name.
+      if (arg.childForFieldName("name")) continue
+      const v = arg.childForFieldName("value") ?? (arg.type === "identifier" ? arg : null)
+      if (!v) continue
+      const nm = v.type === "identifier" ? this.unquoteIdentifier(v.text) : v.type === "string" ? this.unquoteString(v.text) : null
+      if (nm) doomed.add(nm)
+    }
+    if (doomed.size === 0) return 0
+    const before = symbols.length
+    for (let i = symbols.length - 1; i >= 0; i--) {
+      const s = symbols[i]
+      if (s.ownerName || !doomed.has(s.name)) continue   // a CLASS MEMBER is not a binding
+      symbols.splice(i, 1)
+    }
+    for (let i = relationships.length - 1; i >= 0; i--) {
+      const r = relationships[i]
+      if (doomed.has(String(r.source))) relationships.splice(i, 1)
+    }
+    void node; void metadata
+    return before - symbols.length
+  }
+
+  private isStaticallyFalseCondition(ifNode: Node): boolean {
+    const cond = ifNode.childForFieldName("condition")
+    if (!cond) return false
+    // The grammar gives the LITERAL its own node type. Measured, not assumed:
+    //
+    //     if(FALSE) { ... }   -> condition.type = "false"     (a dedicated node)
+    //     if (F) ...          -> condition.type = "identifier" (F is just a name)
+    //
+    // A first version of this checked for `identifier` only, so it handled `if (F)` and
+    // silently missed every `if (FALSE)` -- which is the form packages actually write, and
+    // exactly the one the red-team finding was about. The instrumentation printed
+    // `staticallyFalse=false` for a condition whose text was plainly "FALSE", which is what
+    // sent me to the grammar instead of to another guess.
+    if (cond.type === "false") return true
+    if (cond.type !== "identifier") return false
+    const t = this.unquoteIdentifier(cond.text)
+    return t === "F" || t === "FALSE" || t === "false"
+  }
+
   private getRange(node: Node, byteOffset?: (i: number) => number) {
     const toBytes = byteOffset ?? this.byteOffsetOf
     const r: ASTEngine.UniversalSymbol["range"] = {
