@@ -1,9 +1,0 @@
-{
-  "language": "cpp",
-  "hover": { "symbol": "greet", "contains": ["greet"], "evidenceClassRequired": true },
-  "hoverLine": 9,
-  "definition": { "symbol": "Greeter", "minLocations": 1 },
-  "references": { "symbol": "greet", "minCount": 1 },
-  "documentSymbols": ["Greeter"],
-  "declaredAbsence": { "symbol": "nonexistent_symbol_xyz", "note": "absence must be declared, never fabricated" }
-}
