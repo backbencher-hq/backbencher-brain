@@ -92,6 +92,13 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // assumed), and each is verified by running the lane.
   sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
+  // M60 Make wave (2026-09-27). The analyzer was wired into engine.ts and named
+  // in SUPPORTED_LANGUAGES — so the website advertised it — while being absent
+  // from every gate that could fail. A lane that cannot fail is decoration, and
+  // that is the exact state this registration ends: 5 fixtures, 71 asserted
+  // relationships and 28 forbidden wrong answers, none of which the runner read
+  // before now.
+  make: { wasm: "tree-sitter-make.wasm", analyzerFile: "real-makefile-analyzer", className: "RealMakefileAnalyzer", ext: "mk" },
   // NIM wave (2026-09-27). `ext` carries .nim and .nims but NOT .nimble: the
   // router does not send .nimble here (decision NIMD4 in
   // script/m14/spec/nim-completeness.json), and a lane that swept a file the
