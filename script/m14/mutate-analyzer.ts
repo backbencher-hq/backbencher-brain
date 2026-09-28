@@ -1719,6 +1719,17 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "xml/self-named-import-dropped",
+    language: "xml",
+    defectClass: "reference-suppression",
+    description:
+      "Finding X6. A self-loop guard read `if (type === References || type === Imports) { if (source === target) return }`. Sound for a REFERENCE, where both ends are component names and equality is a cycle in the document. Unsound for an IMPORT, whose ends are DIFFERENT KINDS OF THING: `source` is a symbol name, `target` is a path read out of a SYSTEM identifier, and when the strings coincide they still denote a symbol and a file. `<!ENTITY cover.gif SYSTEM \"cover.gif\" NDATA gif>` names a real file. It was dropped ASYMMETRICALLY, which is what makes it a defect and not a policy: `extractExternalId` had already pushed the ImportInfo, so the file was in the analyzer's `imports` array and absent from its relationship graph — the analyzer contradicting itself inside one call, with the graph the part consumers read. 46 edges in the corpus. Reverted generically: every imports edge whose source equals its target is deleted, which is exactly the pre-fix suppression, and the ImportInfo is LEFT ALONE so the mutant reproduces the asymmetry rather than tidying it — a reversion that also fixed the inconsistency would not be testing the defect. Pinned by xml/dtd-self-named-external-id, whose `cover` and `cover.gif` differ by a dot and nothing else, so a normaliser that stripped path punctuation would collapse them and pass a broken analyzer.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "imports" && String(x.source) === String(x.target))),
+    }),
+  },
+  {
     id: "xml/declared-name-taken-from-a-value",
     language: "xml",
     defectClass: "value-where-a-name-belongs",
