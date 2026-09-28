@@ -1200,6 +1200,135 @@ export function deriveJavaEdges(root: any): { label: string; from: string; targe
 // + kotlinBuiltinExtras for receiver-less calls), the MEASURED PascalCase
 // construction rule (bare PascalCase callee = instantiates; qualified =
 // calls), and constructor_delegation_call super/this edges.
+// JD-J2: java `uses` truth, derived from the LANGUAGE's read rule.
+//
+// Java's read surface is three shapes, and each has an exact language rule:
+//   field_access  `a.b.c` READS the member `c`. On the LEFT of an assignment it is
+//                 a WRITE, not a read.
+//   array_access  `X[i]` READS the array expression `X` (the element is not named).
+//                 Again, LHS = write.
+//   bare read     `return count;` reads the enclosing type's member `count` — an
+//                 implicit-this access. It is NOT a read when the name is bound by
+//                 a local in the enclosing function (then it is the local), when it
+//                 is a callee, a declaration's own name, an annotation's name, a
+//                 write, `this`/`super`, or when the name is not a member of the
+//                 enclosing type at all.
+//
+// Derived from those rules, NOT from RealJavaAnalyzer's collectors. Where this
+// disagrees with the analyzer, the disagreement is the finding: either the truth
+// is wrong (over/under-derived here) or the analyzer is (a real defect).
+export function deriveJavaUsesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string) => {
+    if (!target) return
+    if (seen.has(target)) return
+    seen.add(target)
+    edges.push({ label: "uses", from: "(expr)", target })
+  }
+  const named = (n: any): any[] => (n?.namedChildren ?? [])
+  const fieldName = (n: any, f: string): string | null => n?.childForFieldName?.(f)?.text ?? null
+  const same = (a: any, b: any) => !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+
+  // is this node the LEFT side of an assignment? then it is a write, not a read
+  const isWrite = (n: any): boolean => {
+    const p = n?.parent
+    if (!p) return false
+    if (p.type === "assignment_expression") return same(p.childForFieldName("left") ?? p.namedChild(0), n)
+    return false
+  }
+
+  // ---- declared members of every type, so a bare name can be resolved to one
+  const membersOf = new Map<any, Set<string>>()
+  const collectMembers = (n: any) => {
+    if (n.type === "class_declaration" || n.type === "interface_declaration" || n.type === "enum_declaration" || n.type === "record_declaration" || n.type === "annotation_type_declaration") {
+      const set = new Set<string>()
+      const body = n.childForFieldName("body")
+      const bodyKids = body ? named(body) : named(n)
+      for (const c of bodyKids) {
+        if (c.type === "field_declaration") {
+          for (const d of named(c)) {
+            if (d.type === "variable_declarator") { const nm = fieldName(d, "name"); if (nm) set.add(nm) }
+          }
+        } else if (c.type === "method_declaration" || c.type === "constructor_declaration" || c.type === "compact_constructor_declaration" || c.type === "annotation_type_element_declaration") {
+          const nm = fieldName(c, "name"); if (nm) set.add(nm)
+        } else if (c.type === "enum_constant") {
+          const nm = fieldName(c, "name"); if (nm) set.add(nm)
+        } else if (c.type === "enum_body_declarations") {
+          for (const d of named(c)) if (d.type === "enum_constant") { const nm = fieldName(d, "name"); if (nm) set.add(nm) }
+        }
+      }
+      membersOf.set(n, set)
+    }
+    for (const c of named(n)) collectMembers(c)
+  }
+  collectMembers(root)
+
+  // ---- names bound INSIDE a function body: a local shadows a member of the type
+  const localsIn = (fn: any): Set<string> => {
+    const out = new Set<string>()
+    const w = (n: any) => {
+      if (n.type === "variable_declarator") { const nm = fieldName(n, "name"); if (nm) out.add(nm) }
+      else if (n.type === "formal_parameter") { const nm = fieldName(n, "name"); if (nm) out.add(nm) }
+      else if (n.type === "catch_formal_parameter") { const nm = fieldName(n, "name"); if (nm) out.add(nm) }
+      else if (n.type === "enhanced_for_statement") { const nm = fieldName(n, "name"); if (nm) out.add(nm) }
+      else if (n.type === "lambda_expression") { for (const p of named(n)) if (p.type === "identifier") out.add(p.text) }
+      else if (n.type === "inferred_parameters") { for (const p of named(n)) if (p.type === "identifier") out.add(p.text) }
+      for (const c of named(n)) w(c)
+    }
+    // Walk the WHOLE function node, not just its body. Formal parameters are
+    // SIBLINGS of the body, so a body-only walk never registers them — and an
+    // unregistered parameter makes every read of it look like a read of a member
+    // of the enclosing type. Measured: that single omission produced all 13
+    // MISSING rows in the first adjudication (grailsWebRequest, dispatcherServlet,
+    // active, sleepTime, closure, delegate, ...), every one of them a parameter
+    // read. The analyzer is right on all 13; the truth was wrong.
+    w(fn)
+    return out
+  }
+
+  // ---- walk, carrying the enclosing type and the enclosing function's locals
+  const walk = (n: any, type: any, locals: Set<string>) => {
+    const isType = n.type === "class_declaration" || n.type === "interface_declaration" || n.type === "enum_declaration" || n.type === "record_declaration" || n.type === "annotation_type_declaration"
+    const isFn = n.type === "method_declaration" || n.type === "constructor_declaration" || n.type === "compact_constructor_declaration"
+    let nextType = isType ? n : type
+    let nextLocals = locals
+    if (isFn) nextLocals = localsIn(n)
+    // a nested type resets the member scope: its members are not the outer type's
+    if (isType && type) nextLocals = new Set<string>()
+
+    if (n.type === "field_access" && !isWrite(n)) {
+      const parts = n.text.split(".")
+      if (parts.length >= 2) push(parts[parts.length - 1])
+    } else if (n.type === "array_access" && !isWrite(n)) {
+      const arr = n.childForFieldName("array")
+      if (arr) {
+        if (arr.type === "identifier") push(arr.text)
+        else if (arr.type === "field_access" || arr.type === "scoped_identifier") {
+          const parts = arr.text.split(".")
+          if (parts.length >= 2) push(parts[parts.length - 1])
+        }
+      }
+    } else if (n.type === "identifier") {
+      const txt = n.text
+      if (txt !== "this" && txt !== "super") {
+        const p = n.parent
+        const memberish = p?.type === "field_access" || p?.type === "method_invocation" || p?.type === "scoped_identifier" || p?.type === "array_access"
+        const annotationName = p?.type === "marker_annotation" || p?.type === "annotation"
+        const declParent = p?.type === "variable_declarator" || p?.type === "formal_parameter" || p?.type === "method_declaration" ||
+          p?.type === "constructor_declaration" || p?.type === "class_declaration" || p?.type === "interface_declaration" ||
+          p?.type === "enum_declaration" || p?.type === "record_declaration" || p?.type === "annotation_type_declaration" ||
+          p?.type === "enum_constant" || p?.type === "catch_formal_parameter" || p?.type === "enhanced_for_statement"
+        const declName = declParent && same(p.childForFieldName("name"), n)
+        if (!memberish && !annotationName && !declName && !isWrite(n) && !locals.has(txt) && membersOf.get(nextType)?.has(txt)) push(txt)
+      }
+    }
+    for (const c of named(n)) walk(c, nextType, nextLocals)
+  }
+  walk(root, null, new Set<string>())
+  return edges
+}
+
 const KOTLIN_STDLIB_PREFIXES = ["kotlin.", "kotlinx.", "java.", "javax.", "android.", "androidx."]
 const KOTLIN_STDLIB_EXACT = new Set([
   "println", "print", "readLine", "require", "check", "error",
@@ -15548,6 +15677,17 @@ async function main() {
         for (const e of deriveJavaEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // JD-J2 (M60 java deep review, 2026-09-27): the READ surface, which
+        // until now had no truth at all and was additionally dropped from the
+        // comparison by the allowlist — so java's second-largest edge class
+        // (470 edges per 60-file draw, 6,734 across two 300-file corpora) was
+        // invisible to the corpus in BOTH directions. Deriving it is what makes
+        // the label comparable; see deriveJavaUsesTruth for the three language
+        // rules and for the two adjudication defects this truth itself carried
+        // before it was correct.
+        for (const e of deriveJavaUsesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "kotlin") {
         // M37.21 #610: kotlin calls oracle (JD-oracle gap, java precedent).
@@ -15933,7 +16073,7 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
