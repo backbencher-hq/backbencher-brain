@@ -288,6 +288,8 @@ export const LANG_REPOS: Record<string, string> = {
   // one, and pointing the lane at fresh repositories instead would leave the
   // pre-wave claim un-refuted rather than superseded.
   bash: "otp",
+  scss: "element-plus",
+
   // scss's corpus is element-plus: 170 of the 254 `.scss` files across 13 corpora,
   // and the only one that is a real Sass codebase rather than a stray file in an
   // otherwise-CSS repo. It is also the HARD corpus — 16 of 160 files parsed clean
@@ -615,6 +617,8 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // question was most worth asking, because two grammar defects had been fixed
   // upstream of it and both changed the tree the oracle reads.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
+
   // scss is its own lane with its own wasm, analyzer and oracle. It is NOT folded into
   // the css entry: `deriveScssEdges` is a genuinely separate derivation (it resolves
   // ownership by DESCENDING and recording the enclosing statement, where the analyzer
@@ -1563,8 +1567,22 @@ export function deriveJavaReferencesTruth(root: any): { label: string; from: str
       return
     }
     if (n.type === "scoped_type_identifier") {
+      // Push the FULL spelling and DO NOT descend. In this grammar a dotted type
+      // is a NESTED chain of `scoped_type_identifier`, and the package qualifier
+      // is written as `type_identifier` at every level:
+      //     scoped_type_identifier "org.springframework.util"
+      //       type_identifier      "util"
+      //       scoped_type_identifier "org.springframework"
+      //         type_identifier    "springframework"
+      //         type_identifier    "org"        <- a PACKAGE segment
+      // So walking the children pushed `org` and `springframework` as though they
+      // were types the file names. Measured at 400 files: 164 MISSING rows on
+      // grails-core, dominated by exactly those fragments (`org` x18, `java` x14,
+      // `io`, `springframework`, `lang`, `jakarta`, `grails`, `reflect`) — every
+      // one a segment of a package path, and every one a defect in the TRUTH. The
+      // full spelling already covers the real type name, so the subtree is not
+      // walked.
       if (!notAReference(n)) push(n.text)
-      for (const c of named(n)) walk(c)
       return
     }
     // A CAST publishes its type's FULL spelling, arguments included: the pinned
@@ -14658,6 +14676,121 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
   return edges
 }
 
+export function deriveScssEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (label: string, from: string, target: string) => {
+    if (!from || !target) return
+    const k = `${label}|${from}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label, from, target })
+  }
+  const textOf = (n: any): string => (n && typeof n.text === "string" ? n.text : "")
+  const collapse = (t: string): string => t.replace(/\s+/g, " ").trim()
+
+  /** every named child, INCLUDING anonymous ones — the `!default` flag is anonymous */
+  const kids = (n: any): any[] => {
+    const out: any[] = []
+    if (!n) return out
+    for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) out.push(c) }
+    return out
+  }
+  const namedKids = (n: any): any[] => kids(n).filter((c: any) => c.isNamed)
+  const kidOfType = (n: any, t: string): any | null => namedKids(n).find((c: any) => c.type === t) ?? null
+
+  // Pass 1 — what the file DECLARES, before any reference resolves, because Sass does
+  // not care whether a use precedes its declaration.
+  const mixins = new Set<string>()
+  const functions = new Set<string>()
+  const variables = new Set<string>()
+  const namespaces = new Set<string>()
+  ;(function walk(n: any) {
+    if (!n || n.type === "ERROR") return
+    if (n.type === "mixin_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      if (name) mixins.add(`@mixin ${collapse(textOf(name))}`)
+    } else if (n.type === "function_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      if (name) functions.add(`@function ${collapse(textOf(name))}`)
+    } else if (n.type === "use_statement") {
+      const ns = kidOfType(n, "plain_value") ?? kidOfType(n, "identifier")
+      // `as *` binds no name, so there is nothing to record
+      if (ns) namespaces.add(collapse(textOf(ns)))
+    } else if (n.type === "declaration") {
+      const prop = kidOfType(n, "property_name")
+      // a `$var:` assignment is a declaration; a bare `$var` elsewhere is a read
+      if (prop && textOf(prop).startsWith("$")) variables.add(textOf(prop))
+    }
+    for (const c of kids(n)) walk(c)
+  })(root)
+
+  // Pass 2 — the references, carrying the enclosing entity as `owner` as we descend.
+  ;(function walk(n: any, owner: string) {
+    if (!n || n.type === "ERROR") return
+    let nextOwner = owner
+    if (n.type === "mixin_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      nextOwner = name ? `@mixin ${collapse(textOf(name))}` : owner
+    } else if (n.type === "function_statement") {
+      const name = n.childForFieldName?.("name") ?? kidOfType(n, "identifier")
+      nextOwner = name ? `@function ${collapse(textOf(name))}` : owner
+    } else if (n.type === "rule_set") {
+      const sels = kidOfType(n, "selectors")
+      if (sels) {
+        const sel = collapse(textOf(sels)).replace(/\s*,\s*/g, ", ")
+        for (const one of sel.split(", ")) push("contains", one, nextOwner)
+      }
+    }
+    switch (n.type) {
+      case "include_statement": {
+        const name = kidOfType(n, "identifier") ?? kidOfType(n, "plain_value")
+        if (name) {
+          const bare = collapse(textOf(name))
+          const [ns, nm] = bare.includes(".") ? bare.split(".") : [undefined, bare]
+          // `mixins`/`functions`/`namespaces` are SETS of PUBLISHED names
+          // (`@mixin button`), not maps from bare name to published name — the first
+          // version called `.get()` on all three and threw `mixins.get is not a
+          // function` on the first `@include` in the corpus. Looking a name up means
+          // constructing the published spelling and asking whether it was declared.
+          const resolve = (b: string): string | undefined =>
+            mixins.has(`@mixin ${b}`) ? `@mixin ${b}` : functions.has(`@function ${b}`) ? `@function ${b}` : undefined
+          const target = ns && namespaces.has(ns) ? resolve(nm) : resolve(bare)
+          if (target) push("uses", nextOwner, target)
+        }
+        break
+      }
+      case "extend_statement": {
+        const sel = kidOfType(n, "class_selector") ?? kidOfType(n, "id_selector") ?? kidOfType(n, "type_selector")
+        if (sel) push("uses", nextOwner, collapse(textOf(sel)))
+        break
+      }
+      case "use_statement":
+      case "forward_statement": {
+        const mod = kidOfType(n, "string_value")
+        if (mod) push("imports", nextOwner, collapse(textOf(mod)).replace(/^["']|["']$/g, ""))
+        break
+      }
+      case "variable": {
+        if (variables.has(textOf(n))) {
+          // the left-hand side of its own assignment is not a read of itself
+          const parent = n.parent
+          const isOwnLhs =
+            parent?.type === "declaration" &&
+            textOf(kidOfType(parent, "property_name")) === textOf(n)
+          if (!isOwnLhs) push("references", nextOwner, textOf(n))
+        }
+        break
+      }
+      default:
+        break
+    }
+    for (const c of kids(n)) walk(c, nextOwner)
+  })(root, "")
+
+  return edges
+}
+
 export function deriveCssEdges(root: any, moduleName: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -16033,6 +16166,37 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "scss") {
+        // M14 F10: the scss truth, and it is the SUM of both oracles.
+        //
+        // The first version ran `deriveScssEdges` alone, on the reasoning that the SCSS
+        // grammar is a superset so `deriveCssEdges` would "already cover" the CSS
+        // classes. `deriveCssEdges` does not run on this file at all — it is only called
+        // for `lang === "css"` — so the CSS half of the truth was simply MISSING, and
+        // the row read `TR=3 cov=2 MISSING=1 unexp=110 unexplained=108 (98.2%)`: three
+        // truth rows against 110 analyzer edges, which looks like an analyzer inventing
+        // almost everything it emits and is in fact a truth that modelled 3% of it.
+        //
+        // The reasoning was right about the grammar and wrong about the harness. The
+        // analyzer's result IS the CSS walk plus the SCSS additions (it delegates), so
+        // the truth has to be the CSS oracle plus the SCSS oracle. A delegate needs a
+        // delegate, or the differential compares the addition against the whole.
+        //
+        // The module name is the file's BASENAME with the extension, matching the
+        // analyzer's `importerName`, and `@use`/`@forward` carry their own module path
+        // so they are unaffected by it.
+        // The basename WITH its extension, matching the CSS path and the analyzer's
+        // `importerName`. The first version stripped it, which made every SCSS import's
+        // `from` disagree with the analyzer's by exactly the extension — invisible in
+        // the comparison because it matches on label+target, and wrong everywhere else.
+        const scssModule = relPath.split("/").pop() || "stylesheet"
+        for (const e of deriveCssEdges(root, scssModule)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveScssEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "css") {
         // M14 F10: the css truth. `deriveCssEdges` needs the module name for
         // `@import` — an import belongs to the FILE that declares it, and the
@@ -16765,6 +16929,8 @@ async function main() {
           // `uses` here would compare the analyzer against an oracle that never
           // emits it, which reads as a lane full of unexplained edges.
           ...(lang === "toml" ? ["contains"] : []),
+          ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
+
           // scss: `deriveScssEdges` derives `uses` (`@include` -> a declared mixin,
           // `@extend` -> the extended selector), `references` (a `$var` read -> a
           // declared variable), `imports` (`@use`/`@forward` -> the module) and
