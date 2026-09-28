@@ -58,13 +58,76 @@ field), compared edge for edge against analyzer output.
 `analyzer-edges` equals `tree-truth` exactly on both, so the agreement is
 edge-for-edge rather than a percentage that hides a compensating pair.
 
-**Read that as 120 files, not 2,660.** It is 4.5 % of the corpus, and it was
-drawn by the cold-pool rotation, which prefers files never sampled before — so
-it is a fresh sample, not a representative one, and nothing here should be read
-as a whole-corpus claim. The gap that matters: **48 % of the corpus carries a
-syntax error** (the profile below), and the differential has never been run
-against an errored file, because the draw is dominated by clean ones. A full
-sweep is the outstanding measurement and its number is expected to be lower.
+### The full-corpus number, and what it found
+
+The draw above is 120 files, so the sweep was re-run over **the whole of
+`DISMTools` — 483 files, 483/483 fresh, the entire corpus for that repo**:
+
+| corpus | files | truth edges | covered | missing | unexplained | heuristic |
+|---|---:|---:|---:|---:|---:|---:|
+| `DISMTools` (full) | **483 of 483** | 13,689 | **13,666 (99.8 %)** | **23** | **0** | 0 |
+
+**99.8 %, not 100 %** — which is the whole reason the full sweep was worth
+running. The 23 are not noise, and they are two defects, not one:
+
+**17 × `implements Initialize -> Initialize` — an oracle defect.** A method and
+the interface member it implements share a name, so the oracle emitted a
+**self-edge**: source and target are the same symbol. The analyzer drops
+self-edges, correctly — an edge from a symbol to itself is not navigable and is
+noise a consumer has to filter. The oracle has to agree, so this is a harness
+fix.
+
+**6 × lost call edges — and this one is a grammar defect with a large blast
+radius.** `DISMTools/Panels/ISOFiles/NewTestingEnv.vb` publishes 4 calls where
+the oracle derives 10. The parse error sits at `11:20-35`, and columns 20–35
+are *inside* the identifier `NewTestingEnv_Load`. The cause:
+
+> `_identifier_token` is declared `token(prec(-1, /\p{L}_[\p{L}\p{Nd}_]*/))`
+> while the keywords are `prec(0)`. tree-sitter picks a token by **(1)
+> precedence, then (2) match length**, so precedence is decided *before* length
+> ever runs. The three-letter keyword `New` therefore beats the thirteen-letter
+> identifier `NewForm_Load`, the method's name is destroyed, its declaration node
+> closes at the signature, and **its body falls outside that node** — so
+> `collectCalls` walks a node that does not contain the method and drops every
+> call inside it.
+
+Six lines reproduce it, with no `Handles` clause and no Windows Forms involved:
+
+```vb
+Public Class F
+    Private Sub NewForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        DoWork()
+    End Sub
+End Class
+```
+
+`DoWork()` is not published. The blast radius is **127 distinct `New*`
+identifiers, 2,823 occurrences**, and the pattern is *contagious* in exactly the
+codebase this corpus is: Windows Forms names event handlers `<Form>_<Event>`, so
+a form called `NewForm` loses the body of **every** handler it has — silently,
+with the file's symbol count still looking plausible.
+
+Two fixes were built and neither is safe to land, so the grammar is unchanged:
+
+- **Append `\b` to the `ci()` helper** so a keyword cannot match an identifier
+  prefix. This is the textbook fix and it is *illegal*: `\b` is a zero-width
+  assertion, and a tree-sitter token may not contain one — `Grammar error:
+  Unexpected rule ExpandRegex(Assertion)`.
+- **Drop `prec(-1)` from the identifier** so the length tiebreak runs. The
+  generator accepts it (and reports *fewer* necessary conflicts, which suggests
+  it does reduce ambiguity) but the lexer still picks `New`, so the change is not
+  the fix it looks like.
+
+The correct repair is keyword extraction or a restructure of how keywords are
+declared, which is a grammar project rather than a one-line patch, and it
+belongs to whoever owns `grammar.js` — not to a lane that has to re-pin a
+digest-verified artefact. Both attempts were reverted; `grammars/` and the wasm
+are byte-identical to HEAD and the pin gate is green.
+
+**Read the 120-file draw as 120 files, not 2,660.** It is 4.5 % of the corpus,
+drawn by a rotation that *prefers* never-sampled files, so it is fresh rather
+than representative — and it reported 100 % on a corpus whose honest figure is
+99.8 %.
 
 The audited labels are `calls`, `contains`, `imports`, `extends` and
 `implements`. `references` is deliberately **not** audited: the oracle does not
