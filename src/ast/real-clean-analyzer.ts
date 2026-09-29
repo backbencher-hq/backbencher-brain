@@ -196,6 +196,15 @@ interface CleanContext {
   /** Type names this file declares: synonyms, class names, instance targets,
    *  generics and the constructors of its ADTs. */
   declaredTypeNames: Set<string>
+  /**
+   * The subset of `declaredTypeNames` a `type_definition` introduces. Needed
+   * SEPARATELY because that set also holds constructors, classes, macros and
+   * record fields, and because Clean's coercion `(T x)` is an application whose
+   * head is a `type_definition`'s name — the analyzer can say "this is a
+   * coercion" and should, because the alternative is filing a known construct
+   * inside a count that means "unclassifiable".
+   */
+  declaredTypeDefNames: Set<string>
   /** Record field names, for `field_access` / `update_field` resolution. */
   declaredFieldNames: Set<string>
   /** Data-constructor names, for `instantiates` / `pattern_match` targets. */
@@ -236,6 +245,13 @@ interface CleanContext {
    * corpus so the claim cannot rot.
    */
   declinedInstantiations: { count: number; names: string[] }
+  /**
+   * Applications whose head is a TYPE this file declares: Clean's coercion. Kept
+   * out of `declinedInstantiations` because the analyzer KNOWS what these are, and
+   * a published honesty count that mixes "known" with "cannot tell" is not
+   * honest about how much it does not know.
+   */
+  typeCoercions: { count: number; names: string[] }
   /** Scoped frame identity -> decision points counted inside it. */
   frameComplexity: Map<string, number>
 }
@@ -390,6 +406,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
       importAliases: new Set(),
       declaredTypeNames: new Set(),
+      declaredTypeDefNames: new Set(),
       declaredFieldNames: new Set(),
       declaredConstructors: new Set(),
       declaredClassNames: new Set(),
@@ -400,6 +417,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       seenRels: new Set(),
       fileComplexity: 1,
       declinedInstantiations: { count: 0, names: [] },
+      typeCoercions: { count: 0, names: [] },
       frameComplexity: new Map(),
     }
     const scopeStack: Scope[] = []
@@ -645,6 +663,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // measurement behind it.
         declinedInstantiations: ctx.declinedInstantiations.count,
         declinedInstantiationNames: ctx.declinedInstantiations.names,
+        // Applying a declared type: a coercion, counted apart from the declines
+        // because the construct is known rather than unclassifiable.
+        typeCoercions: ctx.typeCoercions.count,
+        typeCoercionNames: ctx.typeCoercions.names,
       },
     }
   }
@@ -932,7 +954,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         case "type_definition": {
           const nm = n.childForFieldName("name")
-          if (nm) ctx.declaredTypeNames.add(nm.text)
+          if (nm) { ctx.declaredTypeNames.add(nm.text); ctx.declaredTypeDefNames.add(nm.text) }
           const body = n.childForFieldName("body")
           if (body) this.addTypeMention(body.childForFieldName("rhs") ?? body, ctx)
           break
@@ -2445,6 +2467,33 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
             context: "class method application",
             isClassMethodCall: true,
           }, this.lineOf(head))
+          return
+        }
+        // A TYPE this file declares. `(User "x")` where `:: User = { … }` is
+        // Clean's COERCION — the grammar types `type_definition.name` as a
+        // `constructor` node, so this falls through every branch above.
+        //
+        // It emitted nothing before this branch and STILL emits nothing: the
+        // discipline below already declines it. What the branch changes is the
+        // ACCOUNTING, and that matters because `declinedInstantiations` is a
+        // published honesty figure. Without it, 65 sites where the analyzer KNOWS
+        // what the construct is were reported inside a count whose meaning is "a
+        // name this file cannot classify" — so the number overstated the
+        // uncertainty. With it, 65 read as known coercions and 984 as genuinely
+        // unclassifiable, which is the truth.
+        //
+        // (An earlier draft of this comment claimed the branch prevented a
+        // fabricated `calls` edge to a type. That was wrong: no such edge was ever
+        // emitted, because the fall-through declined it. The `X :== expr` case that
+        // looked like the counter-example is a MACRO — `X :== toInt` parses as a
+        // `macro_definition` — and a macro application is a real call, which is why
+        // it is handled by the `declaredFunctions` branch above and why the
+        // differential lists it as cause I rather than a coercion.)
+        if (ctx.declaredTypeDefNames.has(name)) {
+          ctx.typeCoercions.count++
+          if (ctx.typeCoercions.names.length < 25 && !ctx.typeCoercions.names.includes(name)) {
+            ctx.typeCoercions.names.push(name)
+          }
           return
         }
         // Declared NEITHER way: an imported uppercase name, and this file cannot
