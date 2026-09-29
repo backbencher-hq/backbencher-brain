@@ -5017,65 +5017,6 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "zig/imports-twin-dropped",
-    language: "zig",
-    defectClass: "relationship-loss",
-    description:
-      "Z30 regression: the `imports` twin edges stop being published, so every module dependency reverts to living only under `references` \u2014 the state 16 other lanes and the graph engine are not in. A module path is not a declaration name (176 of 394 distinct targets in 400 corpus files contain a separator), so `imports` is the only type where the fact is expressible. Caught by zig/relationship-classes' expectRelationships on `imports ../helper.zig`, and by the imports gate, which counts the type by name.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "imports"),
-    }),
-  },
-  {
-    id: "zig/instantiates-construction-dropped",
-    language: "zig",
-    defectClass: "relationship-loss",
-    description:
-      "Z32 regression: the CONSTRUCTION half of `instantiates` goes away \u2014 `Point{ .x = 0, .y = 0 }` publishes no instantiation edge, which is the class ZIG.GAP.3 has wanted since it was written. Caught by zig/relationship-classes' expectRelationships on `instantiates Point` and `instantiates Inner` (the qualified head), and by the instantiation gate, which counts the two classes separately so a regression in one is attributable.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).filter(
-        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isConstructorApplication),
-      ),
-    }),
-  },
-  {
-    id: "zig/instantiates-generic-dropped",
-    language: "zig",
-    defectClass: "relationship-loss",
-    description:
-      "Z32 regression: the GENERIC TYPE APPLICATION half of `instantiates` goes away \u2014 `Scaled(u8, 4)`, a call to an in-file `fn ... type`, publishes no instantiation edge. Caught by zig/relationship-classes' expectRelationships on `instantiates Scaled`, and by the instantiation gate.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).filter(
-        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isGenericTypeApplication),
-      ),
-    }),
-  },
-  {
-    id: "zig/exports-edge-dropped",
-    language: "zig",
-    defectClass: "relationship-loss",
-    description:
-      "Z33 regression: `exports` relationships stop being published, so the module's public API surface exists only in the result's export ARRAY and never in the graph \u2014 1,584 file-scope `pub`/`export` declarations over 400 corpus files, invisible to any query that reads relationships. Caught by zig/relationship-classes' expectRelationships on three export targets, and by the exports gate, which is bidirectional so it also catches the array drifting from the edges.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
-    }),
-  },
-  {
-    id: "zig/import-binding-symbol-dropped",
-    language: "zig",
-    defectClass: "symbol-loss",
-    description:
-      "Z35 regression: a NAMESPACE IMPORT BINDING stops minting a symbol \u2014 `const std = @import(\"std\")` becomes an edge and no name, so the module's own namespace is missing its most common declaration (1,458 bindings in 400 corpus files) and a `pub const X = @import(...)` re-export names a binding the index cannot resolve. Reconstructed by dropping the symbols the analyzer marks `zigImportBinding`, which is why that marker exists rather than a name list. Caught by zig/relationship-classes' expectSymbols (`helper`, `reexported`) and by the fixture runner\u0027s export invariant, a general check this lane did not have to write.",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).zigImportBinding),
-    }),
-  },
-  {
     id: "zig/anonymous-container-owns",
     language: "zig",
     defectClass: "symbol-fabrication",
@@ -12649,6 +12590,31 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "wrapped", target: "state", confidence: 1, line_number: 20, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
   },
   {
+    id: "erlang/type-syntax-bare-atom-counted",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D36 regression: counts a BARE unquoted atom in type syntax as a type dependency again. In Erlang `-type day() :: monday | tuesday.` declares the ATOMS monday and tuesday — you must write `monday()` to apply a type — so every such edge is fabricated, resolving to a same-named type or record property elsewhere in the file. This is the M12 false positive that started the ER3 wave: the differential went 1.000 -> 0.784 with 19 of them, two of them this exact shape (`job -> id`, `job -> kind`, the map keys of a map type). types-er3 FORBIDS `handle -> ok`, `handle -> error` and `payload -> undefined` while still REQUIRING the applied `binary()`, `request()` and `reply()`, so the mutant has to be selective to survive",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "references", relationshipType: "references", from: "handle", source: "handle", to: "ok", target: "ok", line_number: 10, confidence: 0.9, metadata: { erlangSpecific: true, context: "type reference" } },
+        { type: "references", relationshipType: "references", from: "job", source: "job", to: "id", target: "id", line_number: 35, confidence: 0.9, metadata: { erlangSpecific: true, context: "type reference" } },
+      ],
+    }),
+  },
+  {
+    id: "erlang/nif-without-stub-dropped",
+    language: "erlang",
+    defectClass: "missing-relationship-type",
+    description: "ER-D37 regression: a `-nifs` entry with no Erlang clause is dropped instead of published, so every call to a NIF dangles with nothing in the graph saying a function was declared. The pre-fix code asserted \"a NIF always has an Erlang-visible stub\"; the compiler accepts `-nifs([n/1])` with no `n/1` anywhere in the file, so the assertion is false. imports-and-try REQUIRES nif_one/0 and nif_two/1 AND their `contains` edges at the -nifs line, so removing the symbols alone is not enough to be caught",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.declaredByNifsAttribute !== true),
+      relationships: (r.relationships ?? []).filter((x: any) => !["nif_one", "nif_two"].includes(String(x.target ?? x.to ?? ""))),
+    }),
+  },
+  {
     id: "erlang/second-module-wins",
     language: "erlang",
     defectClass: "symbol-identity-corruption",
@@ -13351,6 +13317,68 @@ export const MUTANTS: Mutant[] = [
           return !calledBy.get(x.source)?.has(String(x.target))
         }),
       }
+    },
+  },
+  // CS-D8. The bare-identifier pass had no gate for a PARAMETER's type, so the position
+  // published a read of a name it does not carry. It is a separate mutant from D7's because the
+  // two are selected by different facts and neither covers the other: D7's keys on the CLASS being
+  // the source (a field or property type, declared in the class body), while every D8 row has a
+  // METHOD or the class-as-primary-constructor as its source. A D7-style `members.get(source)`
+  // lookup returns nothing for `TakesGadget`, so this defect was unreachable from that mutant.
+  {
+    id: "csharp/param-type-published-as-member-read",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description:
+      "CS-D8 revert: a parameter's declared TYPE, and a type ARGUMENT in a local declaration's type, " +
+      "are published as `uses` reads. Pre-fix this emitted " +
+      "`uses TakesGadget -> Gadget` at confidence 1.0, stamped on the SIGNATURE line with the " +
+      "enclosing method as its source, so a type read as a read inside the method body. 6 rows over " +
+      "200 roslyn files; the corpus shapes are `SemanticModel semanticModel` where the class also " +
+      "has a `SemanticModel` member, and `Func<Gadget, Gadget>` where the name is a type argument " +
+      "nested inside a generic_name two levels below the declaration that owns the type. The " +
+      "shadowing frames cannot help: the shadow and the read would be the same identifier.",
+    transform: r => {
+      // Every property-kind member name in the file. The pre-fix rule resolved a candidate name
+      // against the enclosing class chain, so it fired exactly when SOME enclosing class held a
+      // member of that name -- which is what this set approximates. Restricting to that condition
+      // matters: adding a `uses` for every parameter type would add rows the real pre-fix code
+      // never emitted, and a mutant that invents noise gets "caught" for the wrong reason.
+      const memberNames = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        if (s?.kind === "property" && s.name) memberNames.add(String(s.name))
+      }
+      if (memberNames.size === 0) return r
+      const existing = new Set(
+        (r.relationships ?? [])
+          .filter((x: any) => (x.type ?? x.relationshipType) === "uses")
+          .map((x: any) => `${x.source}->${x.target}`),
+      )
+      const added: any[] = []
+      for (const rel of r.relationships ?? []) {
+        if ((rel.type ?? rel.relationshipType) !== "references") continue
+        const md = rel.metadata ?? {}
+        // `parameter` is the signature case; `local_declaration_statement` is the type-ARGUMENT
+        // case (`Func<Gadget, Gadget> f`), which is nested inside a generic_name and so has no
+        // `parameter` node at all -- the two positions the span-based gate had to cover, and the
+        // reason the first version of the fix, which compared offsets for equality, passed the
+        // fixture's first case and failed its second.
+        if (md.declaredOn !== "parameter" && md.declaredOn !== "local_declaration_statement") continue
+        if (!memberNames.has(String(rel.target))) continue
+        const key = `${rel.source}->${rel.target}`
+        if (existing.has(key)) continue
+        existing.add(key)
+        added.push({
+          type: "uses",
+          source: rel.source,
+          target: rel.target,
+          confidence: 1.0,
+          line_number: rel.line_number ?? null,
+          metadata: { relationshipType: "identifier_usage", nodeType: "identifier", evidenceClass: "usage_contextual" },
+        })
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
     },
   },
   {
@@ -14261,6 +14289,65 @@ export const MUTANTS: Mutant[] = [
         relationships: [...(r.relationships ?? []), ...local.map((n) => ({ type: "contains", source: "Host", target: n, confidence: 1, metadata: {} }))],
       }
     },
+  },
+  {
+    id: "zig/imports-twin-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z30 regression: the `imports` twin edges stop being published, so every module dependency reverts to living only under `references` \u2014 the state 16 other lanes and the graph engine are not in. A module path is not a declaration name (176 of 394 distinct targets in 400 corpus files contain a separator), so `imports` is the only type where the fact is expressible. Caught by zig/relationship-classes' expectRelationships on `imports ../helper.zig`, and by the imports gate, which counts the type by name.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "imports"),
+    }),
+  },
+  {
+    id: "zig/instantiates-construction-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z32 regression: the CONSTRUCTION half of `instantiates` goes away \u2014 `Point{ .x = 0, .y = 0 }` publishes no instantiation edge, which is the class ZIG.GAP.3 has wanted since it was written. Caught by zig/relationship-classes' expectRelationships on `instantiates Point` and `instantiates Inner` (the qualified head), and by the instantiation gate, which counts the two classes separately so a regression in one is attributable.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isConstructorApplication),
+      ),
+    }),
+  },
+  {
+    id: "zig/instantiates-generic-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z32 regression: the GENERIC TYPE APPLICATION half of `instantiates` goes away \u2014 `Scaled(u8, 4)`, a call to an in-file `fn ... type`, publishes no instantiation edge. Caught by zig/relationship-classes' expectRelationships on `instantiates Scaled`, and by the instantiation gate.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isGenericTypeApplication),
+      ),
+    }),
+  },
+  {
+    id: "zig/exports-edge-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z33 regression: `exports` relationships stop being published, so the module's public API surface exists only in the result's export ARRAY and never in the graph \u2014 1,584 file-scope `pub`/`export` declarations over 400 corpus files, invisible to any query that reads relationships. Caught by zig/relationship-classes' expectRelationships on three export targets, and by the exports gate, which is bidirectional so it also catches the array drifting from the edges.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  {
+    id: "zig/import-binding-symbol-dropped",
+    language: "zig",
+    defectClass: "symbol-loss",
+    description:
+      "Z35 regression: a NAMESPACE IMPORT BINDING stops minting a symbol \u2014 `const std = @import(\"std\")` becomes an edge and no name, so the module's own namespace is missing its most common declaration (1,458 bindings in 400 corpus files) and a `pub const X = @import(...)` re-export names a binding the index cannot resolve. Reconstructed by dropping the symbols the analyzer marks `zigImportBinding`, which is why that marker exists rather than a name list. Caught by zig/relationship-classes' expectSymbols (`helper`, `reexported`) and by the fixture runner\u0027s export invariant, a general check this lane did not have to write.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).zigImportBinding),
+    }),
   },
   {
     id: "zig/field-assignment-rhs-read",
