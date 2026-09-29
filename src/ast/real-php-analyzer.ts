@@ -974,6 +974,28 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             range: this.nodeToRange(child),
             metadata: { phpSpecific: true, aliased: !!alias },
           })
+          // M12.PHP-IMPORTS: a `use` clause is a MODULE DEPENDENCY, and the
+          // file-level reader keys on it —
+          // src/lsp/graph_request.ts:256 is `relationship_type IN
+          // ('imports','exports')`. This analyzer previously recorded the
+          // clause only as ImportInfo and emitted no relationship at all, so
+          // every PHP module dependency was invisible to that reader. `use`
+          // is per-compilation-unit in PHP, so the owner is file scope — the
+          // same owner emitInclude already used for the include path.
+          relationships.push({
+            source: "global",
+            target: fqn,
+            type: ASTEngine.RelationshipType.Imports,
+            confidence: 1,
+            line_number: this.nodeLine(child),
+            metadata: {
+              phpSpecific: true,
+              isImport: true,
+              fileLevel: true,
+              aliased: !!alias,
+              relationshipType: "use_clause",
+            },
+          })
           this.detectFramework(fqn, detectedFrameworks)
         }
         continue
@@ -1815,10 +1837,21 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships.push({
       source: ns || "global",
       target: filePath,
-      type: ASTEngine.RelationshipType.References,
+      // M12.PHP-IMPORTS: `require`/`include` is a module dependency, not a
+      // symbol reference. It was filed as `references`, which mislabels a
+      // file-level edge as an intra-file symbol read and kept it out of the
+      // file-level reader's `('imports','exports')` filter. Same fix as the
+      // `use` clause above: one kind for all PHP module dependencies.
+      type: ASTEngine.RelationshipType.Imports,
       confidence: 0.9,
       line_number: this.nodeLine(node),
-      metadata: { phpSpecific: true, includeType: node.type.replace("_expression", "") },
+      metadata: {
+        phpSpecific: true,
+        isImport: true,
+        fileLevel: true,
+        relationshipType: "include_path",
+        includeType: node.type.replace("_expression", ""),
+      },
     })
   }
 
