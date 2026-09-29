@@ -1516,14 +1516,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "union_specifier": {
           // CGD20: function-local unions are execution artifacts (C-D1).
           if (scopeManager.isInsideFunction()) break
-          const nameNode = node.childForFieldName("name")
-    let unionName = "anonymous_union"
-    if (nameNode && nameNode.text.trim()) {
-      unionName = nameNode.text
-    } else if (node.parent && node.parent.type === "type_definition") {
-      const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
-      if (declNode && declNode.text.trim()) unionName = declNode.text.trim()
+          // #951: as the struct path.
+    const unionNameNode = node.childForFieldName("name")
+    let unionName = this.specifierOwnName(node)
+    if (unionName === "anonymous_union") {
+      unionName = this.inlineAggregateOwnerName(node) ?? "anonymous_union"
     }
+    void unionNameNode
           if (node.childForFieldName("body")) {
         scopeManager.pushScope(ScopeKind.Union, unionName, node)
         willPushScope = true
@@ -2532,13 +2531,13 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     declaredTypes: Set<string>,
     allMacroNames: Set<string>,
   ) {
+    // #951: an inline aggregate member takes the MEMBER PATH as its name, so two of
+    // them stop sharing the placeholder `anonymous_struct`. Everything else keeps
+    // the tag-or-alias name it always had.
     const nameNode = node.childForFieldName("name")
-    let structName = "anonymous_struct"
-    if (nameNode && nameNode.text.trim()) {
-      structName = nameNode.text
-    } else if (node.parent && node.parent.type === "type_definition") {
-      const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
-      if (declNode && declNode.text.trim()) structName = declNode.text.trim()
+    let structName = this.specifierOwnName(node)
+    if (structName === "anonymous_struct") {
+      structName = this.inlineAggregateOwnerName(node) ?? "anonymous_struct"
     }
     // A struct_specifier without a body is a forward/reference declaration
     // (e.g. `typedef struct Point Point;` or `struct Point *p;`). It is not a
@@ -2548,6 +2547,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isPacked = this.isPacked(node)
 
     const fields: any[] = []
+    // #950: the inline-aggregate keys registered while walking this body, keyed by
+    // the member declaration's start offset, and a sequence for naming them.
+    const inlineKeys = new Map<number, string>()
+    const anonSeq = { n: 0 }
     // #947: how many members the extractor declined because their only name in the
     // parse is a macro's. Struct-level, because a declined member leaves no record.
     let declinedCount = 0
@@ -2573,6 +2576,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
+        // #950: an INLINE aggregate member -- `struct { ... } name;` or
+        // `union { ... } name;`. Its fields are registered under a synthetic key
+        // before the member guard below, and the member record picks the key up.
+        // Additive on purpose: the guard and the loop that follow are the path
+        // already measured at 100% on every type the analyzer claims to model, and
+        // nothing in them changes.
+        if (field && field.type === "field_declaration") {
+          const inlineType = field.childForFieldName("type")
+          if (
+            inlineType &&
+            (inlineType.type === "struct_specifier" || inlineType.type === "union_specifier") &&
+            inlineType.childForFieldName("body") &&
+            !inlineType.childForFieldName("name")
+          ) {
+            const key = `__anon_${structName}_${anonSeq.n++}`
+            const nested = this.collectInlineAggregateFields(
+              inlineType.childForFieldName("body"),
+              declaredTypes,
+              allMacroNames,
+              structs,
+              unions,
+              anonSeq,
+              () => `__anon_${structName}_${anonSeq.n++}`,
+            )
+            if (inlineType.type === "struct_specifier") structs[key] = nested
+            else unions[key] = nested
+            inlineKeys.set(field.startIndex, key)
+          }
+        }
         // #928: a field_declaration with no declarator names no member. A macro-generated
         // field (`BIT(closing);`) has only a macro_type_specifier, and descending to its
         // first named child is how a `property` named after the MACRO used to be
@@ -2719,6 +2751,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   unresolvableDimensions,
                   isBitfield,
                   bitfieldClause,
+                  // #950: the inline aggregate's registered key, so the member's own
+                  // width is derivable instead of falling back to 4 unknown bytes.
+                  anonymousKey: inlineKeys.get(field.startIndex),
                   isPointer,
                 })
                 symbols.push({
@@ -2778,16 +2813,24 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     is64Bit: boolean,
     isLLP64: boolean,
   ) {
-    const nameNode = node.childForFieldName("name")
-    let unionName = "anonymous_union"
-    if (nameNode && nameNode.text.trim()) {
-      unionName = nameNode.text
-    } else if (node.parent && node.parent.type === "type_definition") {
-      const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
-      if (declNode && declNode.text.trim()) unionName = declNode.text.trim()
+    // #951: as `extractStruct`, an inline aggregate member takes the MEMBER PATH.
+    //
+    // The first attempt at this landed in the analyze() DISPATCH rather than here,
+    // so the union's SCOPE got the path and the union SYMBOL kept the placeholder --
+    // and since this function is what emits the symbol, `struct S { union { int a;
+    // double b; } val; }` still published `anonymous_union` while the struct case
+    // published `S.val` two functions away. The two sites computing the same name is
+    // the third time this name has been derived in more than one place in this file,
+    // which is why `specifierOwnName` now exists; this site was simply missed.
+    let unionName = this.specifierOwnName(node)
+    if (unionName === "anonymous_union") {
+      unionName = this.inlineAggregateOwnerName(node) ?? "anonymous_union"
     }
 
     const fields: any[] = []
+    // #950: as the struct path.
+    const inlineKeys = new Map<number, string>()
+    const anonSeq = { n: 0 }
     const bodyList = node.childForFieldName("body")
     // #943/#946: the same conditional-body detection the struct path does, for
     // the same reason -- see `bodyHasConditionalMembers`.
@@ -2795,6 +2838,35 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
+        // #950: an INLINE aggregate member -- `struct { ... } name;` or
+        // `union { ... } name;`. Its fields are registered under a synthetic key
+        // before the member guard below, and the member record picks the key up.
+        // Additive on purpose: the guard and the loop that follow are the path
+        // already measured at 100% on every type the analyzer claims to model, and
+        // nothing in them changes.
+        if (field && field.type === "field_declaration") {
+          const inlineType = field.childForFieldName("type")
+          if (
+            inlineType &&
+            (inlineType.type === "struct_specifier" || inlineType.type === "union_specifier") &&
+            inlineType.childForFieldName("body") &&
+            !inlineType.childForFieldName("name")
+          ) {
+            const key = `__anon_${unionName}_${anonSeq.n++}`
+            const nested = this.collectInlineAggregateFields(
+              inlineType.childForFieldName("body"),
+              declaredTypes,
+              allMacroNames,
+              structs,
+              unions,
+              anonSeq,
+              () => `__anon_${unionName}_${anonSeq.n++}`,
+            )
+            if (inlineType.type === "struct_specifier") structs[key] = nested
+            else unions[key] = nested
+            inlineKeys.set(field.startIndex, key)
+          }
+        }
         // #928: a field_declaration with no declarator names no member. A macro-generated
         // field (`BIT(closing);`) has only a macro_type_specifier, and descending to its
         // first named child is how a `property` named after the MACRO used to be
@@ -2920,6 +2992,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   unresolvableDimensions,
                   isBitfield,
                   bitfieldClause,
+                  // #950: the inline aggregate's registered key, so the member's own
+                  // width is derivable instead of falling back to 4 unknown bytes.
+                  anonymousKey: inlineKeys.get(field.startIndex),
                   isPointer,
                 })
                 symbols.push({
@@ -3610,6 +3685,189 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
+   * The owner name for an INLINE aggregate member's contents. (#951)
+   *
+   * `parser.state.UNIX` rather than `anonymous_struct`.
+   *
+   * Two anonymous aggregates are not one type, and collapsing them is what made the
+   * corpus census report `anonymous_struct.main x2` in curl's ftplistparser.c --
+   * where `main` appears once under `UNIX` and once under `NT`, two members of two
+   * DIFFERENT structs inside a union. The census could not tell that apart, and the
+   * lane's own P8 property called the same shape a violation when this fixture grew
+   * five inline aggregates: `anonymous_struct.a emitted 5x and 5 of them are
+   * UNCONDITIONAL -- mutually exclusive preprocessor arms are the only legal source
+   * of a repeated member name`. The property was right and the analyzer was wrong:
+   * these are not arms, and they are not the same owner.
+   *
+   * The name is the MEMBER PATH, which is what a consumer can act on -- it says
+   * which field of which type these members belong to, and it is unique by
+   * construction, so two anonymous aggregates can no longer collide. It also
+   * removes the phantom `anonymous_struct` / `anonymous_union` TYPE symbols from the
+   * graph entirely, since a real, addressable name now exists for each.
+   *
+   * Derived from the parse rather than from a counter, so it is stable across
+   * reorderings of unrelated code and does not depend on how many anonymous
+   * aggregates came before this one.
+   */
+  private inlineAggregateOwnerName(specifier: Node): string | null {
+    // The specifier must be a MEMBER's type: `struct { ... } name;`
+    const fieldDecl = specifier.parent
+    if (!fieldDecl || fieldDecl.type !== "field_declaration") return null
+    const memberName = this.getIdentifierFromDeclarator(fieldDecl.childForFieldName("declarator"))
+    if (!memberName || !memberName.text.trim()) return null
+    // Its enclosing body, and the type that body belongs to.
+    const body = fieldDecl.parent
+    if (!body || body.type !== "field_declaration_list") return null
+    const ownerSpecifier = body.parent
+    if (!ownerSpecifier) return null
+    if (ownerSpecifier.type !== "struct_specifier" && ownerSpecifier.type !== "union_specifier") return null
+    const ownerName = this.specifierOwnName(ownerSpecifier)
+    if (!ownerName) return null
+    return `${ownerName}.${memberName.text.trim()}`
+  }
+
+  /**
+   * The name a specifier is known by in the source: its own tag, the typedef alias
+   * it is bound to, or `anonymous_struct` / `anonymous_union` for a type with
+   * neither. Factored out because three sites computed this and they had already
+   * drifted on the anonymous case.
+   */
+  private specifierOwnName(specifier: Node): string {
+    const nameNode = specifier.childForFieldName("name")
+    if (nameNode && nameNode.text.trim()) return nameNode.text.trim()
+    const parent: any = specifier.parent
+    if (parent && parent.type === "type_definition") {
+      const decl = this.getIdentifierFromDeclarator(parent.childForFieldName("declarator"))
+      if (decl && decl.text.trim()) return decl.text.trim()
+    }
+    // #952: `typedef struct { ... } X;` arrives in TWO shapes from this grammar, and
+    // the name logic only ever handled one of them.
+    //
+    //   (type_definition type: (struct_specifier ...) declarator: (type_identifier))
+    //   (declaration (storage_class_specifier) type: (struct_specifier ...)
+    //                             declarator: (identifier))
+    //
+    // libgit2's `git2/sys/alloc.h` uses the second, so `git_allocator` -- a
+    // typedef'd anonymous struct with four function-pointer members -- was named
+    // `anonymous_struct` and its members were attributed to the placeholder. That is
+    // a PRE-EXISTING gap, not something this wave introduced: every name derivation
+    // in this file, including the one before #951, tested only for `type_definition`.
+    //
+    // The `typedef` storage class is required, and that is the part that makes it
+    // safe: a file-scope `struct { int a; } x;` has the same shape but declares a
+    // VARIABLE, and naming the type after the variable would publish a type that
+    // does not exist. Checking the declarator is a bare identifier covers the rest,
+    // since `struct {...} x, *y;` would give an `init_declarator` or a pointer.
+    if (parent && parent.type === "declaration") {
+      const isTypedef = (parent.namedChildren ?? []).some(
+        (c: any) => c && c.type === "storage_class_specifier" && c.text.trim() === "typedef",
+      )
+      const decl = parent.childForFieldName("declarator")
+      if (isTypedef && decl && decl.type === "identifier" && decl.text.trim()) return decl.text.trim()
+    }
+    return specifier.type === "union_specifier" ? "anonymous_union" : "anonymous_struct"
+  }
+
+  /**
+   * Layout records for an INLINE aggregate member's body. (#950)
+   *
+   * `struct { int a; int b; } inner;` -- C11's anonymous struct member, and its
+   * union counterpart. The member's own layout was never computed, because
+   * `extractStruct` registers a struct's fields under its NAME and an anonymous one
+   * has none: `if (structName !== "anonymous_struct") structs[structName] = fields`.
+   * So the fields existed only for the duration of the call and the member fell
+   * through to the 4-byte unknown fallback. Measured over the three declared
+   * corpora: 141 such members across 59 files, and
+   * `struct { struct { int a; int b; } inner; char c; }` published 8 bytes where
+   * clang says 12.
+   *
+   * Records only, no symbols: the walk already visits the nested specifier and
+   * publishes its members, so emitting them twice would double the graph. The
+   * nested specifier's members are attributed to the placeholder owner
+   * `anonymous_struct`, which is a separate defect and is why the census reports
+   * `anonymous_struct.main x2` for two members of two DIFFERENT structs in
+   * curl's ftplistparser.c -- legal C that the counter cannot tell apart.
+   *
+   * This deliberately reuses the field-level primitives (`primitiveClass`,
+   * `arrayDimension`, `isPointerType`, `bitfieldWidth`) rather than the whole
+   * member-extraction loop, because that loop is entangled with symbol emission and
+   * with the #928/#932 refusals. A shared extraction would be tidier; this is
+   * additive, so it cannot regress the path that is already measured at 100% on
+   * every type the analyzer claims to model.
+   */
+  private collectInlineAggregateFields(
+    body: Node | null,
+    declaredTypes: Set<string>,
+    allMacroNames: Set<string>,
+    structs: Record<string, any[]>,
+    unions: Record<string, any[]>,
+    seq: { n: number },
+    keyFor: (node: Node) => string,
+  ): any[] {
+    const out: any[] = []
+    if (!body) return out
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const field = body.namedChild(i)
+      if (!field || field.type !== "field_declaration") continue
+      const typeNode = field.childForFieldName("type")
+      if (!typeNode) continue
+      // A NESTED inline aggregate, so an inline struct inside an inline struct
+      // resolves too rather than needing a second fix.
+      let anonymousKey: string | undefined
+      if ((typeNode.type === "struct_specifier" || typeNode.type === "union_specifier") && typeNode.childForFieldName("body") && !typeNode.childForFieldName("name")) {
+        anonymousKey = keyFor(field)
+        const nested = this.collectInlineAggregateFields(typeNode.childForFieldName("body"), declaredTypes, allMacroNames, structs, unions, seq, keyFor)
+        if (typeNode.type === "struct_specifier") structs[anonymousKey] = nested
+        else unions[anonymousKey] = nested
+      }
+      if (!fieldDeclarationHasDeclarator(field)) continue
+      if (fieldDeclarationNamesANonDeclarator(field, declaredTypes, allMacroNames)) continue
+      let arraySize = 1
+      let unresolvableDimensions = false
+      let isPointer = this.isPointerType(field)
+      let declNode: any = field
+      let bitfieldClause = ""
+      while (declNode && declNode.type !== "field_identifier" && declNode.type !== "identifier") {
+        if (declNode.type === "array_declarator") {
+          const sizeNode = declNode.childForFieldName("size") || this.findChild(declNode, (c: any) => c?.type === "number_literal")
+          const dim = this.arrayDimension(sizeNode)
+          if (dim !== null) arraySize *= dim
+          else if (!sizeNode) arraySize = 0
+          else unresolvableDimensions = true
+        }
+        if (declNode.type === "field_declaration" && this.findChild(declNode, (c: any) => c?.type === "bitfield_clause")) {
+          const clause = this.findChild(declNode, (c: any) => c?.type === "bitfield_clause")
+          bitfieldClause = clause ? clause.text : ""
+        }
+        declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
+      }
+      if (!declNode || !declNode.text.trim()) continue
+      // #947/#950: refuse a macro-mediated function pointer. The guard was originally
+      // `isPointer && this.isMacroMediatedFunctionPointer(field)`, and the `isPointer`
+      // half DEFEATED IT in exactly the case it was written for: `isPointerType` looks
+      // for a `pointer_declarator`, and a macro-mediated function pointer is precisely
+      // the shape that has none -- the `*` lives in the macro. The census still
+      // reported `anonymous_struct.GIT_CALLBACK x2` after #951 fixed the ownership,
+      // which is what exposed it. The two conditions are independent, so neither
+      // belongs in the other's guard.
+      if (this.isMacroMediatedFunctionPointer(field)) continue
+      out.push({
+        name: declNode.text,
+        type: typeNode.text,
+        typeKind: this.memberTypeKind(typeNode),
+        primitive: this.primitiveClass(typeNode),
+        arraySize,
+        unresolvableDimensions,
+        isBitfield: bitfieldClause.length > 0,
+        bitfieldClause,
+        isPointer,
+        anonymousKey,
+      })
+    }
+    return out
+  }
+
+  /**
    * Does this body hold an UNNAMED bitfield, which affects layout but names no
    * member? (#948)
    *
@@ -3767,34 +4025,37 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * published under a name known to be wrong, and the reason is recorded.
    */
   private isMacroMediatedFunctionPointer(rawDecl: Node): boolean {
-    // ONE bounded walk of the declarator subtree, not a chain walk that called
-    // `findChild` -- a RECURSIVE subtree search -- at every level. The first
-    // version did that, and it showed up as measured cost: this runs once per
-    // struct member, and on a file like redis's `server.c` a recursive descent per
-    // member is the difference between a linear pass and a quadratic one. The gate's
-    // measured-cost check caught the symptom as a compressed reverted/fixed ratio,
-    // because the extra work inflated BOTH arms of the comparison.
-    let sawFunctionDeclarator = false
-    let sawPointer = false
-    const stack: Node[] = [rawDecl]
+    // The rule is C's own, and it is about PARENTHESISES rather than pointers.
+    //
+    // A function-pointer member must be written `(*name)(args)`: C requires the
+    // dereference to be parenthesised, which is the whole difference between
+    // `int (*f)(void)` (a pointer to a function) and `int f(void)` (a function
+    // declaration, which is not even legal in a struct). So the member's declarator
+    // chain, at the point it first reaches a `function_declarator`, must pass
+    // through a `parenthesized_declarator` -- and if it does not, the `*` is not in
+    // the source and came from a macro.
+    //
+    // The first version of this test looked for a `pointer_declarator` ANYWHERE in
+    // the subtree, which is wrong for the commonest shape of all:
+    //
+    //     void * GIT_CALLBACK(gmalloc)(size_t n, const char *f, int l);
+    //
+    // tree-sitter puts that `*` in a `pointer_declarator` around the whole
+    // declarator -- it belongs to the RETURN TYPE -- so a subtree search finds it and
+    // concludes the member is a genuine function pointer, and the analyzer published
+    // two more members named `GIT_CALLBACK` in libgit2's `git2/sys/alloc.h`. Only the
+    // parentheses distinguish the two forms, and the corpus is what found it.
+    let n: Node | null = rawDecl
     let guard = 0
-    while (stack.length > 0 && guard++ < 64) {
-      const n = stack.pop() as Node
-      if (n.type === "function_declarator") sawFunctionDeclarator = true
-      else if (n.type === "pointer_declarator") sawPointer = true
-      // A pointer anywhere in the declarator subtree is decisive, so there is no
-      // need to descend past one -- which is what bounds the walk in practice.
-      if (sawPointer) return false
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        // A parameter list is not part of the declarator's own shape: `int (*f)(int
-        // *p)` has a `pointer_declarator` in the PARAMETERS and a genuine one in
-        // the declarator, and descending into the parameters would confuse the
-        // member's own shape with its signature's.
-        if (c && c.type !== "parameter_list") stack.push(c)
+    while (n && guard++ < 32) {
+      if (n.type === "function_declarator") {
+        const inner = n.childForFieldName("declarator")
+        return inner ? inner.type !== "parenthesized_declarator" : false
       }
+      if (n.type === "field_identifier" || n.type === "identifier") return false
+      n = n.childForFieldName("declarator") || n.namedChild(0)
     }
-    return sawFunctionDeclarator && !sawPointer
+    return false
   }
 
   /**
@@ -4212,6 +4473,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
    * boolean back and then looked the map up with `field.type` again).
    */
   private structKeyForMember(field: any, structs: Record<string, any[]>): string | null {
+    // #950: an inline aggregate member's fields were registered under a synthetic
+    // key, and this is where the member's width finally becomes derivable.
+    if (field.anonymousKey && structs[field.anonymousKey]) return field.anonymousKey
     const k = field.typeKind
     if (k === "tag_union" || k === "tag_enum") return null
     const key = k === "tag_struct" ? this.stripTagKeyword(field.type) : field.type
@@ -4219,6 +4483,8 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private unionKeyForMember(field: any, unions: Record<string, any[]>): string | null {
+    // #950: as `structKeyForMember`, for an inline UNION member.
+    if (field.anonymousKey && unions[field.anonymousKey]) return field.anonymousKey
     const k = field.typeKind
     if (k === "tag_union") {
       const tag = this.stripTagKeyword(field.type)
