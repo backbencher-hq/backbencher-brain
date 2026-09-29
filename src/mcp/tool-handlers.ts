@@ -417,13 +417,55 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_ask: async (args, { projectId }) => {
-    const result = await quickAnswer(projectId, String(args.query))
-    const lines = result.sources
-      .slice(0, Number(args.limit ?? 5))
-      .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
-    const head = result.answer ? `answer: ${result.answer}\n\n` : ""
-    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
-    return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`) + `\n${prov}`)
+    const limit = Number(args.limit ?? 5)
+    const result = await quickAnswer(projectId, String(args.query), { limit })
+
+    // HONESTY FIX (critical; measured on 9 real repositories). This handler
+    // appended `no semantic matches for "<query>"` whenever `sources` was empty
+    // — and `sources` is empty BY DESIGN on every verified-aggregate path, so
+    // the tool printed a correct count and then denied it two lines later:
+    //
+    //   answer: There are 786 symbols in this project
+    //   no semantic matches for "how many symbols are in this project?"
+    //
+    // "No matches" is a true statement only about a RETRIEVAL answer that found
+    // nothing. It is false about an exact aggregate, and also false for
+    // `limit: 0`, where the caller explicitly asked for no rows. The route is
+    // what makes the difference, and quickAnswer declares it.
+    const retrievalAnswer = result.route === "retrieval" || result.route === "symbol-name"
+    const parts: string[] = []
+    if (result.answer) parts.push(`answer: ${result.answer}`)
+
+    // Confidence was computed on every path and thrown away. Surface it: an
+    // aggregate is exact, a retrieval answer is bounded well below certainty,
+    // an unknown is 0.1. A reader can now tell them apart.
+    parts.push(`confidence: ${result.confidence}`)
+
+    const shown = result.sources.slice(0, limit)
+    if (shown.length) {
+      parts.push(shown.map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`).join("\n"))
+    } else if (retrievalAnswer) {
+      parts.push(limit > 0
+        ? `no matches for "${args.query}" in the index`
+        : `limit was 0, so no matches were requested or returned`)
+    }
+
+    // Retrieval facts the engine already computed. Without these the caller
+    // cannot tell a production embedding's cosine from the offline
+    // 50-dimension word-vector one — the difference between "semantic" and
+    // "lexical with a decimal point".
+    if (result.retrieval) {
+      const r = result.retrieval
+      const bits = [`method=${r.method}`, `queryModel=${r.queryModel}`, `indexModel=${r.indexModel}`]
+      if (r.dimension > 0) bits.push(`dimension=${r.dimension}`)
+      bits.push(`embeddingCoverage=${Math.round(r.embeddingCoverage.ratio * 100)}% (${r.embeddingCoverage.embedded}/${r.embeddingCoverage.symbols} symbols embedded)`)
+      if (r.fallbackReason) bits.push(`reason=${r.fallbackReason}`)
+      parts.push(`[retrieval: ${bits.join(", ")}]`)
+    }
+
+    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine} (${result.route})${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
+    parts.push(prov)
+    return textResult(parts.join("\n\n"))
   },
 
   bb_analyze: async (args, { projectId }) => {
