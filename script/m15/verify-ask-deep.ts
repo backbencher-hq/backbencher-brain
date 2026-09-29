@@ -155,12 +155,18 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
     //    than merely existing. The prior version asserted an exact single
     //    string, which made the census a fingerprint of one implementation
     //    rather than a policy.
-    const JUSTIFIED: Array<{ test: RegExp; why: string }> = [
-      { test: /\.replace\(\s*\/\[.,;:!~\?\]/, why: "strip trailing sentence punctuation from a name-shaped query" },
-      { test: /\.test\(\s*\/\\s\/, why: "reject a multi-word query as a symbol name" },
-      { test: /\.match\(\s*\/, why: "extract a named capture from a result line" },
+    // Each entry names what the operation is FOR, so a new regex has to be
+    // justified in this list rather than merely exist. Plain substring
+    // predicates, not regexes: a regex containing a literal `/` is exactly the
+    // kind of thing this section exists to keep rare, and writing one here to
+    // police the others was its own small trap — the first draft of this table
+    // did, and did not parse.
+    const JUSTIFIED: Array<{ has: (call: string) => boolean; why: string }> = [
+      { has: (c) => c.includes(".replace(/[.,;:!?]+$/"), why: "strip trailing sentence punctuation from a name-shaped query" },
+      { has: (c) => c.includes(".test(/\\s/"), why: "reject a multi-word query as a symbol name" },
+      { has: (c) => c.includes(".match(/"), why: "extract a named capture from a result line" },
     ]
-    const unjustified = cleanRelits.filter((r: string) => !JUSTIFIED.some((j) => j.test(r)))
+    const unjustified = cleanRelits.filter((c: string) => !JUSTIFIED.some((j) => j.has(c)))
     nk(
       "A2: every regex literal in the bb_ask path is a declared text-level operation",
       unjustified.length === 0,
