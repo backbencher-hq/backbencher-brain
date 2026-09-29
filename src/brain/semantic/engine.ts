@@ -31,8 +31,18 @@ export namespace SemanticEngine {
   let _localAvailable: boolean | null = null
   // Canonical label for offline word-vector embeddings. Distinct from any API
   // model name so the vector search never compares across vector spaces.
+  //
+  // The version suffix is load-bearing, not decoration. `local-word-vectors-v2`
+  // tokenizes identifiers (camelCase, snake_case, scope) where v1 tokenized on
+  // whitespace alone, so a v1 stored vector and a v2 query vector are points in
+  // DIFFERENT spaces even though both are 50-dimensional. Bumping the label
+  // makes the existing model-consistency guard refuse to compare them, which
+  // reports an honest `no-matching-model-embeddings` until the project is
+  // re-embedded. Reusing the old label would have produced confident garbage:
+  // real-looking cosines between two unrelated tokenizations, for every
+  // existing index, with no way to tell.
   let _lastModel: string | null = null
-  export const LOCAL_MODEL_LABEL = "local-word-vectors"
+  export const LOCAL_MODEL_LABEL = "local-word-vectors-v2"
 
   /** Model name that produced the most recent embedding (API model or local). */
   export function getLastEmbeddingModel(): string {

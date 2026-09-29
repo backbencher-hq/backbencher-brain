@@ -64,6 +64,38 @@ function buildVectors(words: string[]): void {
   }
 }
 
+/**
+ * The ONE tokenizer, used by BOTH the vocabulary builder and the embedder.
+ *
+ * Before this existed, the two sides disagreed:
+ *   - `buildProjectVocab` split names on camelCase, `_`, `-` and `.`
+ *   - `embedLocal` split on WHITESPACE ONLY
+ * so `CpuCounter` entered the vocabulary as `cpu` + `counter` but was queried
+ * as the single token `cpucounter`. The out-of-vocabulary fallback cannot
+ * rescue this: it tries 2-grams of the token, and vocabulary entries are whole
+ * words, never 2-grams. The result was an all-zero query vector for every
+ * identifier — measured at 99 of 99 real symbol names across 9 repositories.
+ *
+ * A zero vector has cosine 0 against every stored row, so the dense path never
+ * ran for the single most likely query a code tool receives.
+ */
+export function tokenizeForEmbedding(text: string): string[] {
+  const out: string[] = []
+  // Split on everything that is not a letter or digit — INCLUDING underscore,
+  // which is a word separator in snake_case and SCREAMING_SNAKE. (An earlier
+  // draft excluded `_` from the split set and left `process_queue_item` as one
+  // token; the probe caught it.)
+  for (const raw of String(text).split(/[^A-Za-z0-9]+/)) {
+    if (!raw) continue
+    // Split camelCase and PascalCase: `getUserById` -> get User By Id.
+    for (const part of raw.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(" ")) {
+      const word = part.toLowerCase()
+      if (word.length >= 2 && word.length <= 30 && !/^\d+$/.test(word)) out.push(word)
+    }
+  }
+  return out
+}
+
 export function buildProjectVocab(rawDb: any, projectId: string): void {
   const allWords = [...BASE_WORDS]
   try {
@@ -71,8 +103,7 @@ export function buildProjectVocab(rawDb: any, projectId: string): void {
     const freq: Record<string, number> = {}
     for (const s of symbols) {
       if (!s.name) continue
-      const words = String(s.name).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_\-.]+/g, " ").toLowerCase().split(/\s+/)
-      for (const w of words) { if (w.length >= 2 && w.length <= 30 && !/^\d+$/.test(w)) freq[w] = (freq[w] || 0) + 1 }
+      for (const w of tokenizeForEmbedding(String(s.name))) freq[w] = (freq[w] || 0) + 1
     }
     const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5000).map(e => e[0])
     allWords.push(...sorted)
@@ -92,14 +123,31 @@ export function embedLocal(texts: string[]): number[][] {
   const results: number[][] = []
   for (const text of texts) {
     const vec = new Array(WORD_DIM).fill(0)
-    const clean = text.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim()
-    const words = clean.split(" ")
+    // The SAME tokenizer the vocabulary was built with. Using a different one
+    // here is what made every identifier unrepresentable.
+    const words = tokenizeForEmbedding(text)
     let count = 0
     for (const w of words) {
-      if (w.length < 2) continue
       const idx = wv.map[w]
-      if (idx !== undefined) { const base = idx * WORD_DIM; for (let d = 0; d < WORD_DIM; d++) vec[d] += wv.vecs[base + d]; count++ }
-      else { for (let i = 0; i < w.length - 1; i++) { const si = wv.map[w.slice(i, i + 2)]; if (si !== undefined) { const b = si * WORD_DIM; for (let d = 0; d < WORD_DIM; d++) vec[d] += wv.vecs[b + d] * 0.5; count++ } } }
+      if (idx !== undefined) {
+        const base = idx * WORD_DIM
+        for (let d = 0; d < WORD_DIM; d++) vec[d] += wv.vecs[base + d]
+        count++
+      } else {
+        // Sub-word fallback for genuine OOV words. Sub-words are vocabulary
+        // words themselves, so this can actually fire; the previous version
+        // looked for 2-grams, which are never vocabulary entries, so it could
+        // never fire and every OOV token silently contributed nothing.
+        for (let i = 0; i < w.length - 3; i++) {
+          const sub = w.slice(i, i + 4)
+          const si = wv.map[sub]
+          if (si !== undefined) {
+            const b = si * WORD_DIM
+            for (let d = 0; d < WORD_DIM; d++) vec[d] += wv.vecs[b + d] * 0.25
+            count++
+          }
+        }
+      }
     }
     if (count === 0) { results.push(new Array(WORD_DIM).fill(0)); continue }
     let norm = 0; for (let d = 0; d < WORD_DIM; d++) norm += vec[d] * vec[d]
