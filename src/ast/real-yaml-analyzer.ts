@@ -1269,7 +1269,11 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     for (const use of ctx.pendingActionUses) {
-      this.addImport(ctx, use.action, "github_action", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
+      // `yaml_action_use`, NOT `github_action`: the relationship beside it already uses
+      // that name, and an import row that disagrees with its own relationship is a second
+      // vocabulary for one fact. The corpus census asserts row-type == relationshipType
+      // and caught the mismatch on its first run.
+      this.addImport(ctx, use.action, "yaml_action_use", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
       this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
         isExternal: !use.action.startsWith("./") && !use.action.startsWith("docker://"),

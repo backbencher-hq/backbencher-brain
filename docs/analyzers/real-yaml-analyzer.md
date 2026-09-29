@@ -97,8 +97,23 @@ through `parseFile` instead of through the analyzer:
   imports had no line even after the first fix. It now threads the line the pending list
   already carried.
 
-The shape of this defect is worth naming: **a count of imports looks perfectly healthy while
-every row is unlocatable.** Nothing in the milestone checked a field, only a quantity.
+The same investigation then found a second, quieter one in the same rows. Every import in
+every language read `type: "named"` — the JS/TS idiom — because `pool-worker` derived the
+field from import *syntax* and ignored the `importType` the analyzer had already declared.
+So a **project** file dependency (`include_tasks: tasks.yml`) and an **external** tool
+invocation (`uses: actions/checkout@v4`) were indistinguishable in the row the
+file-dependency engine reads, while the relationships beside them always knew the difference.
+All **540 / 540** corpus imports now carry this lane's own classification
+(`github_action` / `yaml_keyword_include` / `yaml_tag_include`).
+
+Wiring that assertion also caught a naming inconsistency **in this analyzer**: the import row
+said `github_action` where its own relationship said `yaml_action_use` — one fact, two
+vocabularies. The census asserts `row type == relationshipType`, failed on its first run, and
+the two are now one name.
+
+The shape of both defects is worth naming: **a count of imports looks perfectly healthy while
+every row is wrong.** The census said `imports: 540` throughout, and 540 was true. Nothing
+in the milestone read a *field* — only a quantity.
 
 **Not emitted, and each ruled with a reason rather than left blank:** `calls`,
 `implements`, `instantiates`, `overrides` (the format has no callable, no heritage clause,
