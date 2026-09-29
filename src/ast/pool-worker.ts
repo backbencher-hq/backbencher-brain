@@ -751,7 +751,13 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         // analyzer: the analyzer reported `line_number: 1` and the production entry
         // reported `line: 0`. The fallback is additive, so an analyzer that does set
         // `line` or `range.startLine` is unaffected.
-        const line = i.range?.startLine ?? i.line ?? i.line_number ?? 0
+        // FOUR spellings of an import's line exist in this tree and this read matched two
+        // of them: `range.startLine` (xml), `line`, and now `line_number` (yaml, ts, go,
+        // ruby, python). makefile, objective-c and sql write a FOURTH — `lineNumber` —
+        // and were still arriving with 0 after the first fix. All four are accepted;
+        // the order is widest-known first and every step is a fallback, so nothing that
+        // already resolved changes.
+        const line = i.range?.startLine ?? i.line ?? i.line_number ?? i.lineNumber ?? 0
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)
           .map((name: string) => {
@@ -763,7 +769,23 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             return {
               name: cleanName,
               path: i.module || i.path || "",
-              type: asMatch ? "alias" : baseType,
+              // The analyzer's OWN classification, when it declares one. Five lanes do:
+              // makefile `make_include`, objective-c `include`, sql `sql_import`, xml
+              // `xml-doctype`, yaml `yaml_tag_include` / `yaml_keyword_include` /
+              // `github_action`. The fallback below is the JS/TS idiom
+              // (named/default/namespace), and applying it to every language made all
+              // 442 of this lane's corpus imports read `named` — so an Ansible
+              // `include_tasks: tasks.yml` PROJECT file dependency and a GitHub Actions
+              // `uses: actions/checkout@v4` EXTERNAL tool invocation became
+              // indistinguishable in the row the file-dependency engine reads. The
+              // relationships always carried the distinction; the row did not.
+              //
+              // Safe to prefer: the stored column is `import_type`, no fixture in the
+              // tree pins this field, and the only consumer that branches on an import's
+              // `type` (import-pruner.ts) reads JS/TS AST SPECIFIERS — a different
+              // structure entirely, not these rows. A lane that sets no `importType`
+              // keeps the historical value unchanged.
+              type: i.importType ?? (asMatch ? "alias" : baseType),
               isExternal: external,
               line,
             }

@@ -769,6 +769,10 @@
   "importsWithLine": "540/540",
   "importsMissingLine": 0,
   "importsMissingLineSamples": [],
+  "importsWithSpecificType": "540/540",
+  "importsWithGenericType": 0,
+  "importTypeMismatches": 0,
+  "importTypeMismatchSamples": [],
   "imports": 540,
   "symbolsWithApiContractPathAtWorkerBoundary": 0,
   "seamFindings": [
