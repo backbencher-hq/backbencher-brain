@@ -148,11 +148,6 @@ JOIN brain_file tf ON tf.id = ts.file_id
 WHERE r.project_id = '${projectId}' AND r.is_cross_language = 1 AND owner.name = :name
   AND m.name <> owner.name`
 
-const MEMBER_COPIES = (projectId: string) => `
-SELECT m.id AS id, m.name AS name
-FROM brain_symbol m
-JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
-WHERE m.project_id = '${projectId}' AND owner.name = :name AND m.name <> owner.name`
 
 const NAME_COPIES = (projectId: string) =>
   `SELECT s.id AS id, s.name AS name, f.relative_path AS path, f.language AS language, s.line_start AS line
@@ -160,11 +155,29 @@ const NAME_COPIES = (projectId: string) =>
    WHERE s.project_id = '${projectId}' AND s.name = :name
    ORDER BY f.relative_path, s.line_start, s.id`
 
+/** The independent truth, INCLUDING the member side.
+ *
+ *  `memberIds` is the oracle for `memberCount` and it is deliberately NOT "every
+ *  member the name has". A member contributes to the answer only when it has a
+ *  row that can be reported: one whose two ends name different languages (else
+ *  it lands in `unpairableRowCount`) and that is not already an own row (a
+ *  class calling its own method is an ordinary internal edge; the row is
+ *  emitted once, from the own section, and counted in `collapsedRowCount`).
+ *  An earlier version of this oracle counted every member, which made the tool
+ *  look deficient for being precise — it reported 5 where the loose oracle said
+ *  86, and the difference was entirely rows that correctly have nowhere to go. */
 function truthFor(raw: any, projectId: string, name: string): { rows: any[]; copies: any[]; memberRows: any[]; memberIds: Set<string> } {
   const rows = raw.prepare(INDEPENDENT_ROWS(projectId)).all({ name }) as unknown as any[]
   const copies = raw.prepare(NAME_COPIES(projectId)).all({ name }) as unknown as any[]
   const memberRows = raw.prepare(INDEPENDENT_MEMBER_ROWS(projectId)).all({ name }) as unknown as any[]
-  const memberIds = new Set<string>((raw.prepare(MEMBER_COPIES(projectId)).all({ name }) as unknown as Array<{ id: string }>).map((m) => m.id))
+  const ownRowIds = new Set(rows.map((r: any) => r.rowId))
+  const differs = (a: string | null, b: string | null): boolean =>
+    Boolean(a) && Boolean(b) && String(a).toLowerCase() !== String(b).toLowerCase()
+  const memberIds = new Set<string>(
+    memberRows
+      .filter((r: any) => !ownRowIds.has(r.rowId) && differs(r.memberLang, r.otherLang))
+      .map((r: any) => r.memberId as string),
+  )
   return { rows, copies, memberRows, memberIds }
 }
 
@@ -262,7 +275,12 @@ async function main(): Promise<void> {
     const ownPairable = truth.rows.filter((r) => differs(r.selfLang, r.otherLang))
     const memPairable = truth.memberRows.filter((r) => differs(r.memberLang, r.otherLang))
     const totalPairable = ownPairable.length + memPairable.length
-    const result = await call("bb_cross_language", { symbol: name })
+    // At the CEILING, so this check measures LOSS and not truncation. With the
+    // default 200 a symbol holding 242 stored rows is correctly truncated to
+    // 200, and comparing the SHOWN count against the TOTAL calls that correct
+    // answer a defect — which is exactly what the first CL2 run reported for
+    // `Method`. Truncation gets its own check (B2) below.
+    const result = await call("bb_cross_language", { symbol: name, limit: 1000 })
 
     // B: the union. Before CL2 this compared pairCount against the OWN rows
     // alone, which made every owner with member rows fail — the check was
@@ -270,6 +288,9 @@ async function main(): Promise<void> {
     check(`CL1 B: every stored row is reported — ${name}`,
       result.parsed?.pairCount === totalPairable && result.parsed?.ownFactCount === ownPairable.length && result.parsed?.memberFactCount === memPairable.length,
       `tool(pair/own/member)=${result.parsed?.pairCount}/${result.parsed?.ownFactCount}/${result.parsed?.memberFactCount} independent=${totalPairable}/${ownPairable.length}/${memPairable.length} copies=${truth.copies.length}`)
+    check(`CL1 B2: the declared total equals the independent total — ${name}`,
+      result.parsed?.totalCountIfKnown === totalPairable,
+      `tool=${result.parsed?.totalCountIfKnown} independent=${totalPairable}`)
     check(`CL1 A: ${name} is answered, not refused`, result.isError === false, result.text.slice(0, 120))
     // C: absence means THE NAME IS SILENT — neither the copies nor their
     // members. Before CL2 this only knew about own rows, so the gate could not
@@ -313,8 +334,13 @@ async function main(): Promise<void> {
     check(`CL1 I: every member fact is marked owner-cascade and names its member — ${name}`, markOk, `memberFacts=${memberFacts.length}`)
     check(`CL1 I2: every claimed member is really a member of a copy — ${name}`, memberReal, `memberFacts=${memberFacts.length} realMembers=${truth.memberIds.size}`)
     check(`CL1 I3: memberCount matches the distinct members the truth has — ${name}`,
-      (result.parsed?.memberCount ?? -1) === claimedMembers.size,
-      `tool=${result.parsed?.memberCount} toolClaimed=${claimedMembers.size}`)
+      // Compared against the TRUTH, not against the members that survived the
+      // limit: `memberCount` describes the whole answer while the sample
+      // describes a possibly-truncated section, and comparing the two is
+      // meaningless whenever a limit bit. It passed by accident until `Method`
+      // hit the ceiling and emptied memberFacts.
+      (result.parsed?.memberCount ?? -1) === truth.memberIds.size,
+      `tool=${result.parsed?.memberCount} independent=${truth.memberIds.size}`)
     // J: no row in both sections. A row counted twice inflates every number.
     const overlap = memberFacts.filter((f) => rowIds.has(f.rowId))
     check(`CL1 J: no stored row appears in both sections — ${name}`, overlap.length === 0, `overlap=${overlap.length}`)
@@ -422,8 +448,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M2", name: "false absence", file: "handler",
-      from: "      declaredAbsent: shown.length === 0,",
-      to: "      declaredAbsent: shown.length < 3,",
+      from: "      declaredAbsent: shownCount === 0,",
+      to: "      declaredAbsent: shownCount < 3,",
       probe: async (m, r, pid) => {
         const ambiguous = await pickAmbiguousWithRows(r, pid)
         const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: ambiguous }, { projectId: pid, projectPath: "." } as any)
@@ -432,8 +458,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M3", name: "no identity (counterparty stripped)", file: "component",
-      from: "      other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line },",
-      to: "      other: { symbol: null, file: null, language: null, line: null } as any,",
+      from: "    other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line },",
+      to: "    other: { symbol: null, file: null, language: null, line: null } as any,",
       probe: async (m, r, pid) => {
         const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: await pickUniqueWithRows(r, pid) }, { projectId: pid, projectPath: "." } as any)
         const parsed = JSON.parse(out.content[0].text)
@@ -442,8 +468,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M4", name: "no bound (limit ignored, truncation undeclared)", file: "handler",
-      from: "    const shown = result.facts.slice(0, limit)",
-      to: "    const shown = result.facts.slice(0, Number.MAX_SAFE_INTEGER)",
+      from: "    const ownShown = result.facts.slice(0, limit)",
+      to: "    const ownShown = result.facts.slice(0, Number.MAX_SAFE_INTEGER)",
       probe: async (m, r, pid) => {
         const hub = await pickHub(r, pid)
         const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: hub, limit: 5 }, { projectId: pid, projectPath: "." } as any)
@@ -515,8 +541,8 @@ async function main(): Promise<void> {
     },
     {
       id: "M6", name: "pair fabrication where the row has no languages", file: "component",
-      from: "    const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()\n      ? `${selfLang} → ${otherLang}`\n      : null",
-      to: "    const pair = `${selfLang ?? 'unknown'} → ${otherLang ?? 'unknown'}`",
+      from: "  const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()\n    ? `${selfLang} → ${otherLang}`\n    : null",
+      to: "  const pair = `${selfLang ?? 'unknown'} → ${otherLang ?? 'unknown'}`",
       probe: async (m, r, pid) => {
         const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: await pickUniqueWithRows(r, pid) }, { projectId: pid, projectPath: "." } as any)
         const parsed = JSON.parse(out.content[0].text)
