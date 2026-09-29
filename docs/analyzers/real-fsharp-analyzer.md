@@ -256,10 +256,10 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 
 | Gate | Result |
 | --- | --- |
-| F1 dead-literal / unknown-symbol | `PASS refs=58 unknown=0 unknownFields=0` |
-| F3 fixtures | 4/4 PASS |
-| F4 mutants | 13/13 CAUGHT |
-| oracle vs analyzer, fixtures | 102 truth, 0 MISSING, 0 UNEXPLAINED |
+| F1 dead-literal / unknown-symbol | `PASS refs=62 unknown=0 unknownFields=0` |
+| F3 fixtures | 6/6 PASS |
+| F4 mutants | 14/14 CAUGHT |
+| oracle vs analyzer, fixtures | 106 truth, 0 MISSING, 0 UNEXPLAINED |
 | F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
 | all-label probe, 120 files | MISSING 205 / UNEXPLAINED 200 — the honest current number |
 
@@ -287,8 +287,16 @@ the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained
 
 | | count | dominant classes |
 |---|---|---|
-| MISSING (truth derives, analyzer does not) | 205 | 116 `calls`/source-other, 52 `declared_type(parameter)`, 10 `implements` |
-| UNEXPLAINED (analyzer emits, truth does not) | 200 | 123 open-path `references`, 26 `calls`/source-other, 18 `overrides`, 14 `instantiates` |
+| MISSING (truth derives, analyzer does not) | 147 | 96 `calls`/source-other, 19 `declared_type(parameter)`, 10 `implements`, 10 `declared_type(local_annotation)` |
+| UNEXPLAINED (analyzer emits, truth does not) | 174 | 58 `declared_type(parameter)`, 27 `declared_type(local_annotation)`, 26 `declared_type(return)`, 18 `overrides`, 14 `instantiates` |
+
+Two of the three biggest numbers in this table were the PROBE's fault, and both were found
+by a second probe disagreeing with the first. `fs028` classified an unexplained `references`
+row as an "open path" without reading the analyzer's `declaredOn` marker, so 127 declared-type
+rows were filed under a class that had already been fixed twice against two files which both
+agreed afterwards. And an `and`-clause bug in the truth oracle named a whole `let rec … and …`
+group after its *second* function, putting 24 rows in a file that was not where the class was
+being fixed. A single-probe residual is a number; it is not yet a finding.
 
 The single largest class on both sides is the **undecided `calls`/`instantiates` boundary** on
 a bare application (§6.1 of the closure review): 116 against 14. The second is the
