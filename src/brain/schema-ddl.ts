@@ -343,6 +343,13 @@ export const ANNOTATION_DDL = `
     );
     CREATE INDEX IF NOT EXISTS brain_annotation_project_symbol_idx ON brain_annotation(project_id, symbol_name);
     CREATE INDEX IF NOT EXISTS brain_annotation_project_idx ON brain_annotation(project_id);
+    -- Location identity in the schema, not in an encoded id string. COALESCE
+    -- is load-bearing: symbol_path is nullable and SQLite counts NULLs as
+    -- distinct in a UNIQUE index, so a path-less note must not escape the
+    -- constraint. See src/brain/annotation-store.ts for the measured defect
+    -- this replaces.
+    CREATE UNIQUE INDEX IF NOT EXISTS brain_annotation_location_idx
+      ON brain_annotation(project_id, symbol_name, author_class, COALESCE(symbol_path, ''));
   `
 
 /** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
