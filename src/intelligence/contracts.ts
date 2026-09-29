@@ -154,7 +154,13 @@ export interface SemanticResult {
   file: string
   line: number
   snippet: string
-  similarity: number
+  /**
+   * Cosine similarity, or null when none was computed. Null is meaningful and
+   * is NOT the same as 0: the keyword-fallback path produces lexical matches
+   * with no score at all, and reporting 0 made callers print and average a
+   * number the engine had explicitly labelled meaningless.
+   */
+  similarity: number | null
   language: string
   /** True when the source file changed on disk since indexing — must never be presented as current. */
   stale?: boolean
@@ -170,7 +176,19 @@ export interface SemanticSearchResults {
     dimension: number
     scannedRows: number
     filteredRows: number
+    /**
+     * Why the dense path was abandoned. `degenerate-query-vector` is distinct
+     * from `no-vector-above-threshold` on purpose: the first means nothing was
+     * compared at all because the query could not be embedded, the second means
+     * vectors were compared and none cleared the threshold. Collapsing them
+     * sends the reader to re-embed a corpus that was embedded correctly.
+     */
     fallbackReason?: string
+    /** Indexable symbols vs symbols that actually have a stored embedding. */
+    indexSymbolCount: number
+    embeddedSymbolCount: number
+    /** 0..1, embeddedSymbolCount / indexSymbolCount. 1 when nothing is indexed. */
+    embeddingCoverage: number
   }
 }
 
@@ -274,6 +292,11 @@ export interface GraphTraversalOptions {
 
 export interface GraphTraversalResult {
   root: GraphNode
+  /** How many stored symbols the name resolved among. 1 means the name was
+   *  unique; more means the caller should confirm `root` is the one they meant
+   *  (measured: lodash holds eight symbols named `build`, cobra holds fifty
+   *  structural symbols named `code_block.go`). */
+  rootCandidates: number
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
