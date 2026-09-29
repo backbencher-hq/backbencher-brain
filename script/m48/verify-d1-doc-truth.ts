@@ -28,7 +28,7 @@ const gitHead = (() => { try { return execFileSync("git", ["rev-parse", "HEAD"],
 
 // The single source of the cross-reference map: imported from the generator so
 // the gate and the generator can never disagree about what "related" means.
-const { RELATIONS } = await import(path.join(ROOT, "script/verify-tool-docs.ts")) as { RELATIONS: Record<string, string> }
+const { RELATIONS, FRESHNESS_TOOLS, CUSTOM_STALENESS_TOOLS } = await import(path.join(ROOT, "script/verify-tool-docs.ts")) as { RELATIONS: Record<string, string>; FRESHNESS_TOOLS: Record<string, unknown>; CUSTOM_STALENESS_TOOLS: Set<string> }
 const { PUBLIC_TOOL_DESCRIPTORS } = await import(path.join(ROOT, "src/mcp/tool-registry")) as { PUBLIC_TOOL_DESCRIPTORS: any[] }
 
 async function main() {
@@ -56,14 +56,32 @@ async function main() {
   // 3. No doc contradicts its own staleness behavior: tools WITHOUT a
   //    registered freshness surface must say so explicitly (auto-refresh
   //    phrasing), tools WITH one must describe their real surface.
-  const withFreshness = new Set(["bb_search", "bb_analyze", "bb_visualize", "bb_migrate", "bb_patterns", "bb_security", "bb_doc"])
+  //    The set is read from the GENERATOR's table, not restated here. It used
+  //    to be a second hardcoded list, which is exactly how bb_ask came to
+  //    publish "does not report per-file index staleness" while its retrieval
+  //    path had always emitted per-source [STALE] markers: the tool was missing
+  //    from the generator's table, so the generator took its "no freshness
+  //    surface" branch, and this list agreed with that mistake instead of
+  //    catching it. Two lists cannot check each other.
+  const withFreshness = new Set(Object.keys(FRESHNESS_TOOLS))
+  const custom = CUSTOM_STALENESS_TOOLS
   for (const name of toolNames) {
     const md = readFileSync(path.join(docDir, `${name}.md`), "utf8")
     const m = md.match(/## Staleness\n\n([^\n]+)/)
     check(`staleness section present: ${name}`, !!m)
     if (!m) continue
-    if (withFreshness.has(name)) {
+    if (custom.has(name)) {
+      // Held to its own generated wording, and required NOT to carry either
+      // blanket phrasing — a custom section is only meaningful if it says
+      // something the other two cannot.
+      check(`staleness describes its own real surface: ${name}`, /No freshness flags are returned/.test(m[1]), m[1].slice(0, 90))
+      check(`staleness does not reuse a blanket phrasing: ${name}`, !/does not report per-file index staleness and does not auto-refresh/.test(m[1]), m[1].slice(0, 90))
+    } else if (withFreshness.has(name)) {
       check(`staleness describes a real surface: ${name}`, /staleness surfaces as|Freshness (modes|applies)/i.test(m[1]), m[1].slice(0, 90))
+      // A tool with a registered freshness surface must not also be handed the
+      // "no staleness reported" sentence: that is the contradiction this whole
+      // section exists to prevent.
+      check(`staleness does not deny the surface it has: ${name}`, !/does not report per-file index staleness/.test(m[1]), m[1].slice(0, 90))
     } else {
       check(`staleness declares no-auto-refresh honestly: ${name}`, /does not report per-file index staleness and does not auto-refresh/.test(m[1]), m[1].slice(0, 90))
     }
