@@ -24,7 +24,7 @@ for (const requirement of ["Citation", "freshness", "maxTokens", "QualityReport"
 }
 
 check("read-only behavior explicit", specification.includes("No source writes") && specification.includes("bb_edit"))
-check("any refresh is bounded and declared", /auto-refresh/i.test(specification) && /within budget/i.test(specification) && /declares?\s/i.test(specification))
+check("any refresh is bounded and declared", /auto-refresh/i.test(specification) && /within budget/i.test(specification) && /declares?\b|declared\b/i.test(specification))
 check("stale behavior explicit", specification.includes("Stale evidence") && specification.includes("stale-evidence"))
 check("unknowns are normative", examples.includes("Deployment topology is unknown") && examples.includes("HTTP status"))
 check("website stable keys specified", specification.includes("snapshotId") && specification.includes("canonicalPath") && specification.includes("slugs"))
