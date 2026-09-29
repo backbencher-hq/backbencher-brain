@@ -496,10 +496,37 @@ export async function traverseGraph(
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NOT NULL " +
           "UNION ALL " +
+          // The UNRESOLVED arm. `target_symbol_id IS NULL` is the store saying
+          // it could not resolve this target, and `target_external` is the NAME
+          // it saw — not an identity.
+          //
+          // This arm used to JOIN brain_symbol back on that name, which turned
+          // the admission into a claim. Measured on real corpora, the name it
+          // joined on is not even close to unique: vscode fans a single stored
+          // row out to 37,876 internal symbols for the name `match`, svelte to
+          // 437,570 for `end`. The tool then emitted those as edges — asked
+          // about typescript's `pseudoTypeEquivalentToType` it reported 27
+          // internal callees, the first of them `isErrorType` in a different
+          // file, when the stored row names `getTypeOfSymbol`. No such
+          // relationship exists.
+          //
+          // Three harms, one JOIN: fabricated edges; the 200-row cap consumed
+          // entirely by fan-out so real callees never appear (and
+          // `calleesIfUncapped` reporting the inflated number); and
+          // `children.push` recursing into the arbitrary match, contaminating
+          // everything downstream.
+          //
+          // An unresolved target is therefore reported as the `ext:<name>` node
+          // this contract already documents for it. The name is kept — it is
+          // the node's name — so nothing is lost; it is simply labelled for
+          // what it is.
           selectCols +
           "FROM brain_relationship r " +
-          "LEFT JOIN brain_symbol s ON s.name = r.target_external AND s.project_id = r.project_id " +
-          "LEFT JOIN brain_file f ON f.id = s.file_id " +
+          // No target-symbol join at all: there is no target symbol. These
+          // columns stay in the SELECT list so the compound query keeps a
+          // single shape, and are constant NULL.
+          "LEFT JOIN brain_symbol s ON 0 " +
+          "LEFT JOIN brain_file f ON 0 " +
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
@@ -574,8 +601,11 @@ export async function traverseGraph(
         metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
+      // Only a real symbol is worth walking into. An `ext:` node has no stored
+      // relationships of its own, and `traceCallees` already refuses it; the
+      // push existed only so the visited-set could absorb it, and with the
+      // name-join gone nothing resolves an external to anything walkable.
       if (row.symId) children.push({ id: row.symId, file: node.file, line: node.line })
-      else if (row.extName) children.push({ id: `ext:${row.extName}`, file: node.file, line: node.line })
     }
 
     for (const child of children) {
