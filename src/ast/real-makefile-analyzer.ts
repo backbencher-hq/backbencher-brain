@@ -243,6 +243,18 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
       addRel(module, ASTEngine.RelationshipType.Exports, name, node.startPosition.row + 1, { via, evidenceClass: "export_directive" })
     }
 
+    /**
+     * Directive flags that must be applied AFTER the walk, because the
+     * declaration they annotate does not exist yet when the directive is read.
+     *
+     * `private VAR = v` and `override VAR := v` carry the keyword and the
+     * assignment on one line, and the walker reaches the directive first. Every
+     * other flag in this analyzer is set at the point of declaration; these
+     * cannot be, and setting them at the point of the directive silently dropped
+     * them in the spelling people actually write.
+     */
+    const deferred: { name: string; key: string; line: number }[] = []
+
     while (stack.length > 0) {
       const frame = stack.pop()!
       const node = frame.node
@@ -478,8 +490,26 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
             const w = listNode.namedChild(i)
             if (!w) continue
             const name = trimOperator(w.text.trim())
+            if (!name) continue
             const s = symbols.find((x) => x.name === name)
             if (s) (s.metadata as Record<string, unknown>).isExported = false
+            // Clearing only the metadata flag left the graph contradicting itself:
+            // the symbol said `isExported: false` while an `exports` edge still
+            // said the file exports it. An unexport must retract the EDGE, not
+            // just the flag, or a consumer reading relationships gets the opposite
+            // answer from a consumer reading symbols.
+            for (let k = exports.length - 1; k >= 0; k--) {
+              if (exports[k]!.name === name) exports.splice(k, 1)
+            }
+            for (let k = relationships.length - 1; k >= 0; k--) {
+              const r = relationships[k]!
+              if (r.type === ASTEngine.RelationshipType.Exports && r.target === name) {
+                relationships.splice(k, 1)
+                edgeCount[ASTEngine.RelationshipType.Exports] =
+                  (edgeCount[ASTEngine.RelationshipType.Exports] ?? 1) - 1
+                relSeen.delete(`${r.source}\u0000${r.type}\u0000${r.target}\u0000${r.line_number}`)
+              }
+            }
           }
           break
         }
@@ -508,11 +538,43 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "override_directive":
         case "private_directive":
         case "undefine_directive": {
-          const inner = this.firstChildOfType(node, new Set(["variable_assignment", "shell_assignment"]))
-          const name = inner ? declaredName(inner) : ""
+          // `private VAR = v` and `override VAR := v` put the keyword and the
+          // assignment on ONE line, and the walker reaches this directive BEFORE
+          // the `variable_assignment` nested inside it. Looking the symbol up
+          // here therefore found nothing, and the flag was dropped in exactly the
+          // spelling people actually write — the two-line form
+          // (`VAR = v` then `private VAR = w`) worked, which is why nothing
+          // caught it. The flag is now DEFERRED and applied after the walk, by
+          // which time the nested declaration has run.
+          //
+          // `undefine` needed a different fix as well: its operand is not a
+          // `variable_assignment` at all. `undefine VAR` parses as
+          // `undefine_directive` with a `variable` FIELD holding a bare word and
+          // no named children, so searching for a nested assignment could never
+          // find one and the branch was a phantom — the same failure mode as the
+          // dead `endif_directive` branch, reachable only because nothing
+          // exercised it.
+          let name = ""
+          if (type === "undefine_directive") {
+            const operand = node.childForFieldName("variable")
+            name = operand ? trimOperator(operand.text.trim()) : ""
+          } else {
+            const inner = this.firstChildOfType(node, new Set(["variable_assignment", "shell_assignment"]))
+            name = inner ? declaredName(inner) : ""
+          }
           if (name) {
+            // The key is named per directive rather than interpolated as
+            // `is${type.replace("_directive","")}`, which produced `isprivate` /
+            // `isoverride` / `isundefine` — snake-ish keys in a file where every
+            // other metadata flag is camelCase (`isMakeVariable`, `isExported`,
+            // `isBuiltin`), and which did not match the names the completeness
+            // spec claimed the analyzer wrote.
+            const key = type === "private_directive" ? "isPrivate"
+              : type === "override_directive" ? "isOverride"
+              : "isUndefine"
+            deferred.push({ name, key, line: node.startPosition.row + 1 })
             const s = symbols.find((x) => x.name === name)
-            if (s) (s.metadata as Record<string, unknown>)[`is${type.replace("_directive", "")}`] = true
+            if (s) (s.metadata as Record<string, unknown>)[key] = true
           }
           childOwner = name || owner
           break
@@ -548,9 +610,22 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child, owner: childOwner })
+          if (child) stack.push({ node: child, owner: childOwner })
+        }
       }
-    }
+
+      // ---- apply the deferred directive flags -----------------------------
+      // By now every declaration in the file exists, including the one nested
+      // inside the `private` / `override` directive that triggered the flag.
+      // Applied by name, and a name that was never declared is recorded rather
+      // than ignored: `private` on an undeclared variable is a Makefile that
+      // means something (`make private FOO=1` on the command line), and silently
+      // dropping the annotation is what made this invisible in the first place.
+      for (const d of deferred) {
+        const s = symbols.find((x) => x.name === d.name)
+        if (s) (s.metadata as Record<string, unknown>)[d.key] = true
+      }
+
 
     // ---- classify every staged edge -------------------------------------
     // `references` iff THIS file declares the target. That is the whole
