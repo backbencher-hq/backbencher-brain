@@ -180,25 +180,51 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     evidence: "Only brain_relationship rows with is_cross_language=1, filtered by the row's own project_id, classified by the single evidence-tier rule in src/lsp/evidence_tier.ts — the same stored rows and the same rule as the editor cross-language hover section, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over a real polyglot corpus (script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json).",
   },
   bb_annotate: {
-    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for a missing/blank symbol, an empty body, or an over-limit body"],
+    returns: [
+      "Stored annotation row with its enforced provenance (author class `agent`, never spoofable) and the calling tool identity, recorded verbatim",
+      "`surfacing` — whether an editor surface can actually show this note, MEASURED against the index rather than promised: `editor` (bool), `matchedAs` (`name` and/or `qualifiedName`), `matchedNames`, and a `statement` saying what is and is not true. This replaced a `surfaces` field that claimed the note \"renders in the editor hover section and graph badge\" for every note; measured on a real corpus, 100% of notes written under a symbol's qualified name matched no symbol name at all, so that claim was false exactly where it sounded most confident",
+      "The path handling: `surfacing.pathNote` when a path was resolved to the index's own spelling, `surfacing.pathWarning` when no indexed file matches the given path (stored under that spelling, no editor surface will scope it to a file), and a name-level note statement when no path was given",
+    ],
     // Honesty: this tool does NOT require the symbol to exist in the index. It is
-    // a free-form note store — an agent may annotate before a symbol is indexed,
-    // or a name the analyzer did not classify — so "unknown symbol" is a
-    // declared acceptance, not a refusal. The previous claim ("Missing or
-    // unknown symbol") was a doc-truth lie: the handler only ever refused a
-    // blank symbol, and a symbol absent from brain_symbol stored with
-    // stored:true. Corrected to the code's real behavior.
-    errors: ["Missing or blank symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
-    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream", "Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given"],
-    performance: "Constant-time store write bounded by the 2000-char body limit.",
+    // a free-form note store — an agent may annotate before a symbol is indexed, or
+    // a name the analyzer did not classify — so `unknown symbol` is a declared
+    // ACCEPTANCE with `surfacing.editor: false`, not a refusal. The previous claim
+    // ("Missing or unknown symbol") was a doc-truth lie: the handler only ever
+    // refused a blank symbol, and a symbol absent from brain_symbol stored with
+    // stored:true.
+    errors: [
+      "Missing or blank symbol",
+      "Empty body (a refusal, not a silent no-op)",
+      "Body exceeds the declared 2000-char limit, counted in characters (an astral glyph is one character, not two UTF-16 units)",
+      "toolIdentity exceeds the declared 200-char limit — refused, never truncated",
+    ],
+    limitations: [
+      "Annotations are opinions layered on index evidence, never index truth",
+      "Annotation store semantics are owned by the M28 workstream",
+      "Any symbol name is accepted. Reachability is reported, not enforced: a name no indexed symbol carries is stored and declared `surfacing.editor: false`",
+      "The note is keyed on the name as given. A name that matches several indexed symbols (a name is one symbol per file/line — `force` in 8 files of a real corpus) is one note shown wherever that name appears, unless `path` scopes it to a file",
+      "`path` is resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path are the SAME note. A path matching no indexed file is stored verbatim and declared",
+      "`toolIdentity` is the caller's own label. It is recorded verbatim and never verified — `author_class` is the enforced field",
+    ],
+    performance: "Constant-time store write bounded by the 2000-char body limit. `surfacing` adds two indexed lookups (name, qualified name) plus one file-row lookup for the path.",
     safety: "Write-capable against the annotation store only. It never modifies source files.",
-    evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.",
+    evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation. `author_class` is constrained to {agent, human} by a storage-level trigger, so a row cannot carry a third claim that every reader would then render verbatim.",
   },
   bb_annotations: {
-    returns: ["Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)", "Declared-absent result when none exist — absence is never an error"],
+    returns: [
+      "Typed annotations for a symbol or the whole project, with full provenance on every row (author class, tool identity, timestamps)",
+      "`count` (the page size), `totalCountIfKnown` (the true number of matching annotations) and `truncated` with a `truncationReason` naming the fix — a bounded read declares its bound, like bb_search and bb_graph. This door used to return only `count`, so a project with 300 notes and the default limit answered a flat `count: 50` with no way to know 250 more existed",
+      "Declared-absent result when none exist — absence is never an error",
+    ],
     errors: ["limit outside the declared 1-200 range"],
-    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream", "Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them"],
-    performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
+    limitations: [
+      "Reads only stored annotations; absence is declared, not inferred",
+      "Annotation store semantics are owned by the M28 workstream",
+      "Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them",
+      "A `symbol` filter also matches notes written under a symbol's QUALIFIED name, because that is one of the two name forms the editor accepts. This is the same predicate `surfacing` reports, so a reader and the editor always agree on which notes exist",
+      "`path` is resolved to the index's own spelling before filtering, so a reader passing `./src/a.ts` finds the note a writer stored as `src/a.ts`",
+    ],
+    performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx). The declared total is a second COUNT over the same predicate, so `totalCountIfKnown` costs one indexed count.",
     safety: "Read-only. It does not modify source files, index data, or annotations.",
     evidence: "Rows come from brain_annotation with provenance fields preserved.",
   },

@@ -304,13 +304,13 @@ const descriptors = [
     // (project, symbol, path, author) so re-annotation updates instead of
     // flooding; body length is bounded by a declared limit.
     name: "bb_annotate",
-    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph). To change source code use bb_edit; to read notes back use bb_annotations.",
+    description: "Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is NOT checked against the index, so a note may name anything; instead the reply MEASURES whether an editor surface can show it and says so in `surfacing` (`editor`, `matchedAs`, `matchedNames`, `statement`) — a typo'd name or a qualified name is stored and reported honestly rather than promised to a surface it cannot reach. `path` is resolved to the index's own spelling, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Annotations are opinions layered on evidence, never index facts. To change source code use bb_edit; to read notes back use bb_annotations.",
     inputSchema: {
       type: "object",
       properties: {
         symbol: { type: "string", description: "symbol name to annotate (`target`/`query` are accepted as aliases)" },
         body: { type: "string", description: "annotation text (max 2000 chars)" },
-        path: { type: "string", description: "optional file path to disambiguate same-named symbols" },
+        path: { type: "string", description: "optional file path to disambiguate same-named symbols; resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path all reach the same note" },
         toolIdentity: { type: "string", description: "optional name of the calling agent/tool (recorded verbatim)" },
       },
       required: ["symbol", "body"],
@@ -327,12 +327,12 @@ const descriptors = [
     // always returned — a reader can always tell an agent note from a human
     // note. Declared absence when there are none; bounded by a declared limit.
     name: "bb_annotations",
-    description: "Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error. To write a note use bb_annotate.",
+    description: "Read annotations for a symbol, one file's copy of a symbol (optional `path`), or all annotations up to the declared limit, with full provenance on every row: author class, tool identity, and timestamps. Every answer declares its bound: `count` is the page size, `totalCountIfKnown` the true total, and `truncated`/`truncationReason` fire when the limit actually dropped rows — a short page is never mistaken for a complete one. A `symbol` also matches notes written under a symbol's qualified name, the same predicate the editor uses. No annotations is a declared absence, never an error. To write a note use bb_annotate.",
     inputSchema: {
       type: "object",
       properties: {
         symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
-        path: { type: "string", description: "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
+        path: { type: "string", description: "optional file path; resolved to the index's own spelling first, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
         limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
       },
       required: [],
