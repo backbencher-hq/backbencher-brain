@@ -456,6 +456,7 @@ it was unbounded and crashed).
 | M14.0.F1 grammar conformance | **PASS**, 60 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
 | C-lane gate (properties + mutants + cost) | **14 properties, 28/28 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (32/32)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 75.5% / 58.0% overall | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
@@ -522,6 +523,76 @@ fixtures (the member's *name* was right — only the edge's direction was not).
 A member-name bug that keeps the name and corrupts the ownership needs an
 **edge-direction** property to detect it.
 
+## Grammar pin
+
+**The C grammar is now pinned, and it was the load-bearing omission in every
+number above.** `wasm/tree-sitter-c.wasm` (650,175 B, sha256 `f9a2d771…`) was
+recorded in `validation/m14/results/wasm-provenance-census.json` with *no*
+byte-identical local copy and the verdict "provenance cannot be re-derived
+offline", and `grammars/tree-sitter-c/` carried only `grammar.js`, `LICENSE`,
+`package.json` and `tree-sitter.json` — so the pin verifier's source↔wasm check
+could not run either. Every C figure in this document is a measurement of a parse
+produced by unpinned bytes: the F1 oracle, the 2,498-file census, the clang layout
+probe, and all 28 mutants.
+
+It could not be pinned as `byte-identical-to-npm-tarball`, the kind every other
+lane uses, because **the vendored `grammar.js` is not pristine**: it differs from
+npm `tree-sitter-c@0.24.1` by 75 diff lines and carries this repository's own
+`#743` / `#743b` edits. So one question had to be answered before provenance could
+even be stated:
+
+> Is the wired wasm a build of the **patched** source, or a pristine build that
+> predates the patch?
+
+**It is the patched build**, and the measurement is the interesting part. A rebuild
+of the committed patched source is *surface-identical to the wired bytes in both
+directions* — 128 named types, zero difference either way — and *behaviourally
+identical on all 10 constructs* of the battery. Pristine upstream 0.24.1, by
+contrast, is short by exactly the three node types the patch adds
+(`macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name`) and
+parses all three `#743b` shapes as `ERROR` where the wired build parses them clean.
+
+The consequence is the useful one: **the incumbent was already a verified build, so
+no C measurement needed re-baselining.** Had the wired bytes matched pristine
+upstream instead, the `#743b` fix would not have been live and the whole lane would
+have needed re-measuring. Bytes are *not* expected to match and the pin does not
+require it — a wasm build carries its emscripten version, compiler flags and
+section order, so two builds of one grammar differ in sha256 while being the same
+grammar. The claim is surface and behaviour identity.
+
+The verifier's own offline proof now runs on every invocation:
+
+```
+c   f9a2d771d989   650175 B  ids= 366 named=128 anon= 202 fields= 39  vendored:6 files
+     source↔wasm: all 135 declared names present (7 supertypes hidden by design),
+     128 wasm-named types all declared, 0 built-in extra(s)
+```
+
+Zero in both directions — the statement that the committed bytes are a build of the
+committed source. It could not run at all before this work, because the vendored
+tree carried no `node-types.json`/`grammar.json` pair; both are now vendored,
+regenerated from the patched `grammar.js`.
+
+This also retires a live hazard **this wave's own review recorded**: the `#936`
+defect was a node-type literal (`attributed_type_specifier`) written from memory of
+a *different* tree-sitter-c release. F1 caught it only because the vocabulary
+happened to be checked against the live grammar. The pin makes the release explicit
+rather than remembered.
+
+- decision, measurements and the rejected alternatives:
+  `grammars/tree-sitter-c/PIN.md` and the `c` entry in
+  `validation/m14/grammar-pins.json`
+- re-runnable: `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` →
+  `validation/m14/results/c-grammar-pin.json`
+- the pristine and rebuilt wasms are kept at `$HOME/ishaq/fixtures/c/grammar/`
+  with a `SHA256SUMS.txt`, so the A/B survives the network copy disappearing
+
+**One tool trap, recorded because it cost a run:** `--lane` is read *inside*
+`if (write)`, so `verify-grammar-pins.ts --lane c` silently verifies and writes
+nothing. The invocation is `--write --lane c`. A flag that documents itself as the
+scoped-writer and then no-ops without a second flag will eventually launder a
+lane's record or lose an hour, whichever comes first.
+
 ## Evidence pointers
 
 - Lane fixtures: `validation/m14/fixtures/c/` (25 pairs, 7 added this wave)
@@ -533,6 +604,8 @@ A member-name bug that keeps the name and corrupts the ownership needs an
   `duplicate-classes.ts` (provable vs unprovable duplicate edges), `line-edges.ts`
   (every edge on one source line, with the metadata that identifies its branch),
   `truncation-shape.ts` (the parse shapes behind the removed regex),
+  `c-grammar-pin.ts` (the grammar pin: is the local patch live in the wired bytes,
+  and are those bytes a build of the committed source),
   `macro-field-probe.ts`, `perf-attribution.ts`, `line-index-parity.ts`
 - Corpus census artifact: `validation/m12/results/c-corpus-census.json`
 - M12 ground truth: `validation/m12/ground-truth/c.json`
