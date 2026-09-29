@@ -2354,6 +2354,47 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isCallCallee =
           node.parent?.type === "call_expression" &&
           node.parent.childForFieldName("function")?.id === node.id
+        // X1 (RULED 2026-09-27): a call's callee chain is skipped ENTIRELY below, on
+        // the J4 assumption that "calls covers it". That is true for a BARE callee —
+        // `fn(x)` has `calls fn`, so suppressing `uses fn` is right and is what the
+        // bare-read pass's `isCallee` gate does. It is FALSE for a MEMBER callee: the
+        // `calls` edge names only the LEAF (`title.toUpperCase()` -> `calls
+        // toUpperCase`), so the chain's ROOT is named by nothing at all.
+        //
+        // Measured consequence before this fix, on the analyzer's own output:
+        // `title.toUpperCase()`, `value.trim()` and `items.slice().sort()` all
+        // published NO `uses` edge for the receiver, while `title.length` (a property
+        // access, not a call) published `title` and `fn(title)` (a call ARGUMENT)
+        // published `title`. The defect was invisible to the fixture and mutant lanes
+        // because no fixture asserted the receiver, and invisible to the differential
+        // because the ORACLE carried the identical rule — the shared-premise shape.
+        //
+        // ONLY THE ROOT IS EMITTED, never the leaf: the leaf is what the `calls` edge
+        // names, and publishing it here would be the double-emission J4 exists to
+        // prevent. `this`/`super` are excluded because they are keywords, not symbols,
+        // which matches the non-callee branch's rule for the same reason. The same
+        // `seen` key dedupes, so a root already published by the non-callee branch
+        // (`a.b.c()` publishes `a` twice today) is emitted once.
+        if (isCallCallee) {
+          let root: Node | null | undefined = node.childForFieldName("object")
+          while (root && root.type === "member_expression") root = root.childForFieldName("object")
+          const head = root && root.type === "identifier" ? root.text : ""
+          if (head && head !== "this" && head !== "super") {
+            const recvSource = method ?? owner ?? moduleName
+            const recvKey = `${recvSource}.#${head}`
+            if (!seen.has(recvKey)) {
+              seen.add(recvKey)
+              relationships.push({
+                source: recvSource,
+                target: head,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.6,
+                ...this.lineField(root!),
+                metadata: { isFieldAccess: true, bareRead: true, callReceiver: true },
+              })
+            }
+          }
+        }
         if (!isCallCallee) {
           // M59 (#825): each segment keeps the node that writes it, so the
           // segment's OWN line is available (a chain can wrap: `a\n  .b\n  .c`).

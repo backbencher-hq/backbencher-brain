@@ -2176,8 +2176,28 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
       case "call_expression": {
         // A coroutine dispatcher is attributed to the ENCLOSING FUNCTION, not to
         // the file: the edge is a statement of what that function uses.
+        //
+        // The callee is read as its TERMINAL segment, because the dispatcher is
+        // nearly always reached through a receiver — `scope.async { }` and
+        // `kotlinx.coroutines.withContext(dispatcher) { }` are the ordinary
+        // spellings, and `scope.async` parses with a navigation_expression in
+        // callee position, not a bare identifier. Matching only the bare form
+        // found `launch { }` and missed every qualified call: measured on
+        // Exposed as the single remaining analyzer-only row across 5
+        // dispatcher-bearing files (`uses ... -> async`, Suspended.kt), found by
+        // adjudication after the M4 mutant proved the rule is load-bearing.
         const callee = n.namedChild(0)
-        const nm = callee && callee.type === "simple_identifier" ? callee.text : null
+        if (!callee) break
+        let nm: string | null = null
+        if (callee.type === "simple_identifier") {
+          nm = callee.text
+        } else {
+          // The terminal selector of the callee path, unwrapping navigation_suffix.
+          let sel: any = callee
+          if (callee.type === "navigation_expression") sel = callee.namedChild(callee.namedChildCount - 1)
+          if (sel && sel.type === "navigation_suffix") sel = sel.namedChild(sel.namedChildCount - 1)
+          if (sel && (sel.type === "simple_identifier" || sel.type === "identifier")) nm = sel.text
+        }
         if (nm && DISPATCHERS.has(nm)) {
           let p = n.parent
           while (p && p.type !== "function_declaration") p = p.parent
