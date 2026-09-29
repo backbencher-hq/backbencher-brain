@@ -2046,17 +2046,52 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
     }
     return false
   }
-  // The receiver's NAME spine, so `xs[0]` targets `xs` and not the text `xs[0]`.
-  const identifierPath = (n: any): string | null => {
-    let cur = n
-    while (cur && cur.type === "navigation_expression") cur = cur.namedChild(0)
-    if (!cur) return null
-    if (cur.type === "simple_identifier") return cur.text
-    if (cur.type === "navigation_suffix") {
-      const inner = cur.namedChild(cur.namedChildCount - 1)
-      return inner && inner.type === "simple_identifier" ? inner.text : null
+  // The receiver's NAME spine: `t.id.ddl`, not the text `t.id.ddl[1]`. Built
+  // from the navigation structure — a dotted path is RECOVERED, not scraped, so
+  // the call parens and the trailing lambda never enter the name.
+  //
+  // Returning only the chain BASE was the third oracle bug. It is invisible on
+  // `xs[0]` (base `xs` is the whole answer) and wrong on every chained index:
+  // `t.id.ddl[1]` and `Testing.selectAll().where { }.single()[...]` publish the
+  // full spine. Measured on Exposed as 20 of the 22 unexplained rows — one per
+  // chained index — with the oracle answering `t` where the analyzer answered
+  // `t.id.ddl`.
+  const identifierPath = (node: any): string | null => {
+    if (!node) return null
+    switch (node.type) {
+      case "simple_identifier":
+      case "identifier":
+      case "type_identifier":
+        return stripNameQuoting(node.text)
+      case "navigation_expression": {
+        const receiver = node.namedChild(0)
+        let selector = node.namedChild(node.namedChildCount - 1)
+        if (!receiver || !selector) return null
+        // navigation_suffix WRAPS the member name; its last child is the name.
+        if (selector.type === "navigation_suffix") {
+          const inner = selector.namedChild(selector.namedChildCount - 1)
+          if (!inner) return null
+          selector = inner
+        }
+        const rt = identifierPath(receiver)
+        const st = identifierPath(selector)
+        return rt && st ? `${rt}.${st}` : null
+      }
+      case "call_expression":
+      case "indexing_expression":
+        return identifierPath(node.namedChild(0))
+      default:
+        return null
     }
-    return null
+  }
+  // A name carries no argument, lambda, index or separator punctuation. Used
+  // ONLY as a fallback, so a receiver whose spine has no identifier (`this`, a
+  // type parameter) keeps a name-shaped spelling rather than losing the edge.
+  const nameShapedText = (text: string): boolean => {
+    if (!text) return false
+    if (text.includes("\n")) return false
+    for (const ch of ["(", ")", "{", "}", "[", "]", ","]) if (text.includes(ch)) return false
+    return text.trim() === text
   }
   // The extension receiver: the first type-shaped named child, stopping before
   // the declaration's own name. `String?` publishes `String` — the nullability
@@ -2105,6 +2140,7 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
           if (recv) {
             const path = identifierPath(recv)
             if (path) push(resolveSource(n.parent), path)
+            else if (nameShapedText(recv.text)) push(resolveSource(n.parent), recv.text)
           }
         }
         break
