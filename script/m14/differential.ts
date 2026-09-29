@@ -11257,6 +11257,24 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   }
   // CLJ-D6: forms whose direct list children are METHOD DEFINITIONS.
   const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"])
+  // CLJ-D30/CLJ-D32 mirrors: the two character tests the analyzer uses, spelled
+  // the same way so the two derivations cannot drift on a spelling.
+  const isDefLikeHead = (head: string): boolean => {
+    if (head.length < 3) return false
+    if (head.charCodeAt(0) !== 100 || head.charCodeAt(1) !== 101 || head.charCodeAt(2) !== 102) return false
+    if (head.length === 3) return true
+    const c3 = head.charCodeAt(3)
+    if (c3 !== 45 && c3 !== 95) return !(head.startsWith("default") || head.startsWith("define"))
+    return true
+  }
+  const staticInteropMember = (head: string): string | null => {
+    const slash = head.lastIndexOf("/")
+    if (slash <= 0) return null
+    if (head.charCodeAt(slash + 1) !== 46) return null
+    const member = head.slice(slash + 2)
+    if (!member || !head.slice(0, slash)) return null
+    return member
+  }
   // CLJ-D7: the direct list children of a libspec site are DATA.
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
@@ -11616,7 +11634,19 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         continue
       }
       let pushedFrame = false
-      if (form === "ns") {
+      if (form === "in-ns") {
+        // CLJ-D31 mirror: `(in-ns 'a.b)` DECLARES A NAMESPACE — it takes a
+        // QUOTED symbol, switches the namespace for the rest of the file, and
+        // emits no call. The truth had no branch for it, so 19 files' `in-ns`
+        // forms came out as calls to a namespace, which is not a function.
+        const arg = n.namedChild(1)
+        const inner = arg && (arg.type === "quoting_lit" || arg.type === "syn_quoting_lit") ? execHead(arg) : arg
+        const v = inner && inner.type === "sym_lit" ? symName(inner) : ""
+        if (v) nsName = v
+        // the refer/alias tables are NOT reset: `in-ns` switches namespace
+        // without re-running `ns`, so anything a previous `ns` form set is still
+        // in force — the same decision the analyzer makes.
+      } else if (form === "ns") {
         const nm = symName(n.namedChild(1))
         if (nm) nsName = nm
         // CLJ-D24 mirror: the refer table is namespace state, exactly like the
@@ -11757,6 +11787,29 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         if (clsName) push("instantiates", currentName(), resolveQualified(clsName))
       } else if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) {
         push("instantiates", currentName(), resolveQualified(form.slice(0, -1)))
+      } else if (staticInteropMember(form) !== null) {
+        // CLJ-D32 mirror: `(String/.toUpperCase s)` is a MEMBER ACCESS, not a
+        // call to a function named `String/.toUpperCase`. The analyzer emits two
+        // `uses` edges (the member at the form's arity, the class at 0) and no
+        // `calls` edge; the truth must agree, or the `calls` comparison demands
+        // an edge to a name nothing defines. The discriminator is the `/.` — a
+        // bare `/` qualifies a NAMESPACE and stays a call. Character indexing,
+        // no regex, matching the analyzer's `staticInteropMember`.
+        //
+        // `uses` is not in the clojure compared set (it has its own gate, F5-clj-rel),
+        // so consuming the branch here is what keeps this out of `calls`.
+      } else if (isDefLikeHead(form) && n.namedChild(1)?.type === "sym_lit") {
+        // CLJ-D30 mirror: a def-like head in def position DEFINES a name, so it
+        // is a frame and a local binding, never a call. This branch only ever
+        // runs for a head none of the explicit cases above claimed, because they
+        // all precede it — `defn`, `deftest`, `defmethod` and `declare` are
+        // handled above.
+        const dn = symName(n.namedChild(1))
+        if (dn) {
+          localNames.add(dn)
+          frames.push({ name: dn, isFn: true })
+          pushedFrame = true
+        }
       } else if (form === "->" || form === "->>" || form === "some->" || form === "some->>" || form === "cond->" || form === "cond->>" || form === "doto") {
         // F13 mirror (CLJ-D10): threading steps are calls; bare symbol steps
         // emit; builtin/dotted steps follow the site policy.
@@ -11803,13 +11856,33 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
       if (pushedFrame) work.push({ n, exit: true, qd })
       const cs = kids(n)
       // F7 mirror: case constant-position LISTs are data groups — never walked.
-      // W23 mirror: the trailing DEFAULT (last child whenever present — odd
-      // child count) is an EXPRESSION, never a constant group; the parity
-      // rule must not swallow it.
+      // W23 mirror: the trailing DEFAULT (last executable child whenever present
+      // — odd executable count) is an EXPRESSION, never a constant group; the
+      // parity rule must not swallow it.
+      // CLJ-D36 mirror: the parity is read off the EXECUTABLE children only. A
+      // `comment` is a named child, so one comment inside a `case` shifts every
+      // later position by one and a real BODY lands where a constant is expected
+      // — silently dropping everything inside it. metabase/dev/src/dev/
+      // kondo_ratchet.clj:343 is the proof (10 named children because of one
+      // `;;` at index 6, so the body at index 8 was skipped). The mirror had the
+      // same bug, which is why no gate could see it: both sides agreed on a body
+      // neither one walked.
       const isCase = form === "case"
-      const caseDefaultIdxO = isCase && cs.length % 2 === 1 ? cs.length - 1 : -1
+      let caseSkip: Set<number> | null = null
+      if (isCase) {
+        const exec: number[] = []
+        for (let i = 0; i < cs.length; i++) if (cs[i].type !== "comment" && cs[i].type !== "dis_expr") exec.push(i)
+        const defaultPos = exec.length % 2 === 1 ? exec.length - 1 : -1
+        caseSkip = new Set<number>()
+        // position 0 is `case`, 1 the expr; from 2 the constants sit at even
+        // POSITIONS in the executable list.
+        for (let pos = 2; pos < exec.length; pos += 2) {
+          if (pos === defaultPos) continue
+          if (cs[exec[pos]!]!.type === "list_lit") caseSkip.add(exec[pos]!)
+        }
+      }
       for (let i = cs.length - 1; i >= 0; i--) {
-        if (isCase && i >= 2 && i % 2 === 0 && cs[i].type === "list_lit" && i !== caseDefaultIdxO) continue
+        if (caseSkip !== null && caseSkip.has(i)) continue
         work.push({ n: cs[i], qd })
       }
       continue
