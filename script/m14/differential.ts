@@ -285,6 +285,19 @@ import { deriveJsonEdges } from "./oracles/json"
 export { deriveJsonEdges }
 
 export const LANG_REPOS: Record<string, string> = {
+  // M14.6 R wave: R was absent from every M14 surface -- no LANGS entry, so
+  // script/m60/lane-surface-audit.ts exited 2 "unknown language r" and the repo's own
+  // line-number audit had never looked at this lane. The lane verified the same property
+  // with a stronger instrument (R's own lexer, not a text search: 41,072 of 41,072 edge
+  // lines confirmed), but "verified by our own harness" is weaker than "the repo's gate
+  // covers it", and the difference is the whole point of the gate.
+  //
+  // Primary corpus is `ggplot2` at 357 tracked .R files, the largest R holding in
+  // CORPUS_ROOT. The lane's own differential measures all five pinned corpora -- dplyr,
+  // ggplot2, shiny, testthat, Matrix, 1,174 files -- so this entry is the surface audit's
+  // sample, not the lane's claim, and the two are not conflated anywhere.
+  r: "ggplot2",
+
   // M14 #277: bash's primary corpus is `otp` — 80 tracked .sh files, the largest
   // bash holding in CORPUS_ROOT, and hand-written build/install tooling rather
   // than machine output. The M12 pin (`fsharp`, 32 files) is retained as the
@@ -601,7 +614,12 @@ const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).to
 // it is not the same kind of thing. It imports NOTHING from the analyzer.
 import { deriveMarkdownEdges } from "./markdown-oracle"
 
-export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
+export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[]; fileNames?: readonly string[] }> = {
+  // `ext` carries the WHOLE production surface. language-detection.ts routes .R and .r,
+  // and the corpora hold .R only -- so claiming `r` as well would be harmless here but
+  // claiming an extension the router does not reach is the inert-pin class #884 documents.
+  r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "R,r" },
+
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
   // reading precision 1.000, which was a measurement of the analyzer against a
   // truth file hand-authored by the same hand as the analyzer — 55 facts, every
@@ -737,6 +755,83 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // `markdown`). A lane that measured one and is routed for two would be measured
   // on a different file set than it is served — the cpp `.cpp` defect.
   markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
+  // --- lanes carried through the consolidation from the other line
+
+  // M60 HCL wave (2026-09-26): hcl was ABSENT from every M14 surface, exactly as
+  // sql was — no entry in this map, no directory in validation/m14/fixtures/,
+  // no mutants, no spec/hcl-completeness.json, and no F5 row, so its completion
+  // cell read `n/a` while the lane's own corpus differential measured 94.2%
+  // reference recall. `ext` carries the WHOLE production surface:
+  // language-detection.ts routes .tf/.tfvars/.tofu/.hcl, and the corpora hold
+  // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
+  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
+
+  make: {
+    wasm: "tree-sitter-make.wasm",
+    analyzerFile: "real-makefile-analyzer",
+    className: "RealMakefileAnalyzer",
+    ext: "mk",
+    fileNames: ["Makefile", "makefile", "GNUmakefile", "Makefile.am", "Makefile.in"],
+  },
+
+  // NIM wave (2026-09-27). `ext` carries all three extensions the pinned grammar
+  // declares (tree-sitter.json -> file-types ["nimble","nims","nim"]) minus the
+  // .nimble manifest, which language-detection.ts does NOT route to nim and which
+  // is therefore not swept: claiming a corpus the router would skip is the inert-
+  // pin class #884 documents.
+  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims" },
+
+  // M14.6 perl wave (2026-09-26): perl had NO lane at all — 25 gated languages,
+  // perl absent — so its F5 differential was unmeasured while the completion
+  // matrix still read `diff: n/a`. `ext` is the sampling universe and it must
+  // carry the whole production surface: production routes .pl/.pm/.t/.perl
+  // (language-detection.ts) and the corpora hold .PL (build scripts) too.
+  // M14.6 perl: `ext` read "pm,pl,t,PL" while production's router
+  // (src/ast/language-detection.ts:42) maps ONLY pl|pm|t|perl to perl, so the
+  // lane was measuring one file per mojo/plack that production never hands the
+  // analyzer — and the 7-corpus census (which uses production's exact set)
+  // said 274/225 where this said 275/226, a 32-edge delta nobody could
+  // explain from the artifacts. Measuring a superset is safe; measuring a
+  // DIFFERENT surface than the one in production is not, because every perl
+  // number then describes a file set that does not exist at runtime. Aligned
+  // to production; the census, this lane and the fixture lane now agree.
+  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
+
+  // SQL wave (2026-09-26): sql was ABSENT from every M14 surface — no entry in
+  // this map, no directory in validation/m14/fixtures/, no mutants in
+  // mutate-analyzer.ts, no sql-completeness.json in spec/, and no per-analyzer
+  // lane in the m12 differential beyond 34 hand-audited facts over 63 lines of
+  // fixture. So its F5 differential was unmeasured while the completion matrix
+  // read `diff: n/a` — a lane that looks absent rather than broken.
+  // `ext` is the sampling universe and must carry the WHOLE production surface:
+  // language-detection.ts routes .sql/.psql/.ddl, and the ProxiCall corpus also
+  // holds .SQL.
+  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql,psql,ddl,SQL" },
+
+  // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
+  // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
+  // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
+  // of the wasm here is a swap the pin catches.
+  vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
+
+  // XML, and the only lane whose `ext` is seven globs rather than one. The
+  // wired grammar names XML documents; `.xsd`/`.dtd`/`.xsl`/`.xslt`/`.svg`/
+  // `.rng` are all XML documents, and a lane that measured only `*.xml` would
+  // grade the minority of a real corpus and report it as the whole — which is
+  // what the doc's old "154 tracked *.xml/*.xsd files" figure did.
+  //
+  // `svg` is 155 of grails-core's 314 (146 xml + 9 xsd + 4 dtd + 155 svg), so
+  // omitting it drops HALF the corpus while every number still looks sane.
+  //
+  // `wsdl` is deliberately ABSENT. The engine does not claim it: the manifest
+  // records 805 `.wsdl` as unrouted under the M60 #913 ruling to refuse rather
+  // than claim, because the wired grammar does not declare that file type. A
+  // lane listing `wsdl` would grade files no analyzer ever sees, and would score
+  // the lane on a population the rest of the system excludes on purpose.
+  // `routeByContent` is deliberately ABSENT: `svg` and `xsl` are content-routed,
+  // and the router's decision is the one that decides which analyzer runs, so
+  // the lane takes every one of the seven and lets the router hand it to xml.
+  xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml,xsd,dtd,xsl,xslt,svg,rng" },
 }
 
 function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
@@ -19969,76 +20064,5 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   }
   return edges
 
-  // --- lanes carried through the consolidation from the other line
 
-  // M60 HCL wave (2026-09-26): hcl was ABSENT from every M14 surface, exactly as
-  // sql was — no entry in this map, no directory in validation/m14/fixtures/,
-  // no mutants, no spec/hcl-completeness.json, and no F5 row, so its completion
-  // cell read `n/a` while the lane's own corpus differential measured 94.2%
-  // reference recall. `ext` carries the WHOLE production surface:
-  // language-detection.ts routes .tf/.tfvars/.tofu/.hcl, and the corpora hold
-  // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
-  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
-
-  make: {
-
-  // NIM wave (2026-09-27). `ext` carries all three extensions the pinned grammar
-  // declares (tree-sitter.json -> file-types ["nimble","nims","nim"]) minus the
-  // .nimble manifest, which language-detection.ts does NOT route to nim and which
-  // is therefore not swept: claiming a corpus the router would skip is the inert-
-  // pin class #884 documents.
-  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims" },
-
-  // M14.6 perl wave (2026-09-26): perl had NO lane at all — 25 gated languages,
-  // perl absent — so its F5 differential was unmeasured while the completion
-  // matrix still read `diff: n/a`. `ext` is the sampling universe and it must
-  // carry the whole production surface: production routes .pl/.pm/.t/.perl
-  // (language-detection.ts) and the corpora hold .PL (build scripts) too.
-  // M14.6 perl: `ext` read "pm,pl,t,PL" while production's router
-  // (src/ast/language-detection.ts:42) maps ONLY pl|pm|t|perl to perl, so the
-  // lane was measuring one file per mojo/plack that production never hands the
-  // analyzer — and the 7-corpus census (which uses production's exact set)
-  // said 274/225 where this said 275/226, a 32-edge delta nobody could
-  // explain from the artifacts. Measuring a superset is safe; measuring a
-  // DIFFERENT surface than the one in production is not, because every perl
-  // number then describes a file set that does not exist at runtime. Aligned
-  // to production; the census, this lane and the fixture lane now agree.
-  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
-
-  // SQL wave (2026-09-26): sql was ABSENT from every M14 surface — no entry in
-  // this map, no directory in validation/m14/fixtures/, no mutants in
-  // mutate-analyzer.ts, no sql-completeness.json in spec/, and no per-analyzer
-  // lane in the m12 differential beyond 34 hand-audited facts over 63 lines of
-  // fixture. So its F5 differential was unmeasured while the completion matrix
-  // read `diff: n/a` — a lane that looks absent rather than broken.
-  // `ext` is the sampling universe and must carry the WHOLE production surface:
-  // language-detection.ts routes .sql/.psql/.ddl, and the ProxiCall corpus also
-  // holds .SQL.
-  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql,psql,ddl,SQL" },
-
-  // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
-  // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
-  // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
-  // of the wasm here is a swap the pin catches.
-  vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
-
-  // XML, and the only lane whose `ext` is seven globs rather than one. The
-  // wired grammar names XML documents; `.xsd`/`.dtd`/`.xsl`/`.xslt`/`.svg`/
-  // `.rng` are all XML documents, and a lane that measured only `*.xml` would
-  // grade the minority of a real corpus and report it as the whole — which is
-  // what the doc's old "154 tracked *.xml/*.xsd files" figure did.
-  //
-  // `svg` is 155 of grails-core's 314 (146 xml + 9 xsd + 4 dtd + 155 svg), so
-  // omitting it drops HALF the corpus while every number still looks sane.
-  //
-  // `wsdl` is deliberately ABSENT. The engine does not claim it: the manifest
-  // records 805 `.wsdl` as unrouted under the M60 #913 ruling to refuse rather
-  // than claim, because the wired grammar does not declare that file type. A
-  // lane listing `wsdl` would grade files no analyzer ever sees, and would score
-  // the lane on a population the rest of the system excludes on purpose.
-  // `routeByContent` is deliberately ABSENT: `svg` and `xsl` are content-routed,
-  // and the router's decision is the one that decides which analyzer runs, so
-  // the lane takes every one of the seven and lets the router hand it to xml.
-  xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml,xsd,dtd,xsl,xslt,svg,rng" },
 }
-
