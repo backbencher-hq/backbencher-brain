@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (38/43 languages pass)",
+      "description": "per-literal shrink-only register with reasons (41/44 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,16 +24,173 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "04402447381c4b15f4d27fba1479c686c662f54f",
-  "committedAt": "2026-09-28T22:45:42-04:00",
+  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
+  "committedAt": "2026-09-29T01:27:42-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [],
-        "ok": true,
+        "countRegressions": [
+          {
+            "from": 0,
+            "lang": "html",
+            "to": 5
+          },
+          {
+            "from": 0,
+            "lang": "zig",
+            "to": 1
+          }
+        ],
+        "ok": false,
         "recordIsV1": false,
-        "shrunk": [],
-        "unregistered": []
+        "shrunk": [
+          {
+            "kind": "field",
+            "lang": "lua",
+            "literal": "name_list"
+          },
+          {
+            "kind": "field",
+            "lang": "lua",
+            "literal": "name_list"
+          },
+          {
+            "kind": "field",
+            "lang": "lua",
+            "literal": "function"
+          },
+          {
+            "kind": "field",
+            "lang": "lua",
+            "literal": "expression_list"
+          },
+          {
+            "kind": "field",
+            "lang": "lua",
+            "literal": "key"
+          },
+          {
+            "kind": "type",
+            "lang": "makefile",
+            "literal": "endif_directive"
+          },
+          {
+            "kind": "field",
+            "lang": "perl",
+            "literal": "parameters"
+          },
+          {
+            "kind": "field",
+            "lang": "r",
+            "literal": "default_value"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "grant"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "revoke"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "revoke_statement"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "create_table_column_parameter"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "column_def"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "primary_key_constraint"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "unique_constraint"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "references_constraint"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "foreign_key_constraint"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "type"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "word"
+          }
+        ],
+        "unregistered": [
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "html",
+            "line": 1038,
+            "literal": "hidden"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "html",
+            "line": 1038,
+            "literal": "submit"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "html",
+            "line": 1038,
+            "literal": "button"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "html",
+            "line": 1038,
+            "literal": "reset"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "html",
+            "line": 1038,
+            "literal": "image"
+          },
+          {
+            "context": "real-sql-analyzer.ts:field-call:childForFieldName",
+            "kind": "field",
+            "lang": "sql",
+            "line": 1907,
+            "literal": "object"
+          },
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "zig",
+            "line": 623,
+            "literal": "field_identifier"
+          }
+        ]
       },
       "counts": {
         "bash": 0,
@@ -246,8 +403,8 @@
         "oracleFieldCount": 39,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 332,
-        "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 57,
+        "referencedFieldLiterals": 14,
+        "referencedTypeLiterals": 61,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -285,7 +442,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 75,
         "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 17,
+        "referencedTypeLiterals": 21,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -303,8 +460,8 @@
         "oracleFieldCount": 50,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 495,
-        "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 68,
+        "referencedFieldLiterals": 11,
+        "referencedTypeLiterals": 83,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -323,7 +480,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 508,
         "referencedFieldLiterals": 7,
-        "referencedTypeLiterals": 91,
+        "referencedTypeLiterals": 106,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -361,7 +518,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 81,
+        "referencedTypeLiterals": 90,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -380,7 +537,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 204,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 33,
+        "referencedTypeLiterals": 35,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -399,7 +556,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 302,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 26,
+        "referencedTypeLiterals": 39,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -418,7 +575,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 41,
+        "referencedTypeLiterals": 62,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -454,9 +611,9 @@
         "fieldless": true,
         "oracleFieldCount": 0,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 145,
+        "oracleNodeTypeCount": 144,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 20,
+        "referencedTypeLiterals": 29,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -475,7 +632,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 381,
         "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 72,
+        "referencedTypeLiterals": 73,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -512,8 +669,8 @@
         "oracleFieldCount": 2,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 123,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 9,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 14,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -532,10 +689,36 @@
         "oracleGrammars": 2,
         "oracleNodeTypeCount": 285,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 13,
-        "status": "pass",
+        "referencedTypeLiterals": 18,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "line": 1038,
+            "literal": "hidden"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "line": 1038,
+            "literal": "submit"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "line": 1038,
+            "literal": "button"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "line": 1038,
+            "literal": "reset"
+          },
+          {
+            "context": "real-html-analyzer.ts:comparison",
+            "line": 1038,
+            "literal": "image"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-html.wasm",
@@ -553,7 +736,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 322,
         "referencedFieldLiterals": 10,
-        "referencedTypeLiterals": 67,
+        "referencedTypeLiterals": 83,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -628,36 +811,10 @@
         "oracleFieldCount": 22,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
-        "referencedFieldLiterals": 12,
-        "referencedTypeLiterals": 13,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 158,
-            "literal": "name_list"
-          },
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 183,
-            "literal": "name_list"
-          },
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 208,
-            "literal": "function"
-          },
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 297,
-            "literal": "expression_list"
-          },
-          {
-            "context": "real-lua-analyzer.ts:field-call:childForFieldName",
-            "line": 393,
-            "literal": "key"
-          }
-        ],
+        "referencedFieldLiterals": 8,
+        "referencedTypeLiterals": 23,
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -672,18 +829,12 @@
         "fieldless": false,
         "oracleFieldCount": 24,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 175,
-        "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 12,
-        "status": "fail",
+        "oracleNodeTypeCount": 176,
+        "referencedFieldLiterals": 1,
+        "referencedTypeLiterals": 7,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-makefile-analyzer.ts:const:BOUNDARY_TYPES",
-            "line": 276,
-            "literal": "endif_directive"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-make.wasm"
@@ -720,7 +871,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 554,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 50,
+        "referencedTypeLiterals": 60,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -738,16 +889,10 @@
         "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
-        "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 18,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-perl-analyzer.ts:field-call:childForFieldName",
-            "line": 487,
-            "literal": "parameters"
-          }
-        ],
+        "referencedFieldLiterals": 7,
+        "referencedTypeLiterals": 42,
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -764,7 +909,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 407,
         "referencedFieldLiterals": 6,
-        "referencedTypeLiterals": 45,
+        "referencedTypeLiterals": 78,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -819,17 +964,11 @@
         "fieldless": false,
         "oracleFieldCount": 20,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 137,
-        "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 15,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-r-analyzer.ts:field-call:childForFieldName",
-            "line": 558,
-            "literal": "default_value"
-          }
-        ],
+        "oracleNodeTypeCount": 139,
+        "referencedFieldLiterals": 12,
+        "referencedTypeLiterals": 26,
+        "status": "pass",
+        "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
@@ -846,7 +985,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 286,
         "referencedFieldLiterals": 4,
-        "referencedTypeLiterals": 40,
+        "referencedTypeLiterals": 63,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -921,75 +1060,31 @@
         "oracleFieldCount": 53,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 727,
-        "referencedFieldLiterals": 2,
-        "referencedTypeLiterals": 37,
+        "referencedFieldLiterals": 6,
+        "referencedTypeLiterals": 43,
         "status": "fail",
-        "unknownFields": [],
+        "unknownFields": [
+          {
+            "context": "real-sql-analyzer.ts:field-call:childForFieldName",
+            "line": 1907,
+            "literal": "object"
+          }
+        ],
         "unknownNodeTypes": [
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 58,
+            "line": 406,
             "literal": "table"
           },
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 199,
-            "literal": "grant"
+            "line": 1928,
+            "literal": "table"
           },
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 199,
-            "literal": "revoke"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 199,
+            "line": 1147,
             "literal": "grant_statement"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 199,
-            "literal": "revoke_statement"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 229,
-            "literal": "create_table_column_parameter"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 229,
-            "literal": "column_def"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 246,
-            "literal": "primary_key_constraint"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 247,
-            "literal": "unique_constraint"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 252,
-            "literal": "references_constraint"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 252,
-            "literal": "foreign_key_constraint"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 599,
-            "literal": "type"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 612,
-            "literal": "word"
           }
         ],
         "waivedFindings": [],
@@ -1030,7 +1125,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 526,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 92,
+        "referencedTypeLiterals": 102,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1171,6 +1266,25 @@
           38
         ]
       },
+      "vb": {
+        "analyzer": "src/ast/real-vb-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 54,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 450,
+        "referencedFieldLiterals": 11,
+        "referencedTypeLiterals": 29,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-vbnet.wasm"
+        ],
+        "wasmFieldCounts": [
+          54
+        ]
+      },
       "vue": {
         "analyzer": "src/ast/real-vue-analyzer.ts",
         "fieldless": false,
@@ -1199,9 +1313,9 @@
         "fieldless": false,
         "oracleFieldCount": 2,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 142,
+        "oracleNodeTypeCount": 146,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 7,
+        "referencedTypeLiterals": 18,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1238,11 +1352,17 @@
         "oracleFieldCount": 16,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
-        "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 41,
-        "status": "pass",
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 46,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "line": 623,
+            "literal": "field_identifier"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-zig.wasm"
@@ -1253,10 +1373,10 @@
       }
     },
     "summary": {
-      "fail": 5,
-      "languagesAudited": 43,
-      "pass": 38,
-      "totalUnknownReferences": 21
+      "fail": 3,
+      "languagesAudited": 44,
+      "pass": 41,
+      "totalUnknownReferences": 10
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1284,8 +1404,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T02:47:20.292Z",
-  "regeneratedAtCommit": "04402447381c4b15f4d27fba1479c686c662f54f",
+  "regeneratedAt": "2026-09-29T05:36:53.645Z",
+  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
