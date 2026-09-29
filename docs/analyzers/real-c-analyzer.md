@@ -231,6 +231,61 @@ measurement.)
   | `redis/src` | 49 | 37 (75.5%) | **32/32 (100.0%)** |
   | `libgit2/include` | 69 | 40 (58.0%) | **20/20 (100.0%)** |
 
+  after #945 (bitfield packing), #946 (union payloads) and #947 (the macro-member
+  refusal) — the same two corpora, same instrument:
+
+  | Corpus | Compared | Agreed (overall) | Agreed, **types the analyzer claims to model** |
+  |---|---|---|---|
+  | `redis/src` | 49 | 42 (**85.7%**) | **37/37 (100.0%)** |
+  | `libgit2/include` | 69 | 40 (58.0%) | **20/20 (100.0%)** |
+
+  The claimed-type count *rose* from 32 to 37 on redis, because five bitfield types
+  stopped being guesses and became computations. Both corpora now report **no
+  actionable misses at all**: every type the analyzer claims to model matches clang,
+  and every remaining disagreement is a declared limit carrying its marker.
+
+- **Bitfields are PACKED, not charged their declared type.** A bitfield occupies
+  bits in a shared storage unit, so charging it its type's full width was wrong by
+  construction: redis's `raxNode` declares three 1-bit flags and a 29-bit counter on
+  `uint32_t`, which clang packs into **one** 4-byte unit where the model published
+  **16**; `quicklist` published 56 against clang's 48. The implemented rules are the
+  psABI ones — bits allocated from the low end of the unit, a field that would
+  **straddle** a boundary of its declared type moved up to the next such boundary, a
+  zero-width field consuming nothing but forcing that boundary, and the struct's
+  alignment being the max of its members' declared-type alignments. The straddle test
+  is why the cursor is kept in **bits**: `a:1, b:31, c:1` is 8 bytes because `b:31`
+  exactly fills the unit so `c:1` must start a second, while `a:1, b:30, c:1` is 4.
+  Both are fixtures, because a bit-sum implementation plus alignment padding gets the
+  first right *by accident* and only the pair tells the two apart. A bitfield width
+  written as a macro or an enumerator resolves; one that cannot (the macro is in a
+  header) is charged its declared type and marked.
+
+- **A UNION published no layout at all.** `{ isUnion, cSpecific, isConditional }` was
+  the entire metadata object, so every fix from #936 onward landed on the struct path
+  only — and the clang probe filters on `typeof memorySize === "number"`, so it
+  **silently skipped every union in the corpus**. An unmeasured payload is not a
+  payload. 13 union symbols in a 150-file redis sample now carry one. A union's
+  members *overlap*, so its size is the largest member rounded up to its alignment;
+  the first version of this fix summed them and reported `union { unsigned int u;
+  double d; }` as 16 bytes where clang says 8.
+
+- **A member named after a macro is no longer published.** libgit2 writes its
+  function-pointer members as `int GIT_CALLBACK(read)(...)` with
+  `#define GIT_CALLBACK(name) (*name)`. Tree-sitter resolves that to a single
+  `field_identifier` reading `GIT_CALLBACK` — the real name is consumed by the macro
+  and is **not a node in the parse** — so four members named `GIT_CALLBACK` were
+  published in `git_odb_stream` and three in `git_odb_writepack`, where the real
+  members are `read`, `write`, `finalize_write`, `free`, `append` and `commit`. The
+  test is per-file and syntactic, and **C is what makes it sound**: a
+  function-pointer declarator must be parenthesised and dereferenced, so a
+  declarator chain holding a `function_declarator` and no `pointer_declarator`
+  cannot be a function pointer written in C. That matters because `GIT_CALLBACK` is
+  defined in `common.h`, a different file — the analyzer's own macro inventory cannot
+  see it, which is why an earlier attempt keyed on a known macro name failed and was
+  **withdrawn as unsound**. Silence over invention, the #928 answer. The struct is
+  then one member short, so its size is marked as a lower bound rather than published
+  as a wrong number.
+
 - **`layoutUnknownMembers` — a number that was partly invented is now marked.**
   Every remaining disagreement with clang is a width the model **declines to
   guess**, and before this wave it was published as if it had been computed: one
@@ -452,12 +507,12 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **25/25 pass** (18 pre-existing + 7 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **26/26 pass** (18 pre-existing + 8 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 60 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 28/28 live mutants caught, 2 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 32/32 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
-| layout vs clang (independent reference) | **100.0% (32/32)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 75.5% / 58.0% overall | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
+| layout vs clang (independent reference) | **100.0% (37/37)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 85.7% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
 
@@ -487,6 +542,40 @@ classified each miss from a 4000-character window after the type name and labell
 15 of 22 misses "array member" because a bracket appeared *somewhere in the file*.
 The class is now computed from the type's own body, which is what moved the
 diagnosis from "array padding looks wrong" to "the width table is incomplete".
+
+**The measured-cost check was flaky, and it was found flaky by disagreeing with
+itself.** Three consecutive invocations on unchanged code reported 1.25x, 0.70x and
+1.45x for the same file, and it *failed* two of the three, with `/proc/loadavg`
+reading 30–34 throughout because other agents share the host. The statistic was
+`min(reverted) / min(fixed)` over five rounds, and with a 4x per-round spread
+(744–3072 ms observed) the two minima are drawn from different points of the noise,
+so the ratio measured the machine rather than the code. It is now the **median of
+nine PAIRED per-round ratios**: each round runs Fixed and then Reverted back to back,
+so a slow patch of host time inflates both members of the pair and cancels. The
+min-of-minima is still printed beside it, because a reader who distrusts an estimator
+should be able to see the spread rather than take one number on faith. A gate that
+fails two runs in three for reasons unrelated to the code under test is worse than no
+gate, because it teaches the reader to ignore red.
+
+**#940 was retired, and the reason is worth the space.** Its guard — the general
+unresolvable-type count — was reorganised out from under it by #949, which made the
+unmeasured-member accounting an *exclusive partition* so that one member is counted
+once rather than twice by two overlapping guards. The marking #940 introduced is
+still live and still asserted: `c-lane/944` reverts the same count and `c-lane/948`
+reverts the flag's initialiser. The fact still runs on the clean analyzer every
+invocation, so a regression that un-marked a refused width would fail the suite
+through those two even with this entry retired. Retired means *pinned elsewhere*, not
+unverified.
+
+**#944 needed three re-aims, and every one was reported by the gate rather than
+absorbed.** Its fact asserted a bitfield carried 2 unmeasured members, true while
+every bitfield was charged its declared type's width; #945 packs them, so the gate
+reported a BAD-FACT — *the fact is wrong, not the analyzer*. Re-aiming it at "it is 0
+now" made it SURVIVE, because a bitfield with a known declared type never reaches
+that guard at all. The class was real and reachable; it just needed its own input, a
+bitfield whose declared *type* is a cross-file typedef, which is a different failure
+mode from #944b's unknown *width*. That distinction is now two fixtures and two
+mutants rather than one of each.
 
 ### What the lane's own gate can and cannot see
 
@@ -595,7 +684,7 @@ lane's record or lose an hour, whichever comes first.
 
 ## Evidence pointers
 
-- Lane fixtures: `validation/m14/fixtures/c/` (25 pairs, 7 added this wave)
+- Lane fixtures: `validation/m14/fixtures/c/` (26 pairs, 8 added this wave)
 - Lane gate: `script/m14/tmp/c-audit/verify-c-lane.ts` + `p13-baseline.json`
 - Lane probes (all re-runnable): `script/m14/tmp/c-audit/` —
   `census.ts` (the 2,498-file census), **`layout-vs-clang.ts`** (the layout payload

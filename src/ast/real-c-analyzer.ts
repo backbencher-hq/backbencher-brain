@@ -1528,7 +1528,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         scopeManager.pushScope(ScopeKind.Union, unionName, node)
         willPushScope = true
       }
-          this.extractUnion(node, symbols, unions, scopeManager.getScopeName(), isConditional, declaredTypes, allMacroNames)
+          this.extractUnion(node, symbols, unions, scopeManager.getScopeName(), isConditional, declaredTypes, allMacroNames, structs, is64Bit, isLLP64)
           break
         }
         case "enum_specifier":
@@ -2548,26 +2548,28 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isPacked = this.isPacked(node)
 
     const fields: any[] = []
+    // #947: how many members the extractor declined because their only name in the
+    // parse is a macro's. Struct-level, because a declined member leaves no record.
+    let declinedCount = 0
     const bodyList = node.childForFieldName("body")
-    // #943: a body whose members sit inside a preprocessor conditional. The
-    // extractor iterates the body's DIRECT children, and a `preproc_ifdef` is not
-    // a `field_declaration`, so those members are skipped entirely -- redis's
-    // eventNotifier published 0 bytes and NO members against clang's 4, because
-    // all it has is `#ifdef HAVE_EVENT_FD int efd; #else int pipefd[2]; #endif`.
-    // Which branch is live depends on the build configuration, which the
-    // per-file model does not have (C-D2), so the members cannot be recovered --
-    // but a size of 0 is a CLAIM, and the flag has to say the payload is not a
-    // measurement rather than a computed zero.
-    let bodyIsConditional = false
-    if (bodyList) {
-      for (let i = 0; i < bodyList.namedChildCount; i++) {
-        const t = bodyList.namedChild(i)?.type ?? ""
-        if (t === "preproc_if" || t === "preproc_ifdef" || t === "preproc_else") {
-          bodyIsConditional = true
-          break
-        }
-      }
-    }
+    // #943/#946: the same conditional-body detection the struct path does, for
+    // the same reason -- see `bodyHasConditionalMembers`.
+    const bodyIsConditional = this.bodyHasConditionalMembers(bodyList)
+    // #948: an UNNAMED bitfield (`unsigned int :0;`, `unsigned int :3;`) is a
+    // layout fact with no name, so the member extractor correctly declines to
+    // publish a member for it -- and the layout then never learns it exists.
+    // Measured: `struct { unsigned before:3; unsigned :0; unsigned after:3; }` is
+    // 8 bytes to clang, because the zero-width field forces `after` to a new
+    // 32-bit unit. Published 4, unmarked.
+    //
+    // Packing it needs to know WHERE the marker sits in the bit cursor, and the
+    // member extractor visits members in order while this would have to be
+    // re-interleaved. So it is NOT guessed: the type is marked as partly
+    // unmeasured and the published size stays an honest lower bound. The
+    // alternative -- rounding the struct up by the marker type's alignment
+    // wherever it appears -- would produce a right number for the common
+    // trailing-marker case and a confidently wrong one everywhere else.
+    const hasUnnamedBitfield = this.bodyHasUnnamedBitfield(bodyList)
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
@@ -2625,6 +2627,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             ) {
               let arraySize = 1
               let unresolvableDimensions = false
+              let bitfieldClause = ""
               // #944: a BITFIELD. `uint32_t iskey:1;` is not a 4-byte member, and
               // the bitfields in redis's raxNode (three 1-bit flags plus a 29-bit
               // counter) pack into ONE 4-byte unit where the model charged 16.
@@ -2636,7 +2639,15 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               let isPointer = this.isPointerType(rawDecl)
               let declNode: Node | null = rawDecl
 
-              if (this.findChild(field, (c: any) => c?.type === "bitfield_clause")) isBitfield = true
+              // #945: the clause's TEXT, so the width can be resolved where the
+              // per-file macro and enum tables are in scope, rather than here.
+              {
+                const clause = this.findChild(field, (c: any) => c?.type === "bitfield_clause")
+                if (clause) {
+                  isBitfield = true
+                  bitfieldClause = clause.text
+                }
+              }
 
               while (declNode && declNode.type !== "field_identifier" && declNode.type !== "identifier") {
                 if (declNode.type === "array_declarator") {
@@ -2675,6 +2686,23 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
               }
 
+              // #947: a macro-mediated function pointer publishes NO member, because
+              // the only name in the parse is the macro's -- AND it counts as an
+              // unmeasured member, because the struct is now one member short of
+              // the truth and its published size is a LOWER BOUND. libgit2's
+              // `struct { int CALLBACK(read)(...); int (*plain)(...); }` is 16
+              // bytes; with `read` declined the model computes 8. Publishing 8 with
+              // no marker would be a wrong number, which is the whole failure mode
+              // #940 exists to end.
+              if (declNode && this.isMacroMediatedFunctionPointer(rawDecl)) {
+                // A STRUCT-level counter, not a field flag: declining the member
+                // means no field record is pushed at all, so a flag on the record
+                // would have nowhere to live. The first attempt put it on the
+                // field and the type still reported `layoutUnknownMembers: 0`.
+                declinedCount++
+                declNode = null
+              }
+
               if (declNode && declNode.text.trim()) {
                 fields.push({
                   name: declNode.text,
@@ -2690,6 +2718,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   arraySize,
                   unresolvableDimensions,
                   isBitfield,
+                  bitfieldClause,
                   isPointer,
                 })
                 symbols.push({
@@ -2728,7 +2757,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         cSpecific: true,
         isPacked,
         isConditional,
-        ...this.layoutPayload(fields, isPacked, structs, unions, is64Bit, isLLP64, bodyIsConditional),
+        ...this.layoutPayload(fields, isPacked, structs, unions, is64Bit, isLLP64, bodyIsConditional, false, hasUnnamedBitfield, declinedCount),
       },
     })
   }
@@ -2742,6 +2771,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // #932: as `extractStruct`.
     declaredTypes: Set<string>,
     allMacroNames: Set<string>,
+    // #946: the union path needs what the struct path already had, to publish a
+    // layout payload. The struct extractor takes these as parameters for exactly
+    // this reason; the union extractor not taking them is WHY it had no payload.
+    structs: Record<string, any[]>,
+    is64Bit: boolean,
+    isLLP64: boolean,
   ) {
     const nameNode = node.childForFieldName("name")
     let unionName = "anonymous_union"
@@ -2754,6 +2789,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const fields: any[] = []
     const bodyList = node.childForFieldName("body")
+    // #943/#946: the same conditional-body detection the struct path does, for
+    // the same reason -- see `bodyHasConditionalMembers`.
+    const bodyIsConditional = this.bodyHasConditionalMembers(bodyList)
     if (bodyList) {
       for (let i = 0; i < bodyList.namedChildCount; i++) {
         const field = bodyList.namedChild(i)
@@ -2812,8 +2850,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               let arraySize = 1
               let unresolvableDimensions = false
               let isBitfield = false
+              let bitfieldClause = ""
               let isPointer = this.isPointerType(rawDecl)
               let declNode: any = rawDecl
+
+              // #945: the union extractor detects the clause too, so a union with
+              // bitfields is a real case rather than an unflagged one.
+              {
+                const clause = this.findChild(field, (c: any) => c?.type === "bitfield_clause")
+                if (clause) {
+                  isBitfield = true
+                  bitfieldClause = clause.text
+                }
+              }
 
               while (declNode && declNode.type !== "field_identifier" && declNode.type !== "identifier") {
                 if (declNode.type === "array_declarator") {
@@ -2853,6 +2902,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                 declNode = declNode.childForFieldName("declarator") || declNode.namedChild(0)
               }
 
+              // #947: a macro-mediated function pointer publishes NO member, because
+              // the only name in the parse is the macro's.
+              if (declNode && this.isMacroMediatedFunctionPointer(rawDecl)) declNode = null
+
               if (declNode && declNode.text.trim()) {
                 fields.push({
                   name: declNode.text,
@@ -2866,6 +2919,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   arraySize,
                   unresolvableDimensions,
                   isBitfield,
+                  bitfieldClause,
                   isPointer,
                 })
                 symbols.push({
@@ -2895,7 +2949,25 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       scope: scope,
       visibility: "public",
-      metadata: { isUnion: true, cSpecific: true, isConditional },
+      metadata: {
+        isUnion: true,
+        cSpecific: true,
+        isConditional,
+        // #946: the layout payload, which a union did not publish at all. Every
+        // #936-#945 fix -- primitive widths, same-file typedef aliases, the shared
+        // unknown-member fallback, macro/enum array dimensions, flexible array
+        // members, bitfield packing -- landed on the STRUCT path only, because
+        // `{ isUnion: true, cSpecific, isConditional }` was the whole metadata
+        // object. So a union's size and alignment were not merely wrong, they were
+        // ABSENT, and no probe could report on them: the clang comparison filters
+        // on `typeof memorySize === "number"` and silently skipped every union in
+        // the corpus. An unmeasured payload is not a payload.
+        //
+        // The same `layoutPayload` call as the struct path, deliberately: one
+        // function, so the two cannot drift the way the size and alignment passes
+        // had drifted from each other in #938.
+        ...this.layoutPayload(fields, false, structs, unions, is64Bit, isLLP64, bodyIsConditional, true),
+      },
     })
   }
 
@@ -3513,6 +3585,57 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   private static readonly UNKNOWN_MEMBER = { size: 4, align: 4 }
 
   /**
+   * Does this body hold its members inside a preprocessor conditional? (#943)
+   *
+   * The extractor iterates the body's DIRECT children, and a `preproc_ifdef` is
+   * not a `field_declaration`, so those members are skipped entirely -- redis's
+   * `eventNotifier` published 0 bytes and NO members against clang's 4, because all
+   * it has is `#ifdef HAVE_EVENT_FD int efd; #else int pipefd[2]; #endif`. Which
+   * branch is live depends on the build configuration, which the per-file model
+   * does not have (C-D2), so the members cannot be recovered -- but a size of 0 is
+   * a CLAIM, and the flag has to say the payload is not a measurement rather than
+   * a computed zero.
+   *
+   * One helper rather than the scan written twice: the struct and union paths
+   * differ in almost everything, and a conditional-body check is exactly the sort
+   * of thing that ends up on one path only.
+   */
+  private bodyHasConditionalMembers(bodyList: Node | null): boolean {
+    if (!bodyList) return false
+    for (let i = 0; i < bodyList.namedChildCount; i++) {
+      const t = bodyList.namedChild(i)?.type ?? ""
+      if (t === "preproc_if" || t === "preproc_ifdef" || t === "preproc_else") return true
+    }
+    return false
+  }
+
+  /**
+   * Does this body hold an UNNAMED bitfield, which affects layout but names no
+   * member? (#948)
+   *
+   * `unsigned int :0;` and `unsigned int :3;` are layout facts with no declarator,
+   * so the member extractor declines them under the #928/#932 rules -- correctly,
+   * since publishing a member for them would invent a name. The consequence is
+   * that the layout never sees them.
+   */
+  private bodyHasUnnamedBitfield(bodyList: Node | null): boolean {
+    if (!bodyList) return false
+    for (let i = 0; i < bodyList.namedChildCount; i++) {
+      const f = bodyList.namedChild(i)
+      if (!f || f.type !== "field_declaration") continue
+      // `unsigned int :0;` parses with `declarator: (MISSING field_identifier)` --
+      // the SLOT exists, the name does not. A presence test therefore passes it
+      // over, which is why the first version of this detector reported nothing on
+      // the one shape it was written for. `isMissing` is the real signal, with the
+      // empty-text test as the belt to its braces.
+      const decl = f.childForFieldName("declarator")
+      if (decl && !decl.isMissing && decl.text.trim().length > 0) continue
+      if (this.findChild(f, (c: any) => c?.type === "bitfield_clause")) return true
+    }
+    return false
+  }
+
+  /**
    * A type's `memorySize` / `alignment`, plus the count of members that had to be
    * guessed (#940).
    *
@@ -3529,11 +3652,27 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // #943: the body had members inside a preprocessor conditional, so no
     // measurement of this type was possible at all.
     bodyIsConditional = false,
+    // #946: a union's members OVERLAP, so its size is the largest member rounded
+    // up to its alignment, not their sum. `layoutPayload` hardcoded `false` here,
+    // so publishing a union's payload summed its members: `union { unsigned int u;
+    // double d; }` reported 16 bytes where clang says 8, and `union { unsigned int
+    // a; unsigned long b; unsigned long long c; }` reported 24 where the answer is
+    // 8. The flag was threaded all the way to the call site and then dropped one
+    // line before the function that uses it -- which is the same shape of mistake
+    // as #938, where two functions held two opinions: here one function held the
+    // struct's opinion and was handed the union's fields.
+    isUnion = false,
+    // #948: the body holds an unnamed bitfield, which occupies bits the member
+    // loop cannot see.
+    hasUnnamedBitfield = false,
+    // #947: members declined as macro-mediated, so the type is a member short.
+    declinedCount = 0,
   ): { memorySize: number; alignment: number; layoutUnknownMembers: number } {
     // A conditional body is counted once: its members were never extracted, so
     // the per-member loop below has nothing to account for and would report 0.
-    const unknown = { count: bodyIsConditional ? 1 : 0 }
-    const memorySize = this.calculateMemorySize(fields, isPacked, structs, unions, is64Bit, isLLP64, false, undefined, unknown)
+    // The same for an unnamed bitfield, and a declined member counts per member.
+    const unknown = { count: (bodyIsConditional || hasUnnamedBitfield ? 1 : 0) + declinedCount }
+    const memorySize = this.calculateMemorySize(fields, isPacked, structs, unions, is64Bit, isLLP64, isUnion, undefined, unknown)
     return {
       memorySize,
       alignment: this.calculateAlignment(fields, structs, unions, is64Bit, isLLP64),
@@ -3591,6 +3730,102 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const allowed = "0123456789+-*/|&<>() \t"
     for (const ch of text) if (!allowed.includes(ch)) return false
     return text.length > 0
+  }
+
+  /**
+   * Is this member a MACRO-MEDIATED function pointer, whose real name is not in
+   * the tree? (#947)
+   *
+   * libgit2 writes its function-pointer members as
+   * `int GIT_CALLBACK(read)(git_odb_stream *s, char *b, size_t n);` where
+   * `#define GIT_CALLBACK(name) (*name)`. Tree-sitter resolves that to a single
+   * `field_identifier` whose text is `GIT_CALLBACK` -- the real name `read` is
+   * consumed by the macro and is NOT a node anywhere in the parse. So the analyzer
+   * published FOUR members named `GIT_CALLBACK` in `git_odb_stream` and three in
+   * `git_odb_writepack`, where the real members are `read`, `write`,
+   * `finalize_write`, `free`, `append` and `commit`. Found by comparing member
+   * SETS against clang, which is the check that could see it: a size stays roughly
+   * right when a phantom member replaces a real one, but the NAME is simply wrong,
+   * and a member named after a macro is a symbol that does not exist in the
+   * program.
+   *
+   * An earlier attempt at this fix recovered the name from inside the macro
+   * invocation and was WITHDRAWN as unsound, because the name is not there to
+   * find. This one does not try to recover anything; it establishes that the name
+   * is unrecoverable and declines.
+   *
+   * The test is per-file, syntactic, and sound because C requires a
+   * function-pointer declarator to be parenthesised and dereferenced: a member
+   * whose declarator chain contains a `function_declarator` but NO
+   * `pointer_declarator` anywhere cannot be a function pointer written in C, so
+   * the `*` came from a macro and the identifier is the macro's. It needs no
+   * knowledge of the macro, which is what makes it work here -- `GIT_CALLBACK` is
+   * defined in `common.h`, a different file, so the analyzer's own macro inventory
+   * cannot see it, and the first attempt failed for exactly that reason.
+   *
+   * Declining is the #928 answer: silence over invention. The member is not
+   * published under a name known to be wrong, and the reason is recorded.
+   */
+  private isMacroMediatedFunctionPointer(rawDecl: Node): boolean {
+    // ONE bounded walk of the declarator subtree, not a chain walk that called
+    // `findChild` -- a RECURSIVE subtree search -- at every level. The first
+    // version did that, and it showed up as measured cost: this runs once per
+    // struct member, and on a file like redis's `server.c` a recursive descent per
+    // member is the difference between a linear pass and a quadratic one. The gate's
+    // measured-cost check caught the symptom as a compressed reverted/fixed ratio,
+    // because the extra work inflated BOTH arms of the comparison.
+    let sawFunctionDeclarator = false
+    let sawPointer = false
+    const stack: Node[] = [rawDecl]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 64) {
+      const n = stack.pop() as Node
+      if (n.type === "function_declarator") sawFunctionDeclarator = true
+      else if (n.type === "pointer_declarator") sawPointer = true
+      // A pointer anywhere in the declarator subtree is decisive, so there is no
+      // need to descend past one -- which is what bounds the walk in practice.
+      if (sawPointer) return false
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        // A parameter list is not part of the declarator's own shape: `int (*f)(int
+        // *p)` has a `pointer_declarator` in the PARAMETERS and a genuine one in
+        // the declarator, and descending into the parameters would confuse the
+        // member's own shape with its signature's.
+        if (c && c.type !== "parameter_list") stack.push(c)
+      }
+    }
+    return sawFunctionDeclarator && !sawPointer
+  }
+
+  /**
+   * The WIDTH of a bitfield, in bits, or null when it cannot be determined.
+   *
+   * A bitfield's contribution is not its declared type's width; it is a PACKING
+   * result, and the packing is what #945 implements. The width itself comes from
+   * the clause, which is usually a plain integer (`uint32_t iskey:1`) but is very
+   * often a same-file macro (redis's `signed int fill : QL_FILL_BITS`) or an
+   * enumerator. All three forms resolve; anything else returns null, and the
+   * caller then falls back to charging the declared type's width and counts the
+   * member as unmeasured -- the #944 behaviour, kept as the refusal rather than
+   * deleted.
+   */
+  private bitfieldWidth(field: any): number | null {
+    const clause = typeof field.bitfieldClause === "string" ? field.bitfieldClause.trim() : ""
+    // The clause node's text is `:1`, `: QL_FILL_BITS`, `:-1` (a GNU signed
+    // width) or `: 0`. Only the magnitude is a storage width.
+    if (clause.length === 0) return null
+    let text = clause.startsWith(":") ? clause.slice(1).trim() : clause
+    if (text.startsWith("-")) text = text.slice(1).trim()
+    if (text.length === 0) return null
+    if (this.isDecimalInteger(text)) return parseInt(text, 10)
+    // A macro or an enumerator: one bare identifier, nothing else.
+    if (this.startsWithIdentifierChar(text[0]) && this.splitOnWhitespace(text).length === 1) {
+      const viaMacro = this.macroIntValue(text)
+      if (viaMacro !== null) return viaMacro
+      const viaEnum = this.enumConstantValues.get(text)
+      if (typeof viaEnum === "number") return viaEnum
+    }
+    return null
   }
 
   /**
@@ -3764,8 +3999,16 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     let currentOffset = 0
     let maxAlign = 1
     let maxSize = 0
+    // #945: a bit cursor, in BITS, or -1 when no bitfield run is in progress. It is
+    // a separate cursor rather than a reinterpretation of `currentOffset` so the
+    // non-bitfield arithmetic below stays byte-for-byte the arithmetic that was
+    // measured at 100% agreement against clang on every type the analyzer claims
+    // to model. Rewriting that to a unified bit cursor would put a proven path at
+    // risk to gain nothing.
+    let bitPos = -1
     const ptrSize = is64Bit ? 8 : 4
     const longSize = is64Bit && !isLLP64 ? 8 : 4
+    const roundUpTo = (v: number, unit: number) => (unit <= 0 ? v : Math.ceil(v / unit) * unit)
 
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i]
@@ -3777,24 +4020,92 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       // #937: the member's width may come from a same-file typedef alias, so this
       // is resolved per member rather than read off the field record once.
       const primitive = this.resolveMemberPrimitive(field)
-      if (field.isBitfield && unknown) {
-        // #944: a bitfield's width is a PACKING result, not its declared type's
-        // width, and this model does not implement the packing. Counted so the
-        // type is never reported as measured; the size it does publish is a lower
-        // bound, which the doc now says out loud.
-        unknown.count++
+      // #949: ONE account of why this member is unmeasured, and at most once.
+      //
+      // The three guards this replaces were independent `if`s, and a bitfield whose
+      // declared TYPE is unknown fired TWO of them -- the bitfield guard and the
+      // general unresolvable-type guard -- so `external_flags_t a : 3;` was counted
+      // twice and the type reported `layoutUnknownMembers: 2` for one member. The
+      // number is a diagnostic of how many members are unmeasured, so counting one
+      // member twice makes it a worse number than useless: it reads as "two things
+      // are wrong here" and invites a reader to go looking for a second.
+      //
+      // A BITFIELD is deliberately not a branch here. It has two failure modes and
+      // they are counted where each is detected: a bitfield whose declared type is
+      // unknown is an `unresolvableType` and is caught above, while one whose type
+      // is known but whose WIDTH is not cannot be packed and is counted by the
+      // packing branch's own fallback. An earlier draft added a `field.isBitfield`
+      // branch here for symmetry, and it counted every bitfield including the ones
+      // that pack perfectly -- `Flags` went from 0 unmeasured members to 4. The
+      // test is not "is it a bitfield", it is "did the bitfield fail".
+      if (unknown) {
+        const unresolvableType =
+          !field.isPointer &&
+          !primitive &&
+          field.typeKind !== "tag_enum" &&
+          this.structKeyForMember(field, structs) === null &&
+          this.unionKeyForMember(field, unions) === null
+        if (unresolvableType) {
+          // A named type this file cannot resolve (C-D2), or a width deliberately
+          // refused (`long double`). Enums and by-value structs/unions are resolved
+          // by descent and are not guesses.
+          unknown.count++
+        } else if (field.unresolvableDimensions) {
+          // #942: the member's TYPE was known, its array COUNT was not, so the
+          // width that went into the total is as invented as any refused one.
+          unknown.count++
+        }
       }
-      if (field.unresolvableDimensions && unknown) {
-        // #942: the member's TYPE was known, its array COUNT was not, so the
-        // width that went into the total is as invented as any refused one.
-        unknown.count++
+
+      // #945: REAL BITFIELD PACKING, replacing #944's "charge it its declared type".
+      //
+      // A bitfield occupies BITS in a shared storage unit, not a whole member. The
+      // rules implemented here are the Itanium/x86-64 psABI ones:
+      //   - bits are allocated from the low end of the unit, upward;
+      //   - a field that would STRADDLE a boundary of its declared type is moved
+      //     up to the next such boundary, so a `uint32_t a:1, b:31, c:1` costs 8
+      //     bytes rather than 4 -- the classic case;
+      //   - a ZERO-width field (`unsigned int :0;`) consumes no bits and forces
+      //     the next field up to the declared type's boundary;
+      //   - the STRUCT's alignment is the maximum of its members' declared-type
+      //     alignments, bitfields included, and the size is rounded up to it.
+      //
+      // What this replaces, measured: redis's raxNode declares `uint32_t iskey:1,
+      // isnull:1, iscompr:1, size:29` and clang packs all four into ONE 4-byte
+      // unit where the model published 16. quicklist charged 4 bytes for each of
+      // three bitfields and published 56 against clang's 48.
+      //
+      // The STRADDLE test is the one that matters and the one a naive
+      // "sum the bits and divide by 8" gets wrong. It is also why the cursor is
+      // kept in bits: a byte cursor cannot express a field that starts 3 bits into
+      // a unit.
+      if (field.isBitfield && primitive && !isUnion) {
+        const width = this.bitfieldWidth(field)
+        if (width !== null) {
+          const unit = this.primitiveLayout(primitive, is64Bit, isLLP64)
+          const unitBits = unit.size * 8
+          if (bitPos < 0) bitPos = currentOffset * 8
+          maxAlign = Math.max(maxAlign, unit.align)
+          if (width === 0) {
+            // A zero-width bitfield is a boundary marker, not storage.
+            bitPos = roundUpTo(bitPos, unitBits)
+          } else {
+            if (unitBits > 0 && (bitPos % unitBits) + width > unitBits) bitPos = roundUpTo(bitPos, unitBits)
+            bitPos += width
+          }
+          continue
+        }
+        // Width unresolvable: fall through to the declared-type charge below, and
+        // count it as unmeasured there, because a member charged its declared
+        // type's width is a lower bound and not a layout.
+        if (unknown) unknown.count++
       }
-      if (!field.isPointer && !primitive && unknown) {
-        // A named type this file cannot resolve, or a width deliberately refused.
-        // Enums and by-value structs/UNIONS are resolved by descent and are not
-        // guesses, so they do not count.
-        const descended = this.structKeyForMember(field, structs) !== null || this.unionKeyForMember(field, unions) !== null
-        if (field.typeKind !== "tag_enum" && !descended) unknown.count++
+
+      // A whole member after a bitfield run starts at the next BYTE, and the byte
+      // offset is resynchronised before the padding arithmetic runs.
+      if (bitPos >= 0) {
+        currentOffset = Math.ceil(bitPos / 8)
+        bitPos = -1
       }
 
       if (field.isPointer) {
@@ -3873,6 +4184,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (isUnion) {
       currentOffset = maxSize
+    } else if (bitPos >= 0) {
+      // #945: a struct whose LAST member is a bitfield has bits outstanding, not
+      // whole bytes. `uint32_t iskey:1, isnull:1, iscompr:1, size:29` is 32 bits
+      // = 4 bytes, and rounding the BIT cursor up to bytes before the alignment
+      // step is what produces that 4 rather than a rounded-up 0 or 1.
+      currentOffset = Math.ceil(bitPos / 8)
     }
 
     if (!isPacked && maxAlign > 1) {
