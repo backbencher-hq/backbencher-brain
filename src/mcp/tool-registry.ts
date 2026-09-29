@@ -267,11 +267,26 @@ const descriptors = [
     // M28.T1 (issue #624): the agent door to cross-language facts. Reuses
     // src/lsp/cross_language_hover.ts (stored rows only, per-pair, declared
     // absence) — the agent reads the same facts the human's hover renders.
+    // M63.CL1: same owner, a projection built for a reader that does not have
+    // the card around it. Every fact names BOTH ends (the copy of the
+    // requested name, and the counterparty's symbol/file/language/line) plus
+    // the stored row id, because a language pair alone cannot answer "does my
+    // Kotlin Warehouse reach my Java Inventory, and where" — the shape
+    // bb_graph already returns. A name is many symbols in the index (`invoke`
+    // is 227 in a 230-file JVM corpus), so the facts are the union over every
+    // copy, `copies` names them, and `ambiguous` says so; absence is declared
+    // only when no copy holds a stored row. Bounded by a declared limit with
+    // first-class truncation, as bb_impact is. Same source and same laws as
+    // the editor's cross-language hover section; never infers, guesses, or
+    // aspires.
     name: "bb_cross_language",
-    description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
+    description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Every fact names both ends: the copy of the requested name it came from, and the other symbol's name, file, language and line, plus the stored row id. A name is many symbols — the index holds one per (file, name, line) — so facts are the union over every copy, `copies` names them, and `ambiguous` says so; absence is declared only when no copy holds a stored row. The answer is bounded by `limit` (default 200, max 1000) with `truncated` and `totalCountIfKnown` declared. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Same source and laws as the editor's cross-language hover section.",
     inputSchema: {
       type: "object",
-      properties: { symbol: { type: "string", description: "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)" } },
+      properties: {
+        symbol: { type: "string", description: "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)" },
+        limit: { type: "number", description: "max facts to return (default 200, max 1000); truncation is declared, never silent" },
+      },
       required: ["symbol"],
     },
     mutability: "read",
@@ -279,8 +294,9 @@ const descriptors = [
     modes: ["cross-language"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "graph", summary: "Stored cross-language pairs with declared absence — the agent view of the hover section.", defaults: {}, examples: [{ symbol: "Warehouse" }] },
+    documentation: { category: "graph", summary: "Stored cross-language pairs, each naming both ends, with declared absence and declared truncation.", defaults: { limit: 200 }, examples: [{ symbol: "Warehouse" }, { symbol: "invoke", limit: 50 }] },
   },
+
   {
     // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
     // ENFORCED, not delegated: author_class is hardcoded 'agent' here — a tool
