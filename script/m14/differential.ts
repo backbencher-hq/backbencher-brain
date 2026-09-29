@@ -2693,19 +2693,25 @@ export function deriveKotlinReferencesTruth(root: any): { label: string; from: s
   // on label+target, only the target matters here.
   //
   // A wildcard import (`import x.y.*`) is serialized by the pinned wasm as
-  // `identifier="x.y"` PLUS a sibling `wildcard_import` node — the identifier
-  // text never contains ".*", so the wildcard must be read from the SIBLING
-  // rather than by testing a suffix that can never fire.
+  // `identifier="x.y"` PLUS a sibling `wildcard_import` node, and the published
+  // TARGET is the identifier text alone.
+  //
+  // The first version of this oracle appended ".*" for a wildcard, on the
+  // reading that the module name should show the wildcard. It does not: the
+  // analyzer's comment on that exact line says the identifier text NEVER
+  // contains ".*" and the wildcard is carried in `items: ["*"]` and
+  // `isNamespaceImport` instead. The oracle had the fact in front of it and read
+  // it backwards, and the 24 MISSING rows it produced were all `x.y.*` for
+  // wildcard imports across nine files. The comment was a specification, not
+  // background — the rule that generalises is that a documented statement about
+  // a node is worth re-reading before it is used to justify a derivation.
   {
     const st: any[] = [root]
     while (st.length) {
       const n = st.pop()!
       if (n.type === "import_header") {
         const id = namedOf(n, "identifier")
-        if (id) {
-          const wildcard = !!namedOf(n, "wildcard_import")
-          push("root", wildcard ? `${stripNameQuoting(id.text)}.*` : stripNameQuoting(id.text))
-        }
+        if (id) push("root", stripNameQuoting(id.text))
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
