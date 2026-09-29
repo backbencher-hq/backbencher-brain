@@ -568,6 +568,72 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return uniqueFileStems.has(stem) && importUnattributedStems.has(stem)
   }
 
+  // ---- per-file incoming usage, for the coverage-gap disclosure -----------
+  // The refused-evidence disclosure above covers a symbol that HAD rows and had
+  // all of them refused. It does not cover the case the rake corpus forced:
+  // Rake::TestTask, Rake::FileCreationTask and Rake::EarlyTime have no
+  // incoming relationship of any kind, refused or otherwise, so nothing fires.
+  // They are used — lib/rake.rb:51 and :57 `require_relative` their files, and
+  // dsl_definition.rb:83 calls `Rake::FileCreationTask.define_task` — and the
+  // index records none of it. The signature is available and is precise:
+  //
+  //   lib/rake/testtask.rb            21 incoming usage edges from 11 sources,
+  //                                    and TestTask itself has 0
+  //   lib/rake/file_creation_task.rb   2 incoming usage edges from 2 sources,
+  //                                    and FileCreationTask itself has 0
+  //   lib/rake/early_time.rb           0 from 0, and EarlyTime is genuinely
+  //                                    self-contained, so it is correctly
+  //                                    reported without any disclaimer
+  //
+  // The analyzer reached the file and recorded its other members. It did not
+  // record this one. That is a coverage gap in the index, and the finding has to
+  // say so, because "no incoming edge" and "the index did not look here enough"
+  // are indistinguishable from inside the engine and very different to a reader.
+  //
+  // Counted over ALL non-bookkeeping incoming rows, anchored or not, and with
+  // `contains`/`exports` excluded. This measures whether the analyzer PRODUCED
+  // ANY ROW about a symbol in this file, which is a coverage question and not
+  // the evidence-quality question the gate above answers. Restricting it to
+  // anchored clean rows made FileCreationTask invisible to the disclosure even
+  // though its file has two incoming rows; restricting it to nothing at all would
+  // make the disclaimer fire on files the analyzer never mentioned, which is the
+  // failure mode the EarlyTime check in the corpus probe guards against.
+  const fileIncomingUsage = new Map<string, { edges: number; sources: Set<string> }>()
+  {
+    const reach = raw.prepare(
+      "SELECT t.file_id AS fid, COALESCE(r.source_symbol_id, '?') AS src, COUNT(*) AS n " +
+        "FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id " +
+        "WHERE r.project_id = ? " +
+        "AND r.relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ") " +
+        "AND (r.source_symbol_id IS NULL OR r.source_symbol_id <> r.target_symbol_id) " +
+        "GROUP BY t.file_id, COALESCE(r.source_symbol_id, '?')",
+    ).all(projectId, ...USAGE_TYPES) as Array<{ fid: string | null; src: string; n: number }>
+    for (const row of reach) {
+      if (!row.fid) continue
+      const entry = fileIncomingUsage.get(row.fid) ?? { edges: 0, sources: new Set<string>() }
+      entry.edges += row.n
+      entry.sources.add(row.src)
+      fileIncomingUsage.set(row.fid, entry)
+    }
+  }
+
+  // Symbols that DO have an incoming USAGE row are not coverage-gap candidates.
+  // `contains` and `exports` are excluded here for the same reason they are
+  // excluded from usage everywhere else: they are the indexer's own
+  // bookkeeping. Including them made Rake::TestTask look referenced, because
+  // its own module offers it via `exports` — which is the definition of a
+  // declaration nobody called.
+  const symbolsWithAnyIncoming = new Set<string>()
+  {
+    const rows = raw.prepare(
+      "SELECT DISTINCT target_symbol_id AS id FROM brain_relationship " +
+        "WHERE project_id = ? AND target_symbol_id IS NOT NULL " +
+        "AND source_symbol_id <> target_symbol_id " +
+        "AND relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
+    ).all(projectId, ...USAGE_TYPES) as Array<{ id: string }>
+    for (const row of rows) symbolsWithAnyIncoming.add(row.id)
+  }
+
   // ---- suppression accounting ---------------------------------------------
   // Every skip below is counted. The previous revision silently dropped
   // candidates for seven different reasons and reported none of them, so a
@@ -599,10 +665,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return v
   }
 
-  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[] }
+  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[]; fileUsage?: { edges: number; sources: Set<string> } }
   const candidates: OrphanCandidate[] = []
 
-  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[]): PatternFinding => {
+  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[], fileUsage: { edges: number; sources: Set<string> } | undefined): PatternFinding => {
     const classLike = CLASS_LIKE_TYPES.has(sym.symbolType)
     const rule = classLike ? "orphaned_class" : "orphaned_function"
     return {
@@ -624,11 +690,19 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
               description: `REFUSED EVIDENCE: ${rejectedReasons.length} row(s) about this symbol were excluded as unverified (${[...new Set(rejectedReasons)].join(", ")}). A row like that is not proof of a consumer — on rake an \`overrides\` row that is simultaneously a self-loop, evidenceClass "inferred" and published at 0.5 was the only thing standing between \`listen\` in lib/Mojo/IOLoop/Server.pm and this report, and that symbol has no recorded callers at all. If you believe the excluded row, the declaring ancestor or caller is outside the indexed files and the analyzer did not capture it; this finding is then a coverage gap, not dead code.`,
             }]
           : []),
+        ...(fileUsage ? [{
+            kind: "heuristic" as const,
+            description: `COVERAGE GAP INDICATOR: this symbol has no incoming usage edge at all, but its file receives ${fileUsage.edges} incoming usage edge(s) from ${fileUsage.sources.size} distinct source(s). The analyzer reached this file and recorded its other members; it did not record this one. That asymmetry is the signature of a missing reference rather than of an unused declaration, and it is why this finding should be checked against the source before anything is removed.`,
+          }]
+          : []),
       ],
       limitations: [
         "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
         ...(rejectedReasons.length > 0
           ? [`${rejectedReasons.length} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
+          : []),
+        ...(fileUsage
+          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources.size} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
           : []),
         ...(nameAmbiguous ? [`The name '${sym.name}' is declared more than once; unresolved name-only references are treated as uncertain and do not suppress this candidate.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
@@ -710,7 +784,12 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     if (confidence > 0.7) confidence = 0.7
 
     if (confidence < minConfidence) { suppressed.belowMinConfidence++; continue }
-    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym, rejectedReasons: rejectedFor.get(sym.id) ?? [] })
+    // The coverage-gap indicator: this symbol has NO incoming row of any kind,
+    // while its file has some. Computed from the raw table rather than from
+    // usedIds, because usedIds holds only what survived the gate — a symbol the
+    // gate rejected is exactly the one whose absence of evidence is in question.
+    const fileUsage = symbolsWithAnyIncoming.has(sym.id) ? undefined : fileIncomingUsage.get(sym.fileId)
+    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym, rejectedReasons: rejectedFor.get(sym.id) ?? [], fileUsage })
   }
 
   // ---- file candidates -----------------------------------------------------
@@ -757,7 +836,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const truncated = candidates.length > maxResults
   const page = candidates.slice(0, maxResults).map((c) =>
     c.symbol
-      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name), c.rejectedReasons ?? [])
+      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name), c.rejectedReasons ?? [], c.fileUsage)
       : buildFileFinding(c.fileRow!, c.conf),
   )
 
