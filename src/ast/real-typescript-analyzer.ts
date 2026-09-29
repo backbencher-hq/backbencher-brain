@@ -999,6 +999,62 @@ function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; no
   return out
 }
 
+/**
+ * The twin's J4 rule, ported: does this `require(...)` bind the module's DEFAULT
+ * export? A bare-identifier binding (`const m = require("m")`) takes the default;
+ * a destructuring binding (`const { a } = require("m")`) takes named members. The
+ * javascript lane hardcoded `true` for every require and flagged everything as a
+ * default import, so the rule is stated once here rather than copied twice.
+ */
+function requireBindsDefault(call: Node): boolean {
+  let vp: Node | null = call.parent
+  while (
+    vp && vp.type !== "variable_declarator" && vp.type !== "lexical_declaration" &&
+    vp.type !== "variable_declaration" && vp.type !== "export_statement" &&
+    vp.type !== "expression_statement" && vp.type !== "program"
+  ) {
+    vp = vp.parent
+  }
+  if (vp && vp.type === "variable_declarator") {
+    const bindName = vp.childForFieldName("name")
+    return !!bindName && bindName.type === "identifier"
+  }
+  return false
+}
+
+/**
+ * The module path an `import_statement` names, for BOTH shapes the grammar uses.
+ *
+ * `import { a } from "./m"` puts the path in a `source` FIELD of the statement,
+ * while `import m = require("./m")` wraps it in an `import_require_clause` whose
+ * string is an ordinary named child (probed: `import_statement >
+ * import_require_clause > identifier, string`). Reading only the `source` field
+ * silently skipped the whole TypeScript form of CommonJS require, so those files
+ * reported no dependency at all.
+ */
+function importStatementSource(importNode: Node): Node | null {
+  const direct = importNode.childForFieldName?.("source")
+  if (direct) return direct
+  for (let i = 0; i < (importNode.namedChildCount ?? 0); i++) {
+    const c = importNode.namedChild(i)
+    if (!c || c.type !== "import_require_clause") continue
+    for (let j = 0; j < c.namedChildCount; j++) {
+      const s = c.namedChild(j)
+      if (s && s.type === "string") return s
+    }
+  }
+  return null
+}
+
+/** True when this `import_statement` is the `import x = require(...)` form. */
+function isImportRequireClause(importNode: Node): boolean {
+  for (let i = 0; i < (importNode.namedChildCount ?? 0); i++) {
+    const c = importNode.namedChild(i)
+    if (c && c.type === "import_require_clause") return true
+  }
+  return false
+}
+
 function extractImportItems(importNode: Node): string[] {
   const clause = extractImportClause(importNode)
   const items: string[] = []
@@ -3786,10 +3842,24 @@ class TypeScriptAnalysisRunner {
       this.recordFileSignal(stringContent(node))
     }
     if (node.type === "import_statement") {
-      const sourceNode = node.childForFieldName("source")
+      const sourceNode = importStatementSource(node)
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
+      // `import m = require("./m")` IS a require: same edge shape, same default
+      // rule, so it is recorded as one rather than as an ES import with no items.
+      if (isImportRequireClause(node)) {
+        const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
+        const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
+        imports.push({
+          module: modulePath,
+          items: ["*"],
+          isDefault: !!bindNode,
+          range: this.nodeRange(node),
+          metadata: { type: "require" },
+        })
+        return
+      }
       const items = extractImportItems(node)
       const clause = extractImportClause(node)
       this.recordFileSignal(modulePath)
@@ -3809,10 +3879,19 @@ class TypeScriptAnalysisRunner {
       })
     }
 
-    // Also check for dynamic imports
+    // Dynamic `import()` and CommonJS `require()` are BOTH module dependencies,
+    // and the javascript twin records both. typescript recorded only the dynamic
+    // form, so every `require` dependency in a TypeScript file was missing from
+    // the module graph — silent, because nothing reported it: the file's imports
+    // were simply short. Measured on the tracked corpus this is the second-largest
+    // edge class, and `require` is how build shims, `.d.ts`-adjacent code and
+    // older Node packages actually pull a dependency in. This repository's own
+    // shims do it (`require("child_process")`, `require("bun:sqlite")`).
     if (node.type === "call_expression") {
-      const callee = node.namedChild(0)
-      if (callee?.text === "import" || callee?.type === "import") {
+      const callee = node.childForFieldName("function")
+      const isImportCall = !!callee && (callee.type === "import" || (callee.type === "identifier" && callee.text === "import"))
+      const isRequireCall = !!callee && callee.type === "identifier" && callee.text === "require"
+      if (isImportCall || isRequireCall) {
         const args = node.childForFieldName("arguments")
         if (args && args.namedChildCount > 0) {
           const pathArg = args.namedChild(0)
@@ -3821,8 +3900,9 @@ class TypeScriptAnalysisRunner {
             imports.push({
               module: modulePath,
               items: ["*"],
-              isDefault: false,
+              isDefault: isRequireCall ? requireBindsDefault(node) : false,
               range: this.nodeRange(node),
+              ...(isRequireCall ? { metadata: { type: "require" } } : {}),
             })
           }
         }
@@ -4196,7 +4276,17 @@ class TypeScriptAnalysisRunner {
             // surfaced as MISSING once #760's rotation sampled the file).
             // Same defect class as the M49 W1 javascript `continue`-skips-
             // subtree fix; walk the children, then stop.
-            if (callee.text === "import" || callee.type === "import") {
+            // `require` is a module loader, not a call, exactly like `import`:
+            // the twin skips both and emits a dependency edge instead. Pre-fix
+            // typescript skipped only `import`, so `require("./m")` published
+            // `calls -> require` — the file appearing to call a function named
+            // `require`, which is not in the program — while the dependency it
+            // actually names went unrecorded. The callee must be the BARE
+            // identifier; `foo.require(...)` is somebody else's method.
+            if (
+              callee.text === "import" || callee.type === "import" ||
+              (callee.type === "identifier" && callee.text === "require")
+            ) {
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
                 if (child) processNode(child, currentSymbol)
@@ -4674,6 +4764,33 @@ class TypeScriptAnalysisRunner {
     source: { name: string },
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
+    // X8 (RULED 2026-09-27): construction candidates are NAMEABLE LEAVES only.
+    //
+    // Without this, an ANONYMOUS constructor publishes a span of SOURCE TEXT as a
+    // name. Measured on this analyzer's own output: `new (e.constructor as any)(...)`
+    // published `instantiates -> "constructor as any)"`, `new (getCtor())()` published
+    // `"(getCtor())"`, and `new (class {})()` published `"(class {})"` — against a
+    // correct `new Foo()` -> `Foo` control. A target that is source text names nothing
+    // a consumer can navigate to, which is the unresolvable-identity class reached
+    // through a malformed CONSTRUCT rather than a missing edge.
+    //
+    // This went unnoticed because the typescript ORACLE had the identical bug, so the
+    // two agreed and the differential reported 100% — the same shared-premise shape as
+    // the svelte reserved-namespace finding. Fixing the truth side is what exposed it;
+    // see validation/m49/ledger.json SVELTE1/X8 and the D12-era commit.
+    //
+    // The list is the javascript twin's, which already carries this guard with the
+    // comment "deriving their raw expression text fabricated unmatchable oracle edges
+    // (lodash corpus)", plus `nested_identifier`, which the TypeScript grammar emits
+    // for a qualified name and which excluding would suppress `new ns.Thing()`. Verified
+    // by tree-walk over vue-core: the ONLY non-nameable constructor there is
+    // `parenthesized_expression`.
+    const NAMEABLE_CTOR = new Set([
+      "identifier", "member_expression", "nested_identifier", "qualified_identifier",
+      "generic_type", "template_type", "type_identifier", "type_descriptor", "primitive_type",
+    ])
+    if (!NAMEABLE_CTOR.has(constructor.type)) return
+
     let className = constructor.text
 
     // Handle generic instantiation: new Map<K, V>()
@@ -5139,10 +5256,23 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
     if (node.type === "import_statement") {
-      const sourceNode = node.childForFieldName("source")
+      const sourceNode = importStatementSource(node)
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
+      if (isImportRequireClause(node)) {
+        const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
+        const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
+        relationships.push({
+          source: this.moduleLeafName(),
+          target: `${modulePath}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...this.lineField(bindNode ?? sourceNode),
+          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode },
+        })
+        return
+      }
       const items = extractImportItemsWithNodes(node)
 
       // Create import relationships (leaf identity: source is the module leaf)
@@ -5170,8 +5300,13 @@ class TypeScriptAnalysisRunner {
     // array but no imports relationship was emitted — and the call walk
     // produced a spurious calls edge to the `import` keyword.
     if (node.type === "call_expression") {
-      const callee = node.namedChild(0)
-      if (callee && (callee.text === "import" || callee.type === "import")) {
+      const callee = node.childForFieldName("function")
+      // `require("m")` is a module dependency in the same sense as
+      // `import("m")`, and the twin emits it. Pre-fix typescript emitted a
+      // `calls → require` edge instead: the dependency was missing AND the
+      // module loader was published as if the file called a function named
+      // `require` — two wrong edges from one construct.
+      if (callee && (callee.text === "import" || callee.type === "import" || (callee.type === "identifier" && callee.text === "require"))) {
         const args = node.childForFieldName("arguments")
         const pathArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
         if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
@@ -5853,7 +5988,11 @@ class TypeScriptAnalysisRunner {
           // call — the relationship walk already skips the `import` callee
           // (T7 fix); the qualified-calls payload did not, leaking "import"
           // into symbol call lists.
-          const calleeIsImport = callee.type === "import" || (callee.type === "identifier" && callee.text === "import")
+          // `require` joins `import` here: both are module loaders, not calls.
+          // The twin skips both, so a symbol's call list must not contain
+          // "require" — it is a dependency edge, emitted above.
+          const calleeIsImport = callee.type === "import" ||
+            (callee.type === "identifier" && (callee.text === "import" || callee.text === "require"))
           if (!calleeIsImport) {
             // Dotted path WITHOUT argument text (family contract with java).
             // Raw callee.text embedded inner-call arguments on chains:
