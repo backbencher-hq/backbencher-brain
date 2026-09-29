@@ -4419,6 +4419,30 @@ class TypeScriptAnalysisRunner {
     // plain `const name = ...` must not either — pre-fix the declaration-skip
     // compared web-tree-sitter node OBJECTS (fresh per access), never
     // matched, and the template pass read the local as a symbol usage).
+    /**
+     * The names a symbol's PARAMETERS bind, read off the symbol's `parameters`
+     * payload. That payload stringifies each binding as text — `a`, `{b}`,
+     * `...rest` — so the identifier runs are pulled out with plain string
+     * splitting rather than a pattern. Destructuring and rest parameters are
+     * included because they bind names too.
+     */
+    const parameterNamesOf = (sym: ASTEngine.UniversalSymbol | null): Set<string> => {
+      const out = new Set<string>()
+      for (const prm of sym?.parameters ?? []) {
+        const raw = typeof prm === "string" ? prm : ((prm as any)?.name ?? "")
+        let token = ""
+        for (let i = 0; i <= raw.length; i++) {
+          const ch = raw[i] ?? ""
+          const isWord = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+          if (isWord) token += ch
+          else {
+            if (token) out.add(token)
+            token = ""
+          }
+        }
+      }
+      return out
+    }
     const collectPatternNames = (pat: Node): string[] => {
       const out: string[] = []
       const walk = (p: Node): void => {
@@ -4569,7 +4593,19 @@ class TypeScriptAnalysisRunner {
             }
             return false
           })()
-        if (locals.has(name) || rhsOfTypeCheck) {
+        // A PARAMETER shadows every module- and class-level name for the whole
+        // body of its function, and this pass resolves by NAME: with an
+        // `interface Deps { root }` in the file, `function f(root) { return root
+        // }` published `f->root`, recording the function as referencing an
+        // interface property it never touches. Measured: 160 of 2,880 references
+        // (5.6%) over 700 tracked files, led by `n`, `root`, `name`, `src`.
+        //
+        // The test belongs HERE and not in `locals`, because `locals` is also
+        // what suppresses the `uses` edge — and a `uses` edge to a parameter is
+        // wanted (interp-uses pins `greet -> name` for a template interpolation of
+        // its own parameter). Seeding `locals` with parameters silenced those and
+        // the fixture caught it. So: suppress the NAME-RESOLVED reference only.
+        if (locals.has(name) || parameterNamesOf(currentSymbol).has(name) || rhsOfTypeCheck) {
           // still recurse into children (e.g. nested member paths)
         } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
