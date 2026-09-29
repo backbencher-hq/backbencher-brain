@@ -6,6 +6,7 @@
 // emitted when the indexed data actually matches the rule.
 
 import { BrainDatabase } from "../../brain/database"
+import { nonCodeLanguageSQL } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 
 export interface RuleFinding {
@@ -46,14 +47,25 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
   // lowering the threshold does not have to raise the cap to see anything.
   const budget = Math.max(0, options.maxResults)
 
+  // Anti-pattern rules describe executable code, so they exclude the languages
+  // whose indexed symbols are structural keys. The top-ranked god-class finding
+  // on a 45,018-symbol repository was docs/data/m10-baseline.json:25 — a JSON
+  // file's members. The orphan engine already excluded these; the rules branch
+  // did not, so the same noise survived here under a different rule name. The
+  // language set is shared (analysis-exclusions.NON_CODE_LANGUAGES) rather than
+  // restated: a second, weaker copy of a language rule is how the qualified
+  // references and the import-stem collisions went missing in the first place.
+  const nonCode = nonCodeLanguageSQL("f")
+  const nonCodeClause = ` AND ${nonCode.sql}`
+
   if (options.includeAntiPatterns) {
     // 1. High-complexity functions (cyclomatic from the analyzer).
     const complex = raw.prepare(
       "SELECT s.name, s.complexity, f.relative_path AS file, COALESCE(s.line_start, 0) AS line " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-        "WHERE s.project_id = ? AND s.complexity IS NOT NULL AND s.complexity >= ? " +
-        "ORDER BY s.complexity DESC",
-    ).all(projectId, COMPLEXITY_THRESHOLD) as Array<{ name: string; complexity: number; file: string; line: number }>
+        "WHERE s.project_id = ? AND s.complexity IS NOT NULL AND s.complexity >= ?" + nonCodeClause +
+        " ORDER BY s.complexity DESC",
+    ).all(projectId, COMPLEXITY_THRESHOLD, ...nonCode.params) as Array<{ name: string; complexity: number; file: string; line: number }>
     let shown = 0
     for (const row of complex) {
       // M20.P1/the previous gate was `row.complexity / COMPLEXITY_THRESHOLD <
@@ -105,9 +117,9 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.parameters IS NOT NULL AND s.parameters != '[]' " +
         "AND json_valid(s.parameters) AND length(s.parameters) >= 17 " +
-        "AND (SELECT COUNT(*) FROM json_each(s.parameters)) > ? " +
-        "ORDER BY s.id",
-    ).all(projectId, PARAMETER_THRESHOLD) as Array<{ name: string; parameters: string; file: string; line: number; paramCount: number }>
+        "AND (SELECT COUNT(*) FROM json_each(s.parameters)) > ?" + nonCodeClause +
+        " ORDER BY s.id",
+    ).all(projectId, PARAMETER_THRESHOLD, ...nonCode.params) as Array<{ name: string; parameters: string; file: string; line: number; paramCount: number }>
     let shownParams = 0
     for (const row of paramRows) {
       const confidence = 0.7
@@ -172,9 +184,9 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
         "(SELECT COUNT(*) FROM brain_symbol m WHERE m.owner_symbol_id = s.id) AS members " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
         "WHERE s.project_id = ? AND s.symbol_type IN ('class','interface','struct','trait','enum') " +
-        "AND (SELECT COUNT(*) FROM brain_symbol m WHERE m.owner_symbol_id = s.id) > ? " +
-        "ORDER BY members DESC",
-    ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD) as Array<{ name: string; file: string; line: number; members: number }>
+        "AND (SELECT COUNT(*) FROM brain_symbol m WHERE m.owner_symbol_id = s.id) > ?" + nonCodeClause +
+        " ORDER BY members DESC",
+    ).all(projectId, GOD_CLASS_MEMBER_THRESHOLD, ...nonCode.params) as Array<{ name: string; file: string; line: number; members: number }>
     let shownGod = 0
     for (const row of godClasses) {
       // The previous gate was `row.members / 20 < confidenceThreshold`, which

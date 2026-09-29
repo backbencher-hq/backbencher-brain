@@ -1,6 +1,6 @@
 # `bb_patterns`
 
-Detect orphaned code, framework patterns, and anti-patterns, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
+Detect orphaned code, framework patterns, and anti-patterns, ranked by evidence-derived confidence, with staleness markers when a finding's file changed after indexing. Use scope=orphaned for dead code; scope=all (default) for the full pattern scan with the optional pattern/confidence filters. Architecture and code-quality analysis are planned, not yet executable.
 
 ## Contract
 
@@ -9,7 +9,7 @@ Detect orphaned code, framework patterns, and anti-patterns, with staleness mark
 - Requires index: `true`
 - Modes: `orphaned`, `all`
 - Planned modes (roadmap, not executable): `quality`, `architecture`
-- Defaults: `{"scope":"all","limit":20,"includeOrphaned":true,"includeFramework":true,"includeAntiPatterns":true,"confidenceThreshold":0.6,"history":false,"recordRun":false}`
+- Defaults: `{"scope":"all","limit":20,"includeOrphaned":true,"includeFramework":true,"includeAntiPatterns":true,"confidenceThreshold":0,"history":false,"recordRun":false}`
 
 ## Input Schema
 
@@ -43,7 +43,7 @@ Detect orphaned code, framework patterns, and anti-patterns, with staleness mark
     },
     "confidenceThreshold": {
       "type": "number",
-      "description": "minimum confidence 0..1 (default 0.6)"
+      "description": "drop findings below this confidence (default 0 = report everything, ranked). Orphan confidence is evidence-derived and spans 0.3-0.7; anti-pattern confidence is 0.6-0.9"
     },
     "history": {
       "type": "boolean",
@@ -51,7 +51,7 @@ Detect orphaned code, framework patterns, and anti-patterns, with staleness mark
     },
     "recordRun": {
       "type": "boolean",
-      "description": "persist this scan as an analysis run"
+      "description": "persist this scan as an analysis run (persists the whole census, not the displayed page)"
     }
   }
 }
@@ -66,6 +66,8 @@ Detect orphaned code, framework patterns, and anti-patterns, with staleness mark
 ## Examples
 
 `{"scope":"orphaned"}`
+
+`{"confidenceThreshold":0.6}`
 
 `{"recordRun":true}`
 
