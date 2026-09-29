@@ -144,3 +144,18 @@ validation/m60/grammar-survey.cache.json
 # Verified with `git add -n` and `git check-ignore -v`, not by reading the diff.
 !grammars/tree-sitter-yaml/src/*
 grammars/tree-sitter-yaml/src/parser.c
+
+# --- load-test output written to the repository ROOT, and scratch files. These are not
+# work: a load test prints its per-entry lines to bare filenames, and `git add -A` will
+# happily commit them. The same hazard already forced an untrack of a node_modules
+# symlink, so it is closed here at the source rather than one file at a time.
+/2300
+/400
+/600
+/Runnable
+/validation/m14/results/*.json.tmp-*
+/script/m60/tmp-*.ts
+
+# `.merge-tmp/` is a REGISTERED git worktree (branch main-align). It appeared here because a
+# worktree lives inside the repository; committing it would nest a repository in this one.
+/.merge-tmp/
