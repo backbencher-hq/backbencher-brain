@@ -34,8 +34,10 @@ Cross-language facts for one symbol from stored brain_relationship rows only (is
 
 ## Returns
 
-- Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier
-- Declared-absent result when no stored cross-language rows exist
+- One fact per stored cross-language row touching the name, each naming BOTH ends — the copy of the requested name it came from (`self`: symbol, file, language, line) and the counterparty (`other`: symbol, file, language, line) — plus the stored `rowId`, the direction, the bridge, the evidence tier and the confidence
+- `copies`: every indexed symbol that carries the name, with its file, language, line and cross-row count, plus `ambiguous` and `ambiguityNote` when the index holds more than one (the index has one symbol per file/name/line, so a common name is many symbols)
+- Declared absent only when NO copy of the name holds a stored cross-language row, with the copy count in the note
+- Declared truncation: `truncated`, `truncationReason` and `totalCountIfKnown` when the `limit` bounded the answer; `unpairableRowCount` and `collapsedRowCount` report rows that could not name a pair and rows matched from both directions
 
 ## Examples
 
@@ -45,17 +47,21 @@ Cross-language facts for one symbol from stored brain_relationship rows only (is
 
 ## Errors
 
-- Missing symbol
+- Missing or blank symbol
 - Symbol not found in the index (declared, not an empty set)
+- limit outside the declared 1..1000 range (refused, never clamped silently)
 
 ## Limitations
 
 - Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts
-- Coverage depends on the analyzers that produced cross-language rows
+- Coverage depends on the analyzers that produced cross-language rows — this tool reports what was stored, nothing more
+- A name is many symbols: the answer is the UNION over every copy, never a silent choice among them. Narrow with the `copies` list — every fact names the copy it came from
+- `bridge` is the stored `bridge_mechanism`. On a real polyglot corpus it is almost always the indexer's `name-resolution` placeholder, which means two identifiers matched by name — not that the two languages communicate by that mechanism. Weigh it with `tier` and `confidence`
+- A row whose endpoint file has no detected language cannot name a pair; those rows are counted in `unpairableRowCount` and never dressed up with a guessed language
 
 ## Performance
 
-Bounded by the stored cross-language rows for the symbol; no graph traversal.
+Two indexed queries (the stored cross-language rows for the name, and every symbol carrying the name), no graph traversal; the response is bounded by `limit` and declares what it dropped.
 
 ## Safety
 
@@ -63,7 +69,7 @@ Read-only. It does not modify source files or index data.
 
 ## Evidence Semantics
 
-Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section.
+Only brain_relationship rows with is_cross_language=1, filtered by the row's own project_id, classified by the single evidence-tier rule in src/lsp/evidence_tier.ts — the same stored rows and the same rule as the editor cross-language hover section, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over a real polyglot corpus (script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json).
 
 ## Relationship to other tools
 
