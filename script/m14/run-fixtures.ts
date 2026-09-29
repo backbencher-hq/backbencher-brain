@@ -59,6 +59,16 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex" },
+  // M14.7-DataConfigDocs.yaml (#286): yaml joins the fixture lane with 24 fixtures, each
+  // authored from re-probed emission (script/m14/tmp/yaml-fixture-dump.ts ->
+  // validation/m14/results/yaml-fixture-emission.json) and each paired with a NEGATIVE
+  // twin where a channel could over-fire. Six of the twelve grammar node types the lane
+  // did not name are reachable only from a fixture, not from any corpus: a 400-file draw
+  // over eight pinned repositories contains 19 `tag` nodes (all `!vault`/`!unsafe` cipher
+  // markers), ZERO directives, and 2 anchors (script/m14/results/yaml-f8-corpus-census.json).
+  // Without this lane the tags, directives, anchors and merge-key contracts would have had
+  // no evidence at all.
+  yaml: { wasm: "tree-sitter-yaml.wasm", analyzerFile: "real-yaml-analyzer", className: "RealYamlAnalyzer", ext: "yaml,yml" },
   // M59 (#825): xml had NO fixture lane at all, while being one of only two
   // analyzers that emitted a line before the round (27 of 27 relationships on
   // the M59 coverage probe). Nothing pinned its line contract, so nothing could
@@ -126,6 +136,14 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // deliberately use `.graphqls` and `.gql` so a regression that keys on one
   // extension cannot pass.
   graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
+  html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
+  css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
+  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
+  bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
+  json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
+  powershell: { wasm: "tree-sitter-powershell.wasm", analyzerFile: "real-powershell-analyzer", className: "RealPowershellAnalyzer", ext: "ps1,psm1,psd1" },
 }
 
 interface Entry { [k: string]: any }
@@ -227,6 +245,16 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
       if (Array.isArray(v)) {
         if (!Array.isArray(mv)) return false
         if (JSON.stringify([...mv].sort()) !== JSON.stringify([...v].sort())) return false
+      } else if (v === null) {
+        // M59 fixed this hole for `line_number`; it is the SAME hole one level
+        // down. Several analyzers emit a metadata label on TRUE only and omit it
+        // otherwise (`isShellDefined`, `isAssignedInFile`), so the ABSENT case is
+        // the one a consumer actually hits most — and a strict `!==` can never be
+        // true for it, so a fixture could not state it. `meta.x: null` now means
+        // "this edge must NOT carry x", reusing the `line_number: null` convention
+        // rather than inventing a second spelling. Additive: every other value
+        // compares exactly as before.
+        if (mv !== undefined && mv !== null) return false
       } else if (mv !== v) return false
     } else if (actual[k] !== v) {
       // relationship field aliases
@@ -333,7 +361,14 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   }
 
   const exts = cfg.ext.split(",")
-  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)))
+  // `.expectation.json` files are excluded because for a lane whose extension IS
+  // `json` an expectation file ends in `.json` too, so it was picked up as a FIXTURE
+  // and then reported as a missing expectation of its own. Every existing lane dodged
+  // this by accident: bash expects `.sh`, typescript expects `.ts`, so the two
+  // extensions never collided. json is the first lane where they do, and the failure
+  // mode is six phantom "missing expectation file" rows that look like a lane problem
+  // and are a runner problem.
+  const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
   let pass = 0, fail = 0
   const details: any[] = []
   for (const src of sources.sort()) {
@@ -349,6 +384,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // script-block pre-parse exactly as real indexing does.
     let result: any
     if (runLangLang === "vue" || runLangLang === "svelte") {
+    if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml" || runLangLang === "markdown") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
       // Mutation harness (M14.0.F4): the mutant wraps analyzer output. For
@@ -550,6 +586,96 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+    // M60 (powershell): three ADDITIVE payload channels. The lane's pre-wave
+    // analyzer wrote `isStatic`, `returnType` and `docstring` into the symbol's
+    // `metadata`, and `pool-worker.ts` drops the whole `metadata` object at the
+    // worker boundary except the narrow `isDeclaration` key — so all three were
+    // discarded before the store saw them, and nothing in the harness could say
+    // so: `expectParameters` covers parameters, `expectDecorators` decorators,
+    // `expectVisibility` visibility, and these three had no channel at all. An
+    // unpinnable payload field is where a regression hides, which is the same
+    // argument that added `forbidDecorators` (C2a) and the parameter-type half of
+    // `forbidParameters` (csharp R7). Each entry is { symbol, ownerName? } plus
+    // one assertion; unspecified fields are wildcards, and `comment`/`note` are
+    // documentation, as everywhere else in this matcher.
+    for (const want of exp.expectReturnType ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectReturnType: symbol ${want.symbol} not found`); continue }
+      if (want.returnType !== undefined && sym.returnType !== want.returnType) {
+        problems.push(`expected ${want.symbol} returnType ${JSON.stringify(want.returnType)}; got ${JSON.stringify(sym.returnType)}`)
+      }
+    }
+    for (const want of exp.expectIsStatic ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectIsStatic: symbol ${want.symbol} not found`); continue }
+      const actual = sym.isStatic === true
+      if (want.isStatic !== undefined && actual !== want.isStatic) {
+        problems.push(`expected ${want.symbol} isStatic ${want.isStatic}; got ${actual}`)
+      }
+    }
+    for (const want of exp.expectDocstring ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) { problems.push(`expectDocstring: symbol ${want.symbol} not found`); continue }
+      const text = String(sym.docstring ?? "")
+      if (want.contains !== undefined && !text.includes(want.contains)) {
+        problems.push(`expected ${want.symbol} docstring to contain ${JSON.stringify(want.contains)}; got ${JSON.stringify(text.slice(0, 200))}`)
+      }
+      if (want.minLength !== undefined && text.length < want.minLength) {
+        problems.push(`expected ${want.symbol} docstring length >= ${want.minLength}; got ${text.length}`)
+      }
+    }
+    // The negative half of the docstring channel, and the class that made it
+    // necessary: the first powershell docstring scanner skipped blank lines while
+    // walking upward, so a FILE BANNER became the documentation of whichever
+    // declaration came first. `forbidDocstring` is the only way to say "this
+    // symbol must have NO documentation", which an expect-channel cannot.
+    for (const want of exp.forbidDocstring ?? []) {
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
+      if (!sym) continue
+      const text = String(sym.docstring ?? "")
+      if (text.length === 0) continue
+      if (want.contains === undefined) {
+        problems.push(`forbidden docstring present on ${want.symbol}: ${JSON.stringify(text.slice(0, 200))}`)
+      } else if (text.includes(want.contains)) {
+        problems.push(`forbidden docstring content on ${want.symbol}: contains ${JSON.stringify(want.contains)}`)
+      }
+    }
+    // The fourth additive payload channel (M60, powershell): cyclomatic
+    // complexity. `isBranch` decides it, and a node type the predicate never
+    // names is uncounted by construction — powershell's `switch_clause` was, so
+    // a ten-case switch measured 1. `metadata.complexity` (symbols + relationships)
+    // is NOT this and must not be substituted for it: that is a count of emitted
+    // facts and it grows with the analyzer's own output, so pinning it would
+    // pin the regression in place.
+    for (const want of exp.expectComplexity ?? []) {
+      if (want.symbol) {
+        const sym = symbols.find((s: any) => s.name === want.symbol && (want.ownerName === undefined || s.ownerName === want.ownerName))
+        if (!sym) { problems.push(`expectComplexity: symbol ${want.symbol} not found`); continue }
+        const cx = (sym as any).complexity
+        if (want.equals !== undefined && cx !== want.equals) {
+          problems.push(`expected ${want.symbol} complexity ${want.equals}; got ${cx}`)
+        }
+        if (want.min !== undefined && !(typeof cx === "number" && cx >= want.min)) {
+          problems.push(`expected ${want.symbol} complexity >= ${want.min}; got ${cx}`)
+        }
+        continue
+      }
+      const fileCx = (result as any)?.metadata?.cyclomaticComplexity
+      if (want.fileEquals !== undefined && fileCx !== want.fileEquals) {
+        problems.push(`expected file cyclomaticComplexity ${want.fileEquals}; got ${fileCx} (a switch case is a decision point: \`switch_clause\` was never named, so a ten-case switch measured 1)`)
+      }
+      if (want.fileMin !== undefined && !(typeof fileCx === "number" && fileCx >= want.fileMin)) {
+        problems.push(`expected file cyclomaticComplexity >= ${want.fileMin}; got ${fileCx}`)
+      }
+    }
     for (const want of exp.expectVisibility ?? []) {
       const sym = symbols.find((s: any) => s.name === want.symbol)
       if (!sym) { problems.push(`expectVisibility: symbol ${want.symbol} not found`); continue }
@@ -605,6 +731,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       const hit = (result.exports ?? []).find((e: any) =>
         Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true : e[k] === v)),
       )
+      const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
     for (const want of exp.expectExportRanges ?? []) {
@@ -841,6 +968,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       const hit = (result.exports ?? []).find((e: any) =>
         Object.entries(want).every(([k, v]) => (k === "comment" || k === "note" ? true : e[k] === v)),
       )
+      const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
     // M49 JVM-closure exports-family invariant — runs on EVERY fixture, every

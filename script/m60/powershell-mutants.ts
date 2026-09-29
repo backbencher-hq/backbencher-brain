@@ -38,7 +38,77 @@ const psDropRelField = (field: string) => (r: any) => ({
   }),
 })
 
+/**
+ * The two export mutants below reproduce the SHAPE of the one-token reader and of
+ * the un-deduplicated writer, generically, off the result's own fields rather than
+ * off a fixture name. Writing them as literal deletions would have been simpler and
+ * would have proved nothing: a mutant that hard-codes the fixture it was written
+ * for measures that fixture, not the behaviour.
+ */
+/** Keep only the first export row per source line — what a one-token value reader yields for a comma list. */
+const dedupeKeepFirstPerLine = (exports: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const e of exports ?? []) {
+    const key = `${e?.range?.start?.line ?? e?.line ?? "?"}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(e)
+  }
+  return out
+}
+
+/** The relationship half of the same revert: one `exports` edge per source line. */
+const dedupeKeepFirstExportsRel = (rels: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of rels ?? []) {
+    if (x?.type === "exports") {
+      const key = `exports|${x.line_number ?? "?"}`
+      if (seen.has(key)) continue
+      seen.add(key)
+    }
+    out.push(x)
+  }
+  return out
+}
+
+/** A second copy of each distinct export name — the un-deduplicated writer's output. */
+const duplicateFirstOfEach = (names: string[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const n of names) {
+    const k = String(n).toLowerCase()
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ name: n })
+  }
+  return out
+}
+
+/** The relationship half of the duplicate mutant. */
+const duplicateFirstExportsRel = (rels: any[]): any[] => {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of rels ?? []) {
+    if (x?.type !== "exports") continue
+    const k = `${String(x.target ?? "").toLowerCase()}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push({ ...x, line_number: (x.line_number ?? 0) + 1 })
+  }
+  return out
+}
+
 import type { Mutant } from "../m14/mutate-analyzer"
+
+/** Drop every relationship of one type. PS-A2: written generically so it reverts
+ *  whatever the fixture declares rather than a hard-coded target. */
+const psDropRelType = (type: string, only?: (rel: any) => boolean) => (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) =>
+    x.type !== type || (only ? !only(x) : false)),
+})
 
 export const POWERSHELL_MUTANTS: Mutant[] = [
   {
@@ -295,6 +365,41 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
       ...r,
       exports: [],
       relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  // NOT AN ENTRY, AND THE REASON IS THE POINT — a fourth instance of this lane's
+  // "an entry that cannot fail is decoration" rule, after `emit-from-recovery-region`.
+  //
+  // There is a third mutation available here: revert the comma-list value read to
+  // the single-token `valueAfterNode(elements, i)` it replaced, so
+  // `Export-ModuleMember -Function A, B` publishes only `A`. It was written, and it
+  // SURVIVED — 0 failures before, 0 after — because no fixture in the lane contains
+  // a comma-separated export list. The obvious fix is to add one, and adding one
+  // makes the FIXTURE UNPARSEABLE: the grammar cannot lex a comma-separated command
+  // argument at all, which is the whole of the G6 class (245 parameter-form sites
+  // across both corpora). So the construct this mutant reverts is not merely
+  // unpinned, it is currently UNREACHABLE, and a fixture cannot assert on text the
+  // parser cannot read.
+  //
+  // The comma-list read therefore stays in the analyzer — it is correct, and the
+  // duplicate mutant below proves the code path is exercised — but its own revert is
+  // not admitted as a mutant, because admitting it would put a permanently-green row
+  // in the lane's mutation evidence and a permanently-green row is worse than no row:
+  // it is read as coverage. This entry reappears the moment G6 lands and the form
+  // becomes parseable, and the fixture row to go with it is written in
+  // reviews/powershell/grammar-worklist.md under G6.
+  {
+    id: "powershell/export-allows-duplicate-name",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "REVERT: `addExport` stops deduplicating on the exported name, so a name reachable by two paths in one statement is published twice. The comma-list fix is what made this reachable — a value in `command_elements` is preceded by a `command_argument_sep` that BOTH the flag's value walk and the bare-value branch match, so `Export-ModuleMember -Function F` sees `F` twice. Found by module-surface-psb9's export invariant (`duplicate export name(s)`) rather than by a count, which is the whole reason that invariant is in the harness: the corpus emits the same edge twice without any number changing shape. PowerShell identifiers are case-insensitive, so the real invariant is one export per name per module, and a reader keying the graph on the name would otherwise see two rows for one published function.",
+    transform: (r: any) => ({
+      ...r,
+      // Append a second copy of every export whose name already appears, which is
+      // the state the analyzer was in for one statement per fixture file.
+      exports: [...(r.exports ?? []), ...duplicateFirstOfEach((r.exports ?? []).map((e: any) => e.name))],
+      relationships: [...(r.relationships ?? []), ...duplicateFirstExportsRel(r.relationships)],
     }),
   },
   {
@@ -609,4 +714,213 @@ export const POWERSHELL_MUTANTS: Mutant[] = [
         i.metadata?.via?.startsWith("using") ? { ...i, module: String(i.metadata.via).split(" ")[1] ?? "using" } : i),
     }),
   },
+  {
+    id: "powershell/drop-class-implements",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a class's interface list publishes no `implements` edge. This is the lane's widest hole and it was found by an AUDIT, not a report: asked whether all relationship types were carried out, `implements` turned out to be emitted by live code with ZERO fixture rows and ZERO mutants, so deleting the loop that produces it would have left every gate in the repository green. The class header cannot say which base is a class and which are interfaces — PowerShell resolves that at runtime — so the grammar's positional shape is the only information there is. Caught by class-inherit-psa2's `implements Circle -> IShape` row and by its `implements == 1` count, which is the half that survives a fix that keeps the row but also emits the base class as an interface.",
+    transform: psDropRelType("implements"),
+  },
+  {
+    id: "powershell/drop-class-extends",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a class's base publishes no `extends` edge. `extends` had a fixture row (method-scope-psb3) but no mutant that could fail it, so the row was documentation rather than a gate. Caught by class-inherit-psa2's two `extends` rows and its `extends == 2` count.",
+    transform: psDropRelType("extends"),
+  },
+  {
+    id: "powershell/drop-class-overrides",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A2 REVERT: a same-named subclass member publishes no `overrides` edge. The pre-wave lane emitted ZERO `overrides` edges in the language, so this is the revert verbatim. `overrides` had two fixture rows and no mutant; it also carries the `overridesMember` metadata that says WHICH member is overridden, and dropping the edges drops the evidence with them. Caught by class-inherit-psa2's three `overrides` rows (each pinning `overridesMember`) and its `overrides == 3` count, whose value is chosen so that a rule matching 'the base has a member of any name' emits 4 and fails — `Area` is in the base and overridden in `Circle` but deliberately absent from `Square`.",
+    transform: psDropRelType("overrides"),
+  },
+  {
+    id: "powershell/interface-keyword-as-call",
+    language: "powershell",
+    defectClass: "fabrication",
+    description:
+      "PS-A2 REVERT: the `interface` KEYWORD is published as a callable again. The grammar has no node for a PowerShell 5.0 interface, so `interface IShape { … }` parses as a plain `command` named `interface` and reaches the generic call edge — the PS5 keyword-fabrication class reached through a grammar gap rather than a missing guard, which is why `interface` was absent from LANGUAGE_KEYWORD_COMMANDS while its siblings `class` and `enum` were both present. The GRAMMAR-side fix was built and REJECTED (an `interface_statement` rule with an optional method body reshaped 491 of 550 clean corpus files), so the guard is analyzer-side. The transform keys on the presence of an `interface` SYMBOL, so it re-derives the pre-fix state from the result without hard-coding this fixture's names. Caught by class-inherit-psa2's two `calls -> interface` / `calls -> IShape` forbid rows and its `interface` forbidSymbol row.",
+    transform: (r: any) => {
+      const ifaces = (r.symbols ?? []).filter((s: any) => s.kind === "interface").map((s: any) => s.name)
+      if (ifaces.length === 0) return r
+      const file = psFileName(r)
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...ifaces.map((n: any) => ({
+            type: "calls", source: file, target: "interface", line_number: 0, confidence: 0.6,
+            metadata: { powershellSpecific: true },
+          })),
+          ...ifaces.map((n: any) => ({
+            type: "calls", source: file, target: n, line_number: 0, confidence: 0.6,
+            metadata: { powershellSpecific: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "powershell/interface-scope-leak",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A2 REVERT, the regression: an interface's scope frame is pushed and never popped, so every class declared AFTER an interface in the same file is re-owned by the interface. This is the defect the FIX introduced, recorded as a mutant rather than quietly corrected, because it is the reason the fixture puts a class after an interface and pins three `contains IShape -> <class>` forbid rows: scoping without an exit is not a narrower fix, it is a different defect, and it was invisible until a file exercised the order. The first version of the fix leaked exactly this way and the measured damage was `contains IShape -> Shape`, `-> Circle` and `-> Square`. Caught by class-inherit-psa2's three forbid rows.",
+    transform: (r: any) => {
+      const ifaces = (r.symbols ?? []).filter((s: any) => s.kind === "interface")
+      if (ifaces.length === 0) return r
+      const file = psFileName(r)
+      const leaked = (r.symbols ?? [])
+        .filter((s: any) => s.kind === "class" && (s.ownerName ?? s.owner) === file)
+        .map((s: any) => s.name)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.kind === "class" && (s.ownerName ?? s.owner) === file
+            ? { ...s, ownerName: ifaces[0].name, owner: ifaces[0].name }
+            : s),
+        relationships: [
+          ...(r.relationships ?? []).filter((x: any) => x.type !== "contains" || x.source !== file || !leaked.includes(x.target)),
+          ...leaked.map((n: any) => ({
+            type: "contains", source: ifaces[0].name, target: n, line_number: 0, confidence: 1.0,
+            metadata: {},
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "powershell/new-object-com-and-positional",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A3 REVERT: `New-Object` reads only `-TypeName`, so `-ComObject <ProgID>` and the POSITIONAL form `New-Object System.Collections.ArrayList` publish no edge at all. Found by hand-auditing the F5 differential's MISSING samples — `instantiates Extract-ZipLegacy -> Shell.Application` appears on ansible's own Windows modules — then confirmed in isolation. The pre-fix state produced no edge rather than a wrong one, which is why ERROR-keyed gates never saw it and why a fixture was needed. Caught by new-object-psa3's two missing rows and, independently, by its `instantiates == 3` count: a fix that read `-ComObject` but not the positional form scores 2.",
+    transform: psDropRelType("instantiates", (x: any) => x.metadata?.viaNewObject === true),
+  },
+  {
+    id: "powershell/com-object-keyed-on-a-dot",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A3 REVERT, the mistake this work made: `isComObject` is derived from the CONSTRUCTED NAME containing a dot rather than from the FLAG that was used. A dotted .NET type name and a COM ProgID look alike and mean different things, so `-TypeName System.Text.StringBuilder` — a managed type — is published as a COM object. This is recorded as a mutant rather than quietly corrected because it is the more interesting half of the finding: the fix that closed a real gap introduced a different one, and the two metadata rows in new-object-psa3 are the only thing that distinguishes them. Caught by that fixture's `Shell.Application` row expecting `isComObject: true` AND its `System.Text.StringBuilder` row expecting the flag to be ABSENT.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "instantiates" && x.metadata?.viaNewObject
+          ? { ...x, metadata: { ...(x.metadata ?? {}), ...(String(x.target).includes(".") ? { isComObject: true } : { isComObject: undefined }) } }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/variable-argument-not-read",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a variable passed as a command ARGUMENT is not read. The largest of the five defects the F9 completeness audit found, and the most consequential: `Write-Host $a` published the call edge and no `uses` at all, so every variable handed to a cmdlet was invisible in the graph while the same variable interpolated in a string was read. Measured rather than estimated — reading command arguments took the corpora from 114,096 to 129,259 relationships across 760 files, and a line-level check over all 25,023 variable-reference edges then read 100.00% justified.\n\nScoped to the `isArgumentReference` marker rather than deleting every variable read, because an argument read and an interpolation read are the same row shape (`uses` + `isVariableReference`); without the marker a mutant for this defect would silently revert three others. That is the same standard the PS9 entry in this file already states — a mutant that cannot be attributed faithfully is not written. Caught by variable-reads-psa4's argument rows and its `uses == 9` count.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isArgumentReference === true),
+  },
+  {
+    id: "powershell/braced-variable-keeps-braces",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a BRACED variable keeps its braces, so `${a}` and `$a` become two different symbols. Measured on a probe: `$a = 1` declared `a`, and a string containing `${a}` published `uses -> {a}` — a read naming a symbol nothing declares, so the reference was lost rather than merely misspelled. The braced spelling is how PowerShell writes a variable whose name would otherwise run into adjacent text, so it is not rare. Caught by variable-reads-psa4's `braced` rows and its `{braced}` forbidSymbol, which pins the DECLARATION side too because the name reaches the graph two ways.",
+    // Keyed on `isBracedVariable`, and the transform is the READ half only — stated
+    // plainly because the first draft of this entry was the opposite mistake: it
+    // re-braced any name that ALREADY had braces, which after the fix matches
+    // nothing, and the mutant SURVIVED at 0 failures. That is the whole reason a
+    // mutant is run rather than written and assumed. The DECLARATION half of the
+    // defect is pinned by the fixture's `forbidSymbols` row for `{braced}`, which a
+    // read-only transform cannot reach; naming that here rather than implying a
+    // coverage the entry does not have.
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.isBracedVariable ? { ...x, target: `{${x.target}}` } : x),
+    }),
+  },
+  {
+    id: "powershell/here-string-interpolation-unread",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: an EXPANDABLE HERE-STRING is not interpolated. A here-string published no read at all while the identical text in a double-quoted string did, because `expandable_here_string_literal` is a different node type from `expandable_string_literal` and only the latter was in the switch. The second half of the defect was a LINE off-by-one with the line break and the sigil inside the target: the grammar gives the interpolation a span starting at the end of the previous line (`variable [6,8]-[7,8]` for a `$message` written on line 7), so the edge was published one line high. Caught by variable-reads-psa4's two here-string rows, whose line numbers ARE the assertion.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isHereStringInterpolation === true),
+  },
+  {
+    id: "powershell/splat-keeps-at-sign",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a SPLAT keeps its `@`, so `@name` and `$name` become two different symbols. The grammar models `@name` as a `variable` node whose text carries NO sigil, so the dollar-strip did nothing to it and `New-PSOptions @OptionsArguments` published `uses -> @OptionsArguments`. Found by the line-level check, where the splat rows were the one real defect hiding among its false negatives. Caught by variable-reads-psa4's splat row and its `@splatArgs` forbidSymbol.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.metadata?.isVariableReference ? { ...x, target: `@${x.target}` } : x),
+    }),
+  },
+  {
+    id: "powershell/dynamic-method-target-as-call",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A4 REVERT: a DYNAMIC method target is published as a call to a sigil-bearing name. `$type::$method()` wrote `calls -> $method`, which is wrong twice: a variable is stored stripped, so `$method` is a name no symbol can have, and the source says the method is CHOSEN AT RUNTIME, so calling a method named `$method` asserts a fact the code does not contain. The correct edge is a `uses` of the variable holding the name. Found on ConstrainedLanguageRestriction.Tests.ps1:513 — the last row of the line-level check's residue, at which point it read 100.00%. Caught by variable-reads-psa4's `isDynamicMethodTarget` row and its `calls -> $method` forbid row.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.metadata?.isDynamicMethodTarget
+          ? { ...x, type: "calls", target: `$${x.target}`, metadata: { ...(x.metadata ?? {}), isDynamicMethodTarget: undefined, isVariableReference: undefined } }
+          : x),
+    }),
+  },
+  {
+    id: "powershell/counter-update-operand-unread",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: an INCREMENT or DECREMENT publishes no read of its operand. All four types were in the F9 audit's \"the analyzer never names it\" set, and probing them confirmed every one emitted nothing, so `$count++` left the graph with a declaration and no read. Keyed on `isCounterUpdate` so the revert is attributable to this defect alone; the increment and the compound-assignment reads are separate rows with separate markers and separate mutants. Caught by variable-reads-psa4's four counter rows.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isCounterUpdate === true),
+  },
+  {
+    id: "powershell/compound-assignment-read-dropped",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT: a COMPOUND assignment publishes no read of its left side. `$total += 1` is a read of `$total` and a write to it; the write is the declaration, and the read was nowhere, so a variable the graph could see being created had a use it could not. The operator is the whole distinction — a plain `=` gains no read edge, which is what the count row pins. Caught by variable-reads-psa4's two compound rows and their `assignmentOperator` metadata.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isCompoundAssignmentRead === true),
+  },
+  {
+    id: "powershell/prefix-counter-missed",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT, the half-defect: a PREFIX counter update is missed because the operand is found by a direct-child lookup. `$count++` puts its variable directly under the increment node, but `++$count` nests it as `pre_increment_expression > unary_expression > variable`, so a direct lookup finds the postfix pair and silently misses the prefix pair. That is the same shape of miss as `sub_expression` (PS16) and `left_assignment_expression` (PS2), and it is invisible in a count — two of four sites missing reads as an error count looks like a partial success. Caught by variable-reads-psa4's two `isPostfix: false` rows, which fail on their own if the prefix forms are the ones dropped.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.isCounterUpdate && x.metadata?.isPostfix === true ? { ...x, metadata: { ...x.metadata, isPostfix: false } } : x),
+    }),  },
+  {
+    id: "powershell/scoped-read-suppressed-again",
+    language: "powershell",
+    defectClass: "identity",
+    description:
+      "PS-A4 REVERT, the RULING half: a scope-qualified READ is suppressed again, because the read path reuses PS8's DECLARATION guard. Measured on the F5 non-test sample: 7 rows from Sign-Package.ps1 expecting `uses -> env:Temp` and `uses -> {env:ProgramFiles(x86)}`, with the analyzer publishing nothing for either.\n\nThis reverses part of an existing ruling, which is why it is pinned as a decision and not as a defect fix. PS8's own text is about declarations — \"a scope-qualified name (`$global:x`) is never a local declaration\" — and that still stands: `$env:FOO = 'x'` declares no symbol, which the fixture pins as a forbidSymbol. What changed is only that a READ is a dependency on something outside the file, of the same kind as a `calls -> Write-Host` target, which is equally unresolvable. The scope prefix is KEPT on the target so it can never collide with a project variable.\n\nNeeds owner confirmation: it is a change to a standing lane ruling, taken on the evidence of an independent oracle plus the reasoning, and recorded as a decision for that reason.",
+    transform: psDropRelType("uses", (x: any) => x.metadata?.isScopedEnvironmentRead === true),
+  },
+  {
+    id: "powershell/evidence-tier-downgraded",
+    language: "powershell",
+    defectClass: "misattribution",
+    description:
+      "PS-A4 REVERT: every relationship's EVIDENCE TIER is dropped, and `overrides` is relabelled `structural`. The tier is how the edge was derived, which is analyzer knowledge, and the one relationship in this lane that is genuinely INFERRED is `overrides` — PowerShell has no `override` keyword, so it is a name match between a subclass member and the base's declared member set. Calling it `structural` overstates the evidence, which is the whole reason a tier exists.\n\nEmitted centrally in `addRel` rather than per call site, so no call site can forget it, with the caller's metadata spread LAST so a call site may still override. The SPEC gate's section D requires two DISTINCT tiers pinned, so collapsing them all to one is caught there as well as here.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        ({ ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: x.metadata?.overridesMember ? "structural" : "usage_contextual" } })),
+    }),  },
 ]

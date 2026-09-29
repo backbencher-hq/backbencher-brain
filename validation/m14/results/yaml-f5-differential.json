@@ -1,0 +1,219 @@
+{
+ "gate": "M14.0.F5",
+ "lane": "yaml",
+ "at": "2026-09-28T21:55:22.776Z",
+ "issue": "M14.7-DataConfigDocs.yaml (#286)",
+ "method": "analyzer key tree (tree-sitter-yaml 0.7.1, concrete syntax, YAML 1.2 core schema) compared against an INDEPENDENT document-model oracle (PyYAML 6.0.1 compose, YAML 1.1). Only the key tree is compared, because that is the most both implementations can independently see; scalar type resolution differs BY DESIGN between a 1.1 and a 1.2 schema and is a known fact about YAML rather than a defect in either. Merge keys are not applied on either side (PyYAML's flatten_mapping runs in the constructor, which compose never reaches). Every disagreement is adjudicated into one of nine declared buckets; anything not explained by a bucket is reported as a defect.",
+ "samplingRule": "deterministic stride over each corpus's sorted file list, stride = floor(files/draw), so a head-slice's alphabetical bias cannot pick one subtree; 200 files per corpus",
+ "drawLimitPerCorpus": 200,
+ "bucketIndependence": {
+  "pathLevelAudited": "grammarLossProvenByOracle",
+  "verifiedSound": [
+   "documentModule"
+  ],
+  "convergedOnTheAnalyzer": [
+   "grammarContainmentLoss"
+  ],
+  "policyDifferences": [
+   "duplicateKeySuffix",
+   "anchorConstant",
+   "mergeAliasExpansion",
+   "scalarSequenceItem"
+  ],
+  "notChargedToTheAnalyzer": [
+   "analyzerDefect = 0",
+   "analyzerVsTree = 0"
+  ]
+ },
+ "oracle": {
+  "implementation": "PyYAML 6.0.1",
+  "api": "yaml.compose_all",
+  "mergeKeysApplied": false,
+  "files": 1074,
+  "parsed": 1004,
+  "unparsed": 70,
+  "paths": 357304,
+  "documents": 1114,
+  "duplicateKeys": 2,
+  "scalarItems": 28184,
+  "tags": 9,
+  "unparsedReasons": {
+   "empty-document": 42,
+   "ScannerError": 5,
+   "ParserError": 23
+  }
+ },
+ "analyzer": {
+  "filesCompared": 1004,
+  "keyTreePaths": 273745,
+  "symbols": 273745
+ },
+ "corpusPins": [
+  {
+   "corpus": "grails-core",
+   "pin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+   "available": 274,
+   "drawn": 200,
+   "stride": 1
+  },
+  {
+   "corpus": "docker",
+   "pin": "4359a27c23a6218a8a25b136ecfa580cfc48c366",
+   "available": 198,
+   "drawn": 198,
+   "stride": 1
+  },
+  {
+   "corpus": "ansible",
+   "pin": "7ec731bfd2dbfd7b5a11ac53bf32ad2a4bf57ed4",
+   "available": 2082,
+   "drawn": 200,
+   "stride": 10
+  },
+  {
+   "corpus": "kubernetes",
+   "pin": "dfd7b93a1783878be367e1fc4a780318330cb3bf",
+   "available": 6608,
+   "drawn": 200,
+   "stride": 33
+  },
+  {
+   "corpus": "terraform",
+   "pin": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+   "available": 26,
+   "drawn": 26,
+   "stride": 1
+  },
+  {
+   "corpus": "openapi-spec",
+   "pin": "447c479c9c7136918e80a57a258fd6c84f369c7c",
+   "available": 25,
+   "drawn": 25,
+   "stride": 1
+  },
+  {
+   "corpus": "helm",
+   "pin": "d31cd6992fc7858922de6ebe5984a06fd6aa0b80",
+   "available": 715,
+   "drawn": 200,
+   "stride": 3
+  },
+  {
+   "corpus": "gh-cli",
+   "pin": "9b031151a825bda919203c5202876a725d637368",
+   "available": 25,
+   "drawn": 25,
+   "stride": 1
+  }
+ ],
+ "coverageByGrammarHealth": {
+  "cleanFiles": {
+   "files": 989,
+   "oraclePaths": 240724,
+   "matched": 234673,
+   "unexplained": 0,
+   "coverage": 0.974863
+  },
+  "grammarErrorFiles": {
+   "oraclePaths": 116580,
+   "matched": 832,
+   "unexplained": 0,
+   "coverage": 0.007137,
+   "medianLines": 9124,
+   "fileList": [
+    "docker/api/docs/v1.25.yaml",
+    "docker/api/docs/v1.26.yaml",
+    "docker/api/docs/v1.27.yaml",
+    "docker/api/docs/v1.28.yaml",
+    "docker/api/docs/v1.29.yaml",
+    "docker/api/docs/v1.30.yaml",
+    "docker/api/docs/v1.31.yaml",
+    "docker/api/docs/v1.32.yaml",
+    "docker/api/docs/v1.33.yaml",
+    "docker/api/docs/v1.34.yaml",
+    "docker/api/docs/v1.35.yaml",
+    "docker/api/docs/v1.36.yaml",
+    "docker/api/docs/v1.37.yaml",
+    "docker/api/docs/v1.38.yaml",
+    "docker/vendor/github.com/google/certificate-transparency-go/cloudbuild.yaml"
+   ]
+  },
+  "note": "tree-sitter-yaml 0.7.1 cannot lex a MULTI-LINE DOUBLE-QUOTED SCALAR (a `description:` broken across a line break). CORRECTED 2026-09-28 by script/m60/yaml-bucket-audit.ts: an earlier version of this note said the trigger produces a 58-byte ERROR at the document root. The 58-byte node is real but NESTED (v1.28: bytes 79,218-79,276, line 2453, depth 4). The ROOT node itself is the ERROR, and it is large: measured over docker/api/docs/v1.25..v1.38 the root ERROR spans 72,809-110,341 bytes and the resulting tree covers only 27.6-31.1% of the file, so 69-72% of each file is NEVER PARSED. That is the actual mechanism of the loss — the parser stops, rather than one token eating containment — and it is why the analyzer publishes 1,991-2,637 key-tree paths where PyYAML finds 7,249-9,001. A path-level audit (yaml-bucket-audit.ts) attributes 88,675 lost paths across the 15 files with 0 that the grammar does not explain. Measured trigger: docker/api/docs/v1.25.yaml .. v1.38.yaml plus one Cloud Build file, all of which PyYAML parses cleanly. Filed against the GRAMMAR under the M60 fork policy and NOT charged to the analyzer; what the analyzer does about the damage it does receive is measured above."
+ },
+ "totals": {
+  "comparedFiles": 1004,
+  "documentsCompared": 1114,
+  "oracleUnparseable": 70,
+  "truthPaths": 357304,
+  "matched": 235505,
+  "buckets": {
+   "documentModule": 1099,
+   "oracleUnparseable": 70,
+   "grammarLossProvenByOracle": 121796,
+   "grammarContainmentLoss": 38240,
+   "duplicateKeySuffix": 2,
+   "anchorConstant": 2,
+   "mergeAliasExpansion": 3
+  },
+  "unexplained": 0,
+  "coverage": 0.659117,
+  "missing": 0,
+  "heuristicClass": 0
+ },
+ "examples": {
+  "documentModule": [
+   "grails-core/grails-core/.asf.yaml :: documentModule",
+   "grails-core/grails-core/.github/FUNDING.yml :: documentModule",
+   "grails-core/grails-core/.github/ISSUE_TEMPLATE/bug_report.yaml :: documentModule",
+   "grails-core/grails-core/.github/ISSUE_TEMPLATE/config.yml :: documentModule",
+   "grails-core/grails-core/.github/ISSUE_TEMPLATE/new_feature.yaml :: documentModule",
+   "grails-core/grails-core/.github/ISSUE_TEMPLATE/other.yaml :: documentModule",
+   "grails-core/grails-core/.github/dependabot.yml :: documentModule",
+   "grails-core/grails-core/.github/dependency-graph/external-references.yml :: documentModule"
+  ],
+  "oracleUnparseable": [
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/boot-run-pid-web/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/bootrun-console-ansi/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/fork-settings-custom/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/fork-settings-defaults/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/java-compat-no-toolchain/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-23/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-24/grails-app/conf/application.yml: empty-document",
+   "grails-core/grails-core/grails-gradle/plugins/src/test/resources/test-projects/java-compat-toolchain-current/grails-app/conf/application.yml: empty-document"
+  ],
+  "grammarLossProvenByOracle": [
+   "docker/docker/.github/actions/setup-windows-test-daemon/action.yml :: oracle-only action.runs.steps[0] (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/actions/setup-windows-test-daemon/action.yml :: oracle-only action.runs.steps[0].name (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/actions/setup-windows-test-daemon/action.yml :: oracle-only action.runs.steps[0].run (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/actions/setup-windows-test-daemon/action.yml :: oracle-only action.runs.steps[0].shell (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/workflows/.windows.yml :: oracle-only .windows.jobs.integration-test.steps[15] (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/workflows/.windows.yml :: oracle-only .windows.jobs.integration-test.steps[15].if (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/workflows/.windows.yml :: oracle-only .windows.jobs.integration-test.steps[15].name (absent from the AST; PyYAML parsed the file cleanly)",
+   "docker/docker/.github/workflows/.windows.yml :: oracle-only .windows.jobs.integration-test.steps[15].run (absent from the AST; PyYAML parsed the file cleanly)"
+  ],
+  "grammarContainmentLoss": [
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.type (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.x-go-name (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.title (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.description (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.required (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.properties (reproducible from the AST, absent from the oracle)",
+   "docker/docker/api/docs/v1.25.yaml :: analyzer-only v1.25.ImageHistoryResponseItem.properties.Id (reproducible from the AST, absent from the oracle)"
+  ],
+  "duplicateKeySuffix": [
+   "docker/docker/vendor/github.com/bits-and-blooms/bitset/.travis.yml :: duplicateKeySuffix",
+   "helm/helm/internal/plugin/testdata/plugdir/bad/duplicate-entries-v1/plugin.yaml :: duplicateKeySuffix"
+  ],
+  "anchorConstant": [
+   "ansible/ansible/lib/ansible/config/base.yml :: anchorConstant"
+  ],
+  "mergeAliasExpansion": [
+   "ansible/ansible/lib/ansible/config/base.yml :: oracle-only base.HOST_PATTERN_MISMATCH.choices.<<.error",
+   "ansible/ansible/lib/ansible/config/base.yml :: oracle-only base.HOST_PATTERN_MISMATCH.choices.<<.ignore",
+   "ansible/ansible/lib/ansible/config/base.yml :: oracle-only base.HOST_PATTERN_MISMATCH.choices.<<.warning"
+  ]
+ },
+ "pass": true,
+ "loadContext": "measured on a shared, loaded box; the differential compares SETS rather than timings, so wall-clock load does not affect the verdict"
+}

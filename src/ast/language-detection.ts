@@ -1,5 +1,5 @@
 export type DetectedLanguage =
-  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "json" | "yaml" | "graphql"
+  | "typescript" | "tsx" | "javascript" | "html" | "vue" | "svelte" | "css" | "scss" | "json" | "yaml" | "graphql"
   | "c" | "cpp" | "rust" | "go" | "zig" | "nim"
   | "java" | "kotlin" | "scala" | "groovy"
   | "python" | "ruby" | "php" | "lua" | "perl" | "elixir" | "erlang"
@@ -10,7 +10,14 @@ export type DetectedLanguage =
 
 export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
-  html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css", scss: "css", sass: "css", less: "css",
+  html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css",
+  // scss is its own language, not a css dialect. It was mapped to "css" here while
+  // the CSS grammar was the only wasm available, which is a decision made for lack of
+  // an alternative and then left in place after the alternative existed — the shape of
+  // claim that outlives the reason for it. `sass` and `less` still map to "css" and
+  // are DECLARED: 0 files of each across 13 corpora, so this table can neither support
+  // nor refute a claim about them.
+  scss: "scss", sass: "css", less: "css",
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig",

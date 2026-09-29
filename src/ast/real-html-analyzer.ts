@@ -848,9 +848,29 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (seen === undefined) {
               usedNames[handle] = 1
             } else {
+              // `usedNames[handle]` doubles as the WATERMARK: the highest suffix
+              // already allocated for this handle. Advancing it is what keeps this
+              // loop amortised O(1).
+              //
+              // It was pinned at 1 and never moved, so the k-th duplicate of an id
+              // re-probed suffixes 2..k from the start every time — O(n) per
+              // duplicate, O(n^2) over a file that reuses one id. Measured on a
+              // 4,000-element page: 912 ms with unique ids against 15,516 ms with
+              // the same id repeated, a 17x gap, and the whole-document figure was
+              // quadratic rather than the O(nodes + attribute bytes) this file
+              // documents. A generated page that stamps one id across thousands of
+              // elements is enough to hit it.
+              //
+              // The watermark is a lower bound, not an assumption: the loop still
+              // probes and skips any suffix that is genuinely occupied, because a
+              // document may DECLARE `d#2` as a literal id of its own. So the
+              // interleaving `id=d`, `id=d`, `id=d#2` still allocates `d`, `d#2`,
+              // `d#3`, `d#2#2` exactly as before — the optimisation is invisible in
+              // the output, which is the only acceptable way to make it.
               let n = seen
               do { n++; symbolName = `${handle}#${n}` } while (usedNames[symbolName] !== undefined)
               usedNames[symbolName] = 1
+              usedNames[handle] = n
             }
             if (handleToSymbol[handle] === undefined) {
               handleToSymbol[handle] = symbolName

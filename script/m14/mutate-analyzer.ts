@@ -20,6 +20,11 @@ import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
+import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
+import { YAML_MUTANTS } from "../m60/yaml-mutants"
+import { CSS_MUTANTS } from "../m60/css-mutants"
+import { SCSS_MUTANTS } from "../m60/scss-mutants"
+import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -190,6 +195,67 @@ function dropKotlinHeritageLines(r: any) {
       return rest
     }),
   }
+}
+
+/**
+ * #924 (M60 name surface): quoting syntax goes back to being part of a NAME.
+ *
+ * The pre-fix behavior of the whole class, on the kotlin row: `fun `in`(x: Int)` publishes
+ * `in` and `param.`in`(1)` calls `in`, because the published string is the grammar's own
+ * identifier token, which carries the quoting.
+ *
+ * Faithful by construction, not by hardcoding: the pre-fix spellings are RE-DERIVED from the
+ * file's own backtick runs, so the mutant stays valid on any fixture. And the rewrite is
+ * SEGMENT-wise, because a substring rewrite is wrong in both directions here — `in` occurs
+ * inside `insert` and inside `Parameters.in`, and only the second is a quoted identifier.
+ */
+function revertQuotedNameSurface(r: any, source?: string) {
+  const text = typeof source === "string" ? source : typeof r.rawContent === "string" ? r.rawContent : ""
+  const quoted = new Map<string, string>()
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "`") continue
+    const close = text.indexOf("`", i + 1)
+    if (close === -1) break
+    const bare = text.slice(i + 1, close)
+    if (bare) quoted.set(bare, text.slice(i, close + 1))
+    i = close
+  }
+  if (quoted.size === 0) return r
+  const requote = (v: unknown) => {
+    if (typeof v !== "string" || v === "") return v
+    let changed = false
+    const out = v
+      .split(/([^A-Za-z0-9_$]+)/)
+      .map((seg) => {
+        const q = quoted.get(seg)
+        if (!q) return seg
+        changed = true
+        return q
+      })
+      .join("")
+    return changed ? out : v
+  }
+  const symbols = (r.symbols ?? []).map((s: any) => {
+    const name = requote(s?.name)
+    if (name === s?.name) return s
+    return { ...s, name, id: requote(s?.id), ownerName: requote(s?.ownerName) }
+  })
+  const relationships = (r.relationships ?? []).map((x: any) => {
+    const tgt = requote(x?.target ?? x?.to ?? x?.toSymbol)
+    const src = requote(x?.source ?? x?.from ?? x?.fromSymbol)
+    const same =
+      tgt === (x?.target ?? x?.to ?? x?.toSymbol) && src === (x?.source ?? x?.from ?? x?.fromSymbol)
+    if (same) return x
+    const out: any = { ...x }
+    if (out.target !== undefined) out.target = tgt
+    if (out.to !== undefined) out.to = tgt
+    if (out.toSymbol !== undefined) out.toSymbol = tgt
+    if (out.source !== undefined) out.source = src
+    if (out.from !== undefined) out.from = src
+    if (out.fromSymbol !== undefined) out.fromSymbol = src
+    return out
+  })
+  return { ...r, symbols, relationships }
 }
 
 // M59 (#825), kotlin half: the NAIVE alternative the fixture forbids — every
@@ -1821,6 +1887,402 @@ export const MUTANTS: Mutant[] = [
       "Finding X8. The `xml` and `xmlns` prefixes are bound by the Namespaces specification ITSELF, in every document, and re-binding `xml` is an error — so a well-formed file CANNOT supply them. A resolver reading only declarations therefore never resolved `xml`, the reference pass found no namespace to test for built-inness, and REFUSED the edge: 71 references over 20 corpus files, including every xml:lang in docx4j's Dublin Core schemas. The knowledge was present and unreachable — BUILTIN_NAMESPACE_URIS already held the xml namespace, consulted only when a binding existed, for the one prefix guaranteed never to bring one. Reverted generically: every reference edge whose qname uses a prefix the spec binds implicitly is deleted. Pinned by xml/xsd-implicit-xml-prefix, which declares NO xmlns:xml on purpose — adding one would make the fixture pass against the broken analyzer, which is the trap it exists to catch — and which uses the prefix xs rather than xsd so a normalising fixture would fail rather than pass.",
     transform: (r) => ({
       ...r,
+
+      symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: n })),
+      metadata: { ...(r.metadata ?? {}), complexity: n },
+    }
+  }
+}
+function htmlCyclomaticConstant() {
+  return (r: any) => ({ ...r, metadata: { ...(r.metadata ?? {}), cyclomaticComplexity: 1 } })
+}
+function htmlScoresDropped() {
+  return (r: any) => {
+    const md: any = { ...(r.metadata ?? {}) }
+    delete md.accessibilityScore
+    delete md.semanticScore
+    delete md.performanceScore
+    delete md.score
+    return { ...r, metadata: md }
+  }
+}
+function htmlErrorWalkUncapped() {
+  return (r: any) => {
+    const errs = r.errors ?? []
+    if (errs.length === 0) return r
+    return { ...r, errors: [...errs, ...errs.map((e: any) => ({ ...e }))] }
+  }
+}
+function htmlFabricatedFramework() {
+  return (r: any) => {
+    const has = (r.symbols ?? []).some((s: any) => !s?.metadata?.isDocument)
+    if (!has) return r
+    const fw = [...((r.metadata as any)?.detectedFrameworks ?? []), "Targeted/ID-Styling"]
+    return { ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [...new Set(fw)] } }
+  }
+}
+function revertBashOwnerToGlobalSentinel(r: any) {
+  const symbols = (r.symbols ?? []) as any[]
+  const script = symbols.find((s) => s.kind === "module")
+  if (!script) return r
+  const moduleName = script.name
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.source === moduleName ? { ...x, source: "global" } : x,
+    ),
+    symbols: symbols.map((s) => (s.ownerName === moduleName ? { ...s, ownerName: undefined } : s)),
+  }
+}
+function dropBashModuleSymbol(r: any) {
+  return { ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module") }
+}
+function collapseBashEdgeIdentity(r: any) {
+  const seen = new Set<string>()
+  const out: any[] = []
+  for (const x of (r.relationships ?? []) as any[]) {
+    const key = `${x.source}\u0000${x.type}\u0000${x.target}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ ...x, line_number: undefined })
+  }
+  return { ...r, relationships: out }
+}
+function dropBashEdgeLines(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).map((x: any) => ({ ...x, line_number: undefined })) }
+}
+function revertBashContainsLineToDeclarationStart(r: any) {
+  const byName = new Map<string, number>()
+  for (const s of (r.symbols ?? []) as any[]) byName.set(`${s.ownerName ?? ""}|${s.name}`, s.range?.startLine)
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "contains") return x
+      const declStart = byName.get(`${x.source}|${x.target}`)
+      if (declStart === undefined) return x
+      const shift = typeof x.line_number === "number" ? x.line_number - declStart : 0
+      return { ...x, line_number: typeof x.line_number === "number" ? x.line_number - shift + (declStart - 1) : x.line_number }
+    }),
+  }
+}
+function revertBashTrapSignalAsSource(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).flatMap((x: any) => {
+      if (x.type !== "calls" || !(x.metadata ?? {}).viaTrap) return [x]
+      const signal = (x.metadata.signals ?? ["EXIT"])[0]
+      return [{ ...x, source: signal, metadata: {} }]
+    }),
+  }
+}
+function revertBashTrapTargetToBlob(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "calls" && (x.metadata ?? {}).viaTrap ? { ...x, target: `${x.target} "WARN" interrupted` } : x,
+    ),
+  }
+}
+function fabricateBashDynamicCommandCalls(r: any) {
+  const fabricated: any[] = []
+  for (const x of (r.relationships ?? []) as any[]) {
+    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
+    const usesLine = x.line_number
+    fabricated.push({ type: "calls", source: x.source, target: `"$${x.target}"`, confidence: 1, line_number: usesLine, metadata: { isFunctionCall: true, isExternalCommand: true } })
+  }
+  return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+}
+function fabricateBashRecoveredRegionCalls(r: any) {
+  const rels = r.relationships ?? []
+  const extra: any[] = []
+  for (const x of rels as any[]) {
+    if (x.type !== "uses") continue
+    if (typeof x.line_number !== "number") continue
+    extra.push({ type: "calls", source: x.source, target: "]/%5D}", confidence: 1, line_number: x.line_number, metadata: { isFunctionCall: true, isExternalCommand: true } })
+  }
+  return { ...r, relationships: [...rels, ...extra] }
+}
+function fabricateBashUnsetEdges(r: any) {
+  const rels = r.relationships ?? []
+  const extra: any[] = []
+  const names = ((r.metadata ?? {}).patterns ?? []).includes("Unset Binding")
+    ? []
+    : []
+  void names
+  for (const x of rels as any[]) {
+    if (x.type !== "uses" || !(x.metadata ?? {}).isVariableReference) continue
+    if (typeof x.line_number !== "number") continue
+    extra.push({ type: "uses", source: x.source, target: x.target, confidence: 0.8, line_number: x.line_number + 1, metadata: { isVariableReference: true } })
+  }
+  return extra.length ? { ...r, relationships: [...rels, ...extra] } : r
+}
+function dropBashExportEdges(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports") }
+}
+function fabricateBashReadonlyExports(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "contains" && (x.metadata ?? {}).bashSpecific
+        ? { ...x, type: "exports" }
+        : x,
+    ),
+  }
+}
+function suppressBashCaseArmCalls(r: any) {
+  return { ...r, relationships: (r.relationships ?? []).filter((x: any) => x.type !== "calls" || x.target !== "apt-get") }
+}
+function dropBashSourceResolutionLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "imports" && x.type !== "references") return x
+      const { resolution, ...meta } = (x.metadata ?? {}) as any
+      void resolution
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+function dropBashDynamicSourceEdges(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (x.type !== "imports" && x.type !== "references") return true
+      return (x.metadata ?? {}).resolution !== "dynamic"
+    }),
+    imports: (r.imports ?? []).filter((i: any) => (i.metadata ?? {}).resolution !== "dynamic"),
+  }
+}
+function markBashEveryCallBothIdentities(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.type === "calls" ? { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: true, isExternalCommand: true } } : x,
+    ),
+  }
+}
+function markBashForwardReferencesExternal(r: any) {
+  const declared: string[] = []
+  for (const s of (r.symbols ?? []) as any[]) {
+    if (s.kind === "function") declared.push(s.name)
+    if (s.kind === "module") continue
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "calls") return x
+      const sym = (r.symbols ?? []).find((s: any) => s.name === x.target)
+      if (!sym || typeof sym.range?.startLine !== "number" || typeof x.line_number !== "number") return x
+      if (sym.range.startLine <= x.line_number) return x
+      return { ...x, metadata: { ...(x.metadata ?? {}), isFunctionCall: false, isExternalCommand: true, resolvedWithinFile: false } }
+    }),
+    __unused: declared,
+  }
+}
+function dropBashArithmeticReads(r: any) {
+  const declared = new Set(((r.symbols ?? []) as any[]).filter((s) => s.kind === "variable" || s.kind === "constant").map((s) => s.name))
+  const exprLines = new Map<string, Set<number>>()
+  for (const x of (r.relationships ?? []) as any[]) {
+    if (x.type !== "uses" || !declared.has(x.target)) continue
+    if (typeof x.line_number !== "number") continue
+    const set = exprLines.get(x.target) ?? new Set<number>()
+    set.add(x.line_number)
+    exprLines.set(x.target, set)
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      if (x.type !== "uses") return true
+      const lines = exprLines.get(x.target)
+      if (!lines || lines.size < 2) return true
+      return lines.size < 2
+    }),
+  }
+}
+function revertBashIsArrayAlwaysFalse(r: any) {
+  return {
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) =>
+      (s.metadata ?? {}).isArray === true ? { ...s, metadata: { ...s.metadata, isArray: false } } : s,
+    ),
+  }
+}
+function dropBashShellDefinedLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "uses") return x
+      const { isShellDefined, ...meta } = (x.metadata ?? {}) as any
+      void isShellDefined
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+function dropBashAssignedInFileLabel(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (x.type !== "uses") return x
+      const { isAssignedInFile, ...meta } = (x.metadata ?? {}) as any
+      void isAssignedInFile
+      return { ...x, metadata: meta }
+    }),
+  }
+}
+const stripJsonLines = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => { const { line_number, ...rest } = x; void line_number; return rest }),
+})
+const dropJsonImports = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "imports"),
+})
+const jsonRefTargetIsName = (r: any) => {
+  const pathToName = new Map<string, string>()
+  for (const s of r.symbols ?? []) {
+    const q = String(s.qualifiedName ?? "")
+    if (q) pathToName.set(q, String(s.name))
+  }
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) => {
+      if (String(x.type ?? "").toLowerCase() !== "references") return x
+      const name = pathToName.get(String(x.target))
+      return name ? { ...x, target: name } : x
+    }),
+  }
+}
+const jsonOwnerIsPath = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    String(x.type ?? "").toLowerCase() === "contains" && String(x.source).includes(".")
+      ? { ...x, source: String(x.source).split(".").slice(0, -1).join(".") }
+      : x,
+  ),
+})
+const jsonArrayItemByPathSegment = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) =>
+    String(x.type ?? "").toLowerCase() === "contains" && /\[\d+\]$/.test(String(x.target))
+      ? { ...x, target: String(x.target).split(".").slice(-1)[0] }
+      : x,
+  ),
+})
+const jsonArrayChildOwnerIsArray = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).map((x: any) => {
+    if (String(x.type ?? "").toLowerCase() !== "contains") return x
+    const src = String(x.source)
+    return /\[\d+\]$/.test(src) ? { ...x, source: src.split("[")[0] } : x
+  }),
+})
+function dropBashOverridesEdge(r: any) {
+  return {
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "overrides"),
+  }
+}
+function orphanBashEdgeSource(r: any) {
+  return {
+    ...r,
+    relationships: [
+      ...(r.relationships ?? []),
+      { type: "calls", source: "global", target: "echo", confidence: 1, line_number: 1, metadata: {} },
+    ],
+  }
+}
+function htmlEmbeddedLineShiftDropped() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).map((s: any) => {
+      if (!s?.metadata?.htmlEmbedded) return s
+      const off = s.metadata.embeddedLineOffset
+      if (typeof off !== "number" || !s.range) return s
+      return { ...s, range: { ...s.range, startLine: s.range.startLine - off, endLine: s.range.endLine - off } }
+    }),
+    relationships: (r.relationships ?? []).map((x: any) => {
+      const off = x?.metadata?.htmlEmbeddedLineOffset ?? x?.metadata?.embeddedLineOffset
+      if (typeof x?.line_number !== "number" || typeof off !== "number") return x
+      return { ...x, line_number: x.line_number - off }
+    }),
+  })
+}
+function htmlEmbeddedBlocksDropped() {
+  return (r: any) => ({
+    ...r,
+    symbols: (r.symbols ?? []).filter((s: any) => !s?.metadata?.htmlEmbedded),
+    relationships: (r.relationships ?? []).filter((x: any) => !x?.metadata?.htmlEmbedded && !x?.metadata?.isEmbeddedCode),
+    imports: (r.imports ?? []).filter((i: any) => !i?.metadata?.htmlEmbedded),
+  })
+}
+function htmlEmbeddedSyntheticModule() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (!x?.metadata?.htmlEmbedded) return x
+        if (x.type === "contains") return x
+        return { ...x, from: "embedded", source: "embedded", fromSymbol: "embedded" }
+      }),
+    }
+  }
+}
+function htmlBareHashEmitted() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.metadata?.isDocument)
+    if (!mod) return r
+    return {
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { source: mod.name, target: "#", type: "uses", confidence: 0.9, metadata: { htmlSpecific: true, resourceType: "navigation", isNavigation: true, evidenceClass: "usage_contextual" } },
+      ],
+    }
+  }
+}
+function htmlMetaRefreshDropped() {
+  return (r: any) => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => x.metadata?.resourceType !== "meta-refresh") })
+}
+function htmlPingListCollapsed() {
+  return (r: any) => {
+    const rels = r.relationships ?? []
+    const pings: any[] = []
+    const rest: any[] = []
+    for (const x of rels) (x.metadata?.resourceType === "ping" ? pings : rest).push(x)
+    if (pings.length < 2) return r
+    rest.push({ ...pings[0], target: pings.map((p: any) => p.target).join(" ") })
+    return { ...r, relationships: rest }
+  }
+}
+function htmlSvgCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((x: any) => {
+      const t = x.metadata?.resourceType
+      return t !== "svg-script" && t !== "svg-filter-image"
+    }),
+  })
+}
+function htmlCitationTierInflated() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).map((x: any) =>
+      x.metadata?.resourceType === "citation" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "import_based" } } : x),
+  })
+}
+function htmlRecoveryStopsTheWalk() {
+  return (r: any) => {
+    const cut = (r.errors ?? [])[0]?.range?.startIndex
+    if (typeof cut !== "number") return r
+    const keep = (x: any) => {
+      const at = x?.range?.startIndex ?? x?.line_number
+      return typeof at !== "number" || at < cut
+    }
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => keep(s)),
       relationships: (r.relationships ?? []).filter((x: any) => {
         if (x.type !== "references") return true
         const q = String(x.metadata?.qname ?? "")
@@ -1828,6 +2290,207 @@ export const MUTANTS: Mutant[] = [
         return !/^(xml|xmlns):/.test(q)
       }),
     }),
+      imports: (r.imports ?? []).filter(keep),
+    }
+  }
+}
+function tomlNameLosesItsPath() {
+  return (r: any) => {
+    const relabel = (s: any) => {
+      const n = String(s.name ?? "")
+      const dot = n.lastIndexOf(".")
+      return dot > 0 ? { ...s, name: n.slice(dot + 1) } : s
+    }
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x,
+        source: m.get(x.source) ?? x.source,
+        target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+function tomlQuotedSegmentLosesQuotes() {
+  return (r: any) => {
+    const relabel = (s: any) => ({ ...s, name: String(s.name ?? "").split('"').join("") })
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x, source: m.get(x.source) ?? x.source, target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+function tomlModuleYieldsItsName() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "namespace" && String(s.name ?? "").startsWith(`${mod.name}#`)
+          ? { ...s, name: String(s.name).replace(`#2`, "") }
+          : s),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x,
+        source: String(x.source ?? "").replace(`${mod.name}#2`, mod.name),
+        target: String(x.target ?? "").replace(`${mod.name}#2`, mod.name),
+      })),
+    }
+  }
+}
+function tomlImpliedParentsMaterialised() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const implied = s?.metadata?.impliedParents
+      if (!Array.isArray(implied)) continue
+      for (const p of implied) {
+        extra.push({ name: String(p), kind: "namespace", range: s.range, scope: "", visibility: "public", ownerName: s.ownerName, metadata: { tomlSpecific: true, isFabricatedImpliedParent: true } })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+function tomlInlineKeysBecomeSymbols() {
+  return (r: any) => {
+    const extra: any[] = []
+    for (const s of r.symbols ?? []) {
+      const keys = s?.metadata?.inlineKeys
+      if (!Array.isArray(keys)) continue
+      for (const k of keys) {
+        extra.push({ name: `${s.name}.${k}`, kind: "property", range: s.range, scope: "", visibility: "public", ownerName: s.name, metadata: { tomlSpecific: true, isInlineTableKey: true } })
+      }
+    }
+    if (extra.length === 0) return r
+    return { ...r, symbols: [...(r.symbols ?? []), ...extra] }
+  }
+}
+function tomlQuotesOnlyPunctuation() {
+  return (r: any) => {
+    const bare = (n: string) => n.length > 0 && !n.includes(".") && !n.includes('"') && !n.includes("\\")
+    const relabel = (s: any) => ({ ...s, name: String(s.name ?? "").split(".").filter((p) => bare(p)).join(".") })
+    const m = new Map<string, string>()
+    for (const s of r.symbols ?? []) m.set(s.name, relabel(s).name)
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).map(relabel),
+      relationships: (r.relationships ?? []).map((x: any) => ({
+        ...x, source: m.get(x.source) ?? x.source, target: m.get(x.target) ?? x.target,
+      })),
+    }
+  }
+}
+function tomlOwnerLookupUsesRawSegments() {
+  return (r: any) => {
+    const syms = r.symbols ?? []
+    const mod = syms.find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    const tableNames = new Set(syms.filter((s: any) => s?.kind === "namespace").map((s: any) => String(s.name)))
+    const missed = (s: any): string | null => {
+      const implied = s?.metadata?.impliedParents
+      if (!Array.isArray(implied) || implied.length === 0) return null
+      const name = String(s.name)
+      const listed = new Set(implied.map((x: any) => String(x)))
+      let best: string | null = null
+      for (const t of tableNames) {
+        if (t === name) continue
+        if (!name.startsWith(`${t}.`)) continue
+        if (listed.has(t)) continue
+        if (best === null || t.length > best.length) best = t
+      }
+      return best
+    }
+    const byTarget = new Map<string, any>()
+    for (const s of syms) {
+      const m = missed(s)
+      if (m !== null) byTarget.set(String(s.name), m)
+    }
+    if (byTarget.size === 0) return r
+    return {
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const owner = byTarget.get(String(x.target))
+        return owner !== undefined && x.source === owner ? { ...x, source: mod.name } : x
+    }
+  }
+}
+function tomlErrorNodeBecomesSymbol() {
+  return (r: any) => {
+    const mod = (r.symbols ?? []).find((s: any) => s?.kind === "module")
+    if (!mod) return r
+    const errs = (r.errors ?? []).filter((e: any) => typeof e?.range?.startLine === "number")
+    if (errs.length === 0) return r
+    return {
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...errs.map((e: any) => ({
+          name: "ERROR",
+          kind: "class",
+          range: { startLine: e.range.startLine, startColumn: e.range.startColumn, endLine: e.range.endLine, endColumn: e.range.endColumn, startIndex: 0, endIndex: 0 },
+          scope: "",
+          visibility: "public",
+          ownerName: mod.name,
+          ownerKind: "module",
+          metadata: { tomlSpecific: true, isRecoveryNode: true },
+        })),
+      ],
+    }
+  }
+}
+function svelteRecoveryStopsWalk() {
+  return (r: any) => {
+    const errs = (r.errors ?? []).filter((e: any) => typeof e?.range?.startLine === "number")
+    if (errs.length === 0) return r
+    const first = Math.min(...errs.map((e: any) => e.range.startLine))
+    const lineOf = (x: any): number | undefined =>
+      typeof x?.range?.startLine === "number" ? x.range.startLine : typeof x?.line_number === "number" ? x.line_number : undefined
+    return {
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => lineOf(s) === undefined || lineOf(s)! < first),
+      relationships: (r.relationships ?? []).filter((e: any) => lineOf(e) === undefined || lineOf(e)! < first),
+    }
+  }
+}
+function svelteRuneInvocationDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (e: any) => !(e.type === "calls" && typeof e?.metadata?.runeCallee === "string"),
+    ),
+  })
+}
+function svelteMemberReadCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter((e: any) => {
+      return !(e.type === "uses" && e?.metadata?.carrierDirective === true)
+  })
+}
+function svelteInvokedCarriersDropped() {
+  return (r: any) => ({
+    ...r,
+    relationships: (r.relationships ?? []).filter(
+      (e: any) => !(e.type === "calls" && /Svelte (use|transition|in|out|animate) directive/.test(String(e?.metadata?.context ?? ""))),
+    ),
+  })
+}
+export const MUTANTS: Mutant[] = [
+  {
+    id: "bash/owner-sentinel-global",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "BD2 regression: top-level edges are owned by the literal string `global` again, which isIndexArtifactName rejects as a symbol name — the exact shape that made 622 of 1432 pre-wave edges unresolvable (module-owner-bd2)",
+    transform: revertBashOwnerToGlobalSentinel,
   },
   {
     id: "xml/external-reference-dropped",
@@ -2157,6 +2820,65 @@ export const MUTANTS: Mutant[] = [
         relationships: (r.relationships ?? []).filter((x: any) => x.source !== root.name),
       }
     },
+    id: "bash/shell-defined-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-shell-defined-vars regression: a read of a shell-defined name is no longer labelled, so 23 BASH_SOURCE edges look like reads of undeclared project variables again (shell-defined-vars)",
+    transform: dropBashShellDefinedLabel,
+  {
+    id: "bash/assigned-in-file-label-dropped",
+    language: "bash",
+    defectClass: "dishonest-metadata",
+    description: "BD-assigned-in-file regression: a read the file DOES assign is no longer labelled, so 14,551 of 19,417 uses edges across the corpus stop distinguishing a project variable from an environment-supplied name (assigned-in-file)",
+    transform: dropBashAssignedInFileLabel,
+  {
+    id: "bash/overrides-edge-dropped",
+    language: "bash",
+    defectClass: "missing-relationship-type",
+    description: "BD8b regression: a function redefinition no longer emits `overrides`, restoring the omission the ontology-coverage gate falsified — two unconnected `contains` rows for one name, and `overrides` back to zero across the ontology (redefinition-overrides)",
+    transform: dropBashOverridesEdge,
+  {
+    id: "json/edge-lines-dropped",
+    language: "json",
+    defectClass: "dishonest-payload",
+    description: "the original state: `line_number` occurred ZERO times in the analyzer, so every json edge was stored with a NULL line while symbols carried `range` throughout (json-contract)",
+    transform: stripJsonLines,
+  {
+    id: "json/imports-dropped",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description: "BD-ontology regression: a `$ref` naming another file stops emitting `imports`, restoring the omission the ontology gate falsified — 58 file-to-file $refs across 12 files (json-contract)",
+    transform: dropJsonImports,
+  {
+    id: "json/ref-target-is-name",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-ref-target regression: a `$ref` resolves to the bare NAME at that location rather than the LOCATION, which disagrees with the analyzer on 91% of every references edge in the corpus (json-contract)",
+    transform: jsonRefTargetIsName,
+  {
+    id: "json/contains-source-is-path",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-owner regression: a nested key's owner is its qualified PATH again, so its `contains` edges resolve to nothing — invisible at the top level, which is why it survived a whole wave (json-contract)",
+    transform: jsonOwnerIsPath,
+  {
+    id: "json/array-item-by-path-segment",
+    language: "json",
+    defectClass: "unresolvable-identity",
+    description: "BD-array-identity regression: an array item is named by the PATH's last dot-segment, so any dotted module name truncates — `index.svelte.warnings.json` gave owners of `warnings` (json-contract)",
+    transform: jsonArrayItemByPathSegment,
+  {
+    id: "json/array-child-owner-is-array",
+    language: "json",
+    defectClass: "dishonest-identity",
+    description: "BD-array-identity regression: an element's own keys are attributed to the ARRAY rather than to the element, so `a` reads as inside `objs` when it is inside `objs[0]` (json-contract)",
+    transform: jsonArrayChildOwnerIsArray,
+  {
+    id: "bash/orphan-edge-source",
+    language: "bash",
+    defectClass: "unresolvable-identity",
+    description: "an edge is emitted whose source is not a symbol in the file — the class BD2 removed and the one every bash fixture's universal forbid set convicts",
+    transform: orphanBashEdgeSource,
   },
   {
     id: "clojure/emit-quote-forms",
@@ -4928,6 +5650,14 @@ export const MUTANTS: Mutant[] = [
     transform: dropNonComponentPhantomContainment,
   },
   {
+    id: "kotlin/quoted-name-surface-revert",
+    language: "kotlin",
+    defectClass: "name-surface",
+    description:
+      "#924 (M60, the kotlin row of the name-surface class) regression: the quoting syntax goes back to being part of the NAME — `fun `in`(x: Int)` publishes `in` instead of `in`, `param.`in`(1)` calls `in`, and the declaration's `contains` target carries the backticks again. Faithful by construction: the pre-fix spellings are re-derived from the fixture's own backtick runs, and only whole identifier SEGMENTS are rewritten, so `Parameters.`in`` is restored while an unrelated `insert` is not. Caught by kotlin/quoted-name-surface-924, whose forbidSymbols name all three quoted spellings and whose `targetEndsWith: \"`\"` pins cover the containment, call, read and reference surfaces as a CLASS rather than as a sample. NOTE what this mutant cannot catch, stated because the lane shipped it: the repair's ORACLE half was dead (the strip call sat inside a `//` comment) and every fixture in the suite stayed green — a fixture reads the analyzer, and the analyzer was the correct side. That state is caught by F9-PROBE-KT-QUOTED-NAME-924-ORACLE (script/m14/verify-probe-battery.ts), the only instrument that asserts the oracle's spelling directly.",
+    transform: revertQuotedNameSurface,
+  },
+  {
     id: "scala/anon-member-initializer-call-loss",
     language: "scala",
     defectClass: "edge-absence",
@@ -6677,6 +7407,34 @@ export const MUTANTS: Mutant[] = [
       }))
       return { ...r, relationships: [...rels, ...extra] }
     },
+  },
+  {
+    id: "svelte/recovery-stops-walk",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "ERROR RECOVERY: the walk STOPS at the first recovery node. Nothing counts symbols-per-file against a floor, so a silently half-analysed document reads as analysed — and the module symbol spans the whole root, so a truncated document still has an identity and every visible count stays plausible. Svelte makes it sharper than html: an unclosed `{#if}` does not clip the damage to the broken line, the parser's ERROR span swallows the REST OF THE FILE, so the tail is valid markup inside the error region. Measured on the real corpus, 2.44% of files carry recovery nodes, and when one does what follows is usually good content — a stopping walk discards the majority of a damaged document. Modelled by dropping every relationship and symbol at or after the FIRST reported error, reading the analyzer's own diagnostic rather than the engine's so the mutated result still looks correctly reported. Caught by svelte/error-recovery, whose `Beta` at L12 and `uses shared` at L12 sit after the error and inside its span.",
+    transform: svelteRecoveryStopsWalk(),
+  },
+  {
+    id: "svelte/member-read-carriers-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D12 obligation 1 of 2: the MEMBER-READ carriers are dropped. `bind:`, `class:` and `style:` each read a component member in the template, which is the S1 case, and every one was silent before the ruling — roughly 1,857 corpus occurrences including `bind:value` at 581, the most common attribute interaction in the corpus. Removing them drops the component's primary data-flow surface while the document still looks analysed. Selective on the `carrierDirective` provenance flag rather than on a blanket `uses` filter: a blanket drop is caught by a dozen unrelated fixtures and would prove nothing about D12, and the first version of this mutant used a `metadata.context` marker that only the CALL edges carry, so it SURVIVED. Caught by svelte/directive-carriers.",
+    transform: svelteMemberReadCarriersDropped(),
+  },
+  {
+    id: "svelte/invoked-carriers-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D12 obligation 2 of 2: the FRAMEWORK-INVOKED carriers are dropped. `use:`, `transition:`, `in:`, `out:` and `animate:` are call sites on exactly the argument that made `on:click` one under D8 — Svelte calls an action on mount and a transition on state change by the same mechanism. Their silence was an internal inconsistency rather than a position, and the mutant restores it. Selective by metadata marker so the `on:` handler edges survive and a failure is attributable to this family rather than to the D8 pass. Caught by svelte/directive-carriers.",
+    transform: svelteInvokedCarriersDropped(),
+  },
+  {
+    id: "svelte/rune-invocation-dropped",
+    language: "svelte",
+    defectClass: "underclaim",
+    description: "D7: rune invocations are dropped. A named function handed to a rune that INVOKES its argument ($effect, $effect.pre, $effect.root, $effect.untracked, $derived.by, $host) is a call site, so a component that runs `fn` on every effect tick must say so in its graph — before the ruling these six forms emitted nothing, because the delegate suppresses the rune and the argument is an ordinary identifier no edge was made for. Selective rather than blanket: a blanket 'drop every calls edge' would be caught by any fixture and would prove nothing about D7. Only edges carrying the rune-pass marker are removed, so the js-delegate call inside `$effect(inlineCall())` and the D8 template-handler call both survive, which is what makes a failure attributable to the ruling rather than to the delegate. Caught by svelte/rune-invocations.",
+    transform: svelteRuneInvocationDropped(),
   },
   {
     id: "svelte/render-first-segment-calls",
@@ -11689,6 +12447,261 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+
+    id: "typescript/class-expression-members-drop",
+    language: "typescript",
+    defectClass: "symbol-loss",
+    description: "R1 regression, the half that is computable from the analyzer RESULT: a member whose container names no DECLARATION is not extracted again — `const Named = class Inner { usesHelper() {} }` loses both the member symbol and its payload. class-expression-members kills it on the usesHelper/Inner ownerName pins. The other half of the defect (the variable path not descending into a class VALUE, which also lost the members of an ANONYMOUS class expression and of a class expression assigned by assignment) is NOT reproducible here: the container's kind is not recoverable from a ParseResult, so those members are indistinguishable from object-literal members after the fact — the FIXTURE carries them via expectSymbols on m@Anon and m@Assigned instead.",
+    transform: r => {
+      const contained = new Set(((r as any).relationships ?? [])
+        .filter((x: any) => String(x.type) === "contains")
+        .map((x: any) => `${x.source}\u0000${x.target}`))
+      return { ...r, symbols: ((r as any).symbols ?? []).filter((s: any) => {
+        if (String(s.kind) !== "method") return true
+        if (!s.ownerName) return true // ownerless members are a separate, pre-existing shape
+        if (contained.has(`${s.ownerName}\u0000${s.name}`)) return true
+        return ((r as any).symbols ?? []).some((o: any) => ["class", "interface", "enum"].includes(String(o.kind)) && o.name === s.ownerName)
+      }) }
+    },
+  },
+  {
+    id: "typescript/extends-override-drop",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description: "M1 regression: restores the implements-only structural override arm — a class EXTENDING an in-file base emits no overrides unless the member carries the optional `override` keyword, so the majority shape (class Sub extends Base { run(){} }) loses the edge the oracle derives as truth; class-extends-overrides pins Sub.run/SubKeyword.run/SubTransitive.run",
+    transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
+  },
+  {
+    id: "typescript/parameter-shadow-reference",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R12 regression: a parameter stops shadowing a same-named file-level symbol, so the reference pass resolves the body read to the wrong declaration. With `interface Deps { root: string }` in the file, `function f(root: string) { return root }` publishes `f->root` again \u2014 the graph recording a function as referencing an interface property it never touches, purely because its own parameter had that name. The pass resolves by NAME, and it already suppressed locally-bound names through `locals` (destructuring patterns and local declarators); a parameter was simply missing, and the fix belongs at the references guard rather than in `locals` because `locals` also gates the `uses` edge, where an edge to a parameter is wanted (interp-uses pins `greet -> name`). The transform re-adds a `references` edge from every symbol to any of its own parameter names that also exists as a file-level symbol \u2014 the exact pre-fix shape. parameter-shadows-file-symbol kills it, and its positive pins (`usesConst -> root`, `callsHelper -> helper`, `annotates -> Deps`) are what stop a fix that over-suppresses from passing.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const names = new Set(symbols.map((s: any) => s.name))
+      const extra: any[] = []
+      const seen = new Set(rels.filter((x: any) => String(x.type) === "references").map((x: any) => `${x.source}|${x.target}`))
+      const word = (raw: string): string[] => {
+        const out: string[] = []
+        let tok = ""
+        for (let i = 0; i <= raw.length; i++) {
+          const ch = raw[i] ?? ""
+          const ok = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+          if (ok) tok += ch
+          else { if (tok) out.push(tok); tok = "" }
+        }
+        return out
+      }
+      for (const s of symbols) {
+        for (const prm of s.parameters ?? []) {
+          const raw = typeof prm === "string" ? prm : ((prm as any)?.name ?? "")
+          for (const nm of word(String(raw))) {
+            if (nm === s.name) continue
+            if (!names.has(nm)) continue
+            const k = `${s.name}|${nm}`
+            if (seen.has(k)) continue
+            seen.add(k)
+            extra.push({ source: s.name, target: nm, type: "references", confidence: 1.0, metadata: {} })
+          }
+        }
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
+  },
+  {
+    id: "typescript/commonjs-require-not-a-dependency",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "R11 regression: CommonJS `require()` stops being a module dependency, and the module loader starts being published as a call instead \u2014 the two halves of the same construct, which is why the twin skips the bare `require` callee while still recording the dependency. The transform drops every `imports` edge carrying `meta.isRequire` and re-publishes each as a `calls` edge to a function named `require`, which is what the analyzer did before the port. It covers all four require spellings at once \u2014 the plain call, a destructuring binding, a bare-identifier binding, and TypeScript's `import m = require(\"m\")` whose path lives in an `import_require_clause` rather than the statement's `source` field \u2014 because the last one is the shape most likely to regress silently: reading only the `source` field skips it with no error. `imports` is the second-largest edge class in this lane (2,692 edges over 600 tracked files) so a silently missing dependency is a hole in impact analysis. commonjs-require-module-graph kills it, including the exact-count pins that separate a legitimate member call named `require` from a spurious one.",
+    transform: (r: any) => {
+      const rels = ((r as any).relationships ?? []) as any[]
+      const dropped = rels.filter((x: any) => String(x.type) === "imports" && (x.metadata ?? {}).isRequire === true)
+      if (dropped.length === 0) return r
+      const kept = rels.filter((x: any) => !dropped.includes(x))
+      const spurious = dropped.map((x: any) => ({
+        source: x.source,
+        target: "require",
+        type: "calls",
+        confidence: 1.0,
+        metadata: {},
+      }))
+      return { ...r, relationships: [...kept, ...spurious] }
+    },
+  },
+  {
+    id: "typescript/declaration-in-body-inherits-owner",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R10 regression: a declaration inside a function body inherits the enclosing class or namespace as its owner again, so `contains Report->helper` \u2014 the graph claims the class has a member that belongs to a closure inside one of its methods. Two causes, both restored by re-attributing every ownerless declaration to the file's containers: the eager scope pop in extractClass/extractInterface/extractEnum, and `getOwnerInfo()` being asked about lexical nesting that an accumulating resource stack cannot answer. The transform adds a containment edge from every container to every ownerless function/type/interface symbol, which is the observable shape of the pre-fix output; the lane's new independent contains oracle is the instrument that found it (8 false edges over 200 files of an external corpus). declaration-in-body-is-local kills it on the forbidRelationships pins, and its positives \u2014 three ordered members, and a body-local type alias still containing its own members \u2014 are what stop a fix that simply suppressed ownership from passing.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const containers = symbols.filter((s: any) => ["class", "interface", "namespace", "enum"].includes(String(s.kind)))
+      if (containers.length === 0) return r
+      const orphanDecls = symbols.filter(
+        (s: any) => !s.ownerName && ["function", "type", "interface", "method"].includes(String(s.kind)),
+      )
+      if (orphanDecls.length === 0) return r
+      const extra: any[] = []
+      const seen = new Set(rels.map((x: any) => `${x.type}|${x.source}|${x.target}`))
+      for (const c of containers) {
+        for (const o of orphanDecls) {
+          const k = `contains|${c.name}|${o.name}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          extra.push({ source: c.name, target: o.name, type: "contains", confidence: 1.0, metadata: {} })
+        }
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
+  },
+  {
+    id: "typescript/ambient-signature-drop",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "R8 regression: bodyless function DECLARATIONS stop emitting. `declare function f(): T` parses to `function_signature`, not `function_declaration`, and the pre-fix analyzer had no reference to that node type at all \u2014 while the spec listed it as handled_verified and the coverage gate was satisfied by a fixture that merely PARSED one. Every exported function in a .d.ts was therefore invisible: no symbol, no call edge, no complexity, no api-contract row. The transform reproduces that by dropping every function symbol that is marked as an ambient declaration, and it also clears the flag itself, because pre-fix nothing could have set it (the `declare` keyword is not a child of the node; it sits on a wrapping ambient_declaration). ambient-function-signature kills it.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: ((r as any).symbols ?? [])
+        .filter((s: any) => !((s?.metadata ?? {}).isDeclare === true && String(s.kind) === "function"))
+        .map((s: any) => ((s?.metadata ?? {}).isDeclare ? { ...s, metadata: { ...s.metadata, isDeclare: false } } : s)),
+    }),
+  },
+  {
+    id: "typescript/accessor-pair-duplicate",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R7 regression: an object-literal get/set pair stops collapsing to one property. The fix keeps the LAST accessor of a pair; the defect emitted one symbol per accessor, and because containment emits one `contains` row per member symbol, the same edge appeared twice. This transform reconstructs that output by giving every object-literal PROPERTY member a second declaration \u2014 the observable shape of the pre-fix analyzer. It cannot read the AST, so it cannot know which properties were accessor pairs, and it therefore over-applies: the point is that object-literal-accessor-pair's exact-count pin (contains o->size equals 1) MUST fail, which is the only assertion in the suite that can fail on a duplicate at all, since expectSymbols is a >=1 match and passes happily with both symbols present.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const byName = new Map<string, any>()
+      for (const s of symbols) if (!byName.has(s.name)) byName.set(s.name, s)
+      const extraSymbols: any[] = []
+      const extraRels: any[] = []
+      for (const s of symbols) {
+        if (String(s.kind) !== "property" || !s.ownerName) continue
+        const owner = byName.get(s.ownerName)
+        if (!owner || !["constant", "variable", "parameter"].includes(String(owner.kind))) continue
+        extraSymbols.push({ ...s, id: `${s.id}-dup` })
+        extraRels.push({ source: s.ownerName, target: s.name, type: "contains", confidence: 1.0, metadata: {} })
+      }
+      return extraSymbols.length > 0 ? { ...r, symbols: [...symbols, ...extraSymbols], relationships: [...rels, ...extraRels] } : r
+    },
+  },
+  {
+    id: "typescript/require-form-signal-drop",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "Restores the pre-fix signal scan, which read child_process only off an import_statement or an `import ... = require(...)` clause. A CommonJS `require(\"child_process\")` — a CALL, not an import — no longer arms the rule, so a bare exec-family call in such a file loses its command_injection sink and no flow into it can be reported: the false NEGATIVE direction, which costs a real vulnerability rather than adding noise. taint-sink-require-child-process kills it (a bare execFileSync whose only evidence is the require form). The transform is the exact inverse of the fix: a bare exec-family sink is kept when the file's import list already proves child_process, and stripped when the ONLY evidence was the call.",
+    transform: (r: any) => {
+      const mods = ((r as any).imports ?? []).map((i: any) => ({
+        module: String(i.module ?? i.path ?? ""),
+        viaRequire: (i.metadata ?? {}).type === "require",
+      }))
+      const provenByImport = mods.some(
+        (m: any) => (m.module === "child_process" || m.module === "node:child_process") && !m.viaRequire,
+      )
+      if (provenByImport) return r
+      const leaves = ["exec", "execSync", "execFile", "execFileSync", "spawn", "spawnSync", "fork"]
+      return {
+        ...r,
+        symbols: ((r as any).symbols ?? []).map((s: any) => {
+          const sinks = s.taintSinks ?? []
+          if (!Array.isArray(sinks) || sinks.length === 0) return s
+          const kept = sinks.filter((t: any) => {
+            if (t?.vulnerability_type !== "command_injection") return true
+            const head = String(t.snippet ?? "").split("(")[0] ?? ""
+            const leaf = head.includes(".") ? (head.split(".").pop() ?? "") : head
+            return !leaves.includes(leaf)
+          })
+          return kept.length === sinks.length ? s : { ...s, taintSinks: kept }
+        }),
+      }
+    },
+  },
+  {
+    id: "typescript/taint-sink-leaf-match",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "H1 regression: restores bare-name/bare-LEAF sink matching — RegExp.prototype.exec, a project-local execute() and the project's own spawn() are reported as command_injection / sql_injection again, and because the store multiplies sources by sinks, one req.body read beside any .exec() manufactures a persisted command-injection flow. taint-sink-receiver kills it on the notIncludesVuln pins (the exact-snippet pins cannot catch a rebuilt snippet, which is why the vulnerability_type pins are in the fixture)",
+    transform: r => ({
+      ...r,
+      symbols: ((r as any).symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.qualified_calls)) return s
+        const existing = new Set((s.taintSinks ?? []).map((t: any) => t.vulnerability_type))
+        const add: any[] = []
+        for (const path of s.qualified_calls) {
+          const leaf = String(path).split(".").pop() ?? ""
+          if (["exec", "execSync", "execFile", "spawn", "spawnSync", "fork"].includes(leaf) && !existing.has("command_injection")) {
+            add.push({ type: "shell_execution", snippet: path, vulnerability_type: "command_injection" })
+            existing.add("command_injection")
+          }
+          if (["query", "execute"].includes(leaf) && !existing.has("sql_injection")) {
+            add.push({ type: "database_write", snippet: path, vulnerability_type: "sql_injection" })
+            existing.add("sql_injection")
+          }
+        }
+        return add.length ? { ...s, taintSinks: [...(s.taintSinks ?? []), ...add] } : s
+      }),
+    }),
+  },
+  {
+    id: "typescript/arrow-contract-drop",
+    language: "typescript",
+    defectClass: "payload-loss",
+    description: "M5 regression: an arrow/function-VALUED variable loses its API contract again — the dominant handler shape (Next.js/Astro/Express arrow consts) reports no path while the byte-identical function declaration still does; arrow-contracts-and-exports expectApiContractPaths pins arrowGet/arrowPost",
+    transform: r => ({ ...r, symbols: ((r as any).symbols ?? []).map((s: any) => (/^(arrowGet|arrowPost)$/.test(String(s.name)) ? { ...s, apiContractPath: undefined, metadata: { ...((s as any).metadata ?? {}), apiMethod: undefined } } : s)) }),
+  },
+  {
+    id: "typescript/export-default-dangling-edge",
+    language: "typescript",
+    defectClass: "relationship-fabrication",
+    description: "M4 regression: an anonymous default export emits an `exports` edge to `default` again — a target no symbol in this or any other file can own; arrow-contracts-and-exports forbidRelationships kills it",
+    transform: r => ({ ...r, relationships: [...((r as any).relationships ?? []), { source: "arrow-contracts-and-exports", target: "default", type: "exports", confidence: 1, metadata: {} }] }),
+  },
+  {
+    id: "typescript/lines-of-code-nonempty",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M8 regression: linesOfCode counts non-empty lines again, so the same source reports a different LOC as .ts than as .js (measured 37 vs 43 on the pinned fixture); arrow-contracts-and-exports expectMetadata.linesOfCode catches it",
+    transform: r => ({ ...r, metadata: { ...((r as any).metadata ?? {}), linesOfCode: 37 } }),
+  },
+  {
+    id: "typescript/qualified-calls-no-rebind",
+    language: "typescript",
+    defectClass: "misattribution",
+    description: "M3 regression, the dangerous half: removes the per-function REBINDING while keeping the boundary removal — the payload walk started at a symbol and charged every call below it to that symbol, so a nested function's or object-literal method's calls were ALSO listed on the enclosing symbol (enclosing lists helper besides inner; mixed lists persist besides save). qualified-calls-nested-scope kills it on the notIncludes pins, which is the only shape that can tell 'omitted' from 'double-counted'",
+    transform: r => {
+      const byName = new Map<string, string[]>()
+      for (const s of (r as any).symbols ?? []) if (Array.isArray(s.qualified_calls)) byName.set(s.name, s.qualified_calls)
+      const extra = new Map<any, string[]>()
+      for (const rel of (r as any).relationships ?? []) {
+        if (String(rel.type) !== "calls") continue
+        const callee = byName.get(String(rel.target))
+        if (!callee) continue
+        const list = extra.get(rel.source) ?? []
+        for (const c of callee) if (!list.includes(c)) list.push(c)
+        extra.set(rel.source, list)
+      }
+      return { ...r, symbols: ((r as any).symbols ?? []).map((s: any) => {
+        const add = extra.get(s.name)
+        if (!add || !add.length || !Array.isArray(s.qualified_calls)) return s
+        const merged = [...s.qualified_calls]
+        for (const c of add) if (!merged.includes(c)) merged.push(c)
+        return { ...s, qualified_calls: merged }
+      }) }
+    },
+  },
+  {
+    id: "typescript/builtin-subpath-revert",
+    language: "typescript",
+    defectClass: "payload-corruption",
+    description: "M7 regression: restores the bare-name-only builtin table — node:fs/promises, node:test, stream/promises and every other subpath Node ships resolve to external:<specifier> again, so the index claims npm packages named 'fs/promises' and 'test' (node-builtin-subpaths meta.resolvedPath pins catch it; lodash/merge stays external in both, so the pin set cannot be satisfied by classifying everything external)",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => (typeof i?.metadata?.resolvedPath === "string" && i.metadata.resolvedPath.startsWith("node:")) ? { ...i, metadata: { ...(i.metadata ?? {}), resolvedPath: "external:" + i.module } } : i) }),
+  },
+  {
     id: "typescript/subscript-callee-nested-call-drop",
     language: "typescript",
     defectClass: "relationship-loss",
@@ -13991,6 +15004,72 @@ if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
 
   // ---- the html lane's mutants, one per defect class ----
   {
+    id: "toml/own-error-report-dropped",
+    language: "toml",
+    defectClass: "underclaim",
+    description: "The analyzer's OWN recovery diagnostic is dropped, leaving the engine to report alone. The error-recovery contract is REPORTED / BYPASSED / KEEP PUBLISHING, and before this the toml analyzer pushed no diagnostics at all, so the reported half was entirely the engine's reached through a caller — a contract resting on someone else's completeness. The mutant removes only the analyzer-authored message, so the engine's `Syntax error (...)` survives and a fixture that merely counted errors would still pass; the fixture pins the analyzer's message verbatim, so this is caught. This is the mirror of the svelte lane's `namedChild` blindness: there the analyzer walked too few nodes, here it contributed nothing at all.",
+    transform: (r: any) => ({
+      ...r,
+      errors: (r.errors ?? []).filter((e: any) => !String(e?.message ?? "").includes("bypassing this broken node")),
+    }),
+  },
+  {
+    id: "toml/error-node-becomes-symbol",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "ERROR RECOVERY: the recovery region is turned into a SYMBOL. `ERROR` and `MISSING` are DIAGNOSTICS, not document constructs — they exist only where the parser could not read the source, and a node named after one joins to nothing a consumer can navigate to, which is the unresolvable-identity class reached through a malformed file rather than a missing edge. The companion half of the contract (\"the region is REPORTED\") is the engine's job — the toml analyzer pushes no errors of its own, so a mutation of analyzer output cannot remove a diagnostic; the fixture pins both and the mutant covers the half a mutant can reach. The fixture also pins what matters most and is easiest to get wrong: a walk that STOPPED at the recovery node would publish `t` and `t.before` and nothing after, and the document would still look analysed because its module is present. Caught by toml/malformed-and-rejected.",
+    transform: tomlErrorNodeBecomesSymbol(),
+  },
+  {
+    id: "toml/quotes-only-punctuation",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "BARE-WRITABILITY, NOT PUNCTUATION: a path segment is quoted only when it contains `.`, `\"` or `\\`, so a segment that CANNOT be written bare is emitted bare. `[target.\"cfg(unix)\".dependencies]` is real cargo syntax and `cfg(unix)` contains PARENTHESES — no punctuation the character test looks for — so the name came out `target.cfg(unix).dependencies`, which is not a spelling TOML can parse back. The same hole let a segment containing a SPACE through. Found by the differential oracle on cargo's own Cargo.toml, which is the argument for deriving the rule from the specification (\"may this be written bare?\") rather than from the characters that appear in the sample you happened to test. Caught by toml/dotted-and-quoted-paths.",
+    transform: tomlQuotesOnlyPunctuation(),
+  },
+  {
+    id: "toml/owner-lookup-uses-raw-segments",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "ONE FUNCTION OWNS A PATH'S SPELLING: the ancestor lookup deciding which DECLARED table owns a section builds prefixes from RAW segments, while the declared-path table is keyed by the QUOTED spelling, so `target.cfg(unix).dependencies` never matches `target.\"cfg(unix)\".dependencies` and a declared ancestor is reported as implied. The section is then filed under the MODULE. The symbol's NAME stays correct — the emit path does quote — so only the CONTAINMENT is wrong, which is why no symbol assertion could see it and why the fixture pins the edge's SOURCE. On cargo's Cargo.toml, `[target.'cfg(windows)'.dependencies.windows-sys]` was filed under the module rather than the parent declared three lines earlier. Caught by toml/dotted-and-quoted-paths.",
+    transform: tomlOwnerLookupUsesRawSegments(),
+  },
+  {
+    id: "toml/name-loses-its-path",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "TOML-IDENTITY: a symbol's name becomes its LAST SEGMENT instead of its full dotted path, so `[workspace.lints.rust]` is `rust` and `package.name` is `name`. The first manifest anyone writes collides — cargo's own has a key named `name` under `[package]` AND under every `[[bin]]` — so the flattened names are not unique and a `contains` edge naming `name` resolves to two nodes. The full path is what makes a file's names unique without a synthetic suffix on every collision. Caught by toml/identity-and-paths.",
+    transform: tomlNameLosesItsPath(),
+  },
+  {
+    id: "toml/quoted-segment-loses-quotes",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "TOML-IDENTITY: a quoted key segment is joined like a bare one, so a segment containing a dot loses its quotes. Inside `[t]`, `a.b.c` and `\"a.b\".c` are DIFFERENT TOML keys — three nested tables versus a table literally named `a.b` — and both assemble to `t.a.b.c`, after which the dedupe invents `t.a.b.c#2` and asserts the document declared one key twice when it declared two distinct ones. That is the unresolvable-identity class arriving through the NAMING SCHEME rather than through a missing edge, and re-quoting is TOML's own disambiguation, not an invented escape. Caught by toml/identity-and-paths, which writes all three spellings side by side.",
+    transform: tomlQuotedSegmentLosesQuotes(),
+  },
+  {
+    id: "toml/module-yields-its-name",
+    language: "toml",
+    defectClass: "relationship-identity",
+    description: "IDENTITY: the module does not own its name in its own file, so a table may take the file's stem. `doc/book/book.toml` declares `[book]`, and relationships address nodes by NAME, so every `contains` edge naming `book` resolves to two nodes. The module's identity comes from its PATH and is not negotiable. This is html's precedence exactly (its `usedNames` starts `{ [moduleName]: 1 }`), and the rule was found by the CORPUS rather than by a fixture: 2 collisions in 684 cargo files, both `<stem>.toml` containing `[<stem>]`. Caught by toml/module-name-collision.",
+    transform: tomlModuleYieldsItsName(),
+  },
+  {
+    id: "toml/implied-parents-materialised",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "IMPLIED PARENTS: `[workspace.lints.rust]` invents symbols for `workspace` and `workspace.lints`, which the file never declares. The ruling is that they are RECORDED in `metadata.impliedParents` precisely because fabricating a table is a guess dressed as a fact — the graph would claim the document contains headers it does not, and a consumer diffing a config against its graph would see phantom entries. Caught by toml/identity-and-paths's forbidSymbols.",
+    transform: tomlImpliedParentsMaterialised(),
+  },
+  {
+    id: "toml/inline-keys-become-symbols",
+    language: "toml",
+    defectClass: "overclaim",
+    description: "INLINE-TABLE SCOPING: an inline table's keys become symbols of the file. The ruling is that they are part of ONE value expression — `x = { a = 1 }` makes `x` the symbol — and a manifest with 200 dependencies written as `{ version = \"...\", features = [...] }` would publish 600+ symbols naming nothing a consumer can navigate to alone. Their names are recorded on the key in `metadata.inlineKeys`, so this mutant loses information as well as adding noise. Caught by toml/arrays-and-values.",
+    transform: tomlInlineKeysBecomeSymbols(),
+  },
+  {
     id: "html/recovery-stops-walk",
     language: "html",
     defectClass: "payload-loss",
@@ -14403,3 +15482,78 @@ if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
   },
+
+  ...POWERSHELL_MUTANTS,
+  ...YAML_MUTANTS,
+  ...CSS_MUTANTS,
+  ...SCSS_MUTANTS,
+  ...MARKDOWN_MUTANTS,
+]
+async function realAnalyzer(lang: string): Promise<any> {
+  const cfg = LANGS[lang]
+  const mod: any = await import(`../../src/ast/${cfg.analyzerFile}`)
+  return new mod[cfg.className]()
+}
+async function main() {
+  const baseline = JSON.parse(fs.readFileSync(path.join(ROOT, "validation", "m14", "fixture-baseline.json"), "utf8"))
+  const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
+  const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
+  let survivors = 0
+  const cleanResults = new Map<string, Awaited<ReturnType<typeof runLang>>>()
+  async function clean(lang: string) {
+    if (!cleanResults.has(lang)) cleanResults.set(lang, await runLang(lang))
+    return cleanResults.get(lang)!
+  }
+  const mutantFilter = process.env.BB_MUTANT_ONLY
+  const selected = MUTANTS.filter((m) => {
+    if (!mutantFilter) return true
+    return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
+  })
+  const scoped = !!mutantFilter
+  if (scoped && selected.length === 0) {
+    console.error(`BB_MUTANT_ONLY="${mutantFilter}" matched 0 of ${MUTANTS.length} mutants - nothing was verified`)
+    process.exit(3)
+  }
+  for (const m of selected) {
+    const base = await clean(m.language)
+    const real = await realAnalyzer(m.language)
+    const mutant = {
+      analyze: async (...args: any[]) =>
+        m.transform(await real.analyze(...args), typeof args[1] === "string" ? args[1] : undefined),
+      transform: m.transform,
+    }
+    const mutated = await runLang(m.language, mutant)
+    const baseProblems = base.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
+    const mutProblems = mutated.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
+    const caught = mutated.fail > base.fail || mutProblems > baseProblems
+    const caughtBy = mutated.details.filter(d => !d.ok).map((d: any) => d.fixture)
+      .filter(f => !base.details.some((bd: any) => !bd.ok && bd.fixture === f))
+      .join(", ")
+    console.log(`${caught ? "CAUGHT" : "SURVIVED"}  ${m.id}  (${base.fail} -> ${mutated.fail} failures${caughtBy ? "; new failures: " + caughtBy : ""})`)
+    checks.push({ id: `mutation-${m.id.replace("/", "-")}`, description: m.description, status: caught ? "pass" : "fail", detail: `${base.fail} -> ${mutated.fail}` })
+    mutationLog.push({ mutant: m.id, injectedAt: new Date().toISOString(), caughtBy: caughtBy || "(none)", detail: `${m.defectClass}: ${base.fail} -> ${mutated.fail} fixture failures` })
+    if (!caught) survivors++
+  }
+  const { emitEvidence } = await import("./evidence-harness")
+  if (!scoped) emitEvidence({
+    issueId: "M14.0.F4",
+    title: "Mutation-testing harness",
+    claimLevel: "L1",
+    layers: ["fixtures", "mutation"],
+    checks,
+    limitations: [
+      { description: "mutants wrap analyzer output rather than rewriting analyzer source; equivalent at the suite level but not a compiler-level injection" },
+      { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
+    ],
+    mutationLog,
+    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors, survived: survivors } },
+  })
+  if (survivors > 0) {
+    console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
+    process.exit(2)
+  }
+  console.log(`\nall ${selected.length} mutants caught - the gates can fail${mutantFilter ? ` (BB_MUTANT_ONLY="${mutantFilter}" filtered ${MUTANTS.length} -> ${selected.length})` : ""}`)
+}
+if (process.argv[1]?.endsWith("mutate-analyzer.ts")) {
+  main().catch(e => { console.error(e); process.exit(1) })
+}

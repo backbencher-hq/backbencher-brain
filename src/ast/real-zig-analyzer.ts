@@ -81,6 +81,39 @@ export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
  *   - Control-flow, type-annotation, call, block, and field-access nodes are
  *     EXECUTION ARTIFACTS, not declaration sites — they never become symbols.
  */
+/**
+ * M60 (#924, zig half): quoting syntax is not part of an identifier's NAME.
+ * `fn @"weird function name"() i32` declares the identifier
+ * `weird function name`; `@"…"` is zig's escape for a name that cannot be spelled
+ * plainly. The grammar puts BOTH tokens inside one `identifier` node (a `@"` token
+ * plus a string), so the node's text carries the sigil and the name is its CONTENT —
+ * the same rule the swift and kotlin halves apply to their backticks, measured the
+ * same way: before the fix the census's own samples publish `@"zls env"`, `@"fn"`
+ * and `@"weird function name"` as a function name, a `calls` target and a `uses`
+ * target (script/m14/tmp/c924-name-surface-probe.ts). An unterminated `@"` is
+ * malformed source, not a name: it is kept verbatim.
+ */
+function stripZigQuoting(text: string): string {
+  if (!text.includes('@"')) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 64 && text[i + 1] === '"') {
+      const close = text.indexOf('"', i + 2)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 2, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -735,6 +768,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // heuristic beside per-symbol real complexities — the removed-
     // everywhere-else disease. Both fields report the real file-level
     // cyclomatic number (family contract, go parity).
+    // M60 (#924, zig half): the published name surface — quoting syntax is not
+    // part of a name.
+    this.canonicalizePublishedNames(symbols, relationships, exports)
+
     const fileComplexity = this.zigBodyComplexity(rootNode)
     return {
       language: "zig",
@@ -891,6 +928,34 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * - resolvability required: unknown names (std/dot-imported/external,
    *   macro-template `$x`) stay silent — no junk edges.
    */
+  /**
+   * M60 (#924, zig half): canonicalize the PUBLISHED name surface.
+   *
+   * Zig builds its symbols inline (no factory), so the strip lands here, at the
+   * publish boundary — after every analysis pass, so nothing internal ever sees a
+   * canonical spelling mid-walk (the bare-use inventory and the shadowing frames
+   * are keyed on the SOURCE's own spellings and stay consistent with the tree),
+   * and before the result leaves the analyzer.
+   */
+  private canonicalizePublishedNames(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+  ): void {
+    for (const s of symbols) {
+      if (typeof s.name === "string") s.name = stripZigQuoting(s.name)
+      if (typeof s.ownerName === "string") s.ownerName = stripZigQuoting(s.ownerName)
+      if (typeof s.id === "string") s.id = stripZigQuoting(s.id)
+    }
+    for (const r of relationships) {
+      if (typeof r.source === "string") r.source = stripZigQuoting(r.source)
+      if (typeof r.target === "string") r.target = stripZigQuoting(r.target)
+    }
+    for (const e of exports) {
+      if (typeof e.name === "string") e.name = stripZigQuoting(e.name)
+    }
+  }
+
   private analyzeZigBareIdentifierUses(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
