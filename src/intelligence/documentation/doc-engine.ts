@@ -24,6 +24,7 @@ import path from "node:path"
 import { BrainDatabase } from "../../brain/database"
 import { checkFileFreshness } from "../../brain/freshness"
 import { semanticVectorSearch } from "../search/semantic-search"
+import { languageExtensionEntries } from "../../ast/language-detection"
 
 export type DocMode = "symbol" | "file" | "module" | "feature" | "api" | "project" | "coverage"
 export type DocFormat = "markdown" | "json"
@@ -143,6 +144,79 @@ function resolveTokenBudget(requested: unknown): number {
   const n = Number(requested)
   if (!Number.isFinite(n) || n < 1) return DEFAULT_TOKEN_BUDGET
   return Math.max(1, Math.min(MAX_TOKEN_BUDGET, Math.floor(n)))
+}
+
+/**
+ * Languages whose SYMBOL NAMES ARE PROSE, so a source-text scan over the file means
+ * nothing for them.
+ *
+ * `markdown` is here for a measured reason, not a stylistic one. A markdown symbol is
+ * a heading, a table, a code fence or a front-matter block, so its "name" is English
+ * text — and both scanners below read the file as if those names were code:
+ *
+ *  1. `sourceDocstring` is a C-family `/**` `*` `//` comment scanner. In markdown `*`
+ *     is the BOLD delimiter, so a prose line above a heading is read as a JSDoc
+ *     block. Measured over this repository's own index (331 `.md` files, 3,598
+ *     markdown symbols): **79 symbols received a fabricated docstring at
+ *     `classification: "extracted", confidence: 1.0`**, e.g. a heading "Symbols seem
+ *     missing after an edit" inheriting the `*Fix:** only run one indexing write…`
+ *     line above it. A confident fabrication is worse than an absence: it is the one
+ *     output shape a reader cannot tell from a real extraction.
+ *  2. The `includeTests` fallback substring-scans test files for the symbol's name.
+ *     A heading named `File`, `Contract`, `Decisions` or `ack` matches any test file
+ *     containing that English word. Measured: 5 of 2,321 distinct markdown names in
+ *     this index would falsely match, each published as an `inferred` fact at
+ *     confidence 0.7.
+ *
+ * The router decides, not a table kept beside it: `language-detection.ts` is the one
+ * registry that admits a file to an analyzer, so the doc lane agrees with it rather
+ * than keeping a second opinion (the same rule `script/m14/differential.ts` states
+ * for the F5 lane's sampling universe).
+ *
+ * NOT a general "no comments in prose formats" claim. `yaml`, `toml` and `xml` are
+ * equally prose-shaped and are deliberately absent, because a comment scanner over a
+ * YAML `#` line is a different question and has not been measured — adding them on
+ * the strength of this reasoning would be exactly the unmeasured widening this
+ * repository keeps refusing.
+ */
+const PROSE_NAME_LANGUAGES: ReadonlySet<string> = new Set(["markdown"])
+
+function isProseNameFile(filePath: unknown): boolean {
+  if (typeof filePath !== "string" || filePath.length === 0) return false
+  const dot = filePath.lastIndexOf(".")
+  if (dot < 0) return false
+  const ext = filePath.slice(dot + 1).toLowerCase()
+  // `language-detection.ts`'s own answer for this extension, so the doc lane cannot
+  // drift from the router the indexer used.
+  const entries = languageExtensionEntries()
+  for (const [e, lang] of entries) {
+    if (e === ext) return PROSE_NAME_LANGUAGES.has(lang)
+  }
+  return false
+}
+
+function sourceDocstring(filePath: string, lineStart: number): string | null {
+  // See PROSE_NAME_LANGUAGES: for a markdown heading the preceding `*bold*` prose
+  // line is not a comment, and emitting it as a docstring at confidence 1.0 is a
+  // fabrication rather than a weak inference.
+  if (isProseNameFile(filePath)) return null
+  try {
+    const lines = readFileSync(filePath, "utf8").split(/\r?\n/)
+    const before = lines.slice(0, Math.max(0, lineStart - 1)).reverse()
+    const comments: string[] = []
+    for (const line of before) {
+      const trimmed = line.trim()
+      if (!trimmed) {
+        if (comments.length) break
+        continue
+      }
+      if (trimmed.startsWith("/**") || trimmed.startsWith("*") || trimmed.startsWith("//")) {
+        comments.unshift(trimmed.replace(/^\/\*\*?\s?/, "").replace(/\*\/$/, "").replace(/^\*\s?/, "").replace(/^\/\/\s?/, ""))
+        if (trimmed.startsWith("/**")) break
+      } else break
+    }
+    return comments.length ? comments.join(" ").trim() : null
+  } catch { return null }
 }
 
 /** Facts per section. `detail` is a real input, not decoration (D17). */
@@ -646,7 +720,12 @@ function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citation
         // file mentions the name" are different claims, and neither is "the
         // project has no tests".
         const testFiles = queryRows(raw, "SELECT * FROM brain_file WHERE project_id=? AND is_test_file=1 ORDER BY relative_path LIMIT 50", symbol.project_id)
-        const referencing = testFiles.find((test) => {
+        // A markdown symbol's name is a heading, so substring-matching it against test
+        // source matches English prose: measured, 5 of 2,321 distinct markdown names
+        // in this index (`File`, `Contract`, `Decisions`, `ack`, `value`) would each
+        // attach a real test file at confidence 0.7. See PROSE_NAME_LANGUAGES — the
+        // honest state for these is the `not-observed` unknown below, not a match.
+        const referencing = isProseNameFile(symbol.path) ? undefined : testFiles.find((test) => {
           const text = reader.text(String(test.path))
           return text !== null && text.includes(String(symbol.name))
         })

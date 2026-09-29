@@ -1,0 +1,49 @@
+{
+  "instrument": "powershell-lane-scoped-record",
+  "why": [
+    "F9 sections E and F read validation/m14/differential-baseline.json, which only a",
+    "canonical unscoped `differential.ts --update-baseline` may honestly write. This file",
+    "records every number the ceremony needs so it is a RE-MEASURE, not a rediscovery.",
+    "It is the powershell instance of the bash lane's record (script/m14/tmp/bash-lane-record.ts)."
+  ],
+  "sectionE": {
+    "requiredRowKey": "powershell:powershell",
+    "presentInBaseline": false,
+    "baselineRowCount": 182,
+    "note": "the baseline already holds 13 `powershell:<other-language>` rows, so powershell is a TEST SUBJECT in other lanes' comparisons; adding the reverse row is a different claim"
+  },
+  "sectionF": {
+    "requiredField": "counts['powershell:powershell'].perf.avgMsPerFile",
+    "measuredAvgMsPerFile": 50.7,
+    "measuredUnderLoadAvg1": 39.42,
+    "loadAvgRetried": true,
+    "maxMsPerFile": 1192.8,
+    "samplesTimed": 60,
+    "verdict": "NOT PINNABLE AS A LANE BUDGET - measured at 4-5x load on 8 cores with a retry flag; the number is contention as much as lane"
+  },
+  "blockersToTheCeremony": [
+    {
+      "reason": "shared-file blast radius",
+      "evidence": "mergeBaseline() writes loadContext and samplePerLang unconditionally from the current run while merging counts per lane, so a powershell-scoped --update-baseline re-stamps the load context of all 182 existing rows. The bash record names this trap d88724fe."
+    },
+    {
+      "reason": "the row may be skipped outright",
+      "evidence": "mergeBaseline() pins a lane only when missing===0 && unexplained===0; the lane-scoped F5 artifact records neither count for the powershell row, so a pin attempt may silently not pin powershell at all"
+    },
+    {
+      "reason": "dirty tree",
+      "evidence": "F5 artifact data.codeInputs.clean is false with a non-empty dirty list; canonical evidence is meant to name a commit"
+    },
+    {
+      "reason": "artifact is not canonical",
+      "evidence": "F5 powershell declares claimLevel L1 and 'LANE-SCOPED artifact ... not the canonical two-corpus sweep'"
+    }
+  ],
+  "loadAtRecord": 25.41,
+  "loadContextCurrentlyInBaseline": {
+    "loadAvgStart": 41.85,
+    "loadAvgEnd": 39.16,
+    "sliceCount": 1
+  },
+  "conclusion": "Both sections stay RED. The gate being red says the ceremony has not happened; that is the correct state, and it is cheaper to leave it honest than to write a floor that measures this machine."
+}

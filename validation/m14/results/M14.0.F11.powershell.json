@@ -1,0 +1,108 @@
+{
+  "checks": [
+    {
+      "description": "no file becomes newly damaged",
+      "detail": "fixed=0 newly=0 improved=0 worse=0",
+      "id": "F11.G1",
+      "status": "pass"
+    },
+    {
+      "description": "every file clean under the pinned grammar keeps a byte-identical s-expression",
+      "detail": "318 clean file(s) checked, 0 difference(s)",
+      "id": "F11.G2",
+      "status": "pass"
+    },
+    {
+      "description": "the analyzer loses no declared symbol name, qualifier or (label,target) pair",
+      "detail": "residue=[symbols 0, qualifier-changed 0, pairs 0] raw=[vanished 0 lost 0] repaired=[moved 0, keyword 0, predefine 0, not-a-declaration 0, pairs-retired 0] added=[symbols 0, pairs 0]",
+      "id": "F11.G3",
+      "status": "pass"
+    }
+  ],
+  "claimLevel": "L3",
+  "commit": "32e33c4c51054c73cfd944dcac59da39901e245c",
+  "committedAt": "2026-09-28T04:30:43-04:00",
+  "corpusPins": {
+    "powershell": "91ce9844e2a70e7184a8fcb26848f019eac151b4"
+  },
+  "data": {
+    "admissible": true,
+    "candidate": "cand-g10b.wasm",
+    "g1": {
+      "errorLinesCand": 3742,
+      "errorLinesPinned": 3742,
+      "filesCandDamaged": 82,
+      "filesPinnedDamaged": 82,
+      "fixed": 0,
+      "improved": 0,
+      "kindChange": 0,
+      "missingCand": 71,
+      "missingPinned": 71,
+      "newlyDamaged": 0,
+      "sitesCand": 560,
+      "sitesPinned": 560,
+      "worse": 0
+    },
+    "g2": {
+      "cleanChecked": 318,
+      "identityBreakFiles": [],
+      "identityBreakFilesTruncated": 0,
+      "identityBreaks": 0
+    },
+    "g3": {
+      "addedPairs": [],
+      "addedSymbols": [],
+      "filesChanged": 0,
+      "lost": 0,
+      "lostPairs": [],
+      "lostPairsTruncated": 0,
+      "pairResidue": [],
+      "pairRetired": [],
+      "pairsAdded": 0,
+      "pairsRemoved": 0,
+      "qualifierChanged": 0,
+      "qualifierChangedSymbols": [],
+      "rawLost": 0,
+      "rawVanished": 0,
+      "reAttributed": 0,
+      "symAdded": 0,
+      "symRemoved": 0,
+      "symbolFabricated": [],
+      "symbolMoved": [],
+      "symbolResidue": [],
+      "symbolRetiredKeyword": [],
+      "symbolRetiredPredefine": [],
+      "vanished": 0,
+      "vanishedSymbols": [],
+      "vanishedSymbolsTruncated": 0
+    },
+    "lang": "powershell",
+    "reasons": [],
+    "repos": [
+      "powershell"
+    ],
+    "sample": 400
+  },
+  "governance": "docs/M14-HONESTY-CONTRACT.md",
+  "issueId": "M14.0.F11.powershell",
+  "layers": [
+    "grammar",
+    "analyzer",
+    "corpus"
+  ],
+  "limitations": [
+    {
+      "description": "G3 measures the designated corpora at the gate's sample cap, not every repo the product will see.",
+      "justification": "the sample is the same deterministic draw F10 pins, so a regression inside the draw is caught and the digest makes the set reproducible"
+    },
+    {
+      "description": "The gate decides admissibility of an artifact; it does not re-pin F10 floors or fixtures, which stay the wave's own commit.",
+      "justification": "separation of measurement from adoption"
+    }
+  ],
+  "regeneratedAt": "2026-09-28T08:58:59.648Z",
+  "regeneratedAtCommit": "32e33c4c51054c73cfd944dcac59da39901e245c",
+  "runtime": "node v24.3.0",
+  "schemaVersion": 2,
+  "title": "Grammar-leaf admissibility gate — powershell candidate cand-g10b.wasm"
+}

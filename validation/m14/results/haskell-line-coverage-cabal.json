@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "kind": "m60-haskell-line-coverage",
+  "generatedAt": "2026-09-26T03:34:18.865Z",
+  "corpus": {
+    "dir": "$HOME/fixtures/repositories/cabal",
+    "files": 2134,
+    "maxFiles": 3000
+  },
+  "note": "total = edges now emitted (line in the dedupe key); lined = carrying a positive line_number; pre = the same file set keyed source|type|target only, i.e. the pre-round edge count (0 carry a line by construction); expansion = total - pre is what per-site identity bought. Sampled by directory order, NOT the seeded F5 draw — this is a coverage measurement, not the corpus differential.",
+  "totals": {
+    "files": 2134,
+    "symbols": 19934,
+    "edges": 55974,
+    "lined": 55974,
+    "unlined": 0,
+    "preChangeEdges": 46753,
+    "expansion": 9221
+  },
+  "beforeAfter": {
+    "after": {
+      "edges": 55974,
+      "lined": 55974,
+      "unlined": 0,
+      "unlinedShare": 0
+    },
+    "before": {
+      "edges": 46753,
+      "lined": 0,
+      "unlined": 46753,
+      "unlinedShare": 1,
+      "basis": "pre-round pushRel keyed source|type|target only and published no line_number field (this round's diff), so the pre-round edge count IS the same-draw collapse and none of them carried a line; corroborated live before this round landed at 5,240 of 5,240 edges unlined on the cabal+hledger 60-file draw (reviews/functional-family/m60-functional-sweep.md §4)."
+    }
+  },
+  "byType": {
+    "references": {
+      "total": 10739,
+      "lined": 10739,
+      "collapsed": 10511,
+      "maxSites": 3,
+      "unlinedExamples": []
+    },
+    "implements": {
+      "total": 3703,
+      "lined": 3703,
+      "collapsed": 3702,
+      "maxSites": 2,
+      "unlinedExamples": []
+    },
+    "instantiates": {
+      "total": 7579,
+      "lined": 7579,
+      "collapsed": 5170,
+      "maxSites": 114,
+      "unlinedExamples": []
+    },
+    "contains": {
+      "total": 17143,
+      "lined": 17143,
+      "collapsed": 15689,
+      "maxSites": 22,
+      "unlinedExamples": []
+    },
+    "calls": {
+      "total": 16789,
+      "lined": 16789,
+      "collapsed": 11660,
+      "maxSites": 186,
+      "unlinedExamples": []
+    },
+    "extends": {
+      "total": 21,
+      "lined": 21,
+      "collapsed": 21,
+      "maxSites": 1,
+      "unlinedExamples": []
+    }
+  }
+}

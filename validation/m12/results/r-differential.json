@@ -1,117 +1,297 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:r",
-  "truthSource": "hand_derived",
-  "truthReference": "fixtures/fixtures/ground-truth.json",
-  "fixtureDir": "$HOME/fixtures/fixtures",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "7f5e3f2ba578e276c6376751d3b6422466fa25b437b0ce5f12d1b93c18845059",
+        "bytes": 75193
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "de307ac2a68ab6baee1f9f4cd0d3b4690d189d21b17e41b78e91c6206106f000",
+        "bytes": 46065
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
+        "bytes": 134291
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
+        "bytes": 119919
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
+        "bytes": 126319
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
+        "bytes": 74340
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
+        "bytes": 107870
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
+        "bytes": 107709
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
+        "bytes": 62122
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
+        "bytes": 18451
+      },
+      "src/brain/database.ts": {
+        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
+        "bytes": 18136
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
+        "bytes": 29793
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
+      },
+      "validation/m12/fixtures/r/Base.R": {
+        "sha256": "80a068e69902c19bd6883f233f149bc6ec57c9ca68055f4f53acfab8474583c4",
+        "bytes": 142
+      },
+      "validation/m12/fixtures/r/Negative.R": {
+        "sha256": "0d852bab29a4980e003cf61574d735e7f545eb9331baa254ccda49730f2e8605",
+        "bytes": 189
+      },
+      "validation/m12/fixtures/r/Service.R": {
+        "sha256": "2c4c20044d3ff90528cb1f894ae0a6ebf77350232650ed54785751d2a5038f11",
+        "bytes": 586
+      },
+      "validation/m12/ground-truth/r.json": {
+        "sha256": "e1c6eaf4bc786f50e0d43b22e3b295d6d48ad09b7d6e15084f8639948f01e2e3",
+        "bytes": 8520
+      }
+    },
+    "digest": "c2b0b8bdc173ec20691e927f6eb3e940e6aac942ba39abce68cad929d4b317b7",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-r_tree-sitter-r.wasm",
+      "sha256": "b11a872a88ad8a9ebc85607ef3fd4cabdf6cbead51421ec1492b4591b6854553",
+      "bytes": 490899
+    }
+  },
+  "truthSource": "manual_audit",
+  "truthReference": "validation/m12/fixtures/r/{Base,Service,Negative}.R",
+  "fixtureDir": "validation/m12/fixtures/r",
   "fixtures": [
-    "F01-assignments.R",
-    "F02-s3.R",
-    "F03-r6.R",
-    "F04-s4.R",
-    "F05-r5.R",
-    "F06-s7.R",
-    "F07-imports.R",
-    "F08-closures.R",
-    "F09-negative.R",
-    "F10-literals.R",
-    "F11-triple-colon.R",
-    "F12-edges.R",
-    "F13-invalid-r.R",
-    "F14-local-boundary.R",
-    "F15-dotdot.R"
+    "Base.R",
+    "Negative.R",
+    "Service.R"
   ],
-  "fixtureFacts": 251,
-  "precision": 1,
-  "recall": 1,
-  "corpusSymbols": 0,
-  "corpusRelationships": 0,
-  "grammarErrorFiles": 0,
-  "grammarErrorNodes": 0,
   "perFile": {
-    "F01-assignments.R": {
-      "symbols": 7,
-      "relationships": 7,
-      "imports": 0
-    },
-    "F02-s3.R": {
-      "symbols": 4,
-      "relationships": 10,
-      "imports": 0
-    },
-    "F03-r6.R": {
-      "symbols": 7,
-      "relationships": 11,
-      "imports": 1
-    },
-    "F04-s4.R": {
-      "symbols": 11,
-      "relationships": 15,
-      "imports": 0
-    },
-    "F05-r5.R": {
-      "symbols": 5,
-      "relationships": 7,
-      "imports": 0
-    },
-    "F06-s7.R": {
-      "symbols": 6,
-      "relationships": 13,
-      "imports": 4
-    },
-    "F07-imports.R": {
-      "symbols": 0,
-      "relationships": 11,
-      "imports": 7
-    },
-    "F08-closures.R": {
-      "symbols": 1,
-      "relationships": 14,
-      "imports": 0
-    },
-    "F09-negative.R": {
-      "symbols": 8,
-      "relationships": 8,
-      "imports": 0
-    },
-    "F10-literals.R": {
-      "symbols": 10,
-      "relationships": 10,
-      "imports": 0
-    },
-    "F11-triple-colon.R": {
-      "symbols": 7,
-      "relationships": 17,
-      "imports": 2
-    },
-    "F12-edges.R": {
-      "symbols": 9,
-      "relationships": 16,
-      "imports": 0
-    },
-    "F13-invalid-r.R": {
-      "symbols": 2,
-      "relationships": 2,
-      "imports": 0
-    },
-    "F14-local-boundary.R": {
-      "symbols": 9,
-      "relationships": 9,
-      "imports": 0
-    },
-    "F15-dotdot.R": {
+    "Base.R": {
       "symbols": 3,
-      "relationships": 3,
-      "imports": 0
+      "relationships": 4
+    },
+    "Negative.R": {
+      "symbols": 2,
+      "relationships": 4
+    },
+    "Service.R": {
+      "symbols": 12,
+      "relationships": 21
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 251,
-      "observedResolved": 251,
-      "truePositive": 251,
+      "expected": 46,
+      "observedResolved": 46,
+      "truePositive": 46,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -122,267 +302,85 @@
       "recall": 1,
       "falsePositiveRate": 0,
       "falseNegativeRate": 0,
-      "unknownRate": 0,
-      "earliestFailingLayer": null
+      "unknownRate": 0
     },
+    "earliestFailingLayer": null,
     "truePositiveIds": [
-      "symbol:F01-assignments.R:variable|left_arrow|4",
-      "symbol:F01-assignments.R:variable|equals|5",
-      "symbol:F01-assignments.R:variable|super_left|6",
-      "symbol:F01-assignments.R:variable|right_from_value|7",
-      "symbol:F01-assignments.R:variable|super_b|8",
-      "symbol:F01-assignments.R:function|fn_left|9",
-      "symbol:F01-assignments.R:variable|deferred_name|12",
-      "rel:F01-assignments.R:contains|global|left_arrow",
-      "rel:F01-assignments.R:contains|global|equals",
-      "rel:F01-assignments.R:contains|global|super_left",
-      "rel:F01-assignments.R:contains|global|right_from_value",
-      "rel:F01-assignments.R:contains|global|super_b",
-      "rel:F01-assignments.R:contains|global|fn_left",
-      "rel:F01-assignments.R:contains|global|deferred_name",
-      "symbol:F02-s3.R:method|print.myclass|2",
-      "symbol:F02-s3.R:method|summary.myclass|6",
-      "symbol:F02-s3.R:function|not_a_method|10",
-      "symbol:F02-s3.R:method|[.myclass|11",
-      "rel:F02-s3.R:implements|print.myclass|print",
-      "rel:F02-s3.R:calls|print.myclass|cat",
-      "rel:F02-s3.R:calls|print.myclass|invisible",
-      "rel:F02-s3.R:implements|summary.myclass|summary",
-      "rel:F02-s3.R:calls|summary.myclass|helper_one",
-      "rel:F02-s3.R:contains|global|print.myclass",
-      "rel:F02-s3.R:contains|global|summary.myclass",
-      "rel:F02-s3.R:contains|global|not_a_method",
-      "rel:F02-s3.R:implements|[.myclass|[",
-      "rel:F02-s3.R:contains|global|[.myclass",
-      "symbol:F03-r6.R:class|Widget|2",
-      "symbol:F03-r6.R:property|size|4",
-      "symbol:F03-r6.R:method|initialize|5",
-      "symbol:F03-r6.R:method|grow|9",
-      "symbol:F03-r6.R:method|log|15",
-      "symbol:F03-r6.R:property|token|16",
-      "symbol:F03-r6.R:method|doubled|19",
-      "rel:F03-r6.R:extends|Widget|BaseWidget",
-      "rel:F03-r6.R:contains|Widget|size",
-      "rel:F03-r6.R:contains|Widget|initialize",
-      "rel:F03-r6.R:contains|Widget|grow",
-      "rel:F03-r6.R:contains|Widget|log",
-      "rel:F03-r6.R:contains|Widget|token",
-      "rel:F03-r6.R:contains|Widget|doubled",
-      "rel:F03-r6.R:calls|initialize|private$log",
-      "rel:F03-r6.R:calls|grow|invisible",
-      "rel:F03-r6.R:contains|global|Widget",
-      "rel:F03-r6.R:imports|global|R6",
-      "symbol:F04-s4.R:class|Vehicle|2",
-      "symbol:F04-s4.R:property|wheels|2",
-      "symbol:F04-s4.R:property|owner|2",
-      "symbol:F04-s4.R:class|Car|3",
-      "symbol:F04-s4.R:property|doors|3",
-      "symbol:F04-s4.R:class|Legacy|4",
-      "symbol:F04-s4.R:property|legacy_field|4",
-      "symbol:F04-s4.R:function|speed|5",
-      "symbol:F04-s4.R:method|speed|6",
-      "symbol:F04-s4.R:method|show|10",
-      "symbol:F04-s4.R:method|validity|11",
-      "rel:F04-s4.R:contains|Vehicle|wheels",
-      "rel:F04-s4.R:contains|Vehicle|owner",
-      "rel:F04-s4.R:extends|Car|Vehicle",
-      "rel:F04-s4.R:contains|Car|doors",
-      "rel:F04-s4.R:contains|Legacy|legacy_field",
-      "rel:F04-s4.R:calls|speed|standardGeneric",
-      "rel:F04-s4.R:contains|Vehicle|speed",
-      "rel:F04-s4.R:calls|speed|compute_speed",
-      "rel:F04-s4.R:contains|Vehicle|show",
-      "rel:F04-s4.R:calls|show|cat",
-      "rel:F04-s4.R:contains|Vehicle|validity",
-      "rel:F04-s4.R:contains|global|Vehicle",
-      "rel:F04-s4.R:contains|global|Car",
-      "rel:F04-s4.R:contains|global|Legacy",
-      "rel:F04-s4.R:contains|global|speed",
-      "symbol:F05-r5.R:class|Account|2",
-      "symbol:F05-r5.R:property|balance|3",
-      "symbol:F05-r5.R:property|owner|3",
-      "symbol:F05-r5.R:method|deposit|5",
-      "symbol:F05-r5.R:method|show|8",
-      "rel:F05-r5.R:extends|Account|Ledger",
-      "rel:F05-r5.R:contains|Account|balance",
-      "rel:F05-r5.R:contains|Account|owner",
-      "rel:F05-r5.R:contains|Account|deposit",
-      "rel:F05-r5.R:contains|Account|show",
-      "rel:F05-r5.R:calls|show|print",
-      "rel:F05-r5.R:contains|global|Account",
-      "symbol:F06-s7.R:class|Temperature|2",
-      "symbol:F06-s7.R:property|celsius|4",
-      "symbol:F06-s7.R:property|scale|4",
-      "symbol:F06-s7.R:method|format|6",
-      "symbol:F06-s7.R:method|format|13",
-      "symbol:F06-s7.R:method|show|16",
-      "rel:F06-s7.R:extends|Temperature|Measurement",
-      "rel:F06-s7.R:contains|Temperature|celsius",
-      "rel:F06-s7.R:contains|Temperature|scale",
-      "rel:F06-s7.R:contains|Temperature|format",
-      "rel:F06-s7.R:calls|format|paste0",
-      "rel:F06-s7.R:calls|format|helper_format",
-      "rel:F06-s7.R:contains|global|Temperature",
-      "rel:F06-s7.R:imports|global|S7",
-      "rel:F06-s7.R:contains|Reading|format",
-      "rel:F06-s7.R:contains|Reading|show",
-      "rel:F06-s7.R:calls|format|paste",
-      "rel:F06-s7.R:calls|show|invisible",
-      "rel:F06-s7.R:calls|format|as.character",
-      "rel:F07-imports.R:references|global|dplyr",
-      "rel:F07-imports.R:references|global|methods",
-      "rel:F07-imports.R:references|global|stats",
-      "rel:F07-imports.R:references|global|helpers.R",
-      "rel:F07-imports.R:references|global|code.cpp",
-      "rel:F07-imports.R:imports|global|dplyr",
-      "rel:F07-imports.R:imports|global|methods",
-      "rel:F07-imports.R:imports|global|stats",
-      "rel:F07-imports.R:imports|global|helpers.R",
-      "rel:F07-imports.R:imports|global|code.cpp",
-      "rel:F07-imports.R:imports|global|internal",
-      "symbol:F08-closures.R:function|outer|2",
-      "rel:F08-closures.R:calls|outer|lapply",
-      "rel:F08-closures.R:calls|outer|transform_one",
-      "rel:F08-closures.R:calls|outer|vapply",
-      "rel:F08-closures.R:calls|outer|transform_two",
-      "rel:F08-closures.R:calls|outer|numeric",
-      "rel:F08-closures.R:calls|outer|tryCatch",
-      "rel:F08-closures.R:calls|outer|risky",
-      "rel:F08-closures.R:calls|outer|recover_from",
-      "rel:F08-closures.R:calls|outer|withCallingHandlers",
-      "rel:F08-closures.R:calls|outer|step",
-      "rel:F08-closures.R:calls|outer|note_warning",
-      "rel:F08-closures.R:calls|outer|local",
-      "rel:F08-closures.R:calls|outer|nested",
-      "rel:F08-closures.R:contains|global|outer",
-      "symbol:F09-negative.R:variable|txt1|4",
-      "symbol:F09-negative.R:variable|txt2|5",
-      "symbol:F09-negative.R:variable|txt3|6",
-      "symbol:F09-negative.R:variable|txt4|7",
-      "symbol:F09-negative.R:variable|still_a_var|9",
-      "symbol:F09-negative.R:variable|backtick name|10",
-      "symbol:F09-negative.R:function|%op%|11",
-      "symbol:F09-negative.R:function|callback|12",
-      "rel:F09-negative.R:contains|global|txt1",
-      "rel:F09-negative.R:contains|global|txt2",
-      "rel:F09-negative.R:contains|global|txt3",
-      "rel:F09-negative.R:contains|global|txt4",
-      "rel:F09-negative.R:contains|global|still_a_var",
-      "rel:F09-negative.R:contains|global|backtick name",
-      "rel:F09-negative.R:contains|global|%op%",
-      "rel:F09-negative.R:contains|global|callback",
-      "symbol:F10-literals.R:variable|hex_int|2",
-      "symbol:F10-literals.R:variable|hex_exp|3",
-      "symbol:F10-literals.R:variable|hex_frac|4",
-      "symbol:F10-literals.R:variable|dec|5",
-      "symbol:F10-literals.R:variable|dec2|6",
-      "symbol:F10-literals.R:variable|lng|7",
-      "symbol:F10-literals.R:variable|cplx|8",
-      "symbol:F10-literals.R:variable|chr|9",
-      "symbol:F10-literals.R:variable|raw|10",
-      "symbol:F10-literals.R:function|missing_default|11",
-      "rel:F10-literals.R:contains|global|hex_int",
-      "rel:F10-literals.R:contains|global|hex_exp",
-      "rel:F10-literals.R:contains|global|hex_frac",
-      "rel:F10-literals.R:contains|global|dec",
-      "rel:F10-literals.R:contains|global|dec2",
-      "rel:F10-literals.R:contains|global|lng",
-      "rel:F10-literals.R:contains|global|cplx",
-      "rel:F10-literals.R:contains|global|chr",
-      "rel:F10-literals.R:contains|global|raw",
-      "rel:F10-literals.R:contains|global|missing_default",
-      "symbol:F11-triple-colon.R:class|Hidden|3",
-      "symbol:F11-triple-colon.R:method|go|4",
-      "symbol:F11-triple-colon.R:class|Plain|6",
-      "symbol:F11-triple-colon.R:method|go|7",
-      "symbol:F11-triple-colon.R:class|Odd|11",
-      "symbol:F11-triple-colon.R:method|real|11",
-      "symbol:F11-triple-colon.R:function|use_it|12",
-      "rel:F11-triple-colon.R:contains|Hidden|go",
-      "rel:F11-triple-colon.R:calls|go|do_work",
-      "rel:F11-triple-colon.R:contains|global|Hidden",
-      "rel:F11-triple-colon.R:contains|Plain|go",
-      "rel:F11-triple-colon.R:calls|go|do_other",
-      "rel:F11-triple-colon.R:contains|global|Plain",
-      "rel:F11-triple-colon.R:contains|Odd|real",
-      "rel:F11-triple-colon.R:contains|global|Odd",
-      "rel:F11-triple-colon.R:imports|global|R6",
-      "rel:F11-triple-colon.R:contains|global|use_it",
-      "rel:F11-triple-colon.R:calls|use_it|Hidden$new",
-      "rel:F11-triple-colon.R:instantiates|use_it|Hidden",
-      "rel:F11-triple-colon.R:calls|use_it|Plain$new",
-      "rel:F11-triple-colon.R:instantiates|use_it|Plain",
-      "rel:F11-triple-colon.R:calls|use_it|NotDeclaredAnywhere$new",
-      "rel:F11-triple-colon.R:calls|use_it|new",
-      "rel:F11-triple-colon.R:calls|use_it|list",
-      "symbol:F12-edges.R:function|public_fn|3",
-      "symbol:F12-edges.R:constant|PUBLIC_CONST|7",
-      "symbol:F12-edges.R:function|private_fn|10",
-      "symbol:F12-edges.R:class|Base2|12",
-      "symbol:F12-edges.R:method|render|12",
-      "symbol:F12-edges.R:class|Child2|13",
-      "symbol:F12-edges.R:method|render|13",
-      "symbol:F12-edges.R:class|Other2|14",
-      "symbol:F12-edges.R:method|render|14",
-      "rel:F12-edges.R:contains|Base2|render",
-      "rel:F12-edges.R:calls|render|base_impl",
-      "rel:F12-edges.R:extends|Child2|Base2",
-      "rel:F12-edges.R:contains|Child2|render",
-      "rel:F12-edges.R:calls|render|child_impl",
-      "rel:F12-edges.R:contains|Other2|render",
-      "rel:F12-edges.R:calls|render|other_impl",
-      "rel:F12-edges.R:exports|global|public_fn",
-      "rel:F12-edges.R:exports|global|PUBLIC_CONST",
-      "rel:F12-edges.R:overrides|Base2|render",
-      "rel:F12-edges.R:contains|global|public_fn",
-      "rel:F12-edges.R:contains|global|PUBLIC_CONST",
-      "rel:F12-edges.R:contains|global|private_fn",
-      "rel:F12-edges.R:contains|global|Base2",
-      "rel:F12-edges.R:contains|global|Child2",
-      "rel:F12-edges.R:contains|global|Other2",
-      "symbol:F13-invalid-r.R:variable|valid_right|9",
-      "symbol:F13-invalid-r.R:variable|valid_super_right|10",
-      "rel:F13-invalid-r.R:contains|global|valid_right",
-      "rel:F13-invalid-r.R:contains|global|valid_super_right",
-      "symbol:F14-local-boundary.R:variable|inside_local|3",
-      "symbol:F14-local-boundary.R:variable|in_a_plain_block|9",
-      "symbol:F14-local-boundary.R:variable|bound_in_block|10",
-      "symbol:F14-local-boundary.R:function|wrap|15",
-      "symbol:F14-local-boundary.R:variable|bound_as_argument|16",
-      "symbol:F14-local-boundary.R:variable|bound_via_argument|16",
-      "symbol:F14-local-boundary.R:variable|bound_via_parens|17",
-      "symbol:F14-local-boundary.R:variable|vec|18",
-      "symbol:F14-local-boundary.R:variable|bound_via_subset|19",
-      "rel:F14-local-boundary.R:contains|global|inside_local",
-      "rel:F14-local-boundary.R:contains|global|in_a_plain_block",
-      "rel:F14-local-boundary.R:contains|global|bound_in_block",
-      "rel:F14-local-boundary.R:contains|global|wrap",
-      "rel:F14-local-boundary.R:contains|global|bound_as_argument",
-      "rel:F14-local-boundary.R:contains|global|bound_via_argument",
-      "rel:F14-local-boundary.R:contains|global|bound_via_parens",
-      "rel:F14-local-boundary.R:contains|global|vec",
-      "rel:F14-local-boundary.R:contains|global|bound_via_subset",
-      "symbol:F15-dotdot.R:function|..2dge|3",
-      "symbol:F15-dotdot.R:function|..foo|4",
-      "symbol:F15-dotdot.R:function|uses_dot_one|5",
-      "rel:F15-dotdot.R:contains|global|..2dge",
-      "rel:F15-dotdot.R:contains|global|..foo",
-      "rel:F15-dotdot.R:contains|global|uses_dot_one"
+      "rel:Base.R:calls:run:helper",
+      "rel:Base.R:contains:Base:initialize",
+      "rel:Base.R:contains:Base:run",
+      "rel:Base.R:contains:global:Base",
+      "rel:Negative.R:calls:external:ExternalClass$new",
+      "rel:Negative.R:calls:external:list",
+      "rel:Negative.R:contains:global:anonymous_value",
+      "rel:Negative.R:contains:global:external",
+      "rel:Service.R:calls:add:Local$new",
+      "rel:Service.R:calls:add:data.frame",
+      "rel:Service.R:calls:run:helper",
+      "rel:Service.R:contains:Local:initialize",
+      "rel:Service.R:contains:Local:run",
+      "rel:Service.R:contains:Person:name",
+      "rel:Service.R:contains:Person:speak",
+      "rel:Service.R:contains:global:GLOBAL_LIMIT",
+      "rel:Service.R:contains:global:Local",
+      "rel:Service.R:contains:global:Person",
+      "rel:Service.R:contains:global:add",
+      "rel:Service.R:contains:global:df",
+      "rel:Service.R:contains:global:formula",
+      "rel:Service.R:contains:global:print.Base",
+      "rel:Service.R:contains:global:speak",
+      "rel:Service.R:extends:Local:Base",
+      "rel:Service.R:extends:Person:Entity",
+      "rel:Service.R:implements:print.Base:print",
+      "rel:Service.R:instantiates:add:Local",
+      "rel:Service.R:references:global:R6",
+      "rel:Service.R:references:global:methods",
+      "symbol:Base.R:1:class:Base",
+      "symbol:Base.R:2:method:initialize",
+      "symbol:Base.R:5:method:run",
+      "symbol:Negative.R:1:function:external",
+      "symbol:Negative.R:9:variable:anonymous_value",
+      "symbol:Service.R:11:function:add",
+      "symbol:Service.R:18:method:print.Base",
+      "symbol:Service.R:20:class:Person",
+      "symbol:Service.R:20:property:name",
+      "symbol:Service.R:21:function:speak",
+      "symbol:Service.R:22:method:speak",
+      "symbol:Service.R:25:variable:df",
+      "symbol:Service.R:26:variable:formula",
+      "symbol:Service.R:4:constant:GLOBAL_LIMIT",
+      "symbol:Service.R:6:class:Local",
+      "symbol:Service.R:7:method:initialize",
+      "symbol:Service.R:8:method:run"
     ],
     "falsePositiveIds": [],
     "falseNegativeIds": [],
     "unknownIds": [],
     "unsupportedIds": [],
-    "phantomViolations": [],
-    "rangeFailures": [],
     "minimizedFailure": null
   },
-  "measurements": [],
-  "note": "Regenerated by script/m12/r-evidence.ts against wasm/tree-sitter-r.wasm and the hand-derived fixture ground truth. Symbol facts are keyed by kind|name|startLine; relationship facts by type|source|target; imports by module. rangeAssertions pin the exact 1-based source columns of members and S4 slots, so a symbol that points at its enclosing call instead of itself fails.",
-  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
+  "intentionalFailure": null,
+  "measurements": [
+    {
+      "name": "verify-analyzer:r",
+      "wallTimeMs": 279.271089,
+      "userCpuMs": 52.317,
+      "systemCpuMs": 13.202,
+      "peakRssBytes": 212140032,
+      "rssDeltaBytes": 528384,
+      "databaseBytes": null,
+      "files": null,
+      "symbols": null,
+      "relationships": null,
+      "filesPerSecond": null,
+      "symbolsPerSecond": null,
+      "relationshipsPerSecond": null
+    }
+  ],
+  "note": "M12 per-analyzer differential for r. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T03:05:38.525Z",
-    "contentSha256": "7517890f2056ba05514f65cb2933660ad47c64fd1aa446d634752ae69f26dd10"
+    "sealedAt": "2026-09-28T02:54:46.289Z",
+    "contentSha256": "db9846d49d596451bc5b4d52bd0399d35d35a2293481e60c731e6572b24276a8"
   }
 }

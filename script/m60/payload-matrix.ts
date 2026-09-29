@@ -23,6 +23,7 @@
 //
 // Run: npx tsx script/m60/payload-matrix.ts  → validation/m60/results/P1.json
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs"
+import { ANALYZER_FILE_ALIAS } from "./family-closure"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
 
@@ -360,10 +361,20 @@ function onboardedLanguages(): string[] {
   return readdirSync(FIXTURES).sort()
 }
 
-function analyzerPathFor(lang: string): string {
-  // objc's file keeps the hyphen the fixture dir drops.
-  return `src/ast/real-${lang === "objc" ? "objective-c" : lang}-analyzer.ts`
-}
+  // The language->analyzer-module mapping lives in ONE exported table
+  // (script/m60/family-closure.ts), because this function READS the file: an
+  // unmapped name throws ENOENT and takes the whole gate down rather than marking
+  // one language red. A gate that dies on a filename is not reporting anything.
+  //
+  // `make` was missing from that table when this function carried its own copy
+  // inline, and the matrix had been CRASHING since the Make lane was onboarded: the
+  // fixture dir appeared, the gate picked it up, and the ENOENT looked like a broken
+  // matrix rather than a missing map entry. A second inline copy of the mapping is
+  // how the two drifted in the first place.
+  function analyzerPathFor(lang: string): string {
+    const file = ANALYZER_FILE_ALIAS[lang] ?? `real-${lang}-analyzer.ts`
+    return `src/ast/${file}`
+  }
 
 function main() {
   const typesSrc = readFileSync(TYPES_TS, "utf8")
