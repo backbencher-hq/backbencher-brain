@@ -38,6 +38,12 @@ module.exports = grammar(C, {
     // to keep both readings alive and let the full lookahead decide. tree-sitter resolves
     // this with GLR, so the cost is ambiguity in one construct, not a wrong answer.
     [$.macro_enum_arguments],
+    // The availability annotation is admissible at two points in one method declaration — the
+    // selector/parameter loop and the trailing modifiers — and the parser cannot commit to
+    // which until it has seen the `;`. Same shape as the conflict above and the same answer:
+    // keep both readings alive and let the lookahead decide, rather than pick a precedence
+    // before the token that settles it has been read.
+    [$._method_trailing_modifiers],
     // `IDENT ( primitive_type )` is the same ambiguity from the struct-member admission of
     // `macro_enum_specifier`: the `(` may open this rule's arguments or a parenthesized type.
     // Resolved by lookahead, not precedence — a precedence answer must be chosen before the
@@ -180,10 +186,59 @@ module.exports = grammar(C, {
       optional($._declaration_modifiers),
     ),
 
+    // Apple's trailing availability annotations are MACRO CALLS with nested parentheses,
+    // commas and string literals, and they are routinely written across several lines:
+    //
+    //   API_DEPRECATED_WITH_REPLACEMENT("queryImageForKey:", macos(10.10, X), ios(8.0, X),
+    //                                   tvos(9.0, X), watchos(2.0, X));
+    //
+    // C's `macro_type_specifier` covers `MACRO(type)` — one argument, type-shaped — and
+    // `attribute_specifier` covers `[[...]]`, so neither reaches this shape. Measured on
+    // sdwebimage's SDImageCacheDefine.h the gap was not cosmetic: the annotation trailed the
+    // LAST parameter of a method declaration, the parse could not continue, and the ERROR node
+    // it produced swallowed the enclosing `@protocol` whole — 83 lines, one protocol, deleted.
+    // The same file twice (Core/ and include/) put 66 of the lane's 285 remaining errors here.
+    //
+    // The argument set is deliberately the four shapes these annotations actually use — a string
+    // literal, a nested call, a bare identifier, a number — rather than a full expression, so
+    // the rule cannot swallow an arbitrary comma-separated list and reinterpret it as an
+    // annotation. It is admitted through `_declaration_modifiers` so it can trail a parameter,
+    // a method declaration, or a field, which is where Apple puts it.
+    availability_macro_specifier: $ => prec(1, seq(
+      alias($.identifier, $.macro_specifier),
+      '(',
+      optional(commaSep1(choice(
+        $.string_literal,
+        $.call_expression,
+        $.identifier,
+        $.number_literal,
+      ))),
+      ')',
+    )),
+
+    // NOT here. The first attempt admitted `availability_macro_specifier` through this shared
+    // hidden rule, which is the right-looking move — the annotation really does trail a
+    // declaration — and it was a disaster over the corpus: 285 -> 14,710 ERROR nodes and
+    // 17,642 relationships dropped, 239 of 329 files regressed. `_declaration_modifiers` sits in
+    // every declaration and parameter position in the grammar, so at `prec(1)` a rule whose
+    // arguments include a bare `identifier` outranks ordinary declarations almost everywhere:
+    // `UIApplicationMain(argc, argv)` in `main.m` was read as an annotation, and the method
+    // bodies that depended on that declaration were lost with it.
+    //
+    // The minimal case PASSED for this rule before the corpus was run, which is the point worth
+    // keeping: `API_DEPRECATED_WITH_REPLACEMENT(...)` after a method parameter parsed cleanly,
+    // in isolation, and was still unsound. A construct that fixes a real file can break 200, and
+    // only a 329-file A/B says so. The rule is therefore admitted ONLY where Apple puts these
+    // annotations — trailing a method selector or a method parameter.
     _declaration_modifiers: ($, original) => choice(
       original,
       $.availability_attribute_specifier,
       $.attribute_declaration,
+    ),
+
+    _method_trailing_modifiers: $ => choice(
+      $._declaration_modifiers,
+      $.availability_macro_specifier,
     ),
 
     _declaration_specifiers: $ => prec.right(seq(
@@ -899,9 +954,17 @@ module.exports = grammar(C, {
           optional($.method_parameter),
         ),
         $.method_parameter,
+        // An availability annotation has to be admissible INSIDE this loop, not only in the
+        // trailing modifiers after it. The loop offers exactly two things — another selector or
+        // another parameter — and a trailing `AF_API_UNAVAILABLE(macos);` begins with an
+        // identifier, so `method_selector` claimed it and the method was published under the
+        // name `setDidFinishEventsForBackgroundURLSessionBlock:AF_API_UNAVAILABLE`. A selector
+        // is identity in Objective-C, so that is not a cosmetic name: it is a method that does
+        // not exist, and it appears as a `contains` row a consumer would route calls to.
+        $.availability_macro_specifier,
       )),
       optional(seq(',', choice('...', commaSep1(alias($.c_method_parameter, $.method_parameter))))),
-      repeat($._declaration_modifiers),
+      repeat($._method_trailing_modifiers),
       repeat1(prec.right(';')),
     ),
 
