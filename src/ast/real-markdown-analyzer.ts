@@ -392,7 +392,17 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
 
-      if (type === "fenced_code_block") {
+      if (type === "fenced_code_block" || type === "indented_code_block") {
+        // MD-G1. An INDENTED (4-space) code block is the same construct as a fenced
+        // one and the grammar names the node, so the lane was emitting nothing for it:
+        // measured, 2 sites in 2 of 738 corpus files. The count is small; the
+        // ASYMMETRY inside one construct is the defect — a reader of the graph cannot
+        // tell "this document has no code" from "this document has code the lane
+        // dropped", and the fenced form proves the lane has a symbol for this.
+        //
+        // It shares the fenced path's SITE IDENTITY, which is what keeps the two forms
+        // from colliding: both are `code_block` under the same owner, so an indented
+        // block after a fenced one is `code_block#2` and not a second `code_block`.
         const infoNode = this.findChildByType(node, new Set(["info_string"]))
         const langNode = infoNode ? this.findChildByType(infoNode, new Set(["language"])) : null
         const lang = langNode?.text?.trim() ?? infoNode?.text?.trim() ?? "text"
@@ -402,6 +412,14 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const base = ownerId === DOC ? name : `${ownerId}.${name}`
         const { id, target, repeat } = siteId(base, name)
         const range = this.nodeToRange(node)
+        // An indented block has NO WAY to declare a language — there is no info string
+        // in the construct — so `language` is omitted rather than defaulted to `text`.
+        // The `text` default below is a FENCE convention and means "a fence with no
+        // language declared", which is a different fact from "a language that cannot be
+        // known"; publishing `language: "text"` here would be a fabricated one, and
+        // `nodeType` already carries the distinction (`indented_code_block`) through the
+        // worker into `annotations`.
+        const declaredLang = langNode?.text?.trim() ?? infoNode?.text?.trim()
         symbols.push({
           name: target,
           kind: ASTEngine.SymbolKind.Function,
@@ -414,7 +432,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           scope: owner === DOC ? undefined : owner,
           metadata: {
             nodeType: type,
-            language: lang,
+            ...(declaredLang ? { language: declaredLang } : {}),
             isMarkdownCodeBlock: true,
             isRepeatedSite: repeat || undefined,
           },

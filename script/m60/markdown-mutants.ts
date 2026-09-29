@@ -31,6 +31,7 @@
  *   `markdown/parent-name-collision-dropped` a heading under an identically-named parent published no edge
  *   `markdown/table-column-symbol-dropped`  every table-column edge named a symbol that was never declared
  *   `markdown/internal-anchor-unresolved`  10,174 same-document references, none of them resolvable
+ *   `markdown/indented-code-block-dropped`  217 nodes the block grammar calls code, published as nothing
  *
  * The last one is the most interesting, and it inverts the usual shape. Every other
  * mutant REMOVES a fact; that one ADDS one, by descending into `code_span` children that
@@ -390,6 +391,25 @@ export const MARKDOWN_MUTANTS = [
       relationships: (r.relationships ?? []).map((x: any) =>
         x.metadata?.linkForm === "internal_anchor" ? { ...x, target: `#${x.metadata.anchor}` } : x,
       ),
+    }),
+  },
+  {
+    id: "markdown/indented-code-block-dropped",
+    language: "markdown",
+    defectClass: "symbol-loss",
+    description:
+      "MD-G1 REVERT: an INDENTED (four-space) code block publishes nothing, while the fenced form beside it " +
+      "publishes a per-site `function`. Measured with the block grammar over 1,138 pinned corpus files: 217 " +
+      "`indented_code_block` nodes, every one of them a node the grammar names. The gap originally recorded 2 " +
+      "sites, measured by a text heuristic; the grammar is 100x that, and most of the 217 are the wrapped " +
+      "continuation lines of deeply-nested list items, which CommonMark genuinely reads as indented code. So the " +
+      "revert deletes 217 symbols, which is why the symbol COUNT is the assertion here and not a name: a lane " +
+      "that published them under a different name would satisfy a name filter and still lose the construct. " +
+      "Caught by markdown/indented-code-block, whose expectSymbolCount totals 6 blocks across 3 sections and " +
+      "whose `Not a code block` forbid rows stop the fixture being satisfied by treating any indented line as code.",
+    transform: (r: MutantResult) => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.nodeType !== "indented_code_block"),
     }),
   },
 ]
