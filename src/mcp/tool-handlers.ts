@@ -1152,16 +1152,91 @@ const handlers: Record<string, ToolHandler> = {
       // (src/lsp/impact.ts): declared budget, first-class truncation,
       // declared total. One truth (M28 decision D-1).
       const impact = await computeImpact(raw, projectId as string, symbol)
-      return textResult(JSON.stringify({
-        symbol,
-        root: impact.root,
-        budget: { maxNodes: 200, maxDepth: 5 },
-        impact: impact.impact,
-        shownCount: impact.shownCount,
-        totalCountIfKnown: impact.totalCountIfKnown,
-        truncated: impact.truncated,
-        truncationReason: impact.truncationReason,
-      }, null, 2))
+      // M63.T1: the payload IS the component's result, plus the freshness of
+      // the files it is about. Four things were missing, and all four are
+      // load-bearing for a refactoring decision:
+      //
+      //   budget   was a literal `{maxNodes: 200, maxDepth: 5}` typed HERE
+      //            while the component owned IMPACT_BUDGET. The numbers
+      //            agreed and nothing kept them agreeing — the next person to
+      //            change the budget would have changed this file too, or
+      //            shipped a payload that lies about its own limits. It is
+      //            the component's budget now, its ceilings included.
+      //   counts   `directCount` is the depth-0 count (exact, or null when the
+      //            counting walk hit a declared ceiling), and `traversal`
+      //            carries what the answer was bounded by: the depth actually
+      //            reached, the engine's own truncation state and reason, its
+      //            per-query site limit, how many of its queries hit it, and
+      //            the root's uncapped count when it could be computed. A
+      //            reader can no longer mistake a 5-node prefix for a 200-node
+      //            one, or `caller-budget-exhausted` for a per-symbol cap.
+      //   identity `rootMatch` (requested / via / nameMatches) and the
+      //            component's `resolution` ride the wire. The member→owner
+      //            substitution that the editor panel renders has been
+      //            invisible to every agent since M44.U5, and a containment
+      //            match was invisible to everyone.
+      //   stale    this surface reported NO freshness at all, on the one tool
+      //            whose answer is acted on. "4 reverse dependencies" derived
+      //            from a weeks-old index is a wrong number with no signal on
+      //            it. Every dependent is flagged, the root's own file is
+      //            declared (`rootStale`), and the envelope is attached — the
+      //            same shape bb_analyze and the graph modes already use.
+      //
+      // A stale dependent is `true`/`false`; one whose file is not in the
+      // index at all is `null`, which is a THIRD state and deliberately not
+      // folded into the other two: "we could not check" is not "fresh".
+      const dependents = impact.impact
+      const idByPath = new Map<string, string>()
+      if (dependents.length > 0 || impact.root.filePath) {
+        for (const f of raw.prepare("SELECT id, path, COALESCE(relative_path,'') AS rel FROM brain_file WHERE project_id = ?").all(projectId) as Array<{
+          id: string
+          path: string
+          rel: string
+        }>) {
+          idByPath.set(f.path, f.id)
+          if (f.rel.length > 0) idByPath.set(f.rel, f.id)
+        }
+      }
+      const idOf = (p: string | undefined): string | null => (p ? (idByPath.get(p) ?? null) : null)
+      const rows = dependents.map((d) => ({ fileId: idOf(d.filePath || d.file), filePath: d.filePath || null }))
+      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, rows)
+      for (const d of dependents) {
+        const id = idOf(d.filePath || d.file)
+        d.stale = id ? detail.statuses.get(id) !== "fresh" : null
+      }
+      const rootFileId = idOf(impact.root.filePath || impact.root.file)
+      const rootStatus = rootFileId ? (detail.statuses.get(rootFileId) ?? "missing") : null
+      // The root's file is part of the question — "what breaks if I change
+      // THIS" — so it counts toward the envelope even when no dependent is
+      // stale. Without that, a stale root with fresh dependents would render
+      // as a clean answer.
+      const rootIsStale = rootStatus !== null && rootStatus !== "fresh"
+      const envelopeRows = rootIsStale && !rows.some((r) => r.fileId && detail.statuses.get(r.fileId) !== "fresh")
+        ? [...rows, { fileId: rootFileId, filePath: impact.root.filePath || null }]
+        : rows
+      const envelope = envelopeRows.length === rows.length ? detail : resolveRowsFreshnessDetailed(raw, projectId as any, envelopeRows)
+      return textResult(
+        JSON.stringify(
+          {
+            symbol,
+            root: impact.root,
+            rootStale: rootIsStale ? rootStatus : false,
+            rootMatch: impact.rootMatch,
+            resolution: impact.resolution,
+            budget: impact.budget,
+            traversal: impact.traversal,
+            impact: dependents,
+            shownCount: impact.shownCount,
+            directCount: impact.directCount,
+            totalCountIfKnown: impact.totalCountIfKnown,
+            truncated: impact.truncated,
+            truncationReason: impact.truncationReason,
+            freshness: buildStalenessEnvelope(envelope.summary, { kind: "dir" }),
+          },
+          null,
+          2,
+        ),
+      )
     } catch (error) {
       return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)
     }
