@@ -119,7 +119,7 @@ const KIND_RANK_SQL =
   Object.entries(EDGE_KIND_PRIORITY)
     .map(([kind, rank]) => `WHEN '${kind}' THEN ${rank}`)
     .join(" ") +
-  ` ELSE ${UNRANKED_KIND_ORDER} END AS kindRank`
+  ` ELSE ${UNRANKED_KIND_ORDER} END AS kindRank `
 
 /**
  * M59.A12 (#888): the per-symbol site limit for one edge query.
@@ -481,7 +481,7 @@ export async function traverseGraph(
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "f.relative_path AS srcFileRel, NULL AS extName, " +
       "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
-      KIND_RANK_SQL + " " +
+      KIND_RANK_SQL +
       "FROM brain_relationship r " +
       "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
       "JOIN brain_file f ON f.id = s.file_id " +
