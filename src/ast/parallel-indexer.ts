@@ -246,7 +246,15 @@ export const ParallelIndexerConfig = {
   skipPatterns: [
     // === GENERATED & DEPENDENCY DIRECTORIES ===
     /\/node_modules\//,
-    /\/vendor\//,
+    // NOT here either: /\/vendor\// . `vendor` is a build-output name in
+    // Composer, where it holds third-party code — but it is a FIRST-PARTY
+    // source name in Go (a vendored tree the project then edits) and in
+    // TypeScript projects that keep curated first-party code under
+    // src/vendor/. Measured on this corpus: src/vendor/format.ts is invisible
+    // to the index, so the import that reaches it is reported as an unresolved
+    // specifier and the file has no symbols, no complexity and no freshness —
+    // for a file that is compiled into the product. node_modules is already
+    // skipped by name, and that is where a dependency tree actually lives.
     /\/bower_components\//,
     /\/__pycache__\//,
     /\/\.venv\//,
@@ -323,7 +331,21 @@ export const ParallelIndexerConfig = {
     /\/wwwroot\//,
     /\/testassets\//,
     /\/benchmarkapps\//,
-    /\/test\//,
+    // NOT here: /\/test\// . A directory named `test` is where Go, Python,
+    // Node, Java and most JVM projects keep their test SUITE. Skipping it drops
+    // those files before they are parsed, so is_test_file can never be set for
+    // them, and testMapping/testGaps/testQuality then report every production
+    // symbol untested with the "no-test-evidence-edges" note attached — which
+    // reads as "we looked and found none" rather than "we never saw the tests".
+    // Differential measurement on a corpus holding one file of each shape:
+    //
+    //   spec/format.spec.ts    indexed, is_test_file=1
+    //   tests/engine.test.ts   indexed, is_test_file=1
+    //   test/should-be-…       ABSENT from the index
+    //
+    // Same language, same naming infix, only the directory name differs. The
+    // read paths need the files; deciding what counts as a test is
+    // test-classification.ts's job and it already gates on file type.
   ],
 }
 

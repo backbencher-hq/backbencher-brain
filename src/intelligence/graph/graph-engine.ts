@@ -217,6 +217,9 @@ export async function traverseGraph(
   truncated: boolean
   truncationReason?: string
   maxDepthReached: number
+  /** The depth cap this run enforced. Paired with `maxDepthReached` it is the
+   *  only way a reader can tell "the walk finished" from "the walk stopped". */
+  maxDepth: number
   /** M59.A12 (#888): the declared per-query site limit in force for this run. */
   edgeLimit: number
   /** How many edge queries hit that limit (a query can hit it at any depth). */
@@ -507,7 +510,15 @@ export async function traverseGraph(
         callerBudgetExhausted = true
         break
       }
-      if (depth >= maxDepth - 1) break
+      if (depth >= maxDepth - 1) {
+        // A bound that fires with work still queued is a truncation. The depth
+        // cap used to break out silently, so a 14-hop chain answered with the
+        // first 3 hops and `truncated: false` — a 23% sample presented as the
+        // whole set, which is the same lie as the budget directly above and
+        // exactly what this field exists to prevent.
+        if (children.some((c) => !visitedCallers.has(c))) noteReason("caller-depth-cap-reached")
+        break
+      }
       if (!visitedCallers.has(childId)) {
         callerBudget--
         traceCallers(childId, depth + 1)
@@ -671,7 +682,10 @@ export async function traverseGraph(
         calleeBudgetExhausted = true
         break
       }
-      if (depth >= maxDepth - 1) break
+      if (depth >= maxDepth - 1) {
+        if (children.some((c) => !visitedCallees.has(c.id))) noteReason("callee-depth-cap-reached")
+        break
+      }
       if (!visitedCallees.has(child.id)) {
         calleeBudget--
         traceCallees(child.id, child.file, child.line, depth + 1)
@@ -697,6 +711,7 @@ export async function traverseGraph(
     truncated,
     truncationReason: reasons.size > 0 ? [...reasons].join("+") : undefined,
     maxDepthReached,
+    maxDepth,
     edgeLimit,
     cappedQueries,
     totalCallersIfKnown,
@@ -821,6 +836,7 @@ export async function graphTraversal(
     truncated,
     truncationReason,
     maxDepthReached,
+    maxDepth,
     edgeLimit,
     cappedQueries,
     totalCallersIfKnown,
@@ -852,6 +868,7 @@ export async function graphTraversal(
       totalCallers: callers.length,
       totalCallees: callees.length,
       maxDepthReached,
+      maxDepth,
       crossLanguageEdges,
       truncated,
       truncationReason,
