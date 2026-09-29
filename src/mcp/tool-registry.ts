@@ -208,7 +208,23 @@ const descriptors = [
       properties: {
         symbol: { type: "string", description: "symbol name to root the graph at (`target`/`symbolName`/`query` are accepted as aliases)" },
         maxDepth: { type: "number", description: "traversal depth bound (default 3)" },
-        edgeLimit: { type: "number", description: "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`callersIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer." },
+        direction: {
+          type: "string",
+          enum: ["callers", "callees", "both"],
+          description:
+            "which side to traverse (default both). 'callers' answers \"who depends on this\" and skips the callee walk entirely — on a real index that is the difference between 1 edge and 37 in the same payload.",
+        },
+        relationshipTypes: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "stored relationship kinds to include. Default: calls, instantiates, extends, implements. Pass e.g. ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction. A kind that is not listed is never reported, so this is how you exclude the type-level 'uses'/'references' rows that make up roughly half of what a typical index stores.",
+        },
+        includeCrossLanguage: {
+          type: "boolean",
+          description: "include edges the indexer marked cross-language (default true). Set false for a single-language view.",
+        },
+        edgeLimit: { type: "number", description: "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`summary.calleesIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer." },
       },
       required: ["symbol"],
     },
@@ -217,7 +233,17 @@ const descriptors = [
     modes: ["graph"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "graph", summary: "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.", defaults: { maxDepth: 3 }, examples: [{ symbol: "handleRequest" }, { symbol: "handleRequest", maxDepth: 5 }] },
+    documentation: {
+      category: "graph",
+      summary: "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.",
+      defaults: { maxDepth: 3, direction: "both" },
+      examples: [
+        { symbol: "handleRequest" },
+        { symbol: "handleRequest", maxDepth: 5 },
+        { symbol: "handleRequest", direction: "callers" },
+        { symbol: "Handler", relationshipTypes: ["calls"] },
+      ],
+    },
   },
   {
     // M28.T1 (issue #624): the agent door to bounded impact. Reuses
