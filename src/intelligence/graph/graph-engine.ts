@@ -111,7 +111,11 @@ const UNRANKED_KIND_ORDER = 100
  * so there is one ordering expression in the module rather than two.
  */
 const KIND_RANK_SQL =
-  "CASE relType " +
+  // `r.relationship_type`, not `relType`: the CASE is evaluated against the
+  // FROM tables, and an output alias is not in scope there. Inside a compound
+  // select that is a hard error — "no such column: relType" — which the corpus
+  // suite found before any reasoning about it would have.
+  "CASE r.relationship_type " +
   Object.entries(EDGE_KIND_PRIORITY)
     .map(([kind, rank]) => `WHEN '${kind}' THEN ${rank}`)
     .join(" ") +
