@@ -309,6 +309,10 @@ export interface GraphTraversalResult {
     /** Edges RETURNED for callees; see `totalCallers`. */
     totalCallees: number
     maxDepthReached: number
+    /** The depth cap in force for this traversal. Paired with
+     *  `maxDepthReached` it is what a UI renders, and `truncated: true` with a
+     *  depth reason is what tells a reader the answer is a prefix. */
+    maxDepth: number
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
@@ -386,8 +390,18 @@ export interface CouplingEntry {
 export interface FileDependency {
   file: string           // relative path
   fileId: string
-  dependencies: Array<{ path: string; fileId?: string; external: boolean }>
+  dependencies: Array<{
+    path: string
+    external: boolean
+    fileId?: string
+    /** How this target was reached: an exact path match, a segment-anchored
+     *  suffix match, or nothing (the specifier the caller wrote, unresolved). */
+    resolution?: "resolved" | "suffix-match" | "unresolved"
+  }>
   dependents: Array<{ path: string; fileId: string }>
+  /** Internal specifiers this file wrote that resolve to no indexed file.
+   *  Declared so an incomplete graph reads as incomplete rather than small. */
+  unresolvedSpecifiers?: number
   score: number
   provenance: EvidenceProvenance
 }
@@ -410,6 +424,14 @@ export interface ComplexityReport {
   }
   breakdown: Array<{ name: string; type: string; complexity: number; file: string; line: number }>
   symbolCount: number
+  /** How many FILES the scope covered. A file scope can match many
+   *  (`target: "src"`), and without this a one-file answer and an eighty-file
+   *  answer are the same shape — measured 163 symbols with `linesOfCode: 2`. */
+  filesInScope: number
+  /** Which relationship types `metrics.couplingEdges` counted. `exports` and
+   *  `contains` are index bookkeeping; counting them inflated the number by
+   *  1.20x on bb's own src and 2.24x on a small corpus. */
+  couplingRelationshipTypes: string[]
   provenance: EvidenceProvenance
 }
 

@@ -208,6 +208,16 @@ async function canonicalImpactReport(
     unresolvedEdges: 0,
     riskLevel: "low",
     truncated: false,
+    // Declared even when empty: a response whose key set changes with the
+    // result forces every consumer to branch on presence.
+    truncationReason: null,
+    depthCap: IMPACT_BUDGET.maxDepth,
+    nodeBudget: IMPACT_BUDGET.maxNodes,
+    depthReached: 0,
+    totalSymbols: 0,
+    totalSymbolsIfKnown: null,
+    notFoundReason: "absent",
+    source: "impact@lsp-canonical (computeImpact, M48.P1) — no walk was performed",
     provenance: makeProvenance({
       evidenceClass: "unknown",
       engine: "impact@lsp-canonical",
@@ -220,6 +230,16 @@ async function canonicalImpactReport(
   })
   let capturedEdges: Array<any> = []
   let capturedNodes: Record<string, any> = {}
+  // computeImpact draws its line at "traversable root / absent". A symbol that
+  // IS indexed but is a namespace, constant, type alias or enum member is
+  // neither, and reporting it as "absent" is a confident FALSE NEGATIVE.
+  // Measured on bb's own src: 78 of 140 distinct symbol names landed here, and
+  // one of them was `ASTEngine` with 390 caller edges — the tool reported
+  // `found:false, riskLevel:"low", directSymbols:0` for it. callers/callees
+  // resolve those same names by exact match of ANY type, so the tool answered
+  // for them one mode earlier and denied them here. The calculator already
+  // renders this case as a declared error naming the type and the
+  // remediation; the wrapper was throwing that message away.
   let result
   try {
     result = await computeImpact(raw, projectId, target, {
@@ -230,24 +250,66 @@ async function canonicalImpactReport(
         return r
       }) as any,
     })
-  } catch {
+  } catch (error: any) {
+    const message = error instanceof Error ? error.message : String(error)
+    // "exists but the graph cannot root here" and "the lookup itself blew up"
+    // are both distinct from "there is no such symbol". Each is carried out
+    // verbatim; neither is dressed as the third.
+    if (/not a traversable root|owning-declaration/i.test(message)) {
+      return {
+        ...notFound(),
+        notFoundReason: "not-traversable",
+        reason: message,
+        provenance: makeProvenance({
+          evidenceClass: "unknown",
+          engine: "impact@lsp-canonical",
+          engineVersion: "m48.01",
+          projectId,
+          source: "computeImpact-declared-error",
+          limitations: [
+            "The target IS in the index; the graph engine cannot root a traversal at it. No impact set exists for it — this is a declared refusal, not an empty answer.",
+            "callers/callees/trace resolve the same name by exact match of ANY symbol type; use those modes, or target the owning declaration.",
+          ],
+          unknowns: ["target-not-traversable"],
+        }),
+      }
+    }
+    if (!/not found/i.test(message)) {
+      return {
+        ...notFound(),
+        notFoundReason: "error",
+        reason: message,
+        provenance: makeProvenance({
+          evidenceClass: "unknown",
+          engine: "impact@lsp-canonical",
+          engineVersion: "m48.01",
+          projectId,
+          source: "computeImpact-error",
+          limitations: ["The impact calculation failed; the reason is reported verbatim rather than as a missing target."],
+          unknowns: ["impact-calc-failed"],
+        }),
+      }
+    }
     return notFound()
   }
 
   const internal = new Map<string, { name: string; file: string; depth: number }>()
-  let unresolvedEdges = 0
+  // Counted once per DISTINCT node id: the entry loop and the raw-edge loop
+  // both counted an external node, so unresolvedEdges was up to double.
+  const unresolvedNodes = new Set<string>()
   let depthReached = 0
   for (const entry of result.impact as Array<{ id: string; name: string; file: string; depth: number }>) {
     if (entry.depth > depthReached) depthReached = entry.depth
     const node = capturedNodes[entry.id]
-    if (node?.isExternal === true || !entry.file) { unresolvedEdges++; continue }
+    if (node?.isExternal === true || !entry.file) { unresolvedNodes.add(entry.id); continue }
     const existing = internal.get(entry.id)
     if (!existing || entry.depth < existing.depth) internal.set(entry.id, { name: entry.name, file: entry.file, depth: entry.depth })
   }
   for (const edge of capturedEdges) {
     const node = capturedNodes[edge.from]
-    if (node?.isExternal === true) unresolvedEdges++
+    if (node?.isExternal === true) unresolvedNodes.add(edge.from)
   }
+  const unresolvedEdges = unresolvedNodes.size
 
   // File-level rollup (one row per file, min depth, first symbol as via).
   const crossLangFiles = new Set<string>()
@@ -290,6 +352,10 @@ async function canonicalImpactReport(
     depthReached,
     // The exact bb_impact count (same result object) — gate-asserted equal.
     totalSymbols: result.shownCount,
+    // computeImpact already runs the bounded independent COUNT that exists
+    // for exactly this ("showing X of Y"). It was computed and then dropped,
+    // so a truncated set could only ever be read as the whole set.
+    totalSymbolsIfKnown: result.totalCountIfKnown,
     source: "impact@lsp-canonical (computeImpact, M48.P1)",
     provenance: makeProvenance({
       evidenceClass: "inferred",
@@ -622,6 +688,23 @@ const handlers: Record<string, ToolHandler> = {
   bb_analyze: async (args, { projectId }) => {
     const mode = String(args.mode ?? "")
     const allowed = new Set(["mode", "target", "filePath", "limit"])
+    // `limit` is advertised on the tool as "result limit". It is honoured by
+    // dependencies and test_quality and silently ignored by the other modes —
+    // measured on bb's own src, `test_mapping` returned 373,270 bytes with
+    // `limit: 2`, byte for byte the same as unlimited. Ignoring a parameter a
+    // caller believes in is worse than refusing it.
+    const LIMIT_MODES = new Set(["dependencies", "test_mapping", "test_gaps", "test_quality"])
+    if (args.limit !== undefined && !LIMIT_MODES.has(mode)) {
+      return textResult(
+        `bb_analyze ${mode}: limit does not apply to this mode (it bounds dependencies, test_mapping, test_gaps and test_quality) — refusing it rather than ignoring it`,
+        true,
+      )
+    }
+    if (args.limit !== undefined && Number(args.limit) === 0) {
+      // limit 0 became an empty answer that reads as "this project has no
+      // dependencies". That is a measurement claim, and it was never taken.
+      return textResult("bb_analyze " + mode + ": limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer", true)
+    }
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
@@ -631,7 +714,8 @@ const handlers: Record<string, ToolHandler> = {
     const fileModes = new Set(["dependencies", "test_mapping", "test_gaps", "test_quality"])
     if (args.target && !targetModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: target`, true)
     if (args.filePath && !fileModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: filePath`, true)
-    if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target) return textResult(`bb_analyze ${mode} requires target`, true)
+    if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target.trim())
+      return textResult(`bb_analyze ${mode} requires a non-empty target`, true)
 
     // M35.S1: staleness on every read mode — additive truth, rows flagged
     // never dropped, nothing silently re-indexed. Helper builds the shared
@@ -705,10 +789,61 @@ const handlers: Record<string, ToolHandler> = {
     }
 
     if (mode === "callers" || mode === "callees" || mode === "trace") {
-      const result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
+      // Not-found used to THROW out of the handler, so three of the five
+      // target modes answered a missing symbol with `isError: true` and a bare
+      // text line while the other two returned JSON with `found: false`. An
+      // agent branching on `found` got an exception instead of a value, and
+      // neither branch carried a remediation. The declared shape is the same
+      // for all five, and the key set does not change with the result.
+      let result
+      try {
+        result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
+      } catch {
+        return withFreshness(
+          {
+            mode,
+            target,
+            found: false,
+            notFoundReason: "absent",
+            reason: `bb_analyze ${mode}: symbol '${target}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
+            root: null,
+            rootCandidates: 0,
+            callers: [],
+            callees: [],
+            nodes: {},
+            // The key set must not change with the result, or every consumer
+            // has to branch on presence before it can read a field.
+            summary: {
+              totalCallers: 0,
+              totalCallees: 0,
+              maxDepthReached: 0,
+              maxDepth: 0,
+              crossLanguageEdges: 0,
+              truncated: false,
+              edgeLimit: 0,
+              cappedQueries: 0,
+              callersIfUncapped: null,
+              calleesIfUncapped: null,
+              totalsAreLowerBounds: false,
+              dedupedAtToolLayer: { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
+            },
+            provenance: makeProvenance({
+              evidenceClass: "unknown",
+              engine: "graph@intelligence",
+              engineVersion: "m10.02",
+              projectId,
+              source: "brain_symbol",
+              limitations: ["The target does not exist in the index, so no relationship set was computed. Nothing is claimed about what depends on it."],
+              unknowns: ["target-not-found"],
+            }),
+          },
+          [],
+          { scope: { kind: "dir" } },
+        )
+      }
       const nodes = Object.values((result as { nodes: Record<string, any> }).nodes ?? {})
       return withFreshness(
-        result as unknown as Record<string, unknown>,
+        { ...(result as unknown as Record<string, unknown>), mode, target, found: true } as Record<string, unknown>,
         nodes.map((n) => (n.isExternal ? { filePath: null } : { filePath: n.filePath || n.file || null })),
         { onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== "fresh" } },
       )
@@ -772,7 +907,10 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_mapping") {
-      const report = await testMapping(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
+      const report = await testMapping(projectId as any, {
+        filePath: args.filePath ? String(args.filePath) : undefined,
+        maxResults: args.limit != null ? Number(args.limit) : undefined,
+      })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
@@ -780,7 +918,10 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_gaps") {
-      const report = await testGaps(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
+      const report = await testGaps(projectId as any, {
+        filePath: args.filePath ? String(args.filePath) : undefined,
+        maxResults: args.limit != null ? Number(args.limit) : undefined,
+      })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),

@@ -345,6 +345,16 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     else indirect.push(entry)
   }
 
+  // testMapping and testGaps both attach the "no-test-evidence-edges" unknown
+  // when the corpus produced nothing. testImpact did not, so on a project with
+  // no test files it reported found:true with two empty arrays — an
+  // authoritative "no test touches this" backed by nothing. The evidence is
+  // one COUNT away, so take it.
+  const testSymbols = (
+    raw.prepare("SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 1").get(projectId) as { c: number }
+  ).c
+  const unknowns = ["runtime-coverage-unavailable"]
+  if (testSymbols === 0) unknowns.unshift(NO_EVIDENCE_UNKNOWN)
   return {
     target,
     found: true,
@@ -352,7 +362,7 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     indirectTests: indirect,
     affectedTestFiles: Array.from(affected).sort(),
     truncated: graph.summary.truncated,
-    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns: ["runtime-coverage-unavailable"] }),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns }),
     runtimeCoverage: { available: false },
   }
 }
