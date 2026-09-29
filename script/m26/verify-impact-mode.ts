@@ -254,6 +254,42 @@ async function main(): Promise<void> {
     core.renderImpact(result, domNE as never)
     check("G4: non-empty impact set renders no absence note", domNE.el.find("bb-impact-empty") === null)
 
+    // --- G4b: a NON-EXACT name is a substitution and the panel says so --------
+    // M63.T1. Measured on the bb_impact corpus lane: asked about graphql-js
+    // `push` (141 stored relationships point at a `push`), the answer is an
+    // empty set about a different `push`. A panel that renders only the
+    // numbers is indistinguishable from "nothing depends on this".
+    const domFuzzy = makeDom()
+    core.renderImpact(
+      { ...result, root: { ...result.root, file: "lib/push.js" }, rootMatch: { requested: "rootFnX", via: "fuzzy-containment", nameMatches: 0 } } as never,
+      domFuzzy as never,
+    )
+    const fuzzyNote = domFuzzy.el.find("bb-root-match-note") as El | null
+    check(
+      "G4b: a containment match renders a visible substitution note",
+      fuzzyNote !== null && fuzzyNote!.textContent.includes("rootFnX") && fuzzyNote!.textContent.includes("rootFn") && fuzzyNote!.textContent.includes("lib/push.js"),
+      fuzzyNote?.textContent ?? "no note",
+    )
+    check(
+      "G4b: the note rides machine-readable attributes",
+      domFuzzy.el.attrs["data-root-match"] === "fuzzy-containment" && domFuzzy.el.attrs["data-root-requested"] === "rootFnX" && domFuzzy.el.attrs["data-root-name-matches"] === "0",
+      JSON.stringify(domFuzzy.el.attrs),
+    )
+    // An EXACT match renders no such note (declared absence), and neither does
+    // the owning-declaration case, which has its own resolution note.
+    const domExact = makeDom()
+    core.renderImpact({ ...result, rootMatch: { requested: "rootFn", via: "exact", nameMatches: 1 } } as never, domExact as never)
+    check("G4b: an exact match renders no substitution note", domExact.el.find("bb-root-match-note") === null)
+    const domOwner = makeDom()
+    core.renderImpact(
+      { ...result, resolution: { through: "owning-declaration", memberName: "ctor", ownerName: "rootFn" }, rootMatch: { requested: "ctor", via: "owning-declaration", nameMatches: 2 } } as never,
+      domOwner as never,
+    )
+    check(
+      "G4b: the owning-declaration case keeps its own note and gains no second one",
+      domOwner.el.find("bb-impact-resolution-note") !== null && domOwner.el.find("bb-root-match-note") === null,
+    )
+
     // --- Latency (contract §3 render budget, headless regime) --------------------
     const samples: number[] = []
     for (let i = 0; i < 20; i++) {
@@ -386,6 +422,17 @@ async function main(): Promise<void> {
         from: "return { total: hitScanCeiling ? null : found.size, direct, rowsScanned, expansions, hitScanCeiling }",
         to: "return { total: found.size, direct, rowsScanned, expansions, hitScanCeiling }",
         probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:hub2", { expansionCeiling: 1 }).total !== null
+      },
+      {
+        name: "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
+        home: "core",
+        from: 'if (match && match.via !== "exact" && match.via !== "owning-declaration") {',
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, rootMatch: { requested: "rootFnX", via: "fuzzy-containment", nameMatches: 0 } }, d as never)
+          return d.el.find("bb-root-match-note") === null // the substitution became invisible
+        },
       },
       {
         name: "M5 truncation state lost",
