@@ -506,21 +506,43 @@ quiet machine will cover all 5,227 through the production path.
 
 ## Honest limitations
 
-1. **do-pragma is not parsed as a pragma.** `expr.#[…].#` is consumed as a
-   block-comment extra by the pinned grammar, so the 16 affected corpus files
-   lose the pragma surface (and pick up ERROR nodes). It is the largest class by
-   file count but every one of those 16 files lives under `nimsuggest/tests/`,
-   i.e. it is a negative test — which is why the shipping-code list above, not the
-   file count, is the honest measure of what a user would hit. The same
-   rebuild-gating applies to every other class in the census table: a 56-line
-   patch for do-pragma is preserved at
-   `$HOME/fixtures/nim/out/0001-nim-dopragma.patch` and is deliberately
-   **not applied**, because a rebuilt wasm has to pass the 72-case conformance
-   suite, the 17-file matrix and the corpus regression before it can be wired,
-   and the machine this was built on cannot hold the 2 GB+ that
-   `tree-sitter generate` needs for a 41 MB `parser.c` while other work is in
-   flight. An unproven grammar patch wired into a pin would be worse than a
-   recorded gap.
+1. **do-pragma is not parsed as a pragma — and the fix is now MEASURED, not
+   assumed.** `expr.#[…].#` is consumed as a block-comment extra, so the 16
+   affected corpus files lose the pragma surface. A 56-line grammar patch was
+   written and, on 2026-09-28, finally rebuilt end to end once the machine had the
+   ~2.3 GB this 41 MB `parser.c` needs:
+
+   | gate | result |
+   | --- | --- |
+   | `tree-sitter generate` | succeeds (15 min) |
+   | `tree-sitter test`, upstream's own 72 cases | **72/72 pass** |
+   | compiler matrix, 17 files | unchanged, no regression |
+   | **whole pinned corpus, 3,914 files** | **0 files fixed, 6 files regressed** |
+
+   The patch is therefore **strictly harmful as written**, and it stays unapplied.
+   The six broken files are all macro-heavy, which points at the cause being
+   structural rather than typographical: `#[` is the EXTERNAL SCANNER's token, so
+   a grammar-level production for it competes with the scanner that owns it. A real
+   fix has to reach the scanner, not just the grammar — which is a different piece
+   of work, honestly scoped rather than left as a hopeful patch. The patch
+   (`$HOME/fixtures/nim/out/0001-nim-dopragma.patch`) and the candidate
+   wasm (5,914,156 B) are both preserved for whoever takes it on.
+
+   This is the strongest argument this lane has for its rebuild protocol: the
+   conformance suite passed 72/72 on a build that made the corpus measurably
+   worse, because upstream's suite contains no do-pragma case. Conformance proves
+   the patch did not break what upstream tests; only the corpus sweep caught what
+   it did.
+
+   A **rebuild hazard** came out of the same exercise and is recorded in
+   `grammars/tree-sitter-nim/PIN.md`: this vendored tree keeps `scanner.c` at the
+   root while upstream keeps it at `src/scanner.c`, and `tree-sitter generate`
+   does not move it. The externals live in `grammar.js`, not in
+   `tree-sitter.json`, so `generate` produces an empty `src/tree_sitter/` and no
+   `src/scanner.c` — and a wasm built that way parses no indentation-sensitive Nim
+   at all, quietly, with a successful build. The PIN's two-command sequence was not
+   sufficient to reproduce the wired build; it now carries the required
+   `cp scanner.c src/scanner.c`.
 2. **Cross-file method overrides now RESOLVE — through the project's companion
    index, and the per-file default is preserved.** The capability is not
    NIM-specific: `ASTEngine.AnalyzeContext.overrideCompanion` already existed and
