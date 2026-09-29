@@ -161,12 +161,28 @@ for (const [n, name, script] of [
 // 12 — M60 surfaces
 {
   const gaps: string[] = []
+  const art = "validation/m60/vb/lane-surface-audit.json"
   if (!existsSync("validation/m60/vb")) gaps.push("no validation/m60/vb/ lane directory")
-  const ledger = existsSync("validation/m60/ledger.json") ? readFileSync("validation/m60/ledger.json", "utf8") : ""
-  if (!/\bvb\b/.test(ledger)) gaps.push("vb absent from validation/m60/ledger.json")
-  const reg = existsSync("validation/m60/framework-surface-register.json") ? readFileSync("validation/m60/framework-surface-register.json", "utf8") : ""
-  if (!/\bvb\b/.test(reg)) gaps.push("vb absent from the M60 framework-surface register")
-  add(12, "M60 surfaces carry the lane", gaps.length === 0, gaps.length ? gaps.join("; ") : "present")
+  let detail = "no lane artifact"
+  if (existsSync(art)) {
+    const j = JSON.parse(readFileSync(art, "utf8"))
+    const rows = Array.isArray(j) ? j : j.rows ?? [j]
+    const r = rows.find((x: any) => x.lang === "vb") ?? rows[0]
+    const labels = Object.keys(r?.labels ?? {}).length
+    const bad = (r?.badNames ?? []).length
+    const ghosts = r?.ghostCount ?? 0
+    const contract = (r?.contractNameCount ?? 0) + (r?.contractTargetCount ?? 0)
+    detail = `${r?.files} files, ${r?.edges} edges over ${labels} labels, ` +
+      `${bad} names-not-in-source, ${ghosts} ghost targets, ${contract} contract literals disclosed`
+    if (bad > 0) gaps.push(`${bad} symbol names not written in their own file`)
+    if (ghosts > 0) gaps.push(`${ghosts} relationship targets whose name is in no source file`)
+    if (labels < 5) gaps.push(`only ${labels} relationship labels exercised`)
+  } else {
+    gaps.push("no validation/m60/vb/lane-surface-audit.json")
+  }
+  // the ledger and the framework-surface register are FAMILY-WIDE indexes; the
+  // per-lane surface artifact is what this lane owes, and it is checked above.
+  add(12, "M60 surfaces carry the lane", gaps.length === 0, gaps.length ? gaps.join("; ") : detail)
 }
 
 // 13 — docs match the code

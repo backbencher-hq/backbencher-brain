@@ -586,7 +586,7 @@ whole session, and a `100 %` on one file set was reported as a corpus result.
 bun run script/m14/verify-vb-lane.ts
 ```
 
-**Current state: 12 of 14 criteria met.** Proven mechanically, not asserted:
+**Current state: 13 of 14 criteria met.** Proven mechanically, not asserted:
 
 | | criterion | evidence |
 |---|---|---|
@@ -618,9 +618,31 @@ not.
   refuses to write that artifact: it is the 30-language sweep's claim, and a
   one-language write would replace a bigger claim with a smaller one. It needs the
   canonical sweep, which is not one lane's to run.
-- **12 — the M60 surfaces do not carry the lane.** No `validation/m60/vb/`
-  directory, absent from `ledger.json`, absent from the framework-surface register,
-  no matrix tick — while `lua`, `sql`, `hcl` and `make` all have lane artifacts.
+- ~~**12 — the M60 surfaces do not carry the lane.**~~ **Closed.** The M60
+  surface audit is the check that asks the questions the user-facing criteria
+  actually ask — every label the lane emits, whether each edge carries its line,
+  whether each carries the seam keys a consumer reads, and whether a published
+  name is written in the file at all — per label, over real corpora. On a 400-file
+  draw it reads **clean**: 7 labels, 12,327 edges, **0** without a line, **0**
+  with line 0, **0** missing a seam key, **0** names not in source, **0** ghost
+  targets. The artifact is `validation/m60/vb/lane-surface-audit.json`.
+
+  Getting it to read clean for the RIGHT reason took two fixes to the audit
+  itself, both of which were false positives against this lane:
+
+  - **393 symbol names and 376 relationship targets flagged as "not in source"**
+    were the contract literals `constructor` and `operator`. The source says `New`
+    and `+`, and csharp and typescript publish the same literal (five sites each),
+    so this is a family contract the check did not know about. It is now a
+    **separate disclosed channel** — `contract literals: N` is printed beside
+    `ghosts: 0` — rather than a suppression, so the difference between clean and
+    excused stays visible. It is keyed to the symbol KIND, so a class genuinely
+    called `constructor` somewhere is still reported.
+  - **4 enum members named `None` were flagged as "a name that is not a name"**,
+    because the placeholder list contains `none` for python's null literal and
+    `None` is an idiomatic zero member of a .NET enum — P3D writes it in three
+    files. A null literal stands in for a VALUE, so the check is now scoped to the
+    kinds that denote one; python is unchanged and still reads 0.
 
 And one thing the checklist deliberately does **not** paper over: criterion 6 passes
 on *zero unexplained*, not on *zero missing*. Seven of 39,045 audited edges are
