@@ -152,7 +152,32 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
-          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+          // Z22 (deep review, found by the OWNERSHIP verifier): a CONTAINER
+          // declared inside an executable body is a LOCAL type, and the walk
+          // handed its declarations to the ENCLOSING container. A local type has
+          // no file-scope identity, so its members cannot be attributed to
+          // anything: `const Callback = struct { pub fn callback(…) void }`
+          // inside a method of `Blob` published `callback` as a Method OWNED BY
+          // `Blob`, plus a `contains Blob -> callback` edge — fabricated ownership
+          // on a class the differential CANNOT see, because its coverage match is
+          // `label + target` and ignores the source, so an edge that keeps its
+          // member name and changes owner still reads as covered. The ownership
+          // verifier (script/m14/tmp/zigw-ownership.ts) found it in 150 files,
+          // which is how a class with no gate got one.
+          //
+          // The contract is the sibling rulings': a container with no stable
+          // identity owns nothing, so its declarations are not symbols — and the
+          // reads, calls and imports inside it are untouched, because those walks
+          // are separate.
+          const localKids = this.getAllNamedChildren(node)
+          const localRhs = localKids[localKids.length - 1]
+          this.pushChildren(
+            node,
+            walkStack,
+            container,
+            inFunction,
+            anonContainer || (!!localRhs && ANONYMOUS_CONTAINER_NODES.has(localRhs.type)),
+          )
           continue
         }
 
