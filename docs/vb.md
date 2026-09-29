@@ -574,6 +574,60 @@ text.
 Two mutants pin it: one reverts the modifier read, one unqualifies the override
 target. Eight VB mutants, all caught.
 
+## Is this lane done? A command, not an opinion
+
+`script/m14/verify-vb-lane.ts` is the checklist this page is audited against. It
+exists because "the analyzer is finished" kept getting answered by assertion, and
+because several claims in this file were true when written and stopped being true
+without anybody noticing — the sampler went on drawing the same 60 files for a
+whole session, and a `100 %` on one file set was reported as a corpus result.
+
+```sh
+bun run script/m14/verify-vb-lane.ts
+```
+
+**Current state: 12 of 14 criteria met.** Proven mechanically, not asserted:
+
+| | criterion | evidence |
+|---|---|---|
+| 1 | zero regex in the analyzer | no `RegExp`, no pattern-taking string method, 1,676 lines |
+| 2 | no unknown symbol kinds | 0 of 768 symbols outside the product's own kind set |
+| 3 | no empty symbol names | 0 of 768 |
+| 4 | every relationship has a 1-based line | 0 without one |
+| 5 | every relationship's line is **correct** | 0 cite a line where the target name is absent, 0 beyond EOF |
+| 6 | no unexplained relationships | 2,363 files, 39,045 audited truth edges, **0 unexplained** |
+| 7 | every node type is classified | 145/145 |
+| 8 | every declaration yields a symbol | 19/19 types, 1:1 yield, from a 7-file set cover |
+| 9 | no repeated field read as singular | 4 repeated fields, all read safely |
+| 10 | every mutant is caught | 9 mutants, 0 surviving |
+| 13 | documentation present and current | all three files, numbers match the code |
+| 14 | grammar pin intact | pinned, working tree clean |
+
+Criterion 5 is the one worth singling out, because "has a line" and "has the
+*right* line" are different claims and only the second one matters to somebody
+navigating to a definition. It checks the target name is actually present within
+three lines of the cited line, across 1,882 relationships. Zero wrong. The two
+contract literals are excluded and the exclusion is stated in the output: a
+constructor is published as `constructor` and the source says `New`, so expecting
+the literal on that line would be checking that the source says something it does
+not.
+
+**Open, and neither is an analyzer defect:**
+
+- **11 — `M14.0.F5` has no `vb` row.** A scoped `--lang vb` run deliberately
+  refuses to write that artifact: it is the 30-language sweep's claim, and a
+  one-language write would replace a bigger claim with a smaller one. It needs the
+  canonical sweep, which is not one lane's to run.
+- **12 — the M60 surfaces do not carry the lane.** No `validation/m60/vb/`
+  directory, absent from `ledger.json`, absent from the framework-surface register,
+  no matrix tick — while `lua`, `sql`, `hcl` and `make` all have lane artifacts.
+
+And one thing the checklist deliberately does **not** paper over: criterion 6 passes
+on *zero unexplained*, not on *zero missing*. Seven of 39,045 audited edges are
+missing (99.98 %), and 4,504 `references` edges sit at confidence 0.6 because the
+type they name is not in the file. "100 % output coverage" is not literally true
+and should not be written as if it were.
+
 ## What is not done
 
 Stated plainly, because a lane that hides its boundary is worse than one that
