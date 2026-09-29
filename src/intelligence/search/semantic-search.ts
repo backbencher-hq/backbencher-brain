@@ -22,10 +22,13 @@ const NON_DENSE_MODELS = new Set(["tfidf-v1"])
  *  as "0% covered" (which reads as total failure rather than total absence). */
 function measureCoverage(raw: any, projectId: ProjectID): { indexSymbolCount: number; embeddedSymbolCount: number; embeddingCoverage: number } {
   try {
+    // TWO placeholders, TWO bindings — binding one leaves the second subquery
+    // NULL, which SQLite reports as 0, and coverage then reads "0 of 0" on
+    // every project instead of the real ratio.
     const row = raw.prepare(
       "SELECT (SELECT COUNT(*) FROM brain_symbol WHERE project_id = ?) AS symbols, " +
         "(SELECT COUNT(DISTINCT entity_id) FROM brain_semantic_embedding WHERE project_id = ?) AS embedded",
-    ).get(projectId) as { symbols: number; embedded: number } | undefined
+    ).get(projectId, projectId) as { symbols: number; embedded: number } | undefined
     const indexSymbolCount = row?.symbols ?? 0
     const embeddedSymbolCount = row?.embedded ?? 0
     return {

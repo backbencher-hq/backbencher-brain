@@ -191,10 +191,13 @@ function has(lower: string, phrase: string): boolean {
 async function embeddingCoverage(projectId: ProjectID): Promise<{ embedded: number; symbols: number; ratio: number }> {
   try {
     const raw = await BrainDatabase.getRawInstance(projectId)
+    // TWO placeholders, TWO bindings. Binding one leaves the second subquery
+    // with NULL, which SQLite reports as 0 — the coverage silently reads as
+    // "0 of 0 symbols embedded" on every project. Measured, not guessed.
     const row = raw.prepare(
       "SELECT (SELECT COUNT(*) FROM brain_symbol WHERE project_id = ?) AS symbols, " +
         "(SELECT COUNT(DISTINCT entity_id) FROM brain_semantic_embedding WHERE project_id = ?) AS embedded",
-    ).get(projectId) as { symbols: number; embedded: number } | undefined
+    ).get(projectId, projectId) as { symbols: number; embedded: number } | undefined
     const symbols = row?.symbols ?? 0
     const embedded = row?.embedded ?? 0
     return { embedded, symbols, ratio: symbols > 0 ? embedded / symbols : 0 }
