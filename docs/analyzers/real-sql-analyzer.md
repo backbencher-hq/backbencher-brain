@@ -4,9 +4,9 @@
 
 - Analyzer: `src/ast/real-sql-analyzer.ts`
 - Grammar: **patched** `@derekstride/tree-sitter-sql` 0.3.11, built from its own upstream
-  source with five rule groups added; wired at `wasm/tree-sitter-sql.wasm`
-  (sha256 `9d2142efde7d17205b5e662343536eba1babe1c965857e24dd4f4b253a693e20`, 12,130,082 B;
-  825 node types, 62 fields)
+  source with eight rule groups added; wired at `wasm/tree-sitter-sql.wasm`
+  (sha256 `486ec2159ecff99bfb94c1549c3e1306594b252f653e13d920e2fdddcff99369`, 12,555,354 B;
+  826 node types, 62 fields)
 - Wiring: `ASTEngine.parseFile` → `RealSqlAnalyzer`; the engine also hands the analyzer its
   loaded grammar through `RealSqlAnalyzer.setGrammar` in `parseRaw` (see *Recovery passes*)
 - Corpora: `proxicall@1f3e3567` (441 tracked SQL files), `postgrest@978b169` (32), and — added
@@ -175,7 +175,8 @@ than argued.
 | **V3** | opaque `DO $$ … $$` (bodies consumed as one token) | **Rejected.** Cuts tree-level error files 320 → 196, but 49/256 damaged files lose ≥25 % of their structure (worst −95.8 %, 2,278 → 79 named nodes) and 0 files gain any, because the gain is an opaque token swallowing real declarations. Product output byte-identical to V2 |
 | **V4** | plpgsql statement scaffolding, 17 rules + 16 keywords, reusing `$._expression` | **Blocked on first build.** −36 % ProxiCall error nodes, +9.4 % structure, but it regressed the pinned `block-declarations` contract case (53/54) |
 | **V5** | V4 plus the DECLARE section restored and the conflict declared | **Blocked, and it disproved the diagnosis.** It failed the *same* case identically, which is how the real cause was found |
-| **V6** | `optional(';')` restored after `END` in both dollar-quoted body forms, plus `[$.plpgsql_block]` declared | **SHIPPED.** `errors=0` on the blocking input. Function recall on real PostgreSQL DDL 17.6 % → **37.0 %** (2,095 → 4,394). Contract battery 54/54, fixtures 11/11, pin re-registered |
+| **V6** | `optional(';')` restored after `END` in both dollar-quoted body forms, plus `[$.plpgsql_block]` declared | **SHIPPED, superseded by V8.** `errors=0` on the blocking input. Function recall 17.6 % → 37.0 % by the count ratio |
+| **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **SHIPPED (current).** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
 
 Six conflicts were resolved by measurement, not guesswork, and three of them are **declared**
 rather than resolved by deletion: `[$.plpgsql_block, $._plpgsql_body_item]`,
@@ -252,9 +253,14 @@ the record stays in the file, is printed on every run, and is not silently skipp
 
 ## Known gaps, stated rather than implied
 
-- Function recall on **real PostgreSQL extension DDL is 37.0 %** (4,394 of 11,883 textual
-  `CREATE FUNCTION`) — up from 17.6 % when the plpgsql grammar shipped, and still the largest
-  known gap. **Table recall is 4.1 %** (13 of 314) and was *not* improved by that grammar, which
+- **Distinct-name** function recall on real PostgreSQL extension DDL is **951 of 1,170 (81.3 %)**;
+  the count ratio says 35.8 %. Report the name-based figure: on a versioned extension corpus the
+  two disagree by more than 2x because the same function is re-declared in every version script,
+  and the count ratio measures repetition rather than coverage.
+- **282 of 387 extension files still contain at least one ERROR**, so most of the cascade loss
+  remains. The next dominant damage shapes should be re-measured, not assumed.
+- `@placeholder@` templating (154 files) is not addressed; it needs a template token in
+  identifier and type positions and was deliberately deferred rather than half-done. **Table recall is 4.1 %** (13 of 314) and was *not* improved by that grammar, which
   makes it the sharpest remaining target: `CREATE TABLE` inside a plpgsql body is still
   unreachable, and the 94 % of `EXECUTE` literals that are concatenated fragments have a
   run-time-computed name that no technique can recover. 56 of 387 extension files yield zero
