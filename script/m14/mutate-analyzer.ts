@@ -11432,6 +11432,56 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   // --------------------------------------------------------------------------
+  // EX-A15 — a parenthesized operator definition (`defmacro (..)`, how Kernel
+  // defines its zero-arity range operator) fell through to the EX-D9
+  // placeholder, and a second one in the same module MERGED into the same
+  // placeholder row. Re-injected as the pre-fix payload: every operator-named
+  // symbol collapses onto the placeholder name, so the fixture's count pin (the
+  // placeholder must be exactly ONE — the genuinely dynamic definition) and its
+  // kind pin fail.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/paren-operator-placeholder",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "EX-A15 regression: a PARENTHESIZED operator definition publishes the EX-D9 placeholder instead of the operator name, and two of them in one module merge into one row (measured pre-fix: `expected 1 symbol(s) named Unknown; got 2` on fixture paren-operator-forms, because `defmacro (..)` and `def (---)(l, r)` both fell through). Caught by the fixture's operator-name pins, its placeholder count pin, and its placeholder-kind forbid.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (typeof s.name !== "string") return s
+        // a name that is PURELY operator characters is what the pre-fix
+        // signature branches failed to recognise
+        if (s.name.length > 0 && /^[+\-*/<>=!&|^~@.]+$/.test(s.name)) return { ...s, name: "Unknown" }
+        return s
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-A16 — the store seam. The pool worker carries exactly ONE metadata key
+  // to the store phase (`metadata.isDeclaration`); the analyzer published the
+  // declaration flag only as a top-level field, so brain_symbol.is_declaration
+  // came out NULL for every elixir declaration. Measured on a real index through
+  // the production indexer: 0 declaration rows before, 2 after. No fixture could
+  // see it, because fixtures call the analyzer and never pass through the worker
+  // — the re-injection here is the payload half (drop the carried key), and the
+  // SQL round-trip probe is the seam half.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/declaration-metadata-key-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A16 regression: `metadata.isDeclaration` is stripped, which is the ONE key the pool worker carries to the store phase — the top-level field alone does not survive the worker's symbol reconstruction, so brain_symbol.is_declaration goes NULL for every elixir declaration. Caught by the callback-declarations fixture's meta.isDeclaration pins; the SQL round-trip (script/m14/tmp/elixir-store-roundtrip.ts) is the seam gate.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("isDeclaration" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.isDeclaration
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
   // EX-PAYLOAD WAVE — the suite's coverage of the elixir PAYLOAD surface, asked
   // as a measurement rather than assumed. The mutants above all target
   // relationship shape and symbol IDENTITY; this batch targets the fields a
