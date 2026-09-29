@@ -7,7 +7,7 @@
   "passed": 19,
   "failed": 0,
   "failures": [],
-  "currentCommit": "2d32f088b926e3ad7b88b6c77dc4fd158669f71d",
+  "currentCommit": "25ef68be44ee255057b3e33067228cf2933a7584",
   "verifierCommand": "npx tsx script/m63/verify-cl1-corpus-predicate.ts",
   "evidenceFile": "CL1-T1.json",
   "predicateSource": "script/m48/c1-repo-worker.ts:185",
@@ -325,7 +325,7 @@
       "pairableRows": 106
     }
   },
-  "generatedAt": "2026-09-29T04:11:39.079Z",
+  "generatedAt": "2026-09-29T04:48:33.534Z",
   "limitations": [
     "The answers fed here are built from the jvm-interop corpus's measured facts (230 files, 9,201 symbols, 1,545 stored cross-language rows; `invoke` 227 copies / 21 rows, `f` 1 copy / 106 rows) plus mutations of the honest answer. They are not live tool output.",
     "This file measures a PREDICATE and a rule set, not the tool. The tool's own behaviour against a real index is gated by script/m63/verify-cl1-cross-language.ts.",
@@ -333,7 +333,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:11:39.108Z",
-    "contentSha256": "12761116de91082c7bb539a5319fe728991511aea13f063a255e9acc8e670d1e"
+    "sealedAt": "2026-09-29T04:48:33.538Z",
+    "contentSha256": "bb29f8b6f71cb02d845a5c6ffe09cfd54b876ecc59975380302317a91a515d44"
   }
 }
