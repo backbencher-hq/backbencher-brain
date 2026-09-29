@@ -208,3 +208,15 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-proto/src/tree_sitter/parser.h
 !grammars/tree-sitter-proto/src/tree_sitter/alloc.h
 !grammars/tree-sitter-proto/src/tree_sitter/array.h
+
+# `libxslt/` is a 2,245-file git clone with its OWN `.git`, checked out as a
+# dependency. Nothing ignored it, which put it one `git add -A` away from
+# committing an entire dependency history as ordinary files — in a repo where
+# `node_modules` is a tracked SYMLINK and one mistaken add has already caused
+# real damage (see the `node_modules` comment above). A checkout is not source.
+libxslt/
+
+# `*.tmp-*` is a crashed or killed run's partial output: `M14.0.F8.json.tmp-2831056`
+# was 0 bytes. Same killed-run failure mode the Lua mutation harness just grew a
+# sidecar for, in a place with no sidecar to repair from.
+*.tmp-*
