@@ -289,6 +289,71 @@ function* walkNodes(node: any): Generator<any> {
   }
 }
 
+// ── METADATA TRUTH, derived from the tree and NOT from the analyzer ──────────
+// M60 LUA-36. These are re-implementations of the CONTRACT, written from the
+// grammar, so a disagreement is a question about which side is wrong rather than
+// a comparison of one implementation with itself.
+
+/**
+ * Coroutines are counted as CREATIONS — `coroutine.create` and `coroutine.wrap` —
+ * not as every call into the coroutine library. That is the contract the existing
+ * gate states: a fixture with one `coroutine.create` and one `coroutine.wrap`
+ * publishes `coroutineUsage: 2`, and those are two coroutines brought into
+ * existence. `coroutine.resume` and `coroutine.yield` do not create anything, so
+ * counting them answers a different question.
+ *
+ * This truth side got that wrong twice before it got it right, and both wrong
+ * answers pointed at the ANALYZER. It first required `callee.type === "identifier"`,
+ * which misses every real call because `coroutine.create` is a
+ * `dot_index_expression` — so it reported `1 vs 0` on a file that plainly has one
+ * `coroutine.create`. It then counted all four library functions, so it reported
+ * `1 vs 2` on kong/init.lua, which has a `create` AND a `resume` and exactly one
+ * coroutine. Both times the instrument was the thing that was wrong, and a truth
+ * side that has to be corrected by looking at the code it is checking is a truth
+ * side whose contract was never written down. This comment is that contract.
+ *
+ * The callee is matched by the standard name rule: identifier, or a dot/method
+ * index whose text is the path.
+ */
+function countCoroutines(root: any): number {
+  const CREATES = new Set(["coroutine.create", "coroutine.wrap"])
+  let n = 0
+  for (const node of walkNodes(root)) {
+    if (node.type !== "function_call") continue
+    for (let i = 0; i < node.childCount; i++) {
+      const fn = typeof node.fieldNameForChild === "function" ? node.fieldNameForChild(i) : null
+      if (fn !== "name") continue
+      const name = nameBearing(node.child(i))
+      if (name && CREATES.has(name)) n++
+    }
+  }
+  return n
+}
+
+/**
+/**
+ * Any member access in the file — the MINIMUM evidence a framework claim needs,
+ * and the whole of the LUA-04 contract in one decidable fact.
+ *
+ * The first version of this leg derived one framework from the tree (Neovim) and
+ * counted every OTHER framework the analyzer legitimately knows as fabricated: 37
+ * spurious "findings" across 68 files, every one of them this truth side being
+ * too narrow rather than the analyzer being wrong. The fix is not to derive the
+ * full framework table — that means COPYING it, and a copy agrees by construction
+ * and proves nothing, which is the mirror trap this lane has paid for twice
+ * (LUA-27, LUA-33). It is to ask the question that needs no table: does the file
+ * contain a member access at all? LUA-04 claimed a framework from BARE
+ * IDENTIFIERS, so a file whose only names are `use`, `setup` and `GetTime` has
+ * none, and must claim nothing.
+ */
+function countMemberAccess(root: any): number {
+  let n = 0
+  for (const node of walkNodes(root)) {
+    if (node.type === "dot_index_expression" || node.type === "method_index_expression") n++
+  }
+  return n
+}
+
 const forBoundVars = new Set<string>()
 let loopCoincidence = 0
 const loopCoincidenceSample: string[] = []
@@ -731,6 +796,10 @@ async function main(): Promise<void> {
   // derived — which is precisely what a payload target is.
   let relTruth = 0, relHit = 0, relSpurious = 0, relFilesProbed = 0
   let disclosureFiles = 0, disclosureCount = 0
+  let metaCoroutines = 0, metaFrameworks = 0, metaHit = 0, metaSpurious = 0, metaScoreSum = 0, metaScoreFiles = 0
+  const metaMissed: string[] = []
+  const metaExtra: string[] = []
+  const metaScoreSet = new Set<number>()
   const relMissed: string[] = []
   const relExtra: string[] = []
   const directRelTruth = new Set<string>()
@@ -860,6 +929,61 @@ async function main(): Promise<void> {
           if (!anyTruth) { exportSpurious++; if (exportExtra.length < 25) exportExtra.push(`${n} ${rel}`) }
         }
       }
+      // ── metadata on the DIRECT path (M60 LUA-36) ──────────────────────────
+      // Four of this lane's fixed defects are METADATA defects — LUA-02 (a
+      // coroutine count that was structurally always zero), LUA-04 (framework
+      // detection firing on bare identifiers), LUA-10 (a score rewarding a branch
+      // the analyzer never detects) and LUA-11 (constant "measurements"). Each has
+      // a dedicated gate and NONE had a corpus-scale test, because this
+      // instrument compared relationships and exports and nothing else. A defect
+      // class the differential cannot see is a defect class with one test instead
+      // of two, and one test is what let LUA-02 ship.
+      //
+      // The truth side is derived from the TREE, independently: coroutines are
+      // counted by finding `coroutine.create` / `coroutine.wrap` call nodes, and
+      // the framework rule is re-implemented from the contract rather than
+      // copied from the analyzer. Copying it would be the mirror trap this lane
+      // has hit repeatedly (LUA-27, LUA-33) — agreement between two copies of one
+      // idea is not evidence.
+      const m = direct.metadata ?? {}
+      const tCoro = countCoroutines(tree.rootNode)
+      metaCoroutines++
+      if ((m.coroutineUsage ?? 0) === tCoro) metaHit++
+      else if (metaMissed.length < 20) metaMissed.push(`coroutineUsage ${m.coroutineUsage} vs tree ${tCoro}  ${rel}`)
+
+      // LUA-04, tested as the CONTRACT and not as a reimplementation. The first
+      // version of this leg derived one framework from the tree — Neovim — and
+      // counted every OTHER framework the analyzer legitimately knows as
+      // fabricated: 37 spurious "findings" on 68 files, all of them my truth side
+      // being too narrow rather than the analyzer being wrong. Deriving the full
+      // framework table would mean COPYING it, and a copy agrees by construction
+      // and proves nothing — the mirror trap, LUA-27 and LUA-33.
+      //
+      // So the test is the one that does not need the table: a framework claim
+      // requires a MEMBER ACCESS somewhere in the file. LUA-04 claimed a framework
+      // from BARE IDENTIFIERS, so a file whose only names are `use`, `setup` and
+      // `GetTime` has no member access and must claim nothing. That is the defect,
+      // it is decidable from the tree alone, and it needs no table.
+      const claimsFrameworks = ((m.detectedFrameworks ?? []).length > 0)
+      const hasMemberAccess = countMemberAccess(tree.rootNode) > 0
+      metaFrameworks++
+      if (claimsFrameworks && !hasMemberAccess) {
+        metaSpurious++
+        if (metaExtra.length < 20) metaExtra.push(`frameworks ${JSON.stringify(m.detectedFrameworks)} claimed with ZERO member accesses in the file  ${rel}`)
+      } else if (claimsFrameworks !== hasMemberAccess && !claimsFrameworks) {
+        // a file with member accesses that claims nothing is legitimate (a struct
+        // literal is a member access and no framework), so only the claiming
+        // direction is a check.
+        metaHit++
+      } else metaHit++
+
+      // LUA-10 / LUA-11: the score must MOVE with the file. A score that is 80 on
+      // an innocent file and 85 on a complex one is a measurement; one that is 85
+      // everywhere is a constant wearing a number. Measured across the probed
+      // files, not asserted on one fixture.
+      const s = m.architecturalScore
+      if (typeof s === "number") { metaScoreSum += s; metaScoreFiles++; metaScoreSet.add(s) }
+
       exportFilesProbed++
 
       // ── relationships on the DIRECT path, for the same reason as exports ────
@@ -1072,7 +1196,10 @@ async function main(): Promise<void> {
   // target, and a fabricated target is the defect class this lane has spent its
   // life on. It is part of the verdict, not a diagnostic.
   const relDirectBad = relSpurious > 0
-  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad || relDirectBad
+  // LUA-36: a framework claimed that the tree does not support is a fabrication of
+  // the kind LUA-04 was, and it is part of the verdict rather than a report.
+  const metaBad = metaSpurious > 0
+  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad | relDirectBad || metaBad || metaMissed.some((x) => x.startsWith("coroutineUsage"))
   const report = {
     schemaVersion: 1,
     kind: "lua_truth_oracle_differential",
@@ -1101,6 +1228,21 @@ async function main(): Promise<void> {
         precision: exportHit + exportSpurious ? Number((exportHit / (exportHit + exportSpurious)).toFixed(6)) : 1,
         missedSample: exportMissed,
         spuriousSample: exportExtra,
+      },
+      metadataDirectPath: {
+        note: "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+        coroutines: { files: metaCoroutines, checks: metaHit },
+        frameworkClaimWithoutMemberAccess: { files: metaFrameworks, violations: metaSpurious },
+        spurious: metaSpurious,
+        missedSample: metaMissed,
+        spuriousSample: metaExtra,
+        architecturalScore: {
+          files: metaScoreFiles,
+          distinctValues: metaScoreSet.size,
+          values: [...metaScoreSet].sort((a, b) => a - b),
+          mean: metaScoreFiles ? Number((metaScoreSum / metaScoreFiles).toFixed(3)) : null,
+          note: "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine.",
+        },
       },
       surfaceDisclosures: {
         note: "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
@@ -1168,6 +1310,11 @@ async function main(): Promise<void> {
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
   console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
+  // Numeric and parseable, always. An earlier version printed "yes" for a
+  // mismatch and "0" for none, which a mutation harness cannot compare — a signal
+  // that changes TYPE rather than VALUE is a signal nobody can gate on.
+  const coroMismatches = metaMissed.filter((m) => m.startsWith("coroutineUsage")).length
+  console.log(`metadata (DIRECT path, ${metaFrameworks} files): coroutineMismatches=${coroMismatches} frameworkClaimsWithoutMemberAccess=${metaSpurious} scoreDistinctValues=${metaScoreSet.size} scoreValues=${JSON.stringify([...metaScoreSet].sort((a, b) => a - b))}`)
   console.log(`disclosures (nameless surfaces): files=${disclosureFiles} total=${disclosureCount}`)
   console.log(`relationships (DIRECT path, ${relFilesProbed} files): truth=${relTruth} hit=${relHit} missed=${relTruth - relHit} SPURIOUS=${relSpurious} recall=${report.totals.relationshipsDirectPath.recall} precision=${report.totals.relationshipsDirectPath.precision}`)
   console.log("\nper label:")
