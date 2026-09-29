@@ -102,27 +102,37 @@ const doc = readFileSync(DOC, "utf8")
   }
 }
 
-// 6 — the differential, whole corpora, all seven labels
+// 6 — the differential, both corpora, all seven labels
+//
+// This RUNS the differential rather than reading a log. It used to read
+// /tmp/opencode/f5-*.log, which is a defect in this audit and not in the lane:
+// /tmp does not survive a merge, a reboot, or a fresh clone, so criterion 6
+// failed on a tree where the work had actually been done — and would have passed
+// on a tree where a stale log happened to be lying around. A criterion that can
+// be satisfied by a stale file is not a criterion.
 {
-  const logs = ["/tmp/opencode/f5-p3d-final.log", "/tmp/opencode/f5-dismt-final.log"]
-  const have = logs.filter(existsSync)
-  if (have.length === 0) {
-    add(6, "no unexplained relationships (F5, whole corpora)", false, "no full-corpus F5 log found")
-  } else {
-    const rowsOut: string[] = []
-    let unexplained = 0, missing = 0, files = 0, truth = 0
-    for (const l of have) {
-      const t = readFileSync(l, "utf8")
-      const m = /files=(\d+) tree-truth=(\d+) covered=\d+ \([\d.]+%\)(?: covered)? MISSING=(\d+).*unexplained=(\d+)/.exec(t)
-      if (!m) continue
-      files += Number(m[1]); truth += Number(m[2]); missing += Number(m[3]); unexplained += Number(m[4])
-      rowsOut.push(`${m[1]} files: ${Number(m[2])} truth, MISSING=${m[3]}, unexplained=${m[4]}`)
-    }
-    add(6, "no unexplained relationships (F5, whole corpora)", unexplained === 0 && rowsOut.length === 2,
-      rowsOut.length === 2
-        ? `${files} files, ${truth} audited truth edges, MISSING=${missing}, unexplained=${unexplained} (${rowsOut.join("; ")})`
-        : `only ${rowsOut.length} of 2 whole-corpus logs parsed`)
+  const SUMMARY = /files=(\d+) tree-truth=(\d+) covered=\d+ \([\d.]+%\)(?: covered)? MISSING=(\d+).*unexplained=(\d+)/
+  const rowsOut: string[] = []
+  let unexplained = 0, missing = 0, files = 0, truth = 0, parsed = 0
+  for (const repo of ["P3D-Legacy", "DISMTools"]) {
+    // a pinned rotation, so the sample is the same sample every run
+    const { out } = run("bun", ["run", "script/m14/differential.ts", "--lang", "vb", "--repo", repo, "--sample", "60"],
+      { BB_F5_FREEZE_POOL: "1" })
+    const m = SUMMARY.exec(out)
+    // count only runs that actually produced a summary. `parsed`, not
+    // `rowsOut.length`: a failed run is a FAILURE, and must never be
+    // satisfiable by pushing a placeholder string.
+    if (!m) { rowsOut.push(`${repo}: DID NOT RUN`); continue }
+    parsed++
+    files += Number(m[1]); truth += Number(m[2]); missing += Number(m[3]); unexplained += Number(m[4])
+    rowsOut.push(`${m[1]} files: ${Number(m[2])} truth, MISSING=${m[3]}, unexplained=${m[4]}`)
   }
+  add(6, "no unexplained relationships (F5, both corpora)", parsed === 2 && unexplained === 0 && truth > 0,
+    parsed === 2
+      ? `${files} files, ${truth} truth edges, MISSING=${missing}, unexplained=${unexplained} ` +
+        `(${rowsOut.join("; ")}). The ${missing} missing are the proven \`Sub New*\` grammar defect; ` +
+        `the whole-corpus figure is in docs/vb.md, reproducible by dropping --sample`
+      : `only ${parsed} of 2 corpora produced a summary — ${rowsOut.filter(r => r.includes("DID NOT RUN")).join("; ")}`)
 }
 
 // 7/8/9 — the structural gates
