@@ -10024,6 +10024,34 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     }
     return false
   }
+  // EX-A17 mirror: the attribute's OWN call node is its NAME, never an
+  // invocation of it (see the analyzer's isAttributeNameCall).
+  const isAttrNameCall = (n: any): boolean => {
+    const p = n.parent
+    return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1) === n)
+  }
+  // EX-A17 mirror: an attribute's VALUE is compile-time code; only the
+  // declaration attributes (docstring, typespec, @behaviour/@derive) keep their
+  // silence. Without this arm the oracle would ratify the analyzer's silence as
+  // truth, and the 21 ash DSL-section attributes would read as "no dependency"
+  // on both sides — a shared blind spot, not agreement.
+  const DECL_ATTRS = new Set([
+    "moduledoc", "doc", "spec", "type", "typep", "opaque", "callback", "macrocallback",
+    "optional_callbacks", "behaviour", "behavior", "derive", "deprecated",
+  ])
+  const isDeclAttrValue = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      if (cur.type === "unary_operator" && cur.child(0)?.text === "@") {
+        const value = cur.child(1)
+        if (!value || value.type !== "call") return true
+        const id = find(value, (c: any) => c.type === "identifier")
+        return DECL_ATTRS.has(id?.text ?? "")
+      }
+      cur = cur.parent
+    }
+    return false
+  }
   const isHead = (n: any): boolean => {
     let cur = n.parent
     while (cur) {
@@ -10290,7 +10318,11 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
                 const prefix = resolveAliasO(resolveSelfO(rawPrefix))
                 for (let i = 0; i < tuple.namedChildCount; i++) {
                   const kid = tuple.namedChild(i)
-                  if (!kid || (kid.type !== "alias" && kid.type !== "dot")) continue
+                  // EX-A18 mirror: `alias Helper.{make, name}` members are
+                  // IDENTIFIER nodes — the uppercase-only filter dropped them,
+                  // so both sides saw no dependency and agreed for the wrong
+                  // reason.
+                  if (!kid || (kid.type !== "alias" && kid.type !== "dot" && kid.type !== "identifier")) continue
                   const full = prefix ? `${prefix}.${kid.text}` : kid.text
                   const key = kid.text.split(".").pop()
                   if (key && full) {
@@ -10400,7 +10432,10 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
     if (SPECIAL.has(target)) return true
     if (KERNEL.has(target)) return true
     if (isQuoted(node)) return true
-    if (isAttr(node)) return true
+    // EX-A17 mirror: the name and the declaration attributes stay silent; a
+    // code-valued attribute is a call site like any other.
+    if (isAttrNameCall(node)) return true
+    if (isDeclAttrValue(node)) return true
     if (isHead(node)) return true
     // ELXD18 mirror: only a lowercase-rooted dot without arguments is a
     // field read / dynamic dispatch — capitalized (or atom/sigil) roots
@@ -10448,6 +10483,14 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
       }
     }
     if (!finalTarget) return
+    // EX-A18 mirror: a bare name the alias map holds under a lowercase key
+    // (`alias Helper.{make, name}` -> `make()`) is a statically nameable remote
+    // call. The map's only lowercase keys are the ones that form writes, so this
+    // cannot capture anything else.
+    if (finalTarget.indexOf(".") === -1) {
+      const hit = aliasLookup(finalTarget)
+      if (hit && hit.indexOf(".") !== -1) finalTarget = hit
+    }
     if (finalTarget.indexOf(".") !== -1) {
       const r = finalTarget.split(".")[0]
       if (!r || r[0] !== r[0].toUpperCase()) return
@@ -10577,7 +10620,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
               if (toMod) push("calls", innerOf(stack), `${resolveAliasO(toMod)}.${asName || nm}`)
             }
           }
-        } else if ((target === "struct" || target === "struct!" || target === "raise" || target === "reraise") && !isAttr(n) && !isHead(n)) {
+        } else if ((target === "struct" || target === "struct!" || target === "raise" || target === "reraise") && !isDeclAttrValue(n) && !isHead(n)) {
           // ELXD19 mirror: struct(User, attrs) constructs the named type;
           // EX-A9 mirror: `raise Mod` / `reraise Mod, stack` is the SAME
           // construction through Kernel.raise's exception entry point
@@ -10625,7 +10668,7 @@ export function deriveElixirEdges(root: any): { label: string; from: string; tar
           const skipName = fnName.includes(".") ? fnName : leaf
           if (fnName && !skipCall(n, skipName)) emitCall(n, fnName, stack)
         }
-      } else if (t === "map" && !isQuoted(n) && !isAttr(n) && !isHead(n) && !isPattern(n)) {
+      } else if (t === "map" && !isQuoted(n) && !isDeclAttrValue(n) && !isHead(n) && !isPattern(n)) {
         const st = find(n, (c: any) => c.type === "struct")
         const al = st ? find(st, (c: any) => c.type === "alias") : undefined
         if (al?.text) push("instantiates", stack.length > 0 ? innerOf(stack) : "Global", resolveAliasO(al.text))

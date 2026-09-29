@@ -70,6 +70,15 @@ const complexityNodes: Record<string, boolean> = (function(){ const r: Record<st
 const DEF_CONSTRUCTS = new Set(["def", "defp", "defmacro", "defmacrop", "defdelegate", "defguard", "defguardp"])
 // Module directives — handled as dependencies, never as runtime calls.
 const DIRECTIVES = new Set(["use", "import", "alias", "require"])
+
+// EX-A17: the attributes whose VALUE is a declaration, not a call site. A
+// docstring is text, a typespec's `%Duration{}` is a TYPE reference, and
+// @behaviour/@derive/@deprecated are compile-time contracts. Every other
+// attribute value is CODE (see isInDeclarationAttributeValue).
+const DECLARATION_ATTRIBUTES = new Set([
+  "moduledoc", "doc", "spec", "type", "typep", "opaque", "callback", "macrocallback",
+  "optional_callbacks", "behaviour", "behavior", "derive", "deprecated",
+])
 // Elixir language special forms / control-flow constructs. A `call` whose
 // target is one of these is syntax, not a function invocation.
 const SPECIAL_FORMS = new Set([
@@ -210,7 +219,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
               // Dynamic first args stay silent (no static target to name):
               // `raise "boom"`, `raise err` (a bound exception), `raise` with a
               // computed module are all unnameable, not dropped names.
-              if (!this.isInAttribute(node) && !this.isDefHead(node)) {
+              if (!this.isInDeclarationAttributeValue(node) && !this.isDefHead(node)) {
                 const structArgs = this.findChild(node, (c) => c?.type === "arguments")
                 const first = structArgs && structArgs.namedChildCount > 0 ? structArgs.namedChild(0) : undefined
                 if (first?.type === "alias") this.recordInstantiates(this.resolveAlias(first.text, ctx), ctx, currentScope, first.startPosition.row + 1)
@@ -257,9 +266,9 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         // and only in executable position (never a def signature or attribute).
         const structChild = this.findChild(node, (c) => c?.type === "struct")
         const aliasChild = structChild ? this.findChild(structChild, (c) => c?.type === "alias") : undefined
-        if (aliasChild?.text && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node) && !this.isPatternPosition(node)) {
+        if (aliasChild?.text && !this.isInQuotedCode(node) && !this.isDefHead(node) && !this.isInDeclarationAttributeValue(node) && !this.isPatternPosition(node)) {
           this.recordInstantiates(this.resolveAlias(aliasChild.text, ctx), ctx, currentScope, aliasChild.startPosition.row + 1)
-        } else if (!aliasChild && !this.isInQuotedCode(node) && !this.isInDefHeadOrAttribute(node) && !this.isPatternPosition(node)) {
+        } else if (!aliasChild && !this.isInQuotedCode(node) && !this.isDefHead(node) && !this.isInDeclarationAttributeValue(node) && !this.isPatternPosition(node)) {
           // %__MODULE__{}: self-construction of the lexically enclosing
           // module (ELXD12). The struct head is an identifier, not an alias;
           // resolve to the nearest module/interface scope (a function scope
@@ -351,6 +360,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // not, and only the DEF knows which it is (processFunction
                 // applies its own verdict, clearing the flag when a body exists).
                 existing.metadata = { ...existing.metadata, callbackSpec: specText, isCallbackDeclaration: true, ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}) }
+                if (existing.isDeclaration) existing.metadata.isDeclaration = true
                 // EX-D16 parity: the typed spec is part of the declaration
                 // surface, so the symbol's extent grows to cover it — the same
                 // "first..last of everything this symbol is" rule the clause
@@ -369,7 +379,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   visibility: "public",
                   isDeclaration: true,
                   metadata: {
-                    elixirSpecific: true, isCallback: true, isBodylessDeclaration: true, arity, heads: 0, clauseRanges: [],
+                    elixirSpecific: true, isCallback: true, isBodylessDeclaration: true, isDeclaration: true, arity, heads: 0, clauseRanges: [],
                     ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}),
                     callbackSpec: specText, hasCallbackSpec: true,
                   },
@@ -818,6 +828,15 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
           const leaf = finalTarget.slice("Kernel.".length)
           if (KERNEL_FUNCTIONS.has(leaf) || SPECIAL_FORMS.has(leaf)) return
       }
+      // EX-A18: `alias Helper.{make, name}` makes `make()` a statically nameable
+      // call to Helper.make — the alias map's ONLY lowercase keys are the ones
+      // that multi-alias writes (module aliases and the implied
+      // `Task.Supervisor` -> Supervisor keys are all capitalized), so resolving
+      // a bare name through it cannot capture any other call.
+      if (finalTarget.indexOf(".") === -1) {
+          const aliased = ctx.aliases[finalTarget]
+          if (aliased && aliased.indexOf(".") !== -1) finalTarget = aliased
+      }
       // EX-L2 (ER-D2 parity): call-site arity rides the edge — `pick/1` and
       // `pick/2` are distinct callees and distinct edges.
       if (arity && arity > 0) meta = { ...meta, callArity: arity }
@@ -913,6 +932,44 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       return false
   }
 
+  // EX-A17: the attribute's OWN call node is its NAME (`@section ...` is
+  // call[section, arguments[...]]), never an invocation of `section`. The
+  // blanket isInAttribute gate hid that correctly, so the relaxation below has
+  // to keep naming it explicitly or every attribute publishes a phantom
+  // lowercase call.
+  private isAttributeNameCall(node: Node): boolean {
+      const p = node.parent
+      return !!(p && p.type === "unary_operator" && p.child(0)?.text === "@" && p.child(1) === node)
+  }
+
+  // EX-A17: a module attribute's VALUE is COMPILE-TIME CODE. `@section
+  // %Spark.Dsl.Section{build: Spark.Dsl.build(:x)}` builds that struct while
+  // the module compiles, `@deferred fn -> Helper.later() end` names a real
+  // remote call, and `@raised raise Helper.Error` raises a real exception —
+  // the whole DSL ecosystem (Ash/Spark, Ecto.Migration, Quantum) is built on
+  // it. The blanket gate silenced every edge inside an attribute value, so a
+  // DSL section named no dependency at all: 21 attributes carrying 21 struct
+  // literals in a 250-file sample of ash, 0 elsewhere in 938 files — and the
+  // SAME walk already counted `case` inside an attribute toward cyclomatic
+  // complexity and set its pattern flags, so the gate contradicted the
+  // analyzer's own treatment of the same subtree. The DECLARATION attributes
+  // keep their silence; `isInAttribute` still guards the directive and
+  // member-read walks, because a `use`/`alias` cannot legitimately appear in
+  // an attribute value.
+  private isInDeclarationAttributeValue(node: Node): boolean {
+      let cur = node.parent
+      while (cur) {
+        if (cur.type === "unary_operator" && cur.child(0)?.text === "@") {
+          const value = cur.child(1)
+          if (!value || value.type !== "call") return true
+          const id = this.findChild(value, (c) => c?.type === "identifier")
+          return DECLARATION_ATTRIBUTES.has(id?.text ?? "")
+        }
+        cur = cur.parent
+      }
+      return false
+  }
+
   // The signature call (and its pattern-position arguments) nested in a
   // def/defp/defmacro/defmacrop `arguments` is the declaration head, not a call
   // site. Stops at both the do_block boundary AND the single-line `, do: body`
@@ -949,12 +1006,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         cur = cur.parent
       }
       return false
-  }
-
-  // Struct literal in a def signature or attribute (pattern position) is not
-  // a construction site.
-  private isInDefHeadOrAttribute(node: Node): boolean {
-      return this.isInAttribute(node) || this.isDefHead(node)
   }
 
   // X2 (adversarial): PATTERN positions are never constructions. A struct
@@ -1017,7 +1068,10 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (SPECIAL_FORMS.has(t)) return true
       if (KERNEL_FUNCTIONS.has(t)) return true
       if (this.isInQuotedCode(node)) return true
-      if (this.isInAttribute(node)) return true
+      // EX-A17: the attribute's own name and the declaration attributes stay
+      // silent; a code-valued attribute is a call site like any other.
+      if (this.isAttributeNameCall(node)) return true
+      if (this.isInDeclarationAttributeValue(node)) return true
       if (this.isDefHead(node)) return true
       if (this.isMemberAccess(node)) return true
       return false
@@ -1376,6 +1430,35 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             name = actualCall.childCount > 1 ? actualCall.child(1)?.text || "Unknown" : "Unknown"
             parameters.push({ name: actualCall.childCount > 0 ? actualCall.child(0)?.text || "left" : "left", type: "dynamic" })
             parameters.push({ name: actualCall.childCount > 2 ? actualCall.child(2)?.text || "right" : "right", type: "dynamic" })
+        } else if (actualCall.type === "block" || this.findChild(actualCall, (c) => c?.type === "operator_identifier") !== null) {
+          // EX-A15: a PARENTHESIZED operator definition with no argument list —
+          // `defmacro (..) do … end`, how Kernel defines the zero-arity range
+          // operator. The grammar shapes the name as
+          // `arguments > block > operator_identifier`, which no earlier branch
+          // recognised, so the definition fell through to the EX-D9
+          // placeholder: elixir's own kernel.ex:4347 published a macro named
+          // `Unknown`, and a second parenthesized operator in the same module
+          // MERGED into it (both arity 0), so one real definition was invisible
+          // and one row stood for two. The operator token is statically
+          // nameable, so it is named.
+          const opNode = this.findChild(actualCall, (c) => c?.type === "operator_identifier")
+          if (opNode?.text) {
+              name = opNode.text
+              // `defmacro (..)` has no argument list — the macro receives the one
+              // AST argument, so arity 1. A parenthesized operator WITH
+              // arguments (`def (op)(a, b)`) is an ERROR node in this grammar
+              // whose `(a, b)` sibling is still readable, so take the parameter
+              // list from there rather than guessing one operand.
+              const siblingArgs = this.filterChildren(actualCall.parent ?? ({ namedChildCount: 0, namedChild: () => null } as any), (c) => c?.type === "arguments")[0]
+              if (siblingArgs) {
+                  for (let i = 0; i < siblingArgs.namedChildCount; i++) {
+                      const a = siblingArgs.namedChild(i)
+                      if (a) parameters.push({ name: a.type === "identifier" ? a.text : "_", type: "dynamic" })
+                  }
+              } else {
+                  parameters.push({ name: "operand", type: "dynamic" })
+              }
+          }
         } else if (actualCall.type === "unary_operator") {
             // Unary operator definition (`def +value`) — the name is the
             // operator token, the operand the single parameter (ELXD24).
@@ -1438,6 +1521,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (parkedSpec) existing.metadata!.callbackSpec = parkedSpec
         if (isDeclaration) {
             if (!existing.isDeclaration) { existing.isDeclaration = true; existing.metadata!.isBodylessDeclaration = true }
+            existing.metadata!.isDeclaration = true
         } else {
             // A clause WITH a body makes the merged symbol a DEFINITION, even if
             // its first clause was a bodiless head (`def f(y)` + `def f(y), do:
@@ -1492,7 +1576,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
                 elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)],
                 hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback,
-                ...(isDeclaration ? { isBodylessDeclaration: true } : {}),
+                ...(isDeclaration ? { isBodylessDeclaration: true, isDeclaration: true } : {}),
                 ...(parkedSpec ? { callbackSpec: parkedSpec, isCallbackDeclaration: true } : {}),
                 ...(parkedOptional && parkedOptional.includes(name) ? { isOptionalCallback: true } : {}),
             }
@@ -1608,7 +1692,14 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             const rawPrefix = this.findChild(multiDot!, (c) => c?.type === "alias")?.text
               ?? this.findChild(multiDot!, (c) => c?.type === "identifier" && c.text === "__MODULE__")?.text ?? ""
             const prefix = this.resolveAlias(resolveSelf(rawPrefix), ctx)
-            for (const kid of this.filterChildren(tuple, (c) => c?.type === "alias" || c?.type === "dot")) {
+            // EX-A18: members may be lowercase — `alias Helper.{make, name}`
+            // aliases two FUNCTIONS, and the member node is an `identifier`,
+            // not an `alias`, so the expander produced zero dependency edges and
+            // zero local aliases for it. Measured 0 in 938 files of the six
+            // corpora (latent hole, not a corpus defect), fixed because the hole
+            // is one predicate wide and the rule is the same one the uppercase
+            // members already follow.
+            for (const kid of this.filterChildren(tuple, (c) => c?.type === "alias" || c?.type === "dot" || c?.type === "identifier")) {
               const full = prefix ? `${prefix}.${kid.text}` : kid.text
               const key = kid.text.split(".").pop()
               if (key && full) {
