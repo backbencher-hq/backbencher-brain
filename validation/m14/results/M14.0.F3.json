@@ -155,29 +155,11 @@
       "detail": "5/5 fixtures pass",
       "id": "fixtures-clean",
       "status": "pass"
-    },
-    {
-      "description": "hcl adversarial fixtures",
-      "detail": "8/8 fixtures pass",
-      "id": "fixtures-hcl",
-      "status": "pass"
-    },
-    {
-      "description": "sql adversarial fixtures",
-      "detail": "8/9 fixtures pass",
-      "id": "fixtures-sql",
-      "status": "fail"
-    },
-    {
-      "description": "graphql adversarial fixtures",
-      "detail": "2/2 fixtures pass",
-      "id": "fixtures-graphql",
-      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "e76d972f92f90beb3df18ca31aed695fc241af83",
-  "committedAt": "2026-09-27T02:11:52-04:00",
+  "commit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "committedAt": "2026-09-26T18:12:46-04:00",
   "data": {
     "details": [
       {
@@ -3655,105 +3637,6 @@
         "fixture": "clean/signature-definition-merge",
         "ok": true,
         "problems": []
-      },
-      {
-        "fixture": "hcl/dynamic-iterator-scope",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/dynamic-sibling-scope",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/flat-attribute-document",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/moved",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/negative-syntax-error",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/object-key-not-reference",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/operation-operand-references",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "hcl/sibling-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld1-column-types",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld2-trigger-when",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld3-routine-signature",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld4-statement-dispatch",
-        "ok": false,
-        "problems": [
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"d4_merge_target\"}; got: references[global->d4_doc_target]@1; references[global->d4_grant_target]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"d4_merge_source\"}; got: references[global->d4_doc_target]@1; references[global->d4_grant_target]@1",
-          "expected relationship not found: {\"type\":\"uses\",\"from\":\"global\",\"target\":\"d4_truncate_target\"}; got: references[global->d4_doc_target]@1; references[global->d4_grant_target]@1"
-        ]
-      },
-      {
-        "fixture": "sql/sqld5-quoted-and-cte",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld6-keyword-and-builtin",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld7-error-honesty",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld8-range-and-ids",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "sql/sqld9-declaration-resync",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "graphql/declaration-lines-and-extensions",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "graphql/executable-and-descriptions",
-        "ok": true,
-        "problems": []
       }
     ],
     "summary": {
@@ -3793,10 +3676,6 @@
         "fail": 0,
         "pass": 12
       },
-      "graphql": {
-        "fail": 0,
-        "pass": 2
-      },
       "groovy": {
         "fail": 0,
         "pass": 73
@@ -3804,10 +3683,6 @@
       "haskell": {
         "fail": 0,
         "pass": 1
-      },
-      "hcl": {
-        "fail": 0,
-        "pass": 8
       },
       "java": {
         "fail": 0,
@@ -3844,10 +3719,6 @@
       "scala": {
         "fail": 0,
         "pass": 54
-      },
-      "sql": {
-        "fail": 1,
-        "pass": 8
       },
       "svelte": {
         "fail": 0,
@@ -3888,9 +3759,9 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-27T06:41:58.820Z",
-  "regeneratedAtCommit": "e76d972f92f90beb3df18ca31aed695fc241af83",
-  "runtime": "node v26.3.0",
+  "regeneratedAt": "2026-09-27T02:57:24.308Z",
+  "regeneratedAtCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
 }

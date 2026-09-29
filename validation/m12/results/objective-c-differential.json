@@ -40,16 +40,16 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "52fd023113bb2524702994cecbec84e04c3b0f7c76c9716baf4299805c1d65c3",
-        "bytes": 30602
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
         "bytes": 89802
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "5c4105e1555e8ac9c2e92d0b0f8c9fdd317e0d746fa4ac5823324eec1623bdcf",
-        "bytes": 133501
+        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
+        "bytes": 134291
       },
       "src/ast/real-csharp-analyzer.ts": {
         "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
@@ -84,8 +84,8 @@
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "df52f3a53ab76a1c2133c4faa037ee3a43b8d9ffb6ddcd1bae8bd4a9ef36449b",
-        "bytes": 125447
+        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
+        "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
         "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
@@ -156,8 +156,8 @@
         "bytes": 88887
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "9b3beab78a85f835718a8d4ded9bc38f2921f7f6163a0010ce23db3c22182d2a",
-        "bytes": 107206
+        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
+        "bytes": 107870
       },
       "src/ast/real-scala-analyzer.ts": {
         "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
@@ -192,8 +192,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "4667d50a6e106580980d82aac2f9a2dd3398d8da11ffe2538efca71676827d51",
-        "bytes": 61224
+        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
+        "bytes": 62122
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -204,16 +204,16 @@
         "bytes": 31754
       },
       "src/brain/brain.sql.ts": {
-        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
-        "bytes": 18297
+        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
+        "bytes": 18451
       },
       "src/brain/database.ts": {
-        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
-        "bytes": 17626
+        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
+        "bytes": 18136
       },
       "src/brain/schema-ddl.ts": {
-        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
-        "bytes": 28163
+        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
+        "bytes": 29793
       },
       "src/project/project.sql.ts": {
         "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
@@ -236,8 +236,8 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
       },
       "validation/m12/fixtures/objective-c/Negative.m": {
         "sha256": "21a60583981b59b88d392a1246c2aa6a33cbea0292cd4e49cef71e1782f866bd",
@@ -260,7 +260,7 @@
         "bytes": 57888
       }
     },
-    "digest": "a776415bbaacd106fe8dbd0fe296d7cb0514a312cf43bcea9a8bf954f77df645",
+    "digest": "de0b6ebee63b51967abb8c0b241ef0eb3854df87b6ba298507680b888746c763",
     "parser": null
   },
   "truthSource": "manual_audit",
@@ -411,11 +411,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:objective-c",
-      "wallTimeMs": 41.322537,
-      "userCpuMs": 83.891,
-      "systemCpuMs": 14.746,
-      "peakRssBytes": 270299136,
-      "rssDeltaBytes": 5898240,
+      "wallTimeMs": 393.582845,
+      "userCpuMs": 119.73,
+      "systemCpuMs": 21.648,
+      "peakRssBytes": 242954240,
+      "rssDeltaBytes": 696320,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -428,7 +428,7 @@
   "note": "M12 per-analyzer differential for objective-c. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.942Z",
-    "contentSha256": "55149d42713143dba1b4a35f223bfa42e75eca07b9a3f4d90aeb67464095271f"
+    "sealedAt": "2026-09-28T02:54:46.133Z",
+    "contentSha256": "fc5bc33ab80415ff80b41135fc0292af58d8c6a5a824f35f025f51069dce64df"
   }
 }

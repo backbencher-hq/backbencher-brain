@@ -40,8 +40,8 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
-        "bytes": 38104
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -68,16 +68,16 @@
         "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
-        "bytes": 41969
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
-        "bytes": 170963
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
@@ -88,8 +88,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
-        "bytes": 70021
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -112,8 +112,8 @@
         "bytes": 22151
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
-        "bytes": 154594
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
-        "bytes": 70460
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -236,8 +236,8 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
       },
       "validation/m12/fixtures/erlang/Negative.erl": {
         "sha256": "6a9331d4b3812ce090f0b21512594bb2caa8544ed58726c257f7bd0e6417afb9",
@@ -248,11 +248,11 @@
         "bytes": 1523
       },
       "validation/m12/ground-truth/erlang.json": {
-        "sha256": "7dae0879512d0c82dd1fdf27216335b9ba9c986cb571f5218085630cab502045",
-        "bytes": 22946
+        "sha256": "26b51a50b575b8f23add98917f3a65691d229f193feb78d2f97f4f84d00059c6",
+        "bytes": 17621
       }
     },
-    "digest": "57e2f08f4ccff3f6d83c165909cdb2990115ff1e7df632b7dea83a482d8304fb",
+    "digest": "d791cbc71a13b6925ec26ca5a02032eb27c85dc1239fdb02cd4a86940285fc65",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-erlang_tree-sitter-erlang.wasm",
       "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
@@ -260,7 +260,7 @@
     }
   },
   "truthSource": "manual_audit",
-  "truthReference": "validation/m12/fixtures/erlang/ (Service.erl, Negative.erl) — hand-audited against Erlang semantics: -module→module, -define→constant, -type/-typep/-opaque→type, -record→struct + field properties (fields owned by the record), functions (multi-clause fun_decl merged); relationships: contains (module owns types/constants/records/functions, record owns fields), implements (-behaviour any behaviour, incl. custom), calls (function-leaf sources; remote calls qualified Module:Function; local calls only when the callee is declared in the file — BIFs length/self/element/hd and imported functions excluded; forward references resolve), instantiates (#Record{} constructions in body position only — head patterns and record updates/accesses excluded), references (-import/-include/-include_lib module deps, ?MACRO uses -> the macro name whether or not it is defined here, fun values fun f/1 and fun m:f/1, and type dependencies). ER2/ER3 contract extension (2026-09-25, semantics-audited per fact, never copied from analyzer output): (a) uses edges for record member READS and UPDATES (S#state.queue, State#state{q = Q}) — the record and the field are both used; a head-position record pattern (a match, not an evaluation) and a construction stay silent, so instantiates keeps its body-position-only rule; (b) references for ?MACRO uses (?MODULE included: a use of a header-defined macro is still a use, and an unresolved target is honest), for fun VALUES (a value is not an invocation — the call happens at apply time), and for type dependencies where a type APPLIES a name (name(...), mod:name(...)) or names a record type (#rec{...}): a bare unquoted atom in type syntax is the atom LITERAL of that name (writing `integer` without parens is the atom, not the type integer()) and a map/record field key is a DECLARATION, so neither emits a dependency — the ER2 authoring counted every bare atom and fabricated job -> id / job -> kind out of the map keys of #{id := job_id()}.",
+  "truthReference": "validation/m12/fixtures/erlang/ (Service.erl, Negative.erl) — hand-audited against Erlang semantics: -module→module, -define→constant, -type/-typep/-opaque→type, -record→struct + field properties (fields owned by the record), functions (multi-clause fun_decl merged); relationships: contains (module owns types/constants/records/functions, record owns fields), implements (-behaviour any behaviour, incl. custom), calls (function-leaf sources; remote calls qualified Module:Function; local calls only when the callee is declared in the file — BIFs length/self/element/hd and imported functions excluded; forward references resolve), instantiates (#Record{} constructions in body position only — head patterns and record updates/accesses excluded), references (-import/-include/-include_lib module deps).",
   "fixtureDir": "validation/m12/fixtures/erlang",
   "fixtures": [
     "Negative.erl",
@@ -269,20 +269,20 @@
   "perFile": {
     "Negative.erl": {
       "symbols": 7,
-      "relationships": 11
+      "relationships": 7
     },
     "Service.erl": {
       "symbols": 22,
-      "relationships": 48
+      "relationships": 33
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 86,
-      "observedResolved": 86,
-      "truePositive": 86,
+      "expected": 69,
+      "observedResolved": 69,
+      "truePositive": 69,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 0,
@@ -304,9 +304,6 @@
       "rel:Negative.erl:contains:negative:spawns",
       "rel:Negative.erl:contains:negative:uses_import",
       "rel:Negative.erl:references:negative:lists",
-      "rel:Negative.erl:uses:member_access:id",
-      "rel:Negative.erl:uses:member_access:job",
-      "rel:Negative.erl:uses:member_access:kind",
       "rel:Service.erl:calls:handle_call:lists:sublist",
       "rel:Service.erl:calls:start_link:gen_server:start_link",
       "rel:Service.erl:calls:stop:gen_server:cast",
@@ -337,23 +334,9 @@
       "rel:Service.erl:implements:service:my_behaviour",
       "rel:Service.erl:instantiates:init:state",
       "rel:Service.erl:instantiates:submit:job",
-      "rel:Service.erl:references:handle_cast:MAX_JOBS",
-      "rel:Service.erl:references:job:atom",
-      "rel:Service.erl:references:job:job_id",
-      "rel:Service.erl:references:job_id:integer",
       "rel:Service.erl:references:service:kernel/include/logger.hrl",
       "rel:Service.erl:references:service:lists",
       "rel:Service.erl:references:service:service.hrl",
-      "rel:Service.erl:references:start_link:MODULE",
-      "rel:Service.erl:references:stop:MODULE",
-      "rel:Service.erl:references:submit:MODULE",
-      "rel:Service.erl:references:sweep:is_stale",
-      "rel:Service.erl:uses:handle_cast:queue",
-      "rel:Service.erl:uses:handle_cast:state",
-      "rel:Service.erl:uses:is_stale:job",
-      "rel:Service.erl:uses:is_stale:kind",
-      "rel:Service.erl:uses:sweep:queue",
-      "rel:Service.erl:uses:sweep:state",
       "symbol:Negative.erl:11:function:member_access",
       "symbol:Negative.erl:15:function:head_pattern",
       "symbol:Negative.erl:18:function:sends",
@@ -394,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:erlang",
-      "wallTimeMs": 96.520357,
-      "userCpuMs": 107.642,
-      "systemCpuMs": 11.476,
-      "peakRssBytes": 250740736,
-      "rssDeltaBytes": 8503296,
+      "wallTimeMs": 310.627353,
+      "userCpuMs": 97.045,
+      "systemCpuMs": 15.67,
+      "peakRssBytes": 219455488,
+      "rssDeltaBytes": 5869568,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -411,7 +394,7 @@
   "note": "M12 per-analyzer differential for erlang. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.859Z",
-    "contentSha256": "8713a034d50764b634b14a8ee9ed8295f5285200587f5081220d78825d9b3a97"
+    "sealedAt": "2026-09-28T02:54:45.494Z",
+    "contentSha256": "6a43d869001771216c8a23ccc51611280d6596da270d66b42e99799ec58fb026"
   }
 }
