@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (34/41 languages pass)",
+      "description": "per-literal shrink-only register with reasons (37/42 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,18 +24,12 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "97f68024082ae39804962d969c935b5755f95845",
-  "committedAt": "2026-09-27T01:39:11-04:00",
+  "commit": "3dcd4af14de77f665ca8e24968e3b0b85815cd18",
+  "committedAt": "2026-09-28T17:55:22-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [
-          {
-            "from": 1,
-            "lang": "perl",
-            "to": 2
-          }
-        ],
+        "countRegressions": [],
         "ok": false,
         "recordIsV1": false,
         "shrunk": [
@@ -65,9 +59,9 @@
             "literal": "key"
           },
           {
-            "kind": "field",
-            "lang": "perl",
-            "literal": "parameters"
+            "kind": "type",
+            "lang": "makefile",
+            "literal": "endif_directive"
           },
           {
             "kind": "type",
@@ -132,24 +126,10 @@
         ],
         "unregistered": [
           {
-            "context": "real-perl-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "perl",
-            "line": 155,
-            "literal": "parenthesized_expression"
-          },
-          {
-            "context": "real-perl-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "perl",
-            "line": 965,
-            "literal": "signature"
-          },
-          {
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
             "kind": "field",
             "lang": "sql",
-            "line": 1366,
+            "line": 1825,
             "literal": "object"
           }
         ]
@@ -180,7 +160,7 @@
         "makefile": 1,
         "markdown": 2,
         "objective-c": 0,
-        "perl": 1,
+        "perl": 0,
         "php": 0,
         "powershell": 0,
         "python": 0,
@@ -300,14 +280,7 @@
             "reason": "real-markdown-analyzer.ts:253, same line and same root cause as uri_autolink. Count unchanged from the v1 baseline of 2026-08-23 (2)."
           }
         ],
-        "perl": [
-          {
-            "kind": "field",
-            "literal": "parameters",
-            "owner": "perl lane",
-            "reason": "real-perl-analyzer.ts:487. REGISTERED RESIDUAL #863 (2026-09-16), with no fallback at the site. Count unchanged from the v1 baseline of 2026-08-23 (1)."
-          }
-        ],
+        "perl": [],
         "sql": [
           {
             "kind": "type",
@@ -664,7 +637,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 144,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 35,
+        "referencedTypeLiterals": 29,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -837,7 +810,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 128,
         "referencedFieldLiterals": 8,
-        "referencedTypeLiterals": 20,
+        "referencedTypeLiterals": 23,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -854,18 +827,12 @@
         "fieldless": false,
         "oracleFieldCount": 24,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 175,
+        "oracleNodeTypeCount": 176,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 12,
-        "status": "fail",
+        "referencedTypeLiterals": 7,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-makefile-analyzer.ts:const:BOUNDARY_TYPES",
-            "line": 276,
-            "literal": "endif_directive"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-make.wasm"
@@ -929,23 +896,11 @@
         "oracleFieldCount": 44,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 539,
-        "referencedFieldLiterals": 8,
+        "referencedFieldLiterals": 7,
         "referencedTypeLiterals": 36,
-        "status": "fail",
-        "unknownFields": [
-          {
-            "context": "real-perl-analyzer.ts:field-call:childForFieldName",
-            "line": 965,
-            "literal": "signature"
-          }
-        ],
-        "unknownNodeTypes": [
-          {
-            "context": "real-perl-analyzer.ts:comparison",
-            "line": 155,
-            "literal": "parenthesized_expression"
-          }
-        ],
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-perl.wasm"
@@ -1017,8 +972,8 @@
         "oracleFieldCount": 20,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 139,
-        "referencedFieldLiterals": 10,
-        "referencedTypeLiterals": 16,
+        "referencedFieldLiterals": 12,
+        "referencedTypeLiterals": 19,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1090,28 +1045,28 @@
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 53,
+        "oracleFieldCount": 62,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 782,
-        "referencedFieldLiterals": 4,
-        "referencedTypeLiterals": 40,
+        "oracleNodeTypeCount": 823,
+        "referencedFieldLiterals": 6,
+        "referencedTypeLiterals": 43,
         "status": "fail",
         "unknownFields": [
           {
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
-            "line": 1366,
+            "line": 1825,
             "literal": "object"
           }
         ],
         "unknownNodeTypes": [
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 196,
+            "line": 344,
             "literal": "table"
           },
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 1381,
+            "line": 1846,
             "literal": "table"
           }
         ],
@@ -1120,7 +1075,7 @@
           "tree-sitter-sql.wasm"
         ],
         "wasmFieldCounts": [
-          53
+          62
         ]
       },
       "svelte": {
@@ -1269,6 +1224,25 @@
           38
         ]
       },
+      "vb": {
+        "analyzer": "src/ast/real-vb-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 54,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 450,
+        "referencedFieldLiterals": 10,
+        "referencedTypeLiterals": 28,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-vbnet.wasm"
+        ],
+        "wasmFieldCounts": [
+          54
+        ]
+      },
       "vue": {
         "analyzer": "src/ast/real-vue-analyzer.ts",
         "fieldless": false,
@@ -1297,9 +1271,9 @@
         "fieldless": false,
         "oracleFieldCount": 2,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 142,
+        "oracleNodeTypeCount": 146,
         "referencedFieldLiterals": 0,
-        "referencedTypeLiterals": 7,
+        "referencedTypeLiterals": 17,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1351,10 +1325,10 @@
       }
     },
     "summary": {
-      "fail": 7,
-      "languagesAudited": 41,
-      "pass": 34,
-      "totalUnknownReferences": 15
+      "fail": 5,
+      "languagesAudited": 42,
+      "pass": 37,
+      "totalUnknownReferences": 12
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1382,8 +1356,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-27T05:47:43.762Z",
-  "regeneratedAtCommit": "97f68024082ae39804962d969c935b5755f95845",
+  "regeneratedAt": "2026-09-28T21:57:40.533Z",
+  "regeneratedAtCommit": "3dcd4af14de77f665ca8e24968e3b0b85815cd18",
   "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
