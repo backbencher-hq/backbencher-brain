@@ -1,10 +1,10 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-29T03:03:45.693Z",
-  "commit": "5b123be70e2f8bc42d55a70a3e9b7acaf2fff095",
+  "at": "2026-09-29T07:09:47.370Z",
+  "commit": "1811dad5128d6c8fa16327420b00deaf321dac87",
   "loadContext": {
-    "loadAvg1": 20.3,
+    "loadAvg1": 28.34,
     "cores": 8
   },
   "perfIsQualified": false,
@@ -24,12 +24,12 @@
         "missing": 6
       },
       "symbols": 2588,
-      "relationships": 12028,
+      "relationships": 12029,
       "kinds": {
         "contains": 2538,
         "references": 24,
         "uses": 5675,
-        "calls": 3676,
+        "calls": 3677,
         "instantiates": 78,
         "exports": 37
       },
@@ -40,8 +40,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 12028,
-        "total": 12028
+        "withLine": 12029,
+        "total": 12029
       },
       "unknownTargets": {
         "count": 0,
@@ -56,9 +56,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 4136,
-        "perFileMs": 84.401,
-        "factsPerMs": 3.534
+        "wallMs": 7022,
+        "perFileMs": 143.316,
+        "factsPerMs": 2.081
       }
     },
     {
@@ -75,8 +75,8 @@
       "kinds": {
         "references": 52,
         "contains": 549,
-        "calls": 616,
-        "uses": 1003,
+        "calls": 619,
+        "uses": 1000,
         "instantiates": 70,
         "exports": 8
       },
@@ -103,17 +103,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 727,
-        "perFileMs": 30.304,
-        "factsPerMs": 3.947
+        "wallMs": 1353,
+        "perFileMs": 56.393,
+        "factsPerMs": 2.121
       }
     }
   ],
   "summary": {
     "files": 73,
     "symbols": 3161,
-    "relationships": 14326,
-    "withLine": 14326,
+    "relationships": 14327,
+    "withLine": 14327,
     "absentKinds": [
       "extends",
       "implements",
@@ -126,11 +126,11 @@
     "perFileMs": [
       {
         "repo": "powershell",
-        "ms": 84.401
+        "ms": 143.316
       },
       {
         "repo": "ansible",
-        "ms": 30.304
+        "ms": 56.393
       }
     ]
   },
