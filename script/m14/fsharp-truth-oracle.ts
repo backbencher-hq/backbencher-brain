@@ -180,8 +180,22 @@ function fileScopeName(root: any): string | null {
   const cands = [
     ...descendantsOfType(root, "module_defn", 3),
     ...descendantsOfType(root, "named_module", 3),
-    ...descendantsOfType(root, "namespace_defn", 3),
+    ...descendantsOfType(root, 3),
   ]
+  // ONE top-level declaration, or none. Two corpus files have the same shape — an `open`
+  // above the `module` keyword — and they need opposite answers: in a single-module file
+  // that scope is the file's wherever the `open` sits, and in a SCRIPT with several
+  // modules the code above the first `module` is at the SCRIPT's scope, not inside it.
+  // `docs/fcs/project.fsx` is the second case. Counting top-level declarations is
+  // structural; keying on the file extension would be a guess about which files are scripts.
+  if (cands.length !== 1) return null
+  // ...and nothing EXECUTES above it — see the analyzer's `collectFileScope` for the two
+  // corpus files that need opposite answers. A top-level binding above the module is what
+  // makes a file a SCRIPT, and it is structural: the extra `module M` / `module N` in
+  // project.fsx are inside triple-quoted strings, so counting modules is not sufficient.
+  const modStart = cands[0]!.startIndex
+  const hasCodeAbove = descendantsOfType(root, "function_or_value_defn", 24).some((n: any) => n.startIndex < modStart)
+  if (hasCodeAbove) return null
   for (const n of cands) {
     const tn = descendantsOfType(n, "type_name", 2)[0] ?? descendantsOfType(n, "long_identifier", 2)[0] ??
       descendantsOfType(n, "identifier", 2)[0]
@@ -194,6 +208,37 @@ function fileScopeName(root: any): string | null {
     if (raw) return raw.trim()
   }
   return null
+}
+
+/**
+ * The declaration's OWN left-hand side, skipping the `and` clauses of a mutual recursion
+ * group.
+ *
+ * F# spells `let rec f x = … and g y = …` as ONE `function_or_value_defn` with four direct
+ * named children, and they are not the four you would guess (printed by
+ * script/m14/tmp/fs035-and-group.ts):
+ *
+ *   0  value_declaration_left   "convTypeSpec cenv emEnv preferCreated (tspec: ILTypeSpec)"
+ *   1  declaration_expression   "let typT = convTypeRef cenv emEnv preferCreated tspec…"
+ *   2  function_declaration_left "convTypeAux cenv emEnv preferCreated ty"
+ *   3  match_expression         "match ty with …"
+ *
+ * The group's own name is child 0, and it is a VALUE_declaration_left. The `and` clause is
+ * child 2 and it is a FUNCTION_declaration_left. Asking for `function_declaration_left`
+ * first therefore returns the `and` clause, and the whole group gets named after its
+ * SECOND function — so every call in the FIRST function's body was attributed to the
+ * second. Measured: 24 residual rows in ilreflect.fs alone, plus a declared_type row, and
+ * the tell was that the rows sat at lines 719–731 while the name they carried was declared
+ * at 743.
+ *
+ * The rule is DOCUMENT ORDER over both left types, not a preference between them. Child 0
+ * precedes child 2 in the source, and the source is what names the binding.
+ */
+function firstDeclarationLeft(node: any): any | undefined {
+  for (const c of namedChildren(node)) {
+    if (c.type === "function_declaration_left" || c.type === "value_declaration_left") return c
+  }
+  return undefined
 }
 
 function leafOf(text: string): string {
@@ -213,6 +258,35 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   const edges: TruthEdge[] = []
   const line = (n: any) => (n && typeof n.startPosition?.row === "number" ? n.startPosition.row + 1 : 0)
   const seen = new Set<string>()
+
+  /**
+   * The names this lane PUBLISHES as symbols.
+   *
+   * The lane's contract — pinned by the `Negative.fs` fixture, where a local `let` is
+   * asserted NOT to be a symbol — is that a binding inside a body is a local and is never
+   * a symbol. An edge sourced to a name with no symbol is not a weaker fact; it is an edge
+   * no consumer can join, because there is nothing on the other end of it to resolve.
+   *
+   * This oracle was attributing declared types to exactly those names. `let select
+   * (methInfo:MethodInfo) = …` inside a function body produced `references select ->
+   * MethodInfo`, while the analyzer — correctly, per the contract — attributes the local's
+   * parameter type to the enclosing published callable. Both implementations were
+   * internally consistent and the residual was the disagreement.
+   *
+   * Measured before the rule: 56 MISSING and 47 UNEXPLAINED `declared_type` rows per 120
+   * files, the largest class in the lane, all of them the same question.
+   *
+   * So the rule is one-directional and it is about the GRAPH, not about the language: truth
+   * may derive a fact from anywhere in the tree, but an edge it publishes must have a
+   * source a consumer can resolve. Where the nearest declaration is not published, the
+   * owner is the nearest enclosing one that is.
+   */
+  const published = new Set<string>()
+  for (const s of symbols ?? []) {
+    if (s?.name) published.add(String(s.name))
+    if (s?.ownerName) published.add(String(s.ownerName))
+  }
+  const isPublished = (n: string | null | undefined): boolean => !!n && published.has(n)
   const fileScope = fileScopeName(root)
 
   const emit = (label: string, from: string, to: string, n: any, declaredOn?: string) => {
@@ -546,15 +620,18 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     // A binding: the declared name is the FIRST `long_identifier` inside the left-hand
     // side's `identifier_pattern` — never the pattern's own text, which spans the whole
     // left-hand side (the FS-D6 defect this oracle exists to be able to contradict).
-    const left =
-      firstChildOfType(node, "function_declaration_left") ?? firstChildOfType(node, "value_declaration_left")
+    const left = firstDeclarationLeft(node)
     if (!left) return firstChildOfType(node, "identifier")?.text ?? null
     const pat = firstChildOfType(left, "identifier_pattern")
     if (!pat) return firstChildOfType(left, "identifier")?.text ?? null
     const li = firstChildOfType(pat, "long_identifier_or_op") ?? firstChildOfType(pat, "long_identifier")
     if (!li) return null
-    const ids = descendantsOfType(li, "identifier", 3)
-    return ids.length ? ids[ids.length - 1].text : null
+    const idents = descendantsOfType(li, "identifier", 3)
+    if (!idents.length) return null
+    // Document order, again: `descendantsOfType` returns REVERSE order, so the LAST element
+    // is the FIRST identifier. For a curried name that returns the head rather than the
+    // whole tail, which is the wrong name for a binding.
+    return idents.slice().sort((a: any, b: any) => a.startIndex - b.startIndex)[0]!.text
   }
 
   /**
@@ -737,14 +814,34 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
       const owner = nearestCallableAncestor(decl)
       if (owner) {
         const ownerName = thisBindingName(owner)
-        return ownerName ? { source: ownerName, declaredOn: "local_annotation" } : null
+        if (ownerName && isPublished(ownerName)) return { source: ownerName, declaredOn: "local_annotation" }
+        // the owner is itself a local, so keep climbing to a PUBLISHED one
+        const outer = nearestPublishedCallable(owner)
+        return outer ? { source: outer, declaredOn: "local_annotation" } : null
       }
     }
     const name = thisBindingName(decl)
     if (!name) return null
-    void inBody
-    void scope
-    return { source: name, declaredOn: inArgs ? "parameter" : "return_type" }
+    if (isPublished(name)) return { source: name, declaredOn: inArgs ? "parameter" : "return_type" }
+    // A local's own parameter/return type belongs to the nearest PUBLISHED callable above
+    // it, for the reason on `published`: `let select (methInfo:MethodInfo) = …` is not a
+    // symbol, so an edge sourced to `select` resolves to nothing.
+    const outer = nearestPublishedCallable(decl)
+    return outer ? { source: outer, declaredOn: inArgs ? "parameter" : "return_type" } : null
+  }
+
+  /** The nearest enclosing callable whose name the lane publishes as a symbol. */
+  function nearestPublishedCallable(n: any): string | null {
+    const callable = ["member_defn", "function_or_value_defn", "value_declaration", "additional_constr_defn"]
+    let cur: any = n?.parent
+    while (cur) {
+      if (callable.includes(cur.type)) {
+        const nm = thisBindingName(cur)
+        if (nm && isPublished(nm)) return nm
+      }
+      cur = cur.parent
+    }
+    return null
   }
 
   /**

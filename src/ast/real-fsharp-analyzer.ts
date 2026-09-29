@@ -94,6 +94,8 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the corpus's 68 extensions do) suppress the real declaration. Collected up front
     // so the rule is order-independent.
     const typeNamesDeclaredInFile = this.collectDeclaredTypeNames(rootNode)
+    // FS-D17: the scope a FILE declares, read before the walk rather than during it.
+    const fileScope = this.collectFileScope(rootNode)
     // FS-D2: which names a `type X with …` has ALREADY published as the file's own
     // declaration. Scoped to extensions on purpose — a general one-symbol-per-name set
     // would collapse an F# SIGNATURE file's forward declaration into its definition,
@@ -797,8 +799,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // FSD10: a module-less file sources its file-level edges from
           // `Global`, never from the opened name itself (self-sourcing makes an
           // import unfalsifiable: any target would "reference" itself).
+          //
+          // FS-D17 adds the file's DECLARED scope between the two, because `owner` is a
+          // property of where the walk happens to be and the file's scope is a property
+          // of the file. Without it, whether an `open` was attributed to the module or to
+          // `Global` depended on whether the `open` appeared above or below the `module`
+          // keyword — see this method for the two corpus files that disagree.
           pushRel(
-            owner || "Global",
+            owner || fileScope || "Global",
             targetNode.text,
             ASTEngine.RelationshipType.References,
             0.9,
@@ -1257,6 +1265,107 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `type X with …`. Collected before the walk so the publication rule is
    * order-independent.
    */
+  /**
+   * The module or namespace a FILE declares, or undefined.
+   *
+   * FS-D17. An `open` is a SIBLING of the file's `module` declaration, not a child, so a
+   * scope stack maintained by walking down the tree is empty when the walk reaches one.
+   * The analyzer's behaviour was then inconsistent in a way the corpus made obvious:
+   *
+   *   FscMain.fs         `module … CommandLineMain` (line 3), `open System` (line 5)
+   *                      -> the import was sourced to the module, because the walk had
+   *                         already entered the module node by the time it got there
+   *   AssemblyCheck.fs   `open System` (line 3), `module AssemblyCheck =` (line 10)
+   *                      -> the import was sourced to `Global`, because the walk had not
+   *                         reached the module yet
+   *
+   * The file's scope is the same in both cases — in F# the whole file is inside
+   * `AssemblyCheck` — so one of the two answers was wrong and the rule that produced them
+   * was "wherever the walk happened to be", which is not a rule about the program. The
+   * fix is a PRE-PASS, so the answer does not depend on the order of two sibling
+   * declarations.
+   *
+   * A module is preferred over a namespace because a file that declares both nests the
+   * module inside the namespace, and a module name is the closer scope of the two.
+   *
+   * Measured: 128 UNEXPLAINED open-path rows per 120 corpus files before the rule, and
+   * the two example files above disagreeing with each other rather than with the truth.
+   *
+   * ONE top-level declaration, and only one. The first version of this pre-pass took the
+   * FIRST module it found, which is right for AssemblyCheck.fs and wrong for
+   * `docs/fcs/project.fsx`, and the two are the same shape: an `open` above the `module`
+   * keyword. In a single-module file that scope is the file's, wherever the `open` sits. In
+   * a SCRIPT with several modules it is not — `project.fsx` opens `System` at line 35 and
+   * declares `module Inputs` at line 48, and code above the first module in a script is at
+   * the SCRIPT's scope, not inside `Inputs`. "The first module" made 128 rows disagree in
+   * the other direction.
+   *
+   * So the distinction is the count, and it is structural rather than a file extension: a
+   * file with more than one top-level module/namespace is a script, and the walk's own scope
+   * — which is correct inside a module and correctly empty above the first one — already
+   * answers it.
+   */
+  private collectFileScope(root: Node): string | undefined {
+    // TOP-LEVEL declarations only. A `module` nested inside another module does not make
+    // the file a script, and counting it would turn an ordinary file into one.
+    const topLevel: string[] = []
+    let topLevelStartIndex: number | undefined
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "module_defn" || n.type === "named_module" || n.type === "namespace") {
+        const nm = this.findChild(n, (c) => c.type === "type_name" || c.type === "long_identifier" || c.type === "identifier")
+        if (nm?.text) {
+          topLevel.push(nm.text.trim())
+          if (topLevelStartIndex === undefined) topLevelStartIndex = n.startIndex
+        }
+        continue // do not descend: nested modules are not top-level
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    if (topLevel.length !== 1) return undefined
+
+    // ...and only if nothing EXECUTES above it. Two corpus files have one top-level module
+    // and an `open` above it, and they need opposite answers:
+    //
+    //   AssemblyCheck.fs   comments + `open`, then `module AssemblyCheck =`
+    //                      -> the module is the file's scope, and the imports belong to it
+    //   docs/fcs/project.fsx   `open System` (35), `let checker = …` (42), `module Inputs` (48)
+    //                      -> a SCRIPT: the binding at line 42 executes before any module
+    //                         exists, so the file is script-scoped and the imports belong
+    //                         to the script, not to `Inputs`
+    //
+    // The discriminator is the top-level BINDING, and it is structural: `module M` and
+    // `module N` further down project.fsx look like two more top-level modules and are not
+    // — they are inside triple-quoted strings (script/m14/tmp/fs036-top-level.ts), so
+    // counting module nodes is not enough on its own. A binding that executes above the
+    // module is what makes a file a script, and it is the same fact in both files.
+    //
+    // Keying on the `.fsx` extension instead would have been shorter and would have been a
+    // guess about which files are scripts rather than a statement about the code. It would
+    // also have been wrong for a `.fs` file that genuinely is a script.
+    const moduleStart = topLevelStartIndex
+    if (moduleStart === undefined) return undefined
+    const codeWalker: Node[] = [root]
+    while (codeWalker.length > 0) {
+      const n = codeWalker.pop()!
+      if (
+        (n.type === "function_or_value_defn" || n.type === "value_declaration" || n.type === "sequential_expression") &&
+        n.startIndex < moduleStart
+      ) {
+        return undefined
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) codeWalker.push(c)
+      }
+    }
+    return topLevel[0]
+  }
+
   private collectDeclaredTypeNames(root: Node): Set<string> {
     const names = new Set<string>()
     const stack: Node[] = [root]
