@@ -1525,6 +1525,9 @@ const handlers: Record<string, ToolHandler> = {
         // relationship seen from two ends, so `totalCallers + totalCallees`
         // overstates the distinct relationship count by exactly this much.
         edgesInBothDirections: result.summary?.edgesInBothDirections ?? 0,
+        // What the answer is made of, and which kinds a bound would keep first.
+        edgesByType: result.summary?.edgesByType ?? {},
+        edgeKindPriority: result.summary?.edgeKindPriority ?? [],
         dedupedAtToolLayer: result.summary?.dedupedAtToolLayer ?? { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
         // What was actually searched. Without this a caller that asked for
         // direction:"callers" cannot tell an empty callee list from a callee
