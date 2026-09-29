@@ -1029,6 +1029,12 @@ const handlers: Record<string, ToolHandler> = {
         file: result.root?.file ?? null,
         line: result.root?.line ?? null,
         filePath: result.root?.filePath ?? null,
+        // How many stored symbols this name resolved among. A name is not a
+        // unique identifier — measured: `build` in lodash resolves among 7,
+        // `code_block.go` in cobra among 50, `Command` among 1 — and when this
+        // is > 1 the graph below is about ONE of them, so `root` is the thing
+        // to confirm before reading the edges.
+        candidates: result.rootCandidates ?? 1,
       },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
