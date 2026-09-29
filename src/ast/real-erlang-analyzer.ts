@@ -128,6 +128,8 @@ interface DeclFrame {
 }
 
 interface ErlangContext {
+  /** The file being analyzed — the fallback owner of a module-less file (see `ownerNameOf`). */
+  filePath: string
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
@@ -152,6 +154,13 @@ interface ErlangContext {
   /** "name/arity" -> the -spec that annotates it. */
   specs: Map<string, SpecInfo>
   /** "name/arity" entries named by -nifs / -on_load. */
+  /**
+   * Macro name -> the ATOM it expands to, for object-like macros whose body is a
+   * bare atom (`-define(FILE_SUITE, file_SUITE).`). Filled by the pre-pass, so a
+   * `-module(?M)` resolves no matter which side of the `-define` it sits on.
+   * ER-D34.
+   */
+  macroAtoms: Map<string, string>
   nifEntries: Set<string>
   onLoadEntries: Set<string>
   /** "name/arity" -> the function-or-callback symbol for that identity. */
@@ -173,6 +182,7 @@ interface ErlangContext {
 export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: ErlangContext = {
+      filePath,
       symbols: [],
       relationships: [],
       imports: [],
@@ -185,6 +195,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       clauseCountByKey: new Map(),
       fnBranches: new Map(),
       specs: new Map(),
+      macroAtoms: new Map(),
       nifEntries: new Set(),
       onLoadEntries: new Set(),
       functionSymbolByKey: new Map(),
@@ -446,11 +457,47 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The module name ALONE, first: `?MODULE()` is a function head, so the name
     // must be known before any clause is read, and doing it in the same pass
     // would make the answer depend on traversal order.
+    // ER-D34: a module attribute's name is not always an atom. Common Test
+    // suites conventionally write `-module(?FILE_SUITE).` with the suite name in
+    // a macro, so the attribute's child is a `macro_expr`, not an atom — and the
+    // pre-ER3 reader, which required an atom, emitted NO module symbol at all.
+    // The file then fell back to being owned by its path, so every one of its
+    // edges, its export matching and its module identity were wrong, silently.
+    // Measured on otp/lib/kernel/test/file_SUITE.erl. The macro table is filled
+    // FIRST so the resolution does not depend on which side of the `-define` the
+    // attribute sits.
+    for (const form of this.prePassForms(rootNode)) {
+      if (form.type !== "pp_define") continue
+      const lhs = this.getChildByType(form, "macro_lhs")
+      const nameNode = lhs ? (this.getChildByType(lhs, "var") ?? this.getChildByType(lhs, "atom")) : undefined
+      if (!nameNode?.text) continue
+      // Only a body that is EXACTLY one atom is expandable without running the
+      // preprocessor. `-define(X, some:expression)` or a concatenation stays
+      // unresolved, and the module name stays unknown — which is the honest
+      // answer, not a guess. The grammar puts that atom DIRECTLY under
+      // pp_define (there is no value_expr wrapper), so the body is the first
+      // named child that is an atom.
+      for (let i = 0; i < form.namedChildCount; i++) {
+        const body = form.namedChild(i)
+        if (!body || body.type !== "atom" || !body.text) continue
+        ctx.macroAtoms.set(nameNode.text, body.text)
+        break
+      }
+    }
     for (const top of this.prePassForms(rootNode)) {
       if (top.type !== "module_attribute") continue
       const atom = this.getChildByType(top, "atom")
       if (atom?.text) {
         ctx.moduleName = atom.text
+        break
+      }
+      // `-module(?FILE_SUITE).` parses as a module_attribute whose only named
+      // child is a macro_call_expr, and the macro's NAME is a `var` (macros are
+      // `?Name`, not atoms). Both shapes are accepted: macro_call_expr is what
+      // the grammar produces here, macro_expr is the object-like form.
+      const expanded = this.expandModuleNameMacro(top, ctx)
+      if (expanded) {
+        ctx.moduleName = expanded
         break
       }
     }
@@ -610,19 +657,96 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Module-level declarations
   // ==========================================================================
+  /**
+   * The module name a `-module(?MACRO)` attribute expands to, or undefined when
+   * it cannot be known without running the preprocessor.
+   *
+   * ER-D34. Common Test suites name themselves through a macro by convention, so
+   * this is not exotic: otp/lib/kernel/test/file_SUITE.erl writes
+   * `-module(?FILE_SUITE).` and is the only such file in the 4,326-file corpus
+   * — rare, but the failure was silent and total. The attribute parsed as a
+   * module_attribute with a macro_call_expr child, and a reader that required an
+   * `atom` emitted no module symbol at all, so the file fell back to being owned
+   * by its path: wrong owner on every edge, no module in the store, exports
+   * unmatched.
+   */
+  private expandModuleNameMacro(attr: Node, ctx: ErlangContext): string | undefined {
+    const macro =
+      this.getChildByType(attr, "macro_call_expr") ?? this.getChildByType(attr, "macro_expr")
+    if (!macro) return undefined
+    const nameNode = this.getChildByType(macro, "var") ?? this.getChildByType(macro, "atom")
+    if (!nameNode?.text) return undefined
+    return ctx.macroAtoms.get(nameNode.text)
+  }
+
   private processModuleAttribute(node: Node, ctx: ErlangContext, filePath: string) {
     if (ctx.moduleSymbol) return
-    const nameNode = this.getChildByType(node, "atom")
-    if (!nameNode?.text) return
+    let nameNode = this.getChildByType(node, "atom")
+    let moduleNameOverride: string | undefined
+    if (!nameNode?.text) {
+      // ER-D34: `-module(?FILE_SUITE).` — the name arrives through a macro. A
+      // macro use is a macro use wherever it appears, so the reference is
+      // emitted as well as the resolved name; dropping it would lose the fact
+      // that this module's identity is a build-time decision.
+      const macro =
+        this.getChildByType(node, "macro_call_expr") ?? this.getChildByType(node, "macro_expr")
+      const macroName = macro
+        ? (this.getChildByType(macro, "var") ?? this.getChildByType(macro, "atom"))
+        : undefined
+      const expanded = this.expandModuleNameMacro(node, ctx)
+      if (!macroName?.text) return
+      // The macro use is recorded either way, because it happened either way.
+      // When the body is a bare atom the source is the RESOLVED module; when it
+      // is not expandable without the preprocessor the module name is unknown,
+      // so the edge is sourced to the file — the same file-path owner ER-D32
+      // gives a module-less file — and tagged so a consumer can tell an
+      // unresolved module name from a resolved one. Dropping the unresolved case
+      // silently loses the fact that this file's identity is macro-driven.
+      const source = expanded ?? this.ownerNameOf(ctx) ?? node.text
+      this.pushRel(
+        ctx,
+        source,
+        macroName.text,
+        ASTEngine.RelationshipType.References,
+        0.9,
+        {
+          erlangSpecific: true,
+          context: "macro use",
+          isModuleNameMacro: true,
+          moduleNameResolved: !!expanded,
+        },
+        macroName.startPosition.row + 1,
+      )
+      // No module symbol is minted from an unresolvable name: the honest
+      // representation of "the module name needs a preprocessor" is no module
+      // symbol, not a synthesised one.
+      if (!expanded) return
+      // The symbol is named by what the macro EXPANDS TO. Naming it
+      // `FILE_SUITE` would put a macro name in the module slot, and every
+      // consumer of a module symbol — exports, imports, cross-module calls —
+      // would then look for a module that no compile can ever produce. The
+      // macro's own line is kept so `contains`/reference lines stay on the
+      // name-bearing node (ER-D33).
+      moduleNameOverride = expanded
+      nameNode = macroName
+    }
+    const moduleName = moduleNameOverride ?? nameNode.text
     const symbol: ASTEngine.UniversalSymbol = {
-      name: nameNode.text,
+      name: moduleName,
       kind: ASTEngine.SymbolKind.Module,
       range: this.nodeToRange(node),
-      metadata: { nodeType: "module_attribute", line: nameNode.startPosition.row + 1 },
+      metadata: {
+        nodeType: "module_attribute",
+        line: nameNode.startPosition.row + 1,
+        ...(moduleNameOverride
+          ? { nameFromMacro: nameNode.text, expandsTo: moduleNameOverride }
+          : {}),
+      },
     }
     ctx.moduleSymbol = symbol
     ctx.symbols.push(symbol)
-    ctx.declStack.push({ source: nameNode.text, kind: "module" })
+    ctx.moduleName = moduleName
+    ctx.declStack.push({ source: moduleName, kind: "module" })
     void filePath
   }
 
@@ -766,7 +890,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: nameNode.text,
       kind: ASTEngine.SymbolKind.Constant,
       range: this.nodeToRange(node),
-      ownerName: ctx.moduleName,
+      ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       metadata: {
         nodeType: "macro_definition",
@@ -794,7 +918,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: typeName,
       kind: ASTEngine.SymbolKind.Type,
       range: this.nodeToRange(node),
-      ownerName: ctx.moduleName ?? filePath,
+      ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       metadata: {
         nodeType: type,
@@ -834,7 +958,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         name: nameNode.text,
         kind: ASTEngine.SymbolKind.Method,
         range: this.nodeToRange(node),
-        ownerName: ctx.moduleName ?? filePath,
+        ownerName: this.ownerNameOf(ctx),
         ownerKind: ASTEngine.SymbolKind.Module,
         metadata: {
           nodeType: "callback",
@@ -911,7 +1035,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       name: recordName,
       kind: ASTEngine.SymbolKind.Struct,
       range: this.nodeToRange(node),
-      ownerName: ctx.moduleName ?? filePath,
+      ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       metadata: { nodeType: "record_decl", fields, line: nameNode.startPosition.row + 1 },
     })
@@ -953,10 +1077,17 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // stays: the contract is true whether or not this file implements it.
       if (symbol.kind === ASTEngine.SymbolKind.Method && (symbol.metadata as any)?.isCallback) {
         symbol.kind = ASTEngine.SymbolKind.Function
+        // `metadata.line` is the symbol's OWN name line (ER-D30/M59), and after
+        // the merge the symbol IS the definition — so the line follows it, while
+        // the contract's line stays in callbackLine. Leaving `line` on the
+        // `-callback` would make `contains` point at a declaration that is not
+        // this symbol.
         symbol.metadata = {
           ...(symbol.metadata ?? {}),
           definedHere: true,
-          ...(clause ? { definitionLine: clause.startPosition.row + 1 } : {}),
+          ...(clause
+            ? { definitionLine: clause.startPosition.row + 1, line: clause.startPosition.row + 1 }
+            : {}),
         }
         // The symbol's LINE is the definition's, not the contract's: the
         // definition is the thing that exists, and the contract's line stays in
@@ -994,6 +1125,28 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * The name of the macro sitting in a remote-module position, or undefined when
+   * the module is a plain atom.
+   *
+   * ER-D25 vs ER-D35. `?MODULE:f(X)` is the idiomatic self-dispatch and resolves
+   * to this file's module. `?ANYTHING_ELSE:f(X)` does not: the macro is an
+   * ordinary build-time constant whose value this analyzer does not expand, and
+   * treating it as `?MODULE` fabricates a self-call. The distinction is the
+   * macro's NAME, and the full-corpus draw is what forced it — otp's
+   * `file_SUITE.erl` writes `?FILE_MODULE:read_file_info(Priv)`, and before this
+   * check every one of those calls was reported as a call into its own module.
+   */
+  private remoteMacroModuleName(remoteModule: Node | undefined): string | undefined {
+    if (!remoteModule) return undefined
+    const macro =
+      this.getChildByType(remoteModule, "macro_call_expr") ??
+      this.getChildByType(remoteModule, "macro_expr")
+    if (!macro) return undefined
+    const nameNode = this.getChildByType(macro, "var") ?? this.getChildByType(macro, "atom")
+    return nameNode?.text
+  }
+
   private makeFunctionSymbol(
     ctx: ErlangContext,
     name: string,
@@ -1019,7 +1172,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       name,
       kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(clause ?? declNode),
-      ownerName: ctx.moduleName ?? filePath,
+      ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       parameters: params,
       ...(spec?.ret ? { returnType: spec.ret } : {}),
@@ -1096,7 +1249,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // but a bare atom.
       const remoteModule = this.getChildByType(remote, "remote_module")
       const modAtom = remoteModule ? this.getChildByType(remoteModule, "atom") : undefined
-      const macroMod = remoteModule ? this.getChildByType(remoteModule, "macro_call_expr") : undefined
+      const macroMod = this.remoteMacroModuleName(remoteModule)
       const fnAtom = this.getChildByType(remote, "atom")
       if (!fnAtom?.text) {
         ctx.stats.dynamicRemote++
@@ -1119,7 +1272,13 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         // is this file's module, so the call resolves exactly like a
         // module-qualified one. The ?MODULE use itself still emits its macro
         // reference from processMacroUse.
-        const mod = ctx.moduleName
+        //
+        // Any OTHER macro in module position is ER-D35: not a self-dispatch. The
+        // value lives in a preprocessor definition the analyzer does not expand,
+        // so no callee is derivable. Substituting this module (what this branch
+        // used to do for every macro) invents a self-call that does not exist in
+        // the source — 922 of them over the corpus, every one of them wrong.
+        const mod = macroMod === "MODULE" ? ctx.moduleName : undefined
         if (!mod) {
           ctx.stats.dynamicRemote++
           return
@@ -1287,6 +1446,12 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
    * macro_call_expr sites in 300 corpus files carry a macro_call_args).
    */
   private processMacroUse(node: Node, ctx: ErlangContext) {
+    // The module's OWN name macro is emitted by processModuleAttribute, tagged
+    // `isModuleNameMacro` and sourced to the RESOLVED module. Firing here too
+    // produced a second edge from a different source, because this generic path
+    // reads `currentSource` — which is still the file path while the attribute's
+    // children are walked — so one macro use became two edges with two sources.
+    if (node.parent?.type === "module_attribute") return
     const nameNode = this.getChildByType(node, "var") ?? this.getChildByType(node, "atom")
     if (!nameNode?.text) return
     const source = this.currentSource(ctx)
@@ -1333,7 +1498,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!fnAtom?.text) return
     const modNode = this.getChildByType(node, "module")
     const modAtom = modNode ? this.getChildByType(modNode, "atom") : undefined
-    const macroMod = modNode ? this.getChildByType(modNode, "macro_call_expr") : undefined
+    const macroMod = this.remoteMacroModuleName(modNode)
     if (modAtom?.text) {
       this.pushRel(
         ctx,
@@ -1346,7 +1511,9 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       )
       return
     }
-    if (macroMod && ctx.moduleName) {
+    // ER-D35, same distinction as the call site: only `?MODULE:f/1` names this
+    // file's module. `?OTHER:f/1` names nothing derivable.
+    if (macroMod === "MODULE" && ctx.moduleName) {
       this.pushRel(
         ctx,
         source,
@@ -1480,10 +1647,43 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
    * declaration line, which is where bb_graph's call hierarchy and the M59
    * symbol-line contract read it from.
    */
+  /**
+   * The owner of a module-scope declaration.
+   *
+   * Erlang has an honest gap here: a source file may declare NO `-module` at
+   * all. OTP's own `lib/syntax_tools/examples/merl/basic_test.erl` is one — its
+   * `-module` line is commented out because the file is textually included into
+   * another module. Nothing in the file names the module it will end up in, and
+   * the analyzer cannot know it. So the owner falls back to the FILE PATH: the
+   * outermost container that definitely holds the declaration, and the only
+   * identity the file has. (The alternative — inventing a module name from the
+   * filename — would fabricate a module that does not exist.)
+   *
+   * Every module-scope declaration must route through here. The 400-file corpus
+   * draw caught the one site that did not: macros took bare `ctx.moduleName`
+   * while functions, records, types and callbacks took the fallback, so a
+   * macro in a module-less file was emitted with NO owner while the function
+   * beside it had one. A fallback that is duplicated per declaration is a
+   * fallback that will drift.
+   */
+  private ownerNameOf(ctx: ErlangContext): string | undefined {
+    return ctx.moduleName ?? ctx.filePath
+  }
+
   private emitOwnership(ctx: ErlangContext) {
     for (const s of ctx.symbols) {
       const owner = s.ownerName
       if (!owner) continue
+      // M59 (#825): the line belongs to the NAME-BEARING node, never to the
+      // construct that contains it. `range.startLine` is the declaration
+      // node's line, which for a multi-line `-define(\n  worker(S, …),\n …)` is
+      // the `-define(` line — one ABOVE the macro's name. Every declaration
+      // records its name's line in `metadata.line`, so that is what `contains`
+      // carries. Measured on the 400-file corpus draw (the 150-file draw missed
+      // it): otp/lib/snmp/src/manager/snmpm_net_if.erl wanted `contains ->
+      // worker` at 209 and 220 and the analyzer said 208 and 219.
+      const nameLine = (s.metadata as any)?.line
+      const line = typeof nameLine === "number" && nameLine > 0 ? nameLine : s.range.startLine
       this.pushRel(
         ctx,
         owner,
@@ -1491,7 +1691,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         ASTEngine.RelationshipType.Contains,
         1.0,
         { erlangSpecific: true, isModuleMember: s.ownerKind === ASTEngine.SymbolKind.Module },
-        s.range.startLine,
+        line,
       )
     }
   }
