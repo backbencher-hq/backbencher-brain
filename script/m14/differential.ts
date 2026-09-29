@@ -11893,32 +11893,10 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
       // Z15 mirror (2026-09-28): a COMPOUND assignment is a read-modify-write,
       // not a definition — `counter += 1` reads the file-scope `counter` before
       // writing it. A plain `=` stays a definition.
-      //
-      // Z24 (2026-09-29): that operator test belongs to the ASSIGNMENT-shaped
-      // parents ONLY. Written as a bare early `return false` for every parent,
-      // it short-circuited the declaration branch below it, so the truth derived
-      // a bare read for the NAME OF EVERY FUNCTION AND FIELD it walked past —
-      // `uses (expr) -> init` at the `pub fn init(` line itself. F5 read ~970
-      // MISSING on a 200-file draw and the analyzer was blameless: it had never
-      // emitted those edges, correctly. The size is one phantom row per
-      // file-scope declaration, so the number moves with the DRAW (6,866-edge
-      // draw: 0 missing; 10,635-edge draw: 970) and reads like a sampling
-      // artefact rather than like a gate defect. Provenance of every one of them
-      // was the declaration site, never a use.
-      if (
-        p.type === "variable_declaration" || p.type === "assignment_expression" ||
-        p.type === "compound_assignment_statement" || p.type === "assignment_statement"
-      ) {
-        if (!zigPlainAssignment(p)) return false
-        // Z25 mirror (2026-09-29): the LHS test is NODE IDENTITY with the
-        // first named child, not "the first child of type `identifier`". In a
-        // struct literal the KEY is a `field_identifier` (`.id = base_id`), so
-        // the first IDENTIFIER child is the VALUE — and the old test read
-        // `.id = base_id` as *defining* `base_id`, dropping a genuine bare read of
-        // a file-scope name. Same rule as the ZGD1 field-path mirror above, which
-        // already used node identity: one rule, two places.
-        const lhs = p.namedChild(0)
-        return !!lhs && lhs.id === n.id
+      if (!zigPlainAssignment(p)) return false
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && c.type === "identifier") return c.startIndex === n.startIndex && c.endIndex === n.endIndex
       }
     if (
       p.type === "function_declaration" || p.type === "test_declaration" ||

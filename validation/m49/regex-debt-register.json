@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "purpose": "M49.R2 regex debt register: every needs_review/replaceable regex in an analyzer; shrink-only (baseline 18 established 2026-09-08). Rows are keyed by (file, source); `line` is re-anchored to HEAD by M49.G6, and each row's note history records every shift it has survived.",
-  "baselineTotal": 11,
+  "baselineTotal": 12,
   "establishedAt": "2026-09-08",
   "entries": [
     {
@@ -91,6 +91,14 @@
       "operation": "other",
       "classification": "needs_review",
       "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 990 -> 1049 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1049 -> 1081 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1081 -> 1088 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "line": 1000,
+      "source": "/[!*\\s\\[\\]\\{\\}]+/g",
+      "operation": "replace",
+      "classification": "needs_review",
+      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained]"
     }
   ],
   "shrunkBy": [
@@ -152,18 +160,6 @@
       "baselineTotalBefore": 13,
       "baselineTotalAfter": 12,
       "note": "A row may only disappear when the source no longer holds the regex, and this one is a CODE FIX, not a reclassification: /^%(\\d+|&)?$/ tested a Clojure anonymous-argument shorthand (%, %1..%N, %&) against a symbol's name string, and it is now isAnonArgShorthand, a char walk. The conversion is PROVED, not asserted — script/m14/tmp/clj-regex-equiv.ts runs the regex and the scan over every sym_lit name in three corpora (633 files, 187,678 symbol nodes, 13,363 distinct names) plus a 42-case adversarial battery and reports 0 mismatches. The row's own note said 'mechanically convertible to a structural symbol-name check; NOT converted in this wave because the clojure analyzer is its authoring lane's file' — that reason expired when the file became this lane's authoring lane. reviews/regex-policy.md's clojure table is updated to 0 in the same commit. Record: reviews/clojure/deep-review-2026-09-28.md, finding CLJ-D20; fixture clojure/anon-shorthand; mutant clojure/anon-shorthand-greedy (CAUGHT)."
-    },
-    {
-      "wave": "zig deep review 2026-09-28 (Z18)",
-      "removed": 1,
-      "removedRows": [
-        {
-          "file": "real-zig-analyzer.ts",
-          "source": "/[!*\\s\\[\\]\\{\\}]+/g",
-          "class": "needs_review"
-        }
-      ],
-      "note": "The row is removed because the SOURCE is gone, not because it was reclassified. The regex sat on the declared-type path, where the receiver can only be an `identifier` node's text: on a plain identifier (`[A-Za-z_][A-Za-z0-9_]*`, no `<or>`, no `=`) all three surgeries on that line are provable no-ops, and on a QUOTED identifier it CORRUPTED a legitimate name. Measured over the three pinned zig corpora (3,839 files): 34,132 quoted identifiers, 31,349 in a type position, and 1,348 of those carrying a character from the junk class - the upstream C compiler's own diagnostics included (`aro/Diagnostics.zig:33` `@\"fatal error\"` was published as `@\"fatalerror\"`, and `@\"*\"` as `@\"\"`). The replacement publishes the source spelling, which is what every other surface of the analyzer already publishes (symbol names, `uses` field leaves, call leaves), so edges still resolve inside the index; the two surviving tests are a `Set` membership and a character-code range. Evidence: validation/m14/fixtures/zig/declared-type-leaf (expects `@\"weird type\"`, FORBIDS the corrupted `@\"weirdtype\"`), mutation zig/quoted-identifier-mangled, validation/m12/results/zig-deep-review.json, and the population counts above. The lane is now zero-regex. NOTE for whoever regenerates the census: R2 reported this row as a GHOST for one wave after the fix landed, because a concurrent lane write restored this file from a pre-fix read - a register row removed in the worktree is only really removed once it is committed, and R2 is right to say so until then."
     }
   ]
 }
