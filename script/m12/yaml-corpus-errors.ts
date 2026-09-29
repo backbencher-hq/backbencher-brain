@@ -27,7 +27,14 @@ import { parseFile } from "../../src/ast/pool-worker"
 
 const ROOT = process.cwd()
 const CORPUS_ROOT = "$HOME/fixtures/repositories"
-const REPOS = ["grails-core", "docker", "ansible", "kubernetes", "terraform", "openapi-spec", "helm", "gh-cli"]
+// NINTH corpus, added 2026-09-28 for ONE reason: `yaml_tag_include` had ZERO occurrences in
+// the first eight, so the family was pinned by fixture only and no corpus could hold it
+// to account. pyyaml-include is the library that DEFINES the construct — its own test
+// data is real `!include` YAML, and PyYAML parses those files cleanly, so the grammar is
+// not the reason the family was rare. It is a small repository (test data, not a
+// production corpus) and is declared as such: it exists to make one construct
+// corpus-backed, and it is not evidence about YAML's general shape.
+const REPOS = ["grails-core", "docker", "ansible", "kubernetes", "terraform", "openapi-spec", "helm", "gh-cli", "pyyaml-include"]
 /** The draw the manifest names as `corpusTarget`; see `corpusRevision` below. */
 const PRIMARY_CORPUS = "kubernetes"
 
