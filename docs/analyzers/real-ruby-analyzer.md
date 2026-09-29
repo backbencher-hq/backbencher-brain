@@ -80,6 +80,35 @@ The enum has 11 distinct values. This is what the analyzer does with **each** of
 | `exports` | **never emitted, and correctly so.** Ruby has no module-level export construct — every constant and method in a module is public unless `private_constant` / `private` says otherwise — so there is nothing for an `exports` edge to name. Minority construct: 3 of 14, and of the OO lanes only java emits it, at one site. |
 | `Dependency` / `Related` | enum aliases of `uses` / `references`, not separate types. |
 
+**So all 11 are accounted for: 8 constructed, `imports` carried through the ImportInfo family with a
+measurement, `exports` correctly empty by language law. No type is missing.** The family matrix and the
+production-path measurement are in `script/m14/tmp/rb-rel-type-census.ts` and the review §12.
+
+### What a consumer actually receives
+
+Emitting a type is not the same as a graph query returning it. Over 1,200 real files and 101,017 emitted
+relationships, two silent filters sat between them:
+
+| | before | after |
+|---|---|---|
+| reachable with **no** `relationshipTypes` argument | **34.3%** | **50.5%** |
+| reachable with an explicit filter | 50.5% | 50.5% |
+
+`graph-engine.ts` defaulted the traversal to four of the eleven types, so **22.2% of every emitted
+relationship was excluded before the query ran** — including `contains`, the parent-to-member edge, which
+left a traversal unable to descend from a class to that class's own methods. It was also undeclared: the
+function reports every cap and budget through `truncated` / `truncationReason` and said nothing about this.
+The default is now every type, and a caller's filter is declared. That also removed a three-way
+disagreement between the repo's graph paths, two of which already returned everything.
+
+The remaining **49.5%** is not a type problem: it is edges whose target resolves to no symbol, which every
+graph query excludes. The structure is a language fact — `contains` and `overrides` resolve at 100% because
+both sides are declared symbols, `references` at 2.9% (a require target is a *path*) and `uses` at 5.0% (an
+ivar read targets `@foo`). `references` is the sharpest case: **1,194 edges emitted, stored, and
+returnable by no graph query.** The same facts sit in `brain_import`, which the graph does not join. The
+reachability figures are a **lower bound** on production resolution, which
+`parallel-indexer.ts resolveRelationships` does more thoroughly than this measurement — review §25.
+
 **All 8 of the emitted types now have an independent oracle derivation.** `contains` and `references`
 were in no audited set and had no derivation at all — ~34% of the payload, correct as emitted and verified
 by nothing. Both are now derived (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`) and
