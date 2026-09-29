@@ -187,8 +187,24 @@ const YAML_CORE_PREFIX = "tag:yaml.org,2002:"
  * script/m14/spec/yaml-completeness.json, and the `!include` corpus gap recorded
  * there — zero of eight pinned repositories contain one).
  */
+// CORRECTED 2026-09-28: this list was GUESSED, and measuring it proved it. Across all
+// 9,953 files in the eight pinned corpora, every one of the ten spellings below occurs
+// ZERO times — while the tags Ansible actually uses (`!vault` 30, `!unsafe` 31) are not
+// here. A web check of the libraries that define this construct explains why: `!include`
+// is not an Ansible tag at all, it belongs to third-party PyYAML extensions, and the
+// CURRENT spelling is different from the one this list was built on.
+//
+//   pyyaml-include 1.x   !include                <- the only spelling here with any
+//                                                  real-world use, and it is v1
+//   pyyaml-include 2.x+  !inc                    <- the current release (PyPI + readthedocs)
+//   claylo/yaml-include  !!inc/file, !!inc/dir
+//
+// So `inc` was a live recall gap: a documented, currently-maintained include tag that
+// this analyzer did not treat as an import. Added, with the evidence, rather than
+// quietly widening the set.
 const INCLUDE_TAGS = new Set([
-  "include", "include_tasks", "include_role", "include_vars", "include_file",
+  "include", "inc",
+  "include_tasks", "include_role", "include_vars", "include_file",
   "import", "import_tasks", "import_playbook", "import_role", "import_file",
 ])
 
