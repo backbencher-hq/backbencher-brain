@@ -351,7 +351,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                 // not, and only the DEF knows which it is (processFunction
                 // applies its own verdict, clearing the flag when a body exists).
                 existing.metadata = { ...existing.metadata, callbackSpec: specText, isCallbackDeclaration: true, ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}) }
-                if (existing.isDeclaration) existing.metadata.isDeclaration = true
                 // EX-D16 parity: the typed spec is part of the declaration
                 // surface, so the symbol's extent grows to cover it — the same
                 // "first..last of everything this symbol is" rule the clause
@@ -370,7 +369,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
                   visibility: "public",
                   isDeclaration: true,
                   metadata: {
-                    elixirSpecific: true, isCallback: true, isBodylessDeclaration: true, isDeclaration: true, arity, heads: 0, clauseRanges: [],
+                    elixirSpecific: true, isCallback: true, isBodylessDeclaration: true, arity, heads: 0, clauseRanges: [],
                     ...(attrCallId.text === "macrocallback" ? { isMacroCallback: true } : {}),
                     callbackSpec: specText, hasCallbackSpec: true,
                   },
@@ -1377,35 +1376,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             name = actualCall.childCount > 1 ? actualCall.child(1)?.text || "Unknown" : "Unknown"
             parameters.push({ name: actualCall.childCount > 0 ? actualCall.child(0)?.text || "left" : "left", type: "dynamic" })
             parameters.push({ name: actualCall.childCount > 2 ? actualCall.child(2)?.text || "right" : "right", type: "dynamic" })
-        } else if (actualCall.type === "block" || this.findChild(actualCall, (c) => c?.type === "operator_identifier") !== null) {
-          // EX-A15: a PARENTHESIZED operator definition with no argument list —
-          // `defmacro (..) do … end`, how Kernel defines the zero-arity range
-          // operator. The grammar shapes the name as
-          // `arguments > block > operator_identifier`, which no earlier branch
-          // recognised, so the definition fell through to the EX-D9
-          // placeholder: elixir's own kernel.ex:4347 published a macro named
-          // `Unknown`, and a second parenthesized operator in the same module
-          // MERGED into it (both arity 0), so one real definition was invisible
-          // and one row stood for two. The operator token is statically
-          // nameable, so it is named.
-          const opNode = this.findChild(actualCall, (c) => c?.type === "operator_identifier")
-          if (opNode?.text) {
-              name = opNode.text
-              // `defmacro (..)` has no argument list — the macro receives the one
-              // AST argument, so arity 1. A parenthesized operator WITH
-              // arguments (`def (op)(a, b)`) is an ERROR node in this grammar
-              // whose `(a, b)` sibling is still readable, so take the parameter
-              // list from there rather than guessing one operand.
-              const siblingArgs = this.filterChildren(actualCall.parent ?? ({ namedChildCount: 0, namedChild: () => null } as any), (c) => c?.type === "arguments")[0]
-              if (siblingArgs) {
-                  for (let i = 0; i < siblingArgs.namedChildCount; i++) {
-                      const a = siblingArgs.namedChild(i)
-                      if (a) parameters.push({ name: a.type === "identifier" ? a.text : "_", type: "dynamic" })
-                  }
-              } else {
-                  parameters.push({ name: "operand", type: "dynamic" })
-              }
-          }
         } else if (actualCall.type === "unary_operator") {
             // Unary operator definition (`def +value`) — the name is the
             // operator token, the operand the single parameter (ELXD24).
@@ -1468,7 +1438,6 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (parkedSpec) existing.metadata!.callbackSpec = parkedSpec
         if (isDeclaration) {
             if (!existing.isDeclaration) { existing.isDeclaration = true; existing.metadata!.isBodylessDeclaration = true }
-            existing.metadata!.isDeclaration = true
         } else {
             // A clause WITH a body makes the merged symbol a DEFINITION, even if
             // its first clause was a bodiless head (`def f(y)` + `def f(y), do:
@@ -1523,7 +1492,7 @@ export class RealElixirAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: {
                 elixirSpecific: true, isMacro: defType.indexOf("macro") !== -1, arity, heads: 1, clauseRanges: [this.nodeToRange(node)],
                 hasPatternMatching: hasPattern, guards: guardList, isGenServerCallback: isGenCallback, isSupervisorCallback: isSupCallback,
-                ...(isDeclaration ? { isBodylessDeclaration: true, isDeclaration: true } : {}),
+                ...(isDeclaration ? { isBodylessDeclaration: true } : {}),
                 ...(parkedSpec ? { callbackSpec: parkedSpec, isCallbackDeclaration: true } : {}),
                 ...(parkedOptional && parkedOptional.includes(name) ? { isOptionalCallback: true } : {}),
             }
