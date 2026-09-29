@@ -159,23 +159,57 @@ names handlers `<Form>_<Event>` and names buttons `New<Thing>`, so a form or a
 button called `New…` loses the body of **every** handler it has — silently, with
 the file's symbol count still plausible.
 
-Four fixes were built and none lands safely, which is itself the useful result:
+### A proven negative result, not four failed guesses
 
-| attempt | outcome |
-|---|---|
-| append `\b` to the `ci()` keyword helper | **illegal** — a tree-sitter token may not contain a zero-width assertion (`Unexpected rule ExpandRegex(Assertion)`) |
-| identifier `prec(-1)` → tie, let length decide | generator accepts it; the lexer still picks `New` |
-| identifier → `prec(1)`, outrank the keywords | **worse** — `Handles MyBase.Load` breaks too, and `New*` still fails |
-| `constructor_declaration` `prec(100)` → `prec(1)` | generator accepts it, still fails; and it puts two rules in tension for no gain |
+This is settled by measurement now, and the full working is in
+[`grammars/tree-sitter-vbnet/PIN.md`](../grammars/tree-sitter-vbnet/PIN.md).
 
-All four reverted. `grammars/` and the wasm are byte-identical to HEAD and the pin
-gate is green. The real repair is keyword extraction — teaching the grammar that
-`New` is a *word* and not a prefix — and the reason it is not a one-liner is now
-understood rather than guessed: `ci()` returns a case-insensitive **RegExp**, and
-tree-sitter's keyword extraction only recognises keywords it can prove are
-keywords, so none of the 287 `ci()` call sites participates. That is a restructure
-of how the grammar declares keywords, for whoever owns `grammar.js` — not a change
-a lane should make to a digest-verified artefact.
+**The mechanism.** The token stream for `Public Sub NewForm_Load()` is
+`member_modifier "Public"` + `identifier "Form_Load"` — the head is gone — while
+`Public Sub Ordinary_Load()` parses clean. So the fault is **purely lexical**:
+`_identifier_token` is `prec(-1)` and every `ci()` keyword is `prec(0)`, and
+tree-sitter resolves a token choice by **precedence first, match length second**.
+Precedence is settled before length is consulted, so the three-character keyword
+`New` beats the thirteen-character identifier — always, whatever the parser wants.
+Confirmed by disabling the constructor's `New` alternative entirely: the
+identifier was *still* split, so the parser's preference for
+`constructor_declaration` is a consequence of the split, not its cause.
+
+**The precedence space is exhausted.** There are exactly three settings and each
+breaks something:
+
+| identifier precedence | `Sub NewForm_Load()` | `Sub New()` | `New Foo(1,2)` |
+|---|---|---|---|
+| `prec(-1)` — current | **broken** | works | works |
+| `prec(0)` — tie | broken | **broken** | **broken** |
+| `prec(1)` | fixed | broken | works |
+
+At a tie the identifier wins the *exact* match, so `New` stops being a keyword and
+real constructors stop parsing; above the tie the same happens and
+`Handles MyBase.Load` breaks too. **No precedence distinguishes `New` from
+`NewForm_Load`**, because what distinguishes them is a word boundary and not a
+priority.
+
+**And both obvious repairs are closed off, by measurement:**
+
+- `\b` on the `ci()` helper is the textbook fix and is **illegal** — a tree-sitter
+  token may not hold a zero-width assertion (`Unexpected rule
+  ExpandRegex(Assertion)`), and the generator then rejects the whole grammar.
+- **Keyword extraction** — the mechanism that exists precisely for this, where the
+  lexer matches the `word` token and promotes it on an *exact* text match — does
+  not rescue these tokens, because `ci()` returns an inline `new RegExp(...)` and
+  the generator indexes keywords by literal text. Converting `New` and `Handles`
+  to plain string tokens was measured and changed **nothing**: extraction is
+  decided for the grammar's token set as a whole, and the other 285 `ci()` call
+  sites keep it off.
+
+**What the repair therefore requires:** replacing `ci()`'s inline case-insensitive
+RegExps with named token rules the extractor can index, across **287 call sites**,
+and re-pinning the digest. That is a grammar project for whoever owns
+`grammar.js`, not a change a lane should make to a digest-verified artefact.
+
+Every experiment was reverted; `grammars/` and the wasm are byte-identical to HEAD
+and the pin gate is green.
 
 **Read the 120-file draw as 120 files — and in fact as 60.** Two rotations of a
 60-file draw, one per corpus, was the sample. It reported 100 % on a corpus whose
