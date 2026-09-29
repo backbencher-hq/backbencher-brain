@@ -189,6 +189,18 @@ export async function traverseGraph(
   cascadedCallers: number
   exactCallees: number
   cascadedCallees: number
+  /** Edges at depth >= 1: about symbols DISCOVERED by the traversal, not
+   *  about the root. exactCallers + cascadedCallers + deeperCallers is
+   *  totalCallers. */
+  deeperCallers: number
+  deeperCallees: number
+  /** The fan-out bounds in force (symbols expanded per direction) and whether
+   *  each was exhausted. A bound that fires with no declared value is a bound
+   *  a reader cannot reason about. */
+  callerBudget: number
+  calleeBudget: number
+  callerBudgetExhausted: boolean
+  calleeBudgetExhausted: boolean
   /** Stored rows that appear in the caller list AND the callee list. Each is
    *  one relationship seen from two ends, so the sum of the two totals
    *  overstates the distinct relationship count by exactly this much. */
@@ -287,10 +299,24 @@ export async function traverseGraph(
   // is what lets a reader use that superset instead of being drowned by it.
   // Measured on cobra: `Command` returns 184 caller edges of which 24 name the
   // symbol itself — a ratio no per-edge field alone makes obvious.
+  //
+  // DEPTH 0 ONLY, and that restriction is the whole point. An edge found at
+  // depth 2 is exact w.r.t. the symbol traced at depth 2, not w.r.t. the root;
+  // rolling those into a root-named total produced a field that was simply
+  // wrong (measured: rake's `Application` reported `exactCallers: 37` against 2
+  // stored rows targeting `Application`). Edges one hop or more out are about
+  // OTHER symbols and are counted as such.
   let exactCallers = 0
   let cascadedCallers = 0
   let exactCallees = 0
   let cascadedCallees = 0
+  let deeperCallers = 0
+  let deeperCallees = 0
+  // Budget exhaustion is a bound like any other, and it used to fire with no
+  // number anywhere in the payload. Declared, so a reader who sees
+  // `caller-budget-exhausted` can learn what the bound was.
+  let callerBudgetExhausted = false
+  let calleeBudgetExhausted = false
   // Rows that legitimately appear in BOTH directions. The engine already knew
   // this — it holds one rowId set per direction and re-encounters a row when a
   // deeper cascade reaches it — but never reported it, so `totalCallers +
@@ -384,7 +410,8 @@ export async function traverseGraph(
         }
         emittedCallerSites.add(siteKey)
       }
-      if (cascadeMatch(row, symbolId) === "exact") exactCallers++
+      if (depth > 0) deeperCallers++
+      else if (cascadeMatch(row, symbolId) === "exact") exactCallers++
       else cascadedCallers++
       const node = nodeFromEdge(row)
       registerNode(node)
@@ -420,6 +447,7 @@ export async function traverseGraph(
     for (const childId of children) {
       if (callerBudget <= 0) {
         noteReason("caller-budget-exhausted")
+        callerBudgetExhausted = true
         break
       }
       if (depth >= maxDepth - 1) break
@@ -520,7 +548,8 @@ export async function traverseGraph(
         }
         emittedCalleeSites.add(calleeKey)
       }
-      if (cascadeMatch(row, symbolId) === "exact") exactCallees++
+      if (depth > 0) deeperCallees++
+      else if (cascadeMatch(row, symbolId) === "exact") exactCallees++
       else cascadedCallees++
       const node = nodeFromEdge(row)
       registerNode(node)
@@ -552,6 +581,7 @@ export async function traverseGraph(
     for (const child of children) {
       if (calleeBudget <= 0) {
         noteReason("callee-budget-exhausted")
+        calleeBudgetExhausted = true
         break
       }
       if (depth >= maxDepth - 1) break
@@ -589,6 +619,12 @@ export async function traverseGraph(
     cascadedCallers,
     exactCallees,
     cascadedCallees,
+    deeperCallers,
+    deeperCallees,
+    callerBudget: options.callerBudget ?? DEFAULT_BUDGET,
+    calleeBudget: options.calleeBudget ?? DEFAULT_BUDGET,
+    callerBudgetExhausted,
+    calleeBudgetExhausted,
     edgesInBothDirections,
     dedupedAtToolLayer: {
       cascadeRepeatsCollapsed: collapsedCascadeRepeats,
@@ -707,6 +743,12 @@ export async function graphTraversal(
     cascadedCallers,
     exactCallees,
     cascadedCallees,
+    deeperCallers,
+    deeperCallees,
+    callerBudget,
+    calleeBudget,
+    callerBudgetExhausted,
+    calleeBudgetExhausted,
     edgesInBothDirections,
     dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
@@ -744,6 +786,15 @@ export async function graphTraversal(
       cascadedCallers,
       exactCallees,
       cascadedCallees,
+      deeperCallers,
+      deeperCallees,
+      // The fan-out bound, and whether it bit. `truncationReason` can name
+      // `caller-budget-exhausted`; before this it did so without saying what
+      // the budget was, so the bound was announced and never quantified.
+      callerBudget,
+      calleeBudget,
+      callerBudgetExhausted,
+      calleeBudgetExhausted,
       // Rows present in BOTH callers and callees. `totalCallers + totalCallees`
       // counts each of these twice, and the number above is the correction.
       edgesInBothDirections,
