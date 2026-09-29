@@ -984,7 +984,12 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Scalar shorthand (`secret: my-secret`) or a named field inside the payload
       // (`configMap: { name: my-cm }`, `persistentVolumeClaim: { claimName: pvc }`).
       // A payload with NO naming field is configuration, and contributes no reference.
-      const direct = this.scalarNode(valueNode)
+      // `valueNode` is null when a mapping entry has no value at all (a bare `key:`),
+      // and `scalarNode` unwraps wrappers from a real node, so it cannot be handed one.
+      // Guarded here rather than by widening scalarNode to `Node | null`: that was tried
+      // and it pushed a possible-null into its other nine call sites, turning two errors
+      // into thirteen. The narrow signature is what the rest of the file wants.
+      const direct = valueNode ? this.scalarNode(valueNode) : null
       if (direct && SCALAR_TYPES.has(direct.type)) {
         const name = this.scalarText(direct)
         if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
@@ -993,7 +998,12 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (named) ctx.pendingReferences.push({ source: path, target: named, kind: "yaml_resource_ref", line })
       }
     } else if (RESOURCE_REF_SCALARS.has(key)) {
-      const direct = this.scalarNode(valueNode)
+      // `valueNode` is null when a mapping entry has no value at all (a bare `key:`),
+      // and `scalarNode` unwraps wrappers from a real node, so it cannot be handed one.
+      // Guarded here rather than by widening scalarNode to `Node | null`: that was tried
+      // and it pushed a possible-null into its other nine call sites, turning two errors
+      // into thirteen. The narrow signature is what the rest of the file wants.
+      const direct = valueNode ? this.scalarNode(valueNode) : null
       if (direct && SCALAR_TYPES.has(direct.type)) {
         const name = this.scalarText(direct)
         if (name) ctx.pendingReferences.push({ source: path, target: name, kind: "yaml_resource_ref", line })
