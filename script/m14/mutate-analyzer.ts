@@ -19,6 +19,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
+import { FSHARP_MUTANTS } from "./fsharp-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -754,7 +755,7 @@ function cleanEdgeLinePerSet() {
   }
 }
 
-interface Mutant {
+export interface Mutant {
   id: string
   language: string
   defectClass: string
@@ -2357,6 +2358,15 @@ function tomlQuotesOnlyPunctuation() {
   }
 }
 export const MUTANTS: Mutant[] = [
+  // The fsharp lane's mutants live in script/m14/fsharp-mutants.ts and are spread in here.
+  // WHY A SEPARATE FILE: this registry is edited by several lanes at once, and the fsharp
+  // wiring — these two lines and the `export` above — was silently removed by the 493-commit
+  // merge. The fourteen mutants it registers did not fail and did not report; they were not
+  // RUN, so the F4 gate could not fail for this lane while reading as a suite with no fsharp
+  // reds. A mutant that is not registered is indistinguishable from a defect class with no
+  // mutant, which is the shape the M14 contract's F4 rule exists to prevent. Keeping the
+  // definitions in a lane-owned file means the next removal costs two lines, not 296.
+  ...FSHARP_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
