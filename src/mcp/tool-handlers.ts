@@ -1703,22 +1703,49 @@ const handlers: Record<string, ToolHandler> = {
       ambiguityNote: result.ambiguous
         ? `${result.copyCount} indexed symbols are named '${symbol}' across ${new Set(result.copies.map((c) => c.file)).size} file(s); the facts below are the union over all of them, and every fact names the copy it came from`
         : null,
-      facts: shown,
-      pairCount: shown.length,
+      // Rows on the copies themselves.
+      facts: ownShown,
+      ownFactCount: ownShown.length,
+      // Rows on the MEMBERS of the copies, each marked `owner-cascade` and
+      // naming the member. These are the MEMBER's edges, never the owner's,
+      // which is why they are a separate section and not merged into `facts`.
+      memberFacts: memberShown,
+      memberFactCount: memberShown.length,
+      memberCount: result.memberCount,
+      memberNote: result.memberCount > 0
+        ? `${result.memberCount} member symbol(s) of '${symbol}' hold cross-language rows of their own. They are reported under memberFacts, marked match "owner-cascade" with matchedMember naming the member — they are the MEMBER's edges, not '${symbol}'s. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.`
+        : null,
+      pairCount: shownCount,
       // Distinct language pairs — the number a human actually reads, and the
       // one that stays small where the row count does not.
-      distinctPairCount: new Set(shown.map((f) => `${f.pair}|${f.direction}|${f.bridge}|${f.tier}`)).size,
+      distinctPairCount: new Set([...ownShown, ...memberShown].map((f) => `${f.pair}|${f.direction}|${f.bridge}|${f.tier}`)).size,
       storedRowCount: result.storedRowCount,
       unpairableRowCount: result.unpairableRowCount,
       collapsedRowCount: result.collapsedRowCount,
       limit,
       truncated,
-      truncationReason: truncated ? `declared limit of ${limit} facts; ${result.facts.length} stored cross-language rows matched this name` : null,
-      totalCountIfKnown: result.facts.length,
-      declaredAbsent: shown.length === 0,
-      absenceNote: shown.length === 0
-        ? `no stored cross-language rows for any of the ${result.copyCount} indexed symbol(s) named '${symbol}' — absence declared, never guessed`
+      truncationReason: truncated
+        ? `declared limit of ${limit} facts; ${totalFacts} stored cross-language rows matched this name (${result.facts.length} on the symbol itself, ${result.memberFacts.length} on its members)`
         : null,
+      totalCountIfKnown: totalFacts,
+      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. Before this it was
+      // `facts.length === 0` alone, so a class whose members carried 109
+      // cross-language rows while it carried none was answered "absence
+      // declared, never guessed" — a false absence, on the most natural
+      // question a caller can ask ("is this class involved in cross-language
+      // code?"), and the direct opposite of what bb_graph said about the same
+      // symbol on the same index (measured: 7 of 10 such owners, docs/m63/CL2.md).
+      // An empty answer now requires that NEITHER the copies NOR their members
+      // hold a stored row.
+      declaredAbsent: shownCount === 0,
+      absenceNote: shownCount === 0
+        ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its members — absence declared, never guessed`
+        : null,
+      // The symptom that produced this change, stated in the answer itself: the
+      // symbol is silent and its members are not. A caller reading only
+      // `declaredAbsent: false` would otherwise assume the symbol itself is the
+      // connected one.
+      silentItselfButNotItsMembers: ownShown.length === 0 && memberShown.length > 0,
     }, null, 2))
   },
 
@@ -1736,14 +1763,36 @@ const handlers: Record<string, ToolHandler> = {
   bb_annotate: async (args, { projectId }) => {
     const symbol = String(args.symbol ?? "").trim()
     const body = String(args.body ?? "")
-    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    const givenPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
     const toolIdentity = String(args.toolIdentity ?? "bb_annotate(mcp)")
     if (!symbol) return textResult("bb_annotate requires symbol", true)
     if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
-    if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
+    // Counted in code points, not UTF-16 units. The declared limit is "2000
+    // chars", and String.length counts an astral character (an emoji, a CJK
+    // extension glyph) as TWO, so a 1001-glyph note was refused under a limit
+    // documented as 2000 characters. Measured against what a reader calls a
+    // character, the limit is now the limit.
+    const bodyChars = [...body].length
+    if (bodyChars > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${bodyChars}) — declared refusal, not silent truncation`, true)
+    // toolIdentity is recorded verbatim (an existing gate depends on that), but it
+    // is a self-declared LABEL, not evidence, and it is returned beside the
+    // ENFORCED author class as though the two carried equal weight. It is also
+    // unbounded, so it is an unbounded row. A declared bound, not a truncation.
+    if ([...toolIdentity].length > 200) return textResult(`bb_annotate: toolIdentity exceeds the declared limit of 200 chars (got ${[...toolIdentity].length}) — declared refusal`, true)
     const now = Date.now()
-    const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
     const raw = await BrainDatabase.getRawInstance(projectId as any)
+    // The path is resolved to the ONE spelling the index stores, so `./x` and
+    // `/abs/project/x` land on the same row the editor selects. Stored verbatim,
+    // they each created a note that never rendered.
+    const canonical = canonicalFilePath(raw, projectId, givenPath)
+    const annotationPath = givenPath === null ? null : canonical.path
+    // Reachability is MEASURED against the index, not promised. The old reply
+    // claimed the note "renders in the editor hover section and graph badge" for
+    // EVERY note; measured on a real corpus, 100% of the qualified-name notes
+    // matched no symbol name at all, so that claim was false exactly where it
+    // sounded most confident.
+    const reach = annotationReachability(raw, projectId, symbol)
+    const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
@@ -1757,8 +1806,18 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(JSON.stringify({
       stored: true,
       annotation: updated,
-      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed",
-      surfaces: "this note renders in the editor hover section and graph badge (M28.A2)",
+      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed; tool_identity is the caller's own label, recorded verbatim and never verified",
+      surfacing: {
+        editor: reach.surfaced,
+        matchedAs: reach.matchedAs,
+        matchedNames: reach.matchedNames,
+        statement: reach.statement,
+        ...(givenPath === null
+          ? { pathNote: "no path given — a NAME-level note, shown for the symbol wherever it appears" }
+          : canonical.matched
+            ? { pathNote: `path resolved to the indexed spelling '${canonical.path}'` }
+            : { pathWarning: `no indexed file matches '${givenPath}', so no editor surface will scope this note to a file; it is stored under that spelling and readable through bb_annotations` }),
+      },
     }, null, 2))
   },
 
@@ -1776,39 +1835,65 @@ const handlers: Record<string, ToolHandler> = {
   // always narrow further.
   bb_annotations: async (args, { projectId }) => {
     const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
-    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    const givenPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
     const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
-    if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
+    if (!Number.isFinite(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     const limit = Math.floor(limitRaw)
+    // The same canonicalization the write door applies, so a reader that filters
+    // by `./src/a.ts` finds the note a writer stored as `src/a.ts`.
+    const canonicalPath = givenPath === null ? null : canonicalFilePath(raw, projectId, givenPath).path
+    // A reader asking for a symbol should find notes written under EITHER name
+    // form the editor accepts, exactly as the editor does. A qualified-name note
+    // used to be invisible to a reader who asked for the simple name.
+    const namePredicates = symbol
+      ? "(symbol_name = ? OR symbol_name = (SELECT qualified_name FROM brain_symbol WHERE project_id = ? AND name = ? AND qualified_name IS NOT NULL LIMIT 1))"
+      : null
+    const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
     // The ORDER BY carries a deterministic tiebreak: several agents writing in
     // the same millisecond share a time_updated, and without a second key their
     // relative order is whatever SQLite happens to produce, so "read back what
     // I just wrote" is not reproducible.
-    const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
-    let rows: any[]
-    if (symbol && annotationPath) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, annotationPath, limit) as any[]
+    const ORDER = "ORDER BY time_updated DESC, id"
+    let where: string
+    let params: unknown[]
+    if (symbol && canonicalPath !== null) {
+      where = `project_id = ? AND ${namePredicates} AND (symbol_path = ? OR symbol_path IS NULL)`
+      params = [projectId, symbol, projectId, symbol, canonicalPath]
     } else if (symbol) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, limit) as any[]
-    } else if (annotationPath) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, annotationPath, limit) as any[]
+      where = `project_id = ? AND ${namePredicates}`
+      params = [projectId, symbol, projectId, symbol]
+    } else if (canonicalPath !== null) {
+      where = `project_id = ? AND (symbol_path = ? OR symbol_path IS NULL)`
+      params = [projectId, canonicalPath]
     } else {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, limit) as any[]
+      where = `project_id = ?`
+      params = [projectId]
     }
+    const rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE ${where} ${ORDER} LIMIT ?`).all(...params, limit) as any[]
+    // M48/M63 house rule for every bounded read: a short page is never mistaken
+    // for a complete one. This door returned only `count` (the page size), so a
+    // project with 300 notes and the default limit answered a flat `count: 50`
+    // with no way to know 250 more existed. Declared here the same way bb_search
+    // and bb_graph declare it.
+    const totalCountIfKnown = (raw.prepare(`SELECT COUNT(*) AS c FROM brain_annotation WHERE ${where}`).get(...params) as any).c
+    const truncated = totalCountIfKnown > rows.length
     return textResult(JSON.stringify({
       symbol,
-      path: annotationPath,
+      path: canonicalPath,
       annotations: rows,
       count: rows.length,
+      totalCountIfKnown,
+      truncated,
+      truncationReason: truncated ? `limit ${limit} reached; ${totalCountIfKnown} annotations match this query. Raise limit (max 200) or narrow the filter.` : null,
       declaredAbsent: rows.length === 0,
       absenceNote: rows.length === 0
-        ? (symbol && annotationPath
-          ? `no annotations stored for '${symbol}' in '${annotationPath}' — absence declared, never guessed`
+        ? (symbol && canonicalPath !== null
+          ? `no annotations stored for '${symbol}' in '${canonicalPath}' — absence declared, never guessed`
           : symbol
             ? `no annotations stored for '${symbol}' — absence declared, never guessed`
-            : annotationPath
-              ? `no annotations stored for '${annotationPath}' — absence declared, never guessed`
+            : canonicalPath !== null
+              ? `no annotations stored for '${canonicalPath}' — absence declared, never guessed`
               : "no annotations stored for this project yet")
         : null,
     }, null, 2))
