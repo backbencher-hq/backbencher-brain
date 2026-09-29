@@ -510,6 +510,38 @@ export default grammar({
           seq($.pipeline, $._statement_terminator),
           $.empty_statement,
           alias($._bare_param_block, $.param_block),
+            // G14 (M60 #278): `using` FIRST, an ATTRIBUTE on the `param`, and the
+            // `param` NOT the first statement.
+            //
+            // G1 recorded this exact combination as unsupported and then asserted the
+            // corpus contained no instance. The ASSERTION is what failed. G1's census
+            // pattern was `using` followed by a BARE `param(`, which found 16 powershell
+            // and 17 ansible files of that shape and ZERO attributed ones -- so it
+            // concluded the combination did not occur. It occurs in 9 production files,
+            // with ONE OR MORE attributes between the `using` and the `param`, which the
+            // pattern never matched. Measured with controls:
+            //
+            //     using + bare param                ok    <- G1's measured shape
+            //     [CmdletBinding()] param(...)      ok    <- no using: program-level rule
+            //     using + [CmdletBinding()] param   2 ERROR  <- the class
+            //     using + [A][B] param              2 ERROR / 1 MISSING  <- the class
+            //
+            // The mechanism is visible in the tree. With no `using`, the `program`-level
+            // `param_block` owns the attribute and the whole thing is one node. With a
+            // `using` first the block must come in through the STATEMENT list, and the
+            // statement form is the bare alias, which has no attribute slot -- so the
+            // attribute is stranded as a `type_literal` carrying an ERROR while the
+            // `param_block` parses without it.
+            //
+            // The fix is the narrowest one available: let the STATEMENT form carry the
+            // attribute list itself. It is safe against the `[` ambiguity that made G1
+            // drop the attribute, because this route REQUIRES a `param` block
+            // immediately after the attributes. `[string]$x = 'a'` is a type annotation
+            // followed by an assignment, not followed by `param`, so it cannot reach this
+            // route at all. G1's rejected attempt instead put the whole `param_block`
+            // into the statement set, which made the leading `[` ambiguous with a type
+            // literal; REQUIRING the `param` is what makes the two readings disjoint.
+            seq($.attribute_list, alias($._bare_param_block, $.param_block)),
         ),
       ),
 
