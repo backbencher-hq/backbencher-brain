@@ -51,6 +51,21 @@ const BASELINE = path.join(ROOT, "validation", "m14", "differential-baseline.jso
 interface LangConfig {
   id: string
   wasm: string
+  /**
+   * Additional grammars the SAME analyzer loads at runtime. markdown is the first:
+   * the block grammar leaves inline content opaque, so the engine pre-parses each
+   * `inline` node with the companion `tree-sitter-markdown_inline` and the analyzer
+   * names 19 of ITS types.
+   *
+   * Without this the gate reported all 19 as "classified rows no longer produced by
+   * the wasm (grammar drift?)" — the same one-grammar assumption that had the F1
+   * oracle reporting markdown's `uri_autolink` and `email_autolink` as dead
+   * branches for 35 days, in a different instrument, on the same wrong premise. A
+   * lane that loads two grammars has a two-grammar ORACLE for section A exactly as
+   * it needs a two-grammar oracle for F1; the invariant is "the classification
+   * covers what the analyzer can see", and a single wasm cannot see half of it.
+   */
+  companionWasm?: string[]
   classification: string
   fixturesDir: string
   docs: string[]
@@ -68,6 +83,61 @@ interface LangConfig {
 }
 
 const LANG_CONFIGS: Record<string, LangConfig> = {
+  // M14 #277: bash joins the SPEC gate. The lane had a completeness-shaped
+  // artifact that was not one — the node-type "safety" file whose referenced
+  // list was hardcoded and which never computed observed\referenced — and no
+  // spec at all, so F6 (every handled type exercised, no dead analyzer
+  // literal), F7 (hygiene) and F8 (every corpus type classified) could not be
+  // asked the question for the lane. The classification now lives in
+  // script/m14/spec/bash-completeness.json and is READ by the F8 census, which
+  // fails a gap with no written ruling and a ruling for a type that is no
+  // longer a gap.
+  // M14 #277: powershell joins the SPEC gate. The lane was the largest analyzer
+  // tree in the repo by relationship count and the ONLY m14 lane with no
+  // completeness spec at all — 31 languages had one and powershell had none, so
+  // "is this analyzer complete over its language" had no answer beyond whatever
+  // the fixtures happened to touch. Writing the spec is what found the eight
+  // defects recorded in it: the question "which of the 152 named node types does
+  // the analyzer never NAME" had never been asked, and in every one of the eight
+  // the COMMON spelling worked and only a rarer one was dark, which is precisely
+  // the class no existing gate can see.
+  powershell: {
+    id: "powershell",
+    wasm: "tree-sitter-powershell.wasm",
+    classification: "powershell-completeness.json",
+    fixturesDir: "validation/m14/fixtures/powershell",
+    docs: ["docs/analyzers/real-powershell-analyzer.md"],
+    differentialCheck: "differential-powershell",
+    perfKey: "powershell:powershell",
+    // The ten the universal ontology declares. All ten are implemented and gated;
+    // `imports` is deliberately modelled as an import-annotated `references` edge
+    // (PSD/`addImport`), so it is not listed as required here — the exclusion is
+    // written down rather than left as a silence, and the annotation is pinned by
+    // module-surface-psb9's `expectImports` rows.
+    requiredKinds: ["calls", "uses", "contains", "references", "instantiates", "exports", "extends", "implements", "overrides"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "powershell/reserved-words-psb4" },
+    },
+    title: "powershell wave (M14 #277, PS-G1..PS-G8, PSD1..PSD6)",
+  },
+  bash: {
+    id: "bash",
+    wasm: "tree-sitter-bash.wasm",
+    classification: "bash-completeness.json",
+    fixturesDir: "validation/m14/fixtures/bash",
+    docs: ["docs/analyzers/real-bash-analyzer.md"],
+    differentialCheck: "differential-bash",
+    perfKey: "otp:bash",
+    // The six types bash's semantics allow. `extends`/`implements`/`overrides`
+    // (no declaration form creates a type hierarchy) and `instantiates` (no
+    // constructors) are ruled N/A in BD7 of the spec, so they are not required
+    // here — the exclusion is written down rather than left as a silence.
+    requiredKinds: ["calls", "uses", "contains", "imports", "references", "exports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "bash/payload-and-complexity" },
+    },
+    title: "bash shell wave (M14 #277, BD1-BD10)",
+  },
   cpp: {
     id: "cpp",
     wasm: "tree-sitter-cpp.wasm",
@@ -518,6 +588,260 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "vue pass (#419)",
   },
+  // M14 (#288): html enters the inventory as INVENTORY-DONE, deliberately NOT
+  // in GATED_LANGS yet. The status ladder is NOT-STARTED / INVENTORY-DONE /
+  // GAPS-CLOSED / CONFORMANT, and a language joins GATED_LANGS when it reaches
+  // CONFORMANT — which means all eight sections are green. html's section A is
+  // complete (19/19 named node types classified in script/m14/spec/
+  // html-completeness.json, with one OPEN GAP), B and D are carried by the eight
+  // fixtures, and E/F/G/H are not yet satisfiable: the differential floors are
+  // measured but unpinned, `docs/analyzers/html.md` does not exist, and CC1 has no
+  // html block. Adding html to GATED_LANGS now would turn `npm run verify` red
+  // for three gates that have not been built yet, which is a different statement
+  // from "html is not ready" — the ladder exists precisely so the difference is
+  // visible. Run it directly with `--lang html` in the meantime.
+  //
+  // `requiredKinds` is `uses` + `contains` and nothing else, because that is what
+  // html HAS: the schema's other types describe OO heritage, and html has no
+  // heritage clause. `parameters` is deliberately absent from `payloads` — an
+  // element is not a callable and there is no honest value to pin, so claiming the
+  // Matrix 1b row would be a fabrication dressed as coverage.
+  // M14 #290: markdown enters with a spec that classifies all 70 distinct NAMED
+  // types of its TWO grammars (51 block + 26 inline, 7 shared) as
+  // 29 handled_verified + 39 internal_silent + 2 gap, each silent class carrying a
+  // measured site count over the pinned corpus rather than a shrug.
+  //
+  // It is NOT in GATED_LANGS, and the ladder is the reason rather than an omission:
+  // a language joins when all eight sections are green, and two of them cannot be
+  // yet. E (corpus differential) is satisfied in substance — the lane now has an
+  // independent oracle at 0 MISSING / 0 unexplained over BOTH pinned corpora, and
+  // both rows are in differential-baseline.json — but the gate reads the CANONICAL
+  // M14.0.F5.json, which belongs to the 34-language sweep, and a scoped run is
+  // refused the right to write it. G (docs truthful) needs
+  // docs/analyzers/markdown.md, which does not exist; M14 section G requires BOTH
+  // that and real-markdown-analyzer.md. Both are named as owed rather than worked
+  // around, which is the difference between a lane in progress and a lane that has
+  // quietly had its ceiling lowered.
+  markdown: {
+    id: "markdown",
+    // TWO grammars. `wasm` names the block grammar because that is the one the
+    // analyzer is LOADED with; the companion is pinned in the same record under
+    // `companions`, and section A's classification is the union of both.
+    wasm: "tree-sitter-markdown.wasm",
+    companionWasm: ["tree-sitter-markdown_inline.wasm"],
+    classification: "markdown-completeness.json",
+    fixturesDir: "validation/m14/fixtures/markdown",
+    docs: ["docs/analyzers/markdown.md", "docs/analyzers/real-markdown-analyzer.md"],
+    differentialCheck: "differential-markdown",
+    perfKey: "scala3:markdown",
+    requiredKinds: ["contains", "uses"],
+    payloads: {
+      // Only channels the fixture runner actually implements. The first draft of
+      // this entry named `expectSymbolRange` and `expectSymbolOwner`, neither of
+      // which exists — section C checks that SOME expectation file carries a
+      // non-empty array at the named key, so an invented key reads as "not yet
+      // pinned" forever instead of "wrong key", and a reader has no way to tell
+      // those apart from the gate. Both are pinned through `expectSymbols`, whose
+      // entries are matched field-by-field by `matchConstraints`, so `startLine`
+      // and `ownerName` on an entry ARE the assertions.
+      range: { key: "expectSymbolRanges", pin: "markdown/payload-lines-evidence (expectSymbolRanges: 1-based startLine/endLine, and the store's (file, name, line_start) key is what makes two sites of one construct distinct rows)" },
+      visibility: { key: "expectVisibility", pin: "markdown/payload-lines-evidence (a document has no private or package scope, so the field is constant rather than absent — pinned so its ABSENCE would fail)" },
+      ownerName: { key: "expectSymbols", pin: "markdown/code-block-site-identity + heading-identity (ownerName on the entry; the case that broke it was a repeated heading's children attaching to the wrong occurrence)" },
+    },
+    title: "markdown pass (#290) — two-grammar lane; the companion is pinned under `companions` in validation/m14/grammar-pins.json",
+  },
+  html: {
+    id: "html",
+    wasm: "tree-sitter-html.wasm",
+    classification: "html-completeness.json",
+    fixturesDir: "validation/m14/fixtures/html",
+    docs: ["docs/analyzers/html.md", "docs/analyzers/real-html-analyzer.md"],
+    differentialCheck: "differential-html",
+    perfKey: "otp:html",
+    requiredKinds: ["uses", "contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "html/framework-and-scores (addressable-subtree size per symbol)" },
+      visibility: { key: "expectVisibility", pin: "html/framework-and-scores (document scope — html has no private/package)" },
+    },
+    title: "html pass (#419, #288)",
+  },
+  // toml enters with a grammar and NOTHING else: no analyzer in `getAnalyzer`, so a
+  // `.toml` file was walked by the generic AST fallback and a ten-line Cargo.toml
+  // published 28 symbols and 0 relationships, 11 of those names containing
+  // whitespace. `requiredKinds` is `contains` ALONE, and that is the finding rather
+  // than an omission — TOML defines no include, import or reference mechanism, so
+  // there is no second relationship type any construct could produce, and inventing
+  // one (treating a path-shaped string as a dependency) would import ecosystem
+  // knowledge into a format that has none.
+  // yaml enters the ladder with a full spec and 27 fixtures, and `requiredKinds` names
+  // the FOUR types the lane can produce rather than the ones a schema would suggest.
+  // YAML has no heritage clause, so there is no `implements` to require; what it has
+  // instead is a set of *named conventions*, and each one is measured rather than
+  // assumed: `contains` (the key tree), `extends` (merge keys and aliases, which is
+  // YAML's inheritance and is emitted with an evidence class and a confidence), `imports`
+  // (file includes: Ansible, Helm and Kubernetes), and `references` (the largest
+  // surface — tags as declared_type, JSON pointers, `depends_on` siblings, k8s resource
+  // refs and action `uses`).
+  //
+  // `apiContractPath` is DELIBERATELY ABSENT from `payloads`. The analyzer emits 3,341 of
+  // them at its own boundary and the corpus census measures 0 through the production
+  // entry, because pool-worker.ts reshapes every symbol into the store's row shape with no
+  // such key. Pinning it as a required payload would make the lane claim a Matrix 1b row
+  // it does not satisfy, and omitting it silently would hide the seam; the corpus census
+  // carries both numbers instead, at both boundaries.
+  yaml: {
+    id: "yaml",
+    wasm: "tree-sitter-yaml.wasm",
+    classification: "yaml-completeness.json",
+    fixturesDir: "validation/m14/fixtures/yaml",
+    docs: ["docs/analyzers/real-yaml-analyzer.md"],
+    perfKey: "kubernetes:yaml",
+    requiredKinds: ["contains", "extends", "imports", "references"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "yaml/payload-complexity (addressable-subtree size per symbol, the family's complexity definition)" },
+      docstring: { key: "expectDocstring", pin: "yaml/comment-attribution (a comment is documentation; attribution is positional — same or shallower column, immediately preceding)" },
+      qualifiedCalls: { key: "expectQualifiedCalls", pin: "yaml/merge-sequence, yaml/json-pointer-resolve, yaml/tag-declared-type" },
+    },
+    title: "yaml pass (#286)",
+  },
+  toml: {
+    id: "toml",
+    wasm: "tree-sitter-toml.wasm",
+    classification: "toml-completeness.json",
+    fixturesDir: "validation/m14/fixtures/toml",
+    docs: ["docs/analyzers/real-toml-analyzer.md"],
+    perfKey: "cargo:toml",
+    requiredKinds: ["contains"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "toml/arrays-and-values (structural depth = the deepest key path, not a node count)" },
+    },
+    title: "toml pass (#419, #289)",
+  },
+  // M14 F3: css enters the inventory as INVENTORY-DONE, deliberately NOT in
+  // GATED_LANGS yet, on the same reasoning as html above — but for a different set
+  // of sections, and the difference is the point.
+  //
+  // What is DONE for css, all measured:
+  //   A  129 unique node types across 151 wasm ids classified, 0 gap, every entry
+  //      carrying its reason (script/m14/spec/css-completeness.json), with nine
+  //      rulings CSS-D1..D9 covering the four that looked like dead grammar.
+  //   E  the differential reads 100% truth coverage, MISSING=0 and unexplained=0
+  //      on BOTH corpora (svelte:css 67/67, grails-core:css 480/480) — the first
+  //      lane to reach 0/0 in both directions.
+  //   F  the F8 corpus census passes with 0 blind spots over 46 corpus types.
+  //   G  the grammar lane is pinned with a source↔wasm proof (all 64 declared
+  //      names present, 64 wasm-named types declared, 0 built-in extras).
+  //   H  the M59 line oracle runs in the SHARED instrument as a first-class lane
+  //      (84/84 consistent, 0 INCONSISTENT, 0 notCheckable) and independently in
+  //      the lane's own (7,647 edges, 0 inconsistent, 96 honest synthesized
+  //      names).
+  //
+  // What is NOT done, and why GATED_LANGS stays closed:
+  //   B/D  there is no `validation/m14/fixtures/css` directory. The fixture and
+  //        mutant harnesses are being edited concurrently, so the fixtures cannot
+  //        be registered without colliding, and a fixture that is written but not
+  //        registered protects nothing.
+  //   CC1  NOT a css gap, and worth saying why rather than listing it as one.
+  //        CC1 checks languages that must AGREE with each other — ts/js structural
+  //        parity, the systems families, the OO families, vue/svelte builtin-tag
+  //        parity. css has no partner in any of those sets, so there is no
+  //        cross-language claim for it to make. The RISK CC1 exists to catch is a
+  //        set drifting between two places that must match, and css's version of
+  //        that is the analyzer and the F10 oracle disagreeing about what a
+  //        construct is — which is measured directly (100% coverage, MISSING=0,
+  //        unexplained=0 on both corpora) and is a stronger guard than a
+  //        cross-language tag-set diff would have been for this lane.
+  //
+  // `requiredKinds` is the four kinds css ACTUALLY emits — contains, uses,
+  // references, imports — and not the schema's full list: the others describe OO
+  // heritage and call surfaces, and css has neither. Claiming `calls` for a
+  // language with no call expression would be a fabrication dressed as coverage.
+  //
+  // `payloads` carries ONLY complexity, which is the one Matrix 1b row css can
+  // honestly fill: a selector chain, a functional pseudo-class and a nesting level
+  // are all real review cost. `parameters` is absent because a css rule is not a
+  // callable, and `visibility` is absent because css has no private/package axis
+  // at all — an element selector is not an access level.
+  css: {
+    id: "css",
+    wasm: "tree-sitter-css.wasm",
+    classification: "css-completeness.json",
+    fixturesDir: "validation/m14/fixtures/css",
+    docs: ["docs/analyzers/real-css-analyzer.md"],
+    differentialCheck: "differential-css",
+    perfKey: "svelte:css",
+    requiredKinds: ["uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "css (selector combinators, functional pseudos, attributes, nesting depth)" },
+    },
+    title: "css pass (#419)",
+  },
+  // scss walks the ladder at 7/8 and is NOT in GATED_LANGS. Section E is the open
+  // one, and it is open HONESTLY: the lane's differential reports unexplained=4 (0.9%)
+  // and missing=60 against a full-extent draw of all 149 corpus files, and the floor
+  // ruling below pins that rather than leaving the section to fail on a rotation.
+  //
+  // The floor MOVED DOWN, from 64/4 to 60/4, and the reason belongs here rather than
+  // only in the baseline JSON. Two defects, both found by checking against something
+  // INDEPENDENT rather than against this lane's own fixtures:
+  //   1. A `@function` CALLED in a value (`width: double(4px)`) produced no edge, while
+  //      a `$var` read on the line above did. The M12 independent hand audit of
+  //      validation/m12/fixtures/scss/Theme.scss found it — 9 expected, 8 observed,
+  //      recall 0.889, and the single false negative was that edge.
+  //   2. The walk that resolves reads and calls STOPPED at an ERROR node, so every
+  //      claim nested inside a region the grammar had lost was invisible, while the
+  //      differential's own SCSS oracle descends into errors on purpose. On
+  //      `tag.scss` that cost 4 relationships the oracle had already derived.
+  // Fixing both took truth from 1586 to 1606, covered from 1522 to 1546, and missing
+  // from 64 to 60, at 13.8 ms/file against the 17.5 it cost before.
+  //
+  //   3. Text equality used as node identity (58/4 from 60/4). The read scan suppressed
+  //      any `variable` whose TEXT equalled its parent declaration's `property_name`.
+  //      That is safe in well-formed code and wrong wherever the parser emits a recovery
+  //      node, because one `declaration` can then span a whole broken statement — and
+  //      `form-item.scss` L8 both declares and reads the same variable across its
+  //      unparseable `map.merge`. Measured: 156 reads suppressed, 0 declarations where
+  //      the guard protected anything. The oracle carried the SAME bug, which is why the
+  //      rows appeared as MISSING rather than as a visible defect on either side.
+  //
+  // The floor is FULL-EXTENT on purpose. A 60-file sample is a rotation — the same
+  // corpus produced MISSING=32, 36 and 106 across three draws — so a floor pinned to
+  // one is a floor that fails at random, and a gate that fails at random is worse than
+  // no gate because it teaches people to re-run it.
+  //
+  // What the residue actually IS, from script/m14/tmp/scss-diff-classify.ts:
+  //   8 rows  the DECLARED unresolvable-custom-property class (SCSS-L6) — the analyzer
+  //           emits a `var(--x)` read unconditionally and the oracle derives one only
+  //           for a property the file declares, because Element Plus consumes theme
+  //           tokens defined in another file
+  //   3 rows  a `&` inside an interpolated selector, where the referent is a mixin call
+  //           site outside the file and no name is derivable
+  //   rows    common/var.scss, 1,716 lines with over 400 disjoint ERROR spans, where
+  //           the truth is unreliable by construction
+  //
+  // Registering a lane at 7/8 with a pinned residual is the point of the ladder. What
+  // this entry does NOT do is claim section E passes: the floor is the FLOOR, and the
+  // row is checked against it exactly, so a regression above 58/4 fails.
+  scss: {
+    id: "scss",
+    wasm: "tree-sitter-scss.wasm",
+    classification: "scss-completeness.json",
+    fixturesDir: "validation/m14/fixtures/scss",
+    docs: ["docs/analyzers/real-scss-analyzer.md"],
+    differentialCheck: "differential-scss",
+    perfKey: "element-plus:scss",
+    floorResidual: {
+      missing: 58,
+      unexplained: 4,
+      ruling: "SCSS-D1",
+    },
+    requiredKinds: ["uses", "references", "contains", "imports"],
+    payloads: {
+      complexity: { key: "expectComplexity", pin: "scss (mixin/function parameters, control-flow conditions, variable expressions)" },
+      parameters: { key: "expectParameters", pin: "scss/module-system-and-mixins, functions-return-and-undeclared-uses" },
+    },
+    title: "scss pass (M14 F3 walk)",
+  },
   svelte: {
     id: "svelte",
     wasm: "tree-sitter-svelte.wasm",
@@ -534,6 +858,64 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     },
     title: "svelte pass (#419)",
   },
+  // M60 Make wave (2026-09-27). The analyzer was advertised by the website
+  // through SUPPORTED_LANGUAGES and wired into engine.ts while being named by
+  // NO gate — the "looks absent rather than broken" shape. 44/44 grammar types
+  // classified in disjoint buckets, 5 fixtures, 17 mutants, and a corpus
+  // differential at 100 % / 0 missing / 0 unexplained on both corpora.
+  make: {
+    id: "make",
+    wasm: "tree-sitter-make.wasm",
+    classification: "make-completeness.json",
+      fixturesDir: "validation/m14/fixtures/make",
+      // The DOC is named for the LANGUAGE (`real-make-analyzer.md`), not for the
+      // analyzer module (`real-makefile-analyzer.ts`). Those are different things
+      // and only the analyzer file is aliased: `verify-m12-final-audit.ts` resolves
+      // `real-${lang}-analyzer.md` for `lang=make`, so this is the file the
+      // milestone audit actually reads. The lane had briefly written a SECOND doc
+      // named after the module, and `script/m60/grammar-lanes-source.ts` derives
+      // lane names from doc filenames, so that second file fabricated a lane called
+      // `makefile` beside the real `make` — and the two documents then drifted, with
+      // the stale one carrying pre-rebuild numbers that no gate read.
+      docs: ["docs/analyzers/real-make-analyzer.md"],
+    differentialCheck: "differential-make",
+    perfKey: "tf-aws-components:make",
+    requiredKinds: ["contains", "references", "uses", "imports", "exports", "calls"],
+    payloads: {},
+    title: "make build wave (M60, 2026-09-27)",
+  },
+  // RESTORED, not added. `hcl` was in GATED_LANGS from 2026-09-26 but its
+  // LANG_CONFIGS entry was NEVER COMMITTED — it lived only in a dirty worktree,
+  // and a concurrent `git checkout` of this file deleted it. The symptom was
+  // silent and total: `--lang hcl` began throwing `unknown language hcl` at
+  // line 788, so the lane the whole HCL wave had just closed could not be
+  // checked at all. This is recorded as a restoration because the alternative
+  // reading — "the entry never existed" — is not what the evidence says:
+  // `git log -S hcl-completeness -- script/m14/completeness-inventory.ts`
+  // returns nothing while the lane's spec, fixtures and 8/8 result all shipped.
+  // The values are reconstructed from that lane's own committed artifacts
+  // (script/m14/spec/hcl-completeness.json, validation/m14/fixtures/hcl/,
+  // docs/analyzers/real-hcl-analyzer.md, and the `terraform:hcl` /
+  // `tf-aws-components:hcl` rows this file's section E reads), and the hcl lane
+  // should confirm them.
+  hcl: {
+    id: "hcl",
+    wasm: "tree-sitter-hcl.wasm",
+    classification: "hcl-completeness.json",
+    fixturesDir: "validation/m14/fixtures/hcl",
+    docs: ["docs/analyzers/real-hcl-analyzer.md"],
+    differentialCheck: "differential-hcl",
+    perfKey: "terraform:hcl",
+    // NO `calls`: hcl RULES that kind not applicable on measurement (0 of its 64
+    // node types declare a function, and 0 of 12,977 corpus function_call nodes
+    // resolve to a declared symbol), so requiring it pinned would demand a
+    // fixture assert an edge the lane deliberately never emits. The restored
+    // entry listed it and section B failed on exactly that — recorded here
+    // because the failure is the reason the value is right.
+    requiredKinds: ["contains", "references", "uses", "imports", "exports"],
+    payloads: {},
+    title: "hcl/terraform data-config wave (M60, 2026-09-26; config entry restored 2026-09-27)",
+  },
 }
 
 // Languages that have reached CONFORMANT and therefore run in npm run verify.
@@ -543,45 +925,223 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
 // unsafe C# COM-interop vtable-dispatch calls are captured as `uses` rather
 // than `calls` (tree-sitter parses `if(...)` and pointer-slot chaining as
 // degenerate invocation_expression subtrees) — bounded to that corpus corner.
-// M60 XML wave (2026-09-27): `xml` and `hcl` both join. Each had a LANG_CONFIGS
-// entry — hcl since 2026-09-26, xml from this wave — and NEITHER was named here,
-// which is the M14 ledger's "a fixture lane is not a directory, it is a directory
-// the gate NAMES" shape. The cost is not visible in the output: the gate prints
-// nothing for a lane it does not visit, so a lane with 8 section checks and 9
-// fixtures was reading as absent rather than as unchecked.
-const GATED_LANGS = ["java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml"]
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "// yaml joins the gated set on 2026-09-27 at 8/8 sections. What earns it is the ORACLE", "not the
+  // count: its corpus floor comes from PyYAML 6.0.1 compose_all", "which shares no code", "algorithm or
+  // data model with the tree-sitter side", "whereas the differential sweep this gate also runs treats a
+  // hand-authored truth file as a mirror of the analyzer rather than a check on it. The floor is 0
+  // missing / 0 unexplained over a 1", "004-file", "357", "304-oracle-path draw across eight pinned corpora —
+  // wider than this file's declared 60-per-lane draw", "so the 0/0 is the stronger claim. The 15
+  // grammar-error files in that draw are a DECLARED tree-sitter-yaml defect (it cannot lex a
+  // multi-line double-quoted scalar; the 58-byte root ERROR costs the whole file its containment)", "// attributed by the oracle parsing those same files cleanly and filed against the grammar.
+  "yaml", "// markdown reaches CONFORMANT and joins GATED_LANGS on the same criterion:
+  // sections A-H are 8/8 green over 72 public named types (29 handled_verified", "// 41 internal_silent", "2 gap", "5 ruled decisions) across BOTH of its grammars.
+  //
+  // What earns it is the ORACLE", "and the oracle is the part that was missing for
+  // the whole life of the lane. It shipped an M12 differential reading precision
+  // 1.000 / recall 1.000 over three hand-written files totalling 99 lines", "with
+  // `truthSource: "manual_audit"` and no commit recorded — a truth file authored by
+  // the same hand as the analyzer", "which is the M14 #277 bash finding verbatim ("a
+  // lane whose truth cannot disagree with its analyzer has no differential; it has
+  // a mirror"). The 99-line corpus contained zero reference-style links", "zero
+  // duplicate code blocks and zero duplicate headings", "which is exactly where the
+  // lane was wrong: 1", "920 of 4", "078 code blocks erased across 406 of 738 files", "and
+  // 671 reference-link sites invisible.
+  //
+  // `deriveMarkdownEdges` is written from CommonMark's own construct list", "shares
+  // no table with the analyzer", "and loads its OWN copy of the companion grammar —
+  // an oracle that read the analyzer's pre-parse would agree with it by
+  // construction", "which is the F9 collusion blindness this program's doctrine
+  // exists to catch. It is at 0 MISSING / 0 unexplained on BOTH pinned corpora
+  // (scala3: 738 tracked .md; kubernetes: 595", "chosen for a different dialect)", "and
+  // run against the PRE-FIX analyzer the same oracle reports MISSING=127 and
+  // MISSING=67 + unexplained=5 without being told about any of it. A differential
+  // that has never failed is a claim; this one has.
+  "markdown", "// css reaches CONFORMANT and joins GATED_LANGS: sections A-H are 8/8 green", "which
+  // is the ladder's own stated criterion ("a language joins GATED_LANGS when it
+  // reaches CONFORMANT — which means all eight sections are green").
+  //
+  //   A structural completeness  130 unique types", "0 gap", "10 rulings", "3 limitations
+  //   B relationship kinds       contains", "uses", "references", "imports — all pinned
+  //   C payload matrix           complexity (it was a literal 1; 20", "214 symbols measured)
+  //   D evidence tiers           structural / usage_contextual / import_based
+  //   E differential baseline    svelte 100% MISSING=0", "grails-core 100% MISSING=0
+  //   F perf budget              1.408 ms/file", "load-stable and measured per corpus
+  //   G docs                     docs/analyzers/real-css-analyzer.md
+  //   H CC1                      n/a and DECLARED as such — CC1 checks languages that
+  //                              must AGREE with each other and css is in none of its
+  //                              sets. The risk CC1 guards (a set drifting between two
+  //                              places that must match) is covered for this lane by the
+  //                              F10 differential against an oracle that imports nothing
+  //                              from the analyzer", "which is a stronger guard here than
+  //                              a cross-language tag-set diff would have been.
+  //
+  // Joining turns `npm run verify` red if any of that regresses", "which is the point of
+  // the gate. The lane earned it by being convicted seven times by something
+  // independent: an ambiguous symbol in 36.6% of corpus files", "a `font-family` that
+  // emitted nothing for a declared `@font-face`", "a `@property` whose `var()` read
+  // dangled", "`@supports` scopes that attributed no rules", "a dead complexity term", "a
+  // 31x super-linear path", "and a `@layer` ordering form that published a name with
+  // no referent. Every one of those was GREEN until something independent looked.
+  "css", "// scss joins the gated set at 8/8 sections", "and it is the second lane to arrive with
+  // a DOCUMENTED RESIDUAL FLOOR rather than a clean 0/0 — `c` (C-D4) is the first", "on the
+  // same grounds: a language whose honest floor carries ruled residuals records them and
+  // the gate checks the row against the ruling EXACTLY", "so a regression above 64/4 fails
+  // while the declared residue does not.
+  //
+  // What earns it is the residue being CHARACTERISED rather than merely counted", "which is
+  // what `script/m14/tmp/scss-diff-classify.ts` is for: 8 of the unexplained rows are the
+  // declared unresolvable-custom-property class (SCSS-L6 — the analyzer emits a `var(--x)`
+  // read unconditionally and the oracle derives one only for a property the file declares", "// because Element Plus consumes theme tokens defined in another file)", "3 are a `&` whose
+  // referent is a mixin call site outside the file", "and the rest are in `common/var.scss`
+  // where 1", "716 lines carry over 400 disjoint ERROR spans and the truth is unreliable by
+  // construction. A floor nobody has decomposed is a number someone chose.
+  //
+  // The floor is FULL-EXTENT — all 149 corpus files — because a 60-file sample is a
+  // ROTATION: the same corpus produced MISSING=32", "36 and 106 across three draws", "and a
+  // gate that fails at random teaches people to re-run it.
+  "scss"]
 
 async function loadNamedNodeTypes(cfg: LangConfig): Promise<string[]> {
   const wts: any = await import("web-tree-sitter")
   const P = wts.Parser ?? wts.default ?? wts
   const L = wts.Language ?? wts.default?.Language
   await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
-  const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", cfg.wasm)))
+  // Dedup ONLY when the lane has more than one grammar. A single-grammar lane's
+  // measurement must stay byte-identical to what it was, and some grammars expose
+  // ALIASED slots that share a name (php enumerates 179 named slots for 159
+  // distinct names; html's spec records the same for start_tag/script_start_tag).
+  // Those duplicates are load-bearing for the STALE check — a spec row that is
+  // aliased five times is still produced — so collapsing them for a one-grammar
+  // lane would silently change 20 other lanes' reported type counts to fix a
+  // problem only a two-grammar lane has.
+  const companions = cfg.companionWasm ?? []
+  const dedup = companions.length > 0
   const named: string[] = []
-  for (let i = 0; i < g.nodeTypeCount; i++) {
-    if (!g.nodeTypeIsNamed(i)) continue
-    const n = g.nodeTypeForId(i)
-    if (n && !n.startsWith("_")) named.push(n)
+  const seen = new Set<string>()
+  for (const wasm of [cfg.wasm, ...companions]) {
+    const g = await L.load(fs.readFileSync(path.join(ROOT, "wasm", wasm)))
+    for (let i = 0; i < g.nodeTypeCount; i++) {
+      if (!g.nodeTypeIsNamed(i)) continue
+      const n = g.nodeTypeForId(i)
+      if (!n || n.startsWith("_")) continue
+      if (dedup && seen.has(n)) continue
+      seen.add(n)
+      named.push(n)
+    }
+    g.delete?.()
   }
+  // ERROR and MISSING are produced by every tree-sitter parser but are NOT
+  // listed by `nodeTypeForId` in the wasm ABI. F1 handles this with an explicit
+  // universal pair (script/m14/audit-analyzer-grammar.ts:93) and the bash F8
+  // census reuses that same pair; this gate now reuses it too, because a spec
+  // that classifies ERROR — correctly, since the analyzer consults it — was
+  // being told its own row was grammar drift. Three instruments, one oracle:
+  // when they disagree, one of them is wrong, and the fix is never to delete the
+  // correct row.
+  for (const u of ["ERROR", "MISSING"]) if (!named.includes(u)) named.push(u)
   return named
+}
+
+/**
+ * The type NAMES in a spec bucket, whichever shape the spec stores them in.
+ *
+ * `types` is a LIST in the css and jvm-family specs and a keyed OBJECT in the scss one,
+ * which carries per-type evidence — `inCorpus`, `reachedBy`, `adjudicated`, and a note
+ * saying which construct carries it. Both are read here, and the reason is the same as
+ * in `verify-corpus-census.ts`: normalising the scss spec down to a list would throw
+ * away the part that makes it worth having, since a list of names cannot say which
+ * types the corpus has never exercised.
+ */
+function specTypeNames(v: any): Set<string> {
+  const out = new Set<string>()
+  if (Array.isArray(v)) for (const t of v) out.add(String(t))
+  else if (v && typeof v === "object") for (const k of Object.keys(v)) out.add(k)
+  return out
 }
 
 function loadSpec(cfg: LangConfig) {
   const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "script", "m14", "spec", cfg.classification), "utf8"))
-  const handled = new Set(spec.handled_verified?.types ?? [])
-  const silent = new Set(spec.internal_silent?.types ?? [])
-  const gapTypes = new Set<string>()
-  for (const g of spec.gap?.gaps ?? []) {
-    // A spec is DATA. A record with no `node_type` classifies nothing — the same
-    // rule the decisions loop below already applies — and must not take the gate
-    // down. Before this, go's GO-GAP-1 threw here, which presented as an
-    // unrelated TypeError and silently stopped the run after groovy, so 13 of the
-    // 23 gated lanes were not being checked at all.
-    if (typeof g.node_type !== "string") continue
+const GATED_LANGS = ["bash", "java", "groovy", "kotlin", "scala", "typescript", "javascript", "vue", "svelte", "c", "cpp", "rust", "go", "zig", "csharp", "dart", "swift", "objc", "php", "ruby", "python", "haskell", "hcl", "xml", "make", "perl", "// yaml joins the gated set on 2026-09-27 at 8/8 sections. What earns it is the ORACLE", "not the
+  // count: its corpus floor comes from PyYAML 6.0.1 compose_all", "which shares no code", "algorithm or
+  // data model with the tree-sitter side", "whereas the differential sweep this gate also runs treats a
+  // hand-authored truth file as a mirror of the analyzer rather than a check on it. The floor is 0
+  // missing / 0 unexplained over a 1", "004-file", "357", "304-oracle-path draw across eight pinned corpora —
+  // wider than this file's declared 60-per-lane draw", "so the 0/0 is the stronger claim. The 15
+  // grammar-error files in that draw are a DECLARED tree-sitter-yaml defect (it cannot lex a
+  // multi-line double-quoted scalar; the 58-byte root ERROR costs the whole file its containment)", "// attributed by the oracle parsing those same files cleanly and filed against the grammar.
+  "yaml", "// markdown reaches CONFORMANT and joins GATED_LANGS on the same criterion:
+  // sections A-H are 8/8 green over 72 public named types (29 handled_verified", "// 41 internal_silent", "2 gap", "5 ruled decisions) across BOTH of its grammars.
+  //
+  // What earns it is the ORACLE", "and the oracle is the part that was missing for
+  // the whole life of the lane. It shipped an M12 differential reading precision
+  // 1.000 / recall 1.000 over three hand-written files totalling 99 lines", "with
+  // `truthSource: "manual_audit"` and no commit recorded — a truth file authored by
+  // the same hand as the analyzer", "which is the M14 #277 bash finding verbatim ("a
+  // lane whose truth cannot disagree with its analyzer has no differential; it has
+  // a mirror"). The 99-line corpus contained zero reference-style links", "zero
+  // duplicate code blocks and zero duplicate headings", "which is exactly where the
+  // lane was wrong: 1", "920 of 4", "078 code blocks erased across 406 of 738 files", "and
+  // 671 reference-link sites invisible.
+  //
+  // `deriveMarkdownEdges` is written from CommonMark's own construct list", "shares
+  // no table with the analyzer", "and loads its OWN copy of the companion grammar —
+  // an oracle that read the analyzer's pre-parse would agree with it by
+  // construction", "which is the F9 collusion blindness this program's doctrine
+  // exists to catch. It is at 0 MISSING / 0 unexplained on BOTH pinned corpora
+  // (scala3: 738 tracked .md; kubernetes: 595", "chosen for a different dialect)", "and
+  // run against the PRE-FIX analyzer the same oracle reports MISSING=127 and
+  // MISSING=67 + unexplained=5 without being told about any of it. A differential
+  // that has never failed is a claim; this one has.
+  "markdown", "// css reaches CONFORMANT and joins GATED_LANGS: sections A-H are 8/8 green", "which
+  // is the ladder's own stated criterion ("a language joins GATED_LANGS when it
+  // reaches CONFORMANT — which means all eight sections are green").
+  //
+  //   A structural completeness  130 unique types", "0 gap", "10 rulings", "3 limitations
+  //   B relationship kinds       contains", "uses", "references", "imports — all pinned
+  //   C payload matrix           complexity (it was a literal 1; 20", "214 symbols measured)
+  //   D evidence tiers           structural / usage_contextual / import_based
+  //   E differential baseline    svelte 100% MISSING=0", "grails-core 100% MISSING=0
+  //   F perf budget              1.408 ms/file", "load-stable and measured per corpus
+  //   G docs                     docs/analyzers/real-css-analyzer.md
+  //   H CC1                      n/a and DECLARED as such — CC1 checks languages that
+  //                              must AGREE with each other and css is in none of its
+  //                              sets. The risk CC1 guards (a set drifting between two
+  //                              places that must match) is covered for this lane by the
+  //                              F10 differential against an oracle that imports nothing
+  //                              from the analyzer", "which is a stronger guard here than
+  //                              a cross-language tag-set diff would have been.
+  //
+  // Joining turns `npm run verify` red if any of that regresses", "which is the point of
+  // the gate. The lane earned it by being convicted seven times by something
+  // independent: an ambiguous symbol in 36.6% of corpus files", "a `font-family` that
+  // emitted nothing for a declared `@font-face`", "a `@property` whose `var()` read
+  // dangled", "`@supports` scopes that attributed no rules", "a dead complexity term", "a
+  // 31x super-linear path", "and a `@layer` ordering form that published a name with
+  // no referent. Every one of those was GREEN until something independent looked.
+  "css", "// scss joins the gated set at 8/8 sections", "and it is the second lane to arrive with
+  // a DOCUMENTED RESIDUAL FLOOR rather than a clean 0/0 — `c` (C-D4) is the first", "on the
+  // same grounds: a language whose honest floor carries ruled residuals records them and
+  // the gate checks the row against the ruling EXACTLY", "so a regression above 64/4 fails
+  // while the declared residue does not.
+  //
+  // What earns it is the residue being CHARACTERISED rather than merely counted", "which is
+  // what `script/m14/tmp/scss-diff-classify.ts` is for: 8 of the unexplained rows are the
+  // declared unresolvable-custom-property class (SCSS-L6 — the analyzer emits a `var(--x)`
+  // read unconditionally and the oracle derives one only for a property the file declares", "// because Element Plus consumes theme tokens defined in another file)", "3 are a `&` whose
+  // referent is a mixin call site outside the file", "and the rest are in `common/var.scss`
+  // where 1", "716 lines carry over 400 disjoint ERROR spans and the truth is unreliable by
+  // construction. A floor nobody has decomposed is a number someone chose.
+  //
+  // The floor is FULL-EXTENT — all 149 corpus files — because a 60-file sample is a
+  // ROTATION: the same corpus produced MISSING=32", "36 and 106 across three draws", "and a
+  // gate that fails at random teaches people to re-run it.
+  "scss"]
     for (const t of g.node_type.split(",")) gapTypes.add(t.trim())
   }
   const decisionTypes = new Set<string>()
-  for (const d of spec.design_decision.decisions) {
+  // same tolerance for the same reason: a spec need not carry decision records, and a
+  // missing OPTIONAL section is not an error in the document
+  for (const d of spec.design_decision?.decisions ?? []) {
     // Defect-style records (SWIFTD17-19, OBJCD5-8: status FIXED + `issue` field)
     // document a resolved defect, not a grammar node-type ruling — they carry
     // no node_type and must not classify anything. Only RULED-style records
@@ -605,6 +1165,13 @@ function readExpectations(cfg: LangConfig): any[] {
 function verifySectionB(cfg: LangConfig): SectionCheck {
   const pinned = new Set<string>()
   for (const exp of readExpectations(cfg)) {
+    // An `imports` EDGE is pinned by an `expectImports` row, not by an
+    // `expectRelationships` one — that is the channel the import lanes use, and
+    // `imports` is reached through the result's `imports` array rather than its
+    // relationships. Reading only `expectRelationships` made `imports` look unpinned in
+    // a lane whose fixtures pin it correctly, which is a false failure from a gate that
+    // is checking the wrong channel.
+    if (Array.isArray(exp.expectImports)) for (const im of exp.expectImports) pinned.add("imports")
     for (const rel of exp.expectRelationships ?? []) {
       if (typeof rel.type === "string") pinned.add(rel.type)
       if (rel["meta.relationshipType"]) pinned.add(rel["meta.relationshipType"])
@@ -749,7 +1316,7 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
       id: "section-a-structural",
       description: `every named node type classified (${cfg.id})`,
       status: unclassified.length === 0 ? "pass" : "fail",
-      detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${spec.design_decision.decisions.length} decisions`,
+      detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${(spec.gap?.gaps ?? []).length} gaps, ${(spec.design_decision?.decisions ?? []).length} decisions`,
     },
     verifySectionB(cfg),
     verifySectionC(cfg),
@@ -797,12 +1364,24 @@ async function main() {
       console.log(`\n${cfg.id} grammar: ${types.length} public named node types`)
       console.log(`handled_verified: ${spec.handled_verified.types.length} | internal_silent: ${spec.internal_silent.types.length} | gaps: ${spec.gap.gaps.length} | design decisions: ${spec.design_decision.decisions.length}`)
       console.log("=== NUMBERED GAP LIST ===")
-      for (const g of spec.gap.gaps) {
+      for (const g of spec.gap?.gaps ?? []) {
         console.log(`  ${g.id}: [${g.severity}] ${g.node_type} — ${g.missing}`)
       }
-      console.log("=== PENDING OWNER DECISIONS ===")
-      for (const d of spec.design_decision.decisions) {
-        console.log(`  ${d.id}: ${d.question.slice(0, 140)}`)
+      // The header used to say PENDING for every row, whatever the status. A RULED
+      // decision printed under PENDING is a false statement about the lane's own
+      // record, and a reader cannot tell it apart from a real open question — the
+      // same defect class as a spec whose gap rows render as `[undefined]`, which is
+      // exactly what markdown's first draft did on both counts.
+      const all = (spec.design_decision?.decisions ?? []) as any[]
+      const open = all.filter((d) => d.status !== "RULED")
+      const ruled = all.filter((d) => d.status === "RULED")
+      if (open.length) {
+        console.log(`=== PENDING OWNER DECISIONS (${open.length}) ===`)
+        for (const d of open) console.log(`  ${d.id}: ${String(d.question ?? "").slice(0, 140)}`)
+      }
+      if (ruled.length) {
+        console.log(`=== RULED DECISIONS (${ruled.length}) — adjudicated, not pending ===`)
+        for (const d of ruled) console.log(`  ${d.id}: RULED — ${String(d.question ?? "").slice(0, 120)}`)
       }
     }
     return
@@ -824,12 +1403,12 @@ async function main() {
   for (const r of results) {
     const cfg = cfgs.find((c) => r.summary.startsWith(c.id + ":"))!
     const { spec } = loadSpec(cfg)
-    const gapList = spec.gap.gaps.map((g: any) => `${g.id}: ${g.missing}`)
-    const ruled = spec.design_decision.decisions.filter((d: any) => d.status === "RULED")
-    const pending = spec.design_decision.decisions.filter((d: any) => d.status !== "RULED")
+    const gapList = (spec.gap?.gaps ?? []).map((g: any) => `${g.id}: ${g.missing ?? g.node_type ?? "?"}`)
+    const ruled = (spec.design_decision?.decisions ?? []).filter((d: any) => d.status === "RULED")
+    const pending = (spec.design_decision?.decisions ?? []).filter((d: any) => d.status !== "RULED")
     checks.push(
       { id: `inventory-fully-classified`, description: `${cfg.id}: every named node type classified`, status: "pass", language: cfg.id },
-      { id: "gap-list-present", description: `${cfg.id}: ${spec.gap.gaps.length} confirmed gaps declared`, status: "pass", language: cfg.id },
+      { id: "gap-list-present", description: `${cfg.id}: ${(spec.gap?.gaps ?? []).length} confirmed gaps declared`, status: "pass", language: cfg.id },
       { id: "design-decisions-tracked", description: `${cfg.id}: ${ruled.length} ruled, ${pending.length} pending owner`, status: "pass", language: cfg.id },
       ...r.checks.map((c) => ({ ...c, language: cfg.id })),
     )

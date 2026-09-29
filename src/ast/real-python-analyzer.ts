@@ -10,6 +10,23 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
+/**
+ * `replace(/^@/, "")` as a prefix check (M49.R2 wave 2026-09-25: the AST census counted
+ * the literal as the python lane's only regex, and a single-character prefix needs no
+ * engine).
+ *
+ * Equivalence proof: `/^@/` is an anchored single-character match with no `g`, so
+ * `replace` removes the `@` iff the string starts with one and removes nothing
+ * otherwise — `"@@a"` loses exactly one `@` under both rules, `"a@"` is untouched by
+ * both. `startsWith` + `slice(1)` is that function; unlike `$`, `^` has no
+ * before-final-newline special case, so there is no edge-case gap to disclose.
+ * The javascript lane ruled the identical shape (`stripLeadingAt`, M49 R2 closure) and
+ * this mirrors it rather than inventing a second spelling for the same predicate.
+ */
+function stripLeadingAt(text: string): string {
+  return text.startsWith("@") ? text.slice(1) : text
+}
+
 interface PythonScope {
   node: Node
   name: string
@@ -586,7 +603,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!c || c.type !== "decorator") continue
         const leaf = this.decoratorName(c)
         if (leaf === "overload" || leaf === "property" || leaf === "setter" || leaf === "getter" || leaf === "deleter") return true
-        if (c.text.replace(/^@/, "").trim().startsWith(`${name}.`)) return true
+        if (stripLeadingAt(c.text).trim().startsWith(`${name}.`)) return true
       }
     }
     return false

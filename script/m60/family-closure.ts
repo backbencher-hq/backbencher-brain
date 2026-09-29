@@ -91,6 +91,17 @@ export function reviewFolderState(reviewsDir: string): { closed: string[]; open:
  */
 export const ANALYZER_FILE_ALIAS: Record<string, string> = {
   objc: "real-objective-c-analyzer.ts",
+  // `make` is the second language whose ANALYZER module is not named after the
+  // language id. This table was missing it while `script/m60/payload-matrix.ts`
+  // carried the same mapping inline, so the two disagreed and the gate that reads
+  // the file crashed on ENOENT rather than marking one language red. The mapping
+  // belongs in ONE exported table, which is why this one exists at all.
+  //
+  // Note this is the ANALYZER module name. The Make DOC is named for the language
+  // (`docs/analyzers/real-make-analyzer.md`) and is NOT aliased: the doc filename
+  // is the lane name, so a doc named after the module would invent a lane called
+  // `makefile` in `grammar-lanes-source.ts`.
+  make: "real-makefile-analyzer.ts",
 }
 
 /** The repo-relative analyzer path for a language, alias-aware. */

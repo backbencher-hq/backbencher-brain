@@ -256,6 +256,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     processing_instruction_href: "import_based",
     schema_location: "import_based",
     attribute_qname_reference: "reference_qualified",
+    // An entity use is reached through a NAME in the document's own DTD, not
+    // through a declared namespace prefix — but it is a reference to a
+    // declaration all the same, and `usage_contextual` would say the document is
+    // only *using* the entity, which understates it: `&logo;` in content means the
+    // element's value IS that entity's replacement text. `reference_qualified` is
+    // the same claim an XSLT named-template call makes.
+    entity_reference: "reference_qualified",
     xslt_named_template_reference: "reference_qualified",
   }
 
@@ -263,6 +270,39 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     "http://www.w3.org/2001/XMLSchema",
     "http://www.w3.org/XML/1998/namespace",
   ])
+
+  /**
+   * The two prefixes the Namespaces specification binds in EVERY document,
+   * whether or not the document says so (XML Namespaces 1.0 §4, and the
+   * Namespaces in XML 1.1 §2.2 which makes it a namespace name rather than a
+   * reserved prefix). Neither may be declared to anything else: re-binding `xml`
+   * is an error, and `xmlns` is bound to the XMLNS namespace.
+   *
+   * This table exists because a well-formed document CANNOT supply them, so a
+   * resolver that only reads declarations can never resolve them. See M60 X8.
+   */
+  /**
+   * The XML Schema built-in DERIVED types, from Part 2's own list. Written out
+   * rather than derived, because the analyzer and the corpus oracle each keep
+   * their own copy ON PURPOSE: two implementations that share a constant cannot
+   * disagree, and a constant that cannot be disagreed with cannot find a defect.
+   */
+  private static readonly XSD_BUILTIN_TYPE_NAMES: ReadonlySet<string> = new Set([
+    "anyType", "anySimpleType", "string", "boolean", "decimal", "float", "double",
+    "duration", "dateTime", "time", "date", "gYearMonth", "gYear", "gMonthDay",
+    "gDay", "gMonth", "hexBinary", "base64Binary", "anyURI", "QName", "NOTATION",
+    "normalizedString", "token", "language", "NMTOKEN", "NMTOKENS", "Name",
+    "NCName", "ID", "IDREF", "IDREFS", "ENTITY", "ENTITIES", "integer",
+    "nonPositiveInteger", "negativeInteger", "long", "int", "short", "byte",
+    "nonNegativeInteger", "unsignedLong", "unsignedInt", "unsignedShort",
+    "unsignedByte", "positiveInteger", "dateTimeStamp", "dayTimeDuration",
+    "yearMonthDuration", "lang", "space", "base", "id",
+  ])
+
+  private static readonly IMPLICIT_PREFIX_BINDINGS: Readonly<Record<string, string>> = {
+    xml: "http://www.w3.org/XML/1998/namespace",
+    xmlns: "http://www.w3.org/2000/xmlns/",
+  }
 
   /**
    * Transient per-attribute context, set by the element branch before its
@@ -301,6 +341,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const bindingScopes: { outer: Map<string, string> }[] = []
     /** Names this document declares, for `references` resolvability. */
     const declaredNames = new Set<string>()
+    /**
+     * Namespaces this document IMPORTS, and the file each came from.
+     *
+     * M60 finding X7: a `references` edge whose prefix is bound to a namespace
+     * this document imports points at a component declared in ANOTHER FILE, and
+     * the reference pass used to refuse it. The refusal is right for a prefix
+     * bound to nothing — recording that would put a name in the graph that no
+     * file supports, the M60.R10 "a value where a name belongs" lie. It is wrong
+     * here, because the document already says where the name lives: the
+     * `imports` edge for the same `xsd:import` names the file. Dropping the
+     * reference left the graph claiming two documents are independent while
+     * holding an edge that says one of them includes the other.
+     *
+     * So there are THREE resolvability classes, not two, and the third is the
+     * one that makes a schema set a graph:
+     *   in-document — the name is declared here
+     *   builtin     — the name is an XML/XSD built-in type
+     *   external    — the name is declared in a file this document imports, and
+     *                 the edge records WHICH file, so a consumer can follow it
+     */
+    const importedNamespaces = new Map<string, { path?: string; element: string }>()
 
     /**
      * Attribute values that MAY name a declaration, held until the walk is over.
@@ -321,9 +382,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       nameNode: Node
       valueNode: Node
       binding: string | undefined
+      /** The resolved namespace of the ELEMENT carrying the attribute. X11. */
+      ownerNs?: string
       bareNameReference?: boolean
     }
     const referenceCandidates: ReferenceCandidate[] = []
+
+    /**
+     * ENTITY USES — M60 M18. `&name;` in content is a real reference to a
+     * declared entity, and this analyzer emitted nothing for it.
+     *
+     * The grammar has an `EntityRef` node for exactly this and it was classified
+     * as PASS-THROUGH with the note "a USE; the declaration is GEDecl /
+     * PEDecl" — which is the observation that it is a use, followed by the decision
+     * to record only the declaration. So the graph could say that entity `greeting`
+     * is declared and nothing at all about which element's content depends on it.
+     *
+     * Measured over the corpus: **12,066 `EntityRef` sites across 268 files, of
+     * which 4,423 name an entity NOTHING DECLARES.** A document containing
+     * `&undefined;` indexed as clean. That is the same defect X13 fixed for bare
+     * type references, in a different syntax: a claim the document makes, dropped
+     * because the analyzer could not decide it, and the not-deciding was invisible.
+     *
+     * Deferred, for the same reason the QName pass is: an entity may be declared
+     * after it is used, and resolving on the spot would drop every forward use.
+     */
+    const entityReferenceCandidates: { ownerName: string; name: string; node: Node; textNode: Node }[] = []
 
     /**
      * Names a `contains` edge is about to point at that this document may not
@@ -380,7 +464,29 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `xml/dtd-declarations` pins `contains catalog -> catalog` and
       // `xml/conditional-section` pins it again at a different line, so a rule
       // that reads as a blanket invariant and is not one is now caught by a gate.
-      if (type === ASTEngine.RelationshipType.References || type === ASTEngine.RelationshipType.Imports) {
+      //
+      // The self-loop guard, and it applies to REFERENCES ONLY.
+      //
+      // It was `References || Imports`, on the reasoning that a thing cannot
+      // reference or import itself. That is sound for a reference — a
+      // declaration naming itself is a cycle in the document, not a link — and
+      // unsound for an import, because the two ends of an `imports` edge are
+      // DIFFERENT KINDS OF THING: `source` is a symbol name and `target` is a
+      // path read out of a SYSTEM identifier. When the two strings coincide they
+      // still denote a symbol and a file, and the file is real.
+      //
+      // `<!ENTITY emc2.gif SYSTEM "emc2.gif" NDATA GIF>` names a file called
+      // `emc2.gif`. The guard dropped the edge, and dropped it ASYMMETRICALLY:
+      // `extractExternalId` had already pushed the `ImportInfo` a few lines
+      // earlier, so the file was present in `imports` and absent from the
+      // relationship graph — the analyzer contradicting itself inside one call.
+      // 46 such edges in the corpus, 4 of them entity external ids and the rest
+      // notation external ids (`<!NOTATION GIF SYSTEM "GIF">`).
+      //
+      // Nothing is lost by dropping the guard from `imports`: there is no
+      // "meaningless self-import" for it to prevent, since a file that is named
+      // after the declaration that names it is still a second thing.
+      if (type === ASTEngine.RelationshipType.References) {
         if (source === target) return
       }
       const key = `${source}\u0000${type}\u0000${target}`
@@ -401,6 +507,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const also = (existing.metadata.alsoRoles as string[] | undefined) ?? []
           if (!also.includes(role)) also.push(role)
           existing.metadata.alsoRoles = also
+          // X14: `evidenceClass` is the tier of the PRIMARY role, so a consumer
+          // asking "is this edge ALSO a usage claim?" had to know the tier table
+          // and re-derive it. The roles were recorded and their tiers were not, so
+          // `alsoRoles` was present but not QUERYABLE — the one thing a field
+          // called "also" exists to be.
+          //
+          // Measured: 148 of 813 content-model sites carry `structural` on the
+          // edge with `dtd_content_model` in `alsoRoles`, which is exactly the
+          // 148 a consumer could not tell apart from 665 genuine nesting edges.
+          //
+          // An ARRAY OF OBJECTS rather than a second map keyed by role, so the
+          // order of `alsoRoles` and the order of its tiers cannot disagree — a
+          // map would have two independent orderings and no way to pair them
+          // without trusting the reader to zip them. Position is the join key,
+          // which is why `alsoRoles` is never re-sorted and never deduped
+          // independently of this list.
+          const tiers = (existing.metadata.alsoRoleTiers as { role: string; tier: string }[] | undefined) ?? []
+          if (!tiers.some((t) => t.role === role)) {
+            tiers.push({ role, tier: RealXmlAnalyzer.EVIDENCE_TIER[role] ?? "inferred" })
+          }
+          existing.metadata.alsoRoleTiers = tiers
         }
         // Seed from the EDGE's own line_number, not from a metadata key: the
         // relationship carries `line_number`, so reading `metadata.line` seeded
@@ -848,6 +975,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // M18: an entity USE in content. Collected, not decided — the declaration
+      // may come later, and the DTD's own declarations are resolved in the
+      // deferred pass with everything else.
+      if (node.type === "EntityRef" && ownerName) {
+        const text = node.text.trim()
+        // `&name;` — the name is between the ampersand and the semicolon, and it
+        // is written in the SOURCE, so the line below is the name's line and the
+        // M60 rule is satisfied by construction rather than by a convention.
+        if (text.length > 2 && text.startsWith("&") && text.endsWith(";")) {
+          const name = text.slice(1, -1)
+          if (name.length > 0 && name.length <= 256) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+        }
+      }
+
       const childDepth = bindDepth ?? 0
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
@@ -866,6 +1007,47 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         role: candidate.edge.role,
         dtdName: candidate.edge.dtdName,
       }, candidate.node)
+    }
+
+    // ── which namespaces does this document IMPORT? ───────────────────────────
+    // A separate pass rather than a hook in the element branch, because the
+    // import may be declared AFTER the reference that needs it: a schema that
+    // references `pic:pic` on line 56 and imports that namespace on line 41 is
+    // the ordinary spelling, and resolving on the spot would drop it — the same
+    // forward-reference trap the candidate queue exists to avoid, one level up.
+    {
+      const IMPORT_ELEMENTS = new Set(["import", "include", "import-schema"])
+      const stack: Node[] = [rootNode]
+      while (stack.length) {
+        const n = stack.pop()!
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c) stack.push(c)
+        }
+        if (n.type !== "element") continue
+        const tag = n.children.find((c) => c && (c.type === "STag" || c.type === "EmptyElemTag"))
+        if (!tag) continue
+        const local = this.findDirectChild(tag, "Name")?.text.trim().split(":").pop() ?? ""
+        if (!IMPORT_ELEMENTS.has(local)) continue
+        let nsUri: string | undefined
+        let path: string | undefined
+        for (let i = 0; i < tag.namedChildCount; i++) {
+          const attr = tag.namedChild(i)
+          if (attr?.type !== "Attribute") continue
+          const an = this.findDirectChild(attr, "Name")?.text.trim()
+          const av = this.findDirectChild(attr, "AttValue")
+          const value = av ? this.unquote(av.text).trim() : undefined
+          if (!an || value === undefined) continue
+          if (an === "namespace") nsUri = value
+          // `schemaLocation` is a namespace/URI PAIR LIST; the URIs are the
+          // paths, and the odd-indexed tokens are the ones that are files.
+          else if (an === "schemaLocation") {
+            const parts = RealXmlAnalyzer.splitOnWhitespace(value)
+            path = parts.length % 2 === 0 ? parts[parts.length - 1] : parts[0]
+          } else if (an === "href") path = value
+        }
+        if (nsUri) importedNamespaces.set(nsUri, { path, element: local })
+      }
     }
 
     // ── the deferred reference pass ───────────────────────────────────────────
@@ -890,8 +1072,102 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const qname = this.asQName(candidate.value)
       if (!qname) continue
       const resolvableInDocument = declaredNames.has(qname.local)
+      // A BUILT-IN is reached ONE way: the value carries a PREFIX whose binding is
+      // a built-in namespace. `xs:int` and `xml:lang` are recognised.
+      //
+      // There is a second way — a BARE value names a built-in when the element
+      // carrying it is in the XSD namespace, so `<xsd:element type="int"/>` reads
+      // as the built-in `int` in a document written `xmlns="…/2001/XMLSchema"`
+      // with no prefix at all, which is the older and very common spelling. It is
+      // NOT implemented, and implementing it would be a DEFECT rather than a fix.
+      //
+      // `libxml2/test/schemas/vdv-first5_0.xsd` writes
+      //
+      //     <xs:schema xmlns:xs="…/2001/XMLSchema">
+      //       <xs:include schemaLocation="vdv-simpleTypes.xsd"/>
+      //       <xs:element name="born" type="date"/>
+      //
+      // and `vdv-simpleTypes.xsd` line 32 declares a CUSTOM type called `date`.
+      // So that bare `date` is the schema's own type, not XSD's built-in `date` —
+      // and both files are libxml2's own schema-composition tests, so the intent
+      // is not in doubt. Resolving it as a built-in would replace a correct
+      // refusal with a confidently wrong answer, and the corpus differential
+      // reported it as a MISS precisely because its oracle made the same unsafe
+      // inference and disagreed with a refusal that was right.
+      //
+      // Telling the two apart needs `xs:include` cross-file declarations, which is
+      // the same machinery X7 started for `import` and has not been built for
+      // `include` — and `include` is harder, because an included schema shares the
+      // INCLUDING schema's target namespace, so a bare name may be satisfied by
+      // either file and the disambiguation is a whole-corpus question rather than
+      // a per-document one. Until that exists, refusing a bare value that no file
+      // in this document declares is the honest reading, and the corpus sites are
+      // recorded rather than papered over.
       const isBuiltin = candidate.binding !== undefined && RealXmlAnalyzer.BUILTIN_NAMESPACE_URIS.has(candidate.binding)
-      if (!resolvableInDocument && !isBuiltin) continue
+      // X7: an IMPORTED namespace makes the name resolvable in a third way. The
+      // target symbol is deliberately NOT published — the component is not in
+      // this file, and a phantom local symbol is exactly the R10 lie — but the
+      // EDGE is, carrying the file it lives in.
+      const imported = !resolvableInDocument && !isBuiltin && candidate.binding !== undefined
+        ? importedNamespaces.get(candidate.binding)
+        : undefined
+      // X13: a BARE value, on an attribute that carries a reference, whose OWNER
+      // is in a declaration vocabulary, and which this document does not declare.
+      //
+      // The reference is REAL — the document says this element's type is that
+      // name — and it was being DROPPED, which is the same defect the review has
+      // been closing all along: a claim the graph cannot see. Two real cases in
+      // the corpus, and they are indistinguishable from one file:
+      //
+      //   cxf/…/calculator.xsd            `xmlns="…XMLSchema"`, `type="int"`
+      //     -> the XSD built-in
+      //   libxml2/…/vdv-first5_0.xsd     `xs:include`es vdv-simpleTypes.xsd,
+      //     `type="date"`                   which declares its OWN `date` at
+      //                                        line 32
+      //
+      // One is a built-in, one is an included custom type, and from inside this
+      // file they are the same three characters. Resolving either by rule is a
+      // guess: the bare-built-in rule makes the second confidently WRONG, and the
+      // refusal makes the first unresolvable for no stated reason.
+      //
+      // So the claim is EMITTED, with a fourth resolvability class:
+      //
+      //   in-document  declared here
+      //   builtin      an XML/XSD built-in
+      //   external     declared in a file this document imports, with the file
+      //   unresolved   a real reference this file does not satisfy  <- X13
+      //
+      // and `ambiguousWithBuiltin` is set when the name is ALSO a built-in, which
+      // is precisely the case where a consumer must not guess either way. The
+      // target symbol is still not published — the component is not in this file —
+      // so this adds an EDGE, never a phantom declaration.
+      //
+      // Restricted to a BARE value under a vocabulary owner. A PREFIXED value
+      // bound to a namespace this document neither declares nor imports is still
+      // REFUSED: there is no document anywhere that supports the name, and
+      // `xml/xsd-external-reference` pins that. Resolving includes for real needs
+      // the include GRAPH, which a per-file analyzer cannot see and which belongs
+      // to a project-level pass rather than here — that is a feature, not a gap
+      // in this function, and naming it as one would be a way of not doing it.
+      const ownerIsVocabulary = candidate.ownerNs !== undefined
+        && RealXmlAnalyzer.DECLARATION_VOCABULARIES[candidate.ownerNs] !== undefined
+      // "BARE" means the value carries NO PREFIX — tested on the PREFIX, not on
+      // `binding === undefined`. Those are not the same predicate: a PREFIXED
+      // value whose prefix is bound nowhere also has no binding, and using the
+      // proxy classified `type="xsd:int"` in cxf's calculator.xsd as an unresolved
+      // BARE reference to the built-in `int` when `xsd` is bound to the XSD
+      // namespace and the answer is plainly `builtin`. This is the same
+      // conflation that made the corpus oracle's bare-built-in test wrong — it
+      // asked whether the VALUE had a namespace instead of whether it had a
+      // prefix — and it is worth stating that the mistake survived being spotted
+      // once, in a different file, on the same question.
+      const isBareValue = qname.prefix.length === 0
+      const unresolvedBareReference = !resolvableInDocument && !isBuiltin && !imported
+        && isBareValue
+        && ownerIsVocabulary
+      if (!resolvableInDocument && !isBuiltin && !imported && !unresolvedBareReference) continue
+      const ambiguousWithBuiltin = unresolvedBareReference
+        && RealXmlAnalyzer.XSD_BUILTIN_TYPE_NAMES.has(qname.local)
       if (resolvableInDocument) {
         ensureTargetSymbol(qname.local, undefined, ASTEngine.SymbolKind.Type, candidate.nameNode, { isReferencedDeclaration: true })
       }
@@ -901,8 +1177,31 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         qname: candidate.value,
         prefix: qname.prefix,
         namespaceUri: candidate.binding,
-        resolvable: isBuiltin ? "builtin" : "in-document",
+        resolvable: isBuiltin ? "builtin" : resolvableInDocument ? "in-document" : unresolvedBareReference ? "unresolved" : "external",
+        // X13: the name is also a built-in, and this file cannot say whether the
+        // document means the built-in or a same-named type an `xs:include` brought
+        // in. Recorded so a consumer can see the ambiguity instead of inheriting
+        // whichever reading the graph happened to take.
+        ...(ambiguousWithBuiltin ? { ambiguousWithBuiltin: true } : {}),
+        // where the name actually lives, so a consumer can follow it rather than
+        // having to guess from the namespace alone
+        ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
       }, candidate.valueNode)
+    }
+
+    // ── entity uses, decided now that every declaration is known ─────────────
+    for (const cand of entityReferenceCandidates) {
+      const declared = declaredNames.has(cand.name)
+      // Dangling uses are RECORDED, not refused: `&undefined;` is a claim the
+      // document makes about itself, and refusing it is what made 4,423 of them
+      // invisible. Same ruling as X13's `unresolved` class, for the same reason,
+      // and the target symbol is still not published — a use is not a declaration.
+      addRelationship(cand.ownerName, cand.name, ASTEngine.RelationshipType.References, {
+        role: "entity_reference",
+        entityName: cand.name,
+        resolvable: declared ? "in-document" : "unresolved",
+        ...(declared ? {} : { danglingEntityReference: true }),
+      }, cand.textNode)
     }
 
     const hasSyntaxErrors = errorNodes > 0 || missingNodes > 0
@@ -1005,7 +1304,7 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     publishedNames: Set<string>,
     declaredNames: Set<string>,
     namespaceBindings: Map<string, string>,
-    referenceCandidates: { ownerName: string; attributeName: string; value: string; nameNode: Node; valueNode: Node; binding: string | undefined; bareNameReference?: boolean }[],
+    referenceCandidates: { ownerName: string; attributeName: string; value: string; nameNode: Node; valueNode: Node; binding: string | undefined; ownerNs?: string; bareNameReference?: boolean }[],
     ensureTargetSymbol: (
       name: string,
       ownerName: string | undefined,
@@ -1016,6 +1315,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ownerLocalName: string,
     ownerNamespace: string | undefined,
   ): void {
+    // The OWNER's resolved namespace, carried on every reference candidate. X11:
+    // a BARE value names a built-in type only when the element carrying it is
+    // itself in the XSD namespace, because that is what makes an unprefixed
+    // QName resolve into it. The value's own binding cannot answer that — a bare
+    // value has none — so the question has to travel with the candidate.
+    const ownerNs = ownerNamespace
     // Is this element one that NAMES another declaration rather than being one?
     // `name` is the attribute in both cases, and the two readings are opposites,
     // so the vocabulary — not the attribute name — decides which applies.
@@ -1132,11 +1437,29 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         nameNode,
         valueNode,
         binding: undefined,
+        ownerNs,
         bareNameReference: true,
       })
     }
 
-    const qname = this.asQName(value)
+    // XML Schema's `QName` datatype carries the `collapse` whiteSpace facet
+    // (XSD 1.0 §3.3.13 / Part 2 §3.3.5.2), so a QName-typed attribute value has
+    // its whitespace runs collapsed and trimmed BEFORE it is read as a name.
+    // M60 X10: the analyzer did not, so `type="CT_GeoHierarchyEntity "` — a
+    // trailing space, written by a human and perfectly legal, because XML only
+    // normalises tab and newline in an attribute value and leaves inner spaces
+    // alone — failed `asQName` and the reference was REFUSED. One such site in
+    // the corpus, in office_drawing_2014_chartex.xsd, where a complex type
+    // declared 7 lines above went unreferenced because of one space.
+    //
+    // Collapse-and-trim, not trim: the facet replaces every whitespace RUN with a
+    // single space and then trims the ends, and `asQName` still rejects a value
+    // with an interior space — which is the point, because `type="CT_ T"` is
+    // genuinely not a QName and no amount of whitespace folding makes it one. A
+    // fix that simply stripped the ends would accept neither more nor fewer
+    // wrong values, and would be wrong about why.
+    const collapsed = RealXmlAnalyzer.collapseWhitespace(value)
+    const qname = this.asQName(collapsed)
     if (!qname || !nameNode || !valueNode) return
     // A PREFIX is the primary signal, and it is a signal the DOCUMENT supplies:
     // `tns:X` names a declaration, and no list of attribute names is consulted.
@@ -1146,13 +1469,37 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // type, which is the M60.R10 class in reverse.
     if (!qname.prefix && !RealXmlAnalyzer.REFERENCE_ATTRIBUTES.has(attributeName)) return
     if (!qname.prefix && this.bareNameDeclarationElement) return
+    // M60 X8: the `xml` and `xmlns` prefixes are bound by the Namespaces
+    // specification ITSELF and need no declaration — `xmlns:xml=…` is forbidden,
+    // and no real document writes it. So `namespaceBindings.get("xml")` is
+    // undefined in every well-formed file, and every `ref="xml:lang"`,
+    // `ref="xml:id"`, `ref="xml:space"` and `ref="xml:base"` came through with
+    // NO binding. The reference pass then asked "is this a built-in?", found no
+    // namespace to test, and REFUSED them — 71 references across 20 corpus files,
+    // including every `xml:lang` in docx4j's Dublin Core schemas.
+    //
+    // The analyzer already knows the answer: BUILTIN_NAMESPACE_URIS contains
+    // `http://www.w3.org/XML/1998/namespace`. It was consulted only when a
+    // binding existed, and for the one prefix the spec guarantees can never
+    // arrive with one. The knowledge was present and unreachable.
+    const declared = namespaceBindings.get(qname.prefix)
+    const binding = declared ?? RealXmlAnalyzer.IMPLICIT_PREFIX_BINDINGS[qname.prefix]
     referenceCandidates.push({
       ownerName,
       attributeName,
-      value,
+      // The COLLAPSED value, not the raw one. The deferred pass re-parses
+      // `candidate.value` with `asQName`, so storing the raw text meant the
+      // facet was applied once for the push-site check and then thrown away —
+      // the candidate passed the collapsed test here and failed the raw one
+      // there, and the edge was refused exactly as before. One transformation,
+      // at the point the value enters the queue, and both readers see the same
+      // string. It also makes `metadata.qname` the reading the spec defines
+      // rather than the bytes a human typed.
+      value: collapsed,
       nameNode,
       valueNode,
-      binding: namespaceBindings.get(qname.prefix),
+      binding,
+      ownerNs,
     })
   }
 
@@ -1212,9 +1559,32 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * completeness gate can see that the attribute vocabulary is not silently
    * assumed to be `{name}`.
    */
-  private static readonly DECLARATION_NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
-    output: "method",
-  }
+  /**
+   * Declared EMPTY, and that emptiness is the finding.
+   *
+   * This used to read `{ output: "method" }`, on the theory that XSLT
+   * `xsl:output` names something. It does not: `method` names the output METHOD
+   * (`xml`, `html`, `text`) and nothing else. So `<xsl:output method="xml"/>`
+   * was published as a symbol called **`xml`**, marked `isVocabDeclaration`,
+   * with `method`/`encoding`/`indent` hung off it as its attributes — and the
+   * element's real name, `xsl:output`, appeared nowhere in the graph.
+   *
+   * That is the M60.R10 defect class in MIRROR IMAGE. R10 is publishing a VALUE
+   * where a NAME belongs, into a `contains` target; this was taking a value
+   * where a NAME belongs and calling the element IT. The comment on
+   * REFERENCE_ATTRIBUTES above spends two paragraphs refusing to publish
+   * `unbounded` and `Normal` as names, and then the declared-name table handed
+   * `xml` to the graph in the very next screen. The corpus paid for it in
+   * bug-128.xml and bug-92.xml, where `contains xsl:stylesheet -> xsl:output`
+   * was missing and the element had been renamed to its own configuration.
+   *
+   * XSLT 2.0 does give `xsl:output` a `name`, for stylesheets that declare
+   * several outputs — and `name` is already this function's default, so the
+   * correct table is the empty one. `xsl:output` in XSLT 1.0, which is what
+   * these files are, has no name at all and is correctly published under its
+   * written name: it is an instruction, not a declaration.
+   */
+  private static readonly DECLARATION_NAME_ATTRIBUTE: Readonly<Record<string, string>> = {}
 
   /**
    * The DECLARED NAME of an element, when its vocabulary puts the name in an
@@ -1258,6 +1628,35 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * behaviour is pinned to a stated set — space, tab, LF, CR, the XML `S`
    * production — instead of to a regex dialect.
    */
+  /**
+   * XML Schema's `collapse` whiteSpace facet, as a char walk.
+   *
+   * Every run of space/tab/LF/CR becomes ONE space, and the ends are trimmed.
+   * This is the transformation the `collapse` facet defines, and it is NOT the
+   * same as trimming: `"a  b"` collapses to `"a b"` rather than `"ab"`. Applied to
+   * a QName-typed attribute value before the value is read as a name — see the
+   * call site in the reference pass for why that matters and why an interior
+   * space must still be refused afterwards.
+   */
+  private static collapseWhitespace(text: string): string {
+    const out: string[] = []
+    let pendingSpace = false
+    let sawAny = false
+    for (let i = 0; i < text.length; i++) {
+      const c = text.charCodeAt(i)
+      if (c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d) {
+        // A leading run produces nothing at all; an interior one produces exactly
+        // one space, however long the run was.
+        if (sawAny) pendingSpace = true
+        continue
+      }
+      if (pendingSpace) { out.push(" "); pendingSpace = false }
+      out.push(text[i])
+      sawAny = true
+    }
+    return out.join("")
+  }
+
   private static splitOnWhitespace(text: string): string[] {
     const parts: string[] = []
     let start = -1
