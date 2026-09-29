@@ -131,6 +131,54 @@ const IMPURE_BUILTINS = (function(){ const r: Record<string, boolean> = Object.c
 // the F5 clj-kondo lane: 12 MISSING edges across rewrite-clj node files).
 const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> = Object.create(null); const arr = ["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"]; for(let i=0;i<arr.length;i++) r[arr[i]] = true; return r; })();
 
+/**
+ * CLJ-D30 — does this head DEFINE a name, whatever it is called?
+ *
+ * A character walk, deliberately: the zero-regex census (`reviews/regex-policy.md`,
+ * counted at HEAD) reads this file, so a `def-` test here has to be spelled in
+ * characters. A head is def-like when it is `def`, or `def` followed by `-`/`_`
+ * plus at least one more character — which admits `defcurried`, `def-aset`,
+ * `defsetting`, `defclause*` and every future spelling a project invents.
+ *
+ * The two exclusions are not arbitrary: `default…` and `define…` are ordinary
+ * verbs in Clojure code (`(default-db ...)`, `(define-spec ...)`), and
+ * promoting a CALL to a DEFINITION would mint a symbol for something that
+ * defines nothing. Everything else in def position is treated as a definition
+ * by the CLJ-D30 branch, which is the general rule rather than a hand list.
+ */
+function isDefLikeHead(head: string): boolean {
+  if (head.length < 3) return false
+  if (head.charCodeAt(0) !== 100 /* d */ || head.charCodeAt(1) !== 101 /* e */ || head.charCodeAt(2) !== 102 /* f */) return false
+  if (head.length === 3) return true
+  const c3 = head.charCodeAt(3)
+  if (c3 !== 45 /* - */ && c3 !== 95 /* _ */) {
+    if (head.startsWith("default") || head.startsWith("define")) return false
+    return true
+  }
+  return true
+}
+
+/**
+ * CLJ-D32 — the member name of a STATIC interop head `Class/.member`, or null.
+ *
+ * The discriminator is the `/.`: a `/` alone qualifies a NAMESPACE (`str/join`,
+ * `clojure.string/trim`) and must keep going to the generic call branch, so a
+ * plain slash is not enough. It has to be a slash immediately followed by a dot,
+ * with a dot-led member and a non-empty class in front. `Integer/parseInt` has
+ * neither and correctly returns null. Character indexing, no regex: the
+ * zero-regex census reads this file.
+ */
+function staticInteropMember(head: string): string | null {
+  const slash = head.lastIndexOf("/")
+  if (slash <= 0) return null
+  if (head.charCodeAt(slash + 1) !== 46 /* . */) return null
+  const member = head.slice(slash + 2)
+  if (member.length === 0) return null
+  const cls = head.slice(0, slash)
+  if (cls.length === 0) return null
+  return member
+}
+
 // CLJ-D20: the anonymous-argument shorthands — `%`, `%1`..`%N`, `%&` — are
 // PARAMETER references, never callees. This was the lane's last regex,
 // `/^%(\d+|&)?$/`, registered in reviews/regex-policy.md with the note
@@ -169,6 +217,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patterns: Record<string, boolean> = {}
 
     let currentNamespace = "user"
+    // CLJ-D34: has this file DECLARED a namespace? `user` is a real namespace
+    // when `(in-ns 'user)` says so, and a synthetic fallback only when nothing
+    // declared one — the two must not be treated alike.
+    let namespaceExplicit = false
     // F3 (adversarial review): Object.create(null) — the SAME prototype-
     // pollution class as F5-2, missed on this record: a plain `{}` alias
     // table answered `["toString"]` with the inherited function, so
@@ -963,6 +1015,50 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const tagNode = node.namedChild(0)
         const payload = node.namedChild(1)
         const tag = symName(tagNode)
+        // CLJ-D37: `#js` IS AN EVALUATED PAYLOAD, EXCEPT FOR ITS KEYS.
+        //
+        // ClojureScript's `#js` compiles its map (or vector) to a JavaScript
+        // object/array LITERAL, and a literal's VALUES are evaluated. So
+        // `(dayjs #js {:year (.year ^dayjs a-date) …})` makes six real member
+        // accesses — and the blanket "payloads are data either way" rule above
+        // dropped all six, together with every call in the values. metabase's
+        // util/time/impl.cljs:313-319 is the whole of it in this corpus, and it
+        // is invisible to the `calls` gate for the reason this file keeps
+        // finding: the `calls` truth derives calls, the analyzer emitted none,
+        // and a form that walks as NOTHING looks identical to a form with no
+        // calls in it.
+        //
+        // The discriminator is the tag. `#js` (and the historical `#JS`) is the
+        // one tag whose payload is a literal with evaluated values; `#inst`,
+        // `#uuid` and every record/class literal take DATA. The KEYS are still
+        // data — a key is a property name, not an expression — so the walk
+        // descends into map values and vector elements only.
+        const bareTag = tag.includes("/") ? tag.slice(tag.indexOf("/") + 1) : tag
+        if ((bareTag === "js" || bareTag === "JS") && payload) {
+          const walkJsValues = (nd: Node): void => {
+            if (nd.type === "kwd_lit") return // a property name, never an expression
+            if (nd.type === "map_lit") {
+              // children alternate key/value; keys are data, values are code.
+              for (let i = 0; i < nd.namedChildCount; i++) {
+                const c = nd.namedChild(i)
+                if (!c) continue
+                const isKey = i % 2 === 0
+                if (!isKey) walkStack.push({ node: c, isExit: false, previousActiveFunction: null as any, quoteDepth })
+              }
+              return
+            }
+            if (nd.type === "vec_lit" || nd.type === "set_lit") {
+              for (let i = 0; i < nd.namedChildCount; i++) {
+                const c = nd.namedChild(i)
+                if (c) walkStack.push({ node: c, isExit: false, previousActiveFunction: null as any, quoteDepth })
+              }
+              return
+            }
+            // a scalar payload evaluates to itself
+          }
+          walkJsValues(payload)
+          continue
+        }
         if (tag && payload && (payload.type === "vec_lit" || payload.type === "map_lit")) {
           const namePart = tag.includes("/") ? tag.slice(tag.indexOf("/") + 1) : tag
           const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
@@ -1063,17 +1159,47 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           activeFunction = lambdaSymbol
         }
         // ── ns form ──────────────────────────────────────────────────────
-        else if (formName === "ns") {
-          const nsName = symName(node.namedChild(1))
-          if (nsName) currentNamespace = nsName
-          // F3: null-prototype reset (see the declaration).
-          namespaceAliases = Object.create(null)
-          // CLJ-D24: the refer table is namespace state for the same reason the
-          // alias table is. The previous segment CLOSES at this form — a
-          // `(comment …)` or a docstring before it still resolves against the
-          // namespace it was written in — and a new one opens for this ns.
-          if (referSegments.length > 0) referSegments[referSegments.length - 1]!.end = node.startIndex
-          referTable = openReferSegment(node.startIndex)
+        else if (formName === "ns" || formName === "in-ns") {
+          // CLJ-D31: `in-ns` IS A NAMESPACE FORM. `(in-ns 'clojure.pprint)` is how
+          // a file loaded into a running runtime declares its namespace — and
+          // `currentNamespace` stayed "user" for it, so every top-level
+          // definition in such a file was stranded on owner `user` with no
+          // `contains` edge and the wrong scope. 484 definitions across 17
+          // files, the whole of clojure's own pretty-printer among them
+          // (cl_format, pprint_base, dispatch, pretty_writer, core_print, …),
+          // plus genclass.clj and core_deftype.clj. The class was invisible for
+          // three waves because it is an ABSENCE, not a wrong value: a file
+          // whose namespace is unknown still emits a full, plausible symbol
+          // table, and every per-class completeness claim was true of it.
+          //
+          // `in-ns` takes a QUOTED symbol, not a bare one: `(in-ns 'a.b)`. So
+          // the name is read from the quote's child. The alias/refer state is
+          // NOT reset here — `in-ns` switches namespace without re-running
+          // `ns`, so an alias table from a previous `ns` form in the same file
+          // is still in force, and clearing it would invent unresolved
+          // references. That is why only `ns` keeps the resets below.
+          const argNode = node.namedChild(1)
+          let nsName = ""
+          if (argNode) {
+            if (argNode.type === "sym_lit") nsName = symName(argNode)
+            else if (argNode.type === "quoting_lit" || argNode.type === "syn_quoting_lit") {
+              // `(in-ns 'a.b)` — the name is the quote's own first child.
+              const inner = executionHead(argNode)
+              const innerName = inner && inner.type === "sym_lit" ? symName(inner) : ""
+              nsName = innerName
+            }
+          }
+          if (nsName) { currentNamespace = nsName; namespaceExplicit = true }
+          if (formName === "ns") {
+            // F3: null-prototype reset (see the declaration).
+            namespaceAliases = Object.create(null)
+            // CLJ-D24: the refer table is namespace state for the same reason the
+            // alias table is. The previous segment CLOSES at this form — a
+            // `(comment …)` or a docstring before it still resolves against the
+            // namespace it was written in — and a new one opens for this ns.
+            if (referSegments.length > 0) referSegments[referSegments.length - 1]!.end = node.startIndex
+            referTable = openReferSegment(node.startIndex)
+          }
           const modSym: ASTEngine.UniversalSymbol = {
             name: currentNamespace,
             kind: ASTEngine.SymbolKind.Module,
@@ -1425,6 +1551,87 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
+        // ── CLJ-D30: a def-like head in def position DEFINES a name ────────
+        // Found by the `uses`/`contains` audit, which is the first gate that
+        // could see it: 1,136 top-level definitions across the four corpora
+        // were recorded as nothing at all — no symbol, no `contains` edge, no
+        // export. `(defcurried map …)` in clojure/core/reducers.clj defines all
+        // ten of that file's core vars and produced ZERO output.
+        //
+        // WHY NO GATE CAUGHT IT SO LONG. The F1 node-type census is blind to it:
+        // `(defcurried map …)` parses as an ordinary `list_lit`, so the form is
+        // a CALL until the analyzer decides otherwise, and a census of node
+        // TYPES cannot see an unrecognized CALL. Only a census of top-level
+        // HEADS can, and that is `script/m14/tmp/clj-defforms.ts`. The F5
+        // `calls` truth was equally blind: it derives calls, and a form it
+        // believes is a call matches what the analyzer emitted. A missing
+        // DEFINITION is not a wrong call; it is an absence, and absence is
+        // exactly what a class-by-class completeness claim cannot detect.
+        //
+        // THE RULE, WHICH IS GENERAL RATHER THAN A LIST. In Clojure a macro in
+        // def position takes the name it defines first. So any def-like head
+        // whose first argument is a symbol defines that symbol — no per-macro
+        // knowledge required, which is the only version of this that survives
+        // the next language/library the analyzer meets. It covers 1,043 sites in
+        // metabase alone (`defsetting`, `defenterprise`, `defclause`,
+        // `deferror`, `defspec`, `defroutes`, …) and 93 in the other three
+        // corpora, including LOCAL macros a per-file analyzer could never have
+        // been taught (`def-aset`, `definline`, `defblockingop`,
+        // `deftest-both`) and a third-party one (`defprotocol+`).
+        //
+        // `isDefLikeHead` is a character test, not a regex (the zero-regex
+        // census reads this file): `def` optionally followed by `-`/`_`, with
+        // the `default…`/`define…` spellings excluded so an ordinary call is not
+        // promoted. The KNOWN forms keep their precise kinds above — this branch
+        // only ever runs for a head they did not claim, so `defn` is still a
+        // Function with parameters and `defrecord` is still a Class.
+        //
+        // HONESTY: the KIND is inferred (Function when an arglist vector
+        // follows, else Variable) and the symbol is stamped
+        // `isUnknownDefMacro: true`, so a consumer can tell an inferred kind
+        // from a proven one and no downstream claim rests on it. It is still
+        // published: a definition the graph does not contain is a hole, and a
+        // hole is worse than an inferred kind.
+        // NO core-name guard here, and its absence was a real miss. `definline` is
+        // a clojure.core macro (core.clj:5461), so it is in the derived core list
+        // — and a guard excluding core-named heads threw away `(definline
+        // booleans …)`, `(definline bytes …)` and 6 siblings at core.clj:5580+,
+        // the `def` family that produces every typed-array coercion. The guard
+        // was never needed: every core-named def head is `def`/`defn`/`defmacro`/
+        // `defonce`/`declare`/`deftest`/`defmulti`/`defmethod`/`defprotocol`/
+        // `defrecord`/`deftype`/`definterface`, and each is claimed by an EARLIER
+        // branch, so this one only ever runs for a head nobody handled.
+        else if (isDefLikeHead(formName) && node.namedChild(1)?.type === "sym_lit") {
+          const nameNode = node.namedChild(1)!
+          const name = symName(nameNode)
+          if (name) {
+            // `def-aset aset-int setInt int`: a name, a docstring, then
+            // arbitrary arguments. An arglist is a VECTOR named the same as the
+            // definition; a metadata map, a docstring and a body are not. So the
+            // kind is Function only when one is actually present.
+            let hasArglist = false
+            for (let i = 2; i < node.namedChildCount; i++) {
+              const c = node.namedChild(i)
+              if (c && c.type === "vec_lit") { hasArglist = true; break }
+              if (c && c.type === "str_lit") continue
+              if (c && c.type === "map_lit") continue
+              if (c && c.type === "meta_lit") continue
+              break
+            }
+            const inferredKind = hasArglist ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable
+            const visibility = metaHasPrivate(nameNode) ? "private" : "public"
+            const sym: ASTEngine.UniversalSymbol = {
+              name, kind: inferredKind, range: this.nodeToRange(node),
+              scope: currentNamespace, ownerName: currentNamespace, visibility,
+              ...(hasArglist ? { parameters: extractParams(node) } : {}),
+              metadata: { clojureSpecific: true, isPure: true, complexity: 1, isUnknownDefMacro: true, definedBy: formName },
+            }
+            symbols.push(sym)
+            activeFunction = sym
+            attachDocs(sym, node, "fn")
+            exports.push({ name, kind: inferredKind, range: this.nodeToRange(node), visibility })
+          }
+        }
         // ── spec forms ───────────────────────────────────────────────────
         else if ((formName === "s/def" || formName === "s/fdef" || formName === "clojure.spec.alpha/def" || formName === "clojure.spec.alpha/fdef") && node.namedChild(1)) {
           const child = node.namedChild(1)!
@@ -1438,11 +1645,23 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const specName = child.type === "kwd_lit" && raw.startsWith("::")
             ? `:${currentNamespace}/${raw.slice(2)}`
             : raw
+          // CLJ-D35: A SPEC FORM NAMES A VAR, so its argument must be a NAME.
+          // `(s/fdef 1 :args)` — a clj-kondo corpus fixture for reader recovery —
+          // published a symbol literally called `1`, with a `contains` edge
+          // `spec-syntax->1` beside it. A symbol named after a literal is not a
+          // var, and nothing can ever resolve it, so it is a placeholder
+          // identity in a table whose whole contract is that every name in it is
+          // referable. Skipped rather than invented.
+          if (!specName || child.type === "num_lit" || child.type === "str_lit" || child.type === "bool_lit" || child.type === "char_lit") {
+            // fall through to the generic-call branch, which records the spec
+            // expression's own call relationships and nothing else
+          } else {
           symbols.push({
             name: specName, kind: ASTEngine.SymbolKind.Interface, range: this.nodeToRange(node),
             scope: currentNamespace, ownerName: currentNamespace, visibility: "public",
             metadata: { isSpec: true, clojureSpecific: true },
           })
+          }
         }
         // ── C9: method implementations inside protocol-extending forms ────
         // A DIRECT list child of reify/extend-type/extend-protocol/proxy/
@@ -1547,6 +1766,45 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           const src = activeFunction ? activeFunction.name : currentNamespace
           const headNode = executionHead(node)
           if (target) pushRel(src, target, ASTEngine.RelationshipType.Uses, 0.7, { clojureSpecific: true, isFieldAccess: true, ...(activeFunction ? {} : { isTopLevel: true }) }, headNode ? headNode.startPosition.row + 1 : undefined, callArityOf(node))
+          patterns["Java Interoperability"] = true
+        }
+        // ── CLJ-D32: STATIC interop `Class/.member` ─────────────────────────
+        // A static member access is the same KIND of access as `(.method obj)` —
+        // it names a member of a class — so it emits a `uses` edge, not a `calls`
+        // edge to a name nobody defines. It used to fall through to the generic
+        // call branch and produce `f -[calls]-> String/.toUpperCase`: an edge
+        // whose target is not a symbol in the file, is not an export, and is not
+        // in any `contains` — a dangling relationship, the one thing the "all
+        // extracted, resolved and emitted" contract exists to prevent.
+        //
+        // It is invisible to F5 by construction, which is the lesson repeated
+        // here: the `calls` truth derives calls, and the analyzer emitted a call,
+        // so the two agreed perfectly on an edge that pointed at nothing. 23 real
+        // sites across clojure's own test suite (param_tags 14, java_interop 3,
+        // genclass 4, method_thunks 2) plus clj-kondo's java interop.
+        //
+        // TWO EDGES, because the static form carries one fact the instance form
+        // does not: WHICH CLASS. `(.method obj)` gets the class from its receiver;
+        // `String/.toUpperCase` names it in the head, so it is emitted as a
+        // second `uses` edge with arity 0 (naming a class, not invoking it).
+        // `(Integer/parseInt "1")` and `(Math/abs -1)` are unaffected — those are
+        // the uncurried interop statics already declared in the core list, and
+        // the suppression gate above still catches them by their whole head name.
+        else if (staticInteropMember(formName) !== null) {
+          const slash = formName.lastIndexOf("/")
+          const clsName = formName.slice(0, slash)
+          const member = formName.slice(slash + 2) // past `/.`
+          const src = activeFunction ? activeFunction.name : currentNamespace
+          const headNode = executionHead(node)
+          const line = headNode ? headNode.startPosition.row + 1 : undefined
+          const topMeta = activeFunction ? {} : { isTopLevel: true }
+          if (member) {
+            pushRel(src, member, ASTEngine.RelationshipType.Uses, 0.7, { clojureSpecific: true, isFieldAccess: true, isStaticInterop: true, ...topMeta }, line, callArityOf(node))
+          }
+          if (clsName) {
+            const clsNode = headNode
+            pushRel(src, resolveQualified(clsName), ASTEngine.RelationshipType.Uses, 0.8, { clojureSpecific: true, isStaticInteropClass: true, ...topMeta }, clsNode ? clsNode.startPosition.row + 1 : undefined, 0)
+          }
           patterns["Java Interoperability"] = true
         }
         // ── threading macros (CLJ-D10, adversarial F13) ─────────────────
@@ -1673,12 +1931,51 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // from BOTH sides (mirrored — no gate could see it). The default is
       // always the last child (children = [case, expr, test…, expr…,
       // default?]): never skip it.
+      //
+      // CLJ-D36: THE PARITY IS COMPUTED OVER EXECUTABLE CHILDREN ONLY. A
+      // `comment` node is a named child, so one comment inside a `case` shifts
+      // every later index by one — and then a BODY lands on an even index and is
+      // skipped as if it were a constant, taking every relationship inside it
+      // with it. metabase/dev/src/dev/kondo_ratchet.clj:343 is the proof: its
+      // `case` has 10 named children because of one `;;` comment at index 6, so
+      // index 8 — `(do (when … (.charAt sb (inc i)) …))`, a real body — was
+      // dropped, and the `uses` edges for `.charAt` and `.setCharAt` at 348-349
+      // vanished from the graph. Two edges in one file is a small loss; the rule
+      // is wrong for every `case` in every corpus that has a comment in one,
+      // and it is invisible because the mirror had the same bug — the two
+      // agreed on a body that neither walked.
+      //
+      // So the executable positions are computed first, over children that are
+      // not comments and not discards, and the parity is read off THAT list. A
+      // comment is not a test and not an expression; it is not a position at
+      // all, and letting it occupy one is what broke the count.
       const isCaseForm = node.type === "list_lit" && formNameOf(node) === "case"
-      const caseDefaultIdx = isCaseForm && node.namedChildCount % 2 === 1 ? node.namedChildCount - 1 : -1
+      let caseSkip: Set<number> | null = null
+      if (isCaseForm) {
+        // children = [case, expr, test…, expr…, default?] — the default is
+        // present iff the executable count is odd, and is never a constant.
+        const exec: number[] = []
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (!c || c.type === "comment" || c.type === "dis_expr") continue
+          exec.push(i)
+        }
+        const hasDefault = exec.length % 2 === 1
+        const defaultIdx = hasDefault ? exec[exec.length - 1]! : -1
+        caseSkip = new Set<number>()
+        // position 0 is `case`, 1 is the expr; from 2 the constants are at
+        // even POSITIONS (index 2, 4, 6 … in the executable list).
+        for (let pos = 2; pos < exec.length; pos += 2) {
+          const childIdx = exec[pos]!
+          if (childIdx === defaultIdx) continue
+          const c = node.namedChild(childIdx)
+          if (c && c.type === "list_lit") caseSkip.add(childIdx)
+        }
+      }
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
         if (!child) continue
-        if (isCaseForm && i >= 2 && i % 2 === 0 && child.type === "list_lit" && i !== caseDefaultIdx) continue
+        if (caseSkip !== null && caseSkip.has(i)) continue
         walkStack.push({ node: child, isExit: false, previousActiveFunction: null as any, quoteDepth })
       }
     }
@@ -1688,18 +1985,61 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // for protocol methods, record for fields/methods). Emit one contains per
     // (owner, symbol) pair; the identity dedup in the harness collapses
     // overloads and repeated forms with identical identity.
-    const seenContains = new Set<string>()
+    //
+    // CLJ-D33: WHICH SYMBOL THE EDGE POINTS AT IS NOW DETERMINISTIC. It used to
+    // be "whichever the walk pushed first", and push order is not source order —
+    // a protocol's methods are symbolized when the protocol is met, a record's
+    // when the record is, so a name with two symbols could land on the later
+    // declaration. 667 edges across the three corpora were affected.
+    //
+    // The rule is two-part, and BOTH parts were measured:
+    //
+    // 1. PREFER A REAL DEFINITION OVER A NON-DEFINITION. Two things in this table
+    //    announce a name without defining it:
+    //
+    //    A FORWARD DECLARATION — `(declare HEADER)` at gen_math.clj:16 then
+    //    `(def ^String HEADER …)` at 119. The edge pointed at 16, claiming the
+    //    namespace defines `HEADER` where it only promises to. A `contains` edge
+    //    says "this owner has this member", and the line is where a reader goes
+    //    to find it — so it must be the definition. The forward-declaration
+    //    SYMBOL is still published (CLJ-D23: the graph needs a node for the call
+    //    target, and `declare` skips core names entirely); only the EDGE moves.
+    //
+    //    A SPEC ANNOTATION — `(s/fdef my-inc …)` at clj-kondo
+    //    corpus/spec_syntax.clj:6 then `(defn my-inc [x] …)` at 13. Same shape,
+    //    same consequence: the edge pointed at the spec, which annotates a var
+    //    rather than defining it.
+    //
+    // 2. AMONG CANDIDATES, THE EARLIEST DECLARATION LINE. Source order, not push
+    //    order — so the same input always yields the same edge, which is what
+    //    makes the class auditable at all.
+    const isDefinition = (s: ASTEngine.UniversalSymbol): boolean =>
+      s.metadata?.isForwardDeclaration !== true && s.metadata?.isSpec !== true
+    const containsPick = new Map<string, ASTEngine.UniversalSymbol>()
     for (const s of symbols) {
       const _owner = s.ownerName
       // Anonymous functions are locals — no namespace-contains edge.
-      if (_owner && _owner !== "user" && !s.metadata?.isAnonymous) {
-        const key = `${_owner}->${s.name}`
-        if (seenContains.has(key)) continue
-        seenContains.add(key)
-        // M59 (#825): the contains edge carries the owned symbol's own
-        // declaration line (erlang parity) — never 0.
-        pushRel(_owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
-      }
+      //
+      // CLJ-D34: `user` IS ONLY A FALLBACK WHEN NOTHING DECLARED A NAMESPACE.
+      // The skip existed so a file with no `ns` form would not claim a `user`
+      // namespace it never declared. But `(in-ns 'user)` at
+      // clojure/core/server.clj:169 DECLARES one, and the eight definitions that
+      // follow it belong to it — 36 real containment edges the file was losing.
+      // So the guard is on the fallback, not on the name.
+      if (!_owner || (!namespaceExplicit && _owner === "user") || s.metadata?.isAnonymous) continue
+      const key = `${_owner}->${s.name}`
+      const prev = containsPick.get(key)
+      if (prev === undefined) { containsPick.set(key, s); continue }
+      // A definition always displaces a non-definition.
+      if (!isDefinition(prev) && isDefinition(s)) { containsPick.set(key, s); continue }
+      if (isDefinition(prev) && !isDefinition(s)) continue
+      // Otherwise the earliest declaration line wins.
+      if (s.range.startLine < prev.range.startLine) containsPick.set(key, s)
+    }
+    for (const s of containsPick.values()) {
+      // M59 (#825): the contains edge carries the owned symbol's own
+      // declaration line (erlang parity) — never 0.
+      pushRel(s.ownerName!, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range.startLine)
     }
 
     // ── exports (ns-level public symbols) ─────────────────────────────────
