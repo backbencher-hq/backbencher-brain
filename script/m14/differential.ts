@@ -2577,6 +2577,231 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
   return edges
 }
 
+/**
+ * M60 (K6, kotlin deep review, 2026-09-27): the `references` truth.
+ *
+ * The largest class in the lane — 5,669 edges on the primary corpus, 35% of all
+ * kotlin output — and the last unaudited one. Two emission sites: the import
+ * class (conf 0.9) and `extractDeclaredTypeRefs` (conf 0.95).
+ *
+ * The declared-type rule is uniform across ten kinds: collect every
+ * `type_identifier` under a set of type-ROOT nodes, and emit
+ * `enclosingDeclaration references <TypeName>`. Only types are
+ * `type_identifier` nodes, so collecting them in a subtree is exact rather than
+ * approximate — there is nothing else in the subtree that could match.
+ *
+ * The ten kinds, and why each is a distinct position:
+ *
+ *   class_parameter / parameter   a declared type in a parameter clause
+ *   variable_declaration          a declared type on a local or property
+ *   as_expression / check_expression   `x as T`, `o is T` — the rightmost
+ *                                 operand is the type being named
+ *   callable_reference            `Foo::bar` is a first-class handle to a
+ *                                 member of Foo, so the type is used
+ *   type_alias                    the alias references its RHS types, and the
+ *                                 SOURCE is the alias's own name
+ *   object_literal                the anonymous object implements its
+ *                                 delegation supertype
+ *   receiver_type                 `fun String.shout()` — a receiver precedes
+ *                                 the function name
+ *   return_type                   a return type follows the parameter list
+ *
+ * The receiver/return split is the one genuinely fiddly piece, and it is
+ * positional rather than heuristic: walk a function's named children, remember
+ * whether the parameter list has been seen, and decide from there. That is
+ * mirrored below as a structure walk, not as a name test.
+ *
+ * As with the other two kotlin oracles, the source is derived by walking the
+ * AST. The analyzer's `resolveSource` is re-derived here rather than read, so
+ * the two can disagree — and where they do, the disagreement is the finding.
+ */
+export function deriveKotlinReferencesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (from: string, target: string): void => {
+    if (!target) return
+    const t = stripNameQuoting(String(target).trim())
+    if (!t) return
+    const k = `references|${from}|${t}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "references", from: from || "Global", target: t })
+  }
+
+  const namedOf = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const firstNamedOf = (n: any, types: string[]): any => {
+    if (!n) return null
+    for (const t of types) {
+      const c = namedOf(n, t)
+      if (c) return c
+    }
+    return null
+  }
+  // Every type named under a root, deduped per name. A `type_identifier` is a
+  // type by construction, so this needs no kind filter and no text test.
+  const collectTypeNames = (n: any, out: Set<string>): void => {
+    if (!n) return
+    if (n.type === "type_identifier") {
+      out.add(stripNameQuoting(n.text))
+      return
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) collectTypeNames(c, out)
+    }
+  }
+
+  // The enclosing DECLARATION that owns a reference. Started at the node
+  // itself, not its parent: a top-level function's return type must attribute to
+  // the function, not to "Global" (KAD6) — one declaration, one owner.
+  const resolveSource = (start: any): string => {
+    let p: any = start
+    while (p) {
+      if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
+        const nm = firstNamedOf(p, ["simple_identifier", "type_identifier"])
+        if (nm) return nm.text
+      }
+      p = p.parent
+    }
+    return "Global"
+  }
+  // Dedupe is per (source, target, KIND) upstream, so two kinds naming the same
+  // type from the same declaration both survive. The comparison is on
+  // label+target, so this oracle dedupes on the published triple; the extra rows
+  // upstream produces are duplicates of a pair already covered.
+  const emit = (decl: any, roots: any[], sourceOverride?: string): void => {
+    const source = sourceOverride ?? resolveSource(decl)
+    for (const r of roots) {
+      if (!r) continue
+      const names = new Set<string>()
+      collectTypeNames(r, names)
+      for (const t of names) push(source, t)
+    }
+  }
+
+  // ── the import class ─────────────────────────────────────────────────────
+  // `import x.y.Z` — the module path is the `identifier` child, and it is the
+  // whole dotted path, not the last segment. The analyzer's `source` is `root`
+  // and is later rewritten to the primary type's name; since the comparison is
+  // on label+target, only the target matters here.
+  //
+  // A wildcard import (`import x.y.*`) is serialized by the pinned wasm as
+  // `identifier="x.y"` PLUS a sibling `wildcard_import` node — the identifier
+  // text never contains ".*", so the wildcard must be read from the SIBLING
+  // rather than by testing a suffix that can never fire.
+  {
+    const st: any[] = [root]
+    while (st.length) {
+      const n = st.pop()!
+      if (n.type === "import_header") {
+        const id = namedOf(n, "identifier")
+        if (id) {
+          const wildcard = !!namedOf(n, "wildcard_import")
+          push("root", wildcard ? `${stripNameQuoting(id.text)}.*` : stripNameQuoting(id.text))
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+
+  // ── the declared-type class ──────────────────────────────────────────────
+  {
+    const walk = (n: any): void => {
+      switch (n.type) {
+        case "class_parameter":
+        case "parameter":
+          emit(n, [n])
+          break
+        case "variable_declaration":
+          emit(n, [n])
+          break
+        case "as_expression":
+        case "check_expression": {
+          // `x as T`, `o is T`: the rightmost operand is the type named.
+          if (n.namedChildCount >= 2) emit(n, [n.namedChild(n.namedChildCount - 1)])
+          break
+        }
+        case "callable_reference": {
+          // `Foo::bar` — the receiver is the first type_identifier. A
+          // package-qualified `pkg.Foo::bar` keeps its receiver through the same
+          // collection, so the qualified form names every type in the spine.
+          const tId = firstNamedOf(n, ["type_identifier"])
+          if (tId) emit(n, [tId])
+          break
+        }
+        case "type_alias": {
+          // The source is the ALIAS'S OWN NAME: the aliased types belong to the
+          // alias's definition, not to whatever encloses it. The alias's own
+          // type parameters are BINDINGS, not references, so `type_identifier`
+          // and `type_parameters` are excluded from the roots.
+          const tName = firstNamedOf(n, ["type_identifier", "simple_identifier"])
+          if (tName) {
+            const rhs: any[] = []
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c && c.type !== "type_identifier" && c.type !== "type_parameters") rhs.push(c)
+            }
+            emit(n, rhs, tName.text)
+          }
+          break
+        }
+        case "object_literal": {
+          // The anonymous object implements its supertype: the delegation
+          // specifier is a real type usage at the object-literal site.
+          const deleg = namedOf(n, "delegation_specifier")
+          if (deleg) emit(n, [deleg])
+          break
+        }
+        case "function_declaration": {
+          // Positional, not heuristic: a receiver type PRECEDES the function's
+          // name and a return type FOLLOWS the parameter list. Walking the named
+          // children and remembering whether the parameter list has been seen
+          // is what separates the two — a name test cannot, because both are
+          // `user_type` in the grammar.
+          let sawParams = false
+          let sawName = false
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            if (c.type === "function_value_parameters") { sawParams = true; continue }
+            if (c.type === "simple_identifier" || c.type === "type_identifier") {
+              if (!sawName && !sawParams && !c.text.startsWith("`")) {
+                if (i > 0 && n.namedChild(i - 1)?.type === "user_type") emit(n, [c])
+                sawName = true
+              }
+              continue
+            }
+            // The pinned grammar wraps an extension receiver in a dedicated
+            // `receiver_type` node, so `user_type` alone never matches it.
+            if (c.type === "receiver_type" || c.type === "user_type" || c.type === "nullable_type" || c.type === "function_type") {
+              if (!sawName && !sawParams) { emit(n, [c]); sawName = true }
+              else if (sawParams) { emit(n, [c]); break }
+            }
+          }
+          break
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+    walk(root)
+  }
+
+  return edges
+}
+
 export function deriveKotlinEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -17677,6 +17902,11 @@ async function main() {
         for (const e of deriveKotlinContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 K6: kotlin `references` — 5,669 edges on the primary corpus, 35%
+        // of the lane's output, the largest class and the last unaudited one.
+        for (const e of deriveKotlinReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "scala") {
         // M37.21 #610: scala calls oracle (JD-oracle gap, java precedent).
@@ -18070,6 +18300,12 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          // M60 K6 (2026-09-27): kotlin joins the references-audited set. 5,669
+          // edges on the primary corpus from ten declared-type positions plus
+          // the import class, with no oracle and no allowlist entry. The java
+          // precedent is the largest single change in that lane's review and
+          // this is the same shape, one corpus over.
+          ...(lang === "kotlin" ? ["references"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
