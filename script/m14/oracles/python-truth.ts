@@ -51,11 +51,25 @@ const PY_BUILTINS = new Set([
 
 const isDunder = (n: string): boolean => n.length > 4 && n.startsWith("__") && n.endsWith("__")
 
-/** The leftmost dotted segment of a callee: `os.path.join` -> `os`, `f(x)` -> `f`. */
+/**
+ * The CALLABLE's name: the rightmost dotted segment.
+ * `os.path.join` -> `join`, `self.helper` -> `helper`, `f(x)` -> `f`.
+ *
+ * The first version of this file took the LEFTMOST segment, which names the module the
+ * callable hangs off rather than the callable: it derived a call to `configparser` for
+ * `configparser.RawConfigParser()` and a call to `self` for every `self.helper()`. The
+ * repository already has one spelling of this rule and it is the rightmost — the
+ * indexer's `extractLeaf` is documented as "the leaf name (after last : and .)", and
+ * every other lane that emits leaf targets means that. Deriving it independently here
+ * rather than importing it is the point: two derivations that agree are evidence, one
+ * shared helper is not.
+ */
 function calleeLeaf(text: string): string {
   const t = text.trim()
-  const cut = t.search(/[.(\s]/)
-  return (cut === -1 ? t : t.slice(0, cut)).trim()
+  const cut = t.search(/[(]/)
+  const head = (cut === -1 ? t : t.slice(0, cut)).trim()
+  const dot = head.lastIndexOf(".")
+  return (dot === -1 ? head : head.slice(dot + 1)).trim()
 }
 
 /**
@@ -99,6 +113,15 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
             else if (b && b.type === "attribute") {
               const a = b.childForFieldName("attribute")
               if (a) bases.push(a.text)
+            } else if (b && b.type === "subscript") {
+              // `class C(Generic[T], X)` — the base is the subscript's VALUE. Python's
+              // MRO runs through `Generic[T]` exactly as it does through `Generic`, so
+              // dropping it loses a base from the inheritance chain.
+              const v = b.childForFieldName("value")
+              if (v) {
+                if (v.type === "identifier") bases.push(v.text)
+                else if (v.type === "attribute") { const a = v.childForFieldName("attribute"); if (a) bases.push(a.text) }
+              }
             }
           }
         }
@@ -146,25 +169,27 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
 
   // `overrides` — a method whose NAME also exists on a base. Derived from the skeleton,
   // so it is a fact about the class graph rather than about any one method body.
-  // A method overrides a base's method of the same NAME whether or not the base is
-  // declared in this file. Python's MRO is a property of the language, not of the
-  // file: `class ServiceScanService(BaseService)` overrides `BaseService.m` even though
-  // `BaseService` lives in another module, and refusing to say so because the base is
-  // external would lose the single most useful fact a subclass declaration carries.
-  // The first version of this file only compared LOCAL bases and reported 319
-  // analyzer edges as unexplained; all 319 were this file's gap, not the analyzer's.
+  // `overrides` — DERIVED ONLY WHERE TRUTH IS DERIVABLE.
+  //
+  // A method overrides a base's method of the same name, and for a base DECLARED IN
+  // THIS FILE that is a fact about the parse: read both class bodies and compare names.
+  // For a base in another module it is not derivable from here, and the second version
+  // of this file tried anyway — "assume an external base has any method some local class
+  // has" — which manufactured 105 edges against `Generic` and `Mapping`, neither of
+  // which defines `ImmutableDict.__init__`. `object` is the one exception and it is
+  // admitted on a stated fact rather than a name list: `object` defines `__init__` for
+  // every class in Python, so `C.__init__ -> object.__init__` is always true.
+  //
+  // The external-base case is the analyzer's declared first-parent guess (PY-7), and it
+  // is bucketed `heuristic` there on purpose. Comparing a guess against an oracle that
+  // cannot know the answer is not a check; the review reports the guess SHARE instead,
+  // which is the number a reader can actually act on.
   for (const c of classes) {
     for (const [m, line] of c.methods) {
       for (const b of c.bases) {
         const base = classes.find((x) => x.name === b)
-        // Local base with the method: the override is derivable here.
-        // External base: the override is derivable ONLY if some local class declares
-        // the method AND a base with that name is in the list — which is what a real
-        // cross-file override looks like from inside one file. `object` is the one
-        // base whose members are known without any declaration (`__init__` is
-        // universal), so it is admitted explicitly rather than by a name list.
-        const externalKnown = !base && (b === "object" || classes.some((x) => x.methods.has(m)))
-        if ((base && base.methods.has(m)) || externalKnown) add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+        if (base && base.methods.has(m)) add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+        else if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
       }
     }
   }
@@ -186,6 +211,8 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // dunder is the language's own protocol surface (`__init__` is invoked BY the
   // interpreter, not by the file). A decorator is NOT a call — `@property` calls nothing
   // at import time; it is metadata on the definition.
+  const instanceAttrSeen = new Set<string>()
+  const classAttrSeen = new Set<string>()
   const walkBody = (n: any, scope: string | null, ownerClass: string | null): void => {
     if (n.type === "decorator") return
     if (n.type === "function_definition" || n.type === "class_definition") return
@@ -205,10 +232,44 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (left && left.type === "attribute") {
         const attr = left.childForFieldName("attribute")
         const obj = left.childForFieldName("object")
-        if (attr && obj && obj.text === "self") add("contains", ownerClass, attr.text, n.startPosition.row + 1)
+        // ONE member per (class, attribute), at its FIRST site. Python guarantees the
+        // attribute exists on every instance; `self.n_existing = ...` written in three
+        // methods is one member of the class, not three. Emitting a `contains` per
+        // assignment produced 170 phantom "missing" edges against a 120-file sample.
+        // `self` in an instance method and `cls` in a classmethod are the same thing to
+        // the instance. A `@classmethod` setter writing `cls._x = value` declares an
+        // instance attribute exactly as `self._x = value` does, and the first version of
+        // this rule matched only `self`, which hid 36 `contains` edges — the backing
+        // field behind a `@property`/`@x.setter` pair, which is precisely the shape
+        // PY-6 is about.
+        if (attr && obj && (obj.text === "self" || obj.text === "cls") && !instanceAttrSeen.has(`${ownerClass}\u0000${attr.text}`)) {
+          instanceAttrSeen.add(`${ownerClass}\u0000${attr.text}`)
+          add("contains", ownerClass, attr.text, n.startPosition.row + 1)
+        }
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) walkBody(n.namedChild(i), scope, ownerClass)
+  }
+
+  // A class BODY's assignments are class attributes — `BAD_STATES = (...)`,
+  // `CLI = None`, `PGPTAG_PUBLIC_KEY = ...`. They are members of the class in exactly
+  // the sense a method is, and the analyzer publishes them. The first version of this
+  // file walked only function bodies for attributes, so 312 class-constant `contains`
+  // edges looked unexplained.
+  const walkClassBody = (n: any, cls: string): void => {
+    // A method body is NOT the class body. `x = 1` inside a method is a LOCAL, and
+    // Python does not give it a class-level name — the first version of this walk
+    // descended into functions and derived 3,225 class attributes that do not exist,
+    // which is the mirror image of PY-6 and just as wrong: every local became a member.
+    if (n.type === "function_definition" || n.type === "lambda") return
+    if (n.type === "assignment") {
+      const left = n.childForFieldName("left")
+      if (left && left.type === "identifier" && !classAttrSeen.has(`${cls}\u0000${left.text}`)) {
+        classAttrSeen.add(`${cls}\u0000${left.text}`)
+        add("contains", cls, left.text, n.startPosition.row + 1)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) walkClassBody(n.namedChild(i), cls)
   }
 
   const walkScopes = (n: any, scope: string | null, ownerClass: string | null): void => {
@@ -229,7 +290,12 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "class_definition") {
       const nameNode = n.childForFieldName("name")
       const nm = nameNode ? nameNode.text : ""
-      for (let i = 0; i < n.namedChildCount; i++) walkScopes(n.namedChild(i), nm, nm)
+      const body = n.childForFieldName("body")
+      if (body) walkClassBody(body, nm)
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c !== body) walkScopes(c, nm, nm)
+      }
       return
     }
     // Module level: a call outside every definition belongs to the module.

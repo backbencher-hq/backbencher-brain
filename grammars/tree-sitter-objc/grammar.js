@@ -30,6 +30,20 @@ module.exports = grammar(C, {
     (e) => !(e.length == 2 && e[0].name == 'type_qualifier' && e[1].name == 'extension_expression'),
   ).concat([
     [$.enum_specifier],
+    // Narrow and deliberate: a macro call's parenthesized arguments are ambiguous with a
+    // function-declarator's parameter list in exactly one position tree-sitter names
+    // (`IDENT ( args ) • {`, an identifier-headed declarator followed by a brace). Rather
+    // than narrow the rule until the ambiguity disappears — which would mean teaching it
+    // which brace bodies are enums, the guess this rule exists to avoid — the parser is told
+    // to keep both readings alive and let the full lookahead decide. tree-sitter resolves
+    // this with GLR, so the cost is ambiguity in one construct, not a wrong answer.
+    [$.macro_enum_arguments],
+    // `IDENT ( primitive_type )` is the same ambiguity from the struct-member admission of
+    // `macro_enum_specifier`: the `(` may open this rule's arguments or a parenthesized type.
+    // Resolved by lookahead, not precedence — a precedence answer must be chosen before the
+    // parser has seen the `{` that actually decides it, which is the one case where guessing
+    // is guaranteed wrong.
+    [$.type_specifier, $.macro_enum_arguments],
     [$.expression, $.generic_specifier],
     [$._declarator, $.type_specifier, $.generic_specifier],
     [$._declarator, $.type_specifier, $.sized_type_specifier],
@@ -69,6 +83,23 @@ module.exports = grammar(C, {
       $.macro_prefixed_objc_declaration,
     ),
 
+    // `macro_prefixed_objc_declaration` belongs HERE as well as in `_top_level_item`, and its
+    // absence was invisible until the corpus was measured at full size.
+    //
+    // tree-sitter-c builds `preproc_if` as `preprocIf('', $ => $._block_item)` — the body of a
+    // file-scope `#if` is a list of BLOCK items, not top-level items. So registering the rule
+    // in `_top_level_item` alone made it UNREACHABLE inside every conditional, and the failure
+    // was not a small one: a bare macro line above an `@interface` inside `#if` fell through to
+    // the grammar's default reading of a bare identifier (a `declaration` with a
+    // `type_identifier`), which cannot continue, so the ERROR node it produced did not stop at
+    // the macro — it extended to the next `@end`, 101 lines later, deleting the whole class.
+    //
+    // That is the shape of this lane's worst findings: a rule that is registered and correct,
+    // unreachable from the position real code puts it in. It generates, it builds, it passes a
+    // diff of the grammar file, and a fixture written without a surrounding `#if` proves it
+    // works. sdwebimage wraps most of its headers in `#if SD_UIKIT || SD_MAC`, so the corpus
+    // is where it finally showed up: 84 `@`-declaration errors across 16 files, all of them
+    // downstream of this one missing registration.
     _block_item: ($, original) => choice(
       original,
       $.class_declaration,
@@ -80,6 +111,7 @@ module.exports = grammar(C, {
       $.compatibility_alias_declaration,
       $.preproc_undef,
       $.preproc_linemarker,
+      $.macro_prefixed_objc_declaration,
     ),
 
     function_definition: $ => seq(
@@ -100,15 +132,39 @@ module.exports = grammar(C, {
       ';',
     ),
 
-    type_definition: $ => seq(
-      optional('__extension__'),
-      optional($.ms_declspec_modifier),
-      'typedef',
-      optional($.attribute_specifier),
-      optional($.ms_declspec_modifier),
-      $._type_definition_type,
-      $._type_definition_declarators,
-      ';',
+    // TWO FORMS, because Apple's macro spelling has no trailing declarator at all: the name
+    // lives inside the macro's arguments, so `typedef NS_ENUM(NSUInteger, Foo) { ... };`
+    // ends at the body's `;`. Forcing that through the C form — whose declarator list is
+    // `commaSep1`, i.e. at least ONE — cannot complete the typedef, and the resulting error
+    // node does not stay local: it extends past the `};`, past the doc comment, past
+    // `NS_ASSUME_NONNULL_BEGIN`, and swallows the `@interface` that follows. That is how a
+    // rule written to REPAIR 470 ERROR nodes turned `AFSecurityPolicy.h` from 3 errors to 16
+    // and deleted a whole class from the graph, and it is why the A/B diffs analyzer output
+    // rather than trusting the error count to move in the right direction.
+    //
+    // The C form is left strict on purpose. Making `_type_definition_declarators` optional
+    // everywhere would be a one-word change that also accepts `typedef int;`, and a grammar
+    // weakened to let one real construct through is a grammar that will let phantoms through
+    // somewhere else. The extra branch is narrow: one production, one shape.
+    type_definition: $ => choice(
+      seq(
+        optional('__extension__'),
+        optional($.ms_declspec_modifier),
+        'typedef',
+        optional($.attribute_specifier),
+        optional($.ms_declspec_modifier),
+        $._type_definition_type,
+        $._type_definition_declarators,
+        ';',
+      ),
+      seq(
+        optional('__extension__'),
+        optional($.ms_declspec_modifier),
+        'typedef',
+        field('type', alias($.macro_enum_specifier, $.enum_specifier)),
+        optional($._declaration_modifiers),
+        ';',
+      ),
     ),
 
     _type_definition_type: $ => seq(
@@ -475,6 +531,55 @@ module.exports = grammar(C, {
         ),
       ),
       optional($.attribute_specifier),
+    ),
+
+    // A MACRO INVOCATION THAT WRAPS A BRACE BODY, with the wrapper's own arguments carrying
+    // the underlying type and the name: `NS_ENUM(NSUInteger, Foo) { ... }`, and the
+    // NS_OPTIONS / NS_CLOSED_ENUM / NS_STRING_ENUM / CF_ENUM / CF_OPTIONS family that shares
+    // the shape. This is the single largest measured hole in the lane: over the router's
+    // universe, 35 such declarations hold 164 named constants and 152 of them (92.7%) were
+    // invisible to the analyzer, because `enum_specifier` above requires the literal `enum`
+    // token and this spelling has none — the whole body collapsed into ERROR nodes and 23 of
+    // the 35 declarations yielded no symbol at all.
+    //
+    // DELIBERATELY GENERIC, not an `NS_ENUM|NS_OPTIONS|...` name list. Naming the five macros
+    // that happened to appear in sdwebimage would repeat, in the grammar, the mistake the YAML
+    // lane made in its analyzer: a closed set built from the constructs one corpus was asked
+    // about, which makes everything outside it invisible by construction rather than by
+    // measurement. What identifies this construct is its SHAPE — an identifier, a
+    // parenthesized argument list, then an enumerator list — not its spelling, so a
+    // `MYAPP_ENUM(...)` in a codebase nobody has cloned still parses.
+    //
+    // The rule is aliased to `enum_specifier` at its admission points so the analyzer's
+    // existing C-enum path (and its `isCEnum` metadata) applies unchanged, which is also what
+    // keeps this from being a second, divergent enum implementation.
+    //
+    // PRECEDENCE, and it is the opposite of the #743 rule above. `prec(-1)` was the first
+    // attempt and it built, generated, and did absolutely nothing: `NS_ENUM` is absorbed as a
+    // plain `type_identifier` and `(NSUInteger, Foo)` as a `parenthesized_declarator` — the
+    // body then parses as a function's `compound_statement` and the typedef dies on a MISSING
+    // `;`. That path is the grammar's DEFAULT reading, so a rule at `prec(-1)` is never
+    // consulted. `prec(1)` lifts it just above that default, which is the minimum elevation
+    // that lets it compete, and it generates without demanding any further conflict.
+    //
+    // Worth recording because the failure was silent in the worst way: a rule that never fires
+    // still generates, still builds a wasm, and passes a byte-level diff of the grammar file.
+    macro_enum_specifier: $ => prec(1, seq(
+      alias($.identifier, $.macro_specifier),
+      field('arguments', $.macro_enum_arguments),
+      field('body', $.enumerator_list),
+    )),
+
+    // The arguments are kept as their own node so name resolution is explicit rather than
+    // positional. `NS_ENUM(NSUInteger, Foo)` puts the UNDERLYING TYPE first and the NAME
+    // second, and the analyzer's plain C path takes the FIRST `type_identifier` child as the
+    // name — so a rule that simply aliased its arguments would name every such enum
+    // `NSUInteger`. With the arguments boxed, the analyzer can tell the two forms apart
+    // instead of inferring from child order.
+    macro_enum_arguments: $ => seq(
+      '(',
+      optional(commaSep1(choice($._type_identifier, $.primitive_type, $.identifier))),
+      ')',
     ),
 
     enumerator_list: $ => seq(
@@ -854,7 +959,7 @@ module.exports = grammar(C, {
     field_declaration: $ => seq(
       $._declaration_specifiers,
       commaSep(seq(
-        field('declarator', choice($._field_declarator, $.enum_specifier)),
+        field('declarator', choice($._field_declarator, $.enum_specifier, alias($.macro_enum_specifier, $.enum_specifier))),
         optional($.bitfield_clause),
       )),
       optional($.bitfield_clause),
@@ -1066,6 +1171,12 @@ module.exports = grammar(C, {
       )),
     )),
 
+    // The macro-wrapped enumerator belongs in TYPE position as well as declarator position:
+    // `typedef NS_ENUM(NSUInteger, Foo) { ... };` puts it where a typedef's type goes, which
+    // is a different slot from the struct-member one and the reason the first attempt at this
+    // rule built cleanly, produced a wasm, and changed NOTHING — the rule was admitted only in
+    // `field_declaration`, so every real declaration bypassed it. A grammar rule that never
+    // fires still generates, still builds, and still passes a byte-diff.
     type_specifier: ($, original) => choice(
       original,
       $.typedefed_specifier,
