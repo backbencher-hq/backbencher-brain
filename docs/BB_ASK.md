@@ -34,14 +34,18 @@ whose `vector_dimension` equals the query vector length are compared. Vectors
 from a different model are never compared, even at equal dimension, because
 different models occupy different vector spaces.
 
-**The local model label is versioned: `local-word-vectors-v2`.** Version 2
+**The local model label is versioned: `local-word-vectors-v3`.** Version 2
 tokenizes identifiers — `CpuCounter` → `cpu`, `counter` — where version 1
-tokenized on whitespace alone. A v1 stored vector and a v2 query vector occupy
+tokenized on whitespace alone. Version 3 additionally derives each word's
+vector from the word itself, so a project's own vocabulary is a pure coverage
+increase: it can never perturb a vector the base vocabulary already produced,
+and the index side and the query side may use different vocabularies without
+comparing two unrelated points. A v1/v2 vector and a v3 vector occupy
 *different* spaces despite both being 50-dimensional, so the version suffix is
 what stops the guard above from comparing them. An index embedded before the
 change reports `reason=no-matching-model-embeddings` until it is re-embedded,
 which is the honest outcome; reusing the old label would have produced
-real-looking cosines between two unrelated tokenizations.
+real-looking cosines between two unrelated vector constructions.
 
 ### Dense-path guards
 

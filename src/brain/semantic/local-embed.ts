@@ -52,16 +52,38 @@ function buildVectors(words: string[]): void {
   const unique = [...new Set(words.map(w => w.toLowerCase().slice(0, 30)).filter(w => w.length >= 2))]
   _wordMap = Object.create(null)
   _wordVecs = new Float32Array(unique.length * WORD_DIM)
-  const rng = seedPRNG(0x5EED0001)
   for (let i = 0; i < unique.length; i++) {
     _wordMap[unique[i]] = i
-    const base = i * WORD_DIM
-    for (let d = 0; d < WORD_DIM; d++) _wordVecs[base + d] = rng() * 2 - 1
-    let norm = 0
-    for (let d = 0; d < WORD_DIM; d++) norm += _wordVecs[base + d] * _wordVecs[base + d]
-    norm = Math.sqrt(norm)
-    if (norm > 0) for (let d = 0; d < WORD_DIM; d++) _wordVecs[base + d] /= norm
+    _wordVecs.set(wordVector(unique[i]), i * WORD_DIM)
   }
+}
+
+/** The unit vector for one word.
+ *
+ *  Seeded from the WORD ITSELF, not from a sequential draw. That is the whole
+ *  point: a word's vector is now a pure function of the word, so two callers
+ *  with DIFFERENT vocabularies still produce comparable vectors for the words
+ *  they share.
+ *
+ *  The previous sequential PRNG made a word's vector depend on its POSITION in
+ *  the vocabulary. That is only safe when every caller uses an identical
+ *  vocabulary — and they do not: `buildProjectVocab` produces a different list
+ *  per project, and the top-5000 frequency slice reorders it. Under the old
+ *  scheme, a query embedding a word at index 3 and an index-time embedding of
+ *  the same word at index 417 compared two unrelated points with a cosine and
+ *  reported the result as a similarity. Position-independence removes that
+ *  whole class of silent nonsense, and it means a project vocabulary can be
+ *  ADDED to the base one as a pure coverage increase: it can never perturb a
+ *  vector that already existed. */
+function wordVector(word: string): Float32Array {
+  const v = new Float32Array(WORD_DIM)
+  const rng = seedPRNG(hashWord(word) | 0)
+  for (let d = 0; d < WORD_DIM; d++) v[d] = rng() * 2 - 1
+  let norm = 0
+  for (let d = 0; d < WORD_DIM; d++) norm += v[d] * v[d]
+  norm = Math.sqrt(norm)
+  if (norm > 0) for (let d = 0; d < WORD_DIM; d++) v[d] /= norm
+  return v
 }
 
 /**
@@ -96,8 +118,27 @@ export function tokenizeForEmbedding(text: string): string[] {
   return out
 }
 
-export function buildProjectVocab(rawDb: any, projectId: string): void {
-  const allWords = [...BASE_WORDS]
+/** Per-project vocabularies, memoized.
+ *
+ *  A vocabulary is a SUPERSET of BASE_WORDS, and because word vectors are
+ *  position-independent (see `wordVector`) adding words to it is a pure
+ *  coverage increase: every word already in BASE_WORDS keeps exactly the
+ *  vector it had. That is what makes it safe for the index side and the query
+ *  side to build DIFFERENT vocabularies and still compare — which is the
+ *  situation they are actually in, and the situation the previous sequential
+ *  PRNG turned into silent noise.
+ *
+ *  Bounded because it is a per-project cache in a long-lived process. */
+const PROJECT_VOCAB_MAX = 16
+const projectVocabCache = new Map<string, Record<string, number>>()
+
+/** The vocabulary for a project, built on first use from its own symbol names.
+ *  Returns null when the index cannot be read, so the caller falls back to the
+ *  base vocabulary instead of failing. */
+export function projectVocabulary(rawDb: any, projectId: string): Record<string, number> | null {
+  const cached = projectVocabCache.get(projectId)
+  if (cached) return cached
+  const words = new Set(BASE_WORDS)
   try {
     const symbols = rawDb.prepare("SELECT DISTINCT name FROM brain_symbol WHERE project_id = ? LIMIT 80000").all(projectId) as any[]
     const freq: Record<string, number> = {}
@@ -105,20 +146,55 @@ export function buildProjectVocab(rawDb: any, projectId: string): void {
       if (!s.name) continue
       for (const w of tokenizeForEmbedding(String(s.name))) freq[w] = (freq[w] || 0) + 1
     }
-    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5000).map(e => e[0])
-    allWords.push(...sorted)
-  } catch (e: any) { log.debug("project vocab failed, using base", { e: e?.message }) }
-  buildVectors(allWords)
+    // Frequency order, then NAME order, so the vocabulary is deterministic for
+    // a given corpus rather than dependent on SQLite's row order.
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 5000)
+    for (const [w] of top) words.add(w)
+  } catch (e: any) {
+    log.debug("project vocabulary failed, using base", { e: e?.message })
+    return null
+  }
+  const map = Object.create(null)
+  for (const w of words) map[w.toLowerCase().slice(0, 30)] = 0
+  if (projectVocabCache.size >= PROJECT_VOCAB_MAX) {
+    const oldest = projectVocabCache.keys().next().value
+    if (oldest !== undefined) projectVocabCache.delete(oldest)
+  }
+  projectVocabCache.set(projectId, map)
+  return map
 }
 
-function getVectors(): { map: Record<string, number>; vecs: Float32Array } | null {
+export function buildProjectVocab(rawDb: any, projectId: string): void {
+  const map = projectVocabulary(rawDb, projectId)
+  buildVectors(map ? Object.keys(map) : BASE_WORDS)
+}
+
+/** The base vocabulary, as a map. Exported so a diagnostic can measure the
+ *  base-only case honestly: the module's current word table is whatever was
+ *  built last, so "with the base vocabulary" is otherwise unmeasurable without
+ *  rebuilding it, and a probe that quietly measured the project vocabulary
+ *  while labelling the result "base" would report a number nothing produced. */
+export function baseVocabulary(): Record<string, number> {
+  const map = Object.create(null)
+  for (const w of BASE_WORDS) map[w] = 0
+  return map
+}
+
+function getVectors(vocabulary?: Record<string, number> | null): { map: Record<string, number>; vecs: Float32Array } | null {
+  if (vocabulary) {
+    // Rebuild the vector table for this vocabulary. Vectors are
+    // position-independent, so this is a pure re-derivation of the same values
+    // for shared words — only the set of covered words changes.
+    buildVectors(Object.keys(vocabulary))
+    return _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
+  }
   if (_wordMap && _wordVecs) return { map: _wordMap, vecs: _wordVecs }
   buildVectors(BASE_WORDS)
   return _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
 }
 
-export function embedLocal(texts: string[]): number[][] {
-  const wv = getVectors()
+export function embedLocal(texts: string[], vocabulary?: Record<string, number> | null): number[][] {
+  const wv = getVectors(vocabulary)
   if (!wv) return []
   const results: number[][] = []
   for (const text of texts) {
