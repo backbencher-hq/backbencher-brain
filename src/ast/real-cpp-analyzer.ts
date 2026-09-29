@@ -1308,6 +1308,115 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       return out
     }
 
+    /**
+     * M60.P1: the PUBLISHED parameter list, as the family's `Parameter[]`.
+     *
+     * The lane already read every parameter's name — `declaratorParamNames`
+     * above, for the local-binding roster — and threw the rest away. The
+     * declared payload field `parameters` was therefore never produced, which
+     * the M60 payload-seam matrix recorded as a DEAD emit cell
+     * (`UniversalSymbol.parameters`, 20 of 33 languages alive, cpp not among
+     * them) while this analyzer's own documentation claimed the row was
+     * supported. The data was in hand the whole time; the field was simply
+     * never filled.
+     *
+     * Each parameter is read the way the C++ signature reads, from the
+     * `parameter_declaration`'s own type/declarator split — never from a
+     * document-order scan of its text:
+     *
+     *   - `type`           the declaration-specifier, which INCLUDES the
+     *                      declarator's own prefix operators — the slice is taken
+     *                      at the NAME node, not at the declarator, because a
+     *                      `reference_declarator`'s text is `& b` and its start
+     *                      index points at the `&`. Slicing at the declarator
+     *                      (the shape `buildParamSig` used) turns
+     *                      `const std::string& b` into `const std::string` and
+     *                      `const char* p` into `const char`, which is a WRONG
+     *                      type and not a cosmetic one.
+     *   - `name`           the declarator's declared name (CPPD12/CPPD13)
+     *   - `defaultValue`   the `default_value` field, when the grammar gives one
+     *   - `isOptional`     a defaulted parameter is optional at the call site;
+     *                      C++ has no other optionality. The default itself is
+     *                      NOT a binding — it is read by the walk-order
+     *                      declaration-position rule at its own node, so
+     *                      pre-binding it here would move the binding EARLIER
+     *                      than the parameter's own declaration node and change
+     *                      flow-sensitive results for a shape like
+     *                      `void f(int a = b, int b = 1)`, where the default
+     *                      legitimately reads an outer `b`.
+     *
+     * Both parameter node types are read, and the difference between them IS the
+     * optionality: `parameter_declaration` (`int a`) and
+     * `optional_parameter_declaration` (`int c = 3`) are distinct nodes in this
+     * grammar, which is why the NAME roster above is deliberately
+     * `parameter_declaration`-only.
+     */
+    const declaratorParameters = (decl: Node | null): ASTEngine.Parameter[] => {
+      const out: ASTEngine.Parameter[] = []
+      if (!decl) return out
+      const paramsNode: Node | null = decl.childForFieldName?.("parameters") ?? this.findChild(decl, "parameter_list") ?? null
+      if (!paramsNode) return out
+      for (let i = 0; i < paramsNode.namedChildCount; i++) {
+        const p = paramsNode.namedChild(i)
+        if (!p) continue
+        if (p.type === "comment") continue
+        // A variadic `...` is a parameter with no name and no type; the family
+        // shape has no slot for it, and inventing one would be a name a consumer
+        // cannot resolve.
+        if (p.type === "variadic_parameter_declaration") continue
+        if (p.type !== "parameter_declaration" && p.type !== "optional_parameter_declaration") continue
+        const nameNode = declaredNameNode(p)
+        if (!nameNode) continue
+        // type = everything the parameter writes BEFORE the name, which keeps
+        // the `*`/`&`/`&&` that belong to the declarator's own prefix.
+        const cut = nameNode.startIndex - p.startIndex
+        const type = cut > 0 ? p.text.slice(0, cut).trim() : ""
+        const param: ASTEngine.Parameter = { name: nameNode.text }
+        if (type) param.type = type
+        const defaultNode: Node | null = p.childForFieldName?.("default_value") ?? null
+        if (defaultNode || p.type === "optional_parameter_declaration") {
+          if (defaultNode) param.defaultValue = defaultNode.text
+          param.isOptional = true
+        }
+        out.push(param)
+      }
+      return out
+    }
+
+    /**
+     * M60.P1: the declared RETURN TYPE of a function or method, as the payload
+     * field `returnType` — which was likewise never produced while the doc
+     * claimed it.
+     *
+     * Two spellings, and the second is the one that is easy to get wrong:
+     *
+     *   `std::string name() const`      -> the declaration's `type` field
+     *   `auto f() const -> std::string` -> the `type` field is `auto` and the
+     *                                      REAL type is the `trailing_return_type`
+     *                                      CHILD of the declarator (measured, not
+     *                                      a field: `function_declarator
+     *                                      [trailing_return_type [-> ,
+     *                                      type_descriptor]]`)
+     *
+     * A trailing return type is not exotic C++ — it is how `decltype(auto)` and
+     * every deduced-return function is written, and this lane's own fixtures use
+     * it. Reading only the `type` field would publish `auto` for every one of
+     * them, and `auto` is a name that resolves to nothing.
+     */
+    const declaredReturnType = (node: Node | null): string | undefined => {
+      if (!node) return undefined
+      const declarator: Node | null = this.findChild(node, "function_declarator") ?? null
+      if (declarator) {
+        const tail: Node | null = this.findChild(declarator, "trailing_return_type") ?? null
+        const td: Node | null = tail ? (this.findChild(tail, "type_descriptor") ?? tail.namedChild(0)) : null
+        const t = td?.text?.trim()
+        if (t) return t
+      }
+      const t: Node | null = node.childForFieldName?.("type") ?? null
+      const text = t?.text?.trim()
+      return text || undefined
+    }
+
     while (stack.length > 0) {
       const item = stack.pop()!
       const { node, parentContext, isExit } = item
@@ -1878,6 +1987,13 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         let isConst = this.hasDirectModifier(node, "const")
         let isVirtual = this.hasDirectModifier(node, "virtual") || this.hasDirectModifier(node, "override")
 
+        // M60.P1 `decorators`: the declared payload field for a declaration's
+        // modifiers, and the one the `metadata` flags above were duplicating
+        // without ever filling. See `declarationDecorators` — the SAME extraction
+        // serves the field/variable branch, because `static constexpr int kMax`
+        // carries exactly as much modifier information as `virtual int area()`.
+        const cppDecorators = this.declarationDecorators(node)
+
         if (funcDetails) {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator, nameNode: funcNameNode } = funcDetails
 
@@ -2046,6 +2162,27 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             isStatic,
             ownerName: actualOwnerName,
             ownerKind: actualOwnerKind,
+            // M60.P1: the three declared payload fields the lane read but never
+            // published. The M60 payload-seam matrix recorded `parameters`,
+            // `returnType` and `decorators` as DEAD emit cells for cpp while
+            // this file's own documentation claimed all three were supported —
+            // a claim that was false, and the data for all three was already
+            // extracted (the parameter NAMES bound the local roster, the return
+            // type and the modifier specifiers were on the node).
+            //
+            // `parameters` and `returnType` are OMITTED rather than emitted empty
+            // when there is no real signature: an empty list is a claim that the
+            // function takes no arguments, and for a function that genuinely does
+            // not (`void f()`) that is a true claim worth making, so this only
+            // withholds the field where withholding it is the honest answer.
+            // A macro-declared heading never reaches here — its branch returns
+            // before the symbol is built — which is right, because its
+            // "parameters" are macro paste-tokens rather than parameters.
+            ...(declaratorParameters(this.findChild(node, "function_declarator")).length > 0
+              ? { parameters: declaratorParameters(this.findChild(node, "function_declarator")) }
+              : {}),
+            ...(declaredReturnType(node) ? { returnType: declaredReturnType(node) } : {}),
+            ...(cppDecorators.length > 0 ? { decorators: cppDecorators } : {}),
             metadata: {
               isCppFunction: true,
               isTemplate,
@@ -2229,6 +2366,11 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
               // access-specifier visibility.
               const visStatic =
                 isStatic && parentContext?.kind !== ASTEngine.SymbolKind.Class ? "private" : undefined
+              // M60.P1 `decorators`, the field/variable half — same extraction as
+              // the function branch (`declarationDecorators`), because
+              // `static constexpr int kMax = 10;` carries exactly as much
+              // modifier information as `virtual int area() const = 0;`.
+              const declDecorators = this.declarationDecorators(node)
               symbols.push({
                 name,
                 kind: isConstexpr
@@ -2241,6 +2383,7 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
                 isStatic,
                 ownerName: parentContext?.name,
                 ownerKind: parentContext?.kind,
+                ...(declDecorators.length > 0 ? { decorators: declDecorators } : {}),
                 metadata: {
                   isConstexpr,
                   isStatic,
@@ -3005,40 +3148,137 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     return sawHardType || (sawTypeIdent && sawNameIdent)
   }
 
+  /**
+   * M60.P1 `decorators`: a declaration's modifiers, as the SOURCE SPELLINGS the
+   * node carries, in source order — so a consumer reads `["static", "constexpr"]`
+   * instead of reversing four booleans back into words.
+   *
+   * This is the declared payload field, and the `metadata` flags
+   * (`isVirtual`/`isConst`/`isConstexpr`/`isStatic`) were duplicating its content
+   * without ever filling it: the M60 payload-seam matrix recorded
+   * `UniversalSymbol.decorators` as a DEAD emit cell for cpp while this file's own
+   * documentation claimed the row was supported.
+   *
+   * Shared by the function and the field/variable branch, because
+   * `static constexpr int kMax = 10;` carries exactly as much modifier
+   * information as `virtual int area() const = 0;` and a payload field that only
+   * answered for one of them is a field a consumer cannot rely on.
+   *
+   * A destructor and an operator overload are deliberately ABSENT: `~File` and
+   * `operator==` are part of the NAME, not modifiers applied to it, and listing
+   * them here would put a name in a field whose meaning is "applied to this
+   * declaration".
+   *
+   * The scan keys off the child's TEXT and EXCLUDES the declaration's own
+   * payload fields (`type`, `declarator`, `default_value`, …), not off
+   * `isNamed`. The grammar is inconsistent here and both forms occur in this
+   * lane's own fixtures: `virtual int area() const = 0;` exposes `virtual` as an
+   * UNNAMED token, while `static constexpr int kMax = 10;` exposes `static` and
+   * `constexpr` as NAMED `storage_class_specifier` / `type_qualifier` wrappers.
+   * A rule that only read unnamed tokens would find the modifier on the method
+   * and miss it on the field, which is the worst of both — a payload field that
+   * answers sometimes.
+   */
+  private declarationDecorators(node: Node): string[] {
+    const out: string[] = []
+    const MODIFIERS = new Set([
+      "static", "constexpr", "const", "inline", "virtual", "explicit", "extern",
+      "friend", "mutable", "thread_local", "volatile", "override", "final",
+    ])
+    // Fields that carry the DECLARATION's own payload. A child in one of these
+    // is content the author wrote inside the declaration, so matching it against
+    // a modifier word would read a VALUE as a modifier — the risk that makes an
+    // `isNamed`-only rule tempting, and the reason it is wrong.
+    const PAYLOAD_FIELDS = new Set([
+      "type", "declarator", "default_value", "value", "initializer", "parameters",
+      "body", "name", "argument", "condition", "left", "right", "operator",
+    ])
+    const seen = new Set<string>()
+    const add = (txt: string) => {
+      if (seen.has(txt)) return
+      seen.add(txt)
+      out.push(txt)
+    }
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (!c) continue
+      const field = node.fieldNameForChild ? node.fieldNameForChild(i) : null
+      if (field && PAYLOAD_FIELDS.has(field)) continue
+      if (MODIFIERS.has(c.text)) add(c.text)
+    }
+    // `override`/`final` are `virtual_specifier`s in this grammar, so they can sit
+    // a level below the declaration rather than directly on it.
+    for (const extra of ["override", "final"]) {
+      if (seen.has(extra)) continue
+      if (this.hasDirectModifier(node, extra)) add(extra)
+    }
+    return out
+  }
+
   private buildParamSig(parametersNode: Node | null): string {
     // CPPD5 (M37.9 fmt probe, gtest.h): parameter TYPE-ONLY signature. Each
     // parameter_declaration's name lives in its trailing `declarator` field;
     // the TYPE is the parameter text minus that declarator. Names, comments
     // (`/*test_info*/`), and whitespace never enter the signature — matching
     // real C++ overload semantics where only the types discriminate.
+    //
+    // D8 (M60.P1): the slice is taken at the NAME node, not at the declarator.
+    // A `reference_declarator`'s text is `& b` and its start index points at the
+    // `&`, so subtracting the declarator's LENGTH from the parameter text turned
+    // `const std::string& b` into `const std::string` and `const char* p` into
+    // `const char`. That is not a cosmetic slip in a display field — this
+    // signature IS the override-matching key, so `virtual void f(Widget&)` and
+    // `virtual void f(Widget)` hashed to the SAME signature and a derived
+    // `void f(Widget)` matched the base's `f(Widget&)`. It is the same slice the
+    // published `parameters` payload had to learn (see `declaratorParameters`),
+    // and the two are now the same rule for the same reason.
     if (!parametersNode) return ""
     const parts: string[] = []
     for (let i = 0; i < parametersNode.namedChildCount; i++) {
       const pc = parametersNode.namedChild(i)
       if (!pc) continue
       if (pc.type === "comment") continue
-      if (pc.type === "optional_parameter_declaration") {
-        // `= default` / `= expr` after the type — the DEFAULT is not part of
-        // the signature either; the type text precedes the `=` assignment.
-        let t = pc.text
-        const eq = t.indexOf("=")
-        if (eq !== -1) t = t.slice(0, eq).trim()
-        const d2 = pc.childForFieldName?.("declarator")
-        if (d2) t = t.slice(0, t.length - d2.text.length).trim()
-        if (t) parts.push(t)
+      if (pc.type === "variadic_parameter_declaration") {
+        parts.push("...")
         continue
       }
-      if (pc.type !== "parameter_declaration") {
-        // variadic_parameter (`...`) or stray nodes: include raw text.
-        if (pc.text) parts.push(pc.text)
+      if (pc.type !== "parameter_declaration" && pc.type !== "optional_parameter_declaration") {
+        // stray nodes: include raw text, as before — an unreadable parameter is
+        // not silently dropped, because a dropped one makes two signatures equal
         continue
       }
+      // `= default` / `= expr` is not part of the signature either; the type text
+      // precedes the `=`.
+      const eqAt = pc.text.indexOf("=")
+      const nameNode = this.declaredNameNodeFor(pc)
       let t = pc.text
-      const d = pc.childForFieldName?.("declarator")
-      if (d) t = t.slice(0, t.length - d.text.length).trim()
+      if (nameNode) {
+        const cut = nameNode.startIndex - pc.startIndex
+        if (cut > 0) t = t.slice(0, cut)
+      } else if (eqAt !== -1) {
+        t = t.slice(0, eqAt)
+      }
+      t = t.trim()
       if (t) parts.push(t)
     }
     return parts.join(",")
+  }
+
+  /**
+   * D8: the declared name node of a `parameter_declaration` /
+   * `optional_parameter_declaration`, for the signature slice. A thin wrapper so
+   * the two call sites that need it (`buildParamSig`) read the same name the
+   * published `parameters` payload does.
+   */
+  private declaredNameNodeFor(param: Node): Node | null {
+    const d: Node | null = param.childForFieldName?.("declarator") ?? null
+    if (!d) return null
+    let cur: Node | null = d
+    for (let i = 0; i < 8 && cur; i++) {
+      if (cur.type === "identifier" || cur.type === "field_identifier") return cur
+      cur = cur.childForFieldName?.("declarator") ?? null
+    }
+    return null
   }
 
   private methodComplexityCpp(node: Node): number {
