@@ -1229,6 +1229,34 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "vb/array-type-published-as-its-own-text",
+    language: "vb",
+    defectClass: "unusable-target",
+    description:
+      "PRE-FIX: `Private _watcher As New Timers.Timer()` puts an `array_type` in `declared_type` -- the `()` reads as bounds -- and the naming helper had no case for that wrapper, so the field published `references _watcher -> \"Timers.Timer()\"`: the whole expression, parens included. Not a name in the file, not navigable, and unmatchable by any independent oracle. Found by auditing `references`, the label that had been 37% of the index and agreed with by no second implementation. Reverted from the SOURCE rather than a hardcoded string, because the pre-fix target is the grammar node's own text and the fixed result no longer carries it; reading the `As New T(...)` the fixture actually contains is also what keeps this from silently ceasing to match when the fixture changes.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      // every `As New <Type>(` in the source, mapped to the pre-fix target text
+      const wrapped = new Map<string, string>()
+      const re = /As\s+New\s+([A-Za-z_][A-Za-z0-9_.]*)\s*\(/g
+      for (let m = re.exec(source); m !== null; m = re.exec(source)) {
+        const parts = m[1].split(".")
+        wrapped.set(parts[parts.length - 1] as string, m[1] + "()")
+      }
+      if (wrapped.size === 0) return r
+      const doomed = (r.relationships ?? []).filter(
+        (x: any) => String(x.type) === "references" && wrapped.has(String(x.target ?? "")),
+      )
+      if (doomed.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          doomed.includes(x) ? { ...x, target: wrapped.get(String(x.target)) } : x,
+        ),
+      }
+    },
+  },
+  {
     id: "vb/override-edge-unqualified",
     language: "vb",
     defectClass: "unusable-target",
@@ -11467,6 +11495,62 @@ export const MUTANTS: Mutant[] = [
       ...r,
       symbols: (r.symbols ?? []).map((s: any) => (s.kind === "property" ? { ...s, range: { ...(s.range ?? {}), startLine: (s.range?.startLine ?? 1) - 1 } } : s)),
     }),
+  },
+  // ───────────────────────────────────────────────────────────────────────
+  // PERL-MR11 — receiver qualification. Three mutants for one fix, because
+  // the fix has THREE ways to go wrong and the first two attempts did exactly
+  // that (18 unexplained mojo edges, then a builtin leak).
+  //
+  // Again invisible to the differential: the oracle in derivePerlEdges derived
+  // the target by leaf name the same way the analyzer did, so the pair agreed
+  // on a shape both were wrong about. The count came from the AST instead
+  // (script/m14/tmp/perl-receiver-scope.mts: 10,781 provable-package call
+  // sites). Only perl/receiver-qualification pins any of it.
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: "perl/receiver-qualification-dropped",
+    language: "perl",
+    defectClass: "identity-loss",
+    description: "M14.6 regression: a class receiver is dropped again, so `Mojo::IOLoop->start` publishes the bare leaf `start` — the pre-MR11 shape. Not cosmetic: `Mojo::IOLoop->remove`, `Mojo::IOLoop->stream` and `Mojo::IOLoop->server` all collapse onto `remove`, `stream` and `server`, so two classes' same-named methods become ONE graph node and a caller of one reads as a caller of the other. Caught by perl/receiver-qualification's expectRelationships {calls, run -> IOLoop.start, line 4} and {run -> Util.encode_json, line 5}, and by its forbidRelationships {run -> start}.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        e.type === "calls" && typeof e.target === "string" && e.target.includes(".") && e.target.includes("::") === false && /^[A-Z]/.test(e.target)
+          ? { ...e, target: String(e.target).split(".").pop() }
+          : e,
+      ),
+    }),
+  },
+  {
+    id: "perl/bareword-variable-qualified-as-a-class",
+    language: "perl",
+    defectClass: "phantom-symbol",
+    description: "M14.6 regression: ANY receiver that syntactically names a class gets qualified, including a bare bareword with no `::`. This is the over-correction, and it is the dangerous direction: the grammar types `app` and `Mojo::IOLoop` both as `bareword`, so the naive rule invents a class named `app` out of a lexical holding a Mojo::Server. Caught by perl/receiver-qualification's forbidRelationships {run -> app.log} and forbidSymbols {app in RQ}. Inventing a type is the same fabrication as the phantom `DSN` and `use_module` this wave already removed — the mutant exists so a future 'make it simpler' edit cannot reintroduce it under a green differential.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        e.type === "calls" && e.target === "level" ? { ...e, target: "app.log" } : e,
+      ),
+      symbols: (r.symbols ?? []).concat(r.symbols.filter((s: any) => s.name === "RQ").map((s: any) => ({ ...s, name: "app", kind: "class" }))),
+    }),
+  },
+  {
+    id: "perl/qualified-target-defeats-builtin-suppression",
+    language: "perl",
+    defectClass: "wrong-edge",
+    description: "M14.6 regression: the builtin test runs against the QUALIFIED target instead of the METHOD, so the lane emits an edge for a PERL BUILTIN. `addCall` checks its argument against PERL_BUILTINS; once the argument became `IOLoop.reset` the test no longer saw `reset`. The first attempt at this fix made exactly this mistake and it cost 3 unexplained mojo edges: `IOLoop.reset`, `Promise.map`, `Reactor.reset`. The mutant ADDS the edge rather than rewriting one — a builtin is suppressed, so the pre-fix output contains no such edge to transform, and a transform that finds nothing is a mutant that silently proves nothing. Caught by perl/receiver-qualification's forbidRelationships {run -> IOLoop.reset}.",
+    transform: r => {
+      const leak = {
+        type: "calls",
+        from: "run",
+        source: "run",
+        target: "IOLoop.reset",
+        line_number: 9,
+        confidence: 0.9,
+        metadata: { evidenceClass: "usage_contextual", reasonCode: "name-only-callee" },
+      }
+      return { ...r, relationships: (r.relationships ?? []).concat([leak]) }
+    },
   },
   // ═══════════════════════════════════════════════════════════════════════
   // NIM wave (2026-09-27)
