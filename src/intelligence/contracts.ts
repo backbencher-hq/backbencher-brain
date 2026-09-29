@@ -82,6 +82,13 @@ export type SearchResults = SearchResult[] & {
    */
   totalMatches?: number
   /**
+   * How many of the matched rows were actually RANKED and can therefore be
+   * paged through. Equal to `totalMatches` in the normal case; smaller when a
+   * cap stopped the ranking. A caller paging to the end needs both numbers: the
+   * first says how much matched, the second says how much of it is reachable.
+   */
+  rankedMatches?: number
+  /**
    * Why the candidate set is smaller than the raw match set, when it is: a
    * per-phase candidate cap was reached, the noise filter removed rows after
    * the cap, or (regex mode) the row cap or the time budget stopped the scan.
@@ -377,6 +384,10 @@ export interface GraphTraversalResult {
     /** The cap's kind ordering, in survival order. A cap that keeps `calls`
      *  and drops `contains` is a decision; this publishes it. */
     edgeKindPriority: string[]
+    /** The relationship kinds this run actually searched, resolved. NOT a
+     *  restatement of the default: a scope field that disagrees with the
+     *  answer is worse than no scope field. */
+    relationshipTypesUsed: string[]
     /** M59 (#895, #854): stored rows collapsed at the tool layer before
      *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
      *  a deeper cascade; spellingVariantsCollapsed: same call site + same
