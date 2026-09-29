@@ -696,6 +696,15 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // Fixing both took truth from 1586 to 1606, covered from 1522 to 1546, and missing
   // from 64 to 60, at 13.8 ms/file against the 17.5 it cost before.
   //
+  //   3. Text equality used as node identity (58/4 from 60/4). The read scan suppressed
+  //      any `variable` whose TEXT equalled its parent declaration's `property_name`.
+  //      That is safe in well-formed code and wrong wherever the parser emits a recovery
+  //      node, because one `declaration` can then span a whole broken statement — and
+  //      `form-item.scss` L8 both declares and reads the same variable across its
+  //      unparseable `map.merge`. Measured: 156 reads suppressed, 0 declarations where
+  //      the guard protected anything. The oracle carried the SAME bug, which is why the
+  //      rows appeared as MISSING rather than as a visible defect on either side.
+  //
   // The floor is FULL-EXTENT on purpose. A 60-file sample is a rotation — the same
   // corpus produced MISSING=32, 36 and 106 across three draws — so a floor pinned to
   // one is a floor that fails at random, and a gate that fails at random is worse than
@@ -713,7 +722,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   //
   // Registering a lane at 7/8 with a pinned residual is the point of the ladder. What
   // this entry does NOT do is claim section E passes: the floor is the FLOOR, and the
-  // row is checked against it exactly, so a regression above 60/4 fails.
+  // row is checked against it exactly, so a regression above 58/4 fails.
   scss: {
     id: "scss",
     wasm: "tree-sitter-scss.wasm",
@@ -723,7 +732,7 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     differentialCheck: "differential-scss",
     perfKey: "element-plus:scss",
     floorResidual: {
-      missing: 60,
+      missing: 58,
       unexplained: 4,
       ruling: "SCSS-D1",
     },

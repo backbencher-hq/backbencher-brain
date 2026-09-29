@@ -137,6 +137,32 @@ per read would be publishing a use as a declaration.
 - **A map literal in an `@each` list** — `@each $k in (a, b)` parses,
   `@each $k, $v in (a: 1)` does not. Zero corpus occurrences; pinned by
   `error-recovery-is-reported` at `atLeast: 1` so the failure stays **visible**.
+- **SCSS-L8 — `map.merge((…), $default)`, the largest parse-failure class in the corpus.**
+  A three-attempt patch was written, built and measured, and **reverted rather than
+  shipped**; the evidence is here so the next attempt starts from it rather than from
+  the idea.
+  - *A `map_value` rule in the general `_value` hierarchy*, beside `list_value`, which is
+    where a Sass value belongs by rights. It fixed 5 files and regressed none — and drove
+    **ERROR nodes from 3,900 to 8,056** across the 244-file corpus. The file-level A/B
+    reported "0 regressed" and saw none of it, because the files that gained errors were
+    already failing and stayed in the same bucket. A metric that counts files cannot see a
+    change in the quality of the recovery inside them; the error count is the measurement
+    that noticed, which is why both are reported from here on.
+  - *The same rule scoped to call arguments*, overriding the inherited CSS `arguments`
+    rule: 4 files fixed and **9 regressed**. Overriding that rule perturbs every function
+    call, `translate()` and `rgba()` included.
+  - *That override with `prec.dynamic` inside the argument choice*: worse still.
+  - The trailing-comma half alone was clean but thin — 0 files fixed, 0 regressed, 54
+    fewer error nodes — below the bar patches 1/2 and 2/2 set, and not worth carrying a
+    node type for.
+  The reason the failure looked arbitrary is the thing to understand: a **single-pair**
+  map `('a': 1)` is ambiguous with the CSS `parenthesized_value` rule and loses to it,
+  while **two or more** pairs parse, because a comma resolves the conflict before
+  precedence is consulted. `prec.dynamic` changed nothing because the conflict is
+  resolved when the parser is *generated*, so a post-parse preference is never consulted.
+  So this is a grammar **redesign** — how maps are represented in the value hierarchy —
+  not one more rule beside `list_value`. The prize is 153 of 167 measured `map.merge`
+  calls; the ceiling stands where the table above records it until then.
 - **`.sass` and `.less` still route to the CSS analyzer** and are declared. Zero files of
   each across 13 corpora, so this repo can neither support nor refute a claim about them.
 - **SCSS-L7 — cross-file resolution.** A `@function` call resolves only against functions
