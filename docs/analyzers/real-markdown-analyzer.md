@@ -295,7 +295,7 @@ matters: an instrument nobody has watched fail is a claim.
   of each is byte-identical. Provenance class is `unnamed-build-sha-only`, not an
   inherited `0.5.1` claim.
 - **Completeness (SPEC)** — **8/8 sections** over 72 named types across both
-  grammars (29 handled / 41 silent / 2 gap / 5 ruled decisions), in `GATED_LANGS`.
+  grammars (29 handled / 41 silent / 2 gap / 6 ruled decisions), in `GATED_LANGS`.
 - **M12 contract probe** — 31/31.
 - **M12 differential** — 59/59, precision 1.000, recall 1.000.
   **Stated plainly: this is a mirror, not a differential.** `truthSource` is
