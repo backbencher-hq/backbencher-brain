@@ -28,7 +28,7 @@
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered | 0.9 |
+| calls | ✅ | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; `console.*` leaf methods filtered; `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered | 0.9 |
 | extends | ✅ | `class_heritage` → base class leaf name | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name | 0.95 |
 | imports | ✅ | ESM `import_statement` → module leaf → `${modulePath}:${item}` per item (named/default/namespace); CJS `require()` → module leaf → `${modulePath}:*` | 1.0 |
@@ -50,10 +50,41 @@ own comparison allowlist, **8 are compared and 1 is not**:
 | `brain_import` | ❌ | the JS oracle derives no import truth, so by the harness's own rule ("a label is comparable exactly when the lane's oracle derives it") the label is out of scope — but the consequence is that **every JavaScript import edge is unverified by the differential** and rests on fixtures and the PIPE seam alone |
 
 `implements` is in the compared set and is never emitted by this analyzer, which
-is correct: JavaScript has no `implements` clause. `imports` in the enum is
-`brain_import` as its wire value, while the allowlist spells the label
-`imports` — so an `imports` allowlist entry matches no analyzer edge on any lane.
-That is a real cross-lane defect, recorded rather than fixed here.
+is correct: JavaScript has no `implements` clause.
+
+**A CORRECTION TO THE PREVIOUS REVISION OF THIS SECTION, which was wrong.** It
+claimed that `imports` in the enum carries the wire value `brain_import`, that the
+differential's allowlist therefore spells the label differently, and that an
+`imports` allowlist entry consequently matches no analyzer edge on any lane. All
+three claims were false, and the "cross-lane defect" was invented. There are two
+enums: `src/ast/types.ts` declares `Imports = "brain_import"`, and that string is
+the **SQLite table name** for persisted import rows; `src/ast/engine.ts` declares
+`Imports = "imports"`, and that is the **relationship wire value** the analyzer
+actually emits. Measured: `import { a as b } from "./m.js"` yields
+`imports->./m.js:b`. The allowlist spells it `imports`, which is correct, and
+every `imports` allowlist entry in the file matches. The error came from reading
+one enum and assuming it was the only one.
+
+**Two documentation defects this census found, both now corrected above.** (1) The
+`calls` row claimed "builtins filtered (console.*, **Object leaf methods**)". Only
+the first half is true: `console.log(x)` publishes `uses console` and no
+`calls log`, while `Object.keys({})` publishes `calls keys` **and** `uses Object`,
+and `Math.floor(1.5)` publishes `calls floor` and `uses Math`. Measured across 27
+global-base leaves by `census-js-doc-builtin-claim`; all 27 are named. The
+suppression is real and confined to `console`. (2) The symbol table claims a
+private field `#x` collapses to `x`. It does not: `legacy-client.js` publishes the
+symbol `#events` and the containment edge `Svelte4Component->#events`, `#` and
+all. This one had teeth — a census that stripped the `#` while matching
+containment targets reported 92 of 96 class members as unplaced, a wholly
+invented defect.
+
+**Containment, measured on the population the contract covers.** The
+`contains` row says "class members, prototype methods", so that is the population
+measured: of 103 class-member and object-literal-method symbols in the sample,
+class members are **0/11 unplaced** and object-literal methods are **92/92
+unplaced**. M49 JD3 predicted exactly this split — `ownerName` is set only for
+class scopes — and its class-member half no longer holds on this corpus, so JD3
+should be read as an object-literal finding now, not a class-member one.
 
 **Regex, re-measured independently.** Stripping comments and string literals and
 then scanning finds **0 regex literals and 0 `RegExp`** in
