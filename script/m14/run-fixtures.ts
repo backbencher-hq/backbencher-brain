@@ -136,6 +136,34 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // deliberately use `.graphqls` and `.gql` so a regression that keys on one
   // extension cannot pass.
   graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
+  // --- from the m60 grammar-governance merge: two lanes the other laptop's wave had
+  // not registered. A fixture lane is not a directory, it is a directory this map
+  // NAMES — and `payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so an unregistered lane has no P1 row to convict it.
+  // M14 (#288 / M60.LCM): html joins the fixture lane. html was the LAST
+  // ungated web-family language: its analyzer had an M12 corpus claim, a regex
+  // census row and a grammar-audit pass, and no fixture, no mutant, no
+  // differential oracle and no completeness spec. Every M14/M49/M60 cell read
+  // `n/a` — the gates could not ask the question, which is how 59.9% of its
+  // symbols were measured carrying a name that is not unique in their own file
+  // while every gate stayed green. The lane is what makes the rest possible:
+  // F4's runner throws `unknown language html` without it, and
+  // `script/m60/payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so html had no P1 row to convict it either.
+  // `ext` carries BOTH html spellings because `language-detection.ts` routes
+  // `.htm` to the same analyzer and a lane that only claimed `.html` would
+  // silently skip half its own routing.
+  // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
+  // runner entry, so nothing could have caught a regression in any of them —
+  // and the four are a differential whose truth was authored by the same hand
+  // as the analyzer (55 facts, all `authority: manual_audit`, 12 of which
+  // pinned the pre-wave `global` phantom endpoint and 2 of which pinned a trap
+  // edge whose SOURCE was a signal name and whose TARGET was a whole command
+  // string), a corpus measurement, a grammar-limit census, and a node-type
+  // "safety" check whose referenced-type list was hardcoded rather than
+  // measured (retired to `script/m12/bash-node-types-legacy-inventory.ts`,
+  // reasoning preserved, and replaced by a derived gate). A fixture lane is
+  // not a directory, it is a directory this map names.
   html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
   toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
@@ -383,7 +411,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     // vue/svelte: production parity — engine parseFile performs the SFC
     // script-block pre-parse exactly as real indexing does.
     let result: any
-    if (runLangLang === "vue" || runLangLang === "svelte") {
     if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml" || runLangLang === "markdown") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
@@ -728,9 +755,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Each constraint field must match >=1 export (unspecified fields
       // wildcards). ER3 (erlang wave): `note` is documentation here too — see the
       // expectImports comment below for why the three matchers must agree.
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true : e[k] === v)),
-      )
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
@@ -965,9 +989,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidExports ?? []) {
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => (k === "comment" || k === "note" ? true : e[k] === v)),
-      )
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
@@ -1206,36 +1227,3 @@ async function main() {
 if (process.argv[1]?.endsWith("run-fixtures.ts")) {
   main().catch(e => { console.error(e); process.exit(1) })
 }
-
-  // --- from the m60 grammar-governance merge: two lanes the other laptop's wave had
-  // not registered. A fixture lane is not a directory, it is a directory this map
-  // NAMES — and `payload-matrix.ts` enumerates the payload languages from
-  // `validation/m14/fixtures/*`, so an unregistered lane has no P1 row to convict it.
-
-  // M14 (#288 / M60.LCM): html joins the fixture lane. html was the LAST
-  // ungated web-family language: its analyzer had an M12 corpus claim, a regex
-  // census row and a grammar-audit pass, and no fixture, no mutant, no
-  // differential oracle and no completeness spec. Every M14/M49/M60 cell read
-  // `n/a` — the gates could not ask the question, which is how 59.9% of its
-  // symbols were measured carrying a name that is not unique in their own file
-  // while every gate stayed green. The lane is what makes the rest possible:
-  // F4's runner throws `unknown language html` without it, and
-  // `script/m60/payload-matrix.ts` enumerates the payload languages from
-  // `validation/m14/fixtures/*`, so html had no P1 row to convict it either.
-  // `ext` carries BOTH html spellings because `language-detection.ts` routes
-  // `.htm` to the same analyzer and a lane that only claimed `.html` would
-  // silently skip half its own routing.
-  html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
-
-  // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
-  // runner entry, so nothing could have caught a regression in any of them —
-  // and the four are a differential whose truth was authored by the same hand
-  // as the analyzer (55 facts, all `authority: manual_audit`, 12 of which
-  // pinned the pre-wave `global` phantom endpoint and 2 of which pinned a trap
-  // edge whose SOURCE was a signal name and whose TARGET was a whole command
-  // string), a corpus measurement, a grammar-limit census, and a node-type
-  // "safety" check whose referenced-type list was hardcoded rather than
-  // measured (retired to `script/m12/bash-node-types-legacy-inventory.ts`,
-  // reasoning preserved, and replaced by a derived gate). A fixture lane is
-  // not a directory, it is a directory this map names.
-  bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
