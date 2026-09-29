@@ -190,8 +190,36 @@ const payload = {
   rows,
 }
 
-mkdirSync(path.dirname(OUT), { recursive: true })
-writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n")
+// A SCOPED RUN MUST NOT REPLACE THE CANONICAL ARTIFACT.
+//
+// This gate had no guard, and it cost the artifact: every `--lang yaml` run I did while
+// developing it overwrote validation/m14/results/analyzer-docs.json with a ONE-row file, so
+// the repo-wide claim (43 analyzers, 18 fully complete) was replaced by a single lane's row —
+// and the file on disk said `analyzers: 1` while looking entirely well-formed. It was caught
+// only by diffing it against HEAD, not by any test, which is the worst way to find out.
+//
+// The sibling censuses in this tree already carry this guard with the same reasoning
+// (script/m60/target-spelling-census.ts: "a scoped run would replace that claim with a
+// smaller one"), and M61 #886 is the incident. A gate that measures the whole family and can
+// be narrowed to one member without saying so is a gate whose artifact means different things
+// on different days.
+if (only) {
+  // `--out` is OPTIONAL, and `indexOf` returning -1 makes `process.argv[0]` — the
+  // interpreter path — look like a value, so the first version of this guard tried to
+  // write the artifact over the bun binary. Presence has to be checked, not inferred
+  // from a shifted index.
+  const outIdx = process.argv.indexOf("--out")
+  const outArg = outIdx >= 0 ? process.argv[outIdx + 1] : undefined
+  if (outArg) {
+    writeFileSync(outArg, JSON.stringify(payload, null, 2) + "\n")
+    console.log(`dev-scoped rows written to ${outArg} (canonical artifact untouched)`)
+  } else {
+    console.log(`\nDEV-SCOPED run (--lang ${only}) — the canonical ${path.relative(ROOT, OUT)} was NOT touched: it is a repo-wide claim over every analyzer, and a one-lane run would replace that claim with a smaller one. Re-run with no --lang to regenerate it, or pass --out <path> for a dev artifact.`)
+  }
+} else {
+  mkdirSync(path.dirname(OUT), { recursive: true })
+  writeFileSync(OUT, JSON.stringify(payload, null, 2) + "\n")
+}
 
 const c = payload.counts
 console.log(`analyzer docs: ${c.analyzers} analyzer(s)`)
@@ -203,4 +231,4 @@ if (payload.worklist.unexplainedOntologyCells.length) {
   console.log(`\nunexplained ontology cells (a real gap, not a formatting one):`)
   for (const r of payload.worklist.unexplainedOntologyCells) console.log(`  ${r.lang}: ${r.gaps.slice(0, 3).join("; ")}`)
 }
-console.log(`\n→ ${path.relative(ROOT, OUT)}`)
+console.log(`\n→ ${only ? "(not written: scoped run)" : path.relative(ROOT, OUT)}`)

@@ -8,8 +8,8 @@
         "bytes": 9702
       },
       "src/ast/engine.ts": {
-        "sha256": "c3b646ad507227726646d31ef425f59009c0ac8e24a712682e688e4674360a8f",
-        "bytes": 83369
+        "sha256": "0ebe76da6ea322d268e09fd91fad20feb5b51cd20c302820d6d484c2dd1ca8d6",
+        "bytes": 84243
       },
       "src/ast/fingerprint.ts": {
         "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
@@ -24,16 +24,16 @@
         "bytes": 48440
       },
       "src/ast/language-detection.ts": {
-        "sha256": "e560099fe2d26774a183974778787d0ff66d641d08d9d1f583a2843ca54e9a90",
-        "bytes": 9672
+        "sha256": "5a9e8e0d159f501f694e12650543b805a7e476f17926c4f6a210071ae1831f8d",
+        "bytes": 10154
       },
       "src/ast/override-context.ts": {
         "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
         "bytes": 7047
       },
       "src/ast/real-yaml-analyzer.ts": {
-        "sha256": "9fae3177420d4d8736406d1cf2ef06ca44ad756c279a6ae67d37e3b14010a445",
-        "bytes": 85194
+        "sha256": "9a60b05ca1802407760ed06a938c8d15e76769516cde6461193583dd538cd5a1",
+        "bytes": 88139
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -104,7 +104,7 @@
         "bytes": 33838
       }
     },
-    "digest": "831b31ad001595d4682377ead0aa51543d0eee80c092093f6800ec7f225bf3db",
+    "digest": "f190033a34c014ee3fecdce9173c19aa6328ad90f6771bf3eb714f273d57f461",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-yaml_tree-sitter-yaml.wasm",
       "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
@@ -120,8 +120,8 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
-        "bytes": 38104
+        "sha256": "1e14aec9a5b1cee1ff27ec65c02c13ee3c245e011c6757d20f8ce3c3af463bb3",
+        "bytes": 158335
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -136,16 +136,16 @@
         "bytes": 190596
       },
       "src/ast/real-css-analyzer.ts": {
-        "sha256": "192b57188770742fe7883a768350c5b887353504786ec231ee1d913b72eb8fb7",
-        "bytes": 123923
+        "sha256": "ccf4f113549745d0f8309a87d01d51a2d69732eeafab9bb7d599bd5b36cbdb64",
+        "bytes": 140933
       },
       "src/ast/real-dart-analyzer.ts": {
         "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
         "bytes": 119919
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
-        "bytes": 83204
+        "sha256": "22ead3e4a8b7601e45961d889467626db847e91df261d03579de6f70f2d80ad6",
+        "bytes": 86724
       },
       "src/ast/real-erlang-analyzer.ts": {
         "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
@@ -168,8 +168,8 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
-        "bytes": 70021
+        "sha256": "943f0ce6d7b497f19ba0d77638a76ea5ff88a88b94fa90f6f1f7865adcfeb032",
+        "bytes": 71471
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -180,20 +180,20 @@
         "bytes": 94338
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
-        "bytes": 140355
+        "sha256": "6062af27f561c416b9629667121bfcca1e8d81e54d0cee46b9609ad1c5ac142a",
+        "bytes": 152024
       },
       "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "7f0ab31d2f410de20df4a805132621293c09ad2d5b49f588f1f1ba0da400e368",
-        "bytes": 129753
+        "sha256": "a1a0e79652c9f228e69aa99822222fd1be5ad7dfe20bf4269cff3a33f45d7632",
+        "bytes": 136593
       },
       "src/ast/real-json-analyzer.ts": {
-        "sha256": "fd6192028edf8d36eb80472a78fd1799828ab138127dceb071648e3324f2a1ae",
-        "bytes": 24773
+        "sha256": "bf0f4f7ca0ce7709f0722af840634cfaf367b6c78cdbd0e60d6c8cea08161a1a",
+        "bytes": 33146
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
-        "bytes": 154594
+        "sha256": "e196bd348afcd0d2f4f0a93652198417faeac418e6cc65326195f177cbef96ba",
+        "bytes": 168901
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -204,8 +204,8 @@
         "bytes": 15750
       },
       "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
-        "bytes": 13413
+        "sha256": "ee5501ff69713e30385b5344d7d7210c39314def0684338ee6ad80536a30c60f",
+        "bytes": 49081
       },
       "src/ast/real-objective-c-analyzer.ts": {
         "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
@@ -220,8 +220,8 @@
         "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "014279eb79dd465651b7e4bda7864877c81ee9070215638b473fe70ed3d5e4e3",
-        "bytes": 94283
+        "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
+        "bytes": 126264
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -240,28 +240,32 @@
         "bytes": 107870
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
-        "bytes": 123034
+        "sha256": "8e5065ddde8ea25e1179debcf3c62e9b67c5acaafa2ff8ad5c9949013a32deea",
+        "bytes": 127225
+      },
+      "src/ast/real-scss-analyzer.ts": {
+        "sha256": "63d9dcf8228abbc0739eac066115dbbc91ff721d02d18a375e9c32dc67849c59",
+        "bytes": 49130
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
         "bytes": 29215
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
-        "bytes": 71997
+        "sha256": "9628a39c8076741df933509f973682f44a175f6719ce693c0af0370f0071d5fa",
+        "bytes": 87277
       },
       "src/ast/real-swift-analyzer.ts": {
         "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
         "bytes": 107709
       },
       "src/ast/real-toml-analyzer.ts": {
-        "sha256": "28f5837ce9aa393bed0ab2809ca0a014bf8f329b9ee0aaaa8b624fe4d60d9d3f",
-        "bytes": 23982
+        "sha256": "ec7bd9bc571a46f596c447cb84ca81680bb2c74d37218ddb4db9ec20488eb1ff",
+        "bytes": 25734
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "8ca7a26217ed35790a11b275b06b5493e31f087b64b6242cc7bde2158e24abab",
-        "bytes": 254463
+        "sha256": "5491d50902ab6aa097ed6df2efa63660a8232e0788a274e96f5d33b84fae814e",
+        "bytes": 279404
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -272,8 +276,8 @@
         "bytes": 11842
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
-        "bytes": 62122
+        "sha256": "f327c176c4466a03e6e14c7ee91de912fa81744b0d8a9d3695908b0c5f5baca8",
+        "bytes": 64750
       }
     }
   },
@@ -423,11 +427,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:yaml",
-      "wallTimeMs": 127.458951,
-      "userCpuMs": 61.091,
-      "systemCpuMs": 11.017,
-      "peakRssBytes": 223768576,
-      "rssDeltaBytes": 2195456,
+      "wallTimeMs": 36.633425,
+      "userCpuMs": 59.061,
+      "systemCpuMs": 7.065,
+      "peakRssBytes": 221216768,
+      "rssDeltaBytes": 4108288,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
