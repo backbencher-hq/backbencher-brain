@@ -92,6 +92,16 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // assumed), and each is verified by running the lane.
   sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
+  // M60 fsharp wave (2026-09-28). The lane had NO fixture directory, so F3 read
+  // `fixtures: n/a` in the completion matrix and nothing measured what the analyzer
+  // called things — which is how 60 symbols named with an entire function signature
+  // and 368 `contains X -> X` self-edges survived. `ext` carries the WHOLE production
+  // surface language-detection.ts routes (fs, fsi, fsx) because the lane's grammar
+  // parses signature files as IMPLEMENTATION files — `engine.ts` resolves exactly one
+  // wasm, `tree-sitter-fsharp.wasm`, for all three extensions, and the separate
+  // `tree-sitter-fsharp_signature.wasm` is NOT wired. A fixture lane that swept only
+  // `.fs` would have been measuring a surface the product never sees.
+  fsharp: { wasm: "tree-sitter-fsharp.wasm", analyzerFile: "real-fsharp-analyzer", className: "RealFsharpAnalyzer", ext: "fs,fsi,fsx" },
   // NIM wave (2026-09-27). `ext` carries .nim and .nims but NOT .nimble: the
   // router does not send .nimble here (decision NIMD4 in
   // script/m14/spec/nim-completeness.json), and a lane that swept a file the
@@ -126,6 +136,52 @@ interface Entry { [k: string]: any }
  * regression hides.
  */
 const PARAM_PIN_EXEMPT = new Set(["note", "isNamed"])
+
+/**
+ * M60 fsharp wave (2026-09-28) — a SILENTLY DEAD FORBID is now a loud failure.
+ *
+ * `matchConstraints` skips the documentation keys it knows (`comment`, `note`) and
+ * treats every OTHER key in an expectation row as a required constraint on the actual
+ * object. So a `forbid` row carrying a documentation key the runner does not know —
+ * `_why`, written by this lane's own first draft — can never match anything, and the
+ * row is dead: it asserts nothing, passes on every run, and looks like coverage in the
+ * fixture file. Five of the lane's seven mutants survived for exactly this reason, and
+ * the honest reading is that the FORBID half of three new fixtures was inert.
+ *
+ * A key the runner does not recognise in a CONSTRAINT row is therefore reported, not
+ * swallowed. This can only turn a silent pass into a loud one: every constraint key
+ * already used by the 33 registered lanes is in the allowlist below, so no existing
+ * lane changes verdict. The check is a report, not an exception, so one bad row cannot
+ * take a whole lane's run down — it is visible in the fixture's problem list instead.
+ */
+const CONSTRAINT_KEY_ALLOWLIST = new Set([
+  // symbol rows
+  "name", "kind", "ownerName", "scope", "owner", "ownerKind", "range", "startLine", "endLine",
+  "startColumn", "endColumn", "genericParameters", "parameters", "returnType", "type",
+  "visibility", "isAsync", "isAbstract", "isExported", "isDeclaration", "isRecordField",
+  "docstring", "decorators", "complexity", "linesOfCode", "id", "line",
+  // relationship rows
+  "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
+  "line_number", "confidence", "contains", "symbol", "isImport", "isContained",
+  // modifiers
+  "confidenceMin", "confidenceMax",
+])
+/** Keys that are documentation by contract, on any row. */
+const CONSTRAINT_DOC_KEYS = new Set(["comment", "note"])
+
+function unknownConstraintKeys(rows: any[] | undefined): string[] {
+  const bad = new Set<string>()
+  for (const row of rows ?? []) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue
+    for (const k of Object.keys(row)) {
+      if (CONSTRAINT_DOC_KEYS.has(k)) continue
+      if (k.startsWith("meta.")) continue
+      if (k.endsWith("EndsWith")) continue
+      if (!CONSTRAINT_KEY_ALLOWLIST.has(k)) bad.add(k)
+    }
+  }
+  return [...bad].sort()
+}
 
 function matchConstraints(actual: Entry, want: Entry): boolean {
   for (const [k, v] of Object.entries(want)) {
@@ -269,10 +325,25 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
     }
+    const fixtureFilePath = `fixtures/${runLangLang}/${src}`
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
     const problems: string[] = []
+
+    // M60 fsharp wave: an unrecognised key in a CONSTRAINT row is a silently dead
+    // assertion. See CONSTRAINT_KEY_ALLOWLIST's header — five of the fsharp lane's
+    // seven mutants survived a forbid half that had been inert for this reason, and
+    // a forbid that can never match is worse than no forbid, because it reads as
+    // coverage in the fixture file.
+    for (const sect of ["expectSymbols", "expectRelationships", "forbidSymbols", "forbidRelationships", "forbidDecorators"] as const) {
+      const unknown = unknownConstraintKeys((exp as any)[sect])
+      if (unknown.length) {
+        problems.push(
+          `inert assertion: ${sect} row(s) carry key(s) ${JSON.stringify(unknown)} which matchConstraints treats as REQUIRED constraints on the actual object — the row can never match, so it asserts nothing. Use "note" or "comment" for documentation.`,
+        )
+      }
+    }
 
     for (const want of exp.expectSymbols ?? []) {
       if (!symbols.some(s => matchConstraints(s, want))) {
@@ -534,10 +605,23 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
     }
     for (const want of exp.expectDecorators ?? []) {
-      // Each entry: { symbol, contains } — symbol.decorators must include an
-      // entry whose text contains `contains`. Reads ONLY s.decorators (not
-      // metadata.annotations fallback) so decorator emission itself stays
+      // Each entry: { symbol, ownerName?, contains } — symbol.decorators must
+      // include an entry whose text contains `contains`. Reads ONLY s.decorators
+      // (not metadata.annotations fallback) so decorator emission itself stays
       // pinned per symbol kind.
+      //
+      // M60.P1 (cpp): `ownerName` joins the filter because a lane that NORMALIZES a
+      // declaration's name cannot address it by name at all. cpp publishes every
+      // constructor as the symbol named `constructor` (and this file's own
+      // expectParameters comment already records the same problem for dart's
+      // multiple `constructor` symbols), so `{ symbol: "constructor",
+      // ownerName: "Shape" }` is the only way to pin a modifier on ONE
+      // constructor — and without it the pin silently resolves to whichever
+      // constructor happens to come first in the file, which is a pin that can
+      // pass against the wrong declaration. This mirrors expectParameters,
+      // expectVisibility and expectComplexity, which all had the filter already;
+      // `ownerName` was already in CONSTRAINT_KEY_ALLOWLIST, so no other lane
+      // changes meaning.
       const sym = symbols.find((s: any) =>
         s.name === want.symbol &&
         (want.ownerName === undefined || s.ownerName === want.ownerName))
@@ -555,9 +639,14 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // decorator rows in the two pinned csharp corpora carried the qualifier — so the
       // payload needed a gate that can say no.
       //
-      // Semantics mirror forbidSymbols/forbidRelationships: { symbol?, contains } — every
-      // decorator of every symbol (or of the named symbol when given) must NOT include
-      // `contains`. Unspecified fields are wildcards; `comment`/`note` are documentation.
+      // Semantics mirror forbidSymbols/forbidRelationships: { symbol?, ownerName?, contains }
+      // — every decorator of every symbol (or of the named symbol when given) must
+      // NOT include `contains`. Unspecified fields are wildcards; `comment`/`note`
+      // are documentation. `ownerName` is the same M60.P1 addition as
+      // `expectDecorators` above, and it is what keeps the negative twin from
+      // being blunter than the positive one: a forbid row that can only name a
+      // symbol, for a lane that normalizes constructors, would forbid the modifier
+      // on EVERY constructor rather than the one under test.
       const scope = want.symbol
         ? symbols.filter((s: any) =>
             s.name === want.symbol &&
@@ -755,9 +844,28 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         .filter((s: any) => s.kind === "module" || s.kind === "Module" || s.kind === "namespace" || s.kind === "Namespace")
         .map((s: any) => s.name),
     )
+    // A symbol whose owner is ITS OWN FILE is a file-scope unit — the case the
+    // rule above already names ("ownerless symbols (file-scope units: types,
+    // fns, consts)") reaches in a language that can genuinely have no module.
+    // Erlang's include fragments are exactly that: an .erl file whose `-module`
+    // line is commented out because the file is textually included into another
+    // module (OTP ships them — lib/syntax_tools/examples/merl/basic_test.erl is
+    // one). The analyzer owns those members by the file path, because the path
+    // is the only identity the file has and inventing a module name from the
+    // filename would fabricate a module that does not exist. That makes the
+    // member file-scoped, hence importable by its bare name, hence top level —
+    // the same class of unit the ownerless clause already admits. Without this,
+    // every `-export` in an Erlang include fragment is reported as unresolvable.
+    const isFileScopeUnit = (s: any) => !!s.ownerName && s.ownerName === fixtureFilePath
     const topLevelNames = new Set(
       symbols
-        .filter((s: any) => !s.ownerName || nsNames.has(s.ownerName) || moduleNames.has(s.ownerName))
+        .filter(
+          (s: any) =>
+            !s.ownerName ||
+            nsNames.has(s.ownerName) ||
+            moduleNames.has(s.ownerName) ||
+            isFileScopeUnit(s),
+        )
         .map((s: any) => s.name),
     )
     // JS/TS module-system binding forms — these are importable units even
