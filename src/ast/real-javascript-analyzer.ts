@@ -333,6 +333,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     // replacement are removed AFTER the walk — a mid-walk splice would
     // shift every later seenMethodIdx index and corrupt J3 last-wins.
     const b5Zombies: number[] = []
+    // JD6: which relationship row came from which node, for the edges pushed
+    // DURING the walk. The two post-walk relationship passes already re-check
+    // `isNodeInDeadSpans`, but the edges pushed inline during the walk — the
+    // heritage, CJS-export, import and decorator rows — never did, so a symbol
+    // removed as dead kept its edges and the graph gained rows whose source or
+    // target is not in the index. Recorded by position rather than matched by
+    // name, because two symbols can share a name and only one of them be dead.
+    const relSpans: Array<{ idx: number; s: number; e: number }> = []
 
     while (stack.length > 0) {
       const { node, scopes: frameScopes, inClassBody, functionDepth } = stack.pop()!
@@ -359,6 +367,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (op === "&&" || op === "||" || op === "??") cyclomaticComplexity++
       }
 
+      const relMark = relationships.length
       switch (node.type) {
         case "class_declaration": {
           const name = node.childForFieldName("name")?.text
@@ -403,6 +412,51 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
           }
+          break
+        }
+
+        case "class": {
+          // M60 / JD4: a CLASS EXPRESSION. There was no case for it at all, so
+          // `const K = class extends Base { … }` produced no extends edge, no
+          // Class symbol, and left every member ownerless — the whole
+          // declaration form was invisible. Heritage is what this adds here; the
+          // Class symbol and the member owner are JD3's (the member owner is
+          // already handled via containerOwnerName, and the class symbol itself
+          // is deliberately still not emitted, because
+          // javascript/class-expression-member-identity expects the bound
+          // variable to remain the symbol).
+          //
+          // The differential's heritage walk (differential.ts) was missing the
+          // same shape, so both sides were blind and the lane reported
+          // agreement. The oracle moved with this change — otherwise an edge
+          // emitted here would register as a fabrication.
+          const ownName = node.childForFieldName("name")?.text ?? bindingNameAbove(node)
+          const heritage = this.findChildByType(node, "class_heritage")
+          // An anonymous class expression with NO BINDING (`runIt(class extends
+          // Base {})`) names nothing, so it gets NO edge at all. The first cut of
+          // this pushed `source: ownName ?? ""` and produced an edge from the
+          // empty string — a dangling row whose source is not a symbol, which is
+          // the same defect class as JD6. Silence is the honest answer; the
+          // base is still reachable through the class_heritage in the AST.
+          if (heritage && ownName) {
+            const base = this.findChildByType(heritage, "identifier") ?? this.findChildByType(heritage, "member_expression")
+            if (base) {
+              relationships.push({
+                source: ownName,
+                target: base.text,
+                type: ASTEngine.RelationshipType.Extends,
+                confidence: 1.0,
+                ...this.lineField(base),
+                metadata: {},
+              })
+            }
+          }
+          // NOTE: no Class scope is pushed here. Ownership of a class
+          // expression's members already comes from containerOwnerName (JD3), and
+          // pushing a scope would additionally set `ownerKind = Class`, which
+          // re-keys `qualified_calls` to `Owner::method` — a behaviour change
+          // javascript/class-expression-member-identity deliberately pins against.
+          // This case adds the EDGE only.
           break
         }
 
@@ -877,10 +931,32 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
                   source: moduleName,
                   target: `${reqPath}:*`,
                   type: ASTEngine.RelationshipType.Imports,
-                  confidence: 1.0,
+                  // JD-J12 (M60, 2026-09-27): a `*` target names NO SYMBOL.
+                  //
+                  // `require("m")` and `import("m")` are module-level: the
+                  // source declares that the module is loaded, not which member
+                  // is taken from it. Publishing `<module>:*` at 1.0 states a
+                  // certainty the file does not contain — and this is the ONLY
+                  // shape a CJS require ever takes, so for an ES5 corpus it is
+                  // the whole import class.
+                  //
+                  // Measured on the two javascript corpora at 300 files: 310
+                  // edges carry a `*` leaf and **every one is at confidence
+                  // 1.0** — 233 of 1,606 in svelte, and 77 of 77 in lodash
+                  // (whose entire import surface is `require`). No named-leaf
+                  // import edge exists there at all.
+                  //
+                  // This is the same defect shape as java's inferred JPA table
+                  // name (`mapped_table`, fixed earlier in this review): an
+                  // inference published at maximum confidence. The edge is KEPT
+                  // — the module dependency is real and worth recording — but it
+                  // is marked and demoted below the 0.7 fabrication threshold,
+                  // so it is declared suspicion rather than a counted
+                  // relationship, and a consumer can filter on `unresolved`.
+                  confidence: 0.6,
                   // The module path argument is the name this edge is about.
                   ...this.lineField(arg),
-                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic },
+                  metadata: { isRequire: !isDynamic, isDynamicImport: isDynamic, unresolved: true },
                 })
               }
             }
@@ -957,18 +1033,31 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               metadata: { type: "import" },
             })
             for (const item of items) {
+              // JD-J12 (M60, 2026-09-27): `import * as ns from "m"` binds a
+              // NAMESPACE, not a symbol — the `*` leaf names no member, and the
+              // local binding `ns` is a namespace object, not a declaration in
+              // the target module. JD2b deliberately left namespace imports
+              // unresolved (there is nothing to resolve TO), which is right; what
+              // was wrong was pairing that honest refusal with confidence 1.0.
+              // A named import keeps 1.0 — its local binding IS written in the
+              // file, and the two importing fixtures pin exactly that.
+              const isNamespaceItem = item.text === "*"
               relationships.push({
                 source: moduleName,
                 // UNCHANGED, and deliberately so: the local binding, which is
                 // what the two importing fixtures pin.
-                target: `${srcPath}:${item.text === "*" ? "*" : item.text.split(" as ")[0]}`,
+                target: `${srcPath}:${isNamespaceItem ? "*" : item.text.split(" as ")[0]}`,
                 type: ASTEngine.RelationshipType.Imports,
-                confidence: 1.0,
+                confidence: isNamespaceItem ? 0.6 : 1.0,
                 ...this.lineField(item.node),
                 // JD2b, additive: what the MODULE declares, so the resolver can
                 // reach the right symbol for an aliased or default import. The
                 // edge target above is untouched.
-                metadata: { declaredName: item.declared, declaredKind: item.kind },
+                metadata: {
+                  declaredName: item.declared,
+                  declaredKind: item.kind,
+                  ...(isNamespaceItem ? { unresolved: true } : {}),
+                },
               })
             }
           }
@@ -1010,16 +1099,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: moduleName,
               target: `${modPath}:*`,
               type: ASTEngine.RelationshipType.Imports,
-              confidence: 1.0,
+              // JD-J12 (M60, 2026-09-27): a clause-less re-export (`export * from
+              // "m"`) names the MODULE and no member of it — `*` again. The
+              // comment below is right that the written name is the path
+              // argument, but a module path is not a symbol, so 1.0 overstated
+              // it the same way it overstated `require` and the namespace import.
+              // Kept, marked, and demoted: the re-export dependency is real.
+              confidence: 0.6,
               // A re-export with no clause names the MODULE, so the written name
               // is the module-path argument itself.
               ...this.lineField(exportSource),
-              metadata: { isReExport: true },
+              metadata: { isReExport: true, unresolved: true },
             })
             patterns["ES6 ReExports"] = true
           }
           break
         }
+      }
+
+      // JD6: tag every row this node pushed, so the dead-span filter below can
+      // drop the ones that came from a superseded body.
+      for (let i = relMark; i < relationships.length; i++) {
+        relSpans.push({ idx: i, s: node.startIndex, e: node.endIndex })
       }
 
       // Recurse children
@@ -1071,6 +1172,23 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = symbols.length - 1; i >= 0; i--) if (deadIdx.has(i)) symbols.splice(i, 1)
       }
     }
+    // JD6: drop the walk-time edges whose node sat inside a dead span. Applied
+    // AFTER the symbol removals above, and only where a dead span actually
+    // exists — measured prevalence on 400 production files is 0, so this is an
+    // integrity guard rather than a common path, and it must stay inert when
+    // nothing was superseded.
+    if (deadSpans.length > 0 && relSpans.length > 0) {
+      const drop = new Set<number>()
+      for (const r of relSpans) {
+        for (const d of deadSpans) {
+          if (d.s <= r.s && r.e <= d.e) { drop.add(r.idx); break }
+        }
+      }
+      if (drop.size > 0) {
+        for (let i = relationships.length - 1; i >= 0; i--) if (drop.has(i)) relationships.splice(i, 1)
+      }
+    }
+
     {
       const bySource = new Map<string, string[]>()
       const qcOwnerOf = (n: Node): string | undefined => {
@@ -1178,6 +1296,22 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.addContainmentRelationships(symbols, relationships)
     this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion)
     this.extractCallRelationships(rootNode, symbols, relationships, moduleName, deadSpans)
+    // JD6: an export written inside a superseded duplicate body is not part of
+    // the module's surface. `extractExportRelationships` runs after the walk and
+    // turns the `exports` array into rows, so the filter belongs here — on the
+    // entries — rather than on relSpans, which only covers rows pushed DURING
+    // the walk. The entry's own range is the name-bearing node, so an entry
+    // inside a dead span is a dead export.
+    if (deadSpans.length > 0 && exports.length > 0) {
+      for (let i = exports.length - 1; i >= 0; i--) {
+        const r = exports[i].range
+        if (r && r.startIndex !== undefined && r.endIndex !== undefined) {
+          for (const d of deadSpans) {
+            if (d.s <= r.startIndex && r.endIndex <= d.e) { exports.splice(i, 1); break }
+          }
+        }
+      }
+    }
     this.extractExportRelationships(exports, relationships, moduleName)
     // M49 #868: decorators are metadata on the symbol they decorate, so their
     // only edge is a reference FROM that symbol, at the decorator's own line.
@@ -1197,7 +1331,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     }))
 
     // Field-access uses (parity with java/groovy/kotlin collectors).
-    this.collectFieldAccessUses(rootNode, relationships, moduleName)
+    this.collectFieldAccessUses(rootNode, relationships, moduleName, deadSpans)
 
     // Declared/checked type references (M14): JavaScript has no type
     // annotations, but instanceof checks reference a type by name — the one
@@ -1952,9 +2086,33 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ANONYMOUS default declarations (`export default function () {}`)
         // have no name node — previously dropped entirely, losing the
         // module's main export. Record under the family sentinel "default".
+        //
+        // JD-J14 (M60, 2026-09-27): a NAMED default declaration's export name is
+        // `default`, never the declaration's own name. ECMAScript exports
+        // `export default function fragment(){}` UNDER THE NAME `default`;
+        // `fragment` is a local binding that importers cannot reach, and nothing
+        // named `fragment` is exported at all. Publishing `fragment` therefore
+        // invented a public name that does not exist — and because the local name
+        // IS what a default importer writes (`import fragment from "./fragment.js"`
+        // publishes the leaf `fragment`), the two errors cancelled in the corpus
+        // and the lane read clean. The failure only appears when a consumer asks
+        // the question a graph tool asks: does this module export `fragment`? It
+        // does not, and the analyzer said it did.
+        //
+        // Measured on svelte: 8 rows in one 300-file audit where the target's
+        // exports are (for example) `[fragment]` while the importer is a DEFAULT
+        // import of that module — `export default function fragment()` published
+        // as `fragment` instead of `default`. The local name is kept in metadata
+        // so nothing is lost, exactly as `export { x as default }` already does
+        // with `localName`.
         const n = child.childForFieldName("name")
         foundNamed = true
-        exports.push({ name: n?.text ?? "default", isDefault, range: this.nodeToRange(child) })
+        exports.push({
+          name: isDefault ? "default" : n?.text ?? "default",
+          isDefault,
+          range: this.nodeToRange(child),
+          ...(isDefault && n?.text ? { metadata: { viaDefaultDeclaration: true, localName: n.text } } : {}),
+        })
       } else if (child.type === "lexical_declaration" || child.type === "variable_declaration") {
         for (let j = 0; j < child.namedChildCount; j++) {
           const decl = child.namedChild(j)
@@ -2104,6 +2262,11 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
     moduleName: string,
+    // JD6: this pass had no dead-span guard, so reads inside a superseded
+    // duplicate body still emitted `uses` rows after the symbol they belonged to
+    // was removed. Its sibling extractCallRelationships has had the guard all
+    // along; this closes the asymmetry.
+    deadSpans: { s: number; e: number }[] = [],
   ) {
     // Walk with an enclosing-class scope (this/super receivers) and an
     // enclosing-FUNCTION scope for member-read attribution. M37 JSD2 (JAD2
@@ -2130,6 +2293,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
       // declaration, which the typescript twin does not emit. Subtree skipped
       // whole (arguments included), matching the calls walk above.
       if (this.inDecoratorPosition(node)) continue
+      // JD6: no reads from inside a superseded duplicate body.
+      if (deadSpans.length > 0 && isNodeInDeadSpans(deadSpans, node)) continue
 
       if (
         node.type === "class_declaration" ||
@@ -2189,6 +2354,47 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         const isCallCallee =
           node.parent?.type === "call_expression" &&
           node.parent.childForFieldName("function")?.id === node.id
+        // X1 (RULED 2026-09-27): a call's callee chain is skipped ENTIRELY below, on
+        // the J4 assumption that "calls covers it". That is true for a BARE callee —
+        // `fn(x)` has `calls fn`, so suppressing `uses fn` is right and is what the
+        // bare-read pass's `isCallee` gate does. It is FALSE for a MEMBER callee: the
+        // `calls` edge names only the LEAF (`title.toUpperCase()` -> `calls
+        // toUpperCase`), so the chain's ROOT is named by nothing at all.
+        //
+        // Measured consequence before this fix, on the analyzer's own output:
+        // `title.toUpperCase()`, `value.trim()` and `items.slice().sort()` all
+        // published NO `uses` edge for the receiver, while `title.length` (a property
+        // access, not a call) published `title` and `fn(title)` (a call ARGUMENT)
+        // published `title`. The defect was invisible to the fixture and mutant lanes
+        // because no fixture asserted the receiver, and invisible to the differential
+        // because the ORACLE carried the identical rule — the shared-premise shape.
+        //
+        // ONLY THE ROOT IS EMITTED, never the leaf: the leaf is what the `calls` edge
+        // names, and publishing it here would be the double-emission J4 exists to
+        // prevent. `this`/`super` are excluded because they are keywords, not symbols,
+        // which matches the non-callee branch's rule for the same reason. The same
+        // `seen` key dedupes, so a root already published by the non-callee branch
+        // (`a.b.c()` publishes `a` twice today) is emitted once.
+        if (isCallCallee) {
+          let root: Node | null | undefined = node.childForFieldName("object")
+          while (root && root.type === "member_expression") root = root.childForFieldName("object")
+          const head = root && root.type === "identifier" ? root.text : ""
+          if (head && head !== "this" && head !== "super") {
+            const recvSource = method ?? owner ?? moduleName
+            const recvKey = `${recvSource}.#${head}`
+            if (!seen.has(recvKey)) {
+              seen.add(recvKey)
+              relationships.push({
+                source: recvSource,
+                target: head,
+                type: ASTEngine.RelationshipType.Uses,
+                confidence: 0.6,
+                ...this.lineField(root!),
+                metadata: { isFieldAccess: true, bareRead: true, callReceiver: true },
+              })
+            }
+          }
+        }
         if (!isCallCallee) {
           // M59 (#825): each segment keeps the node that writes it, so the
           // segment's OWN line is available (a chain can wrap: `a\n  .b\n  .c`).

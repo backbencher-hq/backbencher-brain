@@ -3,12 +3,12 @@
   "grammar": "tree-sitter-css.wasm",
   "vocabulary": {
     "_description": "The grammar pin gate (script/m14/verify-grammar-pins.ts) reports three counts for a lane, and this file uses the same three so the two documents can be compared directly. `ids` is tree-sitter's whole symbol space, which mixes three vocabularies; `namedUnique` and `anonUnique` are the two halves of it by tree-sitter's OWN nodeTypeIsNamed flag, not by a regex on the name. This spec buckets by ANALYZER REACHABILITY instead, which is a different axis and deliberately not the same partition — `internal_silent` holds named types (hidden `_rules`, generated `_repeatN`/`_tokenN` wrappers) AND anonymous tokens (punctuation, keywords, comments). The two axes are reconciled in `internal_silent.named_vs_anonymous`.",
-    "ids": 151,
+    "ids": 152,
     "namedUnique": 64,
-    "anonUnique": 65
+    "anonUnique": 66
   },
   "handled_verified": {
-    "_description": "Analyzer-referenced node types, behavior-verified 2026-09-26 (real-css-analyzer.ts, at the CSS spec wave). Verification is three independent signals, all measured: 81 node types reached by a minimal reproduction (css-spec-classify.ts), 116 of 151 wasm symbol ids present in the real corpus of 185 non-empty svelte .css files (css-spec-corpus-census.ts), and for each type an observed symbol, edge, or pattern count. A type counts as HANDLED when the analyzer names it or reads its field AND it was observed in real code or in a reproduction — never on name alone. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously declaring that it emits nothing for it, and two types do exactly that (CSS-D5). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. Types reached only through a parent construct (unit, integer_value, color_value, escape_sequence, feature_name, keyframe_block, binary_expression, …) are handled via that parent and are listed here rather than left unadjudicated.",
+    "_description": "Analyzer-referenced node types, behavior-verified 2026-09-26 (real-css-analyzer.ts, at the CSS spec wave). Verification is three independent signals, all measured: 81 node types reached by a minimal reproduction (css-spec-classify.ts), 116 of 152 wasm symbol ids present in the real corpus of 185 non-empty svelte .css files (css-spec-corpus-census.ts), and for each type an observed symbol, edge, or pattern count. A type counts as HANDLED when the analyzer names it or reads its field AND it was observed in real code or in a reproduction — never on name alone. Handled does NOT mean \"emits a symbol\": the analyzer can handle a construct by consciously declaring that it emits nothing for it, and two types do exactly that (CSS-D5). The distinction that matters is handled vs unexamined: nothing in this list is merely unaccounted for. Types reached only through a parent construct (unit, integer_value, color_value, escape_sequence, feature_name, keyframe_block, binary_expression, …) are handled via that parent and are listed here rather than left unadjudicated.",
     "types": [
       "adjacent_sibling_selector",
       "arguments",
@@ -85,13 +85,12 @@
       "grid_value": "grid_value -> declaration (handled construct)",
       "integer_value": "integer_value -> declaration (handled construct)",
       "keyframe_block_list": "keyframe_block_list -> keyframes_statement (handled construct)",
-      "namespace_name": "namespace_name -> namespace_statement (handled construct)",
       "parenthesized_value": "parenthesized_value -> binary_expression -> arguments (handled construct)",
       "unit": "unit -> integer_value -> declaration (handled construct)"
     }
   },
   "internal_silent": {
-    "_description": "Grammar-internal containers, generated repetition/token wrappers, hidden rules, punctuation and keyword tokens, comment and string payloads, and tree-sitter's id-0 end-of-input symbol — 71 of 151 unique type names across 151 wasm symbol ids (the id list repeats names, which is how tree-sitter aliases a token to several rules). Every entry below is silent BY CONTRACT: a symbol's edge names a construct, and none of these IS a construct. Each carries a stated reason so \"silent\" is auditable rather than assumed.",
+    "_description": "Grammar-internal containers, generated repetition/token wrappers, hidden rules, punctuation and keyword tokens, comment and string payloads, and tree-sitter's id-0 end-of-input symbol — 72 of 152 unique type names across 152 wasm symbol ids (the id list repeats names, which is how tree-sitter aliases a token to several rules). Every entry below is silent BY CONTRACT: a symbol's edge names a construct, and none of these IS a construct. Each carries a stated reason so \"silent\" is auditable rather than assumed.",
     "types": [
       "ERROR",
       "MISSING",
@@ -155,6 +154,7 @@
         "of",
         "only",
         "or",
+        "parenthesized_value_repeat1",
         "postcss_statement_repeat1",
         "pseudo_class_arguments_repeat1",
         "pseudo_class_arguments_repeat2",
@@ -230,6 +230,7 @@
         "of",
         "only",
         "or",
+        "parenthesized_value_repeat1",
         "postcss_statement_repeat1",
         "pseudo_class_arguments_repeat1",
         "pseudo_class_arguments_repeat2",
@@ -307,6 +308,7 @@
       "of": "punctuation or keyword token — the construct is its parent",
       "only": "punctuation or keyword token — the construct is its parent",
       "or": "punctuation or keyword token — the construct is its parent",
+      "parenthesized_value_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
       "postcss_statement": "RULED (CSS-D2): the rule is defined at prec(-1) and un-precedenced `at_rule` matches the same shape, so tree-sitter prefers at_rule on every conflict — `@tailwind --apply;` parses CLEAN as at_rule + keyword_query, and `@custom-selector :--n .a, .b;` errors without ever producing it. The construct is handled through at_rule; handling it here would mean handling a rule no input can select.",
       "postcss_statement_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
       "pseudo_class_arguments_repeat1": "generated repetition wrapper — holds the repeated children, is not itself a construct",
@@ -362,6 +364,13 @@
         "status": "RULED",
         "question": "`end` is reported as node type id 0 by the wasm but appears nowhere in grammar.js or in the scanner's TokenType enum.",
         "resolution": "It is tree-sitter's end-of-input symbol, not a rule of this grammar — the language's reserved id 0, which is why enumerating node types reports it and why no source can ever produce it. internal_silent, with the absence from both grammars recorded as the evidence rather than a guess."
+      },
+      {
+        "id": "CSS-D10",
+        "node_type": "nested rule_set (contains, isNestedSelector)",
+        "status": "RULED",
+        "question": "a `&`-composed nested rule's `contains` edge carries NO line, because the edge's TARGET is the RESOLVED selector (`.a { & .b {} }` -> `.a .b`) and that string is written nowhere in the file. 52 of the lane's 28,432 relationships are in this state. Should the line be omitted, or should it be the nested rule's own line?",
+        "resolution": "OMITTED, on a measurement rather than a preference. Claiming the nested rule's line made 96 of 96 nested-selector edges INCONSISTENT against the source text — not because the line was nearly right, but because the name the line is supposed to carry is not in the file at all. The governing rule is M59's: a relationship's line belongs to the NAME node, not to the enclosing construct, and `.a .b` has no line because it is not written on one. The test for which case applies is not `does the selector contain &` — an IMPLICIT descendant (`.a { .b {} }`, no `&` at all) also resolves to a composed name that is written nowhere, and it accounted for the 67 INCONSISTENT edges left after the `&` test. The exact test is whether the resolved text and the as-written text are the same string, so the one case where the name genuinely IS written keeps its line. LOCATABILITY IS NOT LOST: the edge carries `asWrittenSelector` (`& .title`) in its metadata, so a consumer can find the site by text even though it cannot be given a line that would imply the name is there. The alternative — stamping the construct's line and weakening the oracle to check the as-written form instead — is defensible and was considered; it is not adopted because it would trade a guarantee the rest of the lane holds (the line carries the name) for one it does not (the line carries the construct), and that trade should be made once for the whole codebase rather than lane by lane."
       },
       {
         "id": "CSS-D2",

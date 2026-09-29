@@ -117,57 +117,122 @@ different claims, and only the first is true here.
 
 - `@supports`/`@media` query text is used verbatim as the scope name — no
   decomposition of query conditions
-- `progid:` IE filter values do not parse — the **largest** remaining class:
-  37 of the 62 corpus `.css` files that still fail (60%), with the error sitting
-  on the progid line in all 37. The other 13 are the genuine modern CSS listed
-  above, so `progid:` and modern CSS are the only two classes left.
-  Recorded as `CSS-L2`, and the diagnosis is the opposite of the obvious one: the
-  `progid:` **token already lexes** (`plain_value`'s trailing repeat has always
-  admitted `:`), and the failure is **inside the parentheses**. Adding `=` to the
-  `arguments` rule's separator choice was built and A/B'd and is **provably
-  inert** — 61 error files before, 61 after, 0 fixed, 0 regressed, 151 → 151 node
-  types — because the value parses as `parenthesized_value`, whose rule is
-  `seq('(', $._value, ')')`, exactly ONE value. A real fix has to widen that
-  rule's **arity**, and it participates in every parenthesized value in CSS
-  (`calc((1px + 2px) * 3)`, nested parens, `var()` fallbacks), so it is a
-  different kind of change from the two additive hunks adopted here and needs its
-  own A/B. Recorded so the inert patch is not written a second time
+- `progid:` IE filter values — **no longer a residual.** This was the largest
+  remaining class (37 of the 62 corpus `.css` files that still failed, 60% of the
+  mass) and the doc previously carried a long explanation of why it was NOT fixed,
+  including that the obvious patch was provably inert. It is now fixed, by widening
+  the ARITY of `parenthesized_value` from one value to a separated list, because an
+  IE filter argument is a `name = value` pair. Measured A/B over 533 files in 13
+  repositories:
 
-## The `.scss` / `.sass` / `.less` files this lane is also routed
+  ```
+  61 error files -> 24      37 fixed      0 REGRESSED
+  Q2 collateral: 0 files that parsed clean before now error
+  Q3 shape:      node types 151 -> 152, added ['parenthesized_value_repeat1']
+                 (this rule's own generated wrapper), 0 removed, 0 field changes
+  grails-core:   20.94% -> 1.57%
+  ```
 
-The product routes all four extensions here — `src/ast/parallel-indexer.ts` lists
-`.css`/`.scss`/`.sass` and `script/m13/corpus-map.ts` maps
-`.scss`/`.sass`/`.less` → `css` — and **all 254 real `.scss` files in the corpus
-route to this analyzer** (measured 254/254).
+  The first attempt is why the second one is written down: adding `=` to the
+  separator choice of `arguments` was built, A/B'd, and **provably inert** (61 → 61,
+  0 fixed). The value never parses as a `call_expression`, so `arguments` is never
+  reached and the token's character set was never the problem — the rule's arity
+  was. `parenthesized_value_repeat1` is classified `internal_silent` in the spec as
+  a generated repetition wrapper.
 
-The CSS grammar does not support SCSS, and the numbers are:
+- `@custom-media`, `@counter-style` and `@font-feature-values` — **not a residual
+  either, and the corpus is why that was not known.** The census reported all three
+  as NO OCCURRENCE, which was recorded as "not a defect". A probe then found all
+  three DECLARED a named, referable thing and published **nothing**: no symbol, so
+  `list-style: thumbs` had no endpoint, `@media (--narrow)` named itself by raw
+  text, and `font-feature-settings` had nothing to point at. That is the
+  `@font-face`/`@property` defect class a second time, and it survived precisely
+  because the corpus is silent — NO OCCURRENCE means the corpus cannot speak about
+  a construct, not that the construct works. Three of three were broken.
+
+  Two of the three also could not be PARSED at all (4 and 6 errors): the grammar
+  contains no mention of `custom-media` (measured: 0 occurrences), because an
+  at-rule prelude had to be a comma-separated query list. Grammar patch 4/4 allows a
+  leading run of identifiers, aliased to `keyword_query` so **no visible node type
+  is added** — the new rule is hidden, absent from `node-types.json` and from every
+  parse tree; only the wasm symbol table grows 152 -> 153 ids while named types stay
+  at 64. It also drops real SCSS errors (`@mixin`/`@include` preludes).
+
+  This is the one patch whose corpus win is **zero**, and that is stated rather than
+  left for a reader to find:
+
+  ```
+  0 files fixed      0 REGRESSED      0 collateral
+  Q3 shape: 0 clean files changed shape, 0 field changes
+  ```
+
+  Its justification is the minimal reproduction; the A/B's job was to prove it does
+  no harm. A patch judged only by a corpus win would never have been written,
+  because there was none to write. What each at-rule now publishes:
+
+  | at-rule | publishes | resolved by |
+  | --- | --- | --- |
+  | `@counter-style thumbs` | `variable` + `isCounterStyleDeclaration` | `list-style`/`list-style-type` -> `uses` |
+  | `@custom-media --narrow (...)` | `variable` named `--narrow` + `isCustomMediaDeclaration` | `@media (--narrow)` -> `references` |
+  | `@font-feature-values Body Text` | `variable` + `isFontFeatureValuesDeclaration` | `font-feature-settings` inside a `@font-face` -> `uses` |
+
+  `@custom-media` publishes the bare `--ident` for the same reason `@property`
+  publishes `--brand`: the name is the referable part and the condition is its
+  value — so the two are the same shape, and each carries a metadata marker saying
+  which construct declared it. A rule-level `.x { font-feature-settings: "nice" }`
+  is legal CSS and deliberately emits NO edge: which family's feature it names
+  depends on the cascade, so an edge there would invent an endpoint.
+
+- `@page` rules, `@starting-style`, `[attr i]`/`[attr s]`, escaped unicode
+  identifiers, HTML-style comments, `chrome://` `@import` URLs, empty custom-property
+  values, range media/container queries, `& &` / `&&` / `&div`, and a NAMED
+  `@container` (`@container card (min-width: 400px)` — only the anonymous form
+  parses) all remain. Together they are the whole of the 25 corpus files that still
+  error, and every one is re-tested against the pinned wasm rather than carried
+  forward.
+
+## `.scss` is no longer routed here — it has its own lane
+
+**This section used to be a declaration that the declaration was missing from.**
+
+It said, in effect: all 254 real `.scss` files in the corpus route to this analyzer,
+the CSS grammar does not support SCSS, 42 of 244 non-empty files parse clean (17.2%),
+and "this is declared, not a defect in the CSS contract". The last sentence was the
+error. It was declared **in this document only** — `CSS-L1` in
+`script/m14/spec/css-completeness.json` was the record, and nothing else read it. An
+82.8% parse-failure rate on 254 real files was therefore invisible to every gate while
+being fully described in prose three screens away.
+
+It also gave the wrong reason for leaving it: *"removing the routing would take away
+real capability: the plain-CSS rules inside an SCSS file parse correctly."* That is
+backwards. Keeping the routing was what cost the capability — 43 of 244 files parsed
+at all, and the ones that did were parsed by a grammar that silently produced nothing
+for every SCSS construct in them.
+
+**What happened instead (2026-09-27).** `.scss` became its own language with its own
+grammar, analyzer, pin, fixtures and mutants:
 
 ```
-244 non-empty .scss files
-  42 parse CLEAN   (17.2%)
- 202 with errors
-   0 crashes
-11,451 distinct error lines
-4,477 symbols and 2,025 relationships still emitted
+.scss routed here          254 files, 43 parsing clean (17.6%)
+.scss under the scss lane  244 files, 149 parsing clean (61.1%)
+ERROR nodes                30,767 -> 3,900
+grammar patches            2, both strictly additive (76 fixed, 0 regressed)
 ```
 
-Cause breakdown over every distinct error line: `$variable` reference **17.9%**,
-`@include` **12.8%**, `$variable` declaration **6.7%**, `//` line comment
-**2.7%**, `@use` **1.6%**, `#{…}` interpolation **1.2%**, `@each`/`@for`/`@if`
-**1.1%**, `@mixin` **0.6%**; the remaining 55.3% is the structural fallout of those
-rather than a separate cause.
+`src/ast/language-detection.ts` maps `scss: "scss"`, `engine.ts` dispatches it to
+`RealScssAnalyzer`, and the fixture lane claims `.scss` separately. See
+`docs/analyzers/real-scss-analyzer.md`.
 
-(`@use` looked like the dominant cause in a first pass and was not — that sample
-read only the first error rows of files in name order, and `@use` sorts early.)
+`.sass` and `.less` **still** route here and are **still declared** — 0 files of each
+across 13 corpora, so this repo can neither support nor refute a claim about them, and
+inventing coverage for a dialect with no corpus would be a claim with nothing behind
+it. `.sass` in particular is indented syntax and is a genuinely different grammar, not
+a dialect flag.
 
-This is **declared, not a defect in the CSS contract**, and the reason is that
-removing the routing would take away real capability: the plain-CSS rules inside an
-SCSS file parse correctly and are worth keeping. Teaching the CSS grammar SCSS is
-a different grammar (`tree-sitter-scss`) with its own A/B, not a third hunk on a
-pinned 0.25.0 that has already been measured twice. What was missing was not the
-behaviour but the **declaration** — nothing in the repo said this lane also
-receives `.scss`, so an 82.8% parse-failure rate on 254 real files was invisible to
-every gate. Recorded as `CSS-L1` in `script/m14/spec/css-completeness.json`.
+The general lesson, recorded because it is the second time in this lane: **a
+limitation that lives only in a document is not a limitation, it is a paragraph.**
+`CSS-L1` was in the spec and still nothing read it. What made it real the second time
+was that the spec entry was replaced by a measurement another gate could fail on.
 
 ## Regex inventory
 
@@ -218,8 +283,8 @@ Replaced with pure-String helpers: `stripQuotes` (paired-quote strip),
 because both answered 1. It is now measured, and the corpus distribution is:
 
 ```
-27,322 of 27,322 symbols carry a value (0 absent)
-60.0% at complexity 1, 15 distinct values, max 52
+20,213 of 20,213 symbols carry a value (0 absent)
+55.4% at complexity 1, 15 distinct values, max 52
 max lands on Tailwind's
   .ltr\:group-hover\:translate-x-0\.5:where(:not(:lang(ae), :lang(ar), :lang(arc), …))
 which is genuinely the hardest selector in the corpus
@@ -235,7 +300,7 @@ Terms, each counted where it is seen rather than inferred from text:
 | `@font-face` / `@property` / `@mixin` | 1 + the count of its OWN descriptors |
 | custom property | 1 + the number of `var(--other)` reads in its value |
 
-60.0% at 1 is **correct, not a residual vacuity** — most CSS selectors are simple.
+55.4% at 1 is **correct, not a residual vacuity** — most CSS selectors are simple.
 The point is that the metric can now tell.
 
 Three defects the fixture lane found in this metric, all of which had shipped as
@@ -253,7 +318,8 @@ Three defects the fixture lane found in this metric, all of which had shipped as
   distinguishing term can never fire cannot tell `:hover` from
   `:where(.a .b .c)`;
 - complexity was measured for SELECTOR symbols only, so the other four kinds fell
-  through to the `|| 1` fallback and **24% of the lane (6,486 of 27,322) carried a
+  through to the `|| 1` fallback and **24% of the lane (6,486 symbols, measured
+  before the identity merge) carried a
   fabricated 1** — a 20-condition `@supports` scope read identically to `.plain`.
 
 ### The performance envelope
@@ -294,6 +360,103 @@ mapping); selector chain/specificity walk is one pass per selector node with a
 bounded per-node stack; `detectFrameworksFromClasses`/`calculateMetrics`/
 `generateInsights` iterate the symbol list once each. No O(n²) or per-symbol
 O(n) scans.
+
+## Verification
+
+### The differential found four defects in its own oracle, from another lane's corpus
+
+This lane reads **100% coverage / 0 unexplained on both corpora**, and it read that way
+at every step of the SCSS work below — while four defects in `deriveCssEdges` were live
+and undiscovered. They were found because registering the `scss` lane pointed the same
+oracle at element-plus, which is 170 of the 254 `.scss` files in 13 corpora and vendors
+VitePress documentation styles:
+
+1. a comma group was resolved as a **unit** — `.doc-content h1, h2` names only its first
+   member correctly;
+2. there was no **cross product** — `h1..h6 { .el-tag, .vp-tag {} }` is twelve selectors,
+   and the intermediate fix asserted five the author never wrote;
+3. the product **repeated members** — four parents times two children is eight entries of
+   which four are duplicates;
+4. **`&` did not expand per parent member** — `&:first-child` under a six-member parent is
+   six selectors, and substituting the comma-JOINED parent suffixed only the last one.
+
+Plus: a name still containing `&` after resolution is **not a name** (224 rules in 160
+files, whose referent is a mixin call site outside the file), and the **unquoted `url()`
+import branch never fired** — the payload is a grandchild, so four of the six imports in
+one corpus file were silently absent from the truth. That file sits outside the rotating
+60-file sample, which is why the row read 100% while the truth was quietly short.
+
+None of this changed the ruling that a comma group is **one** symbol and **one**
+endpoint. It sharpened it: one endpoint per RULE, with each member RESOLVED inside that
+one name. Those are two different operations, and conflating them produced the original
+error and all four of these.
+
+A second opinion is only worth having if it is had. Nothing about this lane's own
+evidence was wrong — it was complete with respect to two corpora, and every defect lived
+in the parts of CSS that two corpora happen not to contain.
+
+### The gates
+
+Eleven gates plus a mutant set. The mutants are 13 faithful reverts of defects
+measured during this work (`script/m60/css-mutants.ts`), and **all 13 are caught** —
+which is the only claim worth making about them. Two did not survive their first
+run, and both gaps were in the pins rather than in the mutants:
+
+- `symbol-identity-collapsed` was unpinned because no fixture repeated a selector, so
+  the lane's largest defect (36.6% of corpus files publishing an ambiguous symbol,
+  27,321 duplicates removed across the wave) had no test at all.
+  `repeated-selectors-are-one-symbol` now writes `.btn` and `.card` twice each and
+  pins ONE symbol apiece.
+- `parse-errors-swallowed` was unpinned because every fixture asserted
+  `expectErrorCount: 0`, which an empty array also satisfies — so the suite could not
+  distinguish a clean parse from a swallowed failure.
+  `error-recovery-is-reported` pins `atLeast: 1` on a named `@page :first`, and
+  deliberately not an exact count: a pin that fails when the grammar improves is a
+  pin that gets deleted.
+
+A fixture only proves what its author thought to write down. The mutants ask the
+opposite question — what can the suite NOT fail on — and that is how the largest
+defect in the lane turned out to be untested.
+
+### Ten more, found by registering the lane that DELEGATES to this one
+
+The mutants above all ask about CSS. The sharpest question about a delegating lane is
+whether the delegate's rules were actually applied to it, and until 2026-09-28 nothing was
+asking that: `scss` was absent from the M59 line oracle, whose name-reading rules were
+selected with `lang === "css"`. So the SCSS lane's scope edges — emitted by *this*
+analyzer, through delegation — were never checked by the CSS name rules, and when they
+were, ten of them failed.
+
+The defect was here, not there. The five scope edges (`@media`, `@supports`, `@layer`,
+`@container`, `@scope`) claimed the `selectors` node's line unconditionally, on the
+comment's own reasoning that the edge "is named by the rule's SELECTOR". That is true
+only when the name is written on that line, and for a **nested** rule it is not: the
+target is the *resolved* name, which composes to parent + own, so
+
+```scss
+table tbody:first-of-type tr {
+  &:nth-child(odd) { … }   /* this line */
+  th { … }                /* the edge named table … tr:nth-child(odd) th */
+}
+```
+
+The fix was already in this file, one edge below: the nested-selector edge compared the
+written text with the composed name and dropped the line when they differed, with a
+comment explaining that testing for `&` is not enough because an implicit descendant
+(`.a { .b { … } }`, no `&` at all) composes too. The scope edges were the same case with
+that test missing, and both families now read one hoisted answer.
+
+Ten edges moved from with-line to no-line, which is the correct outcome and not a
+regression: a name the line does not write is never checkable rather than silently
+unaccused. The differential is unmoved (0/0 on both corpora) because it compares
+relationships, not line provenance.
+
+Worth stating as a measurement: this class is rare in pure CSS, which is why the CSS
+corpus read `86/86` and this survived. The SCSS corpus, which nests throughout, exposed
+all ten at once. **A corpus chosen because it parses cleanly measures the grammar's
+comfort, not the lane's health** — the same sentence the SCSS doc reaches from the other
+direction, which is a fair measure of how much these two lanes have been teaching each
+other.
 
 ## Differential ground truth
 

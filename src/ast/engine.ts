@@ -275,6 +275,17 @@ export namespace ASTEngine {
     decorators?: string[]
     genericParameters?: string[]
     comments?: string[]
+    /**
+     * M60 (powershell, 2026-09-26): the declaration's own documentation, as one
+     * string. The field is emitted by java, python, ruby and now powershell, and
+     * `brain_symbol.docstring` has a column and a store binding
+     * (parallel-indexer.ts, the M35 pre-work) — but it was NOT declared here, so
+     * every consumer typing against `UniversalSymbol` saw it only through the
+     * index signature. That is how a field four producers write and the store
+     * reads can stay invisible to the type system: nothing errors, and nothing
+     * checks. Declared now; the index signature still carries the rest.
+     */
+    docstring?: string
     qualified_calls?: string[] // ProxiCall-style: raw calls extracted as-is ["service.createUser", "_auth.validate"]
     apiContractPath?: string // Deterministic mapping: Exact Route URL or Fetch URL for 100% accurate cross-language links
     ownerName?: string // Parent class/namespace name for nested symbols
@@ -654,8 +665,21 @@ export namespace ASTEngine {
           languageWasmPath = resolveWasm("tree-sitter-html/tree-sitter-html.wasm")
           break
         }
-        case "css":
-        case "scss":
+        case "css": {
+          languageWasmPath = resolveWasm("tree-sitter-css/tree-sitter-css.wasm")
+          break
+        }
+        // scss is its OWN grammar and its own lane, not a dialect flag on the CSS one.
+        // The two were conflated until this change and the conflation was measurable:
+        // 254 `.scss` files were routed to a grammar with no `$variables`, no
+        // `@mixin`/`@include` and no interpolation, and 43 of the 244 non-empty ones
+        // parsed clean. `.sass` (indented syntax, a genuinely different grammar) and
+        // `.less` stay on the CSS wasm and stay DECLARED — measured 0 files of each in
+        // 13 corpora, so neither is a claim this repo can support or refute.
+        case "scss": {
+          languageWasmPath = resolveWasm("tree-sitter-scss.wasm")
+          break
+        }
         case "sass": {
           languageWasmPath = resolveWasm("tree-sitter-css/tree-sitter-css.wasm")
           break
@@ -1718,9 +1742,10 @@ export namespace ASTEngine {
       case "html":
         return new (await import("./real-html-analyzer")).RealHtmlAnalyzer()
       case "css":
-      case "scss":
       case "sass":
         return new (await import("./real-css-analyzer")).RealCssAnalyzer()
+      case "scss":
+        return new (await import("./real-scss-analyzer")).RealScssAnalyzer()
       case "json":
         return new (await import("./real-json-analyzer")).RealJsonAnalyzer()
       case "yaml":
@@ -1804,6 +1829,8 @@ export namespace ASTEngine {
         return new (await import("./real-markdown-analyzer")).RealMarkdownAnalyzer()
       case "vb":
         return new (await import("./real-vb-analyzer")).RealVbAnalyzer()
+      case "toml":
+        return new (await import("./real-toml-analyzer")).RealTomlAnalyzer()
       default:
         return new GenericAnalyzer()
     }

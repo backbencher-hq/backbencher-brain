@@ -174,6 +174,95 @@ function extractTypeParametersOf(node: Node): string[] {
   return typeParams
 }
 
+/**
+ * The NAME a value expression is bound to, looking upward through the wrappers
+ * that can sit between a value and its binding. PORTED from the javascript twin
+ * (`bindingNameAbove`, real-javascript-analyzer.ts:211) so the two analyzers
+ * answer one question the same way: `const K = class {…}` binds through a
+ * `variable_declarator`, `K = class {…}` through an `assignment_expression`,
+ * and anything else — a call argument, a `return`, an array element — names
+ * nothing, so the answer is `undefined` rather than a guess. That "rather than a
+ * guess" is load-bearing: the twin measured 183 of 204 remaining ownerless
+ * members on the svelte corpus as exactly this correct-silence case, and 20 as
+ * the assignment form, which was a real gap.
+ */
+function bindingNameAbove(value: Node): string | undefined {
+  let q: Node | null = value.parent
+  while (q) {
+    if (q.type === "variable_declarator") {
+      const nm = q.childForFieldName("name")
+      return nm && nm.type === "identifier" ? nm.text : undefined
+    }
+    if (q.type === "assignment_expression") {
+      const l = q.childForFieldName("left")
+      return l && l.type === "identifier" ? l.text : undefined
+    }
+    if (
+      q.type === "pair" || q.type === "object" || q.type === "class" || q.type === "class_body" ||
+      q.type === "return_statement" || q.type === "expression_statement" || q.type === "export_statement"
+    ) {
+      q = q.parent
+      continue
+    }
+    return undefined
+  }
+  return undefined
+}
+
+/**
+ * The owner a member's container names, PORTED from the javascript twin
+ * (`containerOwnerName`, real-javascript-analyzer.ts:232).
+ *
+ * The class-EXPRESSION arm is what this analyzer was missing: `const A = class
+ * Inner { m() {} }` produced NO member at all, because the variable path
+ * suppressed descent for every non-`object` initializer, and the javascript
+ * twin — which descends — emitted `method:m`. The oracle derives nothing for
+ * the shape either, so no differential could ever have flagged it; the twin was
+ * the only reference that could. A class expression's own declared name wins
+ * (`class Inner`), else the binding it is initialised or assigned to; a
+ * function boundary ends the search, because nothing inside a function body is
+ * a module-level member of anything.
+ */
+/**
+ * `get` / `set` are ANONYMOUS token children of a `method_definition` — not
+ * named children — so a named-child walk never sees them. Verified against the
+ * pinned typescript grammar: in `{ get size(){}, set size(v){} }` both members
+ * are `method_definition` and each carries one anonymous `get`/`set` token.
+ */
+function accessorKindOf(node: Node): "get" | "set" | undefined {
+  for (let i = 0; i < node.childCount; i++) {
+    const c = node.child(i)
+    if (c && (c.type === "get" || c.type === "set")) return c.type
+  }
+  return undefined
+}
+
+function containerOwnerName(n: Node): string | undefined {
+  let p: Node | null = n.parent
+  while (p) {
+    if (p.type === "class_declaration" || p.type === "abstract_class_declaration") {
+      return p.childForFieldName("name")?.text
+    }
+    if (p.type === "class") {
+      const own = p.childForFieldName("name")?.text
+      if (own) return own
+      return bindingNameAbove(p)
+    }
+    if (p.type === "object") {
+      return bindingNameAbove(p)
+    }
+    if (
+      p.type === "function_declaration" || p.type === "function_expression" ||
+      p.type === "arrow_function" || p.type === "generator_function_declaration" ||
+      p.type === "method_definition" || p.type === "function"
+    ) {
+      return undefined
+    }
+    p = p.parent
+  }
+  return undefined
+}
+
 // Contract route paths always start with "/": join a controller base with a
 // method route collapsing duplicate slashes (pure string ops, no regex —
 // java composes basePath+methodRoute the same way).
@@ -279,6 +368,48 @@ class ScopeManager {
     return undefined
   }
 
+  /**
+   * R10: the owner of a DECLARATION, decided LEXICALLY.
+   *
+   * `getOwnerInfo()` alone answers the wrong question for a declaration nested
+   * in a function body: it walks to the nearest class/namespace/interface/enum
+   * scope and SKIPS function scopes, so `class K { go() { function inner(){} } }`
+   * resolved `inner`'s owner to `K` and emitted `contains K->inner` \u2014 the graph
+   * claiming the class has a member it does not have. The same false edge
+   * appeared for a type alias and an interface declared in a method body, and for
+   * a function declared inside a namespace function.
+   *
+   * It cannot be fixed in the scope stack, because that stack ACCUMULATES: the
+   * class member loop extracts each member synchronously, so while member 2 is
+   * being resolved, member 1's Method scope is still on top. A guard there \u2014
+   * "a function scope means local" \u2014 was tried and measured, and it stripped REAL
+   * members, because member 2 legitimately resolves through member 1's leftover
+   * scope to the class. The scope stack is a resource stack, not a faithful
+   * lexical stack, so the question is asked of the TREE instead.
+   *
+   * A declaration belongs to the nearest enclosing BODY container; if any
+   * function body sits between it and that container, it is a local of that
+   * function and owns nothing. All five shapes measured:
+   *
+   *   class K { a(){} b(){} }                 -> b's parent is class_body  : member
+   *   class K { go() { function inner(){} } }  -> inner meets `go` first    : local
+   *   function f() { class C {} }              -> C meets `f` first         : local
+   *   namespace N { export function f() {} }   -> f meets no function       : member
+   *   function f() { class C { m(){} } }       -> m meets class_body first  : member
+   */
+  getOwnerInfoForDeclaration(node: any): { ownerName?: string; ownerKind?: ASTEngine.SymbolKind } | undefined {
+    for (let p = node?.parent; p; p = p.parent) {
+      const t = p.type
+      if (
+        t === "function_declaration" || t === "generator_function_declaration" ||
+        t === "function_signature" || t === "function_expression" ||
+        t === "arrow_function" || t === "method_definition" || t === "function"
+      ) return undefined
+      if (t === "class_body" || t === "interface_body" || t === "enum_body") break
+    }
+    return this.getOwnerInfo()
+  }
+
   findEnclosingClassNode(): Node | null {
     // Nearest Class scope's node (for class-level decorator lookup —
     // controller base paths). Returns null outside any class.
@@ -367,6 +498,18 @@ class TypeScriptModuleResolver {
 
 // Node.js built-in modules — module-level so every resolution doesn't
 // reallocate the set (the old per-call construction ran per import).
+//
+// A PINNED contract, deliberately NOT `builtinModules` from node:module. That
+// import would be shorter and self-maintaining, and it would also make
+// classification depend on the Node version running the index: `node:sqlite`
+// exists in the runtime's list and not in an older one's, so the same source
+// would resolve differently on two machines — the exact machine-dependence the
+// module resolver was rewritten to remove (no statSync, no node_modules
+// sniffing, `external:` for bare packages). A fixed table plus the subpath-head
+// rule below is the same answer on every machine and every Node version, which
+// is worth more here than the maintenance saving. The table tracks Node >= 22
+// (the `test` runner landed in 18; `sqlite`, `sea` and `diagnostics_channel`
+// are the later additions).
 const NODE_BUILTINS = new Set([
   "assert",
   "buffer",
@@ -854,6 +997,62 @@ function extractImportItemsWithNodes(importNode: Node): Array<{ item: string; no
     }
   }
   return out
+}
+
+/**
+ * The twin's J4 rule, ported: does this `require(...)` bind the module's DEFAULT
+ * export? A bare-identifier binding (`const m = require("m")`) takes the default;
+ * a destructuring binding (`const { a } = require("m")`) takes named members. The
+ * javascript lane hardcoded `true` for every require and flagged everything as a
+ * default import, so the rule is stated once here rather than copied twice.
+ */
+function requireBindsDefault(call: Node): boolean {
+  let vp: Node | null = call.parent
+  while (
+    vp && vp.type !== "variable_declarator" && vp.type !== "lexical_declaration" &&
+    vp.type !== "variable_declaration" && vp.type !== "export_statement" &&
+    vp.type !== "expression_statement" && vp.type !== "program"
+  ) {
+    vp = vp.parent
+  }
+  if (vp && vp.type === "variable_declarator") {
+    const bindName = vp.childForFieldName("name")
+    return !!bindName && bindName.type === "identifier"
+  }
+  return false
+}
+
+/**
+ * The module path an `import_statement` names, for BOTH shapes the grammar uses.
+ *
+ * `import { a } from "./m"` puts the path in a `source` FIELD of the statement,
+ * while `import m = require("./m")` wraps it in an `import_require_clause` whose
+ * string is an ordinary named child (probed: `import_statement >
+ * import_require_clause > identifier, string`). Reading only the `source` field
+ * silently skipped the whole TypeScript form of CommonJS require, so those files
+ * reported no dependency at all.
+ */
+function importStatementSource(importNode: Node): Node | null {
+  const direct = importNode.childForFieldName?.("source")
+  if (direct) return direct
+  for (let i = 0; i < (importNode.namedChildCount ?? 0); i++) {
+    const c = importNode.namedChild(i)
+    if (!c || c.type !== "import_require_clause") continue
+    for (let j = 0; j < c.namedChildCount; j++) {
+      const s = c.namedChild(j)
+      if (s && s.type === "string") return s
+    }
+  }
+  return null
+}
+
+/** True when this `import_statement` is the `import x = require(...)` form. */
+function isImportRequireClause(importNode: Node): boolean {
+  for (let i = 0; i < (importNode.namedChildCount ?? 0); i++) {
+    const c = importNode.namedChild(i)
+    if (c && c.type === "import_require_clause") return true
+  }
+  return false
 }
 
 function extractImportItems(importNode: Node): string[] {
@@ -1657,6 +1856,15 @@ class TypeScriptAnalysisRunner {
    *  one to tell an imported `exec` from a project's own `exec`, and the solid
    *  flag replaces a whole-file `content.includes("solid-js")` text scan with
    *  an AST fact. */
+  /** name -> every symbol declared with that name, in declaration order.
+   *  R2b: the relationship passes resolve the enclosing symbol for every
+   *  DECLARATION node, and each resolution used to be a linear scan of the
+   *  whole symbol array (`findItem`) — O(declarations x symbols) per pass, run
+   *  by two passes and by the qualified-calls post-pass. Bucketing by name
+   *  keeps the scan inside one bucket, and iterating a bucket in declaration
+   *  order preserves `findItem`'s first-match contract exactly, including the
+   *  repeated-name case (two classes each declaring `save`). */
+  private _symbolIndex: Map<string, ASTEngine.UniversalSymbol[]> | null = null
   private _fileSignals: { hasReact: boolean; importsChildProcess: boolean; solidJs: boolean } = {
     hasReact: false,
     importsChildProcess: false,
@@ -1691,6 +1899,7 @@ class TypeScriptAnalysisRunner {
     this.currentFile = filePath
     this.content = content
     this.scopeManager.reset()
+    this._symbolIndex = null
 
     // Initialize module resolver with project root
     const projectRoot = this.findProjectRoot(filePath)
@@ -1733,8 +1942,17 @@ class TypeScriptAnalysisRunner {
     // React file — in Vue/Svelte/Node codebases every `use*` util warned as
     // a parse error. Gate on a React signal (react import or JSX); the
     // SolidJS exclusion stays (different hook rules entirely).
+    // R2c: ONE walk for imports AND the per-file signals, run BEFORE symbol
+    // extraction. This scan used to be a second full traversal sitting next to
+    // the imports walk, and it had to sit here (before the symbol passes)
+    // because the taint sink rule reads `importsChildProcess` while building
+    // payloads. The resolution is ordering, not a provisional list: the imports
+    // walk is a pure tree read that needs no symbols, so running it first hands
+    // the signals to everything downstream and the extra traversal is gone.
+    // `imports` keeps the same content and the same order — the same walk over
+    // the same tree — and the exports pass, which does need symbols, stays put.
     this._fileSignals = { hasReact: false, importsChildProcess: false, solidJs: false }
-    this.scanFileSignals(rootNode)
+    this.scanImportsAndFileSignals(rootNode, imports)
     if (this._fileSignals.hasReact && !this._fileSignals.solidJs) {
       errors.push(...this.detectReactHookAntiPatterns(rootNode))
     }
@@ -1760,6 +1978,17 @@ class TypeScriptAnalysisRunner {
     this._dupKeyDeadSpans =
       this.collapseDuplicateObjectMembers(rootNode, symbols)
 
+    // R2b: the name index every later resolution reads. Built HERE because it
+    // must describe the post-collapse symbol set, and before the first reader
+    // (the qualified-calls post-pass below).
+    const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
+    for (const sym of symbols) {
+      const bucket = byName.get(sym.name)
+      if (bucket) bucket.push(sym)
+      else byName.set(sym.name, [sym])
+    }
+    this._symbolIndex = byName
+
     // M3: fill `qualified_calls` now, with the complete symbol table in hand
     // (see the _pendingQualifiedCalls note). ONE map shared by every symbol's
     // walk, keyed by the SYMBOL (never by name — two classes may each declare
@@ -1780,8 +2009,8 @@ class TypeScriptAnalysisRunner {
     }
     this._pendingQualifiedCalls = []
 
-    // PHASE 3: Extract imports and exports
-    this.extractImports(rootNode, imports)
+    // PHASE 3: Extract exports (imports were read before symbol extraction, so
+    // the per-file signals were available to the payload rules)
     this._pendingReExportImports = []
     this.extractExports(rootNode, exports, symbols)
     imports.push(...this._pendingReExportImports)
@@ -1904,12 +2133,48 @@ class TypeScriptAnalysisRunner {
       switch (node.type) {
         case "function_declaration":
         case "generator_function_declaration":
+        // A bodyless function DECLARATION is a different node type, and the
+        // spec has carried `function_signature` as handled_verified since the
+        // lane was declared conformant while the analyzer had no reference to
+        // the type at all. It is what `declare function f(): void` parses to,
+        // and an ambient module body is nothing but these — so every exported
+        // function in a .d.ts was invisible: no symbol, no call edge, no
+        // complexity, no api-contract row. The class and interface paths
+        // already route `method_signature` and `abstract_method_signature` to
+        // their extractors; this is the statement-level counterpart, and the
+        // grammar distinction is only the absent body. extractFunction already
+        // tolerates that (`if (body)`), and for a signature the api-contract
+        // fields are exactly right: it IS a declaration of the API, with no
+        // implementation to confuse them.
+        case "function_signature":
           skipChildren = this.extractFunction(node, symbols, stack)
           break
 
         case "class_declaration":
         case "abstract_class_declaration":
           skipChildren = this.extractClass(node, symbols, stack)
+          break
+
+        // A NAMED class expression (`const K = class Inner { m(){} }`) is a class
+        // DECLARATION named `Inner`: the name is written in the file, it is in
+        // scope inside its own body, and `new Inner()` inside that body already
+        // resolved to it. There was no `case "class"` at all, so the expression
+        // was walked as a bare bag of members and LOST, measurably:
+        //   * no `Inner` Class symbol \u2014 the class was invisible as a type;
+        //   * therefore no `contains` edge either: the member extraction
+        //     attributes `m` to owner `Inner`, and addContainmentRelationships
+        //     drops an edge whose owner is not a symbol, so a named class
+        //     expression contributed NO members to the hierarchy at all, while
+        //     the javascript twin emitted a dangling `Inner->m` for the very
+        //     same construct;
+        //   * and `extends` / `implements` were lost with it, though heritage
+        //     is clause structure the generic oracle derives.
+        // Anonymous class expressions deliberately keep their existing path:
+        // they have no name of their own, so their members belong to the binding
+        // that holds the value (`const K = class { m(){} }` -> `K contains m`),
+        // which resolves and is reachable.
+        case "class":
+          skipChildren = this.extractNamedClassExpression(node, symbols, stack)
           break
 
         case "interface_declaration":
@@ -1987,7 +2252,18 @@ class TypeScriptAnalysisRunner {
       }
 
       if (!skipChildren) {
+        // A class \u2014 DECLARATION, or an EXPRESSION that carries a name \u2014 is
+        // fully handled by extractClass, which walks its own body, so the generic
+        // descent must not descend into it or every member is extracted TWICE.
+        // That exclusion has always covered `class_declaration`; the class
+        // EXPRESSION node type was missing from it, which is exactly why R1 had
+        // to reach class-expression members through the descent instead. An
+        // ANONYMOUS class expression is deliberately NOT excluded: it has no
+        // name, so its members belong to the binding that holds the value and
+        // the descent is what finds them.
+        const classOwnsItsMembers = node.type === "class" && !!node.childForFieldName("name")
         if (
+          !classOwnsItsMembers &&
           ![
             "class_declaration",
             "abstract_class_declaration",
@@ -2014,6 +2290,15 @@ class TypeScriptAnalysisRunner {
     if (!nameNode) return false
     const name = nameNode.text
     const modifiers = extractModifiersFromNode(node)
+    // An ambient declaration carries NO `declare` child of its own: the grammar
+    // puts the keyword on a wrapping `ambient_declaration`, verified by ancestry
+    // (`function_signature <- ambient_declaration <- [export_statement]`). So
+    // `extractModifiersFromNode` cannot see it, and a bodyless declaration would
+    // otherwise be indistinguishable from an implementation — which matters now
+    // that these symbols exist: there is no body, and nothing to have measured.
+    // Same reason `export` is not a child; that one is already covered by
+    // isNodeExported, which walks ancestors.
+    const isAmbientDeclaration = node.type === "function_signature" && node.parent?.type === "ambient_declaration"
     const exportStatus = isNodeExported(node)
     const params = this.extractParameters(node)
     const returnType = this.extractReturnType(node)
@@ -2044,13 +2329,15 @@ class TypeScriptAnalysisRunner {
       apiContractPath: apiContract.path,
       taintSources: this.extractTaintSources(node),
       taintSinks: this.extractTaintSinks(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         apiMethod: apiContract.method,
         isGenerator: node.type === "generator_function_declaration",
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
-        isDeclare: modifiers.isDeclare,
+        // `|| isAmbientDeclaration`: a signature wrapped in ambient_declaration
+        // IS a declaration even though the keyword is not its own child.
+        isDeclare: modifiers.isDeclare || isAmbientDeclaration,
         complexity: ownComplexity,
         decoratorLines: modifiers.decoratorLines.length > 0 ? modifiers.decoratorLines : undefined,
       },
@@ -2070,6 +2357,16 @@ class TypeScriptAnalysisRunner {
       stack.push({ node: body })
     }
     return true
+  }
+
+  /**
+   * A class EXPRESSION that carries a name is a class declaration, and routes to
+   * the audited class extractor. An anonymous one keeps the existing path: its
+   * members belong to the binding that holds the value, which already resolves.
+   */
+  private extractNamedClassExpression(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
+    if (!node.childForFieldName("name")) return false
+    return this.extractClass(node, symbols, stack)
   }
 
   private extractClass(node: Node, symbols: ASTEngine.UniversalSymbol[], stack: StackEntry[]): boolean {
@@ -2100,7 +2397,7 @@ class TypeScriptAnalysisRunner {
       decorators: modifiers.decorators.length > 0 ? modifiers.decorators : undefined,
       comments: this.extractComments(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2118,6 +2415,18 @@ class TypeScriptAnalysisRunner {
 
     // Process class body for methods, properties, constructor
     this.scopeManager.pushScope(ScopeKind.Class, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
@@ -2190,7 +2499,6 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2212,7 +2520,7 @@ class TypeScriptAnalysisRunner {
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2226,13 +2534,24 @@ class TypeScriptAnalysisRunner {
 
     // Process interface body for members
     this.scopeManager.pushScope(ScopeKind.Interface, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
       this.extractInterfaceMembers(body, symbols, name)
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2355,7 +2674,7 @@ class TypeScriptAnalysisRunner {
       returnType: typeValue?.text,
       genericParameters: typeParams.length > 0 ? typeParams : undefined,
       comments: this.extractComments(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2443,7 +2762,7 @@ class TypeScriptAnalysisRunner {
       scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
       visibility: exportStatus.isExported ? "public" : "private",
       comments: this.extractComments(node),
-      ...this.scopeManager.getOwnerInfo(),
+      ...this.scopeManager.getOwnerInfoForDeclaration(node),
       metadata: {
         isExported: exportStatus.isExported,
         isDefault: exportStatus.isDefault,
@@ -2456,6 +2775,18 @@ class TypeScriptAnalysisRunner {
 
     // Extract enum members
     this.scopeManager.pushScope(ScopeKind.Enum, name, node)
+    // R10c: the pop must be DEFERRED onto the walk stack, not called here. A
+    // member extractor pushes its OWN scope (a method pushes Method, a
+    // constructor Constructor) and queues that member's body for later walking,
+    // so an eager pop removed the INNERMOST scope — the method's — and the
+    // method's own deferred pop then removed the class scope underneath it. The
+    // class scope was therefore still on the stack while a method body was walked
+    // and already gone by the time the next member was extracted, which is how a
+    // function, type alias or interface declared INSIDE a method body came out as
+    // a member of the class: `contains K->inner`, measured, and a false edge.
+    // The five extractors that already deferred their pop (function, method,
+    // constructor, static block, namespace) are the pattern being applied here.
+    stack.push({ action: () => this.scopeManager.popScope() })
 
     const body = node.childForFieldName("body")
     if (body) {
@@ -2489,7 +2820,6 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    this.scopeManager.popScope()
     return false
   }
 
@@ -2588,7 +2918,7 @@ class TypeScriptAnalysisRunner {
         apiContractPath: apiContract.path,
         taintSources: valueNode ? this.extractTaintSources(valueNode) : undefined,
         taintSinks: valueNode ? this.extractTaintSinks(valueNode) : undefined,
-        ...this.scopeManager.getOwnerInfo(),
+        ...this.scopeManager.getOwnerInfoForDeclaration(node),
         metadata: {
           apiMethod: apiContract.method,
           isExported: exportStatus.isExported,
@@ -2623,7 +2953,15 @@ class TypeScriptAnalysisRunner {
       // false lets the walk descend naturally into the declarator's object
       // value, where the method_definition case extracts each member at ANY
       // depth (JS parity — nested object methods are their own scope).
-      if (valueNode?.type === "object") {
+      // R1: a CLASS EXPRESSION value carries members too, and the javascript
+      // twin has always descended into it — `const A = class Inner { m() {} }`
+      // emitted `method:m` there and NOTHING here, because the `object` test
+      // below was the only descent trigger. The whole body was lost with it: no
+      // member symbol, no `contains` edge, and the calls inside `m` attributed
+      // to the enclosing function instead. The oracle derives nothing for the
+      // shape, so no differential could have flagged it; the twin was the only
+      // available reference.
+      if (valueNode?.type === "object" || valueNode?.type === "class") {
         return false
       }
     }
@@ -2696,7 +3034,11 @@ class TypeScriptAnalysisRunner {
         range: this.nodeRange(nameNode, false),
         scope: stripTrailingDot(this.scopeManager.buildQualifiedName("")) || undefined,
         visibility: exportStatus.isExported ? "public" : "private",
-        ...this.scopeManager.getOwnerInfo(),
+        // A destructured binding is a declaration too:  inside a
+        // method is a local of that method, not a member of the class. The
+        // lexical question is asked of the DECLARATOR, which is the node whose
+        // ancestors describe where the binding is written.
+        ...this.scopeManager.getOwnerInfoForDeclaration(declarator),
         metadata: {
           isDestructured: true,
           isConst,
@@ -2756,7 +3098,7 @@ class TypeScriptAnalysisRunner {
       visibility = "protected"
     }
 
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
     // ONE complexity walk per method: the top-level field and the metadata
     // mirror are the same number by contract.
     const ownComplexity = this.calculateComplexity(node)
@@ -2843,7 +3185,7 @@ class TypeScriptAnalysisRunner {
     decoratorNodes?: Node[],
   ): boolean {
     const params = this.extractParameters(node)
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
     const modifiers = extractModifiersFromNode(node)
     const apiContract = this.extractApiContract(
       node,
@@ -2952,7 +3294,7 @@ class TypeScriptAnalysisRunner {
       visibility = "protected"
     }
 
-    const ownerInfo = this.scopeManager.getOwnerInfo()
+    const ownerInfo = this.scopeManager.getOwnerInfoForDeclaration(node)
 
     const symbol: ASTEngine.UniversalSymbol = {
       // #813: the declared spelling is the member's one name (see the method
@@ -3284,26 +3626,54 @@ class TypeScriptAnalysisRunner {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return false
     const name = nameNode.text
-    let ownerName: string | undefined
-    let cur: Node | null = node.parent
-    while (cur) {
-      if (cur.type === "variable_declarator") {
-        ownerName = cur.childForFieldName("name")?.text
-        break
+
+    // R7: a get/set pair is ONE property in TypeScript's type system, and the
+    // CLASS path already rules that way — its body pre-pass keeps the last
+    // declaration of each name. The object-literal path had no such pass, so
+    // `{ get size(){}, set size(v){} }` produced TWO `size` symbols sharing one
+    // owner, and therefore TWO identical `contains owner -> size` rows: a
+    // duplicate symbol, a duplicate edge, and an ambiguous name for every
+    // consumer that resolves a member by name. Measured: 1 duplicate row per
+    // accessor pair, in both the TypeScript and JavaScript lanes.
+    //
+    // Keeping the LAST accessor mirrors the class rule exactly. Returning false
+    // also leaves the walker to descend into the skipped accessor's body, so its
+    // calls are still recorded — against the OWNER, which is what the class path
+    // does today (a getter body calling `compute()` yields `calls C -> compute`),
+    // so this loses no edge that the class path keeps.
+    if (accessorKindOf(node) !== undefined) {
+      const parent = node.parent
+      if (parent) {
+        for (let i = 0; i < parent.namedChildCount; i++) {
+          const sib = parent.namedChild(i)
+          if (!sib || sib.startIndex <= node.startIndex) continue
+          if (accessorKindOf(sib) !== undefined && sib.childForFieldName("name")?.text === name) return false
+        }
       }
-      if (cur.type === "pair") {
-        cur = cur.parent
-        continue
-      }
-      if (cur.type === "object") {
-        cur = cur.parent
-        continue
-      }
-      break
     }
+    // R1: the ownership rule is the twin's, ported verbatim
+    // (`containerOwnerName`), so an object-literal member, a class-expression
+    // member and a class-declaration member are resolved by ONE contract
+    // instead of two hand-rolled walks that disagreed.
+    const ownerName = containerOwnerName(node)
+    // R10: an UNBOUND literal has no owner, and its members must not borrow the
+    // enclosing one. This used to fall back to `getOwnerInfo()`, which is
+    // invisible at module level (no scope to inherit) and wrong everywhere
+    // else: `class K { go() { return { m(){} } } }` emitted `contains K->m`,
+    // telling the graph that class K has a member `m` when `m` belongs to a
+    // temporary object one of its methods returns. Measured across both twins
+    // (typescript and javascript agree on the false edge, so this is a shared
+    // defect, not a divergence) and in every enclosing-scope shape: a method
+    // body, a static method, a nested callback, a namespace function.
+    //
+    // The bound case was always right and is untouched: `const o = { m(){} }`
+    // inside a method gives `ownerName === "o"`, and `class K { go() { const o
+    // = { m(){} } } }` already emitted no `K->m`. So the fallback was never
+    // load-bearing for a literal that HAS a name; it only ever fired for the
+    // nameless ones, which is exactly where it invented an owner.
     const ownerInfo = ownerName
       ? { ownerName, ownerKind: ASTEngine.SymbolKind.Constant as unknown as ASTEngine.SymbolKind }
-      : this.scopeManager.getOwnerInfo()
+      : undefined
     // Reuse extractMethod for full parity (params, complexity, qualified_calls,
     // taint payloads) with the owner info swapped in afterwards.
     const before = symbols.length
@@ -3315,6 +3685,13 @@ class TypeScriptAnalysisRunner {
           s.ownerName = ownerInfo.ownerName
           s.ownerKind = ownerInfo.ownerKind
           s.scope = ownerInfo.ownerName
+        } else {
+          // extractMethod seeds owner/scope from the enclosing scope; clear them
+          // so a nameless literal's member is ownerless, which is what the
+          // module-level case already produced.
+          s.ownerName = undefined
+          s.ownerKind = undefined
+          s.scope = undefined
         }
       }
       // extractMethod pushed a Method scope named after the METHOD — for
@@ -3407,14 +3784,85 @@ class TypeScriptAnalysisRunner {
   // IMPORT/EXPORT EXTRACTION
   // ========================================================================
 
-  private extractImports(node: Node, imports: ASTEngine.ImportInfo[]): void {
+  /**
+   * The file's imports, plus the three per-FILE facts the payload rules need —
+   * in ONE walk (R2c).
+   *
+   * The signals used to come from a separate full traversal that had to run
+   * before symbol extraction, because the taint sink rule asks whether the file
+   * imports child_process while it is still building a symbol's payload. Since
+   * the import walk needs no symbols, running it FIRST removes the second
+   * traversal outright rather than deferring the question: every consumer below
+   * reads the signals after this returns, and the `imports` array is unchanged
+   * in content and order.
+   */
+  /** The three per-file facts, keyed on an import's module path. */
+  private recordFileSignal(modulePath: string): void {
+    if (
+      modulePath === "react" || modulePath === "react-dom" || modulePath === "preact" ||
+      modulePath === "preact/compat" || modulePath.startsWith("react/") || modulePath.startsWith("preact/")
+    ) {
+      this._fileSignals.hasReact = true
+    }
+    if (modulePath === "solid-js" || modulePath.startsWith("solid-js/") || modulePath.startsWith("@solidjs/")) {
+      this._fileSignals.solidJs = true
+    }
+    if (modulePath === "child_process" || modulePath === "node:child_process") {
+      this._fileSignals.importsChildProcess = true
+    }
+  }
+
+  private scanImportsAndFileSignals(node: Node, imports: ASTEngine.ImportInfo[]): void {
+        // `require("child_process")` and `await import("child_process")` are the
+        // CommonJS and dynamic-import spellings of the same fact, and both hide it
+        // in a CALL's argument: there is no import_statement and no
+        // import_require_clause, so neither the imports walk nor the signal scan
+        // that preceded it could see them. The consequence was a false NEGATIVE in
+        // the taint sink rule — `const { execSync } = require("child_process")`
+        // followed by a bare `execSync` produced no sink, because the rule's
+        // evidence that a bare exec is Node's own never arrived. The callee must be
+        // the bare `require` identifier or the `import` keyword; `foo.require(...)`
+        // is somebody else's method and is deliberately excluded.
+        if (node.type === "call_expression") {
+          const callee = node.childForFieldName("function")
+          if (callee && (callee.type === "import" || (callee.type === "identifier" && callee.text === "require"))) {
+            const firstArg = node.childForFieldName("arguments")?.namedChild(0)
+            if (firstArg && firstArg.type === "string") {
+              this.recordFileSignal(stringContent(firstArg))
+            }
+          }
+        }
+
+    // JSX presence is the React signal the Rules-of-Hooks gate needs.
+    if (node.type === "jsx_element" || node.type === "jsx_self_closing_element") {
+      this._fileSignals.hasReact = true
+    } else if (node.type === "import_require_clause") {
+      // `import cp = require("child_process")` — here the node IS the module
+      // string, which is why the old standalone scan read it separately.
+      this.recordFileSignal(stringContent(node))
+    }
     if (node.type === "import_statement") {
-      const sourceNode = node.childForFieldName("source")
+      const sourceNode = importStatementSource(node)
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
+      // `import m = require("./m")` IS a require: same edge shape, same default
+      // rule, so it is recorded as one rather than as an ES import with no items.
+      if (isImportRequireClause(node)) {
+        const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
+        const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
+        imports.push({
+          module: modulePath,
+          items: ["*"],
+          isDefault: !!bindNode,
+          range: this.nodeRange(node),
+          metadata: { type: "require" },
+        })
+        return
+      }
       const items = extractImportItems(node)
       const clause = extractImportClause(node)
+      this.recordFileSignal(modulePath)
 
       // Resolve actual module path
       const resolvedPath = this.moduleResolver?.resolveModulePath(modulePath, this.currentFile) || modulePath
@@ -3431,10 +3879,19 @@ class TypeScriptAnalysisRunner {
       })
     }
 
-    // Also check for dynamic imports
+    // Dynamic `import()` and CommonJS `require()` are BOTH module dependencies,
+    // and the javascript twin records both. typescript recorded only the dynamic
+    // form, so every `require` dependency in a TypeScript file was missing from
+    // the module graph — silent, because nothing reported it: the file's imports
+    // were simply short. Measured on the tracked corpus this is the second-largest
+    // edge class, and `require` is how build shims, `.d.ts`-adjacent code and
+    // older Node packages actually pull a dependency in. This repository's own
+    // shims do it (`require("child_process")`, `require("bun:sqlite")`).
     if (node.type === "call_expression") {
-      const callee = node.namedChild(0)
-      if (callee?.text === "import" || callee?.type === "import") {
+      const callee = node.childForFieldName("function")
+      const isImportCall = !!callee && (callee.type === "import" || (callee.type === "identifier" && callee.text === "import"))
+      const isRequireCall = !!callee && callee.type === "identifier" && callee.text === "require"
+      if (isImportCall || isRequireCall) {
         const args = node.childForFieldName("arguments")
         if (args && args.namedChildCount > 0) {
           const pathArg = args.namedChild(0)
@@ -3443,8 +3900,9 @@ class TypeScriptAnalysisRunner {
             imports.push({
               module: modulePath,
               items: ["*"],
-              isDefault: false,
+              isDefault: isRequireCall ? requireBindsDefault(node) : false,
               range: this.nodeRange(node),
+              ...(isRequireCall ? { metadata: { type: "require" } } : {}),
             })
           }
         }
@@ -3455,7 +3913,7 @@ class TypeScriptAnalysisRunner {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child) {
-        this.extractImports(child, imports)
+        this.scanImportsAndFileSignals(child, imports)
       }
     }
   }
@@ -3818,7 +4276,17 @@ class TypeScriptAnalysisRunner {
             // surfaced as MISSING once #760's rotation sampled the file).
             // Same defect class as the M49 W1 javascript `continue`-skips-
             // subtree fix; walk the children, then stop.
-            if (callee.text === "import" || callee.type === "import") {
+            // `require` is a module loader, not a call, exactly like `import`:
+            // the twin skips both and emits a dependency edge instead. Pre-fix
+            // typescript skipped only `import`, so `require("./m")` published
+            // `calls -> require` — the file appearing to call a function named
+            // `require`, which is not in the program — while the dependency it
+            // actually names went unrecorded. The callee must be the BARE
+            // identifier; `foo.require(...)` is somebody else's method.
+            if (
+              callee.text === "import" || callee.type === "import" ||
+              (callee.type === "identifier" && callee.text === "require")
+            ) {
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
                 if (child) processNode(child, currentSymbol)
@@ -3951,6 +4419,30 @@ class TypeScriptAnalysisRunner {
     // plain `const name = ...` must not either — pre-fix the declaration-skip
     // compared web-tree-sitter node OBJECTS (fresh per access), never
     // matched, and the template pass read the local as a symbol usage).
+    /**
+     * The names a symbol's PARAMETERS bind, read off the symbol's `parameters`
+     * payload. That payload stringifies each binding as text — `a`, `{b}`,
+     * `...rest` — so the identifier runs are pulled out with plain string
+     * splitting rather than a pattern. Destructuring and rest parameters are
+     * included because they bind names too.
+     */
+    const parameterNamesOf = (sym: ASTEngine.UniversalSymbol | null): Set<string> => {
+      const out = new Set<string>()
+      for (const prm of sym?.parameters ?? []) {
+        const raw = typeof prm === "string" ? prm : ((prm as any)?.name ?? "")
+        let token = ""
+        for (let i = 0; i <= raw.length; i++) {
+          const ch = raw[i] ?? ""
+          const isWord = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+          if (isWord) token += ch
+          else {
+            if (token) out.add(token)
+            token = ""
+          }
+        }
+      }
+      return out
+    }
     const collectPatternNames = (pat: Node): string[] => {
       const out: string[] = []
       const walk = (p: Node): void => {
@@ -4101,7 +4593,19 @@ class TypeScriptAnalysisRunner {
             }
             return false
           })()
-        if (locals.has(name) || rhsOfTypeCheck) {
+        // A PARAMETER shadows every module- and class-level name for the whole
+        // body of its function, and this pass resolves by NAME: with an
+        // `interface Deps { root }` in the file, `function f(root) { return root
+        // }` published `f->root`, recording the function as referencing an
+        // interface property it never touches. Measured: 160 of 2,880 references
+        // (5.6%) over 700 tracked files, led by `n`, `root`, `name`, `src`.
+        //
+        // The test belongs HERE and not in `locals`, because `locals` is also
+        // what suppresses the `uses` edge — and a `uses` edge to a parameter is
+        // wanted (interp-uses pins `greet -> name` for a template interpolation of
+        // its own parameter). Seeding `locals` with parameters silenced those and
+        // the fixture caught it. So: suppress the NAME-RESOLVED reference only.
+        if (locals.has(name) || parameterNamesOf(currentSymbol).has(name) || rhsOfTypeCheck) {
           // still recurse into children (e.g. nested member paths)
         } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
@@ -4296,6 +4800,33 @@ class TypeScriptAnalysisRunner {
     source: { name: string },
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
+    // X8 (RULED 2026-09-27): construction candidates are NAMEABLE LEAVES only.
+    //
+    // Without this, an ANONYMOUS constructor publishes a span of SOURCE TEXT as a
+    // name. Measured on this analyzer's own output: `new (e.constructor as any)(...)`
+    // published `instantiates -> "constructor as any)"`, `new (getCtor())()` published
+    // `"(getCtor())"`, and `new (class {})()` published `"(class {})"` — against a
+    // correct `new Foo()` -> `Foo` control. A target that is source text names nothing
+    // a consumer can navigate to, which is the unresolvable-identity class reached
+    // through a malformed CONSTRUCT rather than a missing edge.
+    //
+    // This went unnoticed because the typescript ORACLE had the identical bug, so the
+    // two agreed and the differential reported 100% — the same shared-premise shape as
+    // the svelte reserved-namespace finding. Fixing the truth side is what exposed it;
+    // see validation/m49/ledger.json SVELTE1/X8 and the D12-era commit.
+    //
+    // The list is the javascript twin's, which already carries this guard with the
+    // comment "deriving their raw expression text fabricated unmatchable oracle edges
+    // (lodash corpus)", plus `nested_identifier`, which the TypeScript grammar emits
+    // for a qualified name and which excluding would suppress `new ns.Thing()`. Verified
+    // by tree-walk over vue-core: the ONLY non-nameable constructor there is
+    // `parenthesized_expression`.
+    const NAMEABLE_CTOR = new Set([
+      "identifier", "member_expression", "nested_identifier", "qualified_identifier",
+      "generic_type", "template_type", "type_identifier", "type_descriptor", "primitive_type",
+    ])
+    if (!NAMEABLE_CTOR.has(constructor.type)) return
+
     let className = constructor.text
 
     // Handle generic instantiation: new Map<K, V>()
@@ -4393,6 +4924,31 @@ class TypeScriptAnalysisRunner {
     }
   }
 
+  /**
+   * The first symbol with this name satisfying `pred`, in DECLARATION order —
+   * `findItem`'s exact contract, answered from the name index when one exists
+   * (R2b). One helper for all three call sites that used to be independent
+   * linear scans over the whole symbol array: the enclosing-symbol resolver
+   * (twice per declaration node, in two passes) and the override-keyword arm
+   * (once per `override` member). Repeated names keep first-wins, which is the
+   * contract rather than an accident: two classes each declaring `save()`
+   * resolve to the same owner the array scan always chose.
+   */
+  private firstSymbolNamed(
+    name: string,
+    pred: (s: ASTEngine.UniversalSymbol) => boolean,
+    symbols: ASTEngine.UniversalSymbol[],
+  ): ASTEngine.UniversalSymbol | undefined {
+    const bucket = this._symbolIndex?.get(name)
+    if (bucket) {
+      for (const s of bucket) if (pred(s)) return s
+      return undefined
+    }
+    // No index (a caller outside the normal phase order): fall back to the
+    // array, so resolution can never be WORSE than it was.
+    return findItem(symbols, (s) => s.name === name && pred(s))
+  }
+
   private extractOverrideRelationships(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -4400,9 +4956,10 @@ class TypeScriptAnalysisRunner {
     for (const symbol of symbols) {
       if (symbol.metadata?.isOverride && symbol.ownerName) {
         // Find the parent class
-        const parentClass = findItem(
+        const parentClass = this.firstSymbolNamed(
+          symbol.ownerName,
+          (s) => s.kind === ASTEngine.SymbolKind.Class,
           symbols,
-          (s) => s.name === symbol.ownerName && s.kind === ASTEngine.SymbolKind.Class,
         )
         if (parentClass && parentClass.metadata?.extends) {
           const baseClasses = parentClass.metadata.extends as string[]
@@ -4735,10 +5292,23 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
     if (node.type === "import_statement") {
-      const sourceNode = node.childForFieldName("source")
+      const sourceNode = importStatementSource(node)
       if (!sourceNode) return
 
       const modulePath = stringContent(sourceNode)
+      if (isImportRequireClause(node)) {
+        const clauseNode = node.namedChildren.find((c: any) => c && c.type === "import_require_clause")
+        const bindNode = clauseNode?.namedChildren?.find((c: any) => c && c.type === "identifier")
+        relationships.push({
+          source: this.moduleLeafName(),
+          target: `${modulePath}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...this.lineField(bindNode ?? sourceNode),
+          metadata: { module: modulePath, isRequire: true, isDefault: !!bindNode },
+        })
+        return
+      }
       const items = extractImportItemsWithNodes(node)
 
       // Create import relationships (leaf identity: source is the module leaf)
@@ -4766,8 +5336,15 @@ class TypeScriptAnalysisRunner {
     // array but no imports relationship was emitted — and the call walk
     // produced a spurious calls edge to the `import` keyword.
     if (node.type === "call_expression") {
-      const callee = node.namedChild(0)
-      if (callee && (callee.text === "import" || callee.type === "import")) {
+      const callee = node.childForFieldName("function")
+      // `require("m")` is a module dependency in the same sense as
+      // `import("m")`, and the twin emits it. Pre-fix typescript emitted a
+      // `calls → require` edge instead: the dependency was missing AND the
+      // module loader was published as if the file called a function named
+      // `require` — two wrong edges from one construct.
+      const isDynamicImport = !!callee && (callee.text === "import" || callee.type === "import")
+      const isRequireCall = !!callee && callee.type === "identifier" && callee.text === "require"
+      if (isDynamicImport || isRequireCall) {
         const args = node.childForFieldName("arguments")
         const pathArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
         if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
@@ -4781,7 +5358,11 @@ class TypeScriptAnalysisRunner {
             ...this.lineField(pathArg),
             metadata: {
               module: modulePath,
-              isDynamic: true,
+              // A `require` is a STATIC CommonJS dependency, not a dynamic import.
+              // Labelling it `isDynamic` was wrong in the first cut of the require
+              // port, which reused the dynamic branch wholesale — the edge was
+              // right and its metadata claimed the module was loaded lazily.
+              ...(isDynamicImport ? { isDynamic: true } : { isRequire: true, isDefault: requireBindsDefault(node) }),
             },
           })
         }
@@ -4839,9 +5420,20 @@ class TypeScriptAnalysisRunner {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
+    // R2a: one name -> FIRST-declared-symbol index, built in a single pass.
+    // This loop was O(n^2): a linear `findItem` per member that has an owner,
+    // which is the one surviving half of the "no O(n^2] scans" claim the
+    // analyzer doc used to make. `findItem` returned the FIRST name match, so
+    // the index keeps the first occurrence per name and the resolution is
+    // behaviour-identical — including for the repeated-name case (two classes
+    // each with a `save()`), where first-wins is the contract, not an accident.
+    const firstByName = new Map<string, ASTEngine.UniversalSymbol>()
+    for (const s of symbols) {
+      if (!firstByName.has(s.name)) firstByName.set(s.name, s)
+    }
     for (const symbol of symbols) {
       if (symbol.ownerName) {
-        const owner = findItem(symbols, (s) => s.name === symbol.ownerName)
+        const owner = firstByName.get(symbol.ownerName)
         if (owner) {
           // Leaf identity: container is the namespace full name (Example.Domain)
           // or class/interface/enum leaf (UserService); member is the leaf name.
@@ -4869,11 +5461,14 @@ class TypeScriptAnalysisRunner {
     // lookup passed raw 0-based rows/columns, so positional resolution never
     // matched and everything fell back to first-name-match. Overloads and
     // same-named nested/top-level functions resolved positionally blind.
+    // R2b: the shared indexed lookup (see firstSymbolNamed) — the scan is
+    // shorter, the answer is identical.
+    const firstMatchIn = (name: string, pred: (s: ASTEngine.UniversalSymbol) => boolean) =>
+      this.firstSymbolNamed(name, pred, symbols)
     const byPos = (name: string, kind: ASTEngine.SymbolKind, line: number, col: number, owner?: string) =>
-      findItem(
-        symbols,
+      firstMatchIn(
+        name,
         (s) =>
-          s.name === name &&
           s.kind === kind &&
           s.range.startLine === line + 1 &&
           s.range.startColumn === col + 1 &&
@@ -4885,7 +5480,7 @@ class TypeScriptAnalysisRunner {
       if (!name) return current
       return (
         byPos(name, ASTEngine.SymbolKind.Function, node.startPosition.row, node.startPosition.column) ||
-        findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
+        firstMatchIn(name, (s) => s.kind === ASTEngine.SymbolKind.Function) ||
         current
       )
     }
@@ -4900,7 +5495,7 @@ class TypeScriptAnalysisRunner {
       // misattributes method calls (same reasoning as the JS analyzer).
       const nm = node.childForFieldName("name")?.text
       if (nm) {
-        const ownerSym = findItem(symbols, (s) => s.name === nm && s.kind === ASTEngine.SymbolKind.Class)
+        const ownerSym = firstMatchIn(nm, (s) => s.kind === ASTEngine.SymbolKind.Class)
         if (ownerSym) return ownerSym
       }
       return current
@@ -4910,46 +5505,22 @@ class TypeScriptAnalysisRunner {
       const raw = node.childForFieldName("name")?.text
       if (!raw) return current
       const name = stripPrivatePrefix(raw)
-      // W1 (JD18-class): the enclosing-class walk must stop at the nearest
-      // FUNCTION/CLASS boundary, not skip through it. An object-literal
-      // method nested in a method body (`const local = { deep() {...} }`
-      // inside Outer.run) walked all the way out to Outer — owner=Outer vs
-      // the symbol's real owner=local never matched, so every call inside
-      // the nested object misattributed to the enclosing method (deep ->
-      // inside emitted as run -> inside). If a method_definition or a
-      // function-like node sits between, the object member belongs to the
-      // nearest declarator instead.
-      let owner = this.findEnclosingClassName(node)
-      if (owner) {
-        let anc: Node | null = node.parent
-        while (anc) {
-          if (
-            anc.type === "method_definition" ||
-            anc.type === "function_declaration" ||
-            anc.type === "function_expression" ||
-            anc.type === "arrow_function"
-          ) {
-            // Reached a function boundary before any class: the object
-            // member's owner is the enclosing variable, not the class.
-            let v: Node | null = node.parent
-            while (v && v.type !== "variable_declarator") v = v.parent
-            owner = v?.childForFieldName("name")?.text
-            break
-          }
-          if (anc.type === "class_declaration" || anc.type === "abstract_class_declaration") break
-          anc = anc.parent
-        }
-      } else {
-        // No enclosing class at all: object member -> nearest declarator.
-        let v: Node | null = node.parent
-        while (v && v.type !== "variable_declarator") v = v.parent
-        owner = v?.childForFieldName("name")?.text
-      }
+      // R1: ONE owner rule for every member kind, the twin's
+      // `containerOwnerName` — the same helper that named the SYMBOL now names
+      // the EDGE's source, so the two can never disagree. That disagreement was
+      // live and cost a whole class of edges: the old walk only recognised
+      // `class_declaration`, so for `const A = class Inner { m() { helper() } }`
+      // it fell through to the nearest `variable_declarator` and computed owner
+      // `A` while the symbol's ownerName was `Inner`; the owner-scoped lookup
+      // then matched nothing and every call inside `m` was emitted against the
+      // MODULE leaf (`x -> helper`). The hand-rolled walk also had to
+      // re-implement the function-boundary rule that W1 needed, in two places.
+      const owner = containerOwnerName(node)
       return (
         byPos(name, ASTEngine.SymbolKind.Method, node.startPosition.row, node.startPosition.column, owner) ||
-        findItem(
-          symbols,
-          (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Method && (!owner || s.ownerName === owner),
+        firstMatchIn(
+          name,
+          (s) => s.kind === ASTEngine.SymbolKind.Method && (!owner || s.ownerName === owner),
         ) ||
         current
       )
@@ -4962,7 +5533,7 @@ class TypeScriptAnalysisRunner {
         if (!name) return current
         return (
           byPos(name, ASTEngine.SymbolKind.Function, parent.startPosition.row, parent.startPosition.column) ||
-          findItem(symbols, (s) => s.name === name && s.kind === ASTEngine.SymbolKind.Function) ||
+          firstMatchIn(name, (s) => s.kind === ASTEngine.SymbolKind.Function) ||
           current
         )
       }
@@ -4971,16 +5542,6 @@ class TypeScriptAnalysisRunner {
     return current
   }
 
-  private findEnclosingClassName(node: Node): string | undefined {
-    let cur: Node | null = node.parent
-    while (cur) {
-      if (cur.type === "class_declaration") {
-        return cur.childForFieldName("name")?.text
-      }
-      cur = cur.parent
-    }
-    return undefined
-  }
 
   // ========================================================================
   // HELPER METHODS
@@ -5469,7 +6030,11 @@ class TypeScriptAnalysisRunner {
           // call — the relationship walk already skips the `import` callee
           // (T7 fix); the qualified-calls payload did not, leaking "import"
           // into symbol call lists.
-          const calleeIsImport = callee.type === "import" || (callee.type === "identifier" && callee.text === "import")
+          // `require` joins `import` here: both are module loaders, not calls.
+          // The twin skips both, so a symbol's call list must not contain
+          // "require" — it is a dependency edge, emitted above.
+          const calleeIsImport = callee.type === "import" ||
+            (callee.type === "identifier" && (callee.text === "import" || callee.text === "require"))
           if (!calleeIsImport) {
             // Dotted path WITHOUT argument text (family contract with java).
             // Raw callee.text embedded inner-call arguments on chains:
@@ -5900,44 +6465,6 @@ class TypeScriptAnalysisRunner {
     return "critical"
   }
 
-  /**
-   * ONE walk for every per-file fact the analyzer needs: a React signal (for
-   * the Rules-of-Hooks gate), a solid-js signal (that exclusion, previously a
-   * whole-file `content.includes` text scan), and a child_process import (the
-   * taint sink rule's evidence that a bare `exec` is Node's, not the project's).
-   * All three are import-source / JSX facts read off the AST — pure AST, no
-   * regex, no text matching.
-   */
-  private scanFileSignals(rootNode: Node): void {
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "jsx_element" || n.type === "jsx_self_closing_element") {
-        this._fileSignals.hasReact = true
-      } else if (n.type === "import_statement" || n.type === "import_require_clause") {
-        const src = n.type === "import_statement" ? n.childForFieldName("source") : n
-        if (src) {
-          const mod = stringContent(src)
-          if (
-            mod === "react" || mod === "react-dom" || mod === "preact" || mod === "preact/compat" ||
-            mod.startsWith("react/") || mod.startsWith("preact/")
-          ) {
-            this._fileSignals.hasReact = true
-          }
-          if (mod === "solid-js" || mod.startsWith("solid-js/") || mod.startsWith("@solidjs/")) {
-            this._fileSignals.solidJs = true
-          }
-          if (mod === "child_process" || mod === "node:child_process") {
-            this._fileSignals.importsChildProcess = true
-          }
-        }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (child) stack.push(child)
-      }
-    }
-  }
 
   private detectReactHookAntiPatterns(rootNode: Node): ASTEngine.ParseError[] {    const errors: ASTEngine.ParseError[] = []
     const seen: Record<string, boolean> = {}

@@ -1,151 +1,124 @@
 {
   "checks": [
     {
-      "description": "php: every named node type classified",
+      "description": "markdown: every named node type classified",
       "id": "inventory-fully-classified",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "php: 2 confirmed gaps declared",
+      "description": "markdown: 0 confirmed gaps declared",
       "id": "gap-list-present",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "php: 11 ruled, 18 pending owner",
+      "description": "markdown: 6 ruled, 0 pending owner",
       "id": "design-decisions-tracked",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "every named node type classified (php)",
-      "detail": "177 types, 65 handled, 92 silent, 2 gaps, 29 decisions",
+      "description": "every named node type classified (markdown)",
+      "detail": "72 types, 30 handled, 42 silent, 0 gaps, 6 decisions",
       "id": "section-a-structural",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "8 relationship kinds pinned by php fixtures",
-      "detail": "pinned: calls, contains, declared_type, extends, implements, instantiates, overrides, references, return_type, uses",
+      "description": "2 relationship kinds pinned by markdown fixtures",
+      "detail": "pinned: contains, uses",
       "id": "section-b-relationship-kinds",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "Matrix 1b payload rows pinned for php (1)",
-      "detail": "complexity",
+      "description": "Matrix 1b payload rows pinned for markdown (3)",
+      "detail": "range, visibility, ownerName",
       "id": "section-c-payload-matrix",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+      "detail": "2 tier(s) pinned: reference_qualified, structural",
       "id": "section-d-evidence-tiers",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "phpunit:php at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
+      "description": "scala3:markdown at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor scala3:markdown: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "php avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "phpunit:php 9.5 ms/file",
+      "description": "markdown avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "scala3:markdown 2.2 ms/file",
       "id": "section-f-perf-budget",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
-      "description": "php analyzer docs present and committed",
-      "detail": "docs/analyzers/real-php-analyzer.md",
+      "description": "markdown analyzer docs present and committed",
+      "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md",
       "id": "section-g-docs",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     },
     {
       "description": "cross-language consistency checks all pass",
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
-      "language": "php",
+      "language": "markdown",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "9494ead8fb0b2ac23ef66ecc9c50c419b432da3b",
-  "committedAt": "2026-09-28T21:55:02-04:00",
+  "commit": "0a536438be8e178dda2e3ef9af2086358e41a383",
+  "committedAt": "2026-09-28T22:48:03-04:00",
   "data": {
     "languages": {
-      "php": {
-        "gaps": [
-          "undefined: HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque",
-          "undefined: ini directives and shell hash-bang lines are not parsed as symbols or decision points"
-        ],
-        "nodeTypeCount": 177,
-        "pendingDecisions": [
-          "PHPD5",
-          "PHPD6",
-          "PHPD8",
-          "PHPD10",
-          "PHPD11",
-          "PHP-A",
-          "PHP-H",
-          "PHP-D",
-          "PHP-E",
-          "PHP-F",
-          "PHP-B",
-          "PHP-C",
-          "PHP-O1",
-          "PHP-O2",
-          "PHP2-A",
-          "PHP2-B",
-          "PHP2-C",
-          "PHP2-D"
-        ],
+      "markdown": {
+        "gaps": [],
+        "nodeTypeCount": 72,
+        "pendingDecisions": [],
         "ruledDecisions": [
-          "PHPD1",
-          "PHPD2",
-          "PHPD3",
-          "PHPD4",
-          "M3710-COMPANION",
-          "PHPD7",
-          "PHPD9",
-          "PHPD19",
-          "PHP-R1",
-          "PHP-R2",
-          "PHP-R3"
+          "MD-D1",
+          "MD-D2",
+          "MD-D3",
+          "MD-D4",
+          "MD-D5",
+          "MD-D6"
         ],
         "sections": {
           "section-a-structural": {
-            "detail": "177 types, 65 handled, 92 silent, 2 gaps, 29 decisions",
+            "detail": "72 types, 30 handled, 42 silent, 0 gaps, 6 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: calls, contains, declared_type, extends, implements, instantiates, overrides, references, return_type, uses",
+            "detail": "pinned: contains, uses",
             "status": "pass"
           },
           "section-c-payload-matrix": {
-            "detail": "complexity",
+            "detail": "range, visibility, ownerName",
             "status": "pass"
           },
           "section-d-evidence-tiers": {
-            "detail": "4 tier(s) pinned: import_based, inferred, structural, usage_contextual",
+            "detail": "2 tier(s) pinned: reference_qualified, structural",
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "floor phpunit:php: missing=0, unexplained=0 (differential-baseline.json)",
+            "detail": "floor scala3:markdown: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "phpunit:php 9.5 ms/file",
+            "detail": "scala3:markdown 2.2 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/real-php-analyzer.md",
+            "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -181,9 +154,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-29T01:58:33.363Z",
-  "regeneratedAtCommit": "9494ead8fb0b2ac23ef66ecc9c50c419b432da3b",
-  "runtime": "node v26.3.0",
+  "regeneratedAt": "2026-09-29T02:50:12.505Z",
+  "regeneratedAtCommit": "0a536438be8e178dda2e3ef9af2086358e41a383",
+  "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

@@ -577,6 +577,22 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       log("Taint extraction failed:", e)
     }
 
+    // ONE split of the file for the whole symbol list, not one per symbol.
+    //
+    // Measured 2026-09-28 (script/m60/yaml-scaling-probe.ts, per-doubling ratios, which
+    // survive a loaded box in a way an absolute ms/file cannot): the `.map` below called
+    // `content.split("\n")` for EVERY function/class/method/interface symbol, so a file with
+    // n such symbols split the entire source n times. That is O(n^2) in file size, on the
+    // PRODUCTION path, for every language. A CPU profile put 81% of all sampled time in
+    // `stringSplitFast` with this frame as the only caller.
+    //
+    // YAML exposed it rather than causing it: yaml publishes a `class` symbol for every
+    // object-valued key, so a 4,096-key nested document produced 4,096 class symbols and
+    // 4,096 whole-file splits. Flat documents are unaffected (property symbols do not
+    // take this branch), which is why the same probe measured a flat mapping as linear
+    // and a nested one at ~1.93 per doubling. The `??=` keeps the split lazy so a file
+    // with no such symbol never pays for it at all.
+    let snippetLines: string[] | undefined
     const ret = {
       success: true,
       language: parsed.language || language,
@@ -623,7 +639,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         .map((s: any) => {
         let snippet = ""
         if (["function", "class", "method", "interface"].includes(s.kind)) {
-          const lines = content.split("\n")
+          const lines = snippetLines ?? (snippetLines = content.split("\n"))
           snippet = lines.slice(Math.max(0, s.range.startLine - 1), s.range.endLine).join("\n")
           if (snippet.length > 10000) snippet = snippet.substring(0, 10000)
         }
@@ -708,6 +724,37 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (typeof m.supportsCondition === "string") out.supportsCondition = m.supportsCondition
             if (typeof m.atKeyword === "string") out.atKeyword = m.atKeyword
             if (Array.isArray(m.selectorChain)) out.selectorChain = m.selectorChain
+            // M14 #290 / MD-5 — MARKDOWN, on the same terms as the CSS keys above:
+            // each of these is READ by a check, not merely produced. The reader is
+            // `script/m14/verify-pipeline-e2e.ts`, which indexes a markdown document
+            // through the REAL CLI and asserts the rows in brain.db — and it could not
+            // be written before this line existed, because there was nothing to assert:
+            // every markdown symbol arrived with `annotations = NULL` while every
+            // fixture passed against the analyzer's return value.
+            //
+            // That is the exact shape of the defect, and it is worth being precise
+            // about why no existing gate saw it. A fixture calls `engine.parseFile`,
+            // which never crosses the worker boundary, so the F3 lane is structurally
+            // incapable of observing this seam — which is why the review recorded MD-5
+            // as "unpinnable" rather than "unpinned". It was unpinnable, and the reason
+            // was that the one instrument in the repository that CAN see the worker was
+            // not covering this language. The instrument existed; the case did not.
+            //
+            // `headingLevel` is the load-bearing one: without it the index cannot
+            // reconstruct a document outline, so a markdown heading and a code block
+            // are indistinguishable rows. `isRepeatedSite` is the one that makes two
+            // sites of one construct tellable apart. `nodeType` is the grammar's own
+            // name for the node, which is the fact a reader needs in order to trust
+            // the other four.
+            if (typeof m.nodeType === "string") out.nodeType = m.nodeType
+            if (typeof m.headingLevel === "number") out.headingLevel = m.headingLevel
+            if (typeof m.language === "string") out.language = m.language
+            if (m.isMarkdownHeading === true) out.isMarkdownHeading = m.isMarkdownHeading
+            if (m.isMarkdownTable === true) out.isMarkdownTable = m.isMarkdownTable
+            if (m.isMarkdownTableColumn === true) out.isMarkdownTableColumn = m.isMarkdownTableColumn
+            if (m.isMarkdownCodeBlock === true) out.isMarkdownCodeBlock = m.isMarkdownCodeBlock
+            if (m.isMarkdownFrontMatter === true) out.isMarkdownFrontMatter = m.isMarkdownFrontMatter
+            if (m.isRepeatedSite === true) out.isRepeatedSite = m.isRepeatedSite
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,
@@ -743,7 +790,21 @@ export async function parseFile(filePath: string, projectPath: string, context?:
               : typeof i.module === "string"
                 ? !i.module.startsWith(".") && !i.module.startsWith("/")
                 : !!i.isExternal
-        const line = i.range?.startLine ?? i.line ?? 0
+        // The import's LINE. `line_number` is the field every analyzer in the tree
+        // actually writes (types, go, ruby, python, yaml — 45 call sites, zero of them
+        // write `line`), and this read looked for `range.startLine` and `line` only, so
+        // every import in EVERY language arrived at the store with `line: 0`. Found by
+        // running a real `!include` file through `parseFile` rather than through the
+        // analyzer: the analyzer reported `line_number: 1` and the production entry
+        // reported `line: 0`. The fallback is additive, so an analyzer that does set
+        // `line` or `range.startLine` is unaffected.
+        // FOUR spellings of an import's line exist in this tree and this read matched two
+        // of them: `range.startLine` (xml), `line`, and now `line_number` (yaml, ts, go,
+        // ruby, python). makefile, objective-c and sql write a FOURTH — `lineNumber` —
+        // and were still arriving with 0 after the first fix. All four are accepted;
+        // the order is widest-known first and every step is a fallback, so nothing that
+        // already resolved changes.
+        const line = i.range?.startLine ?? i.line ?? i.line_number ?? i.lineNumber ?? 0
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)
           .map((name: string) => {
@@ -755,7 +816,23 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             return {
               name: cleanName,
               path: i.module || i.path || "",
-              type: asMatch ? "alias" : baseType,
+              // The analyzer's OWN classification, when it declares one. Five lanes do:
+              // makefile `make_include`, objective-c `include`, sql `sql_import`, xml
+              // `xml-doctype`, yaml `yaml_tag_include` / `yaml_keyword_include` /
+              // `github_action`. The fallback below is the JS/TS idiom
+              // (named/default/namespace), and applying it to every language made all
+              // 442 of this lane's corpus imports read `named` — so an Ansible
+              // `include_tasks: tasks.yml` PROJECT file dependency and a GitHub Actions
+              // `uses: actions/checkout@v4` EXTERNAL tool invocation became
+              // indistinguishable in the row the file-dependency engine reads. The
+              // relationships always carried the distinction; the row did not.
+              //
+              // Safe to prefer: the stored column is `import_type`, no fixture in the
+              // tree pins this field, and the only consumer that branches on an import's
+              // `type` (import-pruner.ts) reads JS/TS AST SPECIFIERS — a different
+              // structure entirely, not these rows. A lane that sets no `importType`
+              // keeps the historical value unchanged.
+              type: i.importType ?? (asMatch ? "alias" : baseType),
               isExternal: external,
               line,
             }
@@ -763,6 +840,20 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       }),
       relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
+      // The analyzer's WHOLE `metadata` object was being dropped here, and this
+      // is the function `parallel-indexer.ts:889` uses — the production indexing
+      // path. `engine.ts` carries it (its own result type is
+      // `Omit<ParseResult, "language" | "metadata"> & { metadata?: ... }`), so the
+      // two entry points disagreed and the worker was the lossy one. Found by
+      // running the bash contract probe through `parseFile` rather than through
+      // the analyzer directly: the analyzer reported 10 patterns for
+      // `Deploy.sh` — Strict Error Handling, Insecure Pipe Execution, Privilege
+      // Escalation, Destructive File Operation — and `parseFile` returned none.
+      // Every pattern-based signal in every language was invisible to the index.
+      // Purely additive: nothing read this before, so no consumer changes
+      // behaviour, and the fields that WERE forwarded (`framework` above) are
+      // left exactly as they were.
+      metadata: parsed.metadata,
     }
 
     if (ext === ".dart") {
