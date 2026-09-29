@@ -54,7 +54,7 @@ is a lexical and is not emitted.
 | Relationship | Rule | Carries a line |
 | --- | --- | --- |
 | `contains` | one edge per owned member: subs, package globals, `use constant` names, Moose attributes, class fields | no, by design |
-| `calls` | `function_call_expression`, `ambiguous_function_call_expression` and `method_call_expression`, leaf target, source = the enclosing sub | the callee node |
+| `calls` | `function_call_expression`, `ambiguous_function_call_expression` and `method_call_expression`, target = the receiver-qualified owner where the source proves one, else the leaf; source = the enclosing sub | the callee node |
 | `instantiates` | a concrete package invocant on `->new`, or `new` with a named class argument | the invocant node |
 | `extends` | `use parent` / `use base` / `use Mojo::Base` (named **or** flag-only), an `@ISA` / `$ISA` assignment, and Moo's `extends 'X'` | the naming node |
 | `implements` | Moo `with 'R'` and `use role 'R'` | the argument node |
@@ -196,14 +196,14 @@ text under `content` on every shape that needs the fallback.
 
   | corpus | files | tree truth | covered | MISSING | unexplained |
   | --- | --- | --- | --- | --- | --- |
-  | mojo (M12 pinned, F5 lane) | 274 | 11,109 | 100% | 0 | 0 |
-  | plack (second, F5 lane) | 225 | 2,387 | 100% | 0 | 0 |
-  | perl5 core | 3,607 | 48,138 | 100% | 0 | 0 |
-  | Moose-2.4000 | 961 | 11,979 | 100% | 0 | 0 |
-  | Catalyst-Runtime-5.90132 | 465 | 6,450 | 100% | 0 | 0 |
-  | Moo-2.005005 | 141 | 1,484 | 100% | 0 | 0 |
-  | DBI-1.654 | 101 | 2,367 | 100% | 0 | 0 |
-  | **all seven** | **5,774** | **83,914** | **100%** | **0** | **0** |
+  | mojo (M12 pinned, F5 lane) | 274 | 11,202 | 100% | 0 | 0 |
+  | plack (second, F5 lane) | 225 | 2,395 | 100% | 0 | 0 |
+  | perl5 core | 3,607 | 48,344 | 100% | 0 | 0 |
+  | Moose-2.4000 | 961 | 12,233 | 100% | 0 | 0 |
+  | Catalyst-Runtime-5.90132 | 465 | 6,462 | 100% | 0 | 0 |
+  | Moo-2.005005 | 141 | 1,496 | 100% | 0 | 0 |
+  | DBI-1.654 | 101 | 2,369 | 100% | 0 | 0 |
+  | **all seven** | **5,774** | **84,501** | **100%** | **0** | **0** |
 
   **Auditing the corpora the census walks but the F5 lane never sampled is what
   found the defects in this wave**, and it is worth saying why two F5 corpora
@@ -241,8 +241,66 @@ text under `content` on every shape that needs the fallback.
   not an unknown kind, and it is why the lane emits `calls` to the name and lets
   the indexer resolve it.
 
-### The file surface is production's, exactly
+### A call target carries its owner when the source proves one (PERL-MR11)
 
+`Mojo::IOLoop->start` states two things: that a sub named `start` is being
+invoked, and that its owner is `Mojo::IOLoop`. The lane published only the first,
+so `Mojo::IOLoop->remove`, `Mojo::IOLoop->stream` and `Mojo::IOLoop->server`
+collapsed onto `remove`, `stream` and `server` -- and a caller of one class's
+method read as a caller of another's. The target is now `IOLoop.start`, using
+the same leaf convention the `instantiates` path already used for
+`Util.constructor`.
+
+| receiver | target | why |
+| --- | --- | --- |
+| `Mojo::IOLoop` (a `package` node, or a bareword with `::`) | `IOLoop.start` | the class is **provable** from the token itself |
+| `app` (a bare bareword, no `::`) | `level` | see below |
+| `$self`, `$loop`, a chained `app->log` | `helper` | a value has no class to name |
+| `Mojo::IOLoop->reset` | *nothing* | `reset` is a perl **builtin** |
+
+Two of those rows are load-bearing and each has a mutant, because each is a way
+this rule has already been got wrong.
+
+**A bare bareword is not a class.** The grammar types `app` and `Mojo::IOLoop`
+both as `bareword`, so node type cannot separate them and only the `::` can. In
+`mojo/t/mojo/cgi.t` the same construct is a lexical holding a `Mojo::Server`;
+qualifying it would invent a class named `app` -- the same fabrication as the
+phantom `DSN` and `use_module` this wave removed. So the rule is deliberately
+the *narrow* one: qualify only what `::` or a `package` node proves.
+
+**The builtin test is about the method, never about the target's shape.**
+`addCall` checks its argument against `PERL_BUILTINS`. When the argument became
+the qualified `IOLoop.reset`, the test stopped seeing `reset` and the lane began
+emitting edges for a builtin -- 3 of them on the first run (`IOLoop.reset`,
+`Promise.map`, `Reactor.reset`). The method name is what decides that; the
+qualification happens after the decision, not before it.
+
+Measured with `script/m14/tmp/perl-receiver-scope.mts`, which walks the tree and
+compares what the analyzer published against what the source proves, and exits
+non-zero on any target the tree does not justify:
+
+| corpus | call sites walked | provable package (now qualified) | bare bareword (leaf kept) | unjustified targets |
+| --- | --- | --- | --- | --- |
+| mojo | 28,885 | 2,599 | 235 | 0 |
+| plack | 1,630 | 303 | 19 | 0 |
+| Moose | 13,941 | 1,637 | 1,654 | 0 |
+| Catalyst-Runtime | 6,401 | 266 | 305 | 0 |
+| Moo | 1,074 | 111 | 288 | 0 |
+| DBI | 2,045 | 107 | 109 | 0 |
+| perl5 | 56,166 | 5,758 | 2,190 | 0 |
+| **total** | **110,142** | **10,781** | **4,800** | **0** |
+
+Neither the differential nor any other fixture could see this defect. The
+independent oracle in `derivePerlEdges` derived the target by leaf name exactly
+as the analyzer did, so the pair agreed on a shape both were wrong about --
+100% covered, 0 unexplained, on all seven corpora, the whole time. This is the
+third time that pair has agreed on a shared premise (after the
+`use constant { ... }` dead branch and the oracle's `!inSub` gap), and the
+conclusion is the same: **agreement between an analyzer and an oracle is not
+evidence about the source.** Only `perl/receiver-qualification` pins it, and
+only the AST count gives it a size.
+
+### The file surface is production's, exactly
 Three instruments walk the corpora -- `fixtures/perl/census.mts`,
 `fixtures/perl/lineless.mts` and the F5 lane in `script/m14/differential.ts` --
 and for most of this wave they walked **three different file sets**, which is
@@ -385,25 +443,34 @@ real file; a fixture with ten decision points now reports 11.
 | station | state |
 | --- | --- |
 | F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. See the correction below. |
-| F3 fixtures | **7 expectations, 7/7 pass.** `validation/m14/fixtures/perl/`, one per defect class |
-| F4 mutation | **23 mutants, 23/23 caught** |
+| F3 fixtures | **8 expectations, 8/8 pass.** `validation/m14/fixtures/perl/`, one per defect class |
+| F4 mutation | **26 mutants, 26/26 caught** |
 | #419 structural (A) | green -- 140/140 classified, each in exactly one bucket |
 | #419 relationship kinds (B) | green -- the six kinds the lane emits, all pinned |
 | #419 payload matrix (C) | green -- complexity, parameters, decorators, imports, exports |
 | #419 evidence tiers (D) | green -- 3 tiers, 27 pins |
 | #419 docs (G) | green |
-| #419 differential (E) | **red** -- no canonical `mojo:perl` row in `M14.0.F5.json` |
-| #419 perf (F) | **red** -- no `avgMsPerFile` for `mojo:perl` |
+| #419 differential (E) | green -- `mojo:perl` and `plack:perl` rows pinned, 0 missing / 0 unexplained |
+| #419 perf (F) | green -- `avgMsPerFile` recorded for both (22.0 and 4.7 ms/file) |
 | cross-language (H) | green |
 
-E and F are red for one reason, and it is not a defect: both are written by the
-canonical 30-language sweep, which is the milestone owner's run. A scoped
-`--lang perl` differential deliberately writes no evidence -- replacing a
-30-language artifact with a 2-corpus one would shrink the milestone's claim. The
-lane is REGISTERED (`LANG_CONFIGS.perl`) and runnable with `--lang perl`, which
-reports 6 of 8; it is deliberately **not** in `GATED_LANGS`, because that list
-means "reached CONFORMANT and runs in `npm run verify`", and a language in it must
-be 8 of 8.
+All eight are green and perl is in `GATED_LANGS`. E and F were the last two, and
+they got there the only honest way available: a **sanctioned scoped
+`--pin-baseline`**, which added exactly two rows (`mojo:perl`, `plack:perl`) and
+left all 181 existing rows byte-identical. A plain scoped differential
+deliberately writes no evidence -- replacing a 30-language artifact with a
+2-corpus one would shrink the milestone's claim -- and quoting someone else's
+sweep as perl's result would have been worse. The gate is re-pinned whenever
+the analyzer's edge set changes, because the pin records a `sampleSetHash` of
+what the analyzer actually published; after PERL-MR11 it was re-pinned and the
+diff was 11 lines, all inside the two perl rows.
+
+`GATED_LANGS` means "reached CONFORMANT and runs in `npm run verify`", so
+membership is a claim about the *whole* verify run too. Perl is in it; the
+30-language `npm run verify` is not currently clean, for other lanes
+(groovy, objc, lua/nim fixture coverage, stale F1 records). That is a
+milestone-level fact for the owner, not a perl one, and nothing here
+self-closes it.
 
 ### A false claim this document used to make
 
@@ -438,9 +505,9 @@ corpora, which is the proof they were dead:
 
 | corpus | before | after |
 | --- | --- | --- |
-| mojo / plack | 11,109 / 2,387, 0 / 0 | 11,109 / 2,387, 0 / 0 |
-| Moose / Catalyst | 11,979 / 6,450, 0 / 0 | 11,979 / 6,450, 0 / 0 |
-| Moo / DBI / perl5 | 1,484 / 2,367 / 48,138, 0 / 0 | 1,484 / 2,367 / 48,138, 0 / 0 |
+| mojo / plack | 11,202 / 2,395, 0 / 0 | 11,202 / 2,395, 0 / 0 |
+| Moose / Catalyst | 12,233 / 6,462, 0 / 0 | 12,233 / 6,462, 0 / 0 |
+| Moo / DBI / perl5 | 1,496 / 2,369 / 48,344, 0 / 0 | 1,496 / 2,369 / 48,344, 0 / 0 |
 
 The dead-literal record for perl is now **empty**, which is what closes #863: the
 issue asked for the dead field read to go, and the register that existed to track

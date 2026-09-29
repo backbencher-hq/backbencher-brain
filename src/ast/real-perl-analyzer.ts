@@ -393,8 +393,21 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `function` field, which is NOT the call node. The `&`-argument test below
     // needs the call node itself, so it is passed separately rather than
     // guessed from the callee.
-    const addCall = (target: string, state: WalkState, calleeNode: Node, dynamicReceiver: boolean, callNode?: Node) => {
-      if (!target || PERL_BUILTINS.has(target) || target === "use" || target === "no") return
+    // `builtinProbe` is the METHOD name. It is passed separately because the
+    // target may now be QUALIFIED (`IOLoop.reset`), and testing that against
+    // PERL_BUILTINS misses `reset` — a builtin — so `Mojo::IOLoop->reset` stopped
+    // being suppressed. The builtin test has always been about the method being
+    // invoked, never about the shape of the edge's target.
+    const addCall = (
+      target: string,
+      state: WalkState,
+      calleeNode: Node,
+      dynamicReceiver: boolean,
+      callNode?: Node,
+      builtinProbe?: string,
+    ) => {
+      const probe = builtinProbe ?? target
+      if (!target || PERL_BUILTINS.has(probe) || probe === "use" || probe === "no") return
       // A callee whose name starts with `&` is a CODE-SLOT REFERENCE, not an
       // invocation — UNLESS it carries an argument list, because `&foo(@args)`
       // is perl's EXPLICIT-CALL syntax. The grammar gives both the same shape: a
@@ -791,11 +804,14 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_call_expression": {
           const methodNode = this.findChildByType(node, "method")
           const method = methodNode?.text || ""
+          // `invocant` is multi-child for a parenthesised receiver
+          // `(Foo)->new` / `($self || $other)->new`; the bracket markers carry
+          // no name, so the first NAMED child is the receiver. Hoisted out of the
+          // `new` branch because a receiver that NAMES A CLASS is what makes the
+          // METHOD's owner derivable — true of `Mojo::IOLoop->stream` exactly as
+          // much as of `Mojo::IOLoop->new`.
+          const invocant = this.fieldNodes(node, "invocant").find((c) => c.isNamed) ?? this.firstNamedChild(node)
           if (method === "new") {
-            // `invocant` is multi-child for a parenthesised receiver
-            // `(Foo)->new` / `($self || $other)->new`; the bracket markers
-            // carry no name, so the first NAMED child is the receiver.
-            const invocant = this.fieldNodes(node, "invocant").find((c) => c.isNamed) ?? this.firstNamedChild(node)
             const target = invocant ? this.invocantName(invocant) : ""
             if (target && PERL_MAGIC_TOKENS.has(target)) {
               // `__PACKAGE__->new` IS a constructor call, but `__PACKAGE__` is a
@@ -820,10 +836,59 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               addRelationship(state.functionName || state.packageName || "global", `${this.leafName(target)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, invocant ?? node)
             }
           } else {
-            // `$obj->method` — the receiver is a runtime value, so the target is
-            // a leaf-name match. The line is the METHOD node, which is where the
-            // call is written (not the line the chain opened on).
-            addCall(method, state, methodNode ?? node, true, node)
+            // A receiver that NAMES A CLASS makes the method's OWNER derivable,
+            // so the target is `Receiver.method` and not a bare leaf. The
+            // pre-review lane emitted the leaf, which is a real precision loss
+            // and not a cosmetic one: `Mojo::IOLoop->remove`, `->stream` and
+            // `->server` all collapsed onto the single targets `remove`,
+            // `stream` and `server`, so two classes' same-named methods became
+            // one node and a caller of one looked like a caller of the other.
+            // Measured with script/m14/tmp/perl-receiver-scope.mts: 15,754 of
+            // 71,230 corpus `calls` edges (22.1%) had a class receiver and lost
+            // it — 37.4% of mojo's, 30.3% of Moo's, 28.9% of Moose's.
+            //
+            // The differential reported 100% coverage with 0 unexplained
+            // throughout, because the oracle derived the target by leaf name too.
+            // That is the third time this pair has agreed on a shared premise
+            // (after the `use constant { ... }` dead branch and the oracle's
+            // `!inSub` gap), and it is why the number had to come from the AST
+            // rather than from either derivation.
+            //
+            // A receiver that is a VALUE — `$self->other`, a chained call, a
+            // scalar — still gets the leaf, because there is no class to name.
+            // The discriminator is the same `namesAClass` allowlist the
+            // `instantiates` path uses: one rule, two labels. The line is the
+            // METHOD node either way.
+            // Two corrections to the first version of this, both found by the
+            // differential the moment it landed (18 unexplained on mojo).
+            //
+            // (1) QUALIFYING THE TARGET DEFEATED THE BUILTIN CHECK. `addCall`
+            // tests its argument against PERL_BUILTINS, and it was being handed
+            // `IOLoop.reset` where it needs to be handed `reset` — so
+            // `Mojo::IOLoop->reset` stopped being suppressed, because `reset` IS
+            // a perl builtin. The builtin test has always been about the METHOD.
+            // `addCall` now takes the method separately for that test.
+            //
+            // (2) A BARE BAREWORD IS NOT A CLASS. `app->log->level('fatal')` in
+            // mojo's t/mojo/cgi.t qualified to `app.log` — inventing a class
+            // named `app` for what is a lexical holding a Mojo::Server. The
+            // grammar types both `app` and `Mojo::IOLoop` as `bareword`, so node
+            // type cannot tell them apart; only the `::` can. So qualification
+            // requires a receiver that is PROVABLY a package name: a `package`
+            // node, or a bareword carrying `::`. A plain bareword keeps the leaf,
+            // which is the honest answer for a variable.
+            const recvTarget = invocant ? this.invocantName(invocant) : ""
+            const provableClass =
+              invocant != null &&
+              this.namesAClass(invocant) &&
+              (invocant.type === "package" || recvTarget.includes("::")) &&
+              !recvTarget.includes("$") &&
+              !recvTarget.includes("->")
+            if (provableClass) {
+              addCall(`${this.leafName(recvTarget)}.${method}`, state, methodNode ?? node, false, node, method)
+            } else {
+              addCall(method, state, methodNode ?? node, true, node, method)
+            }
           }
           break
         }
