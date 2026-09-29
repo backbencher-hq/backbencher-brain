@@ -837,15 +837,19 @@ const handlers: Record<string, ToolHandler> = {
     // plan's source file and flag plans whose file changed since the index —
     // a stale plan says so up front instead of silently planning against
     // outdated symbols.
+    //
+    // M53: the file now comes from the plan's OWN symbol, which the planner
+    // records. The previous code re-queried `brain_symbol` by lower-cased NAME
+    // and kept the first matching row, so when two symbols shared a name the
+    // plan was computed for one symbol while the staleness verdict came from
+    // whichever file that name query happened to hit first.
     const migRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const planNames = (result.plans as any[]).map((p) => String(p.componentName ?? "").toLowerCase()).filter(Boolean)
-    const nameToRel = new Map<string, string>()
-    if (planNames.length) {
-      for (const r of migRaw.prepare(`SELECT lower(s.name) AS lname, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND lower(s.name) IN (${planNames.map(() => "?").join(",")})`).all(projectId, ...planNames) as Array<{ lname: string; rel: string }>) {
-        if (!nameToRel.has(r.lname)) nameToRel.set(r.lname, r.rel)
-      }
+    const planFiles = new Set<string>()
+    for (const p of result.plans as any[]) {
+      const file = typeof p.sourceFile === "string" ? p.sourceFile : ""
+      if (file && file !== "unknown") planFiles.add(file)
     }
-    const migFiles = [...new Set([...nameToRel.values()])]
+    const migFiles = [...planFiles]
     const migRelToId = new Map<string, string>()
     if (migFiles.length) {
       for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
@@ -857,13 +861,16 @@ const handlers: Record<string, ToolHandler> = {
     const migStatuses = migDetail?.statuses ?? new Map<string, string>()
     const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
     for (const p of result.plans as any[]) {
-      p.sourceFile = nameToRel.get(String(p.componentName ?? "").toLowerCase()) ?? null
-      p.stale = migStatus(p.sourceFile) === "stale"
+      p.stale = migStatus(typeof p.sourceFile === "string" ? p.sourceFile : undefined) === "stale"
     }
+    // A plan whose source file could not be resolved counts as `missing`, not
+    // `fresh`. Previously such plans were dropped from the envelope entirely, so
+    // a request whose files were all unresolvable reported a clean 0/0/0.
+    const unresolvedPlans = (result.plans as any[]).filter((p) => !p.sourceFile || p.sourceFile === "unknown").length
     const migSummary = {
       fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
       stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
-      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length,
+      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length + unresolvedPlans,
     }
     const migEnvelopeSource = { ...migSummary, staleRatio: migRows.length ? (migSummary.stale + migSummary.missing) / migRows.length : 0, freshnessMode: "complete" as const }
     const stalePlans = (result.plans as any[]).filter((p) => p.stale).length
