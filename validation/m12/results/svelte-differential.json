@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "ef4e7fa37fadd18e3c6de8d94a2a1f2f3d6b80cb930c56c19ab5c5c886821556",
-        "bytes": 79925
+        "sha256": "9628a39c8076741df933509f973682f44a175f6719ce693c0af0370f0071d5fa",
+        "bytes": 87277
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -100,11 +100,11 @@
         "bytes": 479
       },
       "validation/m12/ground-truth/svelte.json": {
-        "sha256": "106c05802d82d07a3932a32c2892a2635ce2423c7d337adec5e3bc082d40dd37",
-        "bytes": 35892
+        "sha256": "d039733796fac306c692e418c3c12dc549102370c8065f7cf037f4a8688aad2b",
+        "bytes": 36591
       }
     },
-    "digest": "4b392f50cdcc6075fd0197850fbd8572b834a4f41f2dbd9c9bd199d6502feddf",
+    "digest": "9eae5de10ee9ce55e8c676f6dab96692a49530c31283d3e926c886faf89bf236",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-svelte_tree-sitter-svelte.wasm",
       "sha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
@@ -120,8 +120,8 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "882d5ddaddf6f6c14c083c77fbc4622f6cf05bae69c8fe772129f93fa48af468",
-        "bytes": 123639
+        "sha256": "98b552f83665aee217ca9e3e89fc14b617c53d7176dbc834367ffb41b4afe055",
+        "bytes": 151894
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -136,8 +136,8 @@
         "bytes": 190596
       },
       "src/ast/real-css-analyzer.ts": {
-        "sha256": "56ca2113810b8079a3eebcdb76e4a7f75283e62f26d854021da8ad29383567fe",
-        "bytes": 136392
+        "sha256": "ccf4f113549745d0f8309a87d01d51a2d69732eeafab9bb7d599bd5b36cbdb64",
+        "bytes": 140933
       },
       "src/ast/real-dart-analyzer.ts": {
         "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
@@ -180,20 +180,20 @@
         "bytes": 94338
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "3a9216cf9a14d1b3bf4a5566794796cb34c5c2c57359482b228128949c4d464c",
-        "bytes": 149684
+        "sha256": "6062af27f561c416b9629667121bfcca1e8d81e54d0cee46b9609ad1c5ac142a",
+        "bytes": 152024
       },
       "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "77e5d6f97b64dcc236c1b7aa16d5e27f41f6cf3c129ccfe298731da7389ffbe1",
-        "bytes": 132601
+        "sha256": "b6c03eea979175ebea8bd5ba16f4a9c4a7e53c2a266ea831cd710ead4c531b4a",
+        "bytes": 134094
       },
       "src/ast/real-json-analyzer.ts": {
-        "sha256": "d08a0201e08fbc2fd95041d87db741ca3457cfb5fe7a264664a0240d376fd497",
-        "bytes": 26512
+        "sha256": "12abc8620b7e0d2952d7fb37dca4a77f75f4f69e6e5bf0a9dc07299727f175f5",
+        "bytes": 29491
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "8b3670df0826a4d2a4e24f19a888f366e72d96d714b1ad0ca99285b16c397cce",
-        "bytes": 161121
+        "sha256": "284b27c21aa6cb4c89fdcc9facfd2335a15f6eb6e2525684526322fa15e944e3",
+        "bytes": 162982
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -204,8 +204,8 @@
         "bytes": 15750
       },
       "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "869f26c0063e053df2e78f00c59d3811efdc83cc80e174b24d1b6cbe21c7a0d4",
-        "bytes": 34325
+        "sha256": "510d6c234e203ad2ec99ba88ca24122feae2ec5abc9c2e4bb9d0103703b790e4",
+        "bytes": 38730
       },
       "src/ast/real-objective-c-analyzer.ts": {
         "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
@@ -220,8 +220,8 @@
         "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "04d5a10560f609c2189d96c83c0b4f4f3d0dbbad2b159cbea6adb04277b85ab0",
-        "bytes": 122169
+        "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
+        "bytes": 126264
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -244,8 +244,8 @@
         "bytes": 127225
       },
       "src/ast/real-scss-analyzer.ts": {
-        "sha256": "f737c8fe7ae5de921a8a6144e7265a935fdae07c6e38e6bd752934b17ca669c6",
-        "bytes": 36433
+        "sha256": "c56b98e24c796a92f1ead56206aeb02ce6ac055b45bcf6f14e4edb9aff437888",
+        "bytes": 45414
       },
       "src/ast/real-sql-analyzer.ts": {
         "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
@@ -260,8 +260,8 @@
         "bytes": 25734
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "9c2bf18d4128fd1a808369f39e5dce7c56258deed59ff37dc61c29a7a0555677",
-        "bytes": 259682
+        "sha256": "72d55a26a084f6ba67187bc8c36440b67bb59a75522551d8731484dcdd693c23",
+        "bytes": 277439
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -272,8 +272,8 @@
         "bytes": 11842
       },
       "src/ast/real-yaml-analyzer.ts": {
-        "sha256": "74c13a4b040c92ab37d90b657278c41fb9076d75fdeb49b84cc9d3501c563899",
-        "bytes": 86208
+        "sha256": "784054714b11cbe5a8de939f79e03b853f4f13917c17beaecb3e8c6783445731",
+        "bytes": 86783
       },
       "src/ast/real-zig-analyzer.ts": {
         "sha256": "f327c176c4466a03e6e14c7ee91de912fa81744b0d8a9d3695908b0c5f5baca8",
@@ -306,7 +306,7 @@
     },
     "Negative.svelte": {
       "symbols": 6,
-      "relationships": 12
+      "relationships": 13
     },
     "UserList.svelte": {
       "symbols": 5,
@@ -317,9 +317,9 @@
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 81,
-      "observedResolved": 81,
-      "truePositive": 81,
+      "expected": 82,
+      "observedResolved": 82,
+      "truePositive": 82,
       "falsePositive": 0,
       "falseNegative": 0,
       "unknown": 10,
@@ -330,7 +330,7 @@
       "recall": 1,
       "falsePositiveRate": 0,
       "falseNegativeRate": 0,
-      "unknownRate": 0.12345679012345678
+      "unknownRate": 0.12195121951219512
     },
     "earliestFailingLayer": null,
     "truePositiveIds": [
@@ -368,6 +368,7 @@
       "rel:Card.svelte:uses:Card:body",
       "rel:Card.svelte:uses:Card:header",
       "rel:Card.svelte:uses:Card:theme",
+      "rel:Negative.svelte:calls:Negative:fade",
       "rel:Negative.svelte:contains:Negative:filtered",
       "rel:Negative.svelte:contains:Negative:query",
       "rel:Negative.svelte:exports:Negative:query",
@@ -437,11 +438,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:svelte",
-      "wallTimeMs": 283.506137,
-      "userCpuMs": 200.988,
-      "systemCpuMs": 25.158,
-      "peakRssBytes": 229228544,
-      "rssDeltaBytes": 5140480,
+      "wallTimeMs": 558.813974,
+      "userCpuMs": 237.804,
+      "systemCpuMs": 31.029,
+      "peakRssBytes": 238092288,
+      "rssDeltaBytes": 3403776,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
