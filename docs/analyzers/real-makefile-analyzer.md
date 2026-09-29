@@ -111,7 +111,7 @@ error-recovery garbage that is now gone (a `?` used as a variable name, a whole
 value it is read in. **The analyzer needed no change** — the constructs were
 already modelled, just unreachable, which is the strongest evidence the patch is
 well-founded. 9 previously invisible declarations are now visible. The pristine
-build and the patch are retained under `fixtures/make/ab/` so the comparison can
+build and the patch are retained under `grammars/tree-sitter-make/ab/` so the comparison can
 be repeated rather than believed.
 
 ## Relationships emitted
@@ -137,7 +137,7 @@ gaps; `reviews/make/master-review.md` §5 carries each count.
 | `bun run script/m12/make-node-types-compare.ts` | **passed** — 35 live node-type references, **0 phantom** |
 | `bun run script/m12/make-corpus-errors.ts` | **passed** — 12/14 files clean, 0 crashes, grammar residual **pinned** |
 | `bun run script/m12/make-corpus-measure.ts` | **passed** — 622 symbols / 2,480 relationships, throughput recorded |
-| `bun run script/m14/run-fixtures.ts --lang make` | **6/6 pass** |
-| `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **18/18 caught** |
+| `bun run script/m14/run-fixtures.ts --lang make` | **7/7 pass** |
+| `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **21/21 caught** |
 | `bun run script/m14/completeness-inventory.ts --lang make` | **sections A–H 8/8** |
 | `bun run script/m14/differential.ts --lang make` | both corpora **100 %** covered, 0 missing, 0 unexplained |

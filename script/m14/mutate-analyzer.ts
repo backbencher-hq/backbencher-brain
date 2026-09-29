@@ -9876,6 +9876,59 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "exports" && (x.metadata as any)?.via === "target")),
     }),
   },
+    {
+      id: "make/apply-private-and-override-flags-eagerly",
+      language: "make",
+      defectClass: "lost-annotation",
+      description:
+        "Reverts the deferral that keeps `private VAR = v` and `override VAR := v` from losing their flag. The walker reaches the directive BEFORE the assignment nested inside it, so applying the flag at the point of the directive targets a symbol that does not exist yet and the annotation is dropped -- silently, and only in the one-line spelling that is actually written. The two-line form (`VAR = v` then `private VAR = w`) still works, which is why this survived having a code path at all.",
+      transform: r => ({
+        ...r,
+        symbols: (r.symbols ?? []).map((x: any) => {
+          if (x.name !== "SECRET" && x.name !== "OVERRIDDEN") return x
+          const m = x.metadata ?? {}
+          const { isPrivate, isOverride, ...rest } = m
+          return { ...x, metadata: rest }
+        }),
+      }),
+    },
+    {
+      id: "make/keep-the-exports-edge-after-unexport",
+      language: "make",
+      defectClass: "wrong-relationship-metadata",
+      description:
+        "REPRODUCES the pre-fix output for `unexport NAME` rather than reverting a line of code: the edge is ADDED BACK, exactly as it survived the unexport before the fix. Mutating an existing relationship cannot express this defect, because after the fix that relationship does not exist -- a transform that looks for it is a silent no-op that would report itself CAUGHT-by-nobody. The shape it adds is the one the pre-fix analyzer published: the symbol table said `isExported: false` while the graph still carried an `exports` edge, so a consumer reading relationships got the opposite answer from one reading symbols.",
+      transform: r => {
+        const rels = r.relationships ?? []
+        const already = rels.some((x: any) => x.type === "exports" && x.target === "EXPORTED")
+        if (already) return r
+        return {
+          ...r,
+          relationships: [...rels, {
+            source: "directive-flags.mk", target: "EXPORTED", type: "exports",
+            confidence: 1.0, line_number: 7, line: 7,
+            metadata: { via: "export_directive", evidenceClass: "export_directive" },
+          }],
+        }
+      },
+    },
+    {
+      id: "make/mislabelled-directive-flags",
+      language: "make",
+      defectClass: "wrong-metadata-key",
+      description:
+        "Reverts the metadata keys from the camelCase the file uses everywhere else (isMakeVariable, isExported, isBuiltin) to the `is${type}` interpolation that produced isprivate / isoverride / isundefine. A key rename is not cosmetic here: those were the names script/m14/spec/make-completeness.json claimed the analyzer wrote, so the spec and the index disagreed while both looked correct.",
+      transform: r => ({
+        ...r,
+        symbols: (r.symbols ?? []).map((x: any) => {
+          const m = x.metadata ?? {}
+          if (m.isPrivate) return { ...x, metadata: { ...m, isprivate: true, isPrivate: undefined } }
+          if (m.isOverride) return { ...x, metadata: { ...m, isoverride: true, isOverride: undefined } }
+          if (m.isUndefine) return { ...x, metadata: { ...m, isundefine: true, isUndefine: undefined } }
+          return x
+        }),
+      }),
+    },
   {
     id: "make/keep-dollar-wrapper-in-prerequisite",
     language: "make",

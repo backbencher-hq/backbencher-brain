@@ -29,7 +29,7 @@
       "P2 `_shell_escape`: `$$( ... )` as a shell command, not a make expansion (closed MAKE-G4)"
     ],
     "patchDecision": "ADOPT. Both gaps were originally recorded as deliberately unpatched to protect the source<->wasm identity proof; that trade was then priced and does not hold, because the patches add NO node type and NO field (44 named / 24 fields before and after, zero added, zero removed) so the proof loses nothing and is re-measured for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing, 0 extra. Measured 11 -> 0 ERROR nodes over the 99-file corpus with 0 files regressed, and at the PRODUCT level 1,772 -> 1,781 symbols / 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer required NO change, which is the strongest evidence the patch is well-founded. A control build of the unpatched source with the same toolchain is functionally identical to the pristine wired build, so every difference is the patch and not the toolchain.",
-    "retained": "fixtures/make/ab/{pristine-src,pristine-make.wasm,grammar.patch} — the A/B stays re-runnable, not merely asserted."
+    "retained": "grammars/tree-sitter-make/ab/{pristine-grammar.js,grammar.patch,pristine-make.wasm} — the A/B stays re-runnable, not merely asserted."
   },
   "corpus": {
     "files": 99,
@@ -204,7 +204,9 @@
       "the F5 file picker required a dotted extension, and Make's files are named `Makefile` — so the lane read as EMPTY rather than unchecked. Added an additive opt-in `fileNames` list; no other lane's matching changes.",
       "the F5 label allowlist registered only 3 of the 6 labels the make oracle derives, so 1,500 analyzer edges were filtered off and reported as 1,498 MISSING (92% of truth) while the analyzer was emitting 2,109 edges for those 53 files.",
       "three M12 gates hardcoded an `elixir` corpus that is not on this machine and died with `fatal: cannot change to ...` before measuring anything. The corpus now comes from script/m12/make-corpus.ts, a missing checkout is skipped and RECORDED, and both corpus gates pin the grammar residual instead of demanding zero errors."
-    ]
+    ],
+    "untestedCodePaths": 3,
+    "note_untested": "Found by asking the census which declared types the corpus never fires, and then asking what the analyzer claims to do with THOSE. A `case` label is a claim, not a test. See reviews/make/master-review.md section 12."
   },
   "survivingMutantsFoundAndFixed": [
     "make/accept-keywords-as-names SURVIVED the first run: the fixtures had no forbid on the `export` keyword, so a mutant resurrecting 6 bad edges changed nothing. A surviving mutant is a hole in the suite, not a pass.",
@@ -227,7 +229,11 @@
     "M12 corpus errors": "passed — 14/14 clean, 0 crashes, 0 error nodes, grammar residual PINNED TO ZERO",
     "M12 corpus measure": "passed — 630 symbols / 2,490 relationships",
     "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
-    "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately."
+    "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately.",
+    "F3 fixtures": "7/7 — the 7th (make/directive-flags) covers five constructs that previously had a code path and no test",
+    "F4 mutants": "21/21 caught — 3 added, one per defect found by that fixture, including one that REPRODUCES the pre-fix output rather than reverting a line, because after the fix the defective relationship no longer exists to mutate",
+    "completeness": "44/44 classified (32 handled, 10 correctly silent), sections A-H 8/8 — and the bucket RULE was amended after five types were found sitting in handled_verified with neither a fixture nor a corpus occurrence",
+    "never-fired audit": "The census's `never fired` list is the highest-signal line in the lane and was being read as a coverage percentage. Cross-referencing it against what the analyzer claims to handle found 5 types with a code path and ZERO tests (private/override/undefine/unexport/shell_assignment, all at 0 of 99 corpus occurrences) and 1 that produced nothing (vpath_directive). Three of those paths were BROKEN: the one-line `private VAR = v` / `override VAR := v` spelling lost its flag because the walker reads the directive before the nested assignment; `undefine VAR` was an UNREACHABLE branch because its operand is a bare word in the `variable` field with no named children, so the child search could never match; and `unexport` cleared the metadata flag while leaving the `exports` edge, so the symbol table and the graph disagreed. All fixed, all pinned. Real corpus fact corrected: `override CFLAGS += ...` at tree-sitter-lua/Makefile:25 now records isOverride. Corpus counts are UNCHANGED (1781/5880) because none of these constructs appear in the corpus except that one annotation."
   },
   "notClosed": {
     "gaps": [
@@ -244,7 +250,7 @@
       {
         "id": "MAKE-G3 / MAKE-G4",
         "status": "CLOSED (2026-09-28)",
-        "summary": "Both grammar limitations fixed by two measured patches to the vendored grammar, which add no node type and no field. 11 -> 0 ERROR nodes over the 99-file corpus; 9 previously invisible declarations are now visible; the error-recovery artefacts the recovery had published as facts (a `?` as a variable name, a whole `VAR=value` as a name) are gone. The analyzer needed no change. The pristine build and the patch are retained under fixtures/make/ab/ so the comparison is re-runnable. See reviews/make/master-review.md section 11."
+        "summary": "Both grammar limitations fixed by two measured patches to the vendored grammar, which add no node type and no field. 11 -> 0 ERROR nodes over the 99-file corpus; 9 previously invisible declarations are now visible; the error-recovery artefacts the recovery had published as facts (a `?` as a variable name, a whole `VAR=value` as a name) are gone. The analyzer needed no change. The pristine build and the patch are retained under grammars/tree-sitter-make/ab/ so the comparison is re-runnable. See reviews/make/master-review.md section 11."
       }
     ],
     "notClaimed": [
@@ -270,5 +276,7 @@
     "probes": "script/m14/tmp/make/ (tracked, re-runnable)",
     "raw": "fixtures/make/out/*.json"
   },
-  "issue": "M60 make wave — 17 defects, 44/44 types, A-H 8/8, differential 1.000000/1.000000"
+  "issue": "M60 make wave — 17 defects, 44/44 types, A-H 8/8, differential 1.000000/1.000000",
+  "fixtures": 7,
+  "mutants": 21
 }
