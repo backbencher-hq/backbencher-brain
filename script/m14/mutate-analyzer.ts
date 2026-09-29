@@ -5017,6 +5017,65 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/imports-twin-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z30 regression: the `imports` twin edges stop being published, so every module dependency reverts to living only under `references` \u2014 the state 16 other lanes and the graph engine are not in. A module path is not a declaration name (176 of 394 distinct targets in 400 corpus files contain a separator), so `imports` is the only type where the fact is expressible. Caught by zig/relationship-classes' expectRelationships on `imports ../helper.zig`, and by the imports gate, which counts the type by name.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "imports"),
+    }),
+  },
+  {
+    id: "zig/instantiates-construction-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z32 regression: the CONSTRUCTION half of `instantiates` goes away \u2014 `Point{ .x = 0, .y = 0 }` publishes no instantiation edge, which is the class ZIG.GAP.3 has wanted since it was written. Caught by zig/relationship-classes' expectRelationships on `instantiates Point` and `instantiates Inner` (the qualified head), and by the instantiation gate, which counts the two classes separately so a regression in one is attributable.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isConstructorApplication),
+      ),
+    }),
+  },
+  {
+    id: "zig/instantiates-generic-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z32 regression: the GENERIC TYPE APPLICATION half of `instantiates` goes away \u2014 `Scaled(u8, 4)`, a call to an in-file `fn ... type`, publishes no instantiation edge. Caught by zig/relationship-classes' expectRelationships on `instantiates Scaled`, and by the instantiation gate.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "instantiates" && (x.metadata ?? {}).isGenericTypeApplication),
+      ),
+    }),
+  },
+  {
+    id: "zig/exports-edge-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z33 regression: `exports` relationships stop being published, so the module's public API surface exists only in the result's export ARRAY and never in the graph \u2014 1,584 file-scope `pub`/`export` declarations over 400 corpus files, invisible to any query that reads relationships. Caught by zig/relationship-classes' expectRelationships on three export targets, and by the exports gate, which is bidirectional so it also catches the array drifting from the edges.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  {
+    id: "zig/import-binding-symbol-dropped",
+    language: "zig",
+    defectClass: "symbol-loss",
+    description:
+      "Z35 regression: a NAMESPACE IMPORT BINDING stops minting a symbol \u2014 `const std = @import(\"std\")` becomes an edge and no name, so the module's own namespace is missing its most common declaration (1,458 bindings in 400 corpus files) and a `pub const X = @import(...)` re-export names a binding the index cannot resolve. Reconstructed by dropping the symbols the analyzer marks `zigImportBinding`, which is why that marker exists rather than a name list. Caught by zig/relationship-classes' expectSymbols (`helper`, `reexported`) and by the fixture runner\u0027s export invariant, a general check this lane did not have to write.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).zigImportBinding),
+    }),
+  },
+  {
     id: "zig/anonymous-container-owns",
     language: "zig",
     defectClass: "symbol-fabrication",
@@ -5143,17 +5202,24 @@ export const MUTANTS: Mutant[] = [
     language: "zig",
     defectClass: "payload-corruption",
     description:
-      "Z18 regression: re-introduces the removed junk-strip on a declared-type leaf. Its receiver can only be an `identifier` node's text, so on a plain identifier it is provably a no-op — and on a QUOTED identifier it corrupts a legitimate name: `@\"weird type\"` is published as `@\"weirdtype\"` (1,348 of the pinned corpora's quoted type-position names carry a character from that class, e.g. the upstream compiler's `@\"fatal error\"` diagnostics field). Caught by zig/declared-type-leaf, whose forbid row names the corrupted spelling and whose expect row names the correct one.",
+      "Z18 regression, RE-AIMED at the current contract (#924-E, a7368a80). The original transform matched a published target spelled `@\"...\"` and stripped its junk class; since quoting syntax is no longer part of a published NAME, that condition never fired and the mutant SURVIVED at 0 -> 0 — which is what a suite reports when a fixture is realigned and a mutant is left pointing at the old spelling. The defect is real and the reconstruction is still sound: a published zig name can contain a space or a bracket ONLY if it came from a quoted identifier (the grammar will not spell `fn weird type()` unquoted), so mangling the interior of such a name IS the Z18 defect under either spelling. Caught by zig/declared-type-leaf and zig/relationship-classes, whose expect rows name `odd field` and `weird type` — the correct published spellings.",
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map(x => {
         const t = String(x.target ?? "")
-        if (t.startsWith('@"') && t.endsWith('"') && /[!*\s[\]{}]/.test(t)) {
-          return { ...x, target: '@"' + t.slice(2, -1).replace(/[!*\s[\]{}]+/g, "") + '"' }
+        // no sigil this time: the published name IS the content
+        if (!t.startsWith("@") && /[!*\s\[\]{}]/.test(t)) {
+          return { ...x, target: t.replace(/[!*\s\[\]{}]+/g, "") }
         }
         return x
       }),
+      symbols: (r.symbols ?? []).map(s => {
+        const n = String(s.name ?? "")
+        if (!n.startsWith("@") && /[!*\s\[\]{}]/.test(n)) return { ...s, name: n.replace(/[!*\s\[\]{}]+/g, "") }
+        return s
+      }),
     }),
+
   },
   {
     id: "zig/compound-write-gate",
