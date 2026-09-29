@@ -40,12 +40,39 @@ expressions, not named declarations, so they emit no symbol.
 | `calls` | `function_call_expression`, `member_call_expression`, `nullsafe_member_call_expression`, `scoped_call_expression`; leaf target; source = enclosing function/method (PHP builtins filtered) |
 | `instantiates` | `object_creation_expression` (`new Class(...)`, incl. `new self/static/parent`) |
 | `overrides` | method whose name exists on the superclass (local declarations or the project companion index) |
-| `references` | `require` / `require_once` / `include` / `include_once` |
+| `imports` | module dependencies: `use` clauses (module = the FQN, alias carried in `metadata.aliased`) and `require` / `require_once` / `include` / `include_once` paths. Owner is file scope — `use` is per-compilation-unit in PHP |
+| `references` | declared-type references (`metadata.relationshipType = declared_type`), constant fetches, and resolved type names. NOT include paths — those are `imports` |
 | `contains` | one edge for every owned symbol |
-| imports | `use` clauses (module = FQN, item = alias or leaf) |
 
 Member *access* (`$obj->prop`, no call) produces no edge; only member *calls*
 (`$obj->method()`) do. Constructor expressions emit `instantiates`, not `calls`.
+
+### `imports` is the kind the file-level reader needs
+
+`src/lsp/graph_request.ts:256` is `relationship_type IN ('imports','exports')`.
+This analyzer used to emit **zero** `imports` edges: a `use` clause was
+recorded only as `ImportInfo` with no relationship, and an include path was
+mislabeled `references` — a file-level module edge presented as an intra-file
+symbol read. Every PHP module dependency was therefore invisible to that
+reader, while the ontology above already promised otherwise. Fixed in
+M12.PHP-IMPORTS: `use` and include paths now share the `imports` kind, with
+`metadata.isImport` / `metadata.fileLevel` set.
+
+### `overrides` is emitted only when it is verified
+
+An `overrides` edge requires the base's declaration to be **visible** — in this
+file, or via `AnalyzeContext.overrideCompanion` — and is then emitted at 0.95.
+
+This analyzer previously also emitted a 0.5 `first-parent-guess` edge for every
+method of a class whose base lives in another file, without checking that the
+base declares the method. The companion index that could verify it is never
+populated in production (M37.10), so in production *every* cross-file PHP
+override was that guess. `script/m12/php-override-audit.ts` measured it on
+`phpunit@c8d6921f`; see Verification evidence for the numbers. The guess was
+removed: it sat below the 0.7 threshold, so `pool-worker` already dropped it
+and it never reached the graph — it bought no real cross-file override while
+manufacturing a majority-false unverified bucket. Restoring cross-file
+coverage honestly means populating the companion index, not guessing.
 
 ## Supported AST shapes
 
@@ -60,23 +87,63 @@ Member *access* (`$obj->prop`, no call) produces no edge; only member *calls*
 
 ## Verification evidence
 
-- Independent manual ground truth: `validation/m12/ground-truth/php.json`
-- Fixtures: `validation/m12/fixtures/php/{BaseService,Service,Negative}.php`
-- Differential: **49/49 facts, precision 1.000, recall 1.000, 0 FP, 0 FN**
-- Corpus: `phpunit@c8d6921fb601b6988854cd84a672f06c1e49f80e`, 3,231 tracked
-  `.php` files; **2 grammar-error files, 0 crashes** after the grammar upgrade
+- Independent manual ground truth: `validation/m12/ground-truth/php.json` —
+  **66 facts, precision 1.000, recall 1.000, 0 FP, 0 FN**
+  (`bun script/m12/verify-analyzer.ts php`)
+- Fixtures: `validation/m12/fixtures/php/{BaseService,Service,Negative}.php`,
+  and `validation/m14/fixtures/php/` (16 pass / 0 fail as of the last run)
+- Mutants: 45 registered for `php/`, all 45 caught as of the last run
+- Completeness (#419): **177 grammar types classified, sections A–H 8/8**;
+  `script/m14/spec/php-completeness.json` records 65 handled + 105 silent,
+  29 adjudicated decisions (18 FIXED, 11 RULED, none pending) and 2 declared
+  gaps. See "Known gaps" below.
+- Regex census: the analyzer contributes **0** regex usages, confirmed by the
+  AST-driven project census in `validation/m12/results/regex-census.json`
+  (which walks for regex literal nodes and `RegExp` constructors, so a
+  `String.replace` with a string argument and a regex inside a comment are both
+  correctly not counted). A naive `grep` for `\.replace(` false-positives on
+  both — use the census artifact, not grep.
+- Corpora (both restored at their pins, both reproducible):
+  - `phpunit@c8d6921fb601b6988854cd84a672f06c1e49f80e` — 3,231 tracked `.php`
+  - `phpmyadmin@4061095a59e1769128776ad24154cc7058de51aa` — 1,232 tracked `.php`
+- Differential, 60-file samples, tree-truth coverage:
+  - phpunit: **361/361 covered (100%), MISSING=0, unexplained=0, heuristic=0**
+  - phpmyadmin: **2942/2943 covered (100%), MISSING=1, unexplained=0, heuristic=0**
+  - The single phpmyadmin MISSING is the require/include rule, not a coverage
+    gap: `derivePhpEdges` in `script/m14/differential.ts:452` still pushes
+    `references` for include paths while the analyzer now files them as
+    `imports`. The oracle mirror is one line behind; a phpunit sample with no
+    `require`/`include` measures MISSING=0, which is why the number is
+    sample-dependent.
 - Grammar upgrade: npm `tree-sitter-php` 0.24.2 fixed **15/17** previously
   failing files with **0 regressions** (PHP 8.4 property hooks, pipe operator,
-  `new Class()->method()` dereference in production code, readonly anonymous
-  classes, a vendor fluent chain); the 2 remaining are an intentional
-  parse-error test fixture and a partial-function-application `?` test fixture
+  `new Class()->method()` dereference, readonly anonymous classes, a vendor
+  fluent chain); the 2 remaining are an intentional parse-error test fixture
+  and a partial-function-application `?` test fixture.
 - Corpus production extraction: **3,073 symbols / 4,276 relationships** on the
-  400-file tracked sample; evidence in
+  400-file tracked phpunit sample; evidence in
   `validation/m12/results/php-corpus-complexity.json`
 - Grammar shape safety: **33/33** dispatch references emitted by the grammar
   (2 remaining refs `and`/`or` are anonymous operator tokens, confirmed live)
-- Project regex census: the PHP analyzer contributes **0 regex usages**
-  (project total 63 → 58)
+
+### Override audit — how the guess was measured, not assumed
+
+`bun script/m12/php-override-audit.ts` runs the analyzer *directly* (the
+`pool-worker` 0.7 threshold hides the guess bucket), resolves each guessed
+base class's declaring file across the whole corpus, and asks whether that
+file declares the method. Only an unambiguous, non-builtin base yields TRUE or
+FALSE, so the tool cannot inflate its own false rate; builtins and ambiguous
+leaves are reported separately.
+
+On a 60-file strided sample of phpunit: **99 guess edges, 18 decidable, 12
+FALSE (66.7%)**. The undecidable remainder is itself mostly false — hand-checked
+cases include `TestCase.testOne`, `Subscriber.notify`, and all 9
+`VariousIterableDataProviderTest.as*Provider` edges (the parent declares only
+the `*ProviderInParent` methods) — so **66.7% is a floor, not a midpoint**.
+
+Removing the guess took heuristic edges **198 → 0** on phpunit and **171 → 0**
+on phpmyadmin with tree-truth coverage unchanged at 100%, confirming it
+contributed no real coverage.
 
 ## Complexity and limitations
 
@@ -88,4 +155,31 @@ PHP is dynamically dispatched: ordinary calls are emitted by syntactic AST
 shape and builtin filtering, not by pretending runtime call resolution is
 knowable. Cross-file override precision requires the optional project companion
 index; absent that context, the analyzer remains deterministic and uses
-declarations available in the current file.
+declarations available in the current file — and emits **no** `overrides` edge
+rather than guessing one (see the audit above).
+
+### Known gaps
+
+Two are declared in `script/m14/spec/php-completeness.json` and are
+deliberate, not forgotten:
+
+1. **HTML/text interpolation outside `<?php` blocks** — `php_tag`,
+   `text_interpolation`, `encapsed_string`, `heredoc`, `nowdoc`. The
+   interpolated HTML is not PHP and its `$var` slots are not PHP symbols, so
+   they are outside this analyzer's contract. The in-PHP string-interpolation
+   cases that matter for value flow (`"hello $name"`, `"{$o->p}"`) are handled
+   and adjudicated in the spec.
+2. **ini directives and hash-bang lines** — `ini_section`, `ini_entry`,
+   `preprocessor`, `shell_comment`, `hash_bang_line`. These are
+   configuration and shell, not PHP declarations.
+
+Both are candidates for promotion from `gap` to `RULED` so the lane stops
+reporting them as unfinished work; neither blocks any gate.
+
+### Not yet measured
+
+- No per-phase profile or A/B harness for this analyzer (the NIM lane has
+  `script/m12/nim-perf-profile.ts` and `nim-perf-ab.mts`). The differential
+  records end-to-end 6.3–9.5 ms/file across the two corpora.
+- Cross-file `overrides` at project scale are unmeasured, because the
+  companion index is not populated in production.
