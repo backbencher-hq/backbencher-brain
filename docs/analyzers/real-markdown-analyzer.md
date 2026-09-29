@@ -353,6 +353,29 @@ matters: an instrument nobody has watched fail is a claim.
 - **Review** — `reviews/markdown/master-review.md`: 10 defect classes and 4 gate
   defects, each with the measurement that made it a finding.
 
+### Pandoc/MyST `+++` title blocks (MD-G2, closed as a grammar boundary)
+
+The `---` spelling of front matter is handled and publishes `front_matter`. The `+++`
+spelling publishes nothing — and the reason is not that the analyzer declines to look.
+
+`plus_metadata` is **declared** in the pinned block grammar's node-type list, which is
+why the union census counts it among the 72 named types, but the grammar **never
+instantiates** it. Measured: the bare Pandoc form parses to a `paragraph`; the MyST
+`<!--[metadata]>` + `+++` form parses to an `html_block`; and across all 5,501 markdown
+files in every pinned corpus — 18 of which carry real MyST title-block metadata, in
+`docker/api/docs` — the grammar produces zero `plus_metadata` nodes.
+
+So the asymmetry is not the analyzer's to close. A front-matter branch keyed to this
+node type would be **dead code**, and the only way to read a `+++` title block is to
+parse the paragraph's text, which is what the zero-regex rule forbids. The lane
+therefore reads a `+++` block as prose, and says so here rather than leaving the
+doc's silence to be read as an oversight.
+
+The obligation is forward-looking and has a real detector: if a grammar ever
+instantiates the node, `validation/m14/grammar-pins.json` goes red on `typeSetDigest`
+(it is drift-gated on all ten surface keys), and this section is where the duty is
+written down.
+
 ## Known gaps, in the order they should be closed
 
 1. **The worker seam is unclosed and currently unpinnable.** `pool-worker.ts`
