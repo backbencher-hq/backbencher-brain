@@ -295,9 +295,14 @@ export async function traverseGraph(
   totalCalleesIfKnown: number | null
   /** The count is a lower bound because the counting scan itself is bounded. */
   totalsAreLowerBounds: boolean
-  /** Caller edges that name the traced symbol exactly, vs. those the owner
-   *  cascade attributed to it through one of its members. The cascade is a
-   *  declared superset; these make it a REDUCIBLE one. */
+  /** DEPTH 0 ONLY. Caller edges that name the traced symbol exactly, vs. those
+   *  the owner cascade attributed to it through one of its members. The cascade
+   *  is a declared superset; these make it a REDUCIBLE one.
+   *
+   *  The depth-0 restriction is load-bearing, not pedantry: an edge found at
+   *  depth 2 is exact w.r.t. the symbol traced at depth 2, not w.r.t. the root,
+   *  and folding those in here produced a field that was simply wrong — measured
+   *  on rake, `exactCallers: 37` against 2 stored rows targeting the root. */
   exactCallers: number
   cascadedCallers: number
   exactCallees: number
@@ -594,9 +599,20 @@ export async function traverseGraph(
     }
 
     for (const childId of children) {
+      // Order matters. The VISITED test comes first, because a child that has
+      // already been expanded needs no budget; the previous order ended the loop
+      // on the first already-visited child it met once the budget ran out.
+      if (visitedCallers.has(childId)) continue
       if (callerBudget <= 0) {
-        noteReason("caller-budget-exhausted")
-        callerBudgetExhausted = true
+        // A bound that fires with nothing left to do is not a truncation. The
+        // depth cap below already asks whether work remains; the budget did not,
+        // so it declared exhaustion on answers that skipped nothing — the two
+        // bounds disagreed about what "exhausted" means, and `truncated: true`
+        // was set for a traversal that lost no edges.
+        if (children.some((c) => !visitedCallers.has(c))) {
+          noteReason("caller-budget-exhausted")
+          callerBudgetExhausted = true
+        }
         break
       }
       if (depth >= maxDepth - 1) {
@@ -608,10 +624,8 @@ export async function traverseGraph(
         if (children.some((c) => !visitedCallers.has(c))) noteReason("caller-depth-cap-reached")
         break
       }
-      if (!visitedCallers.has(childId)) {
-        callerBudget--
-        traceCallers(childId, depth + 1)
-      }
+      callerBudget--
+      traceCallers(childId, depth + 1)
     }
   }
 
@@ -767,19 +781,24 @@ export async function traverseGraph(
     }
 
     for (const child of children) {
+      // Same rule as the callers side: an already-visited child needs no budget,
+      // and a bound only counts as a truncation when work is actually left. The
+      // depth cap below already asked that question; the budget did not, so the
+      // two bounds disagreed about what "exhausted" means.
+      if (visitedCallees.has(child.id)) continue
       if (calleeBudget <= 0) {
-        noteReason("callee-budget-exhausted")
-        calleeBudgetExhausted = true
+        if (children.some((c) => !visitedCallees.has(c.id))) {
+          noteReason("callee-budget-exhausted")
+          calleeBudgetExhausted = true
+        }
         break
       }
       if (depth >= maxDepth - 1) {
         if (children.some((c) => !visitedCallees.has(c.id))) noteReason("callee-depth-cap-reached")
         break
       }
-      if (!visitedCallees.has(child.id)) {
-        calleeBudget--
-        traceCallees(child.id, child.file, child.line, depth + 1)
-      }
+      calleeBudget--
+      traceCallees(child.id, child.file, child.line, depth + 1)
     }
   }
 
