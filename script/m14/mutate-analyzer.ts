@@ -11722,6 +11722,66 @@ export const MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    // EX-A17 (Master Review). A module attribute's VALUE is compile-time code:
+    // `@section %Spark.Dsl.Section{build: Spark.Dsl.build(:x)}` builds the
+    // struct while the module compiles. The pre-fix analyzer's blanket
+    // `isInAttribute` gate silenced every call/instantiates edge in that value,
+    // so 21 attributes carrying 21 struct literals in a 250-file sample of ash
+    // named no dependency at all. This mutant is the pre-fix state: those edges
+    // are gone, which is exactly the condition attribute-value-code pins.
+    id: "elixir/attribute-value-silenced",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A17: module-attribute VALUE edges removed (instantiates + calls raised from a compile-time attribute value) — the pre-fix state, 21 attribute sites in 250 files of ash with no dependency edge",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.source === "AttrValueCode" && (x.target === "Spark.Dsl.Section" || x.target === "Spark.Dsl.build" || x.target === "Helper.later" || x.target === "Helper.Error")),
+      ),
+    }),
+  },
+  {
+    // The other half of EX-A17: relaxing the gate must NOT let the attribute's
+    // OWN NAME become a call. `@section` is a call-shaped node
+    // (call[section, arguments[...]]) and the relaxation is what makes the
+    // value analysable, so a name leak is the exact regression that relaxation
+    // invites.
+    id: "elixir/attribute-name-call-fabricated",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "EX-A17: the attribute's own name emitted as a call (`@section` -> calls->section) — a lowercase phantom callee naming no function, the regression the attribute-value relaxation invites",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "AttrValueCode", target: "section", confidence: 0.8, metadata: { elixirSpecific: true } }] }),
+  },
+  {
+    // EX-A18. `alias Helper.{make, name}` — the member node is an IDENTIFIER
+    // (a function alias), not an `alias`, and the expander accepted only the
+    // latter, so the alias published no dependency and registered no local
+    // name. Measured 0 in 938 files of the six corpora: a latent hole, fixed
+    // because the rule is the one the uppercase members already follow.
+    id: "elixir/multialias-lowercase-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A18: multi-alias members that are lowercase identifiers (function aliases) publish no `references` edge — `alias Helper.{make, name}` named no dependency at all",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.source === "LowerMultiAlias" && (x.target === "Helper.make" || x.target === "Helper.name" || x.target === "Helpers.yet_another")),
+      ),
+    }),
+  },
+  {
+    id: "elixir/lowercase-alias-call-unresolved",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "EX-A18: a bare call through a lowercase function alias keeps the bare name (`calls->make`) instead of the alias target (`calls->Helper.make`) — the edge then names no module and matches no symbol",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "calls" && x.source === "LowerMultiAlias.go/0" && x.target === "Helper.make" ? { ...x, target: "make" } : x,
+      ),
+    }),
+  },
   // M59.A7 (#825): the csharp lane's line round. Four mutants, one per defect
   // class the round's own measurements exposed — the pre-fix state (no line at
   // all), the construct-start line (receiver / `new` / `:` / wrapped head), the

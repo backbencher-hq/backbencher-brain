@@ -36,24 +36,24 @@
         "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "ece63e5d6d248d1153c2742211b133932982939de947a586f99833087b852424",
-        "bytes": 258947
+        "sha256": "7fb0904f6c88c0026df880757f7b2f96726eb29165c07dfa81b51e2fd208a6f5",
+        "bytes": 276875
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
         "bytes": 36816
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "beb1f08b604f4e0d924fa0e8dd4561c2f0cdbd942a231d0c20f9011857c7bf03",
-        "bytes": 115522
+        "sha256": "5736a6c68373b95d37e5ff43aa4f1abe65567d28fd7a47e49248a5eb743a8784",
+        "bytes": 131566
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "ad9acd5b374a778d447b69385e74d07d23073970c47ee1cd40dff868c3619fc8",
-        "bytes": 172186
+        "sha256": "507ee1d59de689343282011458b5356b93891fc76d7ed0f9f3d469de638e5b19",
+        "bytes": 187697
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "380e0fd455c979696fb78e67c492e92e085fbeb1c72493ac9ab27b6e7146e5fc",
-        "bytes": 205562
+        "sha256": "8154a968f2c68a47821004ccdb18ec77fe9873fb23104113355997ec1e49d451",
+        "bytes": 209756
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
@@ -64,20 +64,20 @@
         "bytes": 119919
       },
       "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "ced57c561a8965e45b711213c72b6b5bfca500973f54e1c010f0b08b1dad5863",
-        "bytes": 103829
+        "sha256": "2bd444718df13d5c66b8989c7fc43d0a73363c484768789b978cdff7983fc082",
+        "bytes": 109661
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "42aecca78bd0a88ff762d14d92ccc5c7fd4ba907177e220c4602cbadbb6a6a08",
-        "bytes": 76405
+        "sha256": "7af585aafb086f2dd5712d17b7d6d3996a3c389965fea7ea36129bfa5a475395",
+        "bytes": 84643
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "00ea1e5a13a0c61a982a82e25a8e458bde359f7a9ea4600f2bb3766de4393a14",
-        "bytes": 80225
+        "sha256": "974c90b566b36e2b851c1ee41bcaa5ecdcf6269584e178913b325685d0b8ef68",
+        "bytes": 90395
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "5e2d82b429564a883c6483b979e805f637820423b5a36cb4b2678b7e9ef25384",
-        "bytes": 191085
+        "sha256": "b243dc2ef4a5e003507e317129564959a80e495a8353b9bc8a808623b49df7eb",
+        "bytes": 194184
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "0b97146dce60edb84625d820b7c68d137c86b17b6177e352c61168d31af6c013",
@@ -156,8 +156,8 @@
         "bytes": 100699
       },
       "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "6095e463de0750022e2e8cce3fc226ae30e2597a8f89af3e6a9d44b5b23d02e6",
-        "bytes": 108937
+        "sha256": "3c24277d614a8081d9b98d06922d49a0304140757b2b76b18278dac9f4a827b4",
+        "bytes": 113443
       },
       "src/ast/real-rust-analyzer.ts": {
         "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
@@ -200,8 +200,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "03687dcb8cc906ac56280e9c88ebefb01b5aa5e23bb35302a8782675d42825fa",
-        "bytes": 85537
+        "sha256": "9135ecf17e789213475df184668eaa6707eaf4d9b5c0042c708608fcf1920f64",
+        "bytes": 90927
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -264,7 +264,7 @@
         "bytes": 26639
       }
     },
-    "digest": "c846af2637bf863588f419235521de9462b16851dac3b7790fbea869520fba06",
+    "digest": "570b6ae7f3dbe73973ffbcefc8daaae792ae0cd2d7b8b3c589fbe296f7778e1e",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
@@ -389,11 +389,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 25.881287,
-      "userCpuMs": 78.256,
-      "systemCpuMs": 4.12,
-      "peakRssBytes": 270708736,
-      "rssDeltaBytes": 1171456,
+      "wallTimeMs": 37.772552,
+      "userCpuMs": 73.463,
+      "systemCpuMs": 4.36,
+      "peakRssBytes": 267612160,
+      "rssDeltaBytes": 1572864,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
