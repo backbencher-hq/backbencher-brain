@@ -469,6 +469,15 @@ export interface PatternReport {
     candidatesTotal: number
     candidatesByRule: Record<string, number>
     candidatesAverageConfidence: number
+    /**
+     * Why the candidate set is the size it is. Every candidate the scan
+     * discarded, by reason. A report that says "0 findings" is only honest if
+     * the reader can see whether that is because nothing was dead or because
+     * everything was suppressed; this makes the second case distinguishable
+     * from the first. Optional: a producer that does not account for its own
+     * suppressions omits it rather than reporting zeros it did not measure.
+     */
+    suppressedByReason?: Record<string, number>
   }
 }
 
