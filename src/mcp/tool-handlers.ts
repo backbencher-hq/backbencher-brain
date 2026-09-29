@@ -1497,7 +1497,7 @@ const handlers: Record<string, ToolHandler> = {
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
         edgeLimit: result.summary?.edgeLimit ?? null,
-        cappedQueries: result.summary?.cappedQueries ?? 0,
+        siteLimitedQueries: result.summary?.cappedQueries ?? 0,
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,
         calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
         totalsAreLowerBounds: result.summary?.totalsAreLowerBounds === true,
@@ -1740,13 +1740,15 @@ const handlers: Record<string, ToolHandler> = {
         ? `declared limit of ${limit} facts; ${totalFacts} stored cross-language rows matched this name (${result.facts.length} on the symbol itself, ${result.memberFacts.length} on its members)`
         : null,
       totalCountIfKnown: totalFacts,
-      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. A class whose members
-      // carried 109 cross-language rows while it carried none used to be answered
-      // "absence declared, never guessed" — a false absence, on the most natural
-      // question a caller can ask, and the direct opposite of what bb_graph said
-      // about the same symbol on the same index (measured: 7 of 10 such owners;
-      // docs/m63/CL2.md). An empty answer now requires that NEITHER the copies
-      // NOR their members hold a stored row.
+      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. Before this it was
+      // `facts.length === 0` alone, so a class whose members carried 109
+      // cross-language rows while it carried none was answered "absence
+      // declared, never guessed" — a false absence, on the most natural
+      // question a caller can ask ("is this class involved in cross-language
+      // code?"), and the direct opposite of what bb_graph said about the same
+      // symbol on the same index (measured: 7 of 10 such owners, docs/m63/CL2.md).
+      // An empty answer now requires that NEITHER the copies NOR their members
+      // hold a stored row.
       declaredAbsent: shownCount === 0,
       absenceNote: shownCount === 0
         ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its members — absence declared, never guessed`
@@ -1853,12 +1855,28 @@ const handlers: Record<string, ToolHandler> = {
     // The same canonicalization the write door applies, so a reader that filters
     // by `./src/a.ts` finds the note a writer stored as `src/a.ts`.
     const canonicalPath = givenPath === null ? null : canonicalFilePath(raw, projectId, givenPath).path
-    // A reader asking for a symbol should find notes written under EITHER name
-    // form the editor accepts, exactly as the editor does. A qualified-name note
-    // used to be invisible to a reader who asked for the simple name.
-    const namePredicates = symbol
-      ? "(symbol_name = ? OR symbol_name = (SELECT qualified_name FROM brain_symbol WHERE project_id = ? AND name = ? AND qualified_name IS NOT NULL LIMIT 1))"
+    // A reader asking for a symbol finds notes written under EITHER name form the
+    // editor accepts, and in BOTH directions: the requested name is resolved to
+    // the set of stored names of every symbol it names (its simple name AND its
+    // qualified name), and a note matches when its symbol_name is in that set.
+    // This is exactly the set the hover selects, so the reader and the editor can
+    // never disagree about which notes exist. Asking for the qualified name finds
+    // the simple-name note, and vice versa.
+    const matchingNames = symbol
+      ? (raw.prepare(
+          `SELECT DISTINCT name AS n FROM brain_symbol WHERE project_id = ? AND (name = ? OR qualified_name = ?)`,
+        ).all(projectId, symbol, symbol) as Array<{ n: string }>).map((r) => r.n)
+      : []
+    // No indexed symbol carries the name at all: fall back to a literal match so a
+    // note stored under an arbitrary name is still findable by that name.
+    const namePredicate = symbol
+      ? (matchingNames.length > 0
+        ? `symbol_name IN (${matchingNames.map(() => "?").join(",")})`
+        : "symbol_name = ?")
       : null
+    const nameParams: unknown[] = symbol
+      ? (matchingNames.length > 0 ? [...matchingNames] : [symbol])
+      : []
     const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
     // The ORDER BY carries a deterministic tiebreak: several agents writing in
     // the same millisecond share a time_updated, and without a second key their
@@ -1868,11 +1886,11 @@ const handlers: Record<string, ToolHandler> = {
     let where: string
     let params: unknown[]
     if (symbol && canonicalPath !== null) {
-      where = `project_id = ? AND ${namePredicates} AND (symbol_path = ? OR symbol_path IS NULL)`
-      params = [projectId, symbol, projectId, symbol, canonicalPath]
+      where = `project_id = ? AND ${namePredicate} AND (symbol_path = ? OR symbol_path IS NULL)`
+      params = [projectId, ...nameParams, canonicalPath]
     } else if (symbol) {
-      where = `project_id = ? AND ${namePredicates}`
-      params = [projectId, symbol, projectId, symbol]
+      where = `project_id = ? AND ${namePredicate}`
+      params = [projectId, ...nameParams]
     } else if (canonicalPath !== null) {
       where = `project_id = ? AND (symbol_path = ? OR symbol_path IS NULL)`
       params = [projectId, canonicalPath]
