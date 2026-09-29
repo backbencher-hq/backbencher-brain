@@ -1497,7 +1497,7 @@ const handlers: Record<string, ToolHandler> = {
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
         edgeLimit: result.summary?.edgeLimit ?? null,
-        siteLimitedQueries: result.summary?.cappedQueries ?? 0,
+        cappedQueries: result.summary?.cappedQueries ?? 0,
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,
         calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
         totalsAreLowerBounds: result.summary?.totalsAreLowerBounds === true,
@@ -1804,6 +1804,18 @@ const handlers: Record<string, ToolHandler> = {
     // matched no symbol name at all, so that claim was false exactly where it
     // sounded most confident.
     const reach = annotationReachability(raw, projectId, symbol)
+    // The name matching is necessary but NOT sufficient: the editor also
+    // requires the PATH to match, or to be absent. A note on a symbol the index
+    // holds, written against a file it has never seen, can never be selected by
+    // a file-scoped hover — so the two halves are combined here rather than
+    // reported side by side while contradicting each other.
+    const pathKnown = givenPath === null || canonical.matched
+    const surfaced = reach.surfaced && pathKnown
+    const statement = !reach.surfaced
+      ? reach.statement
+      : !pathKnown
+        ? `'${symbol}' matches ${reach.matchedNames.length} indexed symbol name(s), but no indexed file matches the path '${givenPath}', so NO editor surface will show this note: the hover scopes notes to the file under the cursor. It is stored under that spelling and readable through bb_annotations.`
+        : reach.statement
     const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
@@ -1820,10 +1832,12 @@ const handlers: Record<string, ToolHandler> = {
       annotation: updated,
       provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed; tool_identity is the caller's own label, recorded verbatim and never verified",
       surfacing: {
-        editor: reach.surfaced,
+        editor: surfaced,
+        nameMatched: reach.surfaced,
+        pathMatched: pathKnown,
         matchedAs: reach.matchedAs,
         matchedNames: reach.matchedNames,
-        statement: reach.statement,
+        statement,
         ...(givenPath === null
           ? { pathNote: "no path given — a NAME-level note, shown for the symbol wherever it appears" }
           : canonical.matched
