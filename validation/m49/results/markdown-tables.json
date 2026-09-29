@@ -1,0 +1,503 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M49",
+  "gate": "G11",
+  "title": "markdown table-cell census (an unescaped pipe splits the row)",
+  "derivedFrom": {
+    "roots": [
+      "."
+    ],
+    "files": 433,
+    "rows": 5809,
+    "filesWithTables": 280
+  },
+  "violationCount": 28,
+  "fileCount": 19,
+  "byFile": [
+    {
+      "file": "reviews/m60-oo-family-plan.md",
+      "rows": 4
+    },
+    {
+      "file": "docs/M14-COMPLETENESS-LEDGER.md",
+      "rows": 4
+    },
+    {
+      "file": "reviews/m60-csharp-alias-qualifier-round.md",
+      "rows": 2
+    },
+    {
+      "file": "reviews/regex-policy.md",
+      "rows": 2
+    },
+    {
+      "file": "docs/analyzers/real-clean-analyzer.md",
+      "rows": 2
+    },
+    {
+      "file": "website/faq.md",
+      "rows": 1
+    },
+    {
+      "file": "website/index-commands.md",
+      "rows": 1
+    },
+    {
+      "file": "reviews/m49-groovy-gstring-interpolation.md",
+      "rows": 1
+    },
+    {
+      "file": "reviews/m60-csharp-line-round.md",
+      "rows": 1
+    },
+    {
+      "file": "reviews/go/third-review.md",
+      "rows": 1
+    },
+    {
+      "file": "reviews/go/closure.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/M10-BENCHMARKS.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/m18/M18-MASTER-PLAN.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/analyzers/real-kotlin-analyzer.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/analyzers/real-elixir-analyzer.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/analyzers/review-appendix.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/analyzers/real-c-analyzer.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/M12-INTEGRATION.md",
+      "rows": 1
+    },
+    {
+      "file": "docs/M10-DELETION-LEDGER.md",
+      "rows": 1
+    }
+  ],
+  "violations": [
+    {
+      "file": "website/faq.md",
+      "line": 121,
+      "cells": 4,
+      "expected": 2,
+      "row": "| `bb projects` | List indexed projects (`--sort name|size|time`, `--remove <id>`, `--force`) |",
+      "interiorPipes": [
+        17,
+        54,
+        59
+      ]
+    },
+    {
+      "file": "website/index-commands.md",
+      "line": 106,
+      "cells": 4,
+      "expected": 2,
+      "row": "| `bb projects` | Every indexed project with sizes: `--sort name|size|time`, `--remove <id>` to reclaim space (`--force` to remove an actively-indexed project). |",
+      "interiorPipes": [
+        17,
+        65,
+        70
+      ]
+    },
+    {
+      "file": "reviews/m60-oo-family-plan.md",
+      "line": 56,
+      "cells": 13,
+      "expected": 14,
+      "row": "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+      "interiorPipes": [
+        7,
+        13,
+        19,
+        25,
+        31,
+        37,
+        43,
+        49,
+        55,
+        61,
+        67,
+        73
+      ]
+    },
+    {
+      "file": "reviews/m60-oo-family-plan.md",
+      "line": 58,
+      "cells": 17,
+      "expected": 14,
+      "row": "| php | ✓ | ✓ | ✓ | ✓ | 8/8 | ✓ | PHP1 PHP2 ✓ | ✗ **owed** | ✓ **done** | ✓ **done (R9)** | ✓ | ✗ | #835 #869 (review waves); sweep clean. **The lane's first two depth draws are full extent** and both were red before this round. `reviews/m60-php-lane-round.md`: the declared-type graph (the capability nine sibling lanes had and this one did not), the fully-qualified-call fabrication, the callable-header read boundary, and **the class a mirror can never show** — a string/integer literal published as a member name on *both* sides, which is why the fixture, not the differential, is what holds it. **R10 (2026-09-23):** the target-spelling contract found two more defects of the same class — a VALUE where a name belongs — and both were invisible to the differential because the oracle derived the same truth from the same rules and AGREED: an include path reconstructed from a runtime operand, and a VALUE callee published as a callee NAME. Both fixed, reconciled to the edge (−18 / −181 on the two full-extent draws), pinned by 2 new fixtures and 2 new reverting mutants (40/40 php caught); php now reads **clean** on the family census with one ruled `overrides|.` convention. **R10 follow-up (same day, the sibling sweep):** the same census then caught php at the STATIC end of the same rule — a fully static concatenation was correctly decided to be a path and then published as its SOURCE TEXT, so phpunit's autoloaders emitted `references -> __DIR__.'/src/DeprecatedClass.php'` (4 sites in a 300-file draw of 4,096 files). This OVERTURNED a spelling the earlier round had deliberately pinned as `correct`, so the fixture rationale records the reversal and the reason; the rule now composes operand VALUES, all six static fixture paths still emit, the four dynamic shapes are still refused, and same-file-set draws are byte-identical before/after (300 phpunit files, hash `6038d82a6947594e`, 4,296 truth / 4,551 edges, 0/0 in both states). php's remaining `references|.` and `references|/` are now RULED with the measurement that makes them one edge set. `reviews/m60-r10-target-spelling-round.md`. `lines` was already ✗ and stays ✗: 1 of 26 fixture relationships carries a line, so php's M59.A7 round is its own next item |",
+      "interiorPipes": [
+        7,
+        11,
+        15,
+        19,
+        23,
+        29,
+        33,
+        47,
+        60,
+        73,
+        91,
+        95,
+        99,
+        1166,
+        1975,
+        1994
+      ]
+    },
+    {
+      "file": "reviews/m60-oo-family-plan.md",
+      "line": 160,
+      "cells": 4,
+      "expected": 2,
+      "row": "| R7 runtime half (no emitted row carries a placeholder as a name) | **begun, csharp measured:** `script/m14/tmp/cs-placeholder-runtime-probe.ts` walks every emitted name-bearing field over a real draw and convicts a value only when the FILE DOES NOT WRITE IT (*the value-only rule first convicted 154 `Null` and 22 `Unknown`/`Anonymous` values — all real members of powershell/fsharp*). csharp: **0 fabricated names over 300 files**, so its 15 `|| \"anonymous\"` fallbacks are damaged-tree paths. Recorded in the register under `runtimeMeasured`; the other six lanes still owe their draw |",
+      "interiorPipes": [
+        68,
+        447,
+        448
+      ]
+    },
+    {
+      "file": "reviews/m60-oo-family-plan.md",
+      "line": 432,
+      "cells": 5,
+      "expected": 4,
+      "row": "| **php (R10)** | The target-spelling contract (#835). Two live defects, both of the same class as the previous round's member-read fix — **a value where a name belongs**, and both invisible to the differential because the oracle derived the same truth from the same rules and therefore agreed: an include path reconstructed from a concatenation with a runtime operand (`$this->baseDir.'revision-info.php'`, phpmyadmin `src/Git.php:551`) published as a module AND a `references` target, and a VALUE callee published as a callee NAME (`calls -> $controller`). Both rules now live at module level (`phpStaticIncludePath`, `phpStaticCallableName`) and the oracle imports them instead of mirroring them; the fixture's forbids are transcribed from a replay of the OLD rule. | phpunit **FULL EXTENT 2,907/2,907** — truth **29,046 / covered 29,046 (100%)**, `MISSING=0 unexplained=0`, hash `7feec2ffa6626bca` (**identical to the pre-fix draw**); truth and analyzer both moved by exactly **−18**, reconciling as **17** per-file distinct dropped call targets (77 syntactic sites) + **1** dynamic include. phpmyadmin **FULL EXTENT 1,232/1,232** — truth **42,377 / covered 42,377**, `0/0`, same pre-fix hash; **−181** = **179** + **2**. Fixtures **12/12 php** (`include-paths`, `dynamic-callee` new); **40/40 php mutants CAUGHT** (2 new, each caught by its own fixture); census: php reads **clean** with its one ruled `overrides|.` convention. `reviews/m60-r10-target-spelling-round.md` | `depth` and `declared-type` stay green; the round's residue is **not** php's: the register records every sibling's class with an owner, and the OO debt target is 3 convicted / 6 unruled. `lines` stays ✗ (php's own M59.A7 round). **Follow-up, same day:** the census caught the STATIC end of the same rule too — `require __DIR__ . '/x.php'` was correctly decided to be a path and then published as its source text (`references -> __DIR__.'/src/DeprecatedClass.php'`, phpunit `tests/end-to-end/regression/6778/bootstrap.php`, 4 sites in a 300-file draw of 4,096). Fixed by composing operand VALUES; the fixture `php/include-paths` had pinned the old spelling as correct and was re-pinned with the reversal recorded, plus reverting mutant `php/static-concat-as-source-text` (CAUGHT, 2 fixtures) — php mutants now **41/41**. Same-file-set differential before/after on 300 phpunit files: hash `6038d82a6947594e`, truth `4,296 / covered 4,296`, analyzer `4,551`, `0/0` in **both** states — the labels moved on both sides together, which is exactly why the census and not the differential is the instrument. |",
+      "interiorPipes": [
+        17,
+        770,
+        1418,
+        1477
+      ]
+    },
+    {
+      "file": "reviews/m49-groovy-gstring-interpolation.md",
+      "line": 109,
+      "cells": 4,
+      "expected": 3,
+      "row": "| 4 | `token.immediate('$')` alternative | a bare `$` (`\"cost: $5\"`, `\"100$\"`) starts no interpolation and must stay literal. It cannot be folded into the fragment pattern: tree-sitter's regex has **no lookahead**, so `/[^\"\\\\$]+|\\$(?![{a-zA-Z_])/` is not expressible. |",
+      "interiorPipes": [
+        5,
+        42,
+        229
+      ]
+    },
+    {
+      "file": "reviews/m60-csharp-line-round.md",
+      "line": 158,
+      "cells": 4,
+      "expected": 2,
+      "row": "| R7's RUNTIME half (this lane) | **measured, not disclosed**: `script/m14/tmp/cs-placeholder-runtime-probe.ts` walks every emitted name-bearing field over 300 real files (powershell 150 + fsharp 150) and convicts a value only when the FILE DOES NOT WRITE IT — the value-only version first convicted 154 `Null` and 22 `Unknown`/`Anonymous` values, all of them real members of those corpora, which is why the file-text test is the rule. Result: **0 fabricated names**; the lane's 15 `|| \"anonymous\"` fallbacks are damaged-tree paths, not live fabrications. Recorded per lane in the register (`runtimeMeasured`), because the other six lanes still owe their own draw. |",
+      "interiorPipes": [
+        33,
+        484,
+        485
+      ]
+    },
+    {
+      "file": "reviews/go/third-review.md",
+      "line": 150,
+      "cells": 6,
+      "expected": 3,
+      "row": "| R10 target spelling | `bun script/m60/target-spelling-census.ts --lane go --sample 2200` | sep **11,933**, anomalies **0**, unruled `imports|-`, `imports|.`, `imports|/` (module specifiers; owed family-wide) |",
+      "interiorPipes": [
+        23,
+        92,
+        143,
+        156,
+        169
+      ]
+    },
+    {
+      "file": "reviews/go/closure.md",
+      "line": 57,
+      "cells": 7,
+      "expected": 3,
+      "row": "| **R10** target spelling, full draw | `target-spelling-census.ts --lane go --sample 2200` | **sep 39,280 → 11,933**, `anomalies=0`; `extends|.` retired and the references surface is separator-free, so its unruled vocabulary is now `imports|-`/`imports|.`/`imports|/` — module specifiers, owed family-wide (c records the same three) |",
+      "interiorPipes": [
+        38,
+        92,
+        142,
+        241,
+        253,
+        265
+      ]
+    },
+    {
+      "file": "reviews/m60-csharp-alias-qualifier-round.md",
+      "line": 149,
+      "cells": 3,
+      "expected": 2,
+      "row": "| R10 (`target-spelling-census`) | csharp `sep=0 unruled=-` (was `sep=1 unruled=instantiates|:`) |",
+      "interiorPipes": [
+        34,
+        93
+      ]
+    },
+    {
+      "file": "reviews/m60-csharp-alias-qualifier-round.md",
+      "line": 164,
+      "cells": 5,
+      "expected": 3,
+      "row": "| **R10 live** | *\"csharp drifted: separator vocabulary lost `instantiates|:`\"* — the canonical census was re-emitted in this round but the register writer was **not** re-run, and the register's contract fails when a count moves in **either** direction, so paying the finding down *created* the red | `script/m60/target-spelling-register.ts` re-run at HEAD: exactly one `CHANGED` line, `csharp: separator triples [\"instantiates|:\"] -> []`, and the csharp **note re-derived from the artifact** (its previous text described a `uses -> GenericUnion<int, string>` target this draw does not contain — the stale-prose class the family plan §6.9 records) |",
+      "interiorPipes": [
+        16,
+        75,
+        300,
+        428
+      ]
+    },
+    {
+      "file": "reviews/regex-policy.md",
+      "line": 155,
+      "cells": 4,
+      "expected": 3,
+      "row": "| `/^([A-Za-z_][A-Za-z0-9_]*)\\s*(=|\\()/` | normalization | the same recovery's shape A/B discriminator — is the re-parsed statement a declarator? |",
+      "interiorPipes": [
+        35,
+        42,
+        58
+      ]
+    },
+    {
+      "file": "reviews/regex-policy.md",
+      "line": 216,
+      "cells": 4,
+      "expected": 3,
+      "row": "| `/^%(\\d+|&)?$/` | needs_review | Clojure anonymous-argument shorthands (`%`, `%1`..`%9`, `%&`) tested against a symbol's **name string**. Mechanically convertible to a structural symbol-name check; registered, not converted, because the clojure analyzer is its authoring lane's file (the CC1 clojure<->elixir wave was active at registration time, 2026-09-20). |",
+      "interiorPipes": [
+        11,
+        19,
+        34
+      ]
+    },
+    {
+      "file": "docs/M10-BENCHMARKS.md",
+      "line": 50,
+      "cells": 3,
+      "expected": 2,
+      "row": "| `bb_doc` (symbol|project) | <= 2.5s |",
+      "interiorPipes": [
+        19,
+        29
+      ]
+    },
+    {
+      "file": "docs/M14-COMPLETENESS-LEDGER.md",
+      "line": 21,
+      "cells": 13,
+      "expected": 12,
+      "row": "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+      "interiorPipes": [
+        5,
+        9,
+        13,
+        17,
+        21,
+        25,
+        29,
+        33,
+        37,
+        41,
+        45,
+        49
+      ]
+    },
+    {
+      "file": "docs/M14-COMPLETENESS-LEDGER.md",
+      "line": 22,
+      "cells": 13,
+      "expected": 12,
+      "row": "| ANALYZE (fixtures) | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3 | GATED F3* | GATED F3* | PENDING -> #381 (taints) | PENDING F10 | GATED F3 | n/a | n/a |",
+      "interiorPipes": [
+        22,
+        33,
+        44,
+        55,
+        66,
+        77,
+        89,
+        101,
+        128,
+        142,
+        153,
+        159
+      ]
+    },
+    {
+      "file": "docs/M14-COMPLETENESS-LEDGER.md",
+      "line": 23,
+      "cells": 13,
+      "expected": 12,
+      "row": "| STORE (pipeline e2e) | GATED F7 | GATED F7 | GATED F7 | GATED F7 | PENDING -> #384 (uses/overrides rows) | GATED F7 | PENDING (add to F7) | PENDING (seam-sweep) | **DEAD SEAM → F10** | GATED F7 | PENDING (needs key; conditional gate) | GATED F7 |",
+      "interiorPipes": [
+        24,
+        35,
+        46,
+        57,
+        68,
+        108,
+        119,
+        141,
+        164,
+        186,
+        197,
+        237
+      ]
+    },
+    {
+      "file": "docs/M14-COMPLETENESS-LEDGER.md",
+      "line": 24,
+      "cells": 13,
+      "expected": 12,
+      "row": "| QUERY (tools truthfully read stored data) | M13 scope | M13 scope | M13 scope | M13 scope | M13 scope | PENDING -> M15 (co-agent; verify brain_import surfaced) | M13 scope | M13 scope | **BROKEN → F10** | PENDING | M13 scope | M13 scope |",
+      "interiorPipes": [
+        45,
+        57,
+        69,
+        81,
+        93,
+        105,
+        163,
+        175,
+        187,
+        206,
+        216,
+        228
+      ]
+    },
+    {
+      "file": "docs/m18/M18-MASTER-PLAN.md",
+      "line": 17,
+      "cells": 4,
+      "expected": 3,
+      "row": "| 5 | The engine is already model-consistent: same-model+dimension filter, tfidf excluded from cosine, `method: vector|keyword-fallback` + `fallbackReason` labels. Q4/Q5 **verify** this, not reimplement. | src/intelligence/search/semantic-search.ts |",
+      "interiorPipes": [
+        5,
+        119,
+        205
+      ]
+    },
+    {
+      "file": "docs/analyzers/real-kotlin-analyzer.md",
+      "line": 22,
+      "cells": 5,
+      "expected": 3,
+      "row": "| complexity metrics | ✅ | cyclomatic complexity on `if_expression`/`when_expression`/`for_statement`/`while_statement`/`catch_block`/`elvis_expression`/conjunction/disjunction + `&&`/`||` infix |",
+      "interiorPipes": [
+        22,
+        26,
+        186,
+        187
+      ]
+    },
+    {
+      "file": "docs/analyzers/real-elixir-analyzer.md",
+      "line": 40,
+      "cells": 5,
+      "expected": 4,
+      "row": "| calls | ✅ | `call` nodes in body position with function sources. Alias-resolved qualified module calls (`Repo.get` with `alias MyApp.Repo` → `MyApp.Repo.get`); same-module calls stay leaf (`add_bid`); pipelines (`|>`) call the piped target. Resolution rules: qualified calls emit when the receiver is capitalized (a module/alias) — lowercase receivers are dynamic dispatch (`module.manifests()`) and emit nothing; unqualified calls emit ONLY when the target is declared in the enclosing module/class (checked post-walk against the full declaration set, so forward references resolve) — Kernel builtins (`length`, `is_*`, `function_exported?`) and imported functions are not local symbols and produce no edge. Exclusions: special forms (case/cond/quote/unquote/...), def signature heads, module attributes, member access (`order.side`), quoted code. Self-recursion IS emitted (Rust `calls find -> find` analog) | 1.0 |",
+      "interiorPipes": [
+        9,
+        13,
+        216,
+        913
+      ]
+    },
+    {
+      "file": "docs/analyzers/review-appendix.md",
+      "line": 882,
+      "cells": 4,
+      "expected": 3,
+      "row": "| on: handlers (incl |modifiers, member leaves like box.open) | Calls to callable leaf | EXTENDED this wave (member leaf previously dropped) |",
+      "interiorPipes": [
+        22,
+        63,
+        88
+      ]
+    },
+    {
+      "file": "docs/analyzers/real-clean-analyzer.md",
+      "line": 59,
+      "cells": 5,
+      "expected": 3,
+      "row": "| name | ✅ | `module_declaration` → `module_name`; `type_definition` → first `constructor` (type); `record_definition` → `record_field` → `identifier` (property); `data_constructor` → `constructor` (constructor); `class_name` → `constructor` (interface); class members → `class_member` → `type_signature` → `signature_name` → `identifier` (method); `instance_declaration` → named by the TARGET type `constructor` (the Rust `impl User`/Haskell `instance ... User` contract); instance members → inner `function_declaration` `name` FIELD (method); top-level functions → `function_declaration` `name` FIELD (an uppercase name is typed `constructor`, so the field — not the first `identifier` child — is the name); a MODULE-LEVEL `type_signature` → `signature_name` child, normalized across all four shapes (`identifier`, `constructor`, `parenthesized_operator` `(==)` → `==`, `parenthesized_name` `(bitxor)` → `bitxor`; a comma/brace payload is a tuple/record PATTERN mis-shape and publishes nothing); an `operator_definition` → its `name` FIELD unparenthesized (`(++|)` → `++|`) |",
+      "interiorPipes": [
+        8,
+        12,
+        1064,
+        1073
+      ]
+    },
+    {
+      "file": "docs/analyzers/real-clean-analyzer.md",
+      "line": 64,
+      "cells": 5,
+      "expected": 3,
+      "row": "| visibility | ✅ | always `public`. Clean has no visibility keyword and a module's definition list governs what it offers, so the export list is the module-level symbols: `sym.ownerName === currentModule || !sym.ownerName` (the haskell rule — the module is the namespace, members are importable by name), restricted to exportable kinds and deduped by NAME first-wins, because the exports-family invariant (run-fixtures.ts) requires a name a duplicate cannot identify its provider for. Clean reaches the collision honestly — `instance Eq ParseState` publishes its Class under the instance TARGET type, so a file that both defines the type and implements an instance for it offered the name twice (59 of 312 files). The predicate here used to be `!sym.ownerName`, the exact NEGATION of the rule its own comment stated: measured, 312 of 312 files exported ≤ 1 thing (295 exports against 6,031 module-owned symbols). Now **4,443 exports over 305 of 312 files**; the 7 without one are the `_`-prefixed compiler-internal modules, which are not part of any importable interface |",
+      "interiorPipes": [
+        14,
+        18,
+        205,
+        206
+      ]
+    },
+    {
+      "file": "docs/analyzers/real-c-analyzer.md",
+      "line": 30,
+      "cells": 5,
+      "expected": 3,
+      "row": "| complexity metrics | ✅ | cyclomatic complexity (if/for/while/do/case/ternary/`&&`/`||`/goto/labels); per-function metadata: `usesMalloc`, security flags |",
+      "interiorPipes": [
+        22,
+        26,
+        86,
+        87
+      ]
+    },
+    {
+      "file": "docs/M12-INTEGRATION.md",
+      "line": 28,
+      "cells": 6,
+      "expected": 3,
+      "row": "| F# | `(|Even|Odd|)` active pattern | soft rule (`(` prefix) |",
+      "interiorPipes": [
+        6,
+        10,
+        15,
+        19,
+        38
+      ]
+    },
+    {
+      "file": "docs/M10-DELETION-LEDGER.md",
+      "line": 41,
+      "cells": 5,
+      "expected": 4,
+      "row": "| `AdvancedBrainTools.understandFeature` | `src/ast/tools.ts` line ~2083 | no caller at all in `src/mcp/|src/cli/` or script/ (verified by `grep -r`); no shipping path; M10.06 marks as unambiguous dead code | — (removed outright) |",
+      "interiorPipes": [
+        42,
+        74,
+        105,
+        208
+      ]
+    }
+  ]
+}

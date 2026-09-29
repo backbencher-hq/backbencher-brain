@@ -80,6 +80,8 @@ export const PERL_REASON_CODES = {
   isaArray: "isa-array",
   mojoBaseDeclaration: "mojo-base-declaration",
   mooRoleComposition: "moo-role-composition",
+  mooExtendsKeyword: "moo-extends-keyword",
+  indirectObjectInvocation: "indirect-object-invocation",
   useRoleComposition: "use-role-composition",
   baseDeclaresMethod: "base-declares-method",
   firstParentGuess: "first-parent-guess",
@@ -118,7 +120,14 @@ export function perlWordValues(node: Node): string[] {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      if (child.type === "string_content" || child.type === "noninterpolated_string_content") {
+      // `noninterpolated_string_content` is deliberately NOT listed here: it is
+      // absent from the wired 1.2.1 grammar (checked against the wasm's node-type
+      // table) and the grammar-audit cell is zero-tolerance, so a branch for a
+      // grammar this lane does not run is dead code by definition. It is 2.0.0's
+      // counterpart of `string_content`; the bump must re-add it, and that
+      // requirement is recorded in reviews/perl/master-review.md rather than
+      // smuggled in as a branch the wired grammar can never reach.
+      if (child.type === "string_content") {
         for (const w of splitWords(child.text)) values.push(w)
       }
     }
@@ -180,11 +189,43 @@ export function perlArgumentNodes(node: Node): Node[] {
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
     if (!child || child === module) continue
-    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
+    // `parenthesized_expression` is the wrapper 2.0.0 ADDS to remove the
+    // multi-child paren field (1,419 unreachable sites, down from 39,526). It is
+    // absent from the wired grammar and so absent here for the same reason as
+    // `noninterpolated_string_content` above: the audit is zero-tolerance and
+    // this lane does not run 2.0.0. The bump re-adds it.
+    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword") {
       if (perlWordValues(child).length > 0) result.push(child)
     }
   }
   return result
+}
+
+/**
+ * Does this call node carry an ARGUMENT LIST, by grammar rather than by content?
+ *
+ * `perlArgumentNodes` is the wrong probe here: it keeps an argument only when the
+ * argument contributes a WORD, so `&foo($y)` and `&foo(@y)` — both real calls —
+ * come back empty, indistinguishable from a bare `&SIGINT`. The `arguments` FIELD
+ * is the grammar's own statement of the same fact and does not filter:
+ *
+ *   &foo($y)   arguments=[scalar]                     -> a call
+ *   &foo(@y)   arguments=[array]                      -> a call
+ *   &Foo::bar("s") arguments=[interpolated_string]    -> a call
+ *   &foo()     arguments=[] but a `(` marker present  -> a call
+ *   &SIGINT    arguments=[] and no markers             -> a code-slot reference
+ *   defined &DynaLoader::boot  arguments=[], no markers -> a definedness test
+ *
+ * The marker test is what separates `&foo()` from `&SIGINT`: both have an empty
+ * `arguments` field, and only the first has parentheses.
+ */
+export function hasArgumentSyntax(node: Node): boolean {
+  if (node.childrenForFieldName("arguments").length > 0) return true
+  for (let i = 0; i < node.childCount; i++) {
+    const t = node.child(i)?.type
+    if (t === "(" || t === ")") return true
+  }
+  return false
 }
 
 /**
@@ -238,6 +279,18 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const packageBaseLine = new Map<string, Node>()
     const packageMethods = new Map<string, Set<string>>()
     const deferredIsa: { owner: string; right: Node }[] = []
+    // Inner `ambiguous_function_call_expression` nodes that are the CLASS
+    // half of an indirect-object call (`new Class @args`). They are visited
+    // by the walk because they are real children, but their only content is
+    // the class name, so visiting them as calls files that name under a
+    // second, wrong label.
+    //
+    // Keyed by byte POSITION, not by node identity: web-tree-sitter hands out a
+    // fresh JS wrapper on every access, so the node `argumentNodes()` returned
+    // is never `===` the node `namedChild()` yields later, and an identity Set
+    // silently matched nothing.
+    const indirectObjectClassNodes = new Set<string>()
+    const nodeKey = (n: Node) => `${n.startIndex}:${n.endIndex}:${n.type}`
     const versionRequirements: string[] = []
 
     if (!rootNode) return this.result(symbols, relationships, imports, exports, errors, content, frameworks, patterns)
@@ -265,11 +318,29 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       state: WalkState,
       extra: Record<string, unknown> = {},
       ownerOverride?: string,
+      nameNode?: Node,
     ): ASTEngine.UniversalSymbol | undefined => {
       if (!name) return undefined
       const owner = ownerOverride ?? state.ownerName
       const key = `${kind}\u001f${owner || ""}\u001f${name}`
       if (symbolKeys.has(key)) return symbolsByKey.get(key)
+      // M59.A7 / #921: the line that NAMES the symbol, which is not always the
+      // line its DECLARATION starts on. Perl allows
+      //
+      //     sub
+      //       greeting { ... }
+      //
+      // where `subroutine_declaration_statement` starts on line 1 and the name is
+      // written on line 2, so an edge stamped from `range.startLine` names a line
+      // the symbol's name is not on. The c/cpp round found 166 such rows in a
+      // 120-file draw and the same trap is already the `cpp/contains-line-at-
+      // declaration-start` mutant. `meta.nameLine` records the name's own line
+      // where a name node is in hand; a `contains` edge prefers it and falls
+      // back to `range.startLine`, which is the pre-fix behaviour and therefore
+      // the honest fallback for any shape the name node is not found for.
+      const nameLineSource = nameNode ?? node.childForFieldName("name") ?? this.findChildByType(node, "bareword")
+      const nameLine =
+        name === node.text?.trim() ? node.startPosition.row + 1 : nameLineSource ? nameLineSource.startPosition.row + 1 : node.startPosition.row + 1
       const symbol: ASTEngine.UniversalSymbol = {
         name,
         kind,
@@ -278,7 +349,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerName: owner,
         ownerKind: owner ? state.ownerKind : undefined,
         visibility: state.visibility,
-        metadata: { perlSpecific: true, ...extra },
+        metadata: { perlSpecific: true, nameLine, ...extra },
       }
       symbolKeys.add(key)
       symbolsByKey.set(key, symbol)
@@ -294,6 +365,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * an inferred override) pass nothing and the field is absent, which is the
      * honest value.
      */
+    /**
+     * The line a symbol's NAME is written on, for an edge emitted outside the
+     * walk (where no `Node` is in hand). `meta.nameLine` is set at extraction;
+     * the `range.startLine` fallback is the pre-#921 behaviour, so an edge never
+     * loses its line to this accessor.
+     */
+    const nameLineOf = (symbol: ASTEngine.UniversalSymbol): number | undefined => {
+      const recorded = (symbol.metadata as Record<string, unknown> | undefined)?.nameLine
+      if (typeof recorded === "number" && recorded > 0) return recorded
+      const start = symbol.range?.startLine
+      return typeof start === "number" && start > 0 ? start : undefined
+    }
+
     const addRelationship = (
       source: string,
       target: string,
@@ -301,17 +385,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: Record<string, unknown> = {},
       confidence = 0.9,
       lineNode?: Node,
+      explicitLine?: number,
     ) => {
       if (!source || !target) return
       const key = `${type}\u001f${source}\u001f${target}`
       if (relationshipKeys.has(key)) return
       relationshipKeys.add(key)
+      const line = explicitLine ?? (lineNode ? lineNode.startPosition.row + 1 : undefined)
       relationships.push({
         source,
         target,
         type,
         confidence,
-        ...(lineNode ? { line_number: lineNode.startPosition.row + 1 } : {}),
+        ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
         metadata: { perlSpecific: true, ...metadata },
       })
     }
@@ -336,8 +422,39 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       packageBases.set(owner, existing)
     }
 
-    const addCall = (target: string, state: WalkState, calleeNode: Node, dynamicReceiver: boolean) => {
-      if (!target || PERL_BUILTINS.has(target) || target === "use" || target === "no") return
+    // `calleeNode` is the node the LINE comes from — for a call that is the
+    // `function` field, which is NOT the call node. The `&`-argument test below
+    // needs the call node itself, so it is passed separately rather than
+    // guessed from the callee.
+    // `builtinProbe` is the METHOD name. It is passed separately because the
+    // target may now be QUALIFIED (`IOLoop.reset`), and testing that against
+    // PERL_BUILTINS misses `reset` — a builtin — so `Mojo::IOLoop->reset` stopped
+    // being suppressed. The builtin test has always been about the method being
+    // invoked, never about the shape of the edge's target.
+    const addCall = (
+      target: string,
+      state: WalkState,
+      calleeNode: Node,
+      dynamicReceiver: boolean,
+      callNode?: Node,
+      builtinProbe?: string,
+    ) => {
+      const probe = builtinProbe ?? target
+      if (!target || PERL_BUILTINS.has(probe) || probe === "use" || probe === "no") return
+      // A callee whose name starts with `&` is a CODE-SLOT REFERENCE, not an
+      // invocation — UNLESS it carries an argument list, because `&foo(@args)`
+      // is perl's EXPLICIT-CALL syntax. The grammar gives both the same shape: a
+      // `function` field composed of an `&` token and a varname. So the `&` alone
+      // is not the discriminator; the argument list is. Two measured cases that
+      // reference rather than call, and both had no arguments:
+      //   new POSIX::SigSet &SIGINT   the `&SIGINT` is an ARGUMENT (a reference
+      //                                to the SIGINT handler slot); the call is
+      //                                the indirect-object `new` beside it;
+      //   defined &DynaLoader::boot_DynaLoader
+      //                               a DEFINEDNESS TEST on a code slot.
+      // Suppressing on the `&` alone cost 323 truth rows across perl5, so the
+      // narrower rule is the one that is actually right.
+      if (target.startsWith("&") && !hasArgumentSyntax(callNode ?? calleeNode)) return
       addRelationship(
         state.functionName || state.ownerName || state.packageName || "global",
         this.leafName(target),
@@ -647,22 +764,72 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const arg of this.argumentNodes(node)) {
               const value = this.wordValues(arg)[0]
               if (!value) continue
-              addRelationship(
-                state.packageName || "global",
-                this.leafName(value),
-                isWith ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
-                { reasonCode: isWith ? REASON.mooRoleComposition : REASON.useParentDeclaration, mooseKeyword: target },
-                0.9,
-                arg,
-              )
+              if (isWith) {
+                addRelationship(
+                  state.packageName || "global",
+                  this.leafName(value),
+                  ASTEngine.RelationshipType.Implements,
+                  { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
+                  0.9,
+                  arg,
+                )
+                continue
+              }
+              // A bare `extends 'Base::Class';` is the Moose spelling of
+              // `use parent`. It used to call addRelationship DIRECTLY, which
+              // emitted a correct `extends` edge and left `packageBases` empty —
+              // so the override resolver below found no base and emitted NO
+              // `overrides` edge for any of the class's methods. Every class
+              // inheriting by this spelling had its inheritance graph stop one
+              // hop short.
+              //
+              // This is why two differential corpora never saw it: mojo and
+              // plack contain ZERO bare-`extends` files, and the spelling is
+              // overwhelmingly a Moose idiom — 401 of the 7-corpus census's
+              // 5,774 files, concentrated in Moose (314), Catalyst (52) and Moo
+              // (34). Auditing the corpora the census walks but the F5 lane
+              // never sampled is what named it.
+              //
+              // Routing through addBase is the fix, and it is also the
+              // consistent one: all FIVE inheritance spellings (`use parent`,
+              // `use base`, `our @ISA`, `use Mojo::Base`, bare `extends`) now
+              // reach the extends emitter and the override resolver by the same
+              // path, so `extends` cannot be emitted by a route that `overrides`
+              // cannot see. The edge is byte-identical to the direct call —
+              // same leaf target, same 0.9 — and the line comes from
+              // `packageBaseLine`, the same argument node.
+              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg)
             }
             frameworks.add("Moose/Moo OOP")
           } else if (target === "new") {
+            // Perl's INDIRECT OBJECT syntax: `new Class @args` is exactly
+            // `Class->new(@args)`. The grammar spells it as an
+            // ambiguous_function_call_expression whose `function` is the METHOD
+            // and whose single argument is a second ambiguous call whose
+            // `function` is the CLASS.
+            //
+            // The pre-fix read took `firstValue(node)`, which harvested WORDS
+            // from the whole argument subtree, so `new Win32::ODBC $h->{DSN}`
+            // published a phantom class `DSN` — a hash KEY — and the inner
+            // ambiguous call separately emitted `calls ODBC`, filing the real
+            // class under the wrong label. The class is the inner `function`
+            // field and nothing else.
+            const indirect = this.indirectObjectClass(node)
+            const inner = indirect?.carrier
+            if (inner && indirect?.name) {
+              // The inner node's only job was to carry the class name. It must
+              // not also be walked as a call of its own, or the class is filed
+              // twice under two labels.
+              indirectObjectClassNodes.add(nodeKey(inner))
+              addRelationship(state.functionName || state.packageName || "global", `${this.leafName(indirect.name)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.indirectObjectInvocation }, 0.9, node)
+              break
+            }
             const requestedType = this.firstValue(node)
             const instanceTarget = requestedType && !requestedType.includes("$") ? `${this.leafName(requestedType)}.constructor` : "constructor"
             addRelationship(state.functionName || state.packageName || "global", instanceTarget, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, node)
           } else {
-            addCall(target, state, functionNode ?? node, false)
+            if (indirectObjectClassNodes.has(nodeKey(node))) break
+            addCall(target, state, functionNode ?? node, false, node)
           }
           break
         }
@@ -670,11 +837,14 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_call_expression": {
           const methodNode = this.findChildByType(node, "method")
           const method = methodNode?.text || ""
+          // `invocant` is multi-child for a parenthesised receiver
+          // `(Foo)->new` / `($self || $other)->new`; the bracket markers carry
+          // no name, so the first NAMED child is the receiver. Hoisted out of the
+          // `new` branch because a receiver that NAMES A CLASS is what makes the
+          // METHOD's owner derivable — true of `Mojo::IOLoop->stream` exactly as
+          // much as of `Mojo::IOLoop->new`.
+          const invocant = this.fieldNodes(node, "invocant").find((c) => c.isNamed) ?? this.firstNamedChild(node)
           if (method === "new") {
-            // `invocant` is multi-child for a parenthesised receiver
-            // `(Foo)->new` / `($self || $other)->new`; the bracket markers
-            // carry no name, so the first NAMED child is the receiver.
-            const invocant = this.fieldNodes(node, "invocant").find((c) => c.isNamed) ?? this.firstNamedChild(node)
             const target = invocant ? this.invocantName(invocant) : ""
             if (target && PERL_MAGIC_TOKENS.has(target)) {
               // `__PACKAGE__->new` IS a constructor call, but `__PACKAGE__` is a
@@ -685,16 +855,73 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // edge is not derivable and is not emitted.
               const owner = state.packageName
               if (owner && owner !== "main") addRelationship(state.functionName || owner, `${this.leafName(owner)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.magicTokenInvocant }, 0.9, invocant ?? node)
-            } else if (target && !target.includes("$") && !target.includes("->")) {
-              // A concrete package invocant is resolvable; a scalar or chained
-              // method receiver is dynamic and must not become a phantom type.
+            } else if (invocant && this.namesAClass(invocant) && target && !target.includes("$") && !target.includes("->")) {
+              // A POSITIVE allowlist, not a "does the text look wrong" test.
+              //
+              // The old guard only rejected receivers containing `$` or `->`, so
+              // anything else became a phantom type. `use_module('X')->new(@a)`
+              // in Moose's Class::MOP::Class::Immutable::Trait is the measured
+              // case: `use_module` is a function that loads a module at runtime,
+              // the receiver is its return VALUE, and the edge published a class
+              // named `use_module`. A negative test can only enumerate the
+              // dynamic cases someone already hit; this enumerates the cases
+              // that actually NAME a class, and everything else is a value.
               addRelationship(state.functionName || state.packageName || "global", `${this.leafName(target)}.constructor`, ASTEngine.RelationshipType.Instantiates, { isConstructor: true, reasonCode: REASON.concreteInvocant }, 0.9, invocant ?? node)
             }
           } else {
-            // `$obj->method` — the receiver is a runtime value, so the target is
-            // a leaf-name match. The line is the METHOD node, which is where the
-            // call is written (not the line the chain opened on).
-            addCall(method, state, methodNode ?? node, true)
+            // A receiver that NAMES A CLASS makes the method's OWNER derivable,
+            // so the target is `Receiver.method` and not a bare leaf. The
+            // pre-review lane emitted the leaf, which is a real precision loss
+            // and not a cosmetic one: `Mojo::IOLoop->remove`, `->stream` and
+            // `->server` all collapsed onto the single targets `remove`,
+            // `stream` and `server`, so two classes' same-named methods became
+            // one node and a caller of one looked like a caller of the other.
+            // Measured with script/m14/tmp/perl-receiver-scope.mts: 15,754 of
+            // 71,230 corpus `calls` edges (22.1%) had a class receiver and lost
+            // it — 37.4% of mojo's, 30.3% of Moo's, 28.9% of Moose's.
+            //
+            // The differential reported 100% coverage with 0 unexplained
+            // throughout, because the oracle derived the target by leaf name too.
+            // That is the third time this pair has agreed on a shared premise
+            // (after the `use constant { ... }` dead branch and the oracle's
+            // `!inSub` gap), and it is why the number had to come from the AST
+            // rather than from either derivation.
+            //
+            // A receiver that is a VALUE — `$self->other`, a chained call, a
+            // scalar — still gets the leaf, because there is no class to name.
+            // The discriminator is the same `namesAClass` allowlist the
+            // `instantiates` path uses: one rule, two labels. The line is the
+            // METHOD node either way.
+            // Two corrections to the first version of this, both found by the
+            // differential the moment it landed (18 unexplained on mojo).
+            //
+            // (1) QUALIFYING THE TARGET DEFEATED THE BUILTIN CHECK. `addCall`
+            // tests its argument against PERL_BUILTINS, and it was being handed
+            // `IOLoop.reset` where it needs to be handed `reset` — so
+            // `Mojo::IOLoop->reset` stopped being suppressed, because `reset` IS
+            // a perl builtin. The builtin test has always been about the METHOD.
+            // `addCall` now takes the method separately for that test.
+            //
+            // (2) A BARE BAREWORD IS NOT A CLASS. `app->log->level('fatal')` in
+            // mojo's t/mojo/cgi.t qualified to `app.log` — inventing a class
+            // named `app` for what is a lexical holding a Mojo::Server. The
+            // grammar types both `app` and `Mojo::IOLoop` as `bareword`, so node
+            // type cannot tell them apart; only the `::` can. So qualification
+            // requires a receiver that is PROVABLY a package name: a `package`
+            // node, or a bareword carrying `::`. A plain bareword keeps the leaf,
+            // which is the honest answer for a variable.
+            const recvTarget = invocant ? this.invocantName(invocant) : ""
+            const provableClass =
+              invocant != null &&
+              this.namesAClass(invocant) &&
+              (invocant.type === "package" || recvTarget.includes("::")) &&
+              !recvTarget.includes("$") &&
+              !recvTarget.includes("->")
+            if (provableClass) {
+              addCall(`${this.leafName(recvTarget)}.${method}`, state, methodNode ?? node, false, node, method)
+            } else {
+              addCall(method, state, methodNode ?? node, true, node, method)
+            }
           }
           break
         }
@@ -774,7 +1001,13 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const localDeclares = candidateNames.some((candidate) => localMethods?.has(candidate))
       const companionDeclares = candidateNames.some((candidate) => companionMethods?.has(candidate))
       if (localDeclares || companionDeclares) {
-        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95)
+        // The node that NAMES an override is the SUBCLASS's own method — that is
+        // where the overriding definition is written. Its name line is therefore
+        // the edge's line (#921). This edge previously carried none, on the stated
+        // ground that an inferred override has no naming node; the inference is
+        // about the BASE (a guess, kept honest at confidence 0.5 / `inferred`),
+        // while the method being overridden is not in doubt and is written here.
+        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95, undefined, nameLineOf(symbol))
       } else if (!context?.overrideCompanion) {
         // Pass 3 (family parity with java/groovy resolveOverrides): the base
         // is not declared in this file and no companion index was supplied
@@ -783,15 +1016,24 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (0.7): visible in raw output, counted as heuristic (honest
         // suspicion) by the differential. Pre-M37.10 this edge was silently
         // dropped for every externally-declared base package.
-        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5)
+        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5, undefined, nameLineOf(symbol))
       }
     }
 
-    // Stable ownership edges are generated once, after extraction. They have no
-    // single naming node in the source (the membership is a fact about the two
-    // symbols), so they carry no line_number — declared, not fabricated.
+    // Stable ownership edges are generated once, after extraction, so there is no
+    // `Node` in hand at the emit site — but the CHILD's own name is a written node
+    // in this file, and M59.A7's rule is that an edge's line is the line that
+    // NAMES it. The previous comment here said membership "has no single naming
+    // node", which was true of the POST-PASS and false of the child: `run` in
+    // `sub run` is written, and c/cpp/objc all moved their `contains` edges onto
+    // it for exactly this reason (#921, `objc/contains-line-at-container`).
+    //
+    // `meta.nameLine` is the line the name is written on and
+    // `range.startLine` the line the declaration starts on. They differ for
+    // `sub\n  greeting { ... }`; the fallback is the pre-fix value, so a shape the
+    // name node is not found for keeps its old line rather than losing the field.
     for (const symbol of symbols) {
-      if (symbol.ownerName && symbol.ownerName !== symbol.name) addRelationship(symbol.ownerName, symbol.name, ASTEngine.RelationshipType.Contains, {}, 1.0)
+      if (symbol.ownerName && symbol.ownerName !== symbol.name) addRelationship(symbol.ownerName, symbol.name, ASTEngine.RelationshipType.Contains, {}, 1.0, undefined, nameLineOf(symbol))
     }
 
     const metadata: Partial<ASTEngine.FileMetadata> = {
@@ -811,7 +1053,43 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       ...(versionRequirements.length ? { perlVersion: versionRequirements[0], perlVersions: versionRequirements } : {}),
     } as Partial<ASTEngine.FileMetadata>
 
+    // Evidence-tier classification (managed-OO family contract — ruby/swift/
+    // dart/csharp/objc/php precedent; M14 section D requires >=2 distinct
+    // evidenceClass values, and src/lsp/evidence_tier.ts rule 1 says a STORED
+    // legend-tier value wins and is never re-derived).
+    this.classifyEvidenceTier(relationships)
+
     return { symbols, relationships, imports, exports, errors, metadata }
+  }
+
+  /**
+   * Perl's own confidences decide the floors, not a copied constant: the
+   * source-declared edges (`extends`/`implements`/`instantiates` from `use
+   * parent`, `with`, `use role`, a class invocant) are all 0.9, `contains` is
+   * 1.0, `calls` is 0.9, and `overrides` is 0.5 because it is guessed from a
+   * first-parent chain. So the guessed kind lands on `inferred` on its own,
+   * with no special case: a 0.5 edge can never clear a 0.7 structural floor.
+   */
+  private classifyEvidenceTier(relationships: ASTEngine.UniversalRelationship[]): void {
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      // Attach FIRST, then classify: the branches below all `continue`, so
+      // writing the metadata after them would discard every classification
+      // except the fallthrough's.
+      const md: any = r.metadata ?? {}
+      r.metadata = md
+      if (type === "contains") { md.evidenceClass = "structural"; continue }
+      if (type === "instantiates" || type === "extends" || type === "implements") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.9 ? "structural" : "inferred"
+        continue
+      }
+      if (type === "calls") {
+        md.evidenceClass = (r.confidence ?? 0) >= 0.85 ? "usage_contextual" : "inferred"
+        continue
+      }
+      if (type === "overrides") { md.evidenceClass = "inferred"; continue }
+      md.evidenceClass = "inferred"
+    }
   }
 
   private result(
@@ -1024,12 +1302,35 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The pinned tree-sitter-perl grammar declares NO `parameters` field, so that
    * lookup returned undefined for every sub in every file and the lane shipped
    * 0 parameters across 29,640 symbols on 5,866 corpus files. A signature is the
-   * `signature` FIELD, whose children are `mandatory_parameter`,
+   * `signature` NODE TYPE, whose children are `mandatory_parameter`,
    * `optional_parameter` and `slurpy_parameter`; each wraps the
    * scalar/array/hash node that carries the `varname`.
+   *
+   * The first version of this fix said FIELD here and reached for
+   * `childForFieldName("signature")`, which is dead for the same reason the
+   * original was — `signature` is not among the grammar's 44 fields either. The
+   * working `findChildByType` beside it is what has been producing every
+   * parameter all along, and the dead-literal audit is what finally said so. The
+   * wording is corrected here because the wrong word is what produced the bug.
    */
   private extractParameters(node: Node): ASTEngine.Parameter[] {
-    const signature = node.childForFieldName("signature") || this.findChildByType(node, "signature")
+    // `signature` is a NODE TYPE, not a field. The pinned grammar declares 44
+    // fields — alternative, arguments, array, arrayref, attributes, block, body,
+    // callback, catch_block, catch_expr, condition, consequent, content,
+    // continue, default, finally_block, function, hash, hashref, index,
+    // initialiser, invocant, iterator, key, label, left, lexical, list, loopex,
+    // method, modifiers, module, name, operand, operator, phase, right, statement,
+    // try_block, type, value, variable, variables — and `signature` is not one of
+    // them, so `childForFieldName("signature")` is undefined on EVERY sub, signed
+    // or not. Measured, not assumed: on `sub f ($a, $b = 1, @rest) { }` it
+    // returns undefined while the signature is right there as a named child.
+    //
+    // That call was the SAME defect as #863 with a different field name: the
+    // lane read a field the grammar does not declare, and the `findChildByType`
+    // fallback beside it is what has quietly done the work. The audit caught both
+    // (UNREGISTERED perl field literal "signature"), which is what the dead-literal
+    // record exists for. Read the node type.
+    const signature = this.findChildByType(node, "signature")
     if (!signature) return []
     const result: ASTEngine.Parameter[] = []
     for (let i = 0; i < signature.namedChildCount; i++) {
@@ -1059,6 +1360,59 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (name) result.push(name)
     }
     return result
+  }
+
+  /**
+   * Does this receiver node NAME a class, as opposed to being a runtime value?
+   *
+   * The allowlist is the set of node types whose entire content is a name. A
+   * `function_call_expression` is deliberately absent: its `function` field is
+   * the name of a FUNCTION, and calling it yields a value, so
+   * `use_module('X')->new` constructs nothing knowable. `ambiguous_function_
+   * call_expression` IS present because that is the indirect-object spelling,
+   * where the node's `function` field is the class.
+   */
+  /**
+   * The CLASS half of an indirect-object call: `new Class @args` is exactly
+   * `Class->new(@args)`, and the grammar spells the class as the `function`
+   * FIELD of a nested `ambiguous_function_call_expression`.
+   *
+   * Read STRUCTURALLY, from the node's named children, rather than through
+   * `argumentNodes` — that helper keeps an argument only when it contributes at
+   * least one WORD, and this nested call contributes none whenever its own
+   * arguments are a plain scalar or a list of literals. Measured: it returned
+   * `[]` for `new Win32::ODBC $dbname` and `new Foo 1, 2` but DID return the
+   * call for `new Win32::ODBC $x->{DSN}` — kept only because of a hash KEY, which
+   * is the same accident that published the phantom class `DSN`. A structural
+   * read is right for all three, and for the third shape (`new Foo;`, where the
+   * class is a direct `bareword` child and there is no nested call at all) the
+   * caller's existing path already reads the bareword correctly.
+   */
+  private indirectObjectClass(node: Node): { name: string; carrier: Node } | undefined {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child || child.type !== "ambiguous_function_call_expression") continue
+      const fn = child.childForFieldName("function") || this.findChildByType(child, "function")
+      if (fn?.text) return { name: fn.text, carrier: child }
+    }
+    return undefined
+  }
+
+  private namesAClass(node: Node): boolean {
+    switch (node.type) {
+      case "bareword":
+      case "autoquoted_bareword":
+      case "package":
+      case "ambiguous_function_call_expression":
+        return true
+      case "string_literal":
+      case "interpolated_string_literal":
+        // A quoted class name is a name; an INTERPOLATED one is only a name if
+        // nothing was interpolated into it.
+        return !node.text.includes("$")
+      default:
+        return false
+    }
   }
 
   private invocantName(node: Node): string {

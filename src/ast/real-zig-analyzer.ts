@@ -2,6 +2,72 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
 /**
+ * Z11 (deep review, 2026-09-28) — the KIND of a container-scope `const`, decided
+ * by the grammar's node type rather than by the shape of the name alone.
+ *
+ * The previous dispatch had one value test (`integer`/`float`/`string`/
+ * `boolean`/`character`/`builtin_type` → Constant) and then fell through to
+ * "an upper-case name is a Type alias". Two measured classes came out of that,
+ * over the three pinned corpora (3,839 files, `script/m14/tmp/zigw-kinds.ts`):
+ *
+ *   - a VALUE expression with an upper-case name became a `Type`:
+ *     `binary_expression` 838, `unary_expression` 39,
+ *     `null_coercion_expression` 18, `anonymous_struct_initializer` 22,
+ *     `index_expression` 4, `catch_expression` 4, `block` 9, plus
+ *     `multiline_string`/`error_type` — `pub const DockSpace = 1 << 10;` is a
+ *     Constant, not a Type;
+ *   - a TYPE alias became a value: `builtin_type` 440 (160 of them upper-case),
+ *     `pointer_type` 55, `nullable_type` 31, `array_type` 10 — `const Pos =
+ *     c_long;` is a Type, not a Constant.
+ *
+ * The rule below is the honest one: a node type that CAN be a type makes the
+ * declaration a Type; a node type that CANNOT be a type makes it a value; and
+ * only the genuinely two-sided forms (`identifier`, `field_expression`,
+ * `call_expression`, `if_expression`, `switch_expression`,
+ * `struct_initializer`, `parenthesized_expression`, `builtin_function`) keep the
+ * name heuristic, which is also the pinned `pub const B = A` contract.
+ */
+const ZIG_TYPE_RHS = new Set([
+  "builtin_type", "pointer_type", "slice_type", "array_type", "nullable_type",
+  "error_union_type", "anyframe_type", "opaque_declaration", "function_signature",
+])
+
+/** The container-declaration node types. A container is only a CONTAINER when it
+ *  is a declaration's right-hand side; the same node in an expression position
+ *  is anonymous and can own nothing (see the ANONYMOUS CONTAINER branch). */
+const ANONYMOUS_CONTAINER_NODES = new Set([
+  "struct_declaration", "union_declaration", "enum_declaration",
+  "error_set_declaration", "opaque_declaration",
+])
+
+const ZIG_VALUE_RHS = new Set([
+  "integer", "float", "string", "multiline_string", "boolean", "character",
+  "binary_expression", "unary_expression", "null_coercion_expression",
+  "index_expression", "catch_expression", "block", "initializer_list",
+  "range_expression", "assignment_expression", "error_type",
+  "anonymous_struct_initializer", "dereference_expression",
+])
+
+/**
+ * The type names a declared-type reference must never carry: Zig's builtin
+ * types, `anytype`/`comptime_*`/`noreturn`/`type`, the C ABI types, and the two
+ * keywords that spell a type context (`error`, `test`).
+ *
+ * EXPORTED because the differential oracle (Z14) needs the same vocabulary and
+ * must not re-type it: a second copy is a second answer to "is this a type
+ * name", and two copies that cancel out of every count is how a self-agreeing
+ * edge survives a year of gates (the #916 lesson, applied to zig). The oracle
+ * still derives every POSITION and every LEAF from the tree on its own.
+ */
+export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
+  "void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble",
+  "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
+  "anytype", "comptime_int", "comptime_float", "noreturn", "type", "anyerror",
+  "c_char", "c_short", "c_int", "c_long", "c_longlong", "c_uint", "c_ulong", "c_ulonglong", "c_void",
+  "error", "test",
+])
+
+/**
  * REAL ZIG ANALYZER v6.0 — declaration-site-only extraction.
  *
  * Grounded in the verified tree-sitter-zig AST shape:
@@ -15,6 +81,39 @@ import { ASTEngine } from "./engine"
  *   - Control-flow, type-annotation, call, block, and field-access nodes are
  *     EXECUTION ARTIFACTS, not declaration sites — they never become symbols.
  */
+/**
+ * M60 (#924, zig half): quoting syntax is not part of an identifier's NAME.
+ * `fn @"weird function name"() i32` declares the identifier
+ * `weird function name`; `@"…"` is zig's escape for a name that cannot be spelled
+ * plainly. The grammar puts BOTH tokens inside one `identifier` node (a `@"` token
+ * plus a string), so the node's text carries the sigil and the name is its CONTENT —
+ * the same rule the swift and kotlin halves apply to their backticks, measured the
+ * same way: before the fix the census's own samples publish `@"zls env"`, `@"fn"`
+ * and `@"weird function name"` as a function name, a `calls` target and a `uses`
+ * target (script/m14/tmp/c924-name-surface-probe.ts). An unterminated `@"` is
+ * malformed source, not a name: it is kept verbatim.
+ */
+function stripZigQuoting(text: string): string {
+  if (!text.includes('@"')) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 64 && text[i + 1] === '"') {
+      const close = text.indexOf('"', i + 2)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 2, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
 export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -26,20 +125,26 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Walk context: node + the nearest enclosing declaration context.
     // Context is null (file scope), a container symbol (struct/enum/union), or
     // a function symbol (whose body must not produce declaration symbols).
-    const walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean }[] = [
-      { node: rootNode, container: null, inFunction: false },
+    // `anonContainer` marks a subtree that sits inside a container declaration
+    // reached as an EXPRESSION (an `if`/`switch` branch, a struct literal in a
+    // prune). Such a container has no name, so it can own nothing: see the
+    // ANONYMOUS CONTAINER branch below.
+    const walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[] = [
+      { node: rootNode, container: null, inFunction: false, anonContainer: false },
     ]
 
     while (walkStack.length > 0) {
       const item = walkStack.pop()!
-      const { node, container, inFunction } = item
+      const { node, container, inFunction, anonContainer } = item
       const type = node.type
       const nodeText = this.nodeText(node)
 
       // ─── CONTAINER / CONSTANT DECLARATION: const X = ... ───
       if (type === "variable_declaration") {
-        // Inside a function body: locals are execution artifacts — skip.
-        if (inFunction) {
+        // Inside a function body, or inside an anonymous container: locals are
+        // execution artifacts / unnamed members — skip either way (the import
+        // fact below is recorded in both).
+        if (inFunction || anonContainer) {
           // Z9 (extreme review): a function-local @import is still a real
           // import fact (calls in function bodies are captured too, so
           // dropping the import was inconsistent) — record it exactly like
@@ -80,20 +185,45 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
-          this.pushChildren(node, walkStack, container, inFunction)
+          // Z22 (deep review, found by the OWNERSHIP verifier): a CONTAINER
+          // declared inside an executable body is a LOCAL type, and the walk
+          // handed its declarations to the ENCLOSING container. A local type has
+          // no file-scope identity, so its members cannot be attributed to
+          // anything: `const Callback = struct { pub fn callback(…) void }`
+          // inside a method of `Blob` published `callback` as a Method OWNED BY
+          // `Blob`, plus a `contains Blob -> callback` edge — fabricated ownership
+          // on a class the differential CANNOT see, because its coverage match is
+          // `label + target` and ignores the source, so an edge that keeps its
+          // member name and changes owner still reads as covered. The ownership
+          // verifier (script/m14/tmp/zigw-ownership.ts) found it in 150 files,
+          // which is how a class with no gate got one.
+          //
+          // The contract is the sibling rulings': a container with no stable
+          // identity owns nothing, so its declarations are not symbols — and the
+          // reads, calls and imports inside it are untouched, because those walks
+          // are separate.
+          const localKids = this.getAllNamedChildren(node)
+          const localRhs = localKids[localKids.length - 1]
+          this.pushChildren(
+            node,
+            walkStack,
+            container,
+            inFunction,
+            anonContainer || (!!localRhs && ANONYMOUS_CONTAINER_NODES.has(localRhs.type)),
+          )
           continue
         }
 
         const identNode = this.anyChild(node, (n) => n.type === "identifier")
         const varName = identNode ? identNode.text : ""
         if (!varName || varName.length > 80) {
-          this.pushChildren(node, walkStack, container, inFunction)
+          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
         }
         // Z8 (extreme review): the blank identifier is not a declaration —
         // `var _ = 1;` minted a `_` Variable symbol (GO5 class).
         if (varName === "_") {
-          this.pushChildren(node, walkStack, container, inFunction)
+          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
         }
 
@@ -145,7 +275,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { relationshipType: "zig_import", isImport: true },
               })
             }
-            this.pushChildren(node, walkStack, container, inFunction)
+            this.pushChildren(node, walkStack, container, inFunction, anonContainer)
             continue
           }
 
@@ -154,31 +284,49 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // 2026-08-29 — previously every global was labeled constant).
         const isVar = this.hasToken(node, "var")
         let kind: ASTEngine.SymbolKind = isVar ? ASTEngine.SymbolKind.Variable : ASTEngine.SymbolKind.Constant
+        // Z12 (deep review): `opaque {}` is a CONTAINER in Zig — it has no
+        // fields, but it declares functions and constants. Treating it as an
+        // ordinary value left every one of those declarations at file scope
+        // with no owner: 123 opaque containers in the three pinned corpora, and
+        // their `pub fn` members came out as free Functions with no `contains`
+        // edge and no `scope`. `opaque_declaration` is not a container the
+        // walk knows, so `newContainer` stayed null all the way down.
         const isContainer =
           rhsType === "struct_declaration" ||
           rhsType === "enum_declaration" ||
           rhsType === "union_declaration" ||
-          rhsType === "error_set_declaration"
+          rhsType === "error_set_declaration" ||
+          rhsType === "opaque_declaration"
 
         if (rhsType === "struct_declaration") kind = ASTEngine.SymbolKind.Struct
         else if (rhsType === "enum_declaration") kind = ASTEngine.SymbolKind.Enum
         else if (rhsType === "union_declaration") kind = ASTEngine.SymbolKind.Union
         else if (rhsType === "error_set_declaration") kind = ASTEngine.SymbolKind.Enum
-        else if (
-          // Real tree-sitter-zig value-literal node types (probe-verified
-          // 2026-08-29: `boolean`/`character`, NOT the go/java-family
-          // `boolean_literal`/`char_literal`/`number_literal` left over from an
-          // earlier analyzer copy — those dead literals never matched, so bool/
-          // char consts fell through to the name-heuristic below).
-          rhsType === "integer" ||
-          rhsType === "float" ||
-          rhsType === "string" ||
-          rhsType === "boolean" ||
-          rhsType === "character" ||
-          rhsType === "builtin_type"
-        ) {
-          // Value constant (`const MAX_POINTS: usize = 1024`) — not a type.
-          // A `var` global stays Variable even for literal RHS.
+        // An opaque type is a nominal type with no visible members. The shared
+        // SymbolKind has no Opaque member, and adding one is a cross-lane
+        // contract change, so it is published as `Type` — which is what the
+        // upper-case rule already produced for all 123 corpus sites, and is
+        // true: `const Handle = opaque {}` names a type.
+        else if (rhsType === "opaque_declaration") kind = ASTEngine.SymbolKind.Type
+        else if (ZIG_TYPE_RHS.has(rhsType)) {
+          // Z11: the RHS IS a type node (`const Pos = c_long;`, `const Buf =
+          // []const u8;`, `const T = fn () void;`) whatever the name's case.
+          // The old value-literal list carried `builtin_type` here, which is
+          // how 440 type aliases were published as value constants.
+          kind = ASTEngine.SymbolKind.Type
+        } else if (ZIG_VALUE_RHS.has(rhsType) || (rhsType === "labeled_type_expression" && this.isLabeledBlockValue(rhs))) {
+          // Z11: the RHS is a value expression, so an upper-case name does not
+          // make it a type alias — no Zig type is a bit-shift, a negation, a
+          // null-coercion, an index, a catch or a labeled block. The two-sided
+          // forms below keep the name heuristic, which is the pinned
+          // `pub const B = A` contract (ZGD kind dispatch ordering).
+          if (!isVar) kind = ASTEngine.SymbolKind.Constant
+        } else if (rhsType === "struct_initializer" && !this.isTypeValuedInitializer(rhs)) {
+          // Z11b: `const NAMES = [_]u8{ 1, 2, 3 };` and `const S = Point{}`
+          // are VALUES whatever the name's case. The one initializer that is a
+          // type is an array/slice OF TYPES — `pub const Implements =
+          // [_]type{gtk.Scrollable};` — which is what `isTypeValuedInitializer`
+          // tests, because the grammar gives the element type as a child.
           if (!isVar) kind = ASTEngine.SymbolKind.Constant
         } else if (varName[0] === varName[0].toUpperCase() && varName[0] !== varName[0].toLowerCase()) {
           kind = ASTEngine.SymbolKind.Type
@@ -198,11 +346,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         }
         symbols.push(sym)
-        if (isExported) exports.push({ name: varName, kind })
+        // Z20 (deep review): an export must name an IMPORTABLE unit — a
+        // file-scope name an importer can bind. A `pub const` INSIDE a container
+        // is reached as `Container.member`, which is the `contains` edge's job:
+        // publishing it as an export named `member` invents a binding no
+        // importer can use, and it tripped the fixture runner's export invariant
+        // as soon as an opaque container started owning its declarations. The
+        // `pub` fact survives as the member's `visibility: "public"`.
+        if (isExported && !container) exports.push({ name: varName, kind })
 
         // Container members belong to the new container symbol.
         const newContainer = isContainer ? sym : container
-        this.pushChildren(node, walkStack, newContainer, inFunction)
+        this.pushChildren(node, walkStack, newContainer, inFunction, anonContainer)
         continue
       }
 
@@ -216,8 +371,23 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // symbols, while calls/uses emission (analyzeZigCodeRelationships) is
       // unaffected — it tracks function_declaration only and emits these
       // sites with source "(global)" (ZIG.D.2 contract).
+      //
+      // Z19 (deep review): this named the two ENCLOSING nodes, which is why the
+      // rule had a hole — a LABELED BLOCK is a body reached by a different path
+      // (`const V = cvalue: { const key_fields = …; break :cvalue v; };`) and
+      // its comptime locals were published as file-scope symbols: measured on 400
+      // corpus files, 70 symbols inside 35 container-scope block-shaped
+      // declarations, including `key_fields`, `names`, `types`, `action`,
+      // `attrs`, `total`, `index` — every one of them a local of a block, by the
+      // analyzer's own definition. The structural rule is the honest one and it
+      // subsumes this branch: a `block` in tree-sitter-zig IS a `{ … }` body —
+      // it is never a type and never a declaration scope — so marking the block
+      // itself covers test blocks, comptime blocks, labeled blocks, and the
+      // `comptime_expression` form alike. Kept as an explicit branch because a
+      // test/comptime block's OTHER children (a test NAME) are not inside the
+      // block and must still be walked.
       if (type === "test_declaration" || type === "comptime_declaration") {
-        this.pushChildren(node, walkStack, container, true)
+        this.pushChildren(node, walkStack, container, true, anonContainer)
         continue
       }
 
@@ -257,13 +427,48 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             })
           }
         }
-        this.pushChildren(node, walkStack, container, inFunction)
+        this.pushChildren(node, walkStack, container, inFunction, anonContainer)
         continue
       }
 
       // ─── FUNCTION DECLARATION: pub fn name(...) ───
-      if (type === "function_declaration" || type === "function_signature") {
-        const identNode = this.anyChild(node, (n) => n.type === "identifier")
+      //
+      // Z26 (wave 3, 2026-09-29): a `function_signature` is a function-pointer
+      // TYPE, not a function — this grammar gives it no `declarator` field at
+      // all (measured: `f: *const fn (a: u8) callconv(.c) ComparisonResult`
+      // parses as container_field > pointer_type > function_signature with
+      // children parameters / calling_convention / identifier). Minting a symbol
+      // from it published a METHOD named after whatever identifier happened to
+      // be first under the node: `contains MutableArray -> ComparisonResult`
+      // (the RETURN TYPE) and `contains Options -> apprt` (a segment of
+      // `*apprt.ClipboardRequest`, from a field whose type is a function
+      // pointer). Two fabrications of methods that do not exist, on a class that
+      // is 16.6% of everything this analyzer emits. Found by the new `contains`
+      // gate — and NOT by the ownership verifier, whose derivation took
+      // `firstIdent(function_signature)` and therefore agreed with the bug: a
+      // mirror that reproduces the defect it is meant to convict is self-
+      // agreeing, which is the reason this truth was written from the grammar
+      // rather than from the analyzer's own name-picking.
+      //
+      // The signature's CHILDREN are still walked: a function type's parameters
+      // and its return type are declared-type facts (the `references` collection
+      // at the bottom of this walk reads them on purpose).
+      if (type === "function_signature") {
+        this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+        continue
+      }
+      if (type === "function_declaration") {
+        // Z28, the function half: this grammar has NO `declarator` field on a
+        // function_declaration (measured: `function_declaration [fields: type]`
+        // and its first NAMED child is always the name), so the name is read
+        // POSITIONALLY and the deep `anyChild` search that Z26 exploited is gone
+        // from the common path. The fallback stays for a grammar variant that
+        // reorders it, and the 100-char cap stays as the stated guard it is.
+        const firstNamed = node.namedChildCount > 0 ? node.namedChild(0) : null
+        const identNode =
+          firstNamed && firstNamed.type === "identifier"
+            ? firstNamed
+            : this.anyChild(node, (n) => n.type === "identifier")
         const fnName = identNode ? identNode.text : ""
         const isExported = this.hasToken(node, "pub") || this.hasToken(node, "export")
         const isInline = this.hasToken(node, "inline")
@@ -271,7 +476,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Methods of an ANONYMOUS struct returned by a generic function
         // (`fn GenericStack(...) type { return struct { fn push(...) } }`) have
         // no named container — they must not become file-scope functions.
-        const isAnonymousContainerMember = !container && inFunction
+        const isAnonymousContainerMember = anonContainer || (!container && inFunction)
 
         if (fnName && fnName !== "_" && fnName.length < 100 && !isAnonymousContainerMember) {
           const params: ASTEngine.Parameter[] = []
@@ -280,16 +485,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (let i = 0; i < paramsNode.namedChildCount; i++) {
               const child = paramsNode.namedChild(i)
               if (!child || child.type !== "parameter") continue
-              const pNameNode = this.anyChild(child, (n) => n.type === "identifier")
-              const pTypeNode = this.anyChild(
-                child,
-                (n) =>
-                  n.type === "builtin_type" ||
-                  n.type === "nullable_type" ||
-                  n.type === "slice_type" ||
-                  n.type === "pointer_type" ||
-                  n.type === "error_union_type",
-              )
+              // Z17c (deep review): the same five-node-type list as the field
+              // case, and the same gap — `fn f(w: io.Writer)`, `fn f(g: MyList(u8))`
+              // and `fn f(b: [4]u8)` published a parameter with NO type, which is
+              // what hover and call-hierarchy signatures read. The grammar hands
+              // it over as the `type` field; a fn-TYPE parameter (`fn (u8) void`)
+              // has one too, and one with neither (a recovered shape) publishes
+              // no type rather than a guessed one.
+              const pNameNode = this.namedFieldOf(child, "name") ?? this.anyChild(child, (n) => n.type === "identifier")
+              const pTypeNode = this.typeFieldOf(child)
               if (pNameNode) {
                 params.push({
                   name: pNameNode.text,
@@ -299,8 +503,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
 
-          // Inside a struct/union/enum container → method; else free function.
-          const isMethod = !!container && container.kind !== ASTEngine.SymbolKind.Type
+          // Inside a struct/union/enum/error-set/opaque container → method;
+          // else free function. Z12: the previous test was
+          // `container.kind !== Type`, which was a proxy for "a type alias has
+          // no body" — but an OPAQUE container is published as `Type` (no
+          // Opaque member in the shared SymbolKind) and does have
+          // declarations, so every opaque member came out a free Function with
+          // no owner. Ownership is now the test, and it is the honest one.
+          const isMethod = container !== null
           const sym: ASTEngine.UniversalSymbol = {
             name: fnName,
             kind: isMethod ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Function,
@@ -321,23 +531,62 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               // #612 store-phase: DECLARATION vs DEFINITION. Measured against
               // this grammar (tree dump, 2026-09-25): `extern fn run_engine()
               // c_int;` and `pub fn call_it() c_int { … }` BOTH parse as
-              // `function_declaration` — the body is the discriminator, a
-              // `block` child. A body-less form is a declaration (`extern fn`,
-              // and the `function_signature` spelling if the grammar produces
-              // it); a `block` child is a definition. Without the flag an
-              // `extern` declaration competed on equal footing with the
-              // definition implementing it in another file.
-              ...(type === "function_signature" || !this.anyChild(node, (n) => n.type === "block")
-                ? { isDeclaration: true }
-                : {}),
+              // `function_declaration`, and the grammar hands the difference
+              // over as a FIELD — 35,692 of the corpus's 37,129 functions carry
+              // a `body` child under the `body` field name, the rest declare
+              // nothing. So the discriminator is read off the field, with the
+              // node-type test kept as the fallback for a grammar variant that
+              // does not name it. Without the flag an `extern` declaration
+              // competed on equal footing with the definition implementing it in
+              // another file.
+              ...(this.functionBody(node) === null ? { isDeclaration: true } : {}),
             },
           }
           symbols.push(sym)
           if (isExported && !isMethod) exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })
         }
         // Function body: execution artifacts only — no declaration symbols.
-        this.pushChildren(node, walkStack, container, true)
+        this.pushChildren(node, walkStack, container, true, anonContainer)
         continue
+      }
+
+      // ─── ANONYMOUS CONTAINER IN AN EXPRESSION POSITION ───
+      // A container declaration is only recognised as a container when it is the
+      // RIGHT HAND SIDE of a `const`/`var`. The SAME node reached as an
+      // EXPRESSION — the branch of an `if`/`switch`
+      // (`pub const T = if (c) A else struct { pub inline fn init(…) }`), a
+      // struct literal in a prune (`(struct { inline fn assert(…) void {…} }).assert`),
+      // a struct type inside a `nullable_type`/`array_type` — established no
+      // container at all, so its declarations were published as members of
+      // whatever container happened to enclose them.
+      //
+      // Two measured classes, over 900 corpus files (693 expression-position
+      // containers, 412 symbols inside them):
+      //   (a) FALSE OWNERSHIP: the fields of a union variant's payload struct
+      //       were published as members of the UNION
+      //       (`property libc owner=Value` for a field of `native`'s struct).
+      //   (b) IDENTITY COLLISION: where two variants declare the same field, the
+      //       two distinct declarations were published under ONE identity —
+      //       `ghostty/pkg/apple-sdk/build.zig` publishes `property libc` TWICE
+      //       with the same (owner, name), at lines 19 and 25. The fixture
+      //       runner's RSD3 rule says that shape must yield distinct ids.
+      //
+      // The fix is the contract the analyzer ALREADY states for the sibling
+      // shape (a struct returned by a generic function): a container with no
+      // stable identity can own nothing, so none of its declarations is a
+      // symbol. Imports, calls and reads inside it are unaffected — those walks
+      // are separate and still see every site.
+      if (ANONYMOUS_CONTAINER_NODES.has(type)) {
+        const parent = node.parent
+        const isDeclRhs =
+          !!parent &&
+          parent.type === "variable_declaration" &&
+          parent.namedChildCount > 0 &&
+          parent.namedChild(parent.namedChildCount - 1)?.id === node.id
+        if (!isDeclRhs) {
+          this.pushChildren(node, walkStack, container, inFunction, true)
+          continue
+        }
       }
 
       // ─── CONTAINER FIELD: struct/union member or enum member ───
@@ -346,23 +595,46 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // have no stable container identity and must NOT become file-scope
       // symbols (C negative contract: anonymous containers are not named).
       if (type === "container_field") {
-        if (!container) {
-          this.pushChildren(node, walkStack, container, inFunction)
+        if (!container || anonContainer) {
+          this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
         }
-        const nameNode = this.anyChild(node, (n) => n.type === "identifier")
+        // Z28: the name comes from the grammar's own `name` FIELD, and the
+        // length cap stops being a filter. The old `anyChild(identifier)` +
+        // `length < 50` pair dropped 14 REAL field declarations out of 27,004 in
+        // 1,200 corpus files (0.05%) — `supports_workspace_did_change_configuration_
+        // dynamic_registration` (74 chars, an LSP capability flag) and the aro
+        // `__builtin_amdgcn_wmma_*` shims (50-52 chars). A length test is not a
+        // junk filter; it is a length test, and a declaration that exists in the
+        // source was simply absent from the index. Measured over the same corpus:
+        // 0 field names reach 100 characters, so the cap is now 200 and exists to
+        // catch a grammar variant handing over something that is not a name —
+        // stated as that, rather than as a filter that quietly loses 0.05%.
+        // The `name` field is only a NAME when it is an identifier: an unnamed
+        // field hands over a TYPE there (measured: `extern struct` members in
+        // zls/src/analyser/InternPool.zig whose `name` field is a `builtin_type`
+        // — `usize`, `isize`, `c_short`, `c_int` — and the first version of this
+        // change published all four as fields NAMED after their own type, 31
+        // fabricated `contains` edges in one file). An unnamed field has no name
+        // to publish, and a symbol named `usize` is a fabrication, so the field
+        // is read only when it is an identifier and the search is the fallback.
+        const nameField = node.childForFieldName?.("name")
+        const nameNode =
+          nameField && (nameField.type === "identifier" || nameField.type === "field_identifier")
+            ? nameField
+            : this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
-        if (fieldName && fieldName !== "_" && fieldName.length < 50) {
+        if (fieldName && fieldName !== "_" && fieldName.length < 200) {
           const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
-          const typeNode = this.anyChild(
-            node,
-            (n) =>
-              n.type === "builtin_type" ||
-              n.type === "nullable_type" ||
-              n.type === "slice_type" ||
-              n.type === "pointer_type" ||
-              n.type === "error_union_type",
-          )
+          // Z17b (deep review): the field's declared type used to be found by
+          // asking for one of five node types, so the most common kinds of
+          // declaration in Zig published NO type at all — `size: Size`,
+          // `buf: [4]u8`, `map: MyList(u8)`, `w: std.mem.Allocator`. The
+          // grammar hands the type over as the `type` FIELD, and the nim lane
+          // (the most recent) publishes a property's type the same way, so this
+          // is a family completeness gap rather than a zig quirk. An enum member
+          // has no type field, so it correctly stays undefined.
+          const typeField = this.typeFieldOf(node)
           symbols.push({
             name: fieldName,
             kind: isEnumMember ? ASTEngine.SymbolKind.EnumMember : ASTEngine.SymbolKind.Property,
@@ -371,11 +643,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             scope: container?.name,
             ownerName: container?.name,
             ownerKind: container?.kind,
-            returnType: isEnumMember ? undefined : typeNode ? this.nodeText(typeNode) : undefined,
+            returnType: typeField ? this.nodeText(typeField) : undefined,
             metadata: { zigField: true, ...(isEnumMember ? { zigEnumMember: true } : {}) },
           })
         }
-        this.pushChildren(node, walkStack, container, inFunction)
+        this.pushChildren(node, walkStack, container, inFunction, anonContainer)
         continue
       }
 
@@ -431,7 +703,13 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // ─── PUSH CHILDREN (default: preserve container/function context) ───
-      this.pushChildren(node, walkStack, container, inFunction)
+      // Z19 (deep review): a `block` is an EXECUTABLE BODY wherever it appears.
+      // In tree-sitter-zig `{ … }` is a statement/expression body and never a
+      // type and never a declaration scope, so its `var`/`const` declarations
+      // are execution artifacts by the analyzer's own contract (ZGD3) — the
+      // rule belongs on the block, not on the two node types that usually wrap
+      // one. See the Z19 note on the test/comptime branch for the measurement.
+      this.pushChildren(node, walkStack, container, inFunction || type === "block", anonContainer)
     }    // Contains relationships for owned symbols
     for (const s of symbols) {
       if (s.ownerName) {
@@ -490,6 +768,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // heuristic beside per-symbol real complexities — the removed-
     // everywhere-else disease. Both fields report the real file-level
     // cyclomatic number (family contract, go parity).
+    // M60 (#924, zig half): the published name surface — quoting syntax is not
+    // part of a name.
+    this.canonicalizePublishedNames(symbols, relationships, exports)
+
     const fileComplexity = this.zigBodyComplexity(rootNode)
     return {
       language: "zig",
@@ -579,8 +861,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `self.count += 1;` are both variable_declaration nodes, LHS = first
         // named child) — gate only that LHS span, so the RHS of
         // `self.a = self.b` stays a genuine read.
-        const p = n.parent
-        const isAssignLhs = !!p && p.type === "variable_declaration" && p.namedChild(0)?.id === n.id
+        // Z15 (deep review): the gate tested the NODE and not the OPERATOR, so
+        // it also swallowed the read of a COMPOUND assignment. `self.count += 1`
+        // reads `self.count` and writes it; `while (i < n) : (i += 1)` is the
+        // canonical read-modify-write in Zig. A plain `=` is a pure write, so
+        // the operator is the discriminator the grammar already provides
+        // (`variable_declaration` has 43,949 `type` fields and the `=` is an
+        // anonymous token of its own type, distinct from `+=`).
+        const isAssignLhs = this.isWriteLhs(n)
         // ZGD5 (same wave): `.bad` enum literals and `.{...}` init fields
         // parse as field_expression with a SINGLE named child — no base, so
         // they are not member accesses. `return .bad` emitted a phantom
@@ -592,6 +880,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // declaration nodes (probe-verified); the declared-type graph already
         // carries the fact. `uses` stays reserved for runtime reads
         // (`return self.count`).
+        const p = n.parent
         const isTypePosition =
           p?.type === "parameter" ||
           p?.type === "container_field" ||
@@ -639,6 +928,34 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * - resolvability required: unknown names (std/dot-imported/external,
    *   macro-template `$x`) stay silent — no junk edges.
    */
+  /**
+   * M60 (#924, zig half): canonicalize the PUBLISHED name surface.
+   *
+   * Zig builds its symbols inline (no factory), so the strip lands here, at the
+   * publish boundary — after every analysis pass, so nothing internal ever sees a
+   * canonical spelling mid-walk (the bare-use inventory and the shadowing frames
+   * are keyed on the SOURCE's own spellings and stay consistent with the tree),
+   * and before the result leaves the analyzer.
+   */
+  private canonicalizePublishedNames(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+  ): void {
+    for (const s of symbols) {
+      if (typeof s.name === "string") s.name = stripZigQuoting(s.name)
+      if (typeof s.ownerName === "string") s.ownerName = stripZigQuoting(s.ownerName)
+      if (typeof s.id === "string") s.id = stripZigQuoting(s.id)
+    }
+    for (const r of relationships) {
+      if (typeof r.source === "string") r.source = stripZigQuoting(r.source)
+      if (typeof r.target === "string") r.target = stripZigQuoting(r.target)
+    }
+    for (const e of exports) {
+      if (typeof e.name === "string") e.name = stripZigQuoting(e.name)
+    }
+  }
+
   private analyzeZigBareIdentifierUses(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
@@ -742,14 +1059,27 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isDefiningOccurrence = (node: Node): boolean => {
       const p = node.parent
       if (!p) return false
-      if (p.type === "variable_declaration") {
-        for (let i = 0; i < p.namedChildCount; i++) {
-          const c = p.namedChild(i)
-          if (c && c.type === "identifier") {
-            return c.startIndex === node.startIndex && c.endIndex === node.endIndex
-          }
-        }
-        return false
+      if (p.type === "variable_declaration" || p.type === "assignment_expression") {
+        // Z15 (deep review): a COMPOUND assignment is not a definition, it is a
+        // read-modify-write — `counter += 1` reads the global `counter` before
+        // writing it, and `while (i < n) : (i += 1)` is Zig's own idiom for it.
+        // The old test suppressed the read of every compound assignment, so a
+        // global written with `+=` was invisible to the read graph. Plain `=`
+        // stays a definition (a declaration binds, an assignment writes).
+        //
+        // Z29 (wave 3, 2026-09-29): the LHS test is NODE IDENTITY with the first
+        // named child, the same rule `isWriteLhs` below already used — so the two
+        // sites in this file now agree instead of one being right. "The first
+        // named child of type `identifier`" is not the LHS when the LHS is a
+        // field expression: in `exe.stack_size = stack_size` (zig/build.zig:727)
+        // the first IDENTIFIER child is the VALUE, so the test declared the read
+        // to be a definition and the analyzer published no `uses -> stack_size`
+        // at all — a real read of a file-scope constant, lost. One row in 1,200
+        // files, found only because the truth exists: a LOSS is invisible to any
+        // count of what was published.
+        if (!this.isPlainAssignment(p)) return false
+        const lhs = p.namedChildCount > 0 ? p.namedChild(0) : null
+        return !!lhs && lhs.id === node.id
       }
       // Error sets declare EVERY direct member (`error{ A, B }`) — unlike
       // single-name items, there is no first-only rule here.
@@ -969,19 +1299,19 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     return undefined
   }
 
-  private zigCalleeLeaf(call: Node): string | undefined {
-    return this.zigCalleeLeafNode(call)?.text
-  }
+  // Z17 (deep review) — REMOVED as dead: `zigCalleeLeaf` and `zigFieldLeaf`,
+  // the string-returning wrappers around the two `*Node` accessors below. Every
+  // call site uses the NODE form, because every emitted edge needs the site line
+  // (M59.A7 #825); the string forms had no caller. `zigTypeLeaf` (the same
+  // wrapper for the type leaf) went the same way, and `nameLine` — a helper for
+  // the C/C++ lanes' attribute-line-base rule, never called here, so the zig lane
+  // has no `#920` line rule to claim. Dead code in a review wave is a claim
+  // about a contract that is not implemented, and four of them were sitting in
+  // the file.
 
-  /** Leaf NAME of a field_expression (`std.math.abs` -> abs, `list.items` ->
-   *  items). */
-  private zigFieldLeaf(expr: Node): string | undefined {
-    return this.zigFieldLeafNode(expr)?.text
-  }
-
-  /** The name-bearing field LEAF of a field_expression — the same node whose
-   *  text `zigFieldLeaf` returns, kept so an emitted edge can carry the SITE
-   *  line (M59.A7 #825) as well as the name. */
+  /** The name-bearing field LEAF of a field_expression (`std.math.abs` ->
+   *  `abs`, `list.items` -> `items`) — the node whose text is the edge's target
+   *  and whose line is the edge's site (M59.A7 #825). */
   private zigFieldLeafNode(expr: Node): Node | undefined {
     const last = expr.namedChildCount > 0 ? expr.namedChild(expr.namedChildCount - 1) : null
     if (last && last.type === "identifier") return last
@@ -1007,18 +1337,32 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
   ): void {
-    const BUILTINS = new Set(["void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble", "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize", "anytype", "comptime_int", "comptime_float", "noreturn", "type", "anyerror", "c_char", "c_short", "c_int", "c_long", "c_longlong", "c_uint", "c_ulong", "c_ulonglong", "c_void", "error", "test"])
     const emitted = new Set<string>()
     // `site` is the type node the leaf name was read from — M59.A7 (#825) wants
     // the reference line of the NAME, not of the enclosing declaration.
     const push = (leaf: string, site?: Node) => {
       if (!leaf) return
-      const trim = leaf.replace(/[!*\s\[\]\{\}]+/g, "").trim()
-      if (!trim) return
-      const base = trim.split("<or>")[0] ?? trim
-      const head = base.indexOf("=") !== -1 ? base.slice(0, base.indexOf("=")).trim() : base
-      // ≡ /^\d/ — first char is 0-9 (rejects `123abc`-style heads).
-      if (!head || BUILTINS.has(head) || (head.length > 0 && head.charCodeAt(0) >= 48 && head.charCodeAt(0) <= 57)) return
+      // Z18 (deep review): the receiver here is a TYPE LEAF, and a leaf is
+      // always an `identifier` node's text — so the three text surgeries this
+      // line used to carry could only ever have fired on a QUOTED identifier,
+      // where they CORRUPT a legitimate name: `@"zig lib"` was published as
+      // `@"ziglib"`, `@"weird function name"` as `@"weirdfunctionname"`, and
+      // `@"Responds to foo(): %@"` as `@"Respondstofoo():%@"`. Measured over
+      // the three pinned corpora: 1,916 of the 34,132 quoted identifiers have a
+      // character in the junk class (`!`, `*`, whitespace, `[`, `]`, `{`, `}`),
+      // and on a plain identifier — `[A-Za-z_][A-Za-z0-9_]*`, no `<or>`, no
+      // `=` — all three are provable no-ops. So removing them is a fix, not a
+      // cleanup, and the source spelling is what the rest of the analyzer
+      // already publishes (symbol names, `uses` field leaves, call leaves), so
+      // the graph stays internally consistent.
+      // Zero-regex: the two remaining tests are a Set membership and a
+      // character-code range.
+      const head = leaf
+      if (!head || ZIG_DECLARED_TYPE_BUILTINS.has(head)) return
+      // ≡ /^\d/ — first char is 0-9 (rejects `123abc`-style heads). A quoted
+      // identifier starts with `@`, so it is exempt by construction.
+      const c0 = head.charCodeAt(0)
+      if (c0 >= 48 && c0 <= 57) return
       if (!emitted.has(head)) {
         emitted.add(head)
         relationships.push({
@@ -1035,7 +1379,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "function_declaration") {
+      if (n.type === "function_declaration" || n.type === "function_signature") {
         const paramsNode = this.anyChild(n, (c) => c.type === "parameters")
         if (paramsNode) {
           for (let i = 0; i < paramsNode.namedChildCount; i++) {
@@ -1045,27 +1389,39 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (tNode) push(tNode.text, tNode)
           }
         }
-        // Return type: error_union_type / nullable_type / pointer_type /
-        // slice_type / builtin_type — AND bare identifier / field_expression
-        // (ZGD2, zig wave M37 #600: `fn make() MyError` and `fn f() foo.Bar`
-        // emitted NO declared-type ref — the collection list lacked both
-        // shapes; a bare identifier is the whole type, a field_expression
-        // like io.Writer is a qualified one). The function-NAME identifier
-        // (first named child) is excluded — it is not a type.
-        // NOTE: NO `return_type` literal here — tree-sitter-zig has no such
-        // node (dead literal removed in the zig wave grammar audit).
-        const kids = this.getAllNamedChildren(n)
-        const retNode = kids
-          .filter((c) => c.type !== "identifier" || kids.indexOf(c) !== 0)
-          .find((c) => c.type === "error_union_type" || c.type === "nullable_type" || c.type === "pointer_type" || c.type === "slice_type" || c.type === "builtin_type" || c.type === "identifier" || c.type === "field_expression")
-        const retLeafNode = retNode ? this.zigTypeLeafNode(retNode) : undefined
+        // Z19 (deep review): the return type is read off the grammar's `type`
+        // FIELD — the corpus census measured 37,129 of 37,129 function
+        // declarations carrying one, and 0 of the type nodes carrying a field
+        // of that name (so preferring it can never take the wrong side of a
+        // `!`). The old list of accepted node types was a guess that silently
+        // dropped every return type it did not name: `array_type`
+        // (`fn f() [4]Widget`), `error_type` (`fn f() error{Boom}!void`),
+        // `anyframe_type`, `labeled_type_expression`. The node-type test is
+        // kept as the fallback for a grammar variant that does not name it.
+        const retNode = this.typeFieldOf(n) ?? this.zigFallbackReturnType(n)
+        const retLeafNode = retNode ? this.leafOfTypeNode(retNode) : undefined
         if (retLeafNode) push(retLeafNode.text, retLeafNode)
       }
       if (n.type === "container_field") {
-        // struct/union/enum member type
+        // struct/union field type. Z13: an ENUM member is the same node type
+        // with no `type` field and a value instead — `zigTypeLeafNode` returns
+        // undefined for it, so a member's default (`size: Size = .byte`, or a
+        // bare `normal = 0`) is never mistaken for a type.
         const tNode = this.zigTypeLeafNode(n)
         if (tNode) push(tNode.text, tNode)
       }
+      // Z16 (deep review): the LOCAL annotation is the fourth family position
+      // (`var x: MyType = ...`) and the collector covered three of the four —
+      // field, parameter, return. `variable_declaration` carries a `type` field
+      // 43,949 times in the pinned corpora. The `emitted` set keeps the
+      // overlap with the other positions from becoming a second edge.
+      if (n.type === "variable_declaration") {
+        const tField = this.typeFieldOf(n)
+        if (tField) {
+          const leaf = this.leafOfTypeNode(tField)
+          if (leaf) push(leaf.text, leaf)
+        }
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
@@ -1073,53 +1429,260 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  /** Best-effort single leaf type name for a parameter/field/return node.
+  /**
+   * The history this replaced, kept because the field-based version is only
+   * better if the field is really there (deep-review fixes, 2026-08-29):
+   *   (1) builtin_type nodes were dropped because they shadowed the real leaf —
+   *       `map: *std.StringHashMap(usize)` returned `usize`. Z13 keeps that
+   *       exclusion (it is a value filter, in `push`) and fixes the cause: the
+   *       leaf is read from the `type` FIELD, so a generic ARGUMENT can no
+   *       longer be the answer because it is no longer in scope.
+   *   (2) the first identifier was dropped as the declared name. Z13 drops the
+   *       whole guess — the field is the name's sibling, not its predecessor.
+   *   (3) enum members yielded undefined, and still do: a `container_field`
+   *       with no `type` field IS the enum member, which is now the test
+   *       instead of a consequence.
+   */
+
+  /**
+   * True when a `struct_initializer` initializes an array/slice OF TYPES —
+   * `pub const Implements = [_]type{ gtk.Scrollable };` — so the declaration is
+   * a type, not a value. Measured on the pinned corpora: every one of the 32
+   * upper-case `struct_initializer` declarations is of this form, while the
+   * 467 lower-case ones are ordinary values (`[_]u8{ 1, 2, 3 }`, `Point{}`), and
+   * the element type is a direct child (`array_type` / `slice_type` carrying the
+   * `type`, `comptime_int` or `comptime_float` builtin).
+   */
+  private isTypeValuedInitializer(init: Node): boolean {
+    for (let i = 0; i < init.namedChildCount; i++) {
+      const c = init.namedChild(i)
+      if (!c) continue
+      if (c.type !== "array_type" && c.type !== "slice_type") continue
+      for (let j = 0; j < c.namedChildCount; j++) {
+        const e = c.namedChild(j)
+        if (e && (e.type === "builtin_type") && (e.text === "type" || e.text === "comptime_int" || e.text === "comptime_float")) return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * A `labeled_type_expression` that is really a labeled BLOCK — `const V =
+   * cvalue: { … break :cvalue v; }` — yields a VALUE, whatever the name's case.
    *
-   * Deep-review fixes (2026-08-29, final zig pass):
-   *   (1) builtin_type nodes are NO LONGER collected — they are never
-   *       declared-type dependencies and, worse, shadowed the real leaf:
-   *       `map: *std.StringHashMap(usize)` returned "usize" (the generic
-   *       argument, a builtin) and the StringHashMap dependency was silently
-   *       lost. A local generic `x: MyList(u32)` lost MyList identically.
-   *   (2) for parameter/container_field, the FIRST identifier is the
-   *       declaration NAME (`flags: Flag` -> name "flags") — it is excluded
-   *       so the leaf is the type. A bare identifier node (plain return
-   *       type `fn f() MyError`) IS the type and is returned directly.
-   *   (3) enum members (`North`) and builtin-only fields (`sides: u32`)
-   *       now yield undefined — no more phantom declared-type refs to
-   *       enum members. */
-  private zigTypeLeaf(node: Node): string | undefined {
-    return this.zigTypeLeafNode(node)?.text
-  }
-
-  /** The identifier NODE whose text `zigTypeLeaf` returns (identical traversal
-   *  and identical drop-the-declaration-name rule), so a declared-type
-   *  reference can carry the line the type is written on (M59.A7 #825). */
-  private zigTypeLeafNode(node: Node): Node | undefined {
-    if (node.type === "identifier") return node
-    const ids: Node[] = []
-    const stack: Node[] = [node]
+   * The grammar has ONE node type for both Zig forms (3,900 occurrences in the
+   * pinned corpora): `L: { … break :L v; }` is a labeled block and
+   * `L: T { … return v; }` is a labeled type, and the two differ in the block
+   * they carry — a block leaves by `break :label`, a type by `return`. Measured
+   * over 400 corpus files: 9 of 9 labeled_type_expression right-hand sides
+   * break and none returns, and the six with an upper-case name
+   * (`pub const CValue = cvalue: { … }`, `pub const Key = key: { … }`) were
+   * published as `Type` for what are comptime-computed struct values.
+   */
+  private isLabeledBlockValue(rhs: Node): boolean {
+    if (rhs.type !== "labeled_type_expression") return false
+    let hasBreak = false
+    let hasReturn = false
+    const stack: Node[] = [rhs]
     let guard = 0
-    while (stack.length > 0 && guard++ < 200) {
+    while (stack.length > 0 && guard++ < 500) {
       const n = stack.pop()!
-      if (n.type === "identifier") ids.push(n)
+      if (n.type === "break_label") hasBreak = true
+      if (n.type === "return_expression") hasReturn = true
+      if (hasReturn) return false
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
-    if (ids.length === 0) return undefined
-    // parameter/container_field: child 0 is the declaration NAME — drop it.
-    if (
-      (node.type === "parameter" || node.type === "container_field") &&
-      node.namedChildCount > 0 &&
-      node.namedChild(0)?.type === "identifier"
-    ) {
-      ids.shift()
-      if (ids.length === 0) return undefined
+    return hasBreak
+  }
+
+  /**
+   * The identifier NODE that names a declaration's type, so a declared-type
+   * reference can carry the line the type is written on (M59.A7 #825).
+   *
+   * Z13 (deep review, 2026-09-28) — this used to walk EVERY `identifier` under
+   * the declaration node, drop the first (assumed to be the declared name) and
+   * take the last. The grammar does not require that guess: it hands the type
+   * over as a FIELD (`parameter.type` 78,895, `container_field.type` 49,424,
+   * `variable_declaration.type` 43,949, `function_declaration.type` 37,129 in
+   * the pinned corpora), and no TYPE node carries a field of that name, so
+   * preferring it can never pick the wrong side of an `!` or a `.*`.
+   *
+   * The walk was wrong wherever a declaration has a DEFAULT VALUE: the value
+   * contributes its own identifiers, and the LAST one won.
+   *   `size: Size = .byte`   published `byte` — an enum member — and never `Size`
+   *   `mode: Mode = .a`      published `a`
+   *   `normal = @sizeOf(u8)` published `u8`
+   * Measured over the three corpora, the sites where the emitted target changes
+   * are dominated by exactly these shapes (`script/m14/tmp/zigw-decltype.ts`).
+   *
+   * With no `type` field the node is an ENUM MEMBER (`container_field` is the
+   * same node type for `a: u8` and for `north` / `normal = 0`; only the former
+   * has a type), and a member's value is not a type — so that case yields
+   * `undefined` rather than falling back to the walk. The walk survives only
+   * where nothing else exists: an already-extracted type node.
+   */
+  private zigTypeLeafNode(node: Node): Node | undefined {
+    const typeField = this.typeFieldOf(node)
+    if (typeField) return this.leafOfTypeNode(typeField)
+    // No `type` field. For a container_field that IS the enum member (the same
+    // node type as a typed field, distinguished only by the field), and for a
+    // value-only `var x = 5` there is no type to name.
+    if (node.type === "container_field") return undefined
+    if (node.type === "variable_declaration") return undefined
+    // A parameter with NO name is a fn-TYPE parameter (`fn (u8) void`,
+    // `fn (MyType) void`): its single child is the type. A NAMED parameter
+    // with no type field is a recovered shape — the grammar has no
+    // default-parameter rule, so `fn f(mode: Mode = .a)` (not valid Zig) puts
+    // the type inside an `assignment_expression` under a `range_expression` —
+    // and there the type is the FIRST identifier after the name, never the
+    // last, because a default value contributes identifiers after it.
+    const nameField = this.namedFieldOf(node, "name")
+    if (!nameField) return this.leafOfTypeNode(node)
+    const stack: Node[] = []
+    for (let i = node.namedChildCount - 1; i >= 0; i--) {
+      const c = node.namedChild(i)
+      if (c && c.id !== nameField.id) stack.push(c)
     }
-    // The LAST identifier after the name is the type leaf.
-    return ids[ids.length - 1]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier") return n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return undefined
+  }
+
+  /** The `name` FIELD of a node, or null. `function_declaration` carries one
+   *  37,126 times in the corpus, `container_field` 104,090, `parameter` 77,594
+   *  (the 1,346 that do not are fn-TYPE parameters, which is what the
+   *  name/no-name split above turns on). */
+  private namedFieldOf(node: Node, field: string): Node | null {
+    if (typeof (node as any).childForFieldName !== "function") return null
+    return (node as any).childForFieldName(field) ?? null
+  }
+
+  /** The name a TYPE NODE carries, or `undefined` when it carries none.
+   *
+   *  - a container literal in a type position is ANONYMOUS (`fn f(s: struct {
+   *    FLAG: u8 }) void`): it has fields, not a name, and the last identifier
+   *    under it is a FIELD name — the shape that published
+   *    `references (declared-type) -> FLAG` for a type that names nothing;
+   *  - `!T` carries its dependency in the `ok` FIELD (21,353 in the corpus).
+   *    The walk took the LAST identifier under the whole node, which is a
+   *    member of the ERROR set: `fn f() error{A}!u32` published `-> A`, a
+   *    phantom, and never `u32` (correctly, as a builtin);
+   *  - an `error_type` is an unnamed set, for the same reason;
+   *  - a `labeled_type_expression` (`const V = blk: { … break :blk v; }`) has
+   *    no statically knowable name at all: its label and its value are both
+   *    identifiers in the tree, and the last one is the VALUE, not a type.
+   */
+  private leafOfTypeNode(t: Node): Node | undefined {
+    if (t.type === "identifier") return t
+    switch (t.type) {
+      case "struct_declaration":
+      case "union_declaration":
+      case "enum_declaration":
+      case "error_set_declaration":
+      case "error_type":
+      case "labeled_type_expression":
+        return undefined
+      case "error_union_type": {
+        const ok = this.namedFieldOf(t, "ok")
+        return ok ? this.leafOfTypeNode(ok) : undefined
+      }
+      default:
+        return this.leafIdentifierUnder(t)
+    }
+  }
+
+  /** The `type` FIELD of a node, or null when the grammar does not name one.
+   *  `childForFieldName` is guarded because a web-tree-sitter build without
+   *  field access would otherwise throw on the first declaration. */
+  private typeFieldOf(node: Node): Node | null {
+    if (typeof (node as any).childForFieldName !== "function") return null
+    return (node as any).childForFieldName("type") ?? null
+  }
+
+  /** The LAST `identifier` at or under `node` — the leaf of a qualified type
+   *  (`std.mem.Allocator` → `Allocator`, `MyList(u32)` → `MyList`), the same
+   *  rule the old walk applied, now scoped to the type. Guarded at 200 nodes,
+   *  which the corpus census shows is far above the deepest real type
+   *  (`parameter.type` trees are a handful of nodes). */
+  private leafIdentifierUnder(node: Node): Node | undefined {
+    if (node.type === "identifier") return node
+    let found: Node | undefined
+    let seen = 0
+    const stack: Node[] = [node]
+    while (stack.length > 0 && seen++ < 200) {
+      const n = stack.pop()!
+      if (n.type === "identifier") found = n
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return found
+  }
+
+  /**
+   * The return-type node of a function, WITHOUT the `type` field — the
+   * fallback for a grammar variant that does not name it. Zig's return type is
+   * the last child that is not the body and not the parameter list; a
+   * `callconv(.C)` between them is not the return type, so the node-type list
+   * that used to sit here is replaced by position.
+   */
+  private zigFallbackReturnType(fn: Node): Node | undefined {
+    const kids = this.getAllNamedChildren(fn)
+    for (let i = kids.length - 1; i >= 0; i--) {
+      const c = kids[i]!
+      if (c.type === "block" || c.type === "parameters" || c.type === "block_expression") continue
+      if (i === 0 && c.type === "identifier") continue
+      if (c.type === "calling_convention") continue
+      return c
+    }
+    return undefined
+  }
+
+  /**
+   * True when `node` is the left-hand side of a WRITE. Zig assignments parse as
+   * `variable_declaration` with the LHS as the first named child, and the
+   * OPERATOR is the discriminator: a plain `=` writes without reading, while
+   * `+=`, `|=`, `*%=` and the rest read their left side as well (Z15).
+   */
+  private isWriteLhs(node: Node): boolean {
+    const p = node.parent
+    if (!p) return false
+    if (p.type !== "variable_declaration" && p.type !== "assignment_expression") return false
+    if (p.namedChildCount > 0 && p.namedChild(0)?.id !== node.id) return false
+    return this.isPlainAssignment(p)
+  }
+
+  /** A plain `=` assignment: the operator is the anonymous token `=`, which is
+   *  a node type of its own, distinct from `+=`/`-=`/`|=`/`<<=` (140 distinct
+   *  anonymous token types in the corpus census). */
+  private isPlainAssignment(node: Node): boolean {
+    return this.hasToken(node, "=")
+  }
+
+  /** A function's body node, read off the grammar's `body` field, falling back
+   *  to a `block` child for a grammar variant that does not name it. */
+  private functionBody(fn: Node): Node | null {
+    if (typeof (fn as any).childForFieldName === "function") {
+      const b = (fn as any).childForFieldName("body")
+      if (b) return b
+      if (fn.namedChildCount > 0) {
+        // A named field that resolved to null is authoritative: this function
+        // has no body, which is the #612 DECLARATION case.
+        return null
+      }
+      return null
+    }
+    return this.anyChild(fn, (c) => c.type === "block")
   }
 
   /**
@@ -1130,19 +1693,6 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   private nodeLine(node: Node | null | undefined): number | undefined {
     if (!node || !node.startPosition || typeof node.startPosition.row !== "number") return undefined
     return node.startPosition.row + 1
-  }
-
-  /**
-   * M59.A7 (#825): a declaration's start is not always the line its NAME is
-   * written on (a wrapped declaration puts the name on the next line), so the
-   * grammar's `name` field is the site when it exists. Mirror of the C and C++
-   * lanes' `nameLine`.
-   */
-  private nameLine(node: Node | null | undefined): number | undefined {
-    if (!node) return undefined
-    const nameField =
-      typeof (node as any).childForFieldName === "function" ? node.childForFieldName("name") : null
-    return this.nodeLine(nameField ?? node)
   }
 
   /** Per-symbol cyclomatic complexity of a function/method body (family
@@ -1230,13 +1780,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private pushChildren(
     node: Node,
-    walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean }[],
+    walkStack: { node: Node; container: ASTEngine.UniversalSymbol | null; inFunction: boolean; anonContainer: boolean }[],
     container: ASTEngine.UniversalSymbol | null,
     inFunction: boolean,
+    anonContainer: boolean,
   ): void {
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const child = node.namedChild(i)
-      if (child) walkStack.push({ node: child, container, inFunction })
+      if (child) walkStack.push({ node: child, container, inFunction, anonContainer })
     }
   }
 

@@ -281,6 +281,127 @@ async function main() {
     webSummary[lang] = { classKind: cls?.kind, methodKind: method?.kind }
   }
 
+  // ── html (M14 #288) ──────────────────────────────────────────────────────
+  // html does NOT go in WEB_EQUIVALENTS: that block asserts a class/method
+  // shape, and html is a TEMPLATE language whose family ruling is the opposite
+  // one — "Template elements/attributes/directives are NEVER symbols"
+  // (real-vue-analyzer.ts:13, real-svelte-analyzer.ts:14). Putting html in a
+  // struct-and-method block would assert a construct it does not have. What it
+  // needs is a block for the invariants that ARE cross-language, and the
+  // analyzer-vs-ORACLE parity that a per-language review cannot see — the same
+  // class the #813/#814 memo argued for.
+  const HTML_SOURCE = [
+    '<!doctype html>',
+    '<html lang="en"><body>',
+    '  <div class="card">class only, not an identity</div>',
+    '  <header id="site-header">',
+    '    <a href="#orders">jump</a>',
+    '    <img id="logo" src="/a.png" alt="a">',
+    '  </header>',
+    '  <main id="app">',
+    '    <form id="search" action="/api/search"><label for="q">Q</label><input id="q" name="q"></form>',
+    '    <section id="orders"></section>',
+    '    <a href="LINKEXT">external</a>',
+    '    <a href="MAILTO">mail</a>',
+    '  </main>',
+    '</body></html>',
+  ].join("\n")
+  const htmlFailures: string[] = []
+  let htmlSummary: Record<string, any> = {}
+  {
+    const grammar = await Language.load(fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-html.wasm")))
+    const parser = new ParserClass()
+    parser.setLanguage(grammar)
+    const mod: any = await import("../../src/ast/real-html-analyzer")
+    const analyzer = new mod.RealHtmlAnalyzer()
+    const r = await analyzer.analyze(parser.parse(HTML_SOURCE).rootNode, HTML_SOURCE, "cc1.html")
+    const symbols = r.symbols ?? []
+    const rels = r.relationships ?? []
+    const byName = new Map<string, any>(symbols.map((s: any) => [String(s.name), s]))
+
+    // 1. Ranges are 1-based, and an element's range spans its whole node. The
+    //    objc/swift 0-based-column defect (#613) is the reason this assertion
+    //    exists for every lane; html was never in a block, so nothing checked it.
+    for (const s of symbols) {
+      const rng = s.range ?? {}
+      if (!(rng.startLine >= 1)) htmlFailures.push(`html/${s.name}: startLine=${rng.startLine} is not 1-based`)
+      if (!(rng.startColumn >= 1)) htmlFailures.push(`html/${s.name}: startColumn=${rng.startColumn} is not 1-based`)
+      if (!(rng.endLine >= (rng.startLine ?? 1))) htmlFailures.push(`html/${s.name}: endLine < startLine`)
+    }
+
+    // 2. HTML-IDENTITY: `class` is a shared styling hook and never an identity;
+    //    `id` is. This is the cross-language assertion — the svelte/vue ruling
+    //    forbids template elements as symbols, and html's ONE legitimate
+    //    exception (an addressable DOM node) must not become a class-derived one.
+    for (const token of ["card", "class only, not an identity"]) {
+      if (byName.has(token)) htmlFailures.push(`html: class value "${token}" became a symbol — class is a shared styling hook, not an identity`)
+    }
+    for (const id of ["site-header", "app", "search", "q", "orders", "logo"]) {
+      if (!byName.has(id)) htmlFailures.push(`html: addressable element #${id} is not a symbol`)
+    }
+
+    // 3. The document is the module and the tree has ONE root. Pre-fix every
+    //    top-level element had ownerName undefined and no edge, so a page with
+    //    N top-level nodes had N disconnected trees.
+    const doc = symbols.find((s: any) => s.kind === "module")
+    if (!doc) htmlFailures.push("html: no document module symbol — the containment tree has no single root")
+    for (const s of symbols) {
+      if (s.kind === "module") continue
+      if (s.ownerName === undefined) htmlFailures.push(`html/${s.name}: no ownerName — a disconnected containment root`)
+    }
+    const roots = symbols.filter((s: any) => s.kind !== "module" && s.ownerName === doc?.name).length
+    if (doc && roots < 2) htmlFailures.push(`html: only ${roots} top-level node(s) owned by the document — the fixture is not exercising document-root containment`)
+
+    // 4. Every relationship carries a 1-based line, and a fragment reference
+    //    resolves to the SYMBOL rather than to the written `#text`. M59.O2: the
+    //    honest absent value is no value, never a fabricated 0.
+    for (const x of rels) {
+      if (typeof x.line_number !== "number") htmlFailures.push(`html: ${x.type} ${x.source}->${x.target} carries no line_number`)
+      else if (x.line_number < 1) htmlFailures.push(`html: ${x.type} ${x.source}->${x.target} line_number=${x.line_number} is not 1-based`)
+    }
+    if (rels.some((x: any) => String(x.target).startsWith("#"))) htmlFailures.push("html: a fragment reference targets the literal '#text' instead of the element it names")
+    if (!rels.some((x: any) => x.type === "uses" && x.target === "orders" && x.metadata?.isInternalAnchor)) {
+      htmlFailures.push("html: <a href=#orders> does not resolve to the #orders element")
+    }
+    if (!rels.some((x: any) => x.type === "uses" && x.target === "q" && x.metadata?.isLabelAssociation)) {
+      htmlFailures.push("html: <label for=q> does not resolve to the #q control")
+    }
+
+    // 5. The scheme contract, cross-checked against the SOURCE: a hyperlink is
+    //    not a code dependency. These two are the only non-fragment hrefs in the
+    //    fixture, and neither may become an edge.
+    for (const [label, text] of [["LINKEXT", "https://example.com/x"], ["MAILTO", "mailto:a@b.c"]] as const) {
+      if (rels.some((x: any) => String(x.target) === text)) htmlFailures.push(`html: ${text} became a graph edge — a hyperlink is not a code dependency`)
+      if (text !== label && !HTML_SOURCE.includes(text) && !HTML_SOURCE.includes(label)) htmlFailures.push(`html: cc1 placeholder ${label} was not substituted`)
+    }
+    if (rels.some((x: any) => x.type === "calls")) htmlFailures.push("html: a `calls` edge exists — a URL is not a callee, and the pre-fix lane's whole call graph was URLs")
+
+    // 6. Analyzer-vs-ORACLE parity, the assertion a per-language review cannot
+    //    make. The oracle is written independently (it does not import the
+    //    analyzer's RESOURCE_RULES, and F9's collusion check treats shared data
+    //    as blindness), so agreement here means the two derivations of the same
+    //    document surface are the same set.
+    let oracleEdges: { label: string; from: string; target: string }[] = []
+    try {
+      const diff: any = await import("../../script/m14/differential.ts")
+      oracleEdges = diff.deriveHtmlEdges(parser.parse(HTML_SOURCE).rootNode, "cc1")
+    } catch (e) {
+      htmlFailures.push(`html: the differential oracle could not be imported (${(e as Error)?.message})`)
+    }
+    const norm = (t: string) => { const i = t.lastIndexOf("/"); return i === -1 ? t : t.slice(i + 1) }
+    for (const te of oracleEdges) {
+      if (!rels.some((x: any) => String(x.type) === te.label && norm(String(x.target)) === norm(te.target))) {
+        htmlFailures.push(`html/oracle: truth row ${te.label} ${te.from} -> ${te.target} is not in the analyzer's output`)
+      }
+    }
+    htmlSummary = {
+      symbols: symbols.length,
+      relationships: rels.length,
+      oracleTruth: oracleEdges.length,
+      documentRoot: doc?.name,
+    }
+  }
+
   // Builtin-set parity (born 2026-09-08, #611 drift finding): the vue and
   // svelte analyzers' HTML_BUILTIN_TAGS and the F5 oracle's ORACLE_HTML_TAGS
   // must be the IDENTICAL set — the pre-fix oracle carried 126 tags vs the
@@ -356,12 +477,19 @@ async function main() {
     process.exit(9)
   }
 
+  if (htmlFailures.length) {
+    console.error("HTML CONSISTENCY FAILED:")
+    for (const f of htmlFailures) console.error("  -", f)
+    process.exit(9)
+  }
+  console.log("  html block:", JSON.stringify(htmlSummary))
+
   if (failures.length) {
     console.error("CONSISTENCY FAILED:")
     for (const f of failures) console.error("  -", f)
     process.exit(9)
   }
-  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " JVM + " + Object.keys(SYSTEMS_EQUIVALENTS).length + " systems + " + Object.keys(OO_EQUIVALENTS).length + " OO + " + Object.keys(WEB_EQUIVALENTS).length + " web languages (+ vue/svelte builtin-set parity)")
+  console.log("cross-language consistency verified across " + Object.keys(EQUIVALENTS).length + " JVM + " + Object.keys(SYSTEMS_EQUIVALENTS).length + " systems + " + Object.keys(OO_EQUIVALENTS).length + " OO + " + Object.keys(WEB_EQUIVALENTS).length + " web languages (+ vue/svelte builtin-set parity, +1 html document/identity/scheme/oracle-parity block)")
 }
 
 main().catch(e => { console.error(e); process.exit(1) })

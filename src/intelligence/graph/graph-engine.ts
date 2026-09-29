@@ -7,7 +7,53 @@ import { deriveCallSiteAddress } from "./line-address"
 
 type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
 
-const DEFAULT_REL_TYPES = ["calls", "instantiates", "extends", "implements"]
+/**
+ * Every value of `ASTEngine.RelationshipType`. This list is the DEFAULT filter,
+ * and it used to be four of them.
+ *
+ * The old default was `["calls","instantiates","extends","implements"]`, and it
+ * was UNDECLARED — the traversal's `reasons` set reported caps and budgets but
+ * not this, so a caller could not tell a filtered answer from a complete one.
+ * That is the same failure the M59.A12 note above already forbids in a different
+ * guise ("a bound is fine; an undeclared bound is not"), and the number is not
+ * small. Measured on 1,200 real Ruby files, 101,017 emitted relationships:
+ *
+ *     calls        73.6%
+ *     contains     10.7%   <- the parent -> member edge
+ *     overrides     5.4%
+ *     uses          5.0%
+ *     references    1.2%
+ *     … 22.2% of every emitted relationship was excluded before the query ran.
+ *
+ * `contains` is the one that does structural damage rather than just thinning:
+ * it is the parent -> member edge, so under the old default a traversal from a
+ * class could not reach that class's own methods.
+ *
+ * It also disagreed with the repository's TWO other graph paths, which both
+ * return everything when no filter is given — `src/ast/graph.ts`
+ * (`relationshipTypes: Object.values(RelationshipType)`) and
+ * `visualization-engine.ts` (`!request.relationshipTypes?.length || …`). Three
+ * paths, three default policies, and two of them disagreed with each other, so
+ * the same question about the same project had two different answers depending
+ * on which tool asked. Aligning on "no filter unless asked" makes all three
+ * agree, and a caller who wants a subset still passes one.
+ *
+ * Kept as a literal rather than imported from `ast/engine` to keep this module
+ * free of an import cycle, and it must be kept in step with the enum — which is
+ * why the value list is spelled out in full instead of a partial subset.
+ */
+const DEFAULT_REL_TYPES = [
+  "calls", "extends", "implements", "uses", "instantiates", "overrides",
+  "contains", "references", "imports", "exports",
+]
+/** Records an ACTIVE caller-supplied type filter in the result's reason set, so a
+ * filtered traversal is never mistaken for a complete one. The default is NOT
+ * recorded: with the default now covering every type, there is nothing to
+ * disclose. */
+function noteRelationshipFilter(note: (reason: string) => void, relTypes: string[]): void {
+  note(`relationshipTypes:${[...relTypes].sort().join("|")}`)
+}
+
 const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
 
@@ -217,6 +263,11 @@ export async function traverseGraph(
   const raw = await BrainDatabase.getRawInstance(projectId)
   const maxDepth = Math.min(options.maxDepth || DEFAULT_MAX_DEPTH, 10)
   const relTypes = options.relationshipTypes?.length ? options.relationshipTypes : DEFAULT_REL_TYPES
+  // DECLARE the filter, whether it is the caller's or the default. Every other
+  // bound this function applies reports itself through `reasons`, and a caller
+  // reading a traversal result has no other way to know that a type was excluded
+  // before the answer was computed.
+  const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
 
@@ -229,6 +280,12 @@ export async function traverseGraph(
     reasons.add(reason)
     truncated = true
   }
+  // An ACTIVE filter is a declared subset, so it goes through `noteReason` rather
+  // than straight into the set. Adding the reason alone would produce
+  // `truncated: false` beside a `truncationReason`, which is worse than either
+  // state on its own: a consumer that reads the boolean gets "complete" and a
+  // consumer that reads the string gets "filtered", and they disagree.
+  if (callerFiltered) noteRelationshipFilter(noteReason, relTypes)
   let maxDepthReached = 0
   let cappedQueries = 0
   let totalCallersIfKnown: number | null = null

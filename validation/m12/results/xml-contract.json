@@ -280,11 +280,15 @@
       "passed": true
     },
     {
-      "name": "xsl:output is published under its method",
+      "name": "xsl:output is published under its WRITTEN name",
       "passed": true
     },
     {
-      "name": "the xsl:output declaration records its attribute",
+      "name": "no symbol is named after an output METHOD value",
+      "passed": true
+    },
+    {
+      "name": "xsl:output's own attributes are owned by xsl:output",
       "passed": true
     },
     {
@@ -367,10 +371,70 @@
     {
       "name": "an empty namespace prefix publishes no edge target",
       "passed": true
+    },
+    {
+      "name": "every declared name came from a NAMING attribute (name/id), never from a value",
+      "passed": true,
+      "detail": "16 declaration(s) across the fixture set, all from name/id"
+    },
+    {
+      "name": "every reference edge declares HOW it resolves, and an external one names the file",
+      "passed": true,
+      "detail": "12 reference edge(s), 2 external"
+    },
+    {
+      "name": "a reference through a spec-bound implicit prefix resolves to its namespace",
+      "passed": true,
+      "detail": "2 implicit-prefix reference(s), all resolved"
+    },
+    {
+      "name": "the fixture set exercises the implicit-prefix rule",
+      "passed": true,
+      "detail": "2 reference(s) through a spec-bound prefix"
+    },
+    {
+      "name": "every merged edge records a TIER for each of its other roles, in step with alsoRoles",
+      "passed": true,
+      "detail": "1 merged edge(s), 1 secondary usage claim(s) now answerable from metadata"
+    },
+    {
+      "name": "the fixture set exercises the merged-edge tier pairing",
+      "passed": true,
+      "detail": "1 merged edge(s), 1 with a usage-claiming secondary role"
+    },
+    {
+      "name": "the fixture set exercises the unresolved resolvability class",
+      "passed": true,
+      "detail": "2 unresolved reference(s) — X13's class must be reachable or it is untested"
+    },
+    {
+      "name": "the fixture set exercises the external resolvability class",
+      "passed": true,
+      "detail": "2 external reference(s) — X7's class must be reachable or it is untested"
+    },
+    {
+      "name": "a UTF-16 document decodes to the same text in LE, LE-without-BOM, and BE",
+      "passed": true,
+      "detail": "3 encodings round-trip"
+    },
+    {
+      "name": "a UTF-16 document indexes its symbols once decoded",
+      "passed": true,
+      "detail": "catalog + 2 entries + 2 id attributes in all three encodings"
+    },
+    {
+      "name": "the same bytes read as UTF-8 do NOT index (so the check above is not vacuous)",
+      "passed": true,
+      "detail": "0 symbols from the misread"
+    },
+    {
+      "name": "the fixture set actually exercises the declared-name rule",
+      "passed": true,
+      "detail": "16 vocabulary declaration(s) found — a rule that can never fire is not a rule"
     }
   ],
   "passed": true,
-  "count": 90,
-  "passedCount": 90,
+  "count": 103,
+  "passedCount": 103,
   "failed": []
 }

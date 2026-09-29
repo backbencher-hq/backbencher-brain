@@ -26,9 +26,20 @@ check("= assignment is a constant", hasSym(build, "CFLAGS", "constant"))
 check("?= assignment is a constant", hasSym(build, "DEBUG", "constant"))
 check("+= assignment is a constant", hasSym(build, "OBJS", "constant"))
 check("!= shell assignment is a constant", hasSym(build, "VERSION", "constant"))
-check("define/endef variable is a constant", hasSym(build, "HELP", "constant"))
+// A `define` is a MACRO, and a macro is callable, so it is a `function`. This
+// check previously asserted `constant`, which made `$(call RUN_TESTS,...)`
+// resolve to a value that cannot be called — a call edge pointing at a constant.
+// Asserting the old kind is how that survived: the probe was never run for this
+// lane, so a check that encoded the bug was indistinguishable from a passing one.
+check("define/endef macro is a FUNCTION (a call target must be callable)", hasSym(build, "HELP", "function"))
+check("define is NOT a constant (the pre-fix shape)", !hasSym(build, "HELP", "constant"))
 check("rule target is a function", hasSym(build, "all", "function"))
-check("variable-reference target is a function", hasSym(build, "$(BIN)", "function"))
+// A target that is an EXPRESSION declares nothing: `$(BIN):` is the VALUE of
+// BIN, and a `function` symbol literally named `$(BIN)` would be a buildable
+// nobody can invoke. The expansion is published as a reference instead, and the
+// check below stops the invented buildable coming back.
+check("computed target declares no symbol", !hasSym(build, "$(BIN)", "function"))
+check("computed target publishes a reference to the variable", rels(build).some((r: any) => (r.target ?? "") === "BIN" && (r.type ?? "") === "references"))
 check("order-only target is a function", hasSym(build, "builddir", "function"))
 check("pattern-rule target is a function", hasSym(lib, "print-%", "function"))
 
@@ -43,14 +54,48 @@ check(".PHONY itself is not a symbol", !hasSym(build, ".PHONY", "function"))
 check("no .PHONY dependency edges", !rels(build).some((r: any) => r.source === ".PHONY"))
 
 // ---- relationships ----
-check("target depends on prereq", hasRel(build, "uses", "main.o", "src/main.c"))
-check("order-only prereq edge", hasRel(build, "uses", "$(BIN)", "builddir"))
-check("recipe variable reference edge", hasRel(build, "uses", "main.o", "CC"))
-check("variable value references another variable", hasRel(lib, "uses", "LIB", "BUILD_DIR"))
+// A prerequisite that is a FILE resolves to nothing in the index, so it is a
+// `uses` edge and says so. Publishing it as a project-internal reference would
+// assert a declaration named `src/main.c` that no line creates.
+check("target depends on prereq (a FILE -> uses, labelled)", rels(build).some((r: any) => r.type === "uses" && r.source === "main.o" && r.target === "src/main.c" && (r.metadata as any)?.evidenceClass === "external_prerequisite"))
+check("file prereq is NOT a references edge", !rels(build).some((r: any) => (r.type ?? "") === "references" && (r.target ?? "") === "src/main.c"))
+// The order-only group. Its SOURCE is the module rather than `$(BIN)`, because
+// `$(BIN)` is an expression and declares no target; the dependency itself is
+// still recorded, which is the part that carries information.
+// `$(BIN): $(OBJS) | builddir` — the rule's target is an EXPRESSION, so it
+// declares no literal name and the old code (which iterated the empty list of
+// literal targets) published NO prerequisite edge for the whole rule. The edge is
+// now recorded against the module. Its LABEL is `references`, not `uses`,
+// because `builddir` is a target this same file declares four lines later — the
+// uses/references split decides that, and asserting `uses` here would have
+// re-encoded the very conflation this lane removed.
+check("order-only prereq edge recorded", rels(build).some((r: any) => (r.target ?? "") === "builddir" && ["uses", "references"].includes((r.type ?? ""))))
+check("a computed-target rule still publishes its prereqs", rels(build).some((r: any) => (r.target ?? "") === "OBJS" && (r.line_number ?? 0) === 22))
+check("the order-only prereq is labelled `references` (builddir is declared here)", rels(build).some((r: any) => (r.target ?? "") === "builddir" && (r.type ?? "") === "references"))
+// A variable THIS FILE DECLARES is a `references` edge. The pre-split shape
+// published every reference as `uses`, which demoted real declarations out of
+// the reference graph; 1,566 corpus edges are `references` now.
+check("recipe variable reference edge is `references` (CC is declared here)", hasRel(build, "references", "main.o", "CC"))
+check("declared variable is NOT demoted to `uses`", !rels(build).some((r: any) => (r.type ?? "") === "uses" && (r.target ?? "") === "CC"))
+check("variable value references another variable", hasRel(lib, "references", "LIB", "BUILD_DIR"))
 check("$(call NAME,...) is a calls edge", hasRel(lib, "calls", "verify", "RUN_TESTS"))
-check("include directive imports config.mk", hasRel(build, "imports", "makefile", "config.mk"))
-check("-include imports optional.mk", hasRel(build, "imports", "makefile", "optional.mk"))
-check("sinclude imports local.mk", hasRel(build, "imports", "makefile", "local.mk"))
+// Includes are sourced at THIS FILE's module node. A constant `makefile` source
+// meant every makefile that includes `config.mk` produced the same edge, so two
+// files could not be told apart in the graph.
+check("include directive imports config.mk", hasRel(build, "imports", "Build.mk", "config.mk"))
+check("-include imports optional.mk", hasRel(build, "imports", "Build.mk", "optional.mk"))
+check("sinclude imports local.mk", hasRel(build, "imports", "Build.mk", "local.mk"))
+check("include edges are NOT sourced at a constant 'makefile'", !rels(build).some((r: any) => (r.type ?? "") === "imports" && (r.source ?? "") === "makefile"))
+
+// ---- the product field: line_number on EVERY relationship ----
+const noLine = rels(build).concat(rels(lib)).filter((r: any) => typeof (r as any).line_number !== "number")
+check("every relationship carries line_number", noLine.length === 0, `${noLine.length} without it`)
+
+// ---- evidence tiers: what makes the `uses` pool readable ----
+const tiers = new Set<string>()
+for (const r of rels(build).concat(rels(lib))) { const t = (r.metadata as any)?.evidenceClass; if (t) tiers.add(t) }
+check("at least 3 distinct evidenceClass tiers are published", tiers.size >= 3, [...tiers].join(","))
+check("an automatic variable is labelled `automatic`, not `builtin`", rels(build).some((r: any) => (r.target ?? "") === "$@" && (r.metadata as any)?.evidenceClass === "automatic"))
 
 // ---- imports array ----
 const imports = (build.imports ?? []).map((i: any) => i.name ?? i.module)
