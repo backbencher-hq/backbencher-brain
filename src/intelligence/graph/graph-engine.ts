@@ -598,7 +598,10 @@ export async function traverseGraph(
 }
 
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
-export async function resolveGraphRoot(projectId: ProjectID, name: string): Promise<SymbolRow | null> {
+export async function resolveGraphRootDetailed(
+  projectId: ProjectID,
+  name: string,
+): Promise<{ root: SymbolRow | null; candidates: number }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
   const base =
@@ -615,8 +618,17 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
   // corpora is not hypothetical: cobra indexes 50 structural symbols all named
   // `code_block.go`.)
   const RANK = " ORDER BY s.gravity_score DESC, s.id ASC LIMIT 1"
+  // The three steps, as data. Which one produced the winning row is carried
+  // with it rather than inferred afterwards, because recounting the wrong
+  // population would describe a step that never ran.
+  const exactStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
+  const exactAnyKind = base + "AND s.name = ?"
+  const fuzzyStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'`
+
   // 1) exact name among the structural kinds the graph can traverse
-  let rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?${RANK}`).all(projectId, name) as SymbolRow[]
+  let predicate = exactStructural
+  let param = name
+  let rows = raw.prepare(exactStructural + RANK).all(projectId, name) as SymbolRow[]
   if (rows.length === 0) {
     // M48.C1 (#699) corpus catch: previously the fallback went STRAIGHT to a
     // fuzzy substring match, so a real exact-name symbol of a non-structural
@@ -624,7 +636,9 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
     // bb_graph and bb_analyze then answered the same query with different
     // roots. Exact-name of ANY kind must win over fuzzy containment.
-    rows = raw.prepare(base + "AND s.name = ?" + RANK).all(projectId, name) as SymbolRow[]
+    rows = raw.prepare(exactAnyKind + RANK).all(projectId, name) as SymbolRow[]
+    predicate = exactAnyKind
+    param = name
   }
   if (rows.length === 0) {
     // 3) documented near-miss fallback: fuzzy containment among structural kinds.
@@ -637,11 +651,17 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     // nobody asked, with nothing in the payload saying so. `likeContains`
     // neutralises the metacharacters by value (not by deleting them from the
     // name) and pins the escape character so SQLite cannot re-interpret it.
-    rows = raw
-      .prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'` + RANK)
-      .all(projectId, likeContains(name)) as SymbolRow[]
+    const pattern = likeContains(name)
+    rows = raw.prepare(fuzzyStructural + RANK).all(projectId, pattern) as SymbolRow[]
+    predicate = fuzzyStructural
+    param = pattern
   }
-  return rows[0] ?? null
+  const root = rows[0] ?? null
+  if (!root) return { root: null, candidates: 0 }
+  // How many stored symbols the winning step had to choose between, counted
+  // with that step's own predicate and parameter.
+  const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(projectId, param) as any
+  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)) }
 }
 
 /**
@@ -659,12 +679,17 @@ export function likeContains(needle: string): string {
   return `%${escaped}%`
 }
 
+/** The single-symbol form, unchanged for existing callers. */
+export async function resolveGraphRoot(projectId: ProjectID, name: string): Promise<SymbolRow | null> {
+  return (await resolveGraphRootDetailed(projectId, name)).root
+}
+
 export async function graphTraversal(
   projectId: ProjectID,
   name: string,
   options: GraphTraversalOptions = {},
 ): Promise<GraphTraversalResult> {
-  const root = await resolveGraphRoot(projectId, name)
+  const { root, candidates } = await resolveGraphRootDetailed(projectId, name)
   if (!root) throw new Error(`Symbol '${name}' not found`)
   const {
     callers,
@@ -689,6 +714,7 @@ export async function graphTraversal(
   const crossLanguageEdges = [...callers, ...callees].filter((e) => e.isCrossLanguage).length
   return {
     root: rootNode,
+    rootCandidates: candidates,
     callers,
     callees,
     nodes,
