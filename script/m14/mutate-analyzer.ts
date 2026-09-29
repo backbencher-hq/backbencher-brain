@@ -10882,6 +10882,49 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: [...(r.symbols ?? []), { name: "NS_ASSUME_NONNULL_END", kind: "variable", range: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }, metadata: { objcSpecific: true } }] }),
   },
   {
+    id: "objc/drop-macro-enum-members",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "M60 enum-wave regression: the `macro_enum_arguments` name resolution is reverted, so an `NS_ENUM`/`NS_OPTIONS` body parses (the grammar rule is unchanged) but the analyzer again cannot name it — both ordinary routes to a name are unavailable for Apple's spelling, because the C path looks for a `type_identifier` CHILD and `typedefName` looks for a trailing alias declarator that `typedef NS_ENUM(T, N) { ... };` does not have. The whole enum branch is skipped: a clean tree with zero errors that the analyzer reads as EMPTY. This is the defect the ERROR count cannot see, which is why the fixture pins SYMBOLS and not error counts — 152 of 164 member constants across 35 declarations were invisible while every error-node metric looked fine. Caught by objc/macro-wrapped-enum-and-guarded",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => {
+        if (s.kind === "enum_member" && /^Guarded(Mode|Trait)/.test(s.name)) return false
+        if (s.kind === "enum" && /^Guarded(Mode|Traits)$/.test(s.name)) return false
+        return true
+      }),
+    }),
+  },
+  {
+    id: "objc/macro-enum-name-from-first-arg",
+    language: "objc",
+    defectClass: "payload-corruption",
+    description: "M60 enum-wave regression, the near-miss the fixture FORBIDS: the macro form's name is taken from the FIRST identifier in its arguments instead of the last. `NS_ENUM(NSUInteger, Foo)` puts the UNDERLYING TYPE first, so every such enum gets named after its underlying type — 35 declarations across the corpus would collide on a handful of names (`NSInteger`, `NSUInteger`) and each enum's members would be owned by the wrong type. The members' `ownerName` pins are what see it: symbol NAMES are all still present, so a name-only check reports this mutant as surviving. Caught by objc/macro-wrapped-enum-and-guarded expectSymbols ownerName + forbidSymbols",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.kind !== "enum" || !/^Guarded(Mode|Traits)$/.test(s.name)) return s
+        const wrong = s.name === "GuardedMode" ? "NSInteger" : "NSUInteger"
+        return {
+          ...s,
+          name: wrong,
+          metadata: { ...(s.metadata ?? {}), isWrongUnderlyingType: true },
+        }
+      }),
+    }),
+  },
+  {
+    id: "objc/drop-guarded-class-properties",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "M60 grammar-wave regression: the whole point of registering `macro_prefixed_objc_declaration` in `_block_item` as well as `_top_level_item`. tree-sitter-c builds a file-scope `preproc_if` body from `_block_item`, so a rule registered only in `_top_level_item` is unreachable inside every conditional, and a bare macro line above an `@interface` inside `#if` falls through to the default reading of a bare identifier — whose ERROR node runs to the next `@end`. Measured on sdwebimage: 101 lines, one class deleted, its properties replaced by phantoms named after the property ATTRIBUTES. The mutant removes the class's properties and their `contains` rows, which is what the swallowed region looked like from the graph's side",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "property" && /^(mode|traits|identifier)$/.test(s.name))),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && /^(mode|traits|identifier)$/.test(x.target))),
+    }),
+  },
+  {
     id: "objc/emit-synthesize-as-bare-read",
     language: "objc",
     defectClass: "relationship-fabrication",
@@ -12470,6 +12513,55 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "M1 regression: restores the implements-only structural override arm — a class EXTENDING an in-file base emits no overrides unless the member carries the optional `override` keyword, so the majority shape (class Sub extends Base { run(){} }) loses the edge the oracle derives as truth; class-extends-overrides pins Sub.run/SubKeyword.run/SubTransitive.run",
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
+  },
+  {
+    id: "typescript/loop-catch-shadow-via-locals",
+    language: "typescript",
+    defectClass: "loss",
+    description: "R13 over-suppression: the loop-variable and catch-binding shadowing is applied through `locals` instead of the reference-only set. It looks like the correct fix \u2014 `locals` is the established place a function-scoped name is recorded \u2014 and it is wrong because `locals` also gates the `uses` edge, and a use of a loop variable or a catch binding is a real use. Over 1200 files the correct fix removes 81 `references` edges and 0 `uses`, while this also removes every `uses` edge to a name the function does not otherwise reference. The graph then under-claims, recording a function as never touching a binding it reads in every loop and every catch block. It is the mistake R12 already made once for parameters, recorded in that commit, and the reason that commit put the test at the `references` guard rather than in `locals`. The transform drops `uses` edges to a DECLARED name that the same source does not already reference or call \u2014 the shape a binding-shadowing suppressor produces when it cannot tell a local binding from a module symbol. Killed ONLY by the `usesCatchBindingInTemplate -> e` expectation: every other mutant in this family is caught by the `references` forbids, so a fix that only ever deletes edges can look correct until this one runs.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const declared = new Set(symbols.map((s: any) => s.name))
+      const bySource = new Map<string, Set<string>>()
+      for (const rel of rels) {
+        const t = String(rel.type)
+        if (t !== "calls" && t !== "references") continue
+        const k = `${rel.source}|${rel.target}`
+        if (!bySource.has(k)) bySource.set(k, new Set())
+        bySource.get(k)!.add(t)
+      }
+      const kept: any[] = []
+      for (const rel of rels) {
+        if (String(rel.type) === "uses" && declared.has(rel.target) && !bySource.has(`${rel.source}|${rel.target}`)) continue
+        kept.push(rel)
+      }
+      return kept.length !== rels.length ? { ...r, relationships: kept } : r
+    },
+  },
+  {
+    id: "typescript/loop-catch-shadow-reference",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R13 regression: a for-of/for-in loop variable and a catch binding stop shadowing a same-named file-level symbol, so a read inside the loop or the catch resolves to the unrelated module declaration \u2014 `references afterLoopStillShadowed -> file` against a module `function file()`, published purely because the loop bound that name a line earlier. Neither binding was reachable through the `variable_declarator` handler that covers `const x = \u2026` inside a function: tree-sitter puts a for-of/for-in loop variable in as a DIRECT child of `for_in_statement` (a for-of head contains no `variable_declarator` node at all), and a catch binding hangs off `catch_clause`. A plain read of a binding emits NOTHING in the result, so an AST-free transform cannot reach that region directly; the transform works from the observable proxy instead \u2014 every `calls`/`uses` edge to a declared name is a read of a name the analyzer resolved by NAME, which is exactly the resolution the pre-fix code got wrong. It re-adds the `references` edge for each. Genuine calls already carry a `references` edge and are skipped, so the mutation lands only where a binding shadowed a declaration. Caught by loop-and-catch-shadow-file-symbol.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const declared = new Set(symbols.map((s: any) => s.name))
+      const seen = new Set(rels.filter((x: any) => String(x.type) === "references").map((x: any) => `${x.source}|${x.target}`))
+      const extra: any[] = []
+      for (const rel of rels) {
+        const t = String(rel.type)
+        if (t !== "calls" && t !== "uses") continue
+        if (!declared.has(rel.target)) continue
+        if (rel.source === rel.target) continue
+        const k = `${rel.source}|${rel.target}`
+        if (seen.has(k)) continue
+        seen.add(k)
+        extra.push({ source: rel.source, target: rel.target, type: "references", confidence: 1.0, metadata: {} })
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
   },
   {
     id: "typescript/parameter-shadow-reference",
