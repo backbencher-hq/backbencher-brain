@@ -18117,13 +18117,6 @@ async function main() {
         // already-gated language -- it can only remove duplicate fabrication.
         .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
 
-      if (process.env.BB_LABEL_DUMP === lang) {
-        const tc: Record<string, number> = {}; for (const te of truth) tc[te.label] = (tc[te.label] ?? 0) + 1
-        const ac: Record<string, number> = {}; for (const r of rels) ac[r.label] = (ac[r.label] ?? 0) + 1
-        const ta = (globalThis as any).__TD ??= {}, aa = (globalThis as any).__AD ??= {}
-        for (const [k, v] of Object.entries(tc)) ta[k] = (ta[k] ?? 0) + v
-        for (const [k, v] of Object.entries(ac)) aa[k] = (aa[k] ?? 0) + v
-      }
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
@@ -18290,12 +18283,6 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
-    if (process.env.BB_LABEL_DUMP === lang) {
-      const ta = (globalThis as any).__TD ?? {}, aa = (globalThis as any).__AD ?? {}
-      const keys = [...new Set([...Object.keys(ta), ...Object.keys(aa)])].sort()
-      console.log(`\n[label-dump] ${lang} truth-vs-comparable per label:`)
-      for (const k of keys) console.log(`[label-dump]   ${k.padEnd(14)} truth=${String(ta[k] ?? 0).padStart(5)}  analyzer=${String(aa[k] ?? 0).padStart(5)}`)
-    }
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
     // were captured for exactly this purpose and then had no output path —
