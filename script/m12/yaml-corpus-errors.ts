@@ -59,6 +59,8 @@ const crashes: { file: string; error: string }[] = []
 let trackedFiles = 0, filesScanned = 0, errorNodes = 0
 let symbols = 0, relationships = 0, imports = 0
 let importsWithLine = 0, importsWithRealLine = 0
+let importsWithRealType = 0, genericImportTypes = 0
+const importTypeMismatch: string[] = []
 const importLinesMissing: string[] = []
 let duplicateIdFiles = 0, duplicateIds = 0
 let relWithLine = 0, relWithEvidence = 0, unknownSentinels = 0
@@ -114,6 +116,25 @@ for (const target of targets) {
       importsWithLine++
       if (typeof (imp as any).line === "number" && (imp as any).line >= 1) importsWithRealLine++
       else importLinesMissing.push(`${path.relative(target.dir, file)} :: ${(imp as any).path ?? (imp as any).module ?? "?"} line=${JSON.stringify((imp as any).line)}`)
+    }
+    // The import row must carry the SAME classification the relationship does. This is the
+    // sharp version of the line check: for years every import in every language read
+    // `type: "named"` — the JS/TS idiom — so a PROJECT file dependency
+    // (`include_tasks: tasks.yml`) and an EXTERNAL tool invocation
+    // (`uses: actions/checkout@v4`) were indistinguishable in the row the
+    // file-dependency engine reads, while the relationships always knew the difference.
+    // Asserting row-type == relationshipType makes any future flattening loud here rather
+    // than discovered by a consumer.
+    const importRels = (parsed.relationships ?? []).filter((r: any) => r.type === "imports")
+    const relKinds = new Set<string>(importRels.map((r: any) => String(r.metadata?.relationshipType ?? "")))
+    for (const imp of imps) {
+      const t = String((imp as any).type ?? "")
+      if (!t || t === "named" || t === "default" || t === "namespace" || t === "alias") {
+        genericImportTypes++
+        continue
+      }
+      if (relKinds.has(t)) importsWithRealType++
+      else importTypeMismatch.push(`${path.relative(target.dir, file)} :: row type ${t} has no relationship of that kind (${[...relKinds].join("|")})`)
     }
 
     // IDENTITY AT THE PRODUCTION ENTRY. `poolWorker.parseFile` reshapes a symbol into
@@ -214,6 +235,13 @@ const invariants = {
   importsWithLine: `${importsWithRealLine}/${importsWithLine}`,
   importsMissingLine: importLinesMissing.length,
   importsMissingLineSamples: importLinesMissing.slice(0, 8),
+  // import rows whose type is this lane's own classification AND matches a relationship of
+  // that kind. `generic` counts rows still carrying the JS/TS idiom, which is correct for a
+  // language with no importType and a defect for this one.
+  importsWithSpecificType: `${importsWithRealType}/${importsWithLine - genericImportTypes}`,
+  importsWithGenericType: genericImportTypes,
+  importTypeMismatches: importTypeMismatch.length,
+  importTypeMismatchSamples: importTypeMismatch.slice(0, 8),
   imports,
   symbolsWithApiContractPathAtWorkerBoundary: withApiContract,
   seamFindings: [
