@@ -7526,6 +7526,100 @@ export const MUTANTS: Mutant[] = [
     defectClass: "symbol-loss",
     description: "drops annotation_type_declaration symbols (#419 groovy G7 bug class)",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => (s.metadata ?? {}).nodeType !== "annotation_type_declaration") }),
+  // ═══ GO38 (round 6) ═══════════════════════════════════════════════════
+  {
+    id: "go/local-type-declaration-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GO38 regression: a type declared INSIDE A FUNCTION BODY stops being published — the symbol, its member symbols and its `contains` edges all go. LocalsAreNotSymbols (C# M12.07 / Swift M12.21) excludes a function-local var/const, and the family's stated exception is nim's own: 'THE ONE EXCEPTION IS AN OBJECT/ENUM/FIELD DECLARATION, WHICH IS A SYMBOL BECAUSE THE OBJECT OWNS IT.' The pre-fix walk `continue`d on every function and method, so it never reached a local type. The silence was not neutral — `extractDeclaredTypeRefs` already walks bodies and already attributed a local type's field types to that type, so the lane published `references Local -> Host` whose SOURCE named no symbol at all. Found by the round-6 `contains` truth, which derives membership from the DECLARATION side and therefore reports an unpublished type as MISSING instead of being invisible on both sides (22 memberships in 200 go-tools files). Reconstructed from the output: a struct symbol whose range falls inside a function symbol's range is a function-local type, so it and its members and its contains edges are removed. Caught by go/local-type-declaration, which also FORBIDS publishing the function-local var/const — the other half of the same contract, without which this mutant's opposite would pass too.",
+    transform: r => {
+      const fnRanges = (r.symbols ?? [])
+        .filter((s: any) => String(s.kind) === "function" && s.range && typeof s.range.startIndex === "number")
+        .map((s: any) => [s.range.startIndex, s.range.endIndex] as [number, number])
+      if (fnRanges.length === 0) return r
+      const inside = (s: any): boolean =>
+        typeof s.range?.startIndex === "number" &&
+        fnRanges.some(([a, b]) => s.range.startIndex >= a && (s.range.endIndex ?? s.range.startIndex) <= b)
+      const localTypes = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => String(s.kind) === "struct" && inside(s))
+          .map((s: any) => String(s.name)),
+      )
+      if (localTypes.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter(
+          (s: any) => !(String(s.kind) === "struct" && localTypes.has(String(s.name)) && !s.ownerName),
+        ),
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const rel = normRel(x)
+          if (rel.type === "contains") return !localTypes.has(rel.source)
+          // The declared-type pass named the local type, so its references went
+          // with the rest of the subgraph — the pre-fix world had no such source.
+          if (rel.type === "references") return !localTypes.has(rel.source)
+          return true
+        }),
+      }
+    },
+  },
+  // ═══ GO36 (round 6) ═══════════════════════════════════════════════════
+  // The `references` truth went into the harness this round, so the F5 label
+  // count for go now covers 127,061 `references` edges that were previously
+  // outside the comparison. It cannot see THIS class on its own — the harness
+  // matcher compares `label + normTarget(target)` and IGNORES the edge's source
+  // (differential.ts:15634) — so the source attribution is pinned here and by
+  // the fixture, and this mutant is the regression guard.
+  {
+    id: "go/alias-field-type-to-global",
+    language: "go",
+    defectClass: "dangling-edge",
+    description:
+      "GO36 regression: a type ALIAS's field types attribute to the `global` pseudo-source again. `resolveSource` recognised `type_spec` only, so `type Alias = struct{ Q Inner }` found no enclosing declaration and emitted `global -> Inner` — an edge no consumer can navigate back from, since `global` names nothing. This is the second half of GO31a (which taught the embedding pass to accept `type_alias` and left the declared-type resolver behind), found by the round-6 `references` truth: 16 MISSING + 16 UNEXPLAINED rows over go-tools's 1,931 files. Reconstructed from the output: an edge whose source is a type ALIAS struct that owns members is re-sourced to `global`. Caught by go/round5-surfaces, which expects `references Alias -> Holder` and forbids the `global` spelling for BOTH alias-owned targets (the embedded `Inner` and the named `Holder`, the latter added because the lane's per-set convention would otherwise let the embedded field's edge satisfy the pin on its own).",
+    transform: r => {
+      // A type alias is a struct symbol carrying isTypeAlias, and it owns
+      // members — so the pair (alias name, owned member) is derivable from the
+      // output alone, which is what makes this class reconstructible.
+      const aliasStructs = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => (s.metadata as any)?.isTypeAlias && String(s.kind) === "struct")
+          .map((s: any) => String(s.name)),
+      )
+      if (aliasStructs.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const rel = normRel(x)
+          const rt = (x.metadata ?? {}).relationshipType
+          if (rel.type !== "references") return x
+          if (rt !== "declared_type" && rt !== "return_type") return x
+          return aliasStructs.has(rel.source) ? { ...x, source: "global" } : x
+        }),
+      }
+    },
+  },
+  // ═══ GOD9 (round 6) ══════════════════════════════════════════════════
+  // Found by the round-6 `uses` truth, and NOT by the F5 lane before the truth
+  // was written independently: the two corpus rows it cost were being reported
+  // as agreement, because the truth had been written to mirror the drop.
+  {
+    id: "go/closure-channel-read-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GOD9 regression: the channel-op pass gates on `containingFunction &&`, and findContainingGoFunction returns undefined for a FUNC LITERAL, so every channel read inside a package-scope closure is DISCARDED. Reconstructed from the output by dropping the `uses` edges whose source is `global` and whose marker is go_channel_operation — that is exactly the set the pre-fix truthiness gate could not produce, and `global` is only ever a channel-op source through the fallback. This mutant is also the reason the god8/god9 channel rule is worth pinning: the analyzer contradicted ITSELF here, publishing the same physical read through the selector/identifier passes as `global -> c` while the channel pass threw it away. Caught by go/closure-channel-read, whose FORBID rows (`local`, `l`, `ch`, a call-result receive, and a `for range` over a channel) mean the mutant's opposite — a pass that published every operand — would not pass this fixture either.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        const rel = normRel(x)
+        return !(
+          rel.type === "uses" &&
+          rel.source === "global" &&
+          String((x as any)?.metadata?.relationshipType ?? "") === "go_channel_operation"
+        )
+      }),
+    }),
+  },
   },
   {
     id: "groovy/drop-import-edges",

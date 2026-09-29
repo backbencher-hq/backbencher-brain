@@ -293,6 +293,82 @@ review rather than rounded away.
 | `go-round5-perf-implements.ts` | §9's scaling check on the shape the implements cost lives in; pre/post interleaved, so the ratio is load-independent |
 | `go-round5-fixture-dump.ts` | the emission in expectation-file shape, so a pin is derived from a probe and never from theory |
 
+## Round 6 (2026-09-29): the three labels nobody was reading
+
+Rounds 1-5 measured five labels, because that is all the harness offered go:
+
+```
+extends, implements, instantiates, overrides, calls
+```
+
+`uses`, `references` and `contains` were **excluded** — not clean, not dirty, unmeasured, which is
+the state easiest to mistake for either. Round 6 built an independent derivation for each, admitted
+the label to go's compared set, and read all three at full extent over five corpora / 6,825 files.
+
+| label | truth rows | MISSING | UNEXPLAINED |
+| --- | ---: | ---: | ---: |
+| `references` | 127,061 | 0 | 0 |
+| `contains` | 67,751 | 0 | 0 |
+| `uses` | 154,656 | 0 | 4 |
+
+The differential now audits **8 labels** for go and reads 100% / 0 MISSING / 0 UNEXPLAINED on both
+pinned corpora at `--sample 200`.
+
+### Defects fixed and pinned
+
+| id | surface | what was wrong |
+| --- | --- | --- |
+| GO36 | `references` | `resolveSource` matched only `type_spec`, so a `type_alias` field's type was attributed to `global` — an edge whose source named nothing |
+| GO38 | `contains` | the symbol walk `continue`d on every function, so a **local type** published no symbol — while the declared-type pass, which walks the whole tree, still named it. Same dangling source, opposite side |
+| GOD9 | `uses` | the channel pass required a *named* containing function, so a channel read inside a **func literal** was discarded while the read passes published the same read as `global -> c` |
+
+GO37 is a **ruling, not a fix**: a `parameter_declaration` inside a `function_type` describes a type,
+not a result, so it is not a `return_type`. Pinned as controls S11/S14.
+
+GOD9 is the one the differential could not have found, because the truth was originally written to
+mirror the defect. A derivation that copies a defect reports agreement forever. The fix is one token
+(`?? "global"`), and the negative control is exact: reverting it restores **precisely** the 2 MISSING
+rows at lines 1611/1621 of `go/analysis/passes/unreachable/testdata/src/a/a.go` that the finding
+predicted.
+
+### Two corrections where the ORACLE was wrong
+
+- **Channels are not a type question.** Gating the truth on a literal `channel_type` missed named and
+  inferred channel declarations (`type Buffer chan int`, `var jobs = make(chan int)` — 9 in go-tools)
+  and read 29 UNEXPLAINED. The **binding** decides: a send/receive operand in compilable Go is always
+  a channel.
+- **A 200-file draw hid the class.** The 3,370-row probe read 0/0; sorted order put the declarations
+  past the cut. Full extent found it in seconds.
+
+### A harness defect that made the lane look broken
+
+Wiring `uses` in first read **3,208 MISSING on 200 files**. The cause is documented in
+`differential.ts` at the allowlist, by a lane that hit it first: a `//` comment on the physical line
+carrying a long expression runs to end of line and silently deletes the rest of it. The GO36 comment
+had swallowed the `uses` entry, so the truth grew and the allowlist did not. It has now bitten two
+lanes and the file predicts it; the entry sits on its own line.
+
+### Line audit (new — lines had never been gated)
+
+The F5 matcher reads no line (`differential.ts:15634`), so a wrong `line_number` on a correct edge was
+invisible to every gate. `go-round6-line-oracle.ts` checks a **site invariant** from the parse, and
+deliberately does not re-implement the analyzer's walk order. **97,185 edges over 5 corpora: 0 missing
+lines, 0 site mismatches.**
+
+Disclosed rather than passed: the published line is not always the first site in source order (24,242
+selector, 3,893 identifier rows) — the analyzer dedupes per `(source, target)` and keeps whichever site
+its walk reaches first. That is a measured property, not a claim.
+
+### Round 6's own limits
+
+- **4 EXTRA rows** (0.0026%), all in `testdata/` mutation fixtures — the analyzer is a strict
+  superset, so no read is hidden. Recorded as `GO-GAP-2` with exact file and line.
+- **Shadowing is resolved by name**: a local `c` shadowing a package `c` is attributed to the package
+  symbol. Shared with the read passes; not changed mid-round on one label.
+- **`imports` is still out.** Three labels were admitted; `imports` was not.
+- **prometheus, grpc-go and etcd are measured but not gate-pinned** — the differential still maps go
+  to go-tools + terraform, so those 2,901 files are evidence, not a gate.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`

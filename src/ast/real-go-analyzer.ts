@@ -536,8 +536,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       let p: Node | null = start.type === "field_declaration" ? start : start.parent
       let sawTypeSpec = false
       while (p) {
-        // Struct fields attribute to the enclosing named struct/interface.
-        if (!sawTypeSpec && p.type === "type_spec") {
+        // Struct fields attribute to the enclosing named struct/interface —
+        // and `type_alias` counts, because `type Alias = struct{ Q Inner }` is
+        // a type declaration that declares `Alias` (GO36). The pre-fix test read
+        // `type_spec` only, so an alias's field types had no enclosing
+        // declaration to attribute to and fell through to `global`:
+        //
+        //   type Inner struct{ Q int }
+        //   type Plain  struct{ Q Inner }   ->  Plain->Inner  (correct)
+        //   type Alias  = struct{ Q Inner }  ->  global->Inner  (defect)
+        //
+        // `global` is a pseudo-source, so the edge was unattributable: it says
+        // "something in this file uses Inner" with no way to navigate back to the
+        // declaration that wanted it. This is the SAME class round 5 fixed for
+        // the `extends` edge (GO31a, which taught the embedding pass to accept
+        // `type_alias`); the declared-type source attribution was the second half
+        // of that fix and was missed. Found by the round-6 `references` truth
+        // (`go-round6-references-shapes.ts` case S10), which is the first oracle
+        // that can see this surface at all.
+        if (!sawTypeSpec && (p.type === "type_spec" || p.type === "type_alias")) {
           for (let i = 0; i < p.namedChildCount; i++) {
             const c = p.namedChild(i)
             if (c && c.type === "type_identifier") return c.text
@@ -649,9 +666,33 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * PHASE 1: Extract Go symbols with proper Go semantics understanding
    */
   private extractGoSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
-    // Package-scope declarations only. Function-local vars/consts/types are
-    // NOT symbols (C# M12.07 LocalsAreNotSymbols / Swift M12.21 negative
-    // contract) — the walk stops at function/method bodies.
+    // LocalsAreNotSymbols (C# M12.07 / Swift M12.21), with ONE exception, and
+    // the exception is the family's, not this lane's: nim's own analyzer states
+    // it in its header — "Parameters, generic parameters, concept parameters,
+    // function-local `let`/`var`/`const`, anonymous routines … are execution
+    // artifacts. THE ONE EXCEPTION IS AN OBJECT/ENUM/FIELD DECLARATION, WHICH IS
+    // A SYMBOL BECAUSE THE OBJECT OWNS IT."
+    //
+    // GO38 (round 6): so a function-local VAR or CONST is not a symbol, and a
+    // function-local TYPE is. The pre-fix walk `continue`d on every function and
+    // method, so it never reached a local `type` declaration at all — the type,
+    // its fields, and its `contains` edges were all absent. That is not a
+    // neutral silence. The declared-type pass (extractDeclaredTypeRefs) DOES
+    // walk function bodies and DOES attribute a local type's field types to
+    // that type, so the lane was already publishing
+    //
+    //     references Local -> Host          where `Local` is NOT a symbol
+    //
+    // — a relationship whose SOURCE names nothing. The graph referred to a type
+    // its own symbol table had never heard of. Found by the round-6 `contains`
+    // truth, which derives membership from the DECLARATION side of the tree
+    // (so a type the analyzer never published is a MISSING row rather than
+    // invisible on both sides); 22 such memberships in 200 go-tools files, 0.07%
+    // of the surface — the class a 60-file draw cannot see.
+    //
+    // So the walk descends into bodies, and `inFunction` gates WHICH
+    // declarations are published: types yes, vars and consts no. That is the
+    // contract stated exactly, and each half was already implemented.
     //
     // GO26 (round 5): the `parentStruct` parameter and the `parent` frame this
     // stack carried are removed. The single call site passed three arguments,
@@ -671,11 +712,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       switch (current.type) {
         case "function_declaration":
           this.extractGoFunction(current, symbols)
-          // Do NOT descend into the body: locals are not symbols.
-          continue
+          // DESCEND, for a local TYPE declaration only (GO38). A local var/const
+          // is gated below by `inFunction` and stays out of the symbol set.
+          break
         case "method_declaration":
           this.extractGoMethod(current, symbols)
-          continue
+          break
         case "type_declaration":
           this.extractGoTypeDeclaration(current, symbols)
           break
@@ -688,7 +730,16 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
       }
 
-      const nextInFunction = inFunction || current.type === "block"
+      // Entering a function body. `block` is the usual body node, but a
+      // one-statement body and a `func_literal`'s own children are not blocks,
+      // so the FUNCTION NODES themselves set the flag — otherwise a local
+      // `var` in a body the grammar shaped differently would publish.
+      const nextInFunction =
+        inFunction ||
+        current.type === "block" ||
+        current.type === "function_declaration" ||
+        current.type === "method_declaration" ||
+        current.type === "func_literal"
       for (let i = current.namedChildCount - 1; i >= 0; i--) {
         const child = current.namedChild(i)
         if (child) stack.push({ node: child, inFunction: nextInFunction })
@@ -2600,8 +2651,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // sends on one channel collapse to one row.
       if (node.type === "send_statement" || node.type === "receive_statement" || this.isGoReceiveExpression(node)) {
         const channelVar = this.extractGoChannelVariable(node)
-        const containingFunction = this.findContainingGoFunction(node)
-        if (channelVar && containingFunction && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
+        // GOD9 (M37 #604, round 6): the gate used to be
+        // `channelVar && containingFunction && ...`, and `containingFunction` is
+        // undefined for a FUNC LITERAL — so a channel read inside a closure was
+        // DROPPED by this pass while the selector/identifier read passes
+        // published the same physical read as `global -> <target>`. The lane
+        // disagreed with ITSELF on one read: `uses` coverage was 100% only
+        // because the truth was written to mirror the drop. The two corpus
+        // rows it cost are `var _ = func() int { ... case <-c: ... }` in
+        // go/analysis/passes/unreachable/testdata/src/a/a.go (lines 1611 and
+        // 1621), where `c` is a package var and the read is unambiguous. The
+        // fix is the `global` fallback the read passes already use, not a new
+        // naming scheme: `findContainingGoFunction` returns undefined only when
+        // the read is at file scope, and file scope is what the read passes
+        // call `global`.
+        const containingFunction = this.findContainingGoFunction(node) ?? "global"
+        if (channelVar && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
           const isSend = node.type === "send_statement"
           const key = `${containingFunction}->${channelVar.name}->${isSend ? "send" : "receive"}`
           if (!emittedChannelUses.has(key)) {

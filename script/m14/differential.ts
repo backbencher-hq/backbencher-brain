@@ -3951,6 +3951,533 @@ export function deriveGoDeclaredTypeRefs(root: any): { label: string; from: stri
 // nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
 // so the oracle's implicit-new target matches the analyzer's instantiates
 // target byte-for-byte before normTarget reduction.
+export function deriveGoContains(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const emitted = new Set<string>()
+  const add = (owner: string, member: string) => {
+    if (!owner || !member) return
+    if (owner === member) return // C4 / GO33
+    const key = `${owner}|${member}`
+    if (emitted.has(key)) return // C5
+    emitted.add(key)
+    out.push({ label: "contains", from: owner, target: member })
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "type_spec" || n.type === "type_alias") {
+      const owner = n.childForFieldName?.("name")?.text
+      if (owner) {
+        const o = String(owner)
+        const structN = (n.namedChildren ?? []).find((c: any) => c.type === "struct_type")
+        if (structN) {
+          const list = (structN.namedChildren ?? []).find((c: any) => c.type === "field_declaration_list")
+          for (let i = 0; list && i < list.namedChildCount; i++) {
+            const fd = list.namedChild(i)
+            if (!fd || fd.type !== "field_declaration") continue
+            const names = (fd.namedChildren ?? []).filter(
+              (c: any) => c.type === "field_identifier" || c.type === "identifier",
+            )
+            if (names.length > 0) {
+              for (const nm of names) {
+                const t = String(nm.text ?? "")
+                if (t && t !== "_") add(o, t) // C1
+              }
+              continue
+            }
+            const tn = fd.childForFieldName?.("type")
+            const leaf = tn ? goEmbeddedFieldLeaf(tn) : undefined
+            if (leaf) add(o, leaf)
+          }
+        }
+        const ifaceN = (n.namedChildren ?? []).find((c: any) => c.type === "interface_type")
+        if (ifaceN) {
+          for (let i = 0; i < ifaceN.namedChildCount; i++) {
+            const m = ifaceN.namedChild(i)
+            if (!m) continue
+            if (m.type === "method_spec") {
+              const nm = m.childForFieldName?.("name")?.text
+              if (nm) add(o, String(nm))
+              continue
+            }
+            if (m.type === "constraint_elem") { // C2
+              const inner = m.namedChildCount > 0 ? m.namedChild(0) : undefined
+              if (!inner) continue
+              if (inner.type !== "type_identifier" && inner.type !== "qualified_type") continue
+              const raw = String(inner.text ?? "")
+              const dot = raw.lastIndexOf(".")
+              const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+              if (leaf && GO_PLAIN_IDENTIFIER.test(leaf)) add(o, leaf)
+            }
+          }
+        }
+      }
+    }
+    if (n.type === "method_declaration") { // C3
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "parameter_list") {
+            const recv = c.namedChildCount > 0 ? c.namedChild(0) : undefined
+            const tn = recv?.childForFieldName?.("type")
+            let t = tn ? String(tn.text ?? "") : ""
+            if (t.startsWith("*")) t = t.slice(1)
+            const lt = t.indexOf("[")
+            if (lt > 0) t = t.slice(0, lt)
+            if (t) add(t, String(nm))
+            break
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+// GO39 (round 6): the `uses` second-opinion oracle — the lane's READ surface,
+// and the last label with no oracle.
+//
+// `uses` was the biggest remaining hole: 79,584 edges across the three new
+// corpora, 85% of them one rule. It has THREE sub-surfaces, measured separately
+// so a red row is attributable, and the derivation is written from Go's scoping
+// semantics and the grammar's FIELDS — not from the analyzer's predicates, which
+// keep a flow-ordered lexical scope stack and apply ten exclusion tests. An
+// oracle built from those predicates would be the analyzer's own logic run
+// twice, which is the C5 collusion pattern and proves nothing.
+//
+//   go_selector_use      a field ACCESS, `s.cfg` -> the field leaf `cfg`.
+//                        Excluded: a selector that is a call's callee (the
+//                        calls edge owns it), a WRITE position, and a channel
+//                        send/receive operand (the channel edge owns it, so a
+//                        member channel gets one row and not two).
+//   identifier_usage     a bare VALUE read of a package-scope var/const/func.
+//                        A type name in value position is a CONVERSION and a
+//                        method name in value position is a method VALUE; Go
+//                        requires a receiver for the second and the first is a
+//                        construction, so neither is in the resolvable set.
+//                        Shadowing is an ORDERED scope: a binding takes effect
+//                        from its position onward, which is a fact about the
+//                        source rather than a rule choice.
+//   go_channel_operation  a send/receive on a channel, named by the channel's
+//                        declared leaf, with a direction. Only a declared
+//                        PACKAGE-SCOPE channel or a member selector qualifies —
+//                        a local or a parameter is an execution artifact
+//                        (LocalsAreNotSymbols).
+//
+// A shared `inErrorRegion` rule: a subtree the grammar could not parse is its
+// record of an incomplete read, not source to read a value out of. The lane
+// already applies that to construction and call edges (GO15/GO17); `uses` had
+// no such guard, which is worth stating because the go-799 #914 review found
+// real call edges recovered out of an ERROR region on the ANALYZER side.
+//
+// MEASURED at full extent on all five corpora before the pairing (this is the
+// number that decides whether the label can join the compared set at all):
+// `go_selector_use` and `identifier_usage` at 0 MISSING / 0 UNEXPLAINED, with
+// two independently shaped derivations agreeing exactly.
+const goInErrorRegion = (n: any): boolean => {
+  for (let p = n.parent; p; p = p.parent) {
+    if (p.type === "ERROR" || p.isMissing) return true
+  }
+  return false
+}
+
+const goEnclosingFunction = (node: any): string => {
+  for (let n = node.parent, guard = 0; n && guard < 128; guard++, n = n.parent) {
+    if (n.type === "function_declaration" || n.type === "method_declaration") {
+      return String(n.childForFieldName?.("name")?.text ?? "global")
+    }
+  }
+  return "global"
+}
+
+export function deriveGoUses(root: any): { label: string; from: string; target: string; rt: string; direction?: string }[] {
+  // ---- the resolvable set: PACKAGE-SCOPE VALUES only. A function-LOCAL `var`
+  // cannot make a name resolvable, and a type or method name is not a value.
+  const resolvable = new Set<string>()
+  // PACKAGE-scope var/const names — the channel-op resolvability contract. It is
+  // deliberately NOT the channel-typed subset: a send/receive operand in
+  // compilable Go is always a channel, so the BINDING decides, and a named
+  // channel type (`type Buffer chan int; var b Buffer`) or an inferred one
+  // (`var jobs = make(chan int)`) is still a package var. Requiring a literal
+  // channel_type reported 29 UNEXPLAINED rows on go-tools, every sample one of
+  // those two shapes. Measured across 5 corpora / 6,825 files the corrected rule
+  // gives 154,656 truth rows with 0 MISSING and 4 EXTRA.
+  const packageVars = new Set<string>()
+  const insideAFunction = (n: any): boolean => {
+    for (let p = n.parent; p; p = p.parent) {
+      if (p.type === "function_declaration" || p.type === "method_declaration" || p.type === "func_literal") return true
+    }
+    return false
+  }
+  const scanResolvable = (n: any): void => {
+    if ((n.type === "var_spec" || n.type === "const_spec") && !insideAFunction(n)) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") {
+          resolvable.add(String(c.text ?? ""))
+          packageVars.add(String(c.text ?? ""))
+        }
+      }
+    } else if (n.type === "function_declaration") {
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) resolvable.add(String(nm))
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) scanResolvable(c)
+    }
+  }
+  scanResolvable(root)
+
+  const out: { label: string; from: string; target: string; rt: string; direction?: string }[] = []
+  const seenSelector = new Set<string>()
+  const seenBare = new Set<string>()
+  const seenChannel = new Set<string>()
+
+  // ---- sub-surface 1: go_selector_use
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "selector_expression") {
+        const field = n.childForFieldName?.("field")
+        const p = n.parent
+        const isCallee = p?.type === "call_expression" && p.childForFieldName?.("function")?.id === n.id
+        const isWrite =
+          p?.type === "inc_statement" || p?.type === "dec_statement" ||
+          (p?.type === "expression_list" && p.parent?.type === "assignment_statement" &&
+            p.parent.namedChild(0)?.id === p.id)
+        const isChannelOperand =
+          p?.type === "send_statement" || p?.type === "communication_case" ||
+          (p?.type === "unary_expression" && p.child(0)?.type === "<-") ||
+          (p?.type === "receive_statement" && p.parent?.type === "communication_case")
+        if (field && !isCallee && !isWrite && !isChannelOperand && !goInErrorRegion(n)) {
+          const src = goEnclosingFunction(n)
+          const tgt = String(field.text ?? "")
+          const key = `${src}|${tgt}`
+          if (tgt && !seenSelector.has(key)) {
+            seenSelector.add(key)
+            out.push({ label: "uses", from: src, target: tgt, rt: "go_selector_use" })
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  // ---- sub-surface 3: go_channel_operation
+  {
+    const operandOf = (n: any): any => {
+      if (n.type === "send_statement") {
+        const c = n.childForFieldName?.("channel")
+        return c && (c.type === "identifier" || c.type === "selector_expression") ? c : undefined
+      }
+      const direct = n.childForFieldName?.("operand") ?? (n.namedChildCount > 0 ? n.namedChild(0) : undefined)
+      const unwrapped =
+        direct && (direct.type === "unary_expression" || direct.type === "receive_statement")
+          ? (direct.namedChildCount > 0 ? direct.namedChild(0) : undefined)
+          : direct
+      return unwrapped && (unwrapped.type === "identifier" || unwrapped.type === "selector_expression") ? unwrapped : undefined
+    }
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const isRecvExpr = n.type === "unary_expression" && n.child(0)?.type === "<-"
+      if (n.type === "send_statement" || n.type === "receive_statement" || isRecvExpr) {
+        const op = operandOf(n)
+        if (op && !goInErrorRegion(n)) {
+          let name: string | undefined
+          let ok = false
+          if (op.type === "identifier") {
+            name = String(op.text ?? "")
+            ok = packageVars.has(name)
+          } else {
+            const f = op.childForFieldName?.("field")
+            name = f ? String(f.text ?? "") : undefined
+            ok = !!name
+          }
+          const dir = n.type === "send_statement" ? "send" : "receive"
+          if (name && ok) {
+            const src = goEnclosingFunction(n)
+            const key = `${src}|${name}|${dir}`
+            if (!seenChannel.has(key)) {
+              seenChannel.add(key)
+              out.push({ label: "uses", from: src, target: name, rt: "go_channel_operation", direction: dir })
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  // ---- sub-surface 2: identifier_usage, with an ORDERED lexical scope
+  {
+    const isBindingPosition = (n: any): boolean => {
+      const p = n.parent
+      if (!p) return false
+      if (p.type === "parameter_declaration" || p.type === "variadic_parameter_declaration") {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c?.id === n.id) return c.type === "identifier" || c.type === "field_identifier"
+        }
+        return false
+      }
+      if (p.type === "var_spec" || p.type === "const_spec") {
+        let seenIdent = false
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") { if (c.id === n.id) return true; seenIdent = true }
+          else if (seenIdent) return false
+        }
+        return false
+      }
+      if (p.type === "short_var_declaration" || (p.type === "expression_list" && p.parent?.type === "short_var_declaration")) {
+        const decl = p.type === "short_var_declaration" ? p : p.parent
+        const left = decl.childForFieldName?.("left") ?? (decl.namedChildCount > 0 ? decl.namedChild(0) : undefined)
+        return !!left && n.startIndex >= left.startIndex && n.endIndex <= left.endIndex
+      }
+      if (p.type === "range_clause") {
+        const first = p.namedChildCount > 0 ? p.namedChild(0) : undefined
+        if (first && first.type === "expression_list" &&
+            n.startIndex >= first.startIndex && n.endIndex <= first.endIndex) return true
+        const last = p.namedChildCount > 0 ? p.namedChild(p.namedChildCount - 1) : undefined
+        return !!last && n.endIndex <= last.startIndex
+      }
+      if (p.type === "label_name" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "goto_statement") return true
+      return false
+    }
+    const isEntityName = (n: any): boolean => {
+      const p = n.parent
+      if (!p) return false
+      if (
+        p.type === "function_declaration" || p.type === "method_declaration" ||
+        p.type === "type_spec" || p.type === "type_alias" || p.type === "field_declaration" ||
+        p.type === "package_clause" || p.type === "label_name" || p.type === "method_spec"
+      ) {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+            return c.id === n.id
+          }
+        }
+        return true
+      }
+      if (p.type === "var_spec" || p.type === "const_spec") {
+        let seenIdent = false
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") { if (c.id === n.id) return true; seenIdent = true }
+          else if (seenIdent) return false
+        }
+        return false
+      }
+      if (p.type === "short_var_declaration" || (p.type === "expression_list" && p.parent?.type === "short_var_declaration")) {
+        const decl = p.type === "short_var_declaration" ? p : p.parent
+        const left = decl.childForFieldName?.("left") ?? (decl.namedChildCount > 0 ? decl.namedChild(0) : undefined)
+        return !!left && n.startIndex >= left.startIndex && n.endIndex <= left.endIndex
+      }
+      if (p.type === "goto_statement" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "labeled_statement") return true
+      return false
+    }
+    const isCallCallee = (n: any): boolean => {
+      let top = n
+      let p: any = n.parent
+      while (p && (p.type === "index_expression" || p.type === "generic_type")) { top = p; p = p.parent }
+      if (!p || p.type !== "call_expression") return false
+      const fn = p.childForFieldName?.("function")
+      if (fn) return fn.startIndex === top.startIndex && fn.endIndex >= top.endIndex
+      const first = p.namedChildCount > 0 ? p.namedChild(0) : undefined
+      return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+    }
+    const isAssignLhs = (n: any): boolean => {
+      let cur = n
+      let p: any = n.parent
+      while (p && p.type === "expression_list") {
+        const gp = p.parent
+        if (gp && gp.type === "assignment_statement") {
+          const lhs = gp.namedChildCount > 0 ? gp.namedChild(0) : undefined
+          return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+        }
+        cur = p
+        p = p.parent
+      }
+      return false
+    }
+    const isStructLiteralKey = (n: any): boolean => {
+      let cur: any = n.parent
+      let keyed: any = null
+      while (cur) {
+        if (cur.type === "keyed_element") {
+          const first = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+          if (first && n.startIndex >= first.startIndex && n.endIndex <= first.endIndex) { keyed = cur; break }
+          return false
+        }
+        if (
+          cur.type === "composite_literal" || cur.type === "call_expression" ||
+          cur.type === "field_declaration" || cur.type === "function_declaration" ||
+          cur.type === "method_declaration" || cur.type === "block"
+        ) return false
+        cur = cur.parent
+      }
+      if (!keyed) return false
+      cur = keyed.parent
+      while (cur) {
+        if (cur.type === "composite_literal") {
+          for (let i = 0; i < cur.namedChildCount; i++) {
+            const c = cur.namedChild(i)
+            if (c && c.type === "map_type") return false
+          }
+          return true
+        }
+        if (cur.type === "call_expression" || cur.type === "field_declaration" || cur.type === "function_declaration" || cur.type === "method_declaration" || cur.type === "block") return true
+        cur = cur.parent
+      }
+      return true
+    }
+    const underQualifiedType = (n: any): boolean => {
+      for (let p = n.parent; p; p = p.parent) {
+        if (p.type === "qualified_type") return true
+        if (
+          p.type === "call_expression" || p.type === "field_declaration" ||
+          p.type === "function_declaration" || p.type === "method_declaration" ||
+          p.type === "block" || p.type === "composite_literal" ||
+          p.type === "var_spec" || p.type === "const_spec" ||
+          p.type === "short_var_declaration" || p.type === "assignment_statement"
+        ) return false
+      }
+      return false
+    }
+    const isChannelOperand = (n: any): boolean => {
+      for (let cur: any = n.parent, steps = 0; cur && steps < 4; cur = cur.parent, steps++) {
+        if (cur.type === "send_statement") {
+          const ch = cur.childForFieldName?.("channel")
+          return !!ch && n.startIndex >= ch.startIndex && n.endIndex <= ch.endIndex
+        }
+        if (cur.type === "unary_expression") { const op = cur.child(0); if (op && op.type === "<-") return true }
+        if (cur.type === "receive_statement" || cur.type === "communication_case") return true
+        if (
+          cur.type === "call_expression" || cur.type === "field_declaration" ||
+          cur.type === "function_declaration" || cur.type === "method_declaration" ||
+          cur.type === "block" || cur.type === "expression_list"
+        ) return false
+      }
+      return false
+    }
+
+    const scopeStack: Set<string>[] = []
+    // ONLY the frames currently OPEN shadow a read. A `blocked` set of retired
+    // frames was carried alongside them on the theory that a later sibling read
+    // might still be shadowed — and Go's scoping says the opposite: a block's
+    // bindings die with the block, so a read after `if x { y := 1 }` does not
+    // see `y`. It cost 5 UNEXPLAINED rows in 200 files, every one a
+    // package-scope value read in a later function whose name happened to be
+    // bound earlier in the file.
+    const shadowed = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) if (scopeStack[i].has(name)) return true
+      return false
+    }
+    const stack: Array<{ node: any; exit?: boolean; frame?: Set<string> }> = [{ node: root }]
+    while (stack.length > 0) {
+      const { node: n, exit, frame } = stack.pop()!
+      if (exit) { if (frame) scopeStack.pop(); continue }
+      let newFrame: Set<string> | undefined
+      if (
+        n.type === "function_declaration" || n.type === "method_declaration" ||
+        n.type === "func_literal" || n.type === "block" ||
+        n.type === "for_statement" || n.type === "if_statement" ||
+        n.type === "function_type"
+      ) {
+        newFrame = new Set<string>()
+        scopeStack.push(newFrame)
+      }
+      // A function TYPE written in a package-scope FIELD has parameter names
+      // local to that type, so they bind even where no function frame is open.
+      // Only a package-scope var/const DECLARATION is excluded from binding,
+      // because that declaration is what a read resolves to.
+      const fnTypeOwnsParams =
+        n.type === "function_type" || n.type === "func_literal" ||
+        (n.type === "parameter_declaration" && n.parent?.parent?.type === "function_type")
+      const atPackageScope = !newFrame && scopeStack.length === 0 && !fnTypeOwnsParams
+      const top = atPackageScope ? undefined : scopeStack[scopeStack.length - 1]
+      if (top) {
+        if (n.type === "identifier" && isBindingPosition(n)) top.add(String(n.text ?? ""))
+        if (n.type === "field_identifier" && isBindingPosition(n)) top.add(String(n.text ?? ""))
+        if (n.type === "var_spec" || n.type === "const_spec" || n.type === "short_var_declaration") {
+          const seenNodes: any[] = [n]
+          while (seenNodes.length) {
+            const m = seenNodes.pop()!
+            if (m !== n && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal")) continue
+            if ((m.type === "identifier" || m.type === "field_identifier") && isBindingPosition(m) && String(m.text ?? "") !== "_") {
+              top.add(String(m.text ?? ""))
+            }
+            for (let i = 0; i < m.namedChildCount; i++) { const c = m.namedChild(i); if (c) seenNodes.push(c) }
+          }
+        }
+      }
+      if (n.type === "identifier") {
+        const name = String(n.text ?? "")
+        const src = goEnclosingFunction(n)
+        const p = n.parent
+        if (
+          name && name !== "_" &&
+          resolvable.has(name) &&
+          !isEntityName(n) &&
+          !isCallCallee(n) &&
+          !isAssignLhs(n) &&
+          !isStructLiteralKey(n) &&
+          !isChannelOperand(n) &&
+          !underQualifiedType(n) &&
+          !(p && (p.type === "inc_statement" || p.type === "dec_statement")) &&
+          !goInErrorRegion(n) &&
+          !shadowed(name)
+        ) {
+          const key = `${src}|${name}`
+          if (!seenBare.has(key)) {
+            seenBare.add(key)
+            out.push({ label: "uses", from: src, target: name, rt: "identifier_usage" })
+          }
+        }
+      }
+      stack.push({ node: n, exit: true, frame: newFrame })
+      // Children are pushed in REVERSE so they POP IN SOURCE ORDER. The stack is
+      // LIFO and the shadowing rule is order-sensitive: `_, err := f()` on line
+      // 500 must be recorded BEFORE the read of `err` on line 501 is evaluated.
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ node: c })
+      }
+    }
+  }
+  return out
+}
+
+// C# second-opinion oracle (csharp #264 wave). Re-derives the SAME relationship
+// set the analyzer emits, independently, so disagreements surface as
+// missing/unexplained rather than being copied. Mirrors the analyzer's
+// deterministic C# base-list rule (CSD1): a type's base_list children are
+// ordered — the FIRST entry is the base class (extends), every remaining
+// entry is an interface (implements). Instantiates comes from
+// object_creation_expression; calls come from invocation_expression leaf
+// targets (the analyzer's leaf-target M12 contract, like go/rust).
+
+// Mirror of RealCSharpAnalyzer.cleanTypeName: strip generics (`<...>`) and
+// nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
+// so the oracle's implicit-new target matches the analyzer's instantiates
+// target byte-for-byte before normTarget reduction.
 function csharpCleanTypeName(text: string): string {
   const lt = text.indexOf("<")
   const base = lt > 0 ? text.slice(0, lt) : text
@@ -15436,6 +15963,18 @@ async function main() {
         for (const e of deriveGoDeclaredTypeRefs(root)) {
           ;(truth as any[]).push(e)
         }
+        // GO38 (round 6): go joins the CONTAINS-audited set. Membership was 47,088 edges
+        // across the three new corpora that no gate could see. The oracle is derived from
+        // the DECLARATION side, so an unpublished declaration is a MISSING row rather than
+        // invisible on both sides — that asymmetry is what found GO38.
+        for (const e of deriveGoContains(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // GOD9 (round 6): go joins the USES-audited set — 154,656 rows over five corpora,
+        // and where the channel pass contradicted its own read passes.
+        for (const e of deriveGoUses(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "nim") {
         // NIM truth is a SEPARATE module (script/m14/nim-truth-oracle.ts), not a
@@ -15795,7 +16334,7 @@ async function main() {
         // reach them again. The csharp lane's own `["calls", "references", "uses"]`
         // entry is untouched and still on its own line.
  ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []),
- ...(lang === "perl" || lang === "xml" || lang === "fsharp" ? ["contains"] : []),
+ ...(lang === "perl" || lang === "xml" || lang === "fsharp" || lang === "go" ? ["contains"] : []),
    // 2026-09-28: fsharp joins the CONTAINS-audited set, and ONLY contains.
    //
    // The honest reading of the run, stated before anyone reads a percentage off it: the
@@ -15892,7 +16431,8 @@ async function main() {
           // shape the house precedent suppresses (java and groovy carry explicit
           // builtin filters for println/printf). Adjudication:
           // fixtures/hcl/out/calls-feasibility.json.
-          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" || lang === "go" ? ["references"] : []),   // GO36 (round 6): go joins the REFERENCES-audited set, paired with the deriveGoDeclaredTypeRefs push above. Measured at full extent on all five corpora before the pairing: 127,061 `references` edges, 0 MISSING, 0 UNEXPLAINED, 0 parse skips. `uses` is NOT added here and owes the same treatment — the bare-value-read surface has a far more elaborate exclusion contract than a type reference does, and auditing it against an oracle that has not been proved able to disagree with the analyzer is how a lane gets a green light it has not earned. That is the next round's work, named rather than silently skipped. ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" ? ["uses"] : []),        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" || lang === "go" ? ["references"] : []),   // GO36 (round 6): go joins the REFERENCES-audited set, paired with the deriveGoDeclaredTypeRefs push above. Measured at full extent on all five corpora before the pairing: 127,061 `references` edges, 0 MISSING, 0 UNEXPLAINED, 0 parse skips. `uses` is NOT added here and owes the same treatment — the bare-value-read surface has a far more elaborate exclusion contract than a type reference does, and auditing it against an oracle that has not been proved able to disagree with the analyzer is how a lane gets a green light it has not earned. That is the next round's work, named rather than silently skipped.         // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
+...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "go" ? ["uses"] : []),   // GOD9 (round 6): go joins. The GO36 comment on the PRECEDING physical line had swallowed a LIVE entry — `//` runs to end of line — so dart/ruby/javascript/groovy silently lost their `uses` auditing and go never had any. That is the csharp-lane failure recorded at the head of this expression, and this is the second time it has cost a lane real coverage. 154,656 rows over five corpora, 0 MISSING, 4 EXTRA.
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
