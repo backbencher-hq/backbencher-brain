@@ -3,12 +3,11 @@
 Pure Tree-sitter PowerShell extraction for `*.ps1`, `*.psm1`, and `*.psd1`
 sources, verified under milestone **M12.40** (issue #179).
 
-- Parser: `tree-sitter-powershell` **0.25.10** (npm, published 2025-12-08; WASM at
-  `wasm/tree-sitter-powershell.wasm`, loaded by `engine.ts` via `resolveWasm`).
-  **This version was established by BYTE-IDENTITY, not by a prior record** — see
-  "Provenance" below. The lane shipped for its whole life with **no parser version
-  stated anywhere**, which is what the grammar registry's R1 remainder counts; the
-  16 files in R1's list that are powershell are this line's doing, not the grammar's.
+- Parser: `tree-sitter-powershell` — **a local rebuild from vendored source of upstream
+  0.26.4, carrying 8 local patches** (WASM at `wasm/tree-sitter-powershell.wasm`, loaded
+  by `engine.ts` via `resolveWasm`). This row previously read "0.25.10 (npm, published
+  2025-12-08)", which was true of the artifact the lane *started* with and is now false
+  of the artifact it *ships*. See "Provenance" below for the history and the current pin.
 
 ## Provenance
 
@@ -23,9 +22,32 @@ wasm — no build required, because upstream publishes the artifact we ship.
 Upstream latest is **0.26.4** (2026-05-04, `airbus-cert/tree-sitter-powershell`). It was
 fetched, **rebuilt from source with tree-sitter CLI 0.26.9, and the rebuild reproduced the
 published prebuilt byte-for-byte** (`796124137f0500e5…`, 1,088,467 B) — so the artifact
-adjudicated below is provably upstream's. It closes **0 of the 12 reproducible named
-grammar limits** on this lane; see `reviews/m60-powershell-grammar-0264-refused.md`.
-**The pin therefore stays at 0.25.10** and the lane owes a patch.
+adjudicated below is provably upstream's. It closes **0 of the named reproducible grammar
+limits** on this lane (`reviews/m60-powershell-grammar-0264-refused.md`).
+
+**The pin has since moved off 0.25.10, and the current pin is NOT an upstream artifact.**
+The lane now ships a **local rebuild from vendored 0.26.4 source with 8 patches applied**:
+
+| Property | Value |
+| --- | --- |
+| `sha256` | `df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6` |
+| Size | 1,168,838 B |
+| Kind | `local-rebuild-from-vendored-source` |
+| ABI | 15 |
+| Node types | 429 ids / 152 named / 14 fields |
+| Runtime | `web-tree-sitter@0.25.9` |
+
+The 8 patches, in the order they were admitted: **G5a/b** (PS7 `??` and `? :`), **G5c**
+(`?.` and `?[`), **G1** (script-level `param()` after another statement), **G6** (command
+argument list with a bare word), **G7** (sigil-led path as a command *argument*),
+**G8** (`+` as .NET's nested-type separator), **G9** (bracketed generic type argument),
+**G10** (a value glued to a double-dash parameter).
+
+**A patch record that disagrees with the artifact is the failure this lane already paid
+for once.** G8's wasm was committed against a G1 pin record, and the two were only caught
+by a consistency check. So the pin record and the wasm are verified together, and the
+"Provenance" row above is deliberately split into *what upstream is* and *what we ship*:
+they stopped being the same file, and saying otherwise in either direction is the bug.
 
 ## Contract
 
@@ -42,6 +64,10 @@ grammar limits** on this lane; see `reviews/m60-powershell-grammar-0264-refused.
 | Overrides | a subclass member whose name matches a member of its resolved base emits `overrides` carrying `meta.overridesMember` = the member name. PowerShell class methods are virtual by default, so there is no `override` keyword to key on — the match is by name against the base's declared member set. Gated by `class-inherit-psa2` (3 rows + a count, so a "base has a member of any name" rule fails) and `drop-class-overrides` |
 | Interfaces | PowerShell 5.0 `interface IShape { [string] Describe() }`. The GRAMMAR has no node for it, so it parses as a `command` named `interface`; the analyzer declares `IShape` as an `interface` symbol from that structure and does not publish it as a call. Known gap: the interface's method signatures are bodiless, so they are not `class_method_definition` nodes and an interface is declared with no members |
 | Patterns | `CmdletBinding`/`Parameter`/`Validate*` attributes, DSC, Azure/Exchange/SharePoint/AD/VM frameworks, REST/I-O/service patterns — string checks on AST nodes, never source text |
+| Line numbers | **every relationship carries a `line`**, measured at 12,028/12,028 = 100% over the production draw. Not a sample: a relationship without a line would be counted as missing, so the ratio is a completeness check on the emit path rather than a quality score. Scoped reads (`$env:X` used as a dependency) carry the line of the READ, not of the declaration |
+| Evidence tier | every relationship carries a `tier`, emitted centrally rather than per-call-site so it cannot drift: `structural` (the tree settles it), `usage_contextual` (settled by what the construct means), `import_based` (a `references` edge with `metadata.import: true`), and `inferred` for `overrides`, which is genuinely an inference from name-matching since PowerShell has no `override` keyword |
+| Composition | hashtable literals and array literals emit `references` for their member and element targets. PowerShell's composition is a literal, not a declaration, so these are references and not `contains` |
+| `New-Object` | all three spellings are handled: `-TypeName`, `-ComObject`, and the positional type name, with accelerator names suppressed. This was a real defect found by hand audit, not a theoretical gap |
 | Errors | syntax errors are engine-owned (engine.ts merges `treeErrors`); the analyzer never duplicates them |
 | Regex | **ZERO — 0 regex operations, 0 stored regex literals**, enforced by `script/m60/powershell-zero-regex.ts` rather than asserted. Equivalence to the previous regex implementation was measured over 759 files (691 corpus + 10 fixtures), byte-for-byte, 0 differing. This row previously read "zero regex usages (census 10 → 0)", and both halves were false: there is no powershell regex census, and there were 8 |
 
@@ -143,41 +169,115 @@ intentionally produce no edges).
 
 ## Verified limitations (named, never hidden)
 
-The vendored `tree-sitter-powershell` grammar is an older snapshot that does
-not model valid modern-PowerShell constructs. In the real corpus these are
-recorded explicitly in `validation/m12/results/powershell-corpus-errors.json`:
+The grammar is a **patched local rebuild**, not an upstream snapshot, so this list is
+re-measured rather than inherited. It is written against the **pinned product wasm**
+(`df867849…`, G10) replayed through `script/m60/powershell-0264-repro-battery.ts`, which
+carries 15 controls specifically so that a limit cannot be "fixed" by breaking the
+ordinary form of the same construct.
 
-1. `??` null-coalescing and `?.` null-conditional (PS 7.4) — the GitHub
-   markdown-link action scripts
-2. `?:` ternary (PS 7) and `${env:ProgramFiles(x86)}` scoped interpolation —
-   `tools/wix/wix.psm1`
-3. nested type literals `[System.Environment+SpecialFolder]` and generics
-   `[[string], [PkgVer[]]]` — `Install-PowerShellRemoting.ps1`,
-   `UpdateDotnetRuntime.ps1`
-4. `--flag="$var"` native-flag tokens — `build.psm1`, `packaging.psm1`,
-   `releaseTools.psm1`
-5. comma-separated bare-argument lists — `PSDiagnostics.psm1`, `ci.psm1`
-6. `$var\` / `$var/` path continuations — several tools/ and src/ files
-7. subexpression interpolation with member chains — `Run-AttackSurfaceAnalyzer.ps1`
+### Still broken on the product runtime — 5 of 34 battery cases
 
-Additionally, the repo's own `test/` tree (503 files) is the PowerShell
-parser/engine torture suite and deliberately embeds invalid syntax as
-parser-error test data; 166 of those files contain grammar-flagged errors.
-All are audited, counted, and never hidden; strict acceptance uses the 34
-clean production files.
+| # | Limit | Construct | Errors | Cause |
+| --- | --- | --- | --- | --- |
+| 1 | `hash-in-interpolation` | `"$Repo#$PR"` | 1 | `#` in a variable NAME; the name class is `/[a-zA-Z0-9_]+\|\?/` |
+| 2 | `ddash-quoted-interp` | `--git-dir="$RepoRoot/.git"` | 2 | **native and product runtimes disagree** — see below |
+| 3 | `multiplier-suffix-case` | `$($_.Length/1KB)` | 1 | suffix listed lowercase-only, fatal in operand position |
+| 4 | `invokation-path-slash` | `& $Destination/pwsh -x` | 2 | `path_command_name_token` allows `\` but not `/` |
+| 5 | `invokation-path-slash-literal` | `& /usr/bin/pwsh` | 2 | same cause; fails with no variable involved |
+
+**Limits 1, 3, 4 and 5 are already fixed in a candidate stack (G11+G12+G13) that is
+safety-verified but NOT admitted.** Native A/B over the 691-file corpus: 0 clean files
+changed, 0 newly broken, 5 newly clean. They are not admitted because F11 on
+`web-tree-sitter@0.25.9` has not run — a wasm build needs load < 8 and the machine has
+been at ~30. **Native safety is not product effect**, which is limit 2's lesson.
+
+**Limit 2 is the one that must be fixed against the product runtime directly.** It parses
+on native tree-sitter 0.26.9 and fails on the pinned 0.25.9, with the *same* wasm and the
+*same* patch set. A fourth design validated natively would be validated on the one
+runtime where the construct already works, which is close to unfalsifiable — so it waits
+for a build. Full measurement in `reviews/powershell/grammar-worklist.md`.
+
+### Fixed, and no longer listed as limitations
+
+`??` / `?.` null-coalescing and null-conditional (G5a/b, G5c), `?:` ternary (G5a/b),
+bracketed generic type arguments `[[string], [PkgVer[]]]` (G9), script-level `param()`
+after another statement (G1), bare-word command argument lists (G6), sigil-led paths as
+command arguments (G7), and `+` as a nested-type separator (G8). G10 — a value glued to a
+double-dash parameter — is **admitted but inert on the product runtime**; see limit 2.
+
+### Corpus damage, measured
+
+`script/m60/powershell-surface-measure.ts` over the production draw: **49 files, 8
+damaged (56 ERROR / 6 MISSING), 2,588 symbols, 12,028 relationships, line coverage
+12,028/12,028, unknownTargets 0, dupKeys 0, reserved 0.**
+
+The repo's own `test/` tree is the PowerShell parser/engine torture suite and
+deliberately embeds invalid syntax as parser-error test data; those files are audited,
+counted, and never hidden, and are excluded from strict acceptance. 62% of the residual
+sampled differential disagreement came from exactly this set — model differences against
+deliberately-invalid input, not analyzer defects.
 
 ## Evidence
 
-- Differential: **79/79**, precision/recall **1.000**, 0 FP/FN/unknown
-  (`validation/m12/results/powershell-differential.json`)
-- Contract probe: **36/36** (`validation/m12/results/powershell-contract.json`)
-- Grammar shape audit: **142 observed node types, 0 dead references**
-  (`validation/m12/results/powershell-shape-safety.json`)
-- Regex census: **0** powershell usages
-- Corpus audit: **553 tracked / 0 crashes / 0 unexpected / 16 named grammar
-  limits / 166 test-suite error files**
-  (`validation/m12/results/powershell-corpus-errors.json`)
-- Corpus measurement: `validation/m12/results/powershell-corpus-complexity.json`,
-  `powershell-corpus-shapes.json`
-- Fixtures: `validation/m12/fixtures/powershell/{Module.ps1,Deploy.ps1,Negative.ps1}`
-- Ground truth: `validation/m12/ground-truth/powershell.json`
+Measured, with the instrument named. Every number below is re-derivable by the command or
+file in its row; none is carried forward from a previous wave without one.
+
+### Analyzer correctness
+
+| Claim | Instrument | Result |
+| --- | --- | --- |
+| Fixtures | `validation/m14/fixtures/powershell/` (12) | **12/12** |
+| Mutation coverage | `script/m60/powershell-mutants.ts` | **46/46 caught** |
+| Zero regex | `script/m60/powershell-zero-regex.ts` | **PASS** — 0 operations, 0 literals; verified to FAIL on an injected regex |
+| Relationship line numbers | `script/m60/powershell-surface-measure.ts` | **12,028 / 12,028 = 100%** |
+| Unknown / duplicate / reserved targets | same | **0 / 0 / 0** |
+| Production symbols | same | **2,588** |
+| Production relationships | same | **12,028** |
+| Grammar limits (battery) | `script/m60/powershell-0264-repro-battery.ts` | 5 broken / 34 cases, **15/15 controls holding** |
+| Grammar pin consistency | `script/m14/verify-grammar-pins.ts` | pin and wasm verified together |
+
+### Completeness (M14.0.SPEC)
+
+`script/m14/spec/powershell-completeness.json` classifies every one of the **152 named
+node types**; the gate reports **0 unclassified**. Its three type buckets are **mutually
+disjoint** and hold 144 rows — **50 handled**, **86 internal-silent**, **8 recorded gaps,
+all 8 now fixed** — and **6 rationale decisions** (flow keywords, DSC resource types,
+workflow keywords, `--%` stop-parsing, redirection, comments) cover the remainder.
+The buckets are disjoint, so the counts are meant to be added, and an earlier draft of
+this file that wrote "50 + 86 + 18 = 152, classified exactly once" was arithmetic that
+does not close.
+
+Sections A–D, G, H **pass**. Two sections do not, and the lane is not closed while they
+do not:
+
+- **Section E — `section-e-differential`:** no baseline floor row for
+  `powershell:powershell`. Closing it requires a canonical F3/F5 differential baseline,
+  which is an owner-scoped unscoped run.
+- **Section F — `section-f-perf-budget`:** no `avgMsPerFile` for
+  `powershell:powershell`. The measured 246 ms/file above is from a draw made at load
+  ~30 and is **not** a usable budget row.
+
+### Differential
+
+F5 is lane-scoped and **carries no pass claim.** Its 60-file cold-pool sample rotates
+between runs, so cross-run deltas are invalid unless the file set is fixed; deterministic
+full-corpus fact hashes are the sound instrument and are what the residual analysis used.
+A hand audit of the `New-Object` family found and fixed a real defect this way (measured
+deterministically over 760 files: 66 files changed, +168 relationships). The oracle's
+`$`-prefixed-target bug was also fixed. The remaining sampled disagreement is dominated by
+the `test/` torture suite described above.
+
+### Known gap carried deliberately
+
+A PowerShell 5.0 `interface` has bodiless method signatures, so they are not
+`class_method_definition` nodes and **an interface is declared with no members.** The
+grammar has no node for `interface` at all; the analyzer declares the symbol from a `command`
+named `interface` and does not publish it as a call. Recorded rather than papered over.
+
+### Documentation note
+
+The "Regex census: 0 powershell usages" row this section used to carry was **false twice
+over and has been removed**: there is no powershell regex census instrument, and the real
+count was 8, not 0. The Regex inventory section above already said so; the Evidence
+section contradicted it. The live claim is the gated one — `script/m60/powershell-zero-regex.ts`
+— which counts the analyzer's own source and fails if a regex returns.
