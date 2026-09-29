@@ -3622,6 +3622,38 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** True when `node` is the defining NAME of its entity parent, or a TYPE it declares. */
+  /**
+   * CS-D8 helper: is this identifier inside a declared TYPE, judged by which declaration owns a
+   * `type` field that CONTAINS it? See the CS-D8 note in `isCSharpEntityName` for why the walk
+   * ascends through name-shaped wrappers and why it is bounded.
+   */
+  private isDeclaredTypeSite(node: Node): boolean {
+    const DECL = "declaration"
+    let cur: Node | null = node.parent
+    for (let hops = 0; cur && hops < 12; hops++) {
+      const t: string = cur.type
+      if (
+        t === "variable_declaration" || t === "parameter" ||
+        t === "property_declaration" || t === "indexer_declaration" ||
+        t === "event_declaration" || t === "event_field_declaration" ||
+        t === "variable_declarator" || t === "base_list" ||
+        t === "type_parameter_list" || t === "type_parameter_constraints_clause" ||
+        t === "delegate_declaration"
+      ) {
+        const tf = cur.childForFieldName("type")
+        if (tf && node.startIndex >= tf.startIndex && node.endIndex <= tf.endIndex) return true
+        // A `variable_declarator` is the boundary between the declaration's TYPE and its
+        // INITIALIZER, so a read inside `var f = Some.Field;` must stop the walk here rather
+        // than inherit the `var`'s type position. Without this, every initializer read in the
+        // language is gated by the keyword that introduces it.
+        if (t === "variable_declarator") return false
+      }
+      if (t.includes(DECL) || t === "class_body" || t === "block" || t.includes("statement")) return false
+      cur = cur.parent
+    }
+    return false
+  }
+
   private isCSharpEntityName(node: Node): boolean {
     const p = node.parent
     if (!p) return false
@@ -3640,9 +3672,42 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // The `type` FIELD is the grammar's own statement of "this is a type", so the gate reads the
     // field rather than counting children. Nothing is lost: the declared-type reference graph
     // already publishes this name, and it is the position that owns it (R9).
-    if (p.type === "variable_declaration") {
-      const t = p.childForFieldName("type")
-      if (t && t.startIndex === node.startIndex && t.endIndex === node.endIndex) return true
+    // SPAN containment, not equality — and the reason is CS-D8's third shape. For
+    // `Func<Gadget, Gadget> f = …` the `type` field is a `generic_name` and the name is NESTED
+    // inside it, so an equality test against the field's own offsets misses the very case it was
+    // written for. The fixture case that found it is a lambda whose types come from the delegate
+    // type rather than from a lambda parameter list, so there is no `parameter` node to gate:
+    //
+    //     public void TakesDoodadInLambda() { Func<Doodad, Doodad> f = doodad => doodad; }
+    //                                               ^^^^^^ a TYPE ARGUMENT, pre-fix published
+    //                                               as `uses TakesDoodadInLambda -> Doodad`
+    //
+    // This is the same rule, the same reason, and the same round as the `parameter` gate below;
+    // the two differ only in which node carries the `type` field. Measured, not assumed: 6 rows
+    // over 200 roslyn files from the corpus sweep (script/m14/tmp/cs-deep-33-param-type-scope.ts).
+    // CS-D8 (2026-09-28, the bare-`uses`-oracle round): a declared TYPE is never a value read, in
+    // any position, and the position is found by asking which DECLARATION owns a `type` field that
+    // CONTAINS this identifier. The walk goes UP through the name-shaped type wrappers, because
+    // the identifier's own parent is not the declaration: for `Func<Gadget, Gadget> f = …` the
+    // immediate parent is the `generic_name`, and the node that owns the type is the
+    // `variable_declaration` two levels above it.
+    //
+    // Why containment and not equality: an equality test against the `type` field's own offsets
+    // passes for `Gadget gadget` and fails for `Func<Gadget, Gadget>`, which is the case that
+    // matters. And why the walk CONTINUES past a `generic_name` rather than stopping at it: the
+    // same node type spells a TYPE in a declaration and a METHOD in an expression, and the
+    // distinguishing fact is which declaration's `type` field encloses it. Stopping at the first
+    // `generic_name` ancestor gated every read that reaches a generic method — the most common
+    // shape in modern C# — and cost one real row in 200 files
+    // (`Document.GetRequiredLanguageService<ISyntaxFactsService>()`, cs-deep-26).
+    //
+    // Bounded at 12 ancestors: a type expression is never deeper than that from the declaration
+    // that owns it (argument > type_argument > generic_name > variable_declaration), and the
+    // bound keeps this off the per-identifier cost path.
+    if (this.isDeclaredTypeSite(node)) return true
+    {
+      const nf0 = p?.childForFieldName?.("name")
+      if (nf0 && nf0.startIndex === node.startIndex && nf0.endIndex === node.endIndex) return true
     }
     // The same round, second half: for a PROPERTY the first direct identifier is the TYPE, so
     // the rule below gated the type and let the property's own NAME through — and a property
