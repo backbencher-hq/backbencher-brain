@@ -1536,7 +1536,11 @@ const handlers: Record<string, ToolHandler> = {
         // whether the filter matched nothing or matched everything.
         scope: {
           direction: directionArg ?? "both",
-          relationshipTypes: relTypesArg ?? ["calls", "instantiates", "extends", "implements"],
+          // The engine's RESOLVED list, not a literal here. This used to be a
+          // hardcoded four-element copy of the engine's default, and when the
+          // default was widened to all ten stored kinds the echo went on naming
+          // four while the answer held 120 `uses` and 11 `contains` edges.
+          relationshipTypes: result.summary?.relationshipTypesUsed ?? [],
           includeCrossLanguage: crossLangArg !== false,
         },
       },
