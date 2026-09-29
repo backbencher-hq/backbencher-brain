@@ -227,7 +227,11 @@ export namespace ASTEngine {
 
     // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     nim: "__generic__",
-    protobuf: "__generic__",
+    // Protobuf: the vendored, patched tree-sitter-proto. See
+    // grammars/tree-sitter-proto/README.md — the node surface is snake_case and
+    // is a contract, and this is the ONE routed language whose grammar had to
+    // be cloned and patched because no protobuf grammar is published on npm.
+    protobuf: "tree-sitter-protobuf",
   } as const
 
   type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES
@@ -854,6 +858,10 @@ export namespace ASTEngine {
         }
         case "make": {
           languageWasmPath = resolveWasm("tree-sitter-make/tree-sitter-make.wasm")
+          break
+        }
+        case "protobuf": {
+          languageWasmPath = resolveWasm("tree-sitter-protobuf/tree-sitter-protobuf.wasm")
           break
         }
 
@@ -1637,6 +1645,10 @@ export namespace ASTEngine {
         return new (await import("./real-hcl-analyzer")).RealHclAnalyzer()
       case "graphql":
         return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
+      // Protobuf: the vendored, patched tree-sitter-proto (see the name map
+      // above and grammars/tree-sitter-proto/README.md).
+      case "protobuf":
+        return new (await import("./real-protobuf-analyzer")).RealProtobufAnalyzer()
       case "zig":
         return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
       case "nim":

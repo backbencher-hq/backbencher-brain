@@ -170,3 +170,41 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-graphql/src/tree_sitter/parser.h
 !grammars/tree-sitter-graphql/src/tree_sitter/alloc.h
 !grammars/tree-sitter-graphql/src/tree_sitter/array.h
+
+# M60 Make wave (2026-09-27). tree-sitter-make vendors `src/parser.c` (928 KB)
+# and the same hermeticity argument as the lanes above applies with EXTRA force
+# here: this lane's central claim IS the source<->wasm identity proof, and that
+# proof is not checkable without the generated source. `src/parser.c` is
+# `#include "tree_sitter/parser.h"`, so committing parser.c without the headers
+# leaves the tracked set internally inconsistent — a fresh clone would not build
+# it and the pin could not be re-derived. The DIRECTORY must be re-included
+# before its contents can be: git does not descend into an excluded directory, so
+# negating the headers alone is silently a no-op.
+!grammars/tree-sitter-make/src/
+!grammars/tree-sitter-make/src/grammar.json
+!grammars/tree-sitter-make/src/node-types.json
+!grammars/tree-sitter-make/src/parser.c
+!grammars/tree-sitter-make/src/tree_sitter/
+!grammars/tree-sitter-make/src/tree_sitter/parser.h
+!grammars/tree-sitter-make/src/tree_sitter/alloc.h
+!grammars/tree-sitter-make/src/tree_sitter/array.h
+# tree-sitter-proto (amaanq/tree-sitter-proto @ e9f6b43, vendored AND PATCHED by
+# the protobuf lane) needs the same three roles graphql took, and for the same
+# reasons stated there: the two GENERATED JSONs, because `sourceVsWasmFor` needs
+# the pair to run the offline source<->wasm proof and without them the check
+# reports "not applicable" and the lane has no such proof at all; `src/parser.c`
+# because `measureVendored` hashes EVERY file in the tree, tracked or not, so an
+# untracked parser.c would turn the gate red after any `tree-sitter generate` —
+# 299 KB here, the same call graphql made at 283 KB and hcl at 600 KB, and the
+# opposite of nim at 41 MB. The DIRECTORY has to be re-included before its
+# contents can be: git does not descend into an excluded directory, so negating
+# the files alone is silently a no-op (it tracked 0 of them and reported no
+# error). tree-sitter.json is NOT ignored and is tracked — upstream has none, and
+# without it the CLI falls back to ABI 14 and `tree-sitter build --wasm` refuses.
+!grammars/tree-sitter-proto/src/grammar.json
+!grammars/tree-sitter-proto/src/node-types.json
+!grammars/tree-sitter-proto/src/parser.c
+!grammars/tree-sitter-proto/src/tree_sitter/
+!grammars/tree-sitter-proto/src/tree_sitter/parser.h
+!grammars/tree-sitter-proto/src/tree_sitter/alloc.h
+!grammars/tree-sitter-proto/src/tree_sitter/array.h
