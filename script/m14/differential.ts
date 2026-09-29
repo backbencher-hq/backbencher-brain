@@ -291,6 +291,29 @@ import { deriveJsonEdges } from "./oracles/json"
 
 export { deriveJsonEdges }
 
+// The second corpus for the lanes that name one, kept OUT of `LANG_REPOS` on purpose.
+// `LANG_REPOS` is `Record<string, string>` — one corpus per lane — so when bash and json each
+// gained a second corpus, the second was written as a SECOND KEY in the same literal. That is
+// legal JavaScript with last-wins semantics, so the file parsed, `tsc` stayed silent, the gate
+// ran, and the lane quietly measured the wrong repository:
+//
+//     bash   documented primary `otp`    ->  actually measured `fsharp`  (32 files, not 80)
+//     json   documented primary `terraform` -> actually measured `otp`    (a bash repo)
+//
+// Found by script/m14/tmp/cs-deep-42-duplicate-keys.ts while verifying the merge repairs.
+// A duplicate key is the one kind of merge damage that no tool in this repo reports: not
+// `bun build`, not `tsc`, not any gate — because all three only ask whether the file is VALID,
+// and a shadowed key is perfectly valid. It is only wrong relative to the comment three lines
+// above it. Both comments are explicit and reasoned (bash: the M12 pin is kept as the second
+// corpus precisely so old numbers stay comparable; json: `terraform` was chosen over
+// `clj-kondo` and `shadcn-svelte` after measuring them), so the code was the side that was wrong.
+//
+// Nothing reads this map yet. It exists so the second corpus is stated rather than lost, and so
+// that re-pointing a lane at it is a one-line change instead of an archaeology exercise.
+export const LANG_REPOS_SECOND: Record<string, string> = {
+  bash: "fsharp",
+  json: "otp",
+}
 export const LANG_REPOS: Record<string, string> = {
   // M14 #277: bash's primary corpus is `otp` — 80 tracked .sh files, the largest
   // bash holding in CORPUS_ROOT, and hand-written build/install tooling rather
@@ -310,7 +333,6 @@ export const LANG_REPOS: Record<string, string> = {
   // natural second corpus and is deliberately NOT registered: the differential takes
   // one corpus per lane, and adding a second would mean picking which number is the
   // claim, which is the thing a single declared corpus prevents.
-  scss: "element-plus",
   java: "grails-core",
   groovy: "grails-core",
   kotlin: "Exposed",
@@ -393,7 +415,6 @@ export const LANG_REPOS: Record<string, string> = {
   toml: "cargo",
   // M14 #277: bash's second corpus is the M12 pin. See LANG_REPOS.bash for why
   // the pin is kept rather than replaced.
-  bash: "fsharp",
   // json's primary corpus is `terraform` — 415 tracked .json files, only 12 of
   // them tsconfig/lock, and the rest HAND-WRITTEN configuration and testdata
   // (vscode launch.json, plan-bookmark fixtures). The JSON-rich alternatives were
@@ -415,7 +436,6 @@ export const LANG_REPOS: Record<string, string> = {
   // rather than a representative one, which is exactly what a second opinion is
   // for: the primary says what JSON normally looks like, this says what happens
   // when a file is trying to break the parser.
-  json: "otp",
   // M60 (YAML lane, 2026-09-27): yaml's primary corpus is `kubernetes` — 6,608
   // tracked .yml/.yaml files, the largest YAML holding in CORPUS_ROOT by 3x, and
   // the most DIALECT-diverse of them: multi-document streams, `%YAML`/`%TAG`
