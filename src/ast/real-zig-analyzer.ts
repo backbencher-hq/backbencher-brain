@@ -399,8 +399,43 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // ─── FUNCTION DECLARATION: pub fn name(...) ───
-      if (type === "function_declaration" || type === "function_signature") {
-        const identNode = this.anyChild(node, (n) => n.type === "identifier")
+      //
+      // Z26 (wave 3, 2026-09-29): a `function_signature` is a function-pointer
+      // TYPE, not a function — this grammar gives it no `declarator` field at
+      // all (measured: `f: *const fn (a: u8) callconv(.c) ComparisonResult`
+      // parses as container_field > pointer_type > function_signature with
+      // children parameters / calling_convention / identifier). Minting a symbol
+      // from it published a METHOD named after whatever identifier happened to
+      // be first under the node: `contains MutableArray -> ComparisonResult`
+      // (the RETURN TYPE) and `contains Options -> apprt` (a segment of
+      // `*apprt.ClipboardRequest`, from a field whose type is a function
+      // pointer). Two fabrications of methods that do not exist, on a class that
+      // is 16.6% of everything this analyzer emits. Found by the new `contains`
+      // gate — and NOT by the ownership verifier, whose derivation took
+      // `firstIdent(function_signature)` and therefore agreed with the bug: a
+      // mirror that reproduces the defect it is meant to convict is self-
+      // agreeing, which is the reason this truth was written from the grammar
+      // rather than from the analyzer's own name-picking.
+      //
+      // The signature's CHILDREN are still walked: a function type's parameters
+      // and its return type are declared-type facts (the `references` collection
+      // at the bottom of this walk reads them on purpose).
+      if (type === "function_signature") {
+        this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+        continue
+      }
+      if (type === "function_declaration") {
+        // Z28, the function half: this grammar has NO `declarator` field on a
+        // function_declaration (measured: `function_declaration [fields: type]`
+        // and its first NAMED child is always the name), so the name is read
+        // POSITIONALLY and the deep `anyChild` search that Z26 exploited is gone
+        // from the common path. The fallback stays for a grammar variant that
+        // reorders it, and the 100-char cap stays as the stated guard it is.
+        const firstNamed = node.namedChildCount > 0 ? node.namedChild(0) : null
+        const identNode =
+          firstNamed && firstNamed.type === "identifier"
+            ? firstNamed
+            : this.anyChild(node, (n) => n.type === "identifier")
         const fnName = identNode ? identNode.text : ""
         const isExported = this.hasToken(node, "pub") || this.hasToken(node, "export")
         const isInline = this.hasToken(node, "inline")
@@ -471,9 +506,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               // does not name it. Without the flag an `extern` declaration
               // competed on equal footing with the definition implementing it in
               // another file.
-              ...(type === "function_signature" || this.functionBody(node) === null
-                ? { isDeclaration: true }
-                : {}),
+              ...(this.functionBody(node) === null ? { isDeclaration: true } : {}),
             },
           }
           symbols.push(sym)
@@ -533,9 +566,32 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.pushChildren(node, walkStack, container, inFunction, anonContainer)
           continue
         }
-        const nameNode = this.anyChild(node, (n) => n.type === "identifier")
+        // Z28: the name comes from the grammar's own `name` FIELD, and the
+        // length cap stops being a filter. The old `anyChild(identifier)` +
+        // `length < 50` pair dropped 14 REAL field declarations out of 27,004 in
+        // 1,200 corpus files (0.05%) — `supports_workspace_did_change_configuration_
+        // dynamic_registration` (74 chars, an LSP capability flag) and the aro
+        // `__builtin_amdgcn_wmma_*` shims (50-52 chars). A length test is not a
+        // junk filter; it is a length test, and a declaration that exists in the
+        // source was simply absent from the index. Measured over the same corpus:
+        // 0 field names reach 100 characters, so the cap is now 200 and exists to
+        // catch a grammar variant handing over something that is not a name —
+        // stated as that, rather than as a filter that quietly loses 0.05%.
+        // The `name` field is only a NAME when it is an identifier: an unnamed
+        // field hands over a TYPE there (measured: `extern struct` members in
+        // zls/src/analyser/InternPool.zig whose `name` field is a `builtin_type`
+        // — `usize`, `isize`, `c_short`, `c_int` — and the first version of this
+        // change published all four as fields NAMED after their own type, 31
+        // fabricated `contains` edges in one file). An unnamed field has no name
+        // to publish, and a symbol named `usize` is a fabrication, so the field
+        // is read only when it is an identifier and the search is the fallback.
+        const nameField = node.childForFieldName?.("name")
+        const nameNode =
+          nameField && (nameField.type === "identifier" || nameField.type === "field_identifier")
+            ? nameField
+            : this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
-        if (fieldName && fieldName !== "_" && fieldName.length < 50) {
+        if (fieldName && fieldName !== "_" && fieldName.length < 200) {
           const isEnumMember = container?.kind === ASTEngine.SymbolKind.Enum
           // Z17b (deep review): the field's declared type used to be found by
           // asking for one of five node types, so the most common kinds of
@@ -938,21 +994,27 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isDefiningOccurrence = (node: Node): boolean => {
       const p = node.parent
       if (!p) return false
-      if (p.type === "variable_declaration") {
+      if (p.type === "variable_declaration" || p.type === "assignment_expression") {
         // Z15 (deep review): a COMPOUND assignment is not a definition, it is a
         // read-modify-write — `counter += 1` reads the global `counter` before
         // writing it, and `while (i < n) : (i += 1)` is Zig's own idiom for it.
         // The old test suppressed the read of every compound assignment, so a
         // global written with `+=` was invisible to the read graph. Plain `=`
         // stays a definition (a declaration binds, an assignment writes).
+        //
+        // Z29 (wave 3, 2026-09-29): the LHS test is NODE IDENTITY with the first
+        // named child, the same rule `isWriteLhs` below already used — so the two
+        // sites in this file now agree instead of one being right. "The first
+        // named child of type `identifier`" is not the LHS when the LHS is a
+        // field expression: in `exe.stack_size = stack_size` (zig/build.zig:727)
+        // the first IDENTIFIER child is the VALUE, so the test declared the read
+        // to be a definition and the analyzer published no `uses -> stack_size`
+        // at all — a real read of a file-scope constant, lost. One row in 1,200
+        // files, found only because the truth exists: a LOSS is invisible to any
+        // count of what was published.
         if (!this.isPlainAssignment(p)) return false
-        for (let i = 0; i < p.namedChildCount; i++) {
-          const c = p.namedChild(i)
-          if (c && c.type === "identifier") {
-            return c.startIndex === node.startIndex && c.endIndex === node.endIndex
-          }
-        }
-        return false
+        const lhs = p.namedChildCount > 0 ? p.namedChild(0) : null
+        return !!lhs && lhs.id === node.id
       }
       // Error sets declare EVERY direct member (`error{ A, B }`) — unlike
       // single-name items, there is no first-only rule here.
