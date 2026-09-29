@@ -26,7 +26,7 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
 // (computeImpact + its declared budget) so the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
-import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../lsp/cross_language_hover"
+import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
 import { getFileDependencies } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
@@ -1153,27 +1153,82 @@ const handlers: Record<string, ToolHandler> = {
     }
   },
 
+  // M63.CL1 — the agent door, rebuilt on the same single owner
+  // (src/lsp/cross_language_hover.ts). Four defects, all measured on a real
+  // polyglot corpus (validation/m63/results/CL1.json), all fixed here:
+  //
+  //   A. The old door ran `SELECT ... WHERE project_id = ? AND name = ?` with
+  //      `.get()` — ONE arbitrary copy of a name the index holds up to 227
+  //      times (the index has one symbol per file/name/line), and reported that
+  //      copy's rows as the whole answer. When the copy SQLite happened to
+  //      return held none, the tool answered `declaredAbsent: true` — "no
+  //      stored cross-language rows for this symbol — absence declared, never
+  //      guessed" — while the index held 21 such rows for the name. A false
+  //      absence is the worst thing a tool whose contract is "never guesses"
+  //      can emit. The facts are now the UNION over every copy, the copies are
+  //      named, and absence is declared only when no copy holds a row.
+  //   B. Each fact now names the counterparty (symbol, file, language, line)
+  //      and the stored row id — the fields bb_graph already returns and the
+  //      hover card did not need. A language pair alone cannot answer "does my
+  //      Kotlin Warehouse reach my Java Inventory, and where".
+  //   C. The answer is bounded by a declared `limit`, and truncation is
+  //      first-class (`truncated` / `truncationReason` / `totalCountIfKnown`),
+  //      exactly as bb_impact reports its budget. 106 stored rows used to
+  //      become 106 identical facts and 20,904 bytes.
+  //   D. The row query filters on `r.project_id = ?`. The old door took the
+  //      symbol id as its only key and never constrained the ROW's project;
+  //      a relationship row minted for another project and pointing at this
+  //      symbol was returned as one of this tool's own facts (reproduced
+  //      before the fix).
   bb_cross_language: async (args, { projectId }) => {
-    const symbol = String(args.symbol ?? "")
+    const symbol = String(args.symbol ?? "").trim()
     if (!symbol) return textResult("bb_cross_language requires symbol", true)
+    const limitRaw = args.limit === undefined || args.limit === null ? CROSS_LANGUAGE_DEFAULT_LIMIT : Number(args.limit)
+    if (!Number.isFinite(limitRaw) || limitRaw < 1 || limitRaw > CROSS_LANGUAGE_MAX_LIMIT) {
+      return textResult(`bb_cross_language: limit must be a number between 1 and ${CROSS_LANGUAGE_MAX_LIMIT}`, true)
+    }
+    const limit = Math.floor(limitRaw)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
-    // The hover derives language from the FILE row (brain_file.language) —
-    // brain_symbol has no language column. Same source, same semantics (D-1).
-    const row = raw.prepare("SELECT s.id AS id, f.language AS language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { id: string; language: string | null } | undefined
-    if (!row) {
+    // Existence is its own question, and it is asked over every copy: a name
+    // the index does not hold is a loud error (never an empty set), a name it
+    // holds is answered for all of its copies.
+    const exists = raw.prepare("SELECT COUNT(*) AS n FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { n: number }
+    if (!exists || exists.n === 0) {
       return textResult(`bb_cross_language: symbol '${symbol}' not found — declared error, not an empty set`, true)
     }
-    // The SAME component the hover section renders from (D-1): stored rows
-    // only, per-pair, declared absence when there are none.
-    const rows = storedCrossLanguageRows(raw, row.id)
-    const facts = factsFromRows(rows, row.language ?? null)
+    const result = storedCrossLanguageFactsByName(raw, projectId as string, symbol)
+    const shown = result.facts.slice(0, limit)
+    const truncated = result.facts.length > shown.length
+    // `language` is only meaningful when the copies agree. On an ambiguous
+    // name it is null and `languages` carries the truth, rather than the
+    // single language of whichever copy the database happened to return first.
+    const language = result.languages.length === 1 ? result.languages[0]! : null
     return textResult(JSON.stringify({
       symbol,
-      language: row.language,
-      facts,
-      pairCount: facts.length,
-      declaredAbsent: facts.length === 0,
-      absenceNote: facts.length === 0 ? "no stored cross-language rows for this symbol — absence declared, never guessed" : null,
+      language,
+      languages: result.languages,
+      copies: result.copies,
+      copyCount: result.copyCount,
+      ambiguous: result.ambiguous,
+      ambiguityNote: result.ambiguous
+        ? `${result.copyCount} indexed symbols are named '${symbol}' across ${new Set(result.copies.map((c) => c.file)).size} file(s); the facts below are the union over all of them, and every fact names the copy it came from`
+        : null,
+      facts: shown,
+      pairCount: shown.length,
+      // Distinct language pairs — the number a human actually reads, and the
+      // one that stays small where the row count does not.
+      distinctPairCount: new Set(shown.map((f) => `${f.pair}|${f.direction}|${f.bridge}|${f.tier}`)).size,
+      storedRowCount: result.storedRowCount,
+      unpairableRowCount: result.unpairableRowCount,
+      collapsedRowCount: result.collapsedRowCount,
+      limit,
+      truncated,
+      truncationReason: truncated ? `declared limit of ${limit} facts; ${result.facts.length} stored cross-language rows matched this name` : null,
+      totalCountIfKnown: result.facts.length,
+      declaredAbsent: shown.length === 0,
+      absenceNote: shown.length === 0
+        ? `no stored cross-language rows for any of the ${result.copyCount} indexed symbol(s) named '${symbol}' — absence declared, never guessed`
+        : null,
     }, null, 2))
   },
 
