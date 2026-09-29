@@ -771,7 +771,44 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "property_declaration":
-          this.extractProperty(n, symbols, ctx, pClass, relationships)
+          // M60 K2 (kotlin deep review): a property is a MEMBER of a class
+          // exactly when it is declared in that class's body. Every other
+          // position is a local.
+          //
+          // The walk carries `pClass` down through every node it does not
+          // intercept, and `anonymous_initializer` (an `init { }` block) is not
+          // intercepted — so a local declared in an init block was given the
+          // class as its owner:
+          //
+          //   class D { val c = 1; init { val local = 2; println(local) } }
+          //     symbols:  D, c[owner=D], local[owner=D]     <-- local owns D
+          //     published: uses D -> local  (conf 0.6, "member read")
+          //
+          // That fabricated a member read for a name bound two lines earlier in
+          // the same block, and gate A of the uses oracle could not catch it:
+          // gate B only walks function/lambda/ctor scopes, and an init block is
+          // none of those, so nothing else stood between the bad owner and a
+          // published edge. The same wrong owner also put a phantom
+          // `contains D -> local` in the graph — the java pass closed that
+          // shape as JD-J13, and it was here too.
+          //
+          // Found by adjudication, not by inspection: the oracle disagreed with
+          // the analyzer on exactly one row across 14 real files
+          // (`uses ... -> columnsTable`, Constraints.kt, declared in an init
+          // block and read in the same one) and the oracle was right.
+          //
+          // Member positions are the bodies: a class body, and an enum body (its
+          // entries and declarations live in `enum_class_body`). A companion's
+          // own `class_body` counts too — a companion's members belong to the
+          // owner class, which is the family-wide owner contract, and the uses
+          // oracle's resolveOwner cannot see a companion at all because
+          // `companion_object` is not an `object_declaration`.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition =
+              pt === "class_body" || pt === "enum_class_body"
+            this.extractProperty(n, symbols, ctx, isMemberPosition ? pClass : undefined, relationships)
+          }
           break
         case "primary_constructor":
         case "constructor_declaration":
