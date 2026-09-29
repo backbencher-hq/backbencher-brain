@@ -46,6 +46,7 @@
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { AnalysisExclusions } from "../ast/analysis-exclusions"
+import { classifyTier, type EvidenceTier } from "./evidence_tier"
 import type { GraphNode } from "../intelligence/contracts"
 
 export const IMPACT_BUDGET = {
@@ -88,8 +89,18 @@ export interface ImpactResult {
    *  hard to argue with (the same shape the bb_graph door adopted when it
    *  declared name ambiguity). */
   root: { id: string; name: string; file: string; filePath: string; line: number; symbolType: string; language: string }
-  /** Reverse dependencies, bounded, deepest last. */
-  impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
+  /** Reverse dependencies, bounded, deepest last.
+   *
+   *  M63.T1: each dependent carries the same evidence the stored row already
+   *  had and this component used to drop — the TIER (from the ONE server-side
+   *  classifier, `classifyTier`, never a second derivation), whether the edge
+   *  CROSSES LANGUAGES, the bridge mechanism when it does, and the dependent's
+   *  own position. Two of those were documented claims with no payload behind
+   *  them: docs/tools/bb_impact.md has promised "per-edge evidence tiers"
+   *  since M28, and a cross-language dependent was indistinguishable from a
+   *  same-language one — which is precisely the fact an agent needs before
+   *  renaming or deprecating a symbol. */
+  impact: ImpactDependent[]
   shownCount: number
   /** The true number of reverse dependencies under the declared rule, or null
    *  when the counting walk hit its declared scan ceiling (a declared
@@ -161,6 +172,32 @@ export interface ImpactResult {
 
 export interface ImpactDb {
   prepare(sql: string): { get(...params: unknown[]): unknown; all(...params: unknown[]): unknown[] }
+}
+
+/** One reverse dependency, with everything the stored row said about it. */
+export interface ImpactDependent {
+  id: string
+  name: string
+  file: string
+  filePath: string
+  line: number
+  symbolType: string
+  language: string
+  depth: number
+  relationshipType: string
+  confidence: number
+  /** The legend tier for this edge, from the ONE server-side classifier. */
+  tier: EvidenceTier
+  /** True when the stored row says this dependency crosses languages. */
+  isCrossLanguage: boolean
+  /** The bridge mechanism, when the row names one (null otherwise). */
+  bridgeMechanism: string | null
+  /** M63.T1: whether this dependent's FILE changed since it was indexed.
+   *  Set by the surface that can answer it (the MCP door, over the component's
+   *  file rows); absent from a component-level answer, which never touches
+   *  the filesystem. Declared optional precisely so "not checked" cannot be
+   *  read as "checked and fresh" — a three-state field, not a boolean. */
+  stale?: boolean | null
 }
 
 export interface ImpactDeps {
@@ -449,9 +486,22 @@ export async function computeImpact(
       id: nodeId,
       name: node?.name ?? nodeId,
       file: node?.file ?? "",
+      filePath: node?.filePath ?? "",
+      line: node?.line ?? 0,
+      symbolType: node?.symbolType ?? "",
+      language: node?.language ?? "",
       depth: edge.depth,
       relationshipType: edge.relationshipType,
       confidence: edge.confidence,
+      // The ONE server-side classifier (M55.T5's owner). A second derivation
+      // here would be the exact defect that module was written to close.
+      tier: classifyTier({
+        relationshipType: edge.relationshipType,
+        confidence: edge.confidence,
+        evidenceClass: edge.metadata?.evidenceClass ?? null,
+      }),
+      isCrossLanguage: edge.isCrossLanguage === true,
+      bridgeMechanism: edge.bridgeMechanism ?? null,
     })
   }
   if (result.summary?.truncated && result.summary.truncationReason) {
