@@ -728,9 +728,17 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Each constraint field must match >=1 export (unspecified fields
       // wildcards). ER3 (erlang wave): `note` is documentation here too — see the
       // expectImports comment below for why the three matchers must agree.
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true : e[k] === v)),
-      )
+      //
+      // MERGE REPAIR (post-`1ce88e40`): this block had TWO `const hit` declarations
+      // and the file did not parse. Both sides of the merge were kept. The surviving
+      // matcher is `matchConstraints`, on evidence rather than taste: it is a strict
+      // SUPERSET of the inline form it collided with — the inline form was
+      // `Object.entries(want).every(([k, v]) => (k === "note" || k === "comment" ? true
+      // : e[k] === v))`, which cannot express `equals`, `*EndsWith`, `confidenceMin/Max`,
+      // `meta.*` or the relationship field aliases, all of which `matchConstraints`
+      // handles — and it is what 7 of the file's expectation kinds already call. The
+      // inline form still has 6 callers of its own elsewhere in this file, which is
+      // correct; what was wrong was two of them landing in one block.
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
@@ -965,9 +973,11 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidExports ?? []) {
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
-      const hit = (result.exports ?? []).find((e: any) =>
-        Object.entries(want).every(([k, v]) => (k === "comment" || k === "note" ? true : e[k] === v)),
-      )
+      //
+      // MERGE REPAIR (post-`1ce88e40`): the second of the two duplicated `const hit`
+      // declarations. Same resolution and same reason as the `expectExports` block
+      // above — `matchConstraints` is the superset and the form the rest of the file
+      // uses, so the inline duplicate is the merge leftover.
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (hit) problems.push(`forbidden export present: ${JSON.stringify(want)}`)
     }
