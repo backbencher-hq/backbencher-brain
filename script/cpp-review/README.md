@@ -57,3 +57,66 @@ win is the output volume (`removedPerPass`: 91 symbols and 773 relationships per
 run time (`BASE`, default `2d32f088b9`) and deletes it afterwards. A committed second copy of
 the analyzer is 2,700 lines that go stale the next time it is edited, and a stale measurement
 harness is worse than none.
+
+## The payload/grammar/line instruments (M60.P1 wave, 2026-09-29)
+
+Four new probes, each answering a question the existing suite had no vocabulary for.
+
+### `payload-coverage.ts` — the complement question for FIELDS, not symbols
+
+`defect-register.ts` and `loss-census.ts` both ask whether a *declaration* reached the
+output. Neither can see a symbol that is published perfectly and carries an **empty
+payload field** — which is exactly what `parameters`, `returnType` and `decorators` were.
+This probe counts, per corpus file, how many callables carry each field, plus the shape
+counts that make each defect's size concrete: defaulted parameters, parameters whose
+type carries a `*`/`&`, and `returnType` values spelled `auto`.
+
+It is a **coverage report, not a gate**: it exits 0 whenever the three fields are
+populated. Correctness of the values is gated by the fixture and its mutants, which is
+the right division of labour — a corpus-wide count can prove a field is *there*, and only
+a fixture can prove it is *right*.
+
+Measured over 13,767 files / 1,078,003 symbols / 215,817 callables: `parameters` on
+125,047 (57.9% — the rest genuinely take none), `returnType` on 113,965 (52.8%),
+`decorators` on 63,833 callables and 11,913 non-callables. Defect sizes: 160,717
+ptr/ref-typed parameters, 2,146 defaults, 95 bare deduced returns.
+
+### `grammar-provenance.ts` — is the wired grammar the thing the doc names?
+
+Answers a question no other probe asked: **is the wasm actually what the documentation
+claims it is?** For cpp it is not. The doc said "0.23.4 (npm, latest)"; the wired bytes
+are a **local fork of 0.23.4** carrying three rules for upstream #743, and the two
+differ by ~118 KB in sha256 and length. The probe reports both hashes, the surface
+delta, and the load-bearing comparison: the fork parses **22/28** of this lane's fixtures
+clean against upstream's **20/28**, and the two it rescues are the ones whose symbols
+would otherwise be lost. Re-record with `verify-grammar-pins.ts --write --lane cpp`.
+
+### `line-contract.ts` — M59.A7/M60, every row, not a sample
+
+Walks all **238,172** relationship rows and asserts each `line_number` is either absent
+or a positive integer matching the tree-derived truth. Result: `noLine 0`, `lineZero 0`,
+`subOneOrNonInteger 0`, `mirrorDisagrees 0`. It also prints the relationship types never
+seen, which cross-checks the ontology probe below.
+
+### `relationship-ontology.ts` — "no such construct" vs "the analyzer forgot"
+
+The engine carries **10** `RelationshipType` values; C++ emits **7**. This probe asserts
+that every engine value is accounted for in the doc, and that each doc claim (`emits` /
+`silent`) matches the code in **both** directions. It exists because the first version of
+that table claimed `imports`/`exports` were emitted (they are separate `ImportInfo[]` /
+`ExportInfo[]` payload) and omitted `implements` entirely (no distinct C++ spelling —
+`class D : B` publishes `extends`). Its self-test proves it can catch a false *emitted*
+claim and a deleted row, not just a missing one.
+
+### What the perf probe said about the payload work
+
+The added work is O(N) over the existing walk (one decorator scan, one parameter walk, one
+`trailing_return_type` lookup per declaration) with no new traversal. The first
+measurement disagreed with that argument — `ratioBest 1.246` — and the measurement was
+right: `hasDirectModifier` does **two** scans per call and the branch made six, so eight
+scans were answering four questions the decorator list answers at once. Deriving the
+`isStatic`/`isConstexpr`/`isConst`/`isVirtual` flags **from** the list brought it to
+`ratioBest 0.99`. The distributions still overlap (pre 1617–3488 ms, post 1601–3444 ms
+over 9 interleaved reps), so **no time claim is made**; `removedPerPass` is
+`{ symbols: 0, relationships: 0 }`, which is the honest number for a wave that only
+completed a payload.

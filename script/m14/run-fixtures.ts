@@ -538,10 +538,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // entry whose text contains `contains`. Reads ONLY s.decorators (not
       // metadata.annotations fallback) so decorator emission itself stays
       // pinned per symbol kind.
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const decs: string[] = sym?.decorators ?? []
       if (!decs.some((d) => d.includes(want.contains))) {
-        problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
+        problems.push(`expected ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
       }
     }
     for (const want of exp.forbidDecorators ?? []) {
@@ -557,7 +559,9 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // decorator of every symbol (or of the named symbol when given) must NOT include
       // `contains`. Unspecified fields are wildcards; `comment`/`note` are documentation.
       const scope = want.symbol
-        ? symbols.filter((s: any) => s.name === want.symbol)
+        ? symbols.filter((s: any) =>
+            s.name === want.symbol &&
+            (want.ownerName === undefined || s.ownerName === want.ownerName))
         : symbols
       for (const s of scope) {
         for (const d of (s.decorators ?? []) as string[]) {
