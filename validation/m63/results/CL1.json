@@ -1,0 +1,199 @@
+{
+  "issue": "M63.CL1",
+  "code": "CL1",
+  "milestone": "M63",
+  "status": "verified",
+  "checks": 159,
+  "passed": 159,
+  "failed": 0,
+  "mutantsCaught": 6,
+  "mutantsTotal": 6,
+  "mutantRecords": [
+    {
+      "id": "M1",
+      "name": "pick-one-copy (the old door, planted verbatim)",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M2",
+      "name": "false absence",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M3",
+      "name": "no identity (counterparty stripped)",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
+      "id": "M4",
+      "name": "no bound (limit ignored, truncation undeclared)",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M5",
+      "name": "cross-project leak (row filter dropped)",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
+      "id": "M6",
+      "name": "pair fabrication where the row has no languages",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    }
+  ],
+  "failures": [],
+  "currentCommit": "564eacb42247e10642feb0fb2e1b409deafc1a62",
+  "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
+  "evidenceFile": "CL1.json",
+  "corpus": {
+    "path": "(reused index)",
+    "projectId": "06fee2bfd6b7e3733bfacf182ef927498939dbad",
+    "crossLanguageRows": 1545
+  },
+  "samples": [
+    {
+      "name": "generate-class",
+      "copies": 1,
+      "storedRows": 132,
+      "toolFacts": 132,
+      "pairableRows": 132
+    },
+    {
+      "name": "clojure.core",
+      "copies": 1,
+      "storedRows": 116,
+      "toolFacts": 116,
+      "pairableRows": 116
+    },
+    {
+      "name": "generate-proxy",
+      "copies": 1,
+      "storedRows": 108,
+      "toolFacts": 108,
+      "pairableRows": 108
+    },
+    {
+      "name": "f",
+      "copies": 6,
+      "storedRows": 106,
+      "toolFacts": 106,
+      "pairableRows": 106
+    },
+    {
+      "name": "byte",
+      "copies": 1,
+      "storedRows": 84,
+      "toolFacts": 84,
+      "pairableRows": 84
+    },
+    {
+      "name": "char",
+      "copies": 1,
+      "storedRows": 76,
+      "toolFacts": 76,
+      "pairableRows": 76
+    },
+    {
+      "name": "int",
+      "copies": 1,
+      "storedRows": 63,
+      "toolFacts": 63,
+      "pairableRows": 63
+    },
+    {
+      "name": "getName",
+      "copies": 8,
+      "storedRows": 51,
+      "toolFacts": 51,
+      "pairableRows": 51
+    },
+    {
+      "name": "ArrayChunk",
+      "copies": 5,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "ByteVector",
+      "copies": 4,
+      "storedRows": 2,
+      "toolFacts": 2,
+      "pairableRows": 2
+    },
+    {
+      "name": "ChunkedSeq",
+      "copies": 4,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "ClassReader",
+      "copies": 6,
+      "storedRows": 3,
+      "toolFacts": 3,
+      "pairableRows": 3
+    },
+    {
+      "name": "CompilerException",
+      "copies": 4,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "EMPTY",
+      "copies": 11,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "Entry",
+      "copies": 8,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "Frame",
+      "copies": 4,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "stream-to-bytes",
+      "copies": 1,
+      "storedRows": 1,
+      "toolFacts": 1,
+      "pairableRows": 1
+    },
+    {
+      "name": "*1",
+      "copies": 1,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    }
+  ],
+  "generatedAt": "2026-09-29T04:35:31.756Z",
+  "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
+  "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
+  "limitations": [
+    "Coverage is bounded by what the analyzers stored: 100% of cross-language rows in the measured corpus carry bridge_mechanism 'name-resolution', the indexer's name-matching placeholder, so the bridge field is data but not a communication mechanism.",
+    "A name held by many symbols is answered as the union over all copies; the facts name the copy, so an agent can narrow, but the tool does not choose one on the agent's behalf.",
+    "Facts are bounded by the declared limit with first-class truncation; totalCountIfKnown is the count of pairable matched rows, and unpairableRowCount reports the rows that could not name a pair."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-29T04:35:31.758Z",
+    "contentSha256": "f6b802393b8c92e827e8c6b04e74b5447d593e22308b5021669d3177cdf1e2fc"
+  }
+}
