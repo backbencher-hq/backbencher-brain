@@ -325,8 +325,17 @@ comparable across grammar versions.
 
   | Residual | Count | Adjudication |
   | --- | --- | --- |
-  | `uses` for a binding form the oracle does not track | 5 | **oracle** imprecision, and now precisely characterised: `tconcepts.nim`/`twrapconcept.nim` (a concept's formal parameter), `templatesinconcepts.nim` (a template parameter), `tstatic_constrained.nim`/`ttupleunpack.nim` (a NESTED destructuring `let (a, (b, c))`). The analyzer suppresses every one of them because the binding is in scope — a concept is a scope frame with its formals shadowing, and a nested `tuple_deconstruct_declaration` binds recursively. The oracle's shadow tracking covers procs and simple declarations only, so it publishes a read of a local. Five instances of one gap |
-  | `references -> Rgba8` | 1 | **genuinely ambiguous, unresolved.** `BlenderRgb[Rgba8]` reads as a type argument and the analyzer treats it as one; the enclosing test suggests a value index. Resolving it needs a decision about bracket positions in a non-generic call, not a patch, so it is recorded rather than guessed |
+  | `uses` for a binding form the oracle did not track | **0 — closed** | Five instances, one cause: the oracle's `bindNames` read a destructuring pattern one level deep, so `let (a, (b, c))` never bound `b`/`c`, and `concept_declaration` had no scope frame at all, so a concept's formal parameter — the one binder in Nim written as a bare identifier in a `parameter_list` — was never a binding. `bindNames` is now recursive and a concept is a frame. Measured over 3,914 files: the class went 5 → 0 |
+  | `instantiates -> sink` (`lib/core/system.nim`) | 1 | **oracle** gap: `sink[T]` is a real declared Nim type, so constructing one IS an instantiation. The oracle's `instantiates` rule does not cover the generic-construction form |
+  | `references -> default` (`lib/js/asyncjs.nim`), `references -> f` (`lib/pure/typetraits.nim`) | 2 | **UNADJUDICATED — the analyzer emits them and the oracle does not, and a minimal repro did not reproduce it.** A field named `default` and a parameter named `f` are both correctly excluded in isolation (verified), so the source is something narrower in these two macro-heavy files. Recorded rather than guessed: a plausible-sounding ruling here would be worse than an open row, and it is the reason the sweep prints file and line for every residual |
+  | `references -> Rgba8` (`tests/.../taliasbugs.nim`) | 1 | **genuinely ambiguous.** `BlenderRgb[Rgba8]` reads as a type argument and the analyzer treats it as one; the enclosing test suggests a value index. Resolving it needs a decision about bracket positions in a non-generic call, not a patch |
+
+  The residual count over the whole corpus is **4, down from 10** when this table
+  was first written. That number matters more than any single row: a standing
+  check that always reports the same handful of known rows is a check nobody
+  reads, and a NEW defect would hide in that noise. With four rows the signal is
+  usable again, and the two unadjudicated rows are named precisely enough to be
+  picked up by whoever has the context for them.
 
   The import family is now CLEAN over all 3,914 files. Getting there took four
   corrections, and three of them were the oracle's fault rather than the
