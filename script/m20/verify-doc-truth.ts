@@ -11,7 +11,7 @@
 // A check that carries no detail is a harness bug and throws — a vacuous green
 // gate is the exact failure this file exists to prevent.
 
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -200,14 +200,17 @@ try {
     const exact = await doc({ mode: "file", target: "src/lib/math.ts", limit: 20 })
     check("file mode: an EXACT path still resolves", exact.citations.length > 0,
       `target="src/lib/math.ts" citations=${exact.citations.length}`)
+    // A file-mode result may still carry project-wide evidence (an open
+    // finding); what must be empty is the FILE evidence.
     const absent = await doc({ mode: "file", target: "no/such/file.ts", limit: 20 })
-    check("file mode: an absent path resolves to nothing", absent.citations.length === 0,
-      `target="no/such/file.ts" citations=${absent.citations.length}`)
+    const absentFiles = absent.citations.filter((citation) => citation.kind === "file")
+    check("file mode: an absent path resolves to no files", absentFiles.length === 0,
+      `target="no/such/file.ts" fileCitations=${absentFiles.length} allCitations=${absent.citations.length} kinds=${JSON.stringify([...new Set(absent.citations.map((c) => c.kind))])}`)
     // Negative twin: the engine DISCRIMINATES (exact yes, absent no), so a
     // directory scoring 0 is a resolution defect, not a dead fixture.
     negative("file-mode resolution discriminates existing from absent",
-      exact.citations.length > 0 && absent.citations.length === 0,
-      `exact resolved ${exact.citations.length}, absent resolved ${absent.citations.length} — so an existing directory scoring 0 is a real miss`)
+      exact.citations.filter((c) => c.kind === "file").length > 0 && absentFiles.length === 0,
+      `exact resolved ${exact.citations.filter((c) => c.kind === "file").length} file(s), absent resolved ${absentFiles.length} — so an existing directory scoring 0 is a real miss`)
   }
 
   // ── T2 (D1): an empty result must not report passed ─────────────────────
@@ -257,12 +260,14 @@ try {
     const missing = missingSections(mode, d)
     check(`${mode} mode emits its declared required sections`, missing.length === 0,
       `emitted=${JSON.stringify(d.sections.map((s) => s.heading))} missing=${JSON.stringify(missing)}`)
-    const tautology = d.quality.completeness.expected === d.quality.completeness.covered + d.quality.completeness.unknown
-    check(`${mode} mode: completeness.expected is not covered+unknown`, tautology === false,
-      `covered=${d.quality.completeness.covered} unknown=${d.quality.completeness.unknown} expected=${d.quality.completeness.expected} (required sections for the mode: ${REQUIRED_SECTIONS[mode].length})`)
+    // `expected` is the mode's DECLARED section count. It used to be
+    // covered+unknown, which made completeness unable to detect a missing
+    // section at all.
+    check(`${mode} mode: completeness.expected is the mode's declared section count`, d.quality.completeness.expected === REQUIRED_SECTIONS[mode].length,
+      `expected=${d.quality.completeness.expected} declared=${REQUIRED_SECTIONS[mode].length} covered=${d.quality.completeness.covered} unknown=${d.quality.completeness.unknown}`)
   }
-  negative("tautology predicate recognises a tautology", (1 === 1 + 0) === true,
-    "covered=1, unknown=0, expected=1 is recognised as expected===covered+unknown")
+  negative("the old completeness shape is recognised as a tautology", (1 === 1 + 0) === true,
+    "covered=1, unknown=0, expected=1 is the old covered+unknown shape; the gate now compares expected against the declared section count")
 
   // ── T7 (D11): the summary is not a copy of the facts ───────────────────
   {
@@ -287,14 +292,32 @@ try {
   {
     const d = await doc({ mode: "project", limit: 20 })
     const md = formatDocumentation(d, "markdown")
-    // The documented shape is `[1](src/auth.ts#L12-L28)`: an inline markdown
-    // link whose target is the citation's own repository-relative path.
-    const sourceLines = md.split("\n").filter((l) => l.startsWith("- ["))
-    const linkedSources = sourceLines.filter((l) => l.includes("]("))
-    check("markdown renders every source as a link", d.citations.length > 0 && linkedSources.length === sourceLines.length,
-      `${linkedSources.length}/${sourceLines.length} source lines carry an inline link; first: ${JSON.stringify(sourceLines[0]?.slice(0, 90) ?? "")}`)
+    const lines = md.split("\n")
+    // Two lists, so the check is per list. A file citation must be a markdown
+    // LINK (`[1](src/a.ts#L1)`); an index-scoped citation has no file and is
+    // numbered as a footnote (`[^i1]`) instead. Counting both together is what
+    // let a broken-link regression hide: 7 of 29 file sources were unlinked and
+    // the footnote markers made the ratio look wrong rather than the links.
+    const fileLines = lines.filter((l) => /^- \[\d+\]\(/.test(l))
+    const indexLines = lines.filter((l) => /^- \[\^i\d+\]/.test(l))
+    const fileCitations = d.citations.filter((c) => Boolean(c.path))
+    const indexCitations = d.citations.filter((c) => !c.path)
+    check("every file source is rendered as a markdown link", fileLines.length === fileCitations.length && fileCitations.length > 0,
+      `${fileLines.length} linked of ${fileCitations.length} file citation(s); index-scoped footnotes=${indexLines.length}/${indexCitations.length}; first=${JSON.stringify(fileLines[0]?.slice(0, 80) ?? "")}`)
+    // Every link target must be a real path in the fixture, and every
+    // in-document marker must resolve to a listed entry.
+    const linkTargets = fileLines.map((l) => /^- \[\d+\]\(([^)#]+)/.exec(l)?.[1] ?? "").filter(Boolean)
+    const listedNumbers = new Set(fileLines.map((l) => /^- \[(\d+)\]/.exec(l)?.[1] ?? ""))
+    const usedNumbers = new Set((md.match(/\[(\d+)\]/g) ?? []).map((m) => m.slice(1, -1)))
+    const deadLink = linkTargets.find((t) => !t || !existsSync(path.join(root, decodeURIComponent(t))))
+    check("every rendered source link resolves on disk", !deadLink, `${linkTargets.length} link(s); unresolved=${deadLink ?? "none"}`)
+    check("every inline marker resolves to a listed source", [...usedNumbers].every((n) => listedNumbers.has(n)),
+      `${usedNumbers.size} marker(s) used, ${listedNumbers.size} listed; dangling=${JSON.stringify([...usedNumbers].filter((n) => !listedNumbers.has(n)))}`)
     check("markdown has no heading with an empty body", !/^## \w+\n\n(## |$)/m.test(md),
       "no empty section between two headings / at the end")
+    negative("the file-link predicate convicts an unlinked source",
+      /^- \[\d+\]\(/.test("- [1](src/a.ts#L1) — file: x") === true && /^- \[\d+\]\(/.test("- [1] src/a.ts — file: x") === false,
+      "a linked source is recognised and an unlinked one is not — the predicate discriminates")
   }
 
   // ── T10 (D14): no duplicate statements ──────────────────────────────────
@@ -363,12 +386,21 @@ try {
     const real = JSON.stringify(d).length
     check("the token estimate covers the whole payload", d.quality.budget.estimatedTokens * 4 >= real,
       `estimatedTokens*4=${d.quality.budget.estimatedTokens * 4} actualChars=${real}`)
+    // The DEFAULT call must fit the DEFAULT budget. It used to overflow it 3x
+    // on every real repository measured and return the oversized document.
+    check("the default call fits the default budget", d.quality.budget.passed,
+      `est=${d.quality.budget.estimatedTokens} max=${d.quality.budget.maxTokens} output-budget drop(s)=${d.unknowns.filter((u) => u.reason === "output-budget").length}`)
     const small = await doc({ mode: "project", limit: 50, maxTokens: 200 })
     check("maxTokens below the default is honoured", small.quality.budget.maxTokens === 200,
       `requested=200 effective=${small.quality.budget.maxTokens}`)
-    const within = small.quality.budget.estimatedTokens <= small.quality.budget.maxTokens
-    check("a tight budget produces output that fits it", within,
-      `est=${small.quality.budget.estimatedTokens} max=${small.quality.budget.maxTokens} facts=${allFacts(small).length}`)
+    // A budget too small for the required sections cannot be met, and the
+    // honest answer is to SAY that rather than silently emit an oversized body
+    // or drop a required section to fit.
+    const shortfall = !small.quality.budget.passed
+    check("an unmet budget is declared, not hidden", !shortfall || small.unknowns.some((u) => u.reason === "output-budget" && /cannot fit inside/.test(u.statement)),
+      `budgetPassed=${small.quality.budget.passed} est=${small.quality.budget.estimatedTokens} declaresShortfall=${small.unknowns.some((u) => /cannot fit inside/.test(u.statement))}`)
+    check("trimming never drops a required section", REQUIRED_SECTIONS.project.every((required) => small.sections.some((section) => section.heading.toLowerCase().includes(required))),
+      `sections kept=${JSON.stringify(small.sections.map((section) => section.id))}`)
     const over = d.quality.budget.estimatedTokens > d.quality.budget.maxTokens
     check("an over-budget result declares an output-budget unknown", !over || d.unknowns.some((u) => u.reason === "output-budget"),
       `over=${over} est=${d.quality.budget.estimatedTokens} max=${d.quality.budget.maxTokens} outputBudgetUnknowns=${d.unknowns.filter((u) => u.reason === "output-budget").length}`)
