@@ -2414,6 +2414,83 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
     }
   }
 
+  // ── anonymous object expressions ─────────────────────────────────────────
+  // `val t = object : IntIdTable() { val code = 1 }` is a CLASS in kotlin — it
+  // overrides, it has members, it is a real type — but it has no name of its
+  // own. The analyzer names it `anonymous_<DelegationSuperType>` (or
+  // `anonymous_object` with no delegation), gives it the nearest enclosing
+  // declaration as owner, and contains its body. Measured on Exposed as the bulk
+  // of the 50 unexplained contains rows: `anonymous_IntIdTable`,
+  // `anonymous_IdTable`, `anonymous_Table`, `anonymous_StatementInterceptor`.
+  //
+  // The name comes from the DELEGATION supertype, not from the variable it is
+  // assigned to: `val t = object : IntIdTable() {...}` is `anonymous_IntIdTable`,
+  // while `val t: Runnable = object {...}` is `anonymous_object` because the
+  // type is written on the variable and the object delegates to nothing.
+  //
+  // Distinguishing an anonymous object from a NAMED one is structural and needs
+  // no heuristic: an anonymous object has a `class_body`, and the named
+  // `object O { ... }` that the pinned grammar mis-parses into
+  // `infix_expression > object_literal` has a `lambda_literal` body instead. So
+  // "has a class_body" is the test, and the mis-parsed named object is excluded
+  // by construction rather than by a name check.
+  //
+  // The owner SKIPS lambdas: an object inside `.let { object : Function<T>(..)
+  // }` is contained by the enclosing FUNCTION, not by the lambda — which is why
+  // the row reads `aliasOnlyExpression contains anonymous_Function` rather than
+  // the lambda holding it.
+  {
+    const ownerOfDecl = (start: any): string | null => {
+      let q = start
+      while (q) {
+        if (q.type === "function_declaration" || q.type === "class_declaration" || q.type === "object_declaration") {
+          const nm = firstNamedOf(q, ["simple_identifier", "type_identifier"])
+          if (nm) return nm.text
+        }
+        q = q.parent
+      }
+      return null
+    }
+    const delegationSuperType = (obj: any): string | null => {
+      const spec = namedOf(obj, "delegation_specifier")
+      if (!spec) return null
+      let cur: any = spec
+      for (let i = 0; i < cur.namedChildCount; i++) {
+        const c = cur.namedChild(i)
+        if (c && c.type === "constructor_invocation") cur = c
+      }
+      const ut = cur.type === "user_type" ? cur : namedOf(cur, "user_type")
+      const ti = ut ? namedOf(ut, "type_identifier") : null
+      return ti ? ti.text : null
+    }
+    const st: any[] = [root]
+    while (st.length) {
+      const n = st.pop()!
+      if (n.type === "object_literal" && namedOf(n, "class_body")) {
+        const sup = delegationSuperType(n)
+        const anonName = `anonymous_${sup ?? "object"}`
+        const owner = ownerOfDecl(n.parent)
+        if (owner) push(owner, anonName)
+        const body = namedOf(n, "class_body")
+        for (let i = 0; i < body.namedChildCount; i++) {
+          const d = body.namedChild(i)
+          if (!d) continue
+          if (
+            d.type === "property_declaration" || d.type === "function_declaration" ||
+            d.type === "class_declaration" || d.type === "object_declaration" ||
+            d.type === "enum_entry"
+          ) {
+            push(anonName, declaredName(d) ?? "")
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+
   return edges
 }
 
