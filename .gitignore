@@ -1,4 +1,8 @@
-node_modules/
+# NO trailing slash, deliberately. `node_modules/` matches a DIRECTORY and not a SYMLINK, so
+# it never matched the node_modules symlink this repo used to track — which checked itself
+# out as a link to itself and made the TypeScript compiler unreachable. The bare name matches
+# both the directory and a symlink of that name.
+node_modules
 dist/
 *.tgz
 bun.lock
