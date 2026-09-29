@@ -527,17 +527,19 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
     if (member) return true
     return left.type === "identifier"
   }
-  const bindNames = (frame: Scope | null, listNode: any): void => {
-    if (!frame || !listNode) return
+  // Recursive, because the pattern NESTS: `let (a, (b, c)): (int, (int, int))`
+  // is a tuple_deconstruct_declaration containing a symbol_declaration AND
+  // another tuple_deconstruct_declaration. The previous version read one level
+  // and then asked a nested destructuring node for its own name, which has none
+  // — so `b` and `c` were never bound and the reads of them were published.
+  const bindNames = (frame: Scope | null, listNode: any, depth = 0): void => {
+    if (!frame || !listNode || depth > 8) return
     for (const d of named(listNode)) {
       if (d.type === "symbol_declaration") {
         const info = nameOf(field(d, "name"))
         if (info.name && info.name !== "_") frame.names.add(info.name)
       } else if (d.type === "tuple_deconstruct_declaration") {
-        for (const inner of named(d)) {
-          const info = nameOf(inner)
-          if (info.name && info.name !== "_") frame.names.add(info.name)
-        }
+        bindNames(frame, d, depth + 1)
       }
     }
   }
@@ -579,6 +581,22 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       scopes.push({ names: new Set<string>(), fn: null })
       pushedScope = true
       bindNames(top(), field(node, "left"))
+    } else if (t === "concept_declaration") {
+      // A CONCEPT binds a formal parameter, and it is the one binder in Nim
+      // written with no `symbol_declaration` wrapper and no type annotation —
+      // just a bare identifier in a `parameter_list`. So it needs its own frame,
+      // and the body's reads of that parameter are reads of a BINDING.
+      const frame: Scope = { names: new Set<string>(), fn: null }
+      const owner = node.parent && node.parent.type === "type_declaration" ? node.parent.namedChild(0) : null
+      if (owner) frame.fn = nameOf(field(owner, "name")).name || null
+      const params = firstOfType(node, "parameter_list")
+      if (params) {
+        for (const c of named(params)) {
+          if (c.type === "identifier" && c.text !== "_") frame.names.add(c.text)
+        }
+      }
+      scopes.push(frame)
+      pushedScope = true
     } else if (t === "variable_declaration") {
       bindNames(top(), named(node)[0])
     } else if (t === "except_branch") {
