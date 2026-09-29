@@ -3,8 +3,31 @@
 ## Language
 
 - Analyzer file: `src/ast/real-cpp-analyzer.ts`
-- Parser: `tree-sitter-cpp` **0.23.4** (npm, latest — upgraded from the
-  previously pinned grammar in this milestone; `translation_unit` →
+- Parser: `tree-sitter-cpp`, **a LOCAL FORK of upstream 0.23.4** — not the npm
+  package. The fork is vendored at `grammars/tree-sitter-cpp/` and is
+  byte-pinned: `validation/m14/grammar-pins.json` records the wired wasm's
+  sha256 + length, the enumerable node surface, and a per-file sha256 for every
+  vendored source file; `script/m14/verify-grammar-pins.ts` re-measures all of it
+  and fails on any drift. Re-runnable:
+
+  ```bash
+  bun script/m14/verify-grammar-pins.ts
+  ```
+
+  The fork exists for upstream issue #743 and carries three rules upstream 0.23.4
+  does not have — `macro_prefixed_type_specifier`, `macro_specifier`, and
+  `preproc_header_name` (3 named types, 0 fields). The patches are load-bearing
+  rather than cosmetic: the fork parses **22 of this lane's 28 fixtures clean
+  where upstream 0.23.4 parses 20**, and the two it rescues
+  (`preproc-has-include.cpp`, `macro-decorated-specifier.cpp`) are the ones whose
+  symbols would otherwise be lost. Measured by
+  `script/cpp-review/grammar-provenance.ts`; the full record, including the
+  byte-identity ledger against the npm tarball, is `grammars/tree-sitter-cpp/PIN.md`.
+  (This section previously said "0.23.4 (npm, latest)", which was false: the
+  wired wasm was never the npm bytes, and the byte lengths of the two differ by
+  ~118 KB.)
+- Grammar shape (as walked):
+  `translation_unit` →
   `namespace_definition`/`class_specifier`/`struct_specifier`/
   `enum_specifier`/`template_declaration`/`function_definition`/
   `field_declaration`/`declaration`/`alias_declaration`/`preproc_include` tree;
@@ -83,6 +106,74 @@ test is stated in the register itself, as the five-line contract it is, while th
 analyzer implements it in the two exported helpers. Against the pre-fix analyzer the
 gate reports `D7: 22` and `pass: false`; against the fixed one, 0.
 
+## M60.P1 — the payload this document used to describe and the analyzer never emitted
+
+Three rows in the symbol contract above (`parameters`, `returnType`,
+`decorators/attributes`) were marked ✅ for this lane while the analyzer produced
+none of them. `script/m60/payload-matrix.ts` had already recorded all three as
+**dead emit cells**, so the repository was holding two contradictory artifacts and
+the documentation was the one a reader would believe. There were two further
+silent defects behind the first of them:
+
+- **The parameter type was sliced at the wrong node.** The `type` is the
+  declaration-specifier, which *includes* the `*`/`&`/`&&` that belong to the
+  declarator's own prefix. A `reference_declarator`'s text is `& name` and its
+  start index points at the `&`, so the natural-looking
+  `param.text.slice(0, param.text.length - declarator.text.length)` publishes
+  `const std::string` for `const std::string& name` and `const char` for
+  `const char* format`. Those are not display slips: they are *different C++
+  types that overload differently*, and the identical slice is the
+  override-matching key in `buildParamSig`, where it made `virtual void
+  f(Widget&)` and `virtual void f(Widget)` hash to one signature and let a
+  derived `void f(Widget)` match the base's `f(Widget&)`. The rule is now one
+  rule, taken at the parameter's NAME node, and it is pinned from both
+  directions: `expectParameters` states the exact type (`const std::string&`),
+  `forbidParameters.types` states that the parameter's own name may never appear
+  in its type field.
+- **Defaulted parameters are a different node.** In this grammar
+  `int a` is a `parameter_declaration` and `double scale = 1.0` is an
+  `optional_parameter_declaration`. A walk that reads the first node type alone
+  looks correct on every undefaulted signature and silently loses every defaulted
+  parameter in the corpus. A default is also deliberately NOT pre-bound: it is
+  read by the walk-order declaration-position rule at its own node, because for
+  `void f(int a = b, int b = 1)` the first default legitimately reads an *outer*
+  `b`, and pre-binding would move the binding earlier than the declaration and
+  change a flow-sensitive answer.
+
+**Why no existing gate could see this.** D1–D6 are fabrication-shaped and D7 is the
+first loss class, but all seven are symbol/edge classes — a symbol can be
+perfectly named, correctly owned, and still carry an absent payload, and neither a
+symbol count nor an edge assertion can notice. The differential cannot either: an
+oracle written from the same reading of the same grammar never asks for the field,
+so the blind spot is symmetric and cancels. The six mutants added with this work
+are all `payload-loss`, and all five are caught by the one new fixture
+`cpp/m60-signature-payload`; the fixture also fails on each of the four arms
+independently, which is what makes them regression gates rather than documentation.
+
+**The shared matrix, re-measured, confirms this — and one of its own defects is worth
+recording here.** Run it with `bun run` (see below), and cpp dead emit cells go
+**15 → 12** with `parameters`, `returnType` and `decorators` alive.
+
+`script/m60/payload-matrix.ts` guards its entry with `if (import.meta.main) main()`,
+which is correct — an unguarded call would make every future *import* rewrite its
+committed artifact from whatever tree is checked out — but `import.meta.main` is a
+**Bun** property, and the file's own header says `npx tsx script/m60/payload-matrix.ts`.
+Under tsx the guard is falsy: `main()` never runs, the script prints nothing, and it
+**exits 0**. I read the committed artifact, concluded this work had not landed, and was
+wrong; the artifact was stamped `00:18:25Z` / commit `06ef6e7a` against a HEAD of
+`0da6ea37`. A gate that exits 0 having done nothing is worse than one that fails.
+
+Two cpp cells remain **falsely** dead, both stale needles rather than defects:
+`isStatic` is looked for as `/\bisStatic\s*:/` while the analyzer uses JS **property
+shorthand** (`isStatic,`), and `qualified_calls` is looked for in a `key:` form it is
+never written in — yet both fields are genuinely published. A needle blind to property
+shorthand is a systematic blind spot for any lane written in idiomatic TS, so this is
+worth more than the two cells. The remaining dead cells are correct, including `from`/`to`
+(for which cpp emits `source`/`target`/`fromSymbol`/`toSymbol` — all four verified
+populated, rather than assumed). The matrix is a shared artifact and re-pointing its
+needles is another lane's call; measured key sets for this lane are recorded in
+`reviews/cpp/m60-payload-2026-09-29.md`.
+
 ## Symbol contract
 
 | Field | Supported? | How extracted (AST node/field) |
@@ -91,26 +182,36 @@ gate reports `D7: 22` and `pass: false`; against the fixed one, 0.
 | kind | ✅ | namespaces → `namespace`; classes/structs with bodies → `class`; `enum class` → `enum` (members → `enum_member`); methods (declarations + out-of-line definitions, incl. template `Registry<T>::add`) → `method`; constructors → `constructor`; members → `property`; `using X = ...` aliases → `type`; object-like macros with value bodies → `constant`; file-scope static vars → `variable` (private, internal linkage) |
 | qualified/container name | ✅ | `ownerName` = enclosing namespace/class via scope stack (out-of-line definitions use the explicit `Class::` scope; template `Registry<T>::add` resolves through the `template_type` scope node); visibility from access specifiers (`public:`/`private:`/`protected:`). **A function is never an owner** except for a local `class`/`struct`/`enum`, which has members that need one. |
 | range (start/end line + column) | ✅ | the declaration/definition node |
-| parameters | ✅ | function declarator `parameter_list` → name/type pairs on method/function symbols |
-| returnType | ✅ | return type from the declarator's type node (`node.childForFieldName("type")`) |
+| parameters | ✅ | function declarator `parameter_list` → `name`/`type`/`defaultValue`/`isOptional` on method/function/constructor symbols. **M60.P1: this row was a FALSE CLAIM until this milestone** — the field was never produced, and `UniversalSymbol.decorators`/`returnType` sat as DEAD emit cells in `script/m60/payload-matrix.ts` while this table said ✅. Two rules make the values correct rather than merely present, and both are pinned by `cpp/m60-signature-payload` and by six mutants: **(1) the type slice stops at the parameter's NAME node, not its declarator** — a `reference_declarator`'s text is `& name` and its start index points at the `&`, so slicing at the declarator publishes `const std::string` for `const std::string& name`, a *different C++ type that overloads differently* (and the same slice is the override-matching key, so `f(Widget&)` and `f(Widget)` hashed alike); **(2) a defaulted parameter is a DIFFERENT node** (`optional_parameter_declaration`), so reading only `parameter_declaration` silently drops every defaulted parameter in the corpus. A variadic `...` is deliberately NOT a parameter — it has no name and no type, and the family shape has no slot for it. |
+| returnType | ✅ | the declaration's `type` field, EXCEPT for a deduced return type: `auto f() const -> std::string` has `type` = `auto`, so the real type is read from the `trailing_return_type` **child** of the declarator (measured shape: `function_declarator [trailing_return_type [->, type_descriptor]]`) — it is a child, not a field, and `childForFieldName` returns null for it. M60.P1: absent before this milestone. **Where `auto` is still published, it is the honest spelling, and that is a measured distinction rather than a leftover:** the trailing return type gives the type only when the author WROTE one. 95 corpus symbols spell a bare deduced return with no `->` at all (e.g. `auto UnpackStructImpl(const T& t, MakeIndexSequence<3>, char) { … }` in fmt's bundled gmock, 12+ of them in one header), and there the declared type genuinely *is* `auto` — the real type is deduced from the return statement in the body, which this analyzer does not evaluate and must not guess. Publishing `auto` there is truthful; publishing it for a written `-> std::string` is a name that resolves to nothing. |
 | documentation/comments | — | n/a (C++ comments not extracted as doc) |
 | complexity metrics | ✅ | memory-safety score (smart pointers `std::make_unique`/`std::make_shared` boost, raw `new`/`delete` penalize); patterns (`auto`, `lambda`, `constexpr`, RAII, smart pointers); framework detection (Qt/STL/Win32) from `#include` patterns — pure-String scans |
 | syntax errors | ✅ | ERROR/missing nodes surfaced as warnings; counted in `parseErrors` |
-| decorators/attributes | ✅ | `virtual`/`override`/`const`/`constexpr`/`static` modifiers on method/field symbols; `isPureVirtual`/`isAbstract` flags; `isTemplate` |
+| decorators/attributes | ✅ | M60.P1: the declaration's modifiers as their **source spellings, in source order** (`["static", "constexpr"]`), on BOTH the function branch and the field/variable branch — `static constexpr int kMax = 2;` carries as much modifier information as `virtual double area() const = 0;`, so a field that answers for one and not the other is a field a consumer cannot rely on. The scan matches a child by TEXT and EXCLUDES the declaration's own payload fields (`type`, `declarator`, `default_value`, …), **not** by `isNamed`: the grammar is inconsistent and both forms occur in this lane's own fixtures — `virtual` is an unnamed token on a method, while `static`/`constexpr` are NAMED `storage_class_specifier`/`type_qualifier` wrappers on a field, and an `isNamed`-only rule finds the modifier on the method and misses it on the field. `override`/`final` are `virtual_specifier`s, a level below the declaration, so they need the second lookup. A destructor and an operator overload are deliberately absent: `~File` and `operator==` are part of the NAME, not modifiers applied to it. `isPureVirtual`/`isAbstract`/`isTemplate` remain separate metadata flags. |
 
 ## Relationship ontology
 
-| Relationship type | Emitted? | How resolved | Confidence model |
+The engine's `RelationshipType` carries **10 distinct values**. This lane emits
+**7** of them as relationships. All 10 are listed, because a consumer reading the
+table must be able to tell "C++ has no such construct" from "the analyzer forgot",
+and the first version of this table did not: it marked `imports` and `exports` as
+emitted (they are **not** relationships for C++ — they are separate
+`ImportInfo[]` / `ExportInfo[]` payload) and omitted `implements` entirely.
+`script/cpp-review/relationship-ontology.ts` asserts that every value the engine
+carries appears below, and which of them the analyzer emits.
+
+| Relationship type | Emitted as a relationship? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| contains | ✅ | REAL container ownership: namespace→class/enum/alias, class→method/property/constructor, enum→member, and function→local `class`/`enum` (a local type has members and needs an owner). Never `global contains X`. **D3: one edge per `(owner, name)` pair** — the overloads stay SYMBOLS, only the duplicated edge is dropped. | 1.0 |
-| references | ✅ | include dependencies (`global → header` from `#include <...>` / `#include "..."`, pure-String `stripIncludeChars` unwrap) and `using`-dependencies. **D3: one edge per module**; the `imports` array still receives every occurrence, because a count and a dependency are different things. | 1.0 |
-| uses | ✅ | three positions, all gated by `isCppSpelledName` (D1): bare value reads (CP1, resolution via the file-scope/namespace/class roster) and non-call field access (`a.b` / `ptr->field`). Field expressions that are the function of a call skip the uses walk — the `calls` edge is the fact. | 1.0 / 0.9 |
-| calls | ✅ | `call_expression` → callee leaf, unwrapped through template/dependent/parenthesized wrappers; source = enclosing method/function. `calls` is deliberately **not** deduplicated: two call sites are two facts, each with its own M59.A7 `line_number`, and the C/TypeScript/Java lanes emit both. | 1.0 |
-| instantiates | ✅ | `new_expression` → allocated type | 0.9 |
-| extends | ✅ | `base_class_clause` → base name. **D2: a base whose cleaned leaf equals the derived class's own name is refused** — `char_traits : std::char_traits<T>` is real inheritance from a *different* class, and the leaf clean had discarded the only thing that said so. | 1.0 |
-| imports | ✅ | `#include` → module name; `using_declaration` → imported name | 1.0 |
-| exports | ✅ | public non-static file-scope symbols, excluding the `expandedFrom: "macro-heading"` symbols (M49 exports invariant: unique, resolvable, top-level) | — |
-| overrides | ✅ | base-class virtuals tracked in-memory, resolved transitively with a depth cap, signature-aware (parameter TYPES only, CPPD5/CPPD11), self-base guarded (D2) | 0.9, `reasonCode: "signature-match"` |
+| contains | ✅ 27,558 | REAL container ownership: namespace→class/enum/alias, class→method/property/constructor, enum→member, and function→local `class`/`enum` (a local type has members and needs an owner). Never `global contains X`. **D3: one edge per `(owner, name)` pair** — the overloads stay SYMBOLS, only the duplicated edge is dropped. | 1.0 |
+| references | ✅ 13,321 | include dependencies (`global → header` from `#include <...>` / `#include "..."`, pure-String `stripIncludeChars` unwrap) and `using`-dependencies. **D3: one edge per module**; the `imports` array still receives every occurrence, because a count and a dependency are different things. | 1.0 |
+| uses | ✅ 16,071 | three positions, all gated by `isCppSpelledName` (D1): bare value reads (CP1, resolution via the file-scope/namespace/class roster) and non-call field access (`a.b` / `ptr->field`). Field expressions that are the function of a call skip the uses walk — the `calls` edge is the fact. | 1.0 / 0.9 |
+| calls | ✅ 179,268 | `call_expression` → callee leaf, unwrapped through template/dependent/parenthesized wrappers; source = enclosing method/function. `calls` is deliberately **not** deduplicated: two call sites are two facts, each with its own M59.A7 `line_number`, and the C/TypeScript/Java lanes emit both. | 1.0 |
+| extends | ✅ 1,047 | `base_class_clause` → base name. **D2: a base whose cleaned leaf equals the derived class's own name is refused** — `char_traits : std::char_traits<T>` is real inheritance from a *different* class, and the leaf clean had discarded the only thing that said so. | 1.0 |
+| instantiates | ✅ 407 | `new_expression` → constructed type | 0.9 |
+| overrides | ✅ 500 | base-class virtuals tracked in-memory, resolved transitively with a depth cap, signature-aware (parameter TYPES only, CPPD5/CPPD11), self-base guarded (D2) | 0.9, `reasonCode: "signature-match"` |
+| **implements** | ❌ **never emitted** | C++ has no separate interface construct: interface satisfaction IS inheritance, and inheritance is emitted as `extends`. There is no `implements` keyword, no `implements` clause, and no distinct base-class list to read. Emitting it would mean inventing a distinction the language does not make. | — |
+| **imports** | ❌ **never as a relationship** | Carried as `ImportInfo[]` payload, not as an edge: `module` + `items[]` + `range` + `isImport`/`isSystemInclude`/`isUsingDeclaration`. The persister reads `imp.module` and DROPS any import without one (the C-D2 defect class), so a `module` field is the contract. The *graph* consequence of an import is the `references` edge above. | — |
+| **exports** | ❌ **never as a relationship** | Carried as `ExportInfo[]` payload. Export names are unique and resolve to top-level symbols (M49 F3 invariant); containment rides `contains`, so an `exports` edge would duplicate it. | — |
 
 **One edge per pair, and where that rule does and does not apply.** A callee emits
 exactly one of `calls`/`uses`/`references` for any (source, target) pair — the
@@ -336,7 +437,7 @@ lookups on a 123-entry set. No O(n²) or per-symbol O(n) scans.
 - Differential: `script/m14/differential.ts` — the corpus oracle shares the
   analyzer's rules by import
 - Mutants: `script/m14/mutate-analyzer.ts` (`BB_MUTANT_ONLY="cpp/"`)
-- Grammar: `grammars/tree-sitter-cpp/` (pinned, 0.23.4) · M12 census
+- Grammar: `grammars/tree-sitter-cpp/` (local fork of upstream 0.23.4, byte-pinned) · M12 census
   `validation/m12/results/cpp-corpus-errors.json` · `cpp-complexity.json`
 - Ground truth: `validation/m12/ground-truth/cpp.json` ·
   `validation/m12/results/cpp-differential.json`
