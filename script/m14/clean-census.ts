@@ -72,6 +72,14 @@ const files = (mi > 0
   ? fs.readFileSync(process.argv[mi + 1], "utf8").split("\n").map((l) => l.trim()).filter(Boolean).sort()
   : walk(REPOS).sort())
 let totalNodes = 0
+// PARSE HEALTH. The analyzer's ceiling is the grammar's, not its own: a file the
+// pinned wasm cannot read is a damaged tree, and every downstream figure inherits
+// that. Measured here rather than quoted, because at 312 files this lane read as
+// 88.5% clean and at 2,179 it is far worse.
+let parseCleanFiles = 0
+let errorFiles = 0
+let errorNodes = 0
+let errorTextSamples: string[] = []
 const typeCounts: Record<string, number> = Object.create(null)
 const instanceArgField: Record<string, number> = Object.create(null)
 const instanceHasDirectCtorChild = { yes: 0, no: 0 }
@@ -95,6 +103,26 @@ for (const f of files) {
   const src = fs.readFileSync(f, "utf8")
   const tree = parser.parse(src)
   totalNodes += tree.rootNode.descendantCount
+  if (tree.rootNode.hasError) {
+    errorFiles++
+    let n = 0
+    const count = (node: any): void => {
+      if (node.type === "ERROR" || node.isMissing) n++
+      for (let i = 0; i < node.childCount; i++) count(node.child(i))
+    }
+    count(tree.rootNode)
+    errorNodes += n
+    if (errorTextSamples.length < 12) {
+      const first = (function find(node: any): any {
+        if (node.type === "ERROR" || node.isMissing) return node
+        for (let i = 0; i < node.childCount; i++) { const r = find(node.child(i)); if (r) return r }
+        return null
+      })(tree.rootNode)
+      if (first) errorTextSamples.push(src.split("\n")[first.startPosition.row]?.trim().slice(0, 64) ?? "")
+    }
+  } else {
+    parseCleanFiles++
+  }
 
   // ---- grammar census over this file
   const cursor = tree.walk()
@@ -288,6 +316,10 @@ const report = {
     namedTypesOccurringInCorpus: namedInCorpus.length,
     namedTypesNeverOccurring: distinctNamed.filter((t) => (typeCounts[t] ?? 0) === 0),
     indexAccessSites: typeCounts["index_access"] ?? 0,
+    parseCleanFiles,
+    errorFiles,
+    errorNodes,
+    errorTextSamples,
   },
   analyzer: {
     specBuckets: { handled: handled.length, internalSilent: silent.length, gap: gaps.length, designDecision: decided.length, closedGaps: closed.length, rulingsWithoutABucket: rulingsWithoutBucket.length },
@@ -358,6 +390,10 @@ p(`  named slots (duplicates collapsed)  ${report.universe.namedSlotCount}`)
 p(`  named types occurring in the corpus ${report.universe.namedTypesOccurringInCorpus}`)
 p(`  never occurring                     ${report.universe.namedTypesNeverOccurring.join(", ") || "(none)"}`)
 p(`  index_access sites                  ${report.universe.indexAccessSites}`)
+p(`  PARSE HEALTH  files with NO error  ${report.universe.parseCleanFiles} (${((100 * report.universe.parseCleanFiles) / report.universe.files).toFixed(1)}%)`)
+p(`                  files with >=1 ERROR ${report.universe.errorFiles} (${((100 * report.universe.errorFiles) / report.universe.files).toFixed(1)}%), ${report.universe.errorNodes} ERROR nodes`)
+p(`  first-error lines seen (sample):`)
+for (const t of report.universe.errorTextSamples) p(`    ${t}`)
 p("")
 p("analyzer reach:")
 p(`  spec buckets                        handled ${report.analyzer.specBuckets.handled}, internal_silent ${report.analyzer.specBuckets.internalSilent}, gap ${report.analyzer.specBuckets.gap}, design_decision ${report.analyzer.specBuckets.designDecision} (+${report.analyzer.specBuckets.rulingsWithoutABucket} rulings without a bucket), closed_gaps ${report.analyzer.specBuckets.closedGaps}`)
