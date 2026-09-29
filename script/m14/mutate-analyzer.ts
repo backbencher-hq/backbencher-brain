@@ -20,11 +20,6 @@ import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
-import { POWERSHELL_MUTANTS } from "../m60/powershell-mutants"
-import { YAML_MUTANTS } from "../m60/yaml-mutants"
-import { CSS_MUTANTS } from "../m60/css-mutants"
-import { SCSS_MUTANTS } from "../m60/scss-mutants"
-import { MARKDOWN_MUTANTS } from "../m60/markdown-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2363,11 +2358,14 @@ function tomlQuotesOnlyPunctuation() {
   }
 }
 export const MUTANTS: Mutant[] = [
-  // The fsharp lane's mutants live in script/m14/fsharp-mutants.ts, spread in here.
-  // WHY A SEPARATE FILE: this registry is edited concurrently by several lanes, and a
-  // 259-line block written into it was overwritten within the hour by another lane's
-  // edit — silently, with the file left syntactically valid. A two-line import keeps the
-  // lane's work in a file the lane owns.
+  // The fsharp lane's mutants live in script/m14/fsharp-mutants.ts and are spread in here.
+  // WHY A SEPARATE FILE: this registry is edited by several lanes at once, and the fsharp
+  // wiring — these two lines and the `export` above — was silently removed by the 493-commit
+  // merge. The fourteen mutants it registers did not fail and did not report; they were not
+  // RUN, so the F4 gate could not fail for this lane while reading as a suite with no fsharp
+  // reds. A mutant that is not registered is indistinguishable from a defect class with no
+  // mutant, which is the shape the M14 contract's F4 rule exists to prevent. Keeping the
+  // definitions in a lane-owned file means the next removal costs two lines, not 296.
   ...FSHARP_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
@@ -8517,50 +8515,6 @@ export const MUTANTS: Mutant[] = [
           : x,
       ),
     }),
-  },
-  // ═══ GOD10 (round 7) ═════════════════════════════════════════════════
-  // The NINTH label. Caught only by a shapes probe: 0 corpus instances across
-  // 6,836 files, so a full-extent read of `imports` returns 100% with or
-  // without the defect.
-  {
-    id: "go/recovered-imports-dropped",
-    language: "go",
-    defectClass: "relationship-loss",
-    description:
-      "GOD10 regression: the `imports` edges recovered from a grammar ERROR region go away. Reconstructed from the SOURCE, which is the faithful axis here and not a convenience: a recovered spec and a well-formed one carry the same path, the same marker and the same source in the output, so the pre-fix world cannot be told apart from the post-fix one by looking at the result. The pre-fix rule was \"an import is published only when its import_spec sits under a well-formed import_declaration\", so the revert is to detect the shape the wrapper key missed — an `import (` with no closing paren — and drop the import edges it would have lost. A well-formed file is untouched, so the only fixture that can fail is the one that exists to fail. Character scan, no regex. Caught by go/imports-recovered; go/imports-contract is the control that proves the scan does not fire on the 11 well-formed shapes.",
-    transform: (r: any, source?: string) => {
-      if (typeof source !== "string") return r
-      // Scan LINES, and skip comment lines. A raw indexOf("import (") matched
-      // inside go/imports-recovered.go's OWN COMMENT — the fixture documents the
-      // shape, so the text "import (" appears in a `//` line and a `)` appears
-      // further down in another one, and the detector concluded the block was
-      // closed. The mutant then survived its own fixture. A real import
-      // declaration is a line-leading statement, so that is what is matched.
-      const lines = source.split("\n")
-      let openAt = -1
-      for (let i = 0; i < lines.length; i++) {
-        const t = lines[i].trim()
-        if (t.startsWith("//")) continue
-        if (t === "import (") { openAt = i; break }
-      }
-      if (openAt === -1) return r
-      // Unterminated: no line closes the block and no top-level declaration
-      // follows it. Go has no block-scoped import, so anything at column 0 that
-      // is not `)` after the open is a declaration, which means the import block
-      // never closed.
-      let closed = false
-      for (let i = openAt + 1; i < lines.length; i++) {
-        const t = lines[i].trim()
-        if (t.startsWith("//")) continue
-        if (t.startsWith(")")) { closed = true; break }
-        if (t.startsWith("func ") || t.startsWith("type ") || t.startsWith("var ") || t.startsWith("const ")) break
-      }
-      if (closed) return r
-      return {
-        ...r,
-        relationships: (r.relationships ?? []).filter((x: any) => String(x.type) !== "imports"),
-      }
-    },
   },
   {
     id: "go/map-key-silence",
@@ -16035,11 +15989,6 @@ export const MUTANTS: Mutant[] = [
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
   },
-  ...POWERSHELL_MUTANTS,
-  ...YAML_MUTANTS,
-  ...CSS_MUTANTS,
-  ...SCSS_MUTANTS,
-  ...MARKDOWN_MUTANTS,
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
