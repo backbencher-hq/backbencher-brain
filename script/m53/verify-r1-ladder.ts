@@ -88,16 +88,34 @@ function gitHead(): string {
   }
 }
 
-function runGate(script: string, extraArgs: string[] = []): { rc: number; verdict: string } {
+function runGate(script: string, extraArgs: string[] = []): { rc: number; verdict: string; timedOut: boolean } {
   const r = spawnSync("npx", ["tsx", script, ...extraArgs], {
     cwd: ROOT,
     encoding: "utf8",
-    timeout: 900_000,
+    timeout: 2_400_000,
   })
   const out = (r.stdout ?? "") + (r.stderr ?? "")
   const m = out.match(/(VERIFIED|KNOWN-GAP|BLOCKED|PASS|FAIL)[^\n]*/g)
   const verdict = m ? m[m.length - 1].slice(0, 160) : "(no verdict line)"
-  return { rc: r.status ?? 1, verdict }
+  // A TIMEOUT IS NOT A FAILURE, and this function conflated the two.
+  //
+  // `r.status` is null when spawnSync kills the child, so `r.status ?? 1` turned
+  // "this gate ran out of budget" into "this gate returned 1" — the one number
+  // the aggregate counts. Measured, not inferred: script/m26/verify-closure.ts
+  // takes 8m00s wall on an idle machine and prints `X1: VERIFIED` with exit 0,
+  // against a 900s budget here. Under the ladder's own load that inflates past
+  // 900s, the child is SIGTERM'd before it prints a verdict, and the ladder
+  // records `rc=1 :: (no verdict line)` — which reads as a content failure and
+  // sends triage to the wrong file. It is a BUDGET failure, and the honest
+  // signal is the absence of a verdict line, not the number 1.
+  //
+  // So the timeout is surfaced as its own field. A gate that fails on its
+  // content still returns rc=1 with a verdict; a gate that ran out of budget
+  // returns timedOut with rc=0 so it does not contaminate the content count,
+  // and the aggregate counts timeouts separately. Folding them together is
+  // exactly what made this undiagnosable in the first place.
+  const timedOut = !!r.error || r.signal === "SIGTERM"
+  return { rc: timedOut ? 0 : (r.status ?? 1), verdict, timedOut }
 }
 
 // --- The can-fail proof (the degenerate aggregate) ----------------------------
@@ -110,9 +128,13 @@ function runGate(script: string, extraArgs: string[] = []): { rc: number; verdic
 // it as a promise owed to this issue. It now runs on EVERY ladder invocation
 // and its result is recorded in the evidence.
 const aggregate = (rs: Array<{ rc: number }>): number => rs.filter((g) => g.rc !== 0).length
-function selfTest(): { flipped: boolean; rc: number } {
+function selfTest(): { flipped: boolean; rc: number; timedOut: boolean } {
   const bogus = runGate("script/m53/does-not-exist-gate.ts")
-  return { flipped: bogus.rc !== 0 && aggregate([{ rc: 0 }, { rc: bogus.rc }]) > 0, rc: bogus.rc }
+  // A gate that does not exist fails FAST, so it must report rc!=0 and timedOut=false.
+  // Asserting timedOut=false here is what stops the timeout carve-out from
+  // swallowing real failures: if a missing script were misread as a timeout, the
+  // can-fail proof would pass while the ladder proved nothing.
+  return { flipped: bogus.rc !== 0 && !bogus.timedOut && aggregate([{ rc: 0 }, { rc: bogus.rc }]) > 0, rc: bogus.rc, timedOut: bogus.timedOut }
 }
 if (process.argv.includes("--self-test")) {
   const st = selfTest()
@@ -128,18 +150,29 @@ if (process.argv.includes("--self-test")) {
 console.log(`R1: running the ${GATES.length}-gate lane ladder at ${gitHead().slice(0, 8)}`)
 const results = GATES.map(([name, script]) => {
   const r = runGate(script)
+  // `?` for a timeout: neither a pass nor a content failure, and the reason is on
+  // the line. A silent pass here would be the same failure as the silent skip in
+  // the verify chain — an unread row that looks like a green one.
+  const mark = r.timedOut ? "?" : r.rc === 0 ? "✓" : "✗"
   const ok = r.rc === 0
-  console.log(`  ${ok ? "✓" : "✗"} ${name} rc=${r.rc} :: ${r.verdict}`)
-  return { name, script, rc: r.rc, verdict: r.verdict, ok }
+  console.log(`  ${mark} ${name} rc=${r.rc}${r.timedOut ? " TIMED OUT" : ""} :: ${r.verdict}`)
+  return { name, script, rc: r.rc, verdict: r.verdict, ok, timedOut: r.timedOut }
 })
 
 const failed = results.filter((g) => !g.ok)
+const timedOut = results.filter((g) => g.timedOut)
 // The can-fail proof, recorded every run (M61.V6 / #847).
 const st = selfTest()
 const mutantsCaught = st.flipped ? 1 : 0
 const mutantsTotal = 1
-const checksList = [`${st.flipped ? "ok" : "FAIL"}: M: degenerate-aggregate — a bogus gate (rc=${st.rc}) flips the R1 verdict`]
-const ok = failed.length === 0 && st.flipped
+const checksList = [
+  `${st.flipped ? "ok" : "FAIL"}: M: degenerate-aggregate — a bogus gate (rc=${st.rc}) flips the R1 verdict`,
+  `${timedOut.length === 0 ? "ok" : "FAIL"}: M: no-gate-timed-out — ${timedOut.length} of ${results.length} exceeded the budget; a timeout is never a pass and never a content failure`,
+  ]
+// A timeout makes the run NOT ok. It is separated from `failed` so triage can tell
+// "this gate is wrong" from "this gate did not finish", but it is never allowed to
+// pass silently, which is the whole point of the distinction.
+const ok = failed.length === 0 && timedOut.length === 0 && st.flipped
 const result = {
   issue: "M53.R1",
   code: "R1",
