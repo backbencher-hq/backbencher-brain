@@ -13,7 +13,22 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   html: "html", htm: "html", vue: "vue", svelte: "svelte", css: "css", scss: "css", sass: "css", less: "css",
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
-  rs: "rust", go: "go", zig: "zig", nim: "nim",
+  rs: "rust", go: "go", zig: "zig",
+  // M60 honesty rule applied on measurement, not on the grammar's file-types
+  // list. The pinned grammar declares `nimble` and `nims` alongside `nim`, but
+  // declaring a format is not evidence the analyzer models it, and routing on
+  // the declaration alone is the claim-without-coverage class. So both were
+  // MEASURED first, over every tracked file of all 12 pinned corpora:
+  //
+  //   .nims    65 files   0 error files   0 error nodes   43 symbols   279 relationships   96 imports
+  //   .nimble 171 files   0 error files   0 error nodes   26 symbols   315 relationships   11 imports
+  //
+  // 100% parse health on both, and both carry real declarations rather than
+  // being pure data: a .nims is a NimScript (set_cmd/switch/buildFile, all
+  // procs), and a .nimble's `task`/`bin` blocks declare things. Routing them is
+  // what the evidence supports; rulings NIMD4/NIMD5 in
+  // script/m14/spec/nim-completeness.json.
+  nim: "nim", nims: "nim", nimble: "nim",
   java: "java", kt: "kotlin", kts: "kotlin", scala: "scala", sc: "scala", groovy: "groovy",
   // M49 W21 (#850): Gradle's Groovy DSL. `.gradle` had NO registry entry, so every
   // `build.gradle`/`settings.gradle` was rejected by detectLanguage before a grammar
