@@ -360,10 +360,48 @@ export const ANNOTATION_DDL = `
       ON brain_annotation(project_id, symbol_name, author_class, COALESCE(symbol_path, ''));
   `
 
+/**
+ * The honesty boundary for `author_class`, enforced by the DATABASE rather than
+ * by convention. `author_class` was `TEXT NOT NULL`, which refuses NULL but
+ * accepts any string — a row could claim 'human'. The write door hardcodes
+ * 'agent', so a bb_annotate call cannot spoof it, but every reader trusts this
+ * column verbatim (annotation_ui labels each note with it), so the column itself
+ * is where the claim has to be made true.
+ *
+ * A trigger, not a CHECK: SQLite has no `ALTER TABLE ADD CONSTRAINT`, and
+ * rebuilding the table on a shared, long-lived index is a destructive migration
+ * this schema deliberately avoids (every migration here is additive + idempotent,
+ * see ensureAnnotationTable). A BEFORE trigger is additive, survives reopening,
+ * and refuses the write loudly instead of letting a mislabelled note be rendered
+ * to a human as a human's own note.
+ */
+export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
+    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard
+    BEFORE INSERT ON brain_annotation
+    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
+    BEGIN
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+    END;
+    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update
+    BEFORE UPDATE OF author_class ON brain_annotation
+    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
+    BEGIN
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+    END;
+  `
+
 /** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
 export function ensureAnnotationTable(raw: any): void {
   try {
     raw.exec(ANNOTATION_DDL)
+  } catch {}
+  // The author-class guard is part of the same additive, idempotent migration:
+  // a pre-existing DB gains it on the next open, exactly like the table and the
+  // location index. Failures stay swallowed (a read-only or busy open must not
+  // fail because a trigger could not be created) — the same contract as every
+  // other migration here.
+  try {
+    raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
   } catch {}
 }
 
