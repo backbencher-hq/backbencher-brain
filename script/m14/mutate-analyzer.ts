@@ -10925,6 +10925,34 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "objc/drop-availability-annotated-protocol",
+    language: "objc",
+    defectClass: "symbol-loss",
+    description: "M60 availability-annotation regression: the enclosing @protocol of a method whose last parameter carries a trailing availability macro call is lost with all of its methods. The annotation is a macro CALL with nested parens, commas and a string literal, reachable by neither C's `macro_type_specifier` (`MACRO(type)`, one type argument) nor `attribute_specifier` (`[[...]]`), so the parse could not continue and the ERROR node it produced ran to the end of the protocol — 83 lines on sdwebimage, and the file analysed to ZERO methods where it has seven. The mutant drops the protocol's methods, which is what the swallowed region looked like from the graph's side; caught by objc/macro-wrapped-enum-and-guarded",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !["removeImageForKey:options:", "flushPendingWrites"].includes(s.name)),
+      relationships: (r.relationships ?? []).filter((x: any) => !["removeImageForKey:options:", "flushPendingWrites"].includes(x.target)),
+    }),
+  },
+  {
+    id: "objc/availability-annotation-into-selector",
+    language: "objc",
+    defectClass: "payload-corruption",
+    description: "M60 availability-annotation regression, the near-miss the fixture FORBIDS: a trailing annotation is read as another method SELECTOR instead of a modifier, publishing a method named `flushPendingWritesAF_API_UNAVAILABLE`. A selector is identity in Objective-C, so this is not a cosmetic name — it is a method that does not exist, carrying a `contains` row a consumer would route calls to, and it displaces the real selector so the genuine method is the one that disappears. Measured: `setDidFinishEventsForBackgroundURLSessionBlock:AF_API_UNAVAILABLE` in afnetworking before the fix. Caught by objc/macro-wrapped-enum-and-guarded forbidSymbols",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" && s.name === "flushPendingWrites"
+          ? { ...s, name: "flushPendingWritesAF_API_UNAVAILABLE" }
+          : s),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.target === "flushPendingWrites"
+          ? { ...x, target: "flushPendingWritesAF_API_UNAVAILABLE" }
+          : x),
+    }),
+  },
+  {
     id: "objc/emit-synthesize-as-bare-read",
     language: "objc",
     defectClass: "relationship-fabrication",
