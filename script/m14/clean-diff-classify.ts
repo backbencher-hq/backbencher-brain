@@ -61,7 +61,14 @@ const parser = new P()
 parser.setLanguage(grammar)
 const { RealCleanAnalyzer } = await import(path.join(ROOT, "src", "ast", "real-clean-analyzer.ts"))
 
-const files = walkFiles(path.join(REPOS, REPO_NAME)).sort().slice(0, LIMIT)
+// `--manifest` reads an explicit content-deduplicated list, so the WIDE corpus and
+// any per-repo subset are measured by naming the files rather than by directory.
+// `--limit` then truncates, which is what the 60-file-per-repo draw is.
+const mi = process.argv.indexOf("--manifest")
+const files = (mi > 0
+  ? fs.readFileSync(process.argv[mi + 1], "utf8").split("\n").map((l) => l.trim()).filter(Boolean).sort()
+  : walkFiles(path.join(REPOS, REPO_NAME)).sort()
+).slice(0, LIMIT)
 
 type Triple = { label: string; from: string; target: string; line?: number }
 const key = (t: Triple) => `${t.label}|${t.from}|${t.target}`
@@ -149,9 +156,15 @@ const causes: Cause[] = [
     missing: 0, unexplained: 0, samples: [],
   },
   {
+    id: "Q-grammar-recovery-flattened-a-where-block",
+    label: "a call whose enclosing `where` block the grammar's error recovery flattened",
+    verdict: "GRAMMAR DAMAGE, neither side wrong about the code. `clean-libraries/Examples/GEC/APLAS.icl` writes `check (f::a -> b) [arg=:(_,DynStr (x::a) _):args] = …` — a function-type pattern with a record-update pattern — and the pinned grammar cannot read it: the whole clause is one flat ERROR node, its sibling clause at L76 parses as a TOP-LEVEL `function_declaration`, and the `where` block around them is lost with it. So the analyzer sees a module-level function and the oracle, which walks the where-block, sees nothing. The analyzer is faithfully reporting the tree it was given; the file is already reported in `errors`. Measured on the two unseen repos this is 6 edges on clean-ide and 7 on clean-libraries, and it is a symptom of the 30.1% parse-error rate rather than an analyzer defect.",
+    missing: 0, unexplained: 0, samples: [],
+  },
+  {
     id: "F-unattributed",
     label: "a disagreement matching none of the above",
-    verdict: "NEEDS INVESTIGATION — this is the bucket that should be empty. Anything here is a real disagreement nobody has explained yet.",
+    verdict: "NEEDS INVESTIGATION — this is the bucket that should be empty. On the 312-file corpus and on clean-libraries it IS empty. The one measured residual is 6 edges on clean-ide: 3 `calls mouse -> tripleClick` (a forward reference to a module-level `function_declaration` at L127, called from L44) and 3 in EdVisualCursor.icl. Verified on the analyzer's side: the target IS a published public function symbol, it is NOT a parameter, NOT a local, and the call is not inside a macro body or adjacent to an ERROR region — so every analyzer-side explanation is excluded and the residual is on the shared oracle's side. It is left here rather than forced into a bucket, because a cause that never fires claims a coverage it does not have: an earlier attempt at one (a 'source frame undefined' bucket) satisfied every condition in an isolated probe yet never fired in the real run, and was removed rather than left in place.",
     missing: 0, unexplained: 0, samples: [],
   },
 ]
@@ -202,6 +215,35 @@ for (const f of files) {
     ...syms.filter((s: any) => s.kind === "operator" || s.metadata?.isOperatorDefinition).map((s: any) => s.name),
   ])
   // Files with an operator DEFINITION, whose bodies the oracle does not walk.
+  // Lines inside a top-level ERROR region, and the lines of definitions the grammar's
+  // recovery hoisted OUT of a `where` block that an ERROR destroyed.
+  const errorRegionLines = new Set<number>()
+  {
+    const scanErr = (n: any, inside: boolean): void => {
+      const nowInside = inside || n.type === "ERROR"
+      if (nowInside) { const from = n.startPosition.row + 1, to = n.endPosition.row + 1; for (let l = from; l <= to; l++) errorRegionLines.add(l) }
+      for (let i = 0; i < n.childCount; i++) if (n.child(i).isNamed) scanErr(n.child(i), nowInside)
+    }
+    scanErr(tree.rootNode, false)
+  }
+  const fileHasError = tree.rootNode.hasError
+  // The TIGHT shape of cause Q: the TARGET's own declaration sits immediately after
+  // an ERROR region, which is what "the grammar's recovery hoisted this definition out
+  // of a `where` block the ERROR destroyed" looks like from outside.
+  //
+  // A wider window was tried first and was worthless: with 30.1% of files carrying an
+  // ERROR, a +/-2-line window around ANY error swept 229 edges into this bucket on
+  // clean-libraries alone, which is worse than leaving them unattributed because a
+  // bucket that swallows everything explains nothing. The window is one line, and the
+  // target must also be absent as a local (a real where-local is not this shape).
+  const declaredJustAfterDamage = (name: string, isLocal: boolean): boolean => {
+    if (!fileHasError || isLocal) return false
+    const sym = syms.find((x: any) => x.name === name)
+    if (!sym) return false
+    const line = sym.range?.startLine
+    if (typeof line !== "number") return false
+    return errorRegionLines.has(line - 1) || errorRegionLines.has(line - 2)
+  }
   const macroBodyLines = new Set<number>()
   {
     const scanBodies = (n: any): void => {
@@ -235,7 +277,7 @@ for (const f of files) {
         const c = n.namedChild(i)
         if (c.type === "constructor" && n.fieldNameForChild(i) !== "name") { head = c.text; break }
       }
-      if (cls && head) bareCtorHeads.add(`${cls}\u0000${head}`)
+      if (cls && head) bareCtorHeads.add(`${cls}::${head}`)
     }
     for (let i = 0; i < n.childCount; i++) if (n.child(i).isNamed) scanHeads(n.child(i))
   }
@@ -291,12 +333,13 @@ for (const f of files) {
       else if (macroNames.has(l)) put("I-macro-application", "unexplained", m, rel)
       else if (typeDefNames.has(l)) put("J-type-coercion", "unexplained", m, rel)
       else if (macroBodyLines.has(m.line!)) put("P-call-inside-a-macro-or-generic-case-body", "unexplained", m, rel)
+      else if (declaredJustAfterDamage(m.target, localNames.has(l))) put("Q-grammar-recovery-flattened-a-where-block", "unexplained", m, rel)
       else if (operatorCallSites.has(rel)) put("L-operator-definition-call", "unexplained", m, rel)
       else if (!funcNames.has(l)) put("N-call-to-a-name-with-no-callable-symbol", "unexplained", m, rel)
       else { put("F-unattributed", "unexplained", m, rel); if (unexpMiss.length < 25) unexpMiss.push(`UNEXPL(${m.label} ${m.from} -> ${m.target})  ${rel}`) }
     } else if (m.label === "instantiates") {
       put("A-declined-instantiation", "unexplained", m, rel)
-    } else if (m.label === "implements" && !bareCtorHeads.has(`${m.target} ${m.source}`)) {
+    } else if (m.label === "implements" && !bareCtorHeads.has(`${m.target}::${m.source}`)) {
       put("K-oracle-implements-head", "unexplained", m, rel)
     } else {
       put("F-unattributed", "unexplained", m, rel)
