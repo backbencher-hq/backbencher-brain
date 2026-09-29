@@ -3938,19 +3938,61 @@ export function deriveGoDeclaredTypeRefs(root: any): { label: string; from: stri
   return out
 }
 
-// C# second-opinion oracle (csharp #264 wave). Re-derives the SAME relationship
-// set the analyzer emits, independently, so disagreements surface as
-// missing/unexplained rather than being copied. Mirrors the analyzer's
-// deterministic C# base-list rule (CSD1): a type's base_list children are
-// ordered — the FIRST entry is the base class (extends), every remaining
-// entry is an interface (implements). Instantiates comes from
-// object_creation_expression; calls come from invocation_expression leaf
-// targets (the analyzer's leaf-target M12 contract, like go/rust).
+// GO38 (round 6): the `contains` second-opinion oracle — the membership graph's
+// truth, for the same reason `deriveGoDeclaredTypeRefs` exists above.
+//
+// `contains` is how a consumer answers "what is inside this type?", and it was
+// NOT in go's compared-label set, so 47,088 membership edges across the three
+// new corpora could be neither MISSING nor fabrication: a membership graph
+// nobody was checking. Go makes this surface unusually derivable — there are
+// exactly two owner relations (a type's fields and interface method set, and a
+// method's receiver) and all three are syntactic.
+//
+// DELIBERATELY A DIFFERENT SHAPE, and this is the point of the whole exercise:
+// the analyzer builds membership from the SYMBOL TABLE it just emitted (every
+// symbol with an `ownerName`), so a type it fails to publish is invisible on
+// both sides and the two derivations would agree perfectly on a wrong answer.
+// This one walks the DECLARATION side of the tree, so an unpublished type is a
+// MISSING row. That asymmetry is the instrument, and it is what found GO38 —
+// see below.
+//
+//   C1 a struct's members are its FIELDS: named fields by name, embedded fields
+//      by the leaf of the embedded type (spec, Struct types: "The unqualified
+//      type name acts as the field name"), and `_` declares nothing.
+//   C2 an interface's members are its method_specs plus each PLAIN embedded
+//      interface as a member leaf (a union/tilde constraint is not a member).
+//   C3 a method's owner is its receiver's type, `*` and type arguments stripped.
+//   C4 a member whose name EQUALS its owner gets no edge — the lane's ruled
+//      decision GO33 (a self-loop in a membership surface is a traversal hazard;
+//      the member stays reachable through its other edges).
+//   C5 one edge per (owner, member): membership is a set.
+//   C6 a `type_alias` is a type declaration and declares its name.
+//
+// GO38, found by this derivation and not by any other gate: a type declared
+// INSIDE A FUNCTION BODY was published as nothing at all — no symbol, no
+// members, no membership. And it was not a neutral silence: the declared-type
+// pass already walks bodies and already attributed a local type's field types to
+// that type, so the lane published `references Local -> Host` with `Local`
+// absent from its own symbol table. 22 memberships in 200 go-tools files.
+const GO_PLAIN_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
 
-// Mirror of RealCSharpAnalyzer.cleanTypeName: strip generics (`<...>`) and
-// nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
-// so the oracle's implicit-new target matches the analyzer's instantiates
-// target byte-for-byte before normTarget reduction.
+const goEmbeddedFieldLeaf = (typeNode: any): string | undefined => {
+  let cur: any = typeNode
+  for (let guard = 0; guard < 8 && cur; guard++) {
+    if (cur.type === "pointer_type" || cur.type === "generic_type") {
+      cur = cur.namedChildCount > 0 ? cur.namedChild(0) : undefined
+      continue
+    }
+    break
+  }
+  if (!cur) return undefined
+  if (cur.type !== "type_identifier" && cur.type !== "qualified_type") return undefined
+  const raw = String(cur.text ?? "")
+  const dot = raw.lastIndexOf(".")
+  const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+  return GO_PLAIN_IDENTIFIER.test(leaf) ? leaf : undefined
+}
+
 export function deriveGoContains(root: any): { label: string; from: string; target: string }[] {
   const out: { label: string; from: string; target: string }[] = []
   const emitted = new Set<string>()
@@ -4818,7 +4860,7 @@ export function deriveCSharpContains(root: any): { label: string; from: string; 
   return out
 }
 
-export function deriveCSharpFieldAccessUses(root: any): { label: string; from: string; target: string }[] {
+export function deriveCSharpFieldAccessUses(root: any): { label: string; from: string; target: string } {
   const out: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const containingFn = (node: any): string => {
@@ -12405,6 +12447,166 @@ export function deriveZigReferenceEdges(root: any): { label: string; from: strin
   return edges
 }
 
+/**
+ * ZIG WAVE 3 (2026-09-29) — the `contains` truth, the lane's LAST unoracled label.
+ *
+ * `contains` was 16.6% of everything this analyzer emits (5,521 of 33,266
+ * relationships over 400 corpus files) and nothing had ever adjudicated it, for
+ * a structural reason: the analyzer derives containment from `symbol.ownerName`,
+ * a field its OWN walk sets, so the class is self-agreeing — it cannot disagree
+ * with the symbol table because it is built from it. This derivation rebuilds the
+ * owner chain from DECLARATION STRUCTURE instead, which is the only thing that
+ * makes the comparison worth running.
+ *
+ * The rules, one per node shape, all mirrorable from the tree (which is the test
+ * of a mirror: if a rule needs the analyzer's own output, it is not a mirror):
+ *
+ *   • the five container declarations own their `container_field` children —
+ *     which is how fields, ENUM MEMBERS and union members all arrive, because in
+ *     this grammar an enum body is `container_field` children and an error-set body
+ *     is bare `identifier` children (two shapes, one rule each, not one guess);
+ *   • an error set owns its direct `identifier` children;
+ *   • a container owns its `function_declaration` children (methods) and its
+ *     container-scope `variable_declaration` children (nested types, container-level
+ *     consts and vars);
+ *   • Z19: inside an executable body — a function body, a `test`, a `comptime`
+ *     block, any `block` — a declaration is an execution artifact and is owned by
+ *     nothing;
+ *   • Z21: a container in an EXPRESSION position is anonymous and owns nothing;
+ *   • Z22: and so is a container declared inside an executable body — a local type
+ *     has no file-scope identity to own anything with. This is the rule the
+ *     ownership verifier lacked in the derived direction: it only ever asked "is
+ *     every PUBLISHED owner justifiable?", so a container that should own nothing
+ *     and does was visible, and one that should own something and does not was not.
+ *     Both directions are compared now, and the Z22 rule is what makes the missing
+ *     direction reachable.
+ *
+ * KNOWN LIMIT, stated rather than left for a reader to infer from a clean count:
+ * the F5 matcher keys on `label + normTarget(target)`, so this truth is compared
+ * BY MEMBER NAME, not by (owner, member). It therefore convicts a fabricated or
+ * missing edge whose name is wrong, and CANNOT convict one whose owner is wrong —
+ * Z19 and Z21 each moved 335 edges to a different owner while keeping every member
+ * name. The owner-sensitive half of the class is `script/m14/tmp/zigw-ownership.ts`,
+ * which keys on the owner. The two together are the class; neither alone is.
+ */
+export function deriveZigContainment(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const CONTAINERS = new Set([
+    "struct_declaration", "union_declaration", "enum_declaration",
+    "error_set_declaration", "opaque_declaration",
+  ])
+  // Z19: entering any of these means "declarations here are execution artifacts".
+  const EXECUTABLE = new Set([
+    "function_declaration", "function_signature", "test_declaration",
+    "comptime_declaration", "block",
+  ])
+  const firstIdent = (n: any): string | null => {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "field_identifier" || c.type === "type_identifier")) {
+        return String(c.text)
+      }
+    }
+    return null
+  }
+  const push = (owner: string, member: string): void => {
+    if (!owner || !member || member === "_") return
+    const k = `${owner}\u0000${member}`
+    if (seen.has(k)) return
+    seen.add(k)
+    out.push({ label: "contains", from: owner, target: member })
+  }
+  const visit = (n: any, owner: string | null, executable: boolean, anon: boolean): void => {
+    let nextOwner = owner
+    let nextAnon = anon
+    let nextExec = executable
+
+    if (CONTAINERS.has(n.type)) {
+      const p = n.parent
+      const declRhs =
+        !!p && p.type === "variable_declaration" && p.namedChildCount > 0 &&
+        p.namedChild(p.namedChildCount - 1)?.id === n.id
+      if (declRhs) {
+        const nameKid = p && p.namedChildCount > 0 ? p.namedChild(0) : null
+        const name = nameKid && nameKid.type === "identifier" ? String(nameKid.text) : null
+        // Z22: a container inside an executable body is a LOCAL type. It is
+        // declared, so it has a name — but it owns nothing, and the analyzer
+        // publishes none of its members, so deriving any would be a MISSING row
+        // in the direction that does not exist.
+        if (name && !executable) nextOwner = name
+        else nextAnon = true
+      } else {
+        // Z21: an anonymous container in an expression position owns nothing.
+        nextAnon = true
+      }
+    } else if (!executable && !anon) {
+      if (n.type === "container_field") {
+        if (owner) push(owner, firstIdent(n) ?? "")
+      } else if (n.type === "function_declaration") {
+        if (owner) push(owner, firstIdent(n) ?? "")
+        nextExec = true
+      } else if (n.type === "variable_declaration") {
+        // a container-scope declaration is a member (nested type, container const)
+        // — EXCEPT an import alias, which Z9 settled deliberately: it mints an
+        // import fact and a reference edge and no symbol, so there is no
+        // `contains` edge to match. The first version derived those and read 5
+        // MISSING rows (`terminal -> color`, `terminal -> style`, `Inspector ->
+        // cimgui` — all `const x = @import("...")` inside a container).
+        const kids: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) kids.push(c)
+        }
+        // `@import("...")` is a `builtin_function` NODE here, not a
+        // call_expression — the first version of this rule looked for a
+        // call_expression and never fired, which is why it read 5 MISSING
+        // (`terminal -> color`, `terminal -> style`, `Inspector -> cimgui`).
+        const isImportAlias = kids.some(
+          (c) => c.type === "builtin_function" && String(c.text ?? "").replace(/^@/, "").startsWith("import"),
+        )
+        if (owner && !isImportAlias) push(owner, firstIdent(n) ?? "")
+      }
+    }
+    // NOTE ON ERROR-SET MEMBERS: the first version of this truth pushed one row
+    // per direct `identifier` child of an error set (an error set\'s body IS bare
+    // identifiers in this grammar, unlike every other container) and read 13
+    // MISSING rows that were all the TRUTH\'s error: the published contract (Z4) is
+    // that an error-set member is a DECLARATION SITE and an edge target — it
+    // resolves by name in `error.X` expressions — and is deliberately not a symbol,
+    // so it has no `contains` edge to match. Enum members ARE symbols (1,361 of
+    // ERROR-SET MEMBERS are their own rule, and the first version of this file
+    // was wrong about them in the other direction: it read 13 MISSING and I
+    // concluded the analyzer published no error members as symbols. It DOES — as
+    // `enum_member`, owned by the set (`contains Error -> OutOfMemory`), which is
+    // why 1,361 of them are in the owned-kind census and why deleting this branch
+    // turned those 13 MISSING into 224 PHANTOM. An error set's body is bare
+    // `identifier` children where every other container uses `container_field`,
+    // so the shape is a separate rule and not a case of the one above. This is
+    // the calibration the header asks for: a new gate is run against a KNOWN
+    // case before its verdict is believed, and twice the first run was the
+    // INSTRUMENT rather than the analyzer.
+    // `nextAnon`, not the incoming `anon`: `pub const E = error{A} || error{B}`
+    // puts the sets inside a binary expression, so the container rule above
+    // already marked them anonymous (Z21 — an expression-position container owns
+    // nothing), and the member rule has to read THAT state. Reading the incoming
+    // state instead is what produced the `Options -> InvalidValue` MISSING rows.
+    if (n.type === "error_set_declaration" && !nextAnon && !nextExec) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") push(nextOwner ?? "", String(c.text))
+      }
+    }
+    if (EXECUTABLE.has(n.type)) nextExec = true
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) visit(c, nextOwner, nextExec, nextAnon)
+    }
+  }
+  visit(root, null, false, false)
+  return out
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -12533,36 +12735,36 @@ export function deriveZigBareUses(root: any, symbols: any[] = []): { label: stri
     if (!p) return false
     // Error sets declare EVERY direct member (mirrors the analyzer).
     if (p.type === "error_set_declaration" && n.type === "identifier") return true
-      // Z15 mirror (2026-09-28): a COMPOUND assignment is a read-modify-write,
-      // not a definition — `counter += 1` reads the file-scope `counter` before
-      // writing it. A plain `=` stays a definition.
-      //
-      // Z24 (2026-09-29): that operator test belongs to the ASSIGNMENT-shaped
-      // parents ONLY. Written as a bare early `return false` for every parent,
-      // it short-circuited the declaration branch below it, so the truth derived
-      // a bare read for the NAME OF EVERY FUNCTION AND FIELD it walked past —
-      // `uses (expr) -> init` at the `pub fn init(` line itself. F5 read ~970
-      // MISSING on a 200-file draw and the analyzer was blameless: it had never
-      // emitted those edges, correctly. The size is one phantom row per
-      // file-scope declaration, so the number moves with the DRAW (6,866-edge
-      // draw: 0 missing; 10,635-edge draw: 970) and reads like a sampling
-      // artefact rather than like a gate defect. Provenance of every one of them
-      // was the declaration site, never a use.
-      if (
-        p.type === "variable_declaration" || p.type === "assignment_expression" ||
-        p.type === "compound_assignment_statement" || p.type === "assignment_statement"
-      ) {
-        if (!zigPlainAssignment(p)) return false
-        // Z25 mirror (2026-09-29): the LHS test is NODE IDENTITY with the
-        // first named child, not "the first child of type `identifier`". In a
-        // struct literal the KEY is a `field_identifier` (`.id = base_id`), so
-        // the first IDENTIFIER child is the VALUE — and the old test read
-        // `.id = base_id` as *defining* `base_id`, dropping a genuine bare read of
-        // a file-scope name. Same rule as the ZGD1 field-path mirror above, which
-        // already used node identity: one rule, two places.
-        const lhs = p.namedChild(0)
-        return !!lhs && lhs.id === n.id
-      }
+    // Z15 mirror (2026-09-28): a COMPOUND assignment is a read-modify-write,
+    // not a definition — `counter += 1` reads the file-scope `counter` before
+    // writing it. A plain `=` stays a definition.
+    //
+    // Z24 (2026-09-29): that operator test belongs to the ASSIGNMENT-shaped
+    // parents ONLY. Written as an early `return false` for every parent that
+    // carries no `=` token, it short-circuited the declaration branch below it,
+    // so the truth derived a bare read for the NAME OF EVERY FUNCTION AND FIELD
+    // it walked past — `uses (expr) -> init` at the `pub fn init(` line itself.
+    // F5 then reported ~970 MISSING on a 200-file draw and the analyzer was
+    // blameless: it had never emitted those edges, correctly. The size is one
+    // phantom row per file-scope declaration, so the number moves with the draw
+    // (6,866-edge draw: 0; 10,635-edge draw: 970) and reads like a sampling
+    // artefact rather than like a gate defect. Provenance of every one of them
+    // was the declaration site, not a use.
+    if (
+      p.type === "variable_declaration" || p.type === "assignment_expression" ||
+      p.type === "compound_assignment_statement" || p.type === "assignment_statement"
+    ) {
+      if (!zigPlainAssignment(p)) return false
+      // Z25 mirror (2026-09-29): the LHS test is NODE IDENTITY with the
+      // first named child, not "the first child of type `identifier`". In a
+      // struct literal the key is a `field_identifier` (`.id = base_id`), so the
+      // first IDENTIFIER child is the VALUE — and the old test therefore read
+      // `.id = base_id` as *defining* `base_id` and dropped a genuine bare read
+      // of a file-scope name. Same rule as the ZGD1 field-path mirror above,
+      // which already used node identity: one rule, two places.
+      const lhs = p.namedChild(0)
+      return !!lhs && lhs.id === n.id
+    }
     if (
       p.type === "function_declaration" || p.type === "test_declaration" ||
       p.type === "struct_item" || p.type === "enum_item" ||
@@ -16079,15 +16281,9 @@ async function main() {
         for (const e of deriveGoDeclaredTypeRefs(root)) {
           ;(truth as any[]).push(e)
         }
-        // GO38 (round 6): go joins the CONTAINS-audited set. Membership was 47,088 edges
-        // across the three new corpora that no gate could see. The oracle is derived from
-        // the DECLARATION side, so an unpublished declaration is a MISSING row rather than
-        // invisible on both sides — that asymmetry is what found GO38.
         for (const e of deriveGoContains(root)) {
           ;(truth as any[]).push(e)
         }
-        // GOD9 (round 6): go joins the USES-audited set — 154,656 rows over five corpora,
-        // and where the channel pass contradicted its own read passes.
         for (const e of deriveGoUses(root)) {
           ;(truth as any[]).push(e)
         }
@@ -16126,6 +16322,14 @@ async function main() {
         // the same rule: a label is compared only once the truth side derives it,
         // never before.
         for (const e of deriveZigReferenceEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // ZIG WAVE 3: `contains` joins the audited set — the last unoracled label,
+        // 16.6% of the edges this analyzer emits, and the one class that cannot
+        // disagree with itself until an independent derivation exists. Compared
+        // BY MEMBER NAME: the harness matcher is site-agnostic, so the owner
+        // half of the class is adjudicated by the ownership verifier, not here.
+        for (const e of deriveZigContainment(root)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -16173,6 +16377,20 @@ async function main() {
         // analyzer-side filter below restricts the class to `csharp_field_access` rows, and the
         // bare half stays on its fixture + mutant gate with that limit stated rather than hidden.
         for (const e of deriveCSharpFieldAccessUses(root)) {
+          ;(truth as any[]).push(e)
+        }
+
+        // 2026-09-28: the BARE-IDENTIFIER half of `uses` joins too -- the last slice. Writing it
+        // is what found CS-D8 (a `parameter`'s TYPE published as a read of a name the position
+        // does not carry, 6 rows / 200 roslyn files, stamped on a method SIGNATURE because the
+        // attribution found no callable and fell back to the enclosing member). The truth itself
+        // cost four corrections before it agreed, and all four are recorded at the function: a
+        // member declarator published as a read of itself (742 rows), a local function used as a
+        // relationship source that is not a node in the graph (17), and a `generic_name` treated
+        // as a type position, which silences every read that reaches a generic METHOD (1).
+        //
+        // Reconciled over 200 roslyn files: 544 / 544, 0 either way, 0 files disagreeing.
+        for (const e of deriveCSharpBareUses(root, (result as any)?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
 
@@ -16450,7 +16668,27 @@ async function main() {
         // reach them again. The csharp lane's own `["calls", "references", "uses"]`
         // entry is untouched and still on its own line.
  ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "perl" ? ["calls"] : []),
- ...(lang === "perl" || lang === "xml" || lang === "fsharp" || lang === "go" ? ["contains"] : []),
+ ...(lang === "perl" || lang === "xml" || lang === "go" ? ["contains"] : []),   // GO38 (round 6): go joins the CONTAINS-audited set, paired with the deriveGoContains push above, for the same reason it joined the references set: membership was 47,088 edges outside the comparison on the three new corpora, and the oracle is derived from the DECLARATION side so an unpublished type is a MISSING row rather than invisible on both sides. That asymmetry is what found GO38 (a type declared inside a function body published nothing, while the declared-type pass was already naming it as a relationship source). ...(lang === "fsharp" ? ["contains", "calls", "references"] : []),
+
+   // fsharp audits contains + calls + references. ON ITS OWN LINE, deliberately, and that
+   // is not a style preference — it is the third time this entry has been lost. The
+   // `["calls"]` and `["contains"]` entries above live on ONE PHYSICAL LINE, and any lane
+   // that appends a `//` comment to that line silently deletes everything after it. The
+   // clojure lane lost 17 lanes' `calls` that way (its RESTORED note above records it);
+   // the go lane's GO38 edit then rewrote the same line and took this lane's
+   // `|| lang === "fsharp"` with it, and the symptom was a differential reporting 1.9%
+   // coverage with 4,696 MISSING on an analyzer that was emitting 2,751 edges — the
+   // harness comparing almost nothing and calling it a result. A green that measures the
+   // harness is worse than a red.
+   //
+   // The labels are the ones this lane's own truth oracle (script/m14/fsharp-truth-oracle.ts)
+   // derives independently over the same grammar. Symmetry is the whole requirement: the
+   // harness filters the ANALYZER side by this list and does NOT filter the truth side, so
+   // a truth row whose label is absent here can never match and is counted MISSING forever.
+   // Before this entry the lane reported 21-42% covered and 3,270-3,979 MISSING, which read
+   // as a containment defect and was almost entirely that asymmetry: `calls` and
+   // `references` truth rows with no allowance. With the three labels symmetric the same
+   // corpora measured 100% covered, MISSING 0-1.
    // 2026-09-28: fsharp joins the CONTAINS-audited set, and ONLY contains.
    //
    // The honest reading of the run, stated before anyone reads a percentage off it: the
@@ -16533,7 +16771,7 @@ async function main() {
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
           // #910 (c imports) and G7 (groovy uses) notes below record.
-          ...(lang === "zig" ? ["calls", "uses", "references"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
 
           // hcl joins the USES-audited set only, and `calls` is excluded on
           // measurement rather than assumption. HCL declares no function, class or
@@ -16547,22 +16785,25 @@ async function main() {
           // shape the house precedent suppresses (java and groovy carry explicit
           // builtin filters for println/printf). Adjudication:
           // fixtures/hcl/out/calls-feasibility.json.
-          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" || lang === "go" ? ["references"] : []),   // GO36 (round 6): go joins the REFERENCES-audited set, paired with the deriveGoDeclaredTypeRefs push above. Measured at full extent on all five corpora before the pairing: 127,061 `references` edges, 0 MISSING, 0 UNEXPLAINED, 0 parse skips. `uses` is NOT added here and owes the same treatment — the bare-value-read surface has a far more elaborate exclusion contract than a type reference does, and auditing it against an oracle that has not been proved able to disagree with the analyzer is how a lane gets a green light it has not earned. That is the next round's work, named rather than silently skipped.         // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
-...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "go" ? ["uses"] : []),   // GOD9 (round 6): go joins. The GO36 comment on the PRECEDING physical line had swallowed a LIVE entry — `//` runs to end of line — so dart/ruby/javascript/groovy silently lost their `uses` auditing and go never had any. That is the csharp-lane failure recorded at the head of this expression, and this is the second time it has cost a lane real coverage. 154,656 rows over five corpora, 0 MISSING, 4 EXTRA.
-        // (using directives, and now the declared-type graph) had truth that the
+          ...(lang === "hcl" ? ["uses"] : []), ...(lang === "c" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "hcl" || lang === "go" ? ["references"] : []),   // GO36 (round 6): go joins the REFERENCES-audited set, paired with the deriveGoDeclaredTypeRefs push above. Measured at full extent on all five corpora before the pairing: 127,061 `references` edges, 0 MISSING, 0 UNEXPLAINED, 0 parse skips. `uses` is NOT added here and owes the same treatment — the bare-value-read surface has a far more elaborate exclusion contract than a type reference does, and auditing it against an oracle that has not been proved able to disagree with the analyzer is how a lane gets a green light it has not earned. That is the next round's work, named rather than silently skipped; it landed in GO39, below, on its own line.         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
+...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "go" ? ["uses"] : []),   // GO39 (round 6): go joins the USES-audited set, paired with the deriveGoUses push above. `uses` was the lane's largest unmeasured surface — 79,584 edges across the three new corpora, 85% of them one rule — and it is where round 5 found a defect by reading the analyzer. The three sub-surfaces are derived separately and measured separately, so a red row is attributable rather than a single uninterpretable number. The channel sub-surface's IDENTITY includes its direction (metadata.operationType), which the harness matcher does not see: it matches `label + normTarget(target)`, so a send/receive direction flip is NOT differential-visible and is pinned by probe instead. That limitation is stated here rather than left for a reader to infer from a clean count.        // R9 (#804): csharp joins the REFERENCES-audited set. Its `references` class
         ...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []), ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" ? ["references"] : [])].includes(r.label)
-        // 2026-09-28: `uses` is compared for csharp on the FIELD-ACCESS half only. The
-        // bare-identifier half (marker `identifier_usage`, confidence 1.0) has no truth
-        // derivation, so letting it through would report those rows UNEXPLAINED for the truth's
-        // silence rather than for any defect — a manufactured red, which is the failure mode this
-        // gate exists to prevent (the same reason vb's `uses` and the #910 `imports` classes are
-        // excluded above). A marker-scoped comparison beats either extreme: the 5,698-row half is
-        // adjudicated at corpus scale, and the 742-row half keeps its fixture + mutant gate with
-        // the limit written down rather than left to be found as unexplained rows. Removing the
+        // 2026-09-28: `uses` is now compared for csharp on BOTH halves. The field-access half
+        // landed first and the bare-identifier half landed in the same round it closed, so the
+        // marker restriction that used to sit here is gone rather than merely relaxed: every
+        // `uses` row csharp emits is now adjudicated against an independent derivation, and the
+        // exclusion list for this lane no longer contains an entry whose only reason for existing
+        // was that the truth had not been written yet.
+        //
+        // The reason to write that truth LAST rather than first: it is the only class whose
+        // contract is fifteen exclusion gates deep, and four of the five disagreements this round
+        // attributed to the analyzer were the truth's own errors. A bare-identifier oracle written
+        // in an hour and trusted on sight would have reported 742 defects that were one dead
+        // branch, and the review would have carried them.
         // restriction is a one-line change once deriveCSharpBareIdentifierUses lands.
-        && !(lang === "csharp" && r.label === "uses" && r.marker !== "csharp_field_access"))
+        )
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -17081,4 +17322,695 @@ async function main() {
 
 if (process.argv[1]?.endsWith("differential.ts")) {
   main().catch(e => { console.error(e); process.exit(1) })
+}
+
+/**
+ * 2026-09-28: csharp's BARE-IDENTIFIER `uses` truth — the last unoracled slice of the lane's
+ * output (617 rows, 2.4%, marker `identifier_usage`, confidence 1.0).
+ *
+ * WHAT IS AND IS NOT INDEPENDENT HERE, stated first because it bounds the claim. The MEMBER
+ * INVENTORY — which names are Property-kind members of which type — is passed IN from the
+ * analyzer's own symbol table, and that is the family's sanctioned arrangement (the zig lane's
+# `deriveZigBareUses` does the same, and for the same reason): the question this truth audits is
+ * *which identifier SITES read which member*, and re-deriving the inventory as well would only
+ * create a second place to be wrong about a set the harness already trusts. Everything the audit
+ * is actually about — the RESOLUTION walk, the shadowing frames, and every exclusion gate — is
+ * re-derived here from the tree.
+ *
+ * THE RULE, and the shape of it:
+ *
+ *   resolve   an identifier reads when it is not excluded (below) AND it is not shadowed by a
+ *             lexically enclosing binding AND some enclosing class — innermost first, then its
+ *             base chain breadth-first to a bounded depth, then outward to the next enclosing
+ *             class — DECLARES a Property-kind member of that name. Methods, enum members, events
+ *             and delegates never resolve bare: a bare method name is a method GROUP, and the
+ *             rest are qualified-only in C#.
+ *   shadow    walk-order frames: a method's and a local function's parameters, a block, a lambda's
+ *             parameters (named and implicit), a local function's OWN name in the enclosing
+ *             frame, a class's primary-constructor parameters, a declaration pattern's names, an
+ *             `out` declaration, query range variables, a catch variable, a foreach variable, and
+ *             deconstruction targets. The frames are POPPED on exit, so a binding introduced after
+ *             a read does not retroactively silence it.
+ *   exclude   the fifteen positions where an identifier names something that is not a value read.
+ *             Each is a separate rule with a separate reason, and each is re-derived from the
+ *             grammar rather than from the analyzer's gate list.
+ *
+ * WHY A REIMPLEMENTATION AND NOT A CALL. The alternative — importing the analyzer's own
+ * resolution — would be a second answer to the same question inside one process, and a
+ * differential built from it can only ever report that the lane agrees with itself. That is the
+ * failure this whole round exists to close: 60.3% of the lane's output had no second answer at
+ * all.
+ */
+export function deriveCSharpBareUses(
+  root: any,
+  symbols: Array<{ name?: string; kind?: string; ownerName?: string }>,
+): { label: string; from: string; target: string }[] {
+  // ---- the shared inventory: Property-kind members, by owner and by owner leaf -------------
+  const leafOf = (s: string): string => {
+    const segs: string[] = []
+    for (const a of s.split("::")) for (const b of a.split(".")) if (b) segs.push(b)
+    return segs.length > 0 ? segs[segs.length - 1] : s
+  }
+  const members = new Map<string, Set<string>>()
+  const addMember = (owner: string, name: string): void => {
+    if (!owner || !name || name === "_") return
+    for (const key of [owner, leafOf(owner)]) {
+      let set = members.get(key)
+      if (!set) { set = new Set<string>(); members.set(key, set) }
+      set.add(name)
+    }
+  }
+  for (const s of symbols ?? []) {
+    if (s?.kind === "property" && s.ownerName) addMember(String(s.ownerName), String(s.name ?? ""))
+  }
+
+  // ---- the base lists, for the resolution walk ---------------------------------------------
+  // Only needed to reach a member declared on an ANCESTOR. Keyed by the name a base list writes,
+  // and by the enclosing name, which is all a name-keyed resolution can use.
+  const bases = new Map<string, string[]>()
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (/^(class|interface|struct|record)_declaration$/.test(n.type)) {
+        const nm = n.childForFieldName?.("name")?.text
+        if (nm) {
+          const bl = (n.namedChildren ?? []).find((c: any) => c.type === "base_list")
+          const bs: string[] = []
+          for (const b of bl?.namedChildren ?? []) {
+            if (!b || b.type === "argument_list") continue
+            const tn = b.type === "primary_constructor_base_type"
+              ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
+              : b
+            if (!tn || typeof tn.text !== "string") continue
+            let text = tn.text
+            const call = text.indexOf("(")
+            if (call > 0) text = text.slice(0, call)
+            const lt = text.indexOf("<")
+            if (lt > 0) text = text.slice(0, lt)
+            bs.push(leafOf(text.trim()))
+          }
+          if (bs.length > 0) bases.set(nm, bs)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) stack.push(n.namedChild(i))
+    }
+  }
+
+  // ---- the frames ---------------------------------------------------------------------------
+  interface Frame { names: Set<string>; cls: string | null }
+  const frames: Frame[] = [{ names: new Set<string>(), cls: null }]
+
+  const shadowed = (name: string): boolean => {
+    for (let i = frames.length - 1; i >= 0; i--) if (frames[i].names.has(name)) return true
+    return false
+  }
+  const resolvable = (name: string): boolean => {
+    for (let i = frames.length - 1; i >= 0; i--) {
+      const fr = frames[i]
+      if (!fr.cls) continue
+      const seen = new Set<string>()
+      const queue = [fr.cls]
+      let depth = 0
+      while (queue.length > 0 && depth < 10) {
+        depth++
+        const cur = queue.shift()!
+        if (seen.has(cur)) continue
+        seen.add(cur)
+        if (members.get(cur)?.has(name) || members.get(leafOf(cur))?.has(name)) return true
+        for (const b of bases.get(cur) ?? bases.get(leafOf(cur)) ?? []) if (!seen.has(b)) queue.push(b)
+      }
+    }
+    return false
+  }
+
+  const out: { label: string; from: string; target: string }[] = []
+  const emitted = new Set<string>()
+
+  // Source attribution: the nearest enclosing callable, else the innermost enclosing class (a
+  // member initializer or a class-level attribute argument reads in class scope), else "global"
+  // (top-level statements).
+  //
+  // LOCAL FUNCTIONS ARE DELIBERATELY NOT SOURCES, and this cost 17 phantom findings to learn.
+  // The first cut of this function returned a `local_function_statement`'s name, and every one of
+  // the 17 rows it invented named a method the graph does not contain: `AnalyzeInvocationOperation`
+  // and `TryGetMethodName` are local functions inside `OnCompilationStart`, and the symbol table
+  // holds 0 symbols for either. A relationship whose SOURCE is not a node in the graph is a
+  // dangling edge -- worse than a missing one, because it looks connected. The rule is therefore
+  // "the nearest enclosing callable THAT IS PUBLISHED AS A SYMBOL", and the half of it that makes
+  // this a derivation rather than a transcription is that the exclusion is justified by an
+  // invariant checked against the symbol table (cs-deep-36), not by reading the analyzer's code.
+  const containingFn = (n: any): string | null => {
+    let cur: any = n.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "method_declaration") return cur.childForFieldName?.("name")?.text ?? null
+      if (t === "constructor_declaration") return "constructor"
+      if (t === "destructor_declaration") return "Finalize"
+      if (t === "property_declaration") return cur.childForFieldName?.("name")?.text ?? null
+      if (t === "indexer_declaration") return "this"
+      cur = cur.parent
+    }
+    return null
+  }
+  const innermostClass = (): string | null => {
+    for (let i = frames.length - 1; i >= 0; i--) if (frames[i].cls) return frames[i].cls
+    return null
+  }
+
+  // ---- the exclusion gates ------------------------------------------------------------------
+  const firstIdent = (n: any): any | null => {
+    for (let i = 0; i < (n?.namedChildCount ?? 0); i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "identifier") return c
+    }
+    return null
+  }
+  const same = (a: any, b: any): boolean => !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+  const namedOf = (n: any): any | null => n?.childForFieldName?.("name") ?? null
+  const paramName = (p: any): string | null => namedOf(p)?.text ?? firstIdent(p)?.text ?? null
+
+  const isCallableKind = (t: string): boolean =>
+    t === "method_declaration" || t === "constructor_declaration" || t === "destructor_declaration" ||
+    t === "operator_declaration" || t === "conversion_operator_declaration" || t === "local_function_statement"
+
+  /** A declared type name, in any position: a `variable_declaration`'s type field, a
+   *  parameter's, a property's, a base list, a type-parameter list, a constraint clause, a tuple
+   *  TYPE (as opposed to a tuple expression). A type never reads a value. */
+  const isTypePosition = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t = cur.type
+      // A `variable_declarator` is the boundary between a declaration's TYPE and its INITIALIZER,
+      // and it must be tested before the `variable_declaration` case below -- otherwise every read
+      // in `var f = Some.Field;` is gated by the `var` that introduces it. Removing this branch
+      // while fixing the generic-name gate below cost 162 rows across 200 files, which is the
+      // measurement that says the branch is load-bearing rather than redundant.
+      if (t === "variable_declarator") {
+        const vd = cur.parent
+        if (vd && vd.type === "variable_declaration") {
+          const tf = vd.childForFieldName?.("type")
+          return !!tf && n.startIndex >= tf.startIndex && n.endIndex <= tf.endIndex
+        }
+        return false
+      }
+      if (t === "variable_declaration" || t === "parameter" || t === "property_declaration" ||
+          t === "indexer_declaration" || t === "event_declaration" || t === "event_field_declaration" ||
+          t === "base_list" || t === "type_parameter_list" || t === "type_parameter_constraints_clause" ||
+          t === "tuple_type" || t === "nullable_type" || t === "array_type" || t === "pointer_type" || t === "ref_type") {
+        return true
+      }
+      // `generic_name` and `qualified_name` are DELIBERATELY not in the list above, and their
+      // absence was the last of the 17+1 rows this truth got wrong:
+      //   `var f = Document.GetRequiredLanguageService<ISyntaxFactsService>();`
+      //   ^^^^^^^^ a real read of the field `Document`
+      // The name-shaped nodes are TYPE nodes in a type position and METHOD nodes in an
+      // expression, and the grammar uses the same node type for both. Gating on the node type
+      // therefore silences every read that reaches a generic method -- the most common shape in
+      // modern C#. The type positions are already covered by the declaration cases above, which
+      // is where a type name actually appears, so nothing is lost by not guessing from the node.
+      if (t.includes("statement") || t.includes("declaration") || t.includes("block") ||
+          t.includes("function") || t.includes("body") || t.includes("clause")) return false
+      cur = cur.parent
+    }
+    return false
+  }
+
+  /** The callee of a call: the invocation's `function`, and the member side of a receiver. */
+  const isCalleeShaped = (n: any): boolean => {
+    let top: any = n
+    let p: any = n.parent
+    while (p && (p.type === "generic_name" || p.type === "parenthesized_expression")) { top = p; p = p.parent }
+    if (p && p.type === "member_access_expression") {
+      const expr = p.childForFieldName?.("expression")
+      if (expr && n.startIndex >= expr.startIndex && n.endIndex <= expr.endIndex) return false
+      top = p
+      p = p.parent
+    }
+    if (p && p.type === "member_binding_expression") {
+      top = p
+      p = p.parent
+      if (p && p.type === "conditional_access_expression") { top = p; p = p.parent }
+    }
+    if (!p || p.type !== "invocation_expression") return false
+    const fn = p.childForFieldName?.("function")
+    return !!fn && top.startIndex >= fn.startIndex && top.endIndex <= fn.endIndex
+  }
+
+  const isMemberLeaf = (n: any): boolean => {
+    const p = n.parent
+    if (!p || p.type !== "member_access_expression") return false
+    return same(p.childForFieldName?.("name"), n)
+  }
+  const inQualifiedName = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) { if (cur.type === "qualified_name" || cur.type === "alias_qualified_name") return true; cur = cur.parent }
+    return false
+  }
+  const isNamePosition = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "typeof_expression" || t === "default_expression" || t === "sizeof_expression" ||
+          t === "name_of_expression") return true
+      if (t === "is_expression" || t === "as_expression") {
+        const first = cur.namedChild(0)
+        return !first || n.startIndex < first.startIndex || n.endIndex > first.endIndex
+      }
+      if (t.includes("statement") || t.includes("declaration") || t.includes("expression") ||
+          t.includes("clause") || t.includes("function") || t.includes("body") ||
+          t.includes("pattern") || t.includes("argument")) return false
+      cur = cur.parent
+    }
+    return false
+  }
+  const isNameofOperand = (n: any): boolean => {
+    const isNameof = (inv: any): boolean => {
+      const fn = inv.childForFieldName?.("function")
+      return !!fn && fn.type === "identifier" && fn.text === "nameof"
+    }
+    const p0 = n.parent
+    if (p0 && p0.type === "invocation_expression") return isNameof(p0)
+    let cur: any = p0
+    while (cur && (cur.type === "argument_list" || cur.type === "argument" || cur.type === "parenthesized_expression")) {
+      cur = cur.parent
+      if (cur && cur.type === "invocation_expression") return isNameof(cur)
+    }
+    return false
+  }
+  const isPreprocText = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) {
+      const t = cur.type
+      if (t.includes("statement") || t.includes("declaration") || t.includes("declarator") ||
+          t.includes("specifier") || t.includes("enumerator") || t.includes("compound") ||
+          t.includes("argument_list") || t.includes("init") || t.includes("expression") ||
+          t.includes("function") || t.includes("class_body") || t.includes("field_declaration_list") ||
+          t.includes("block")) return false
+      if (t.startsWith("preproc_")) return true
+      cur = cur.parent
+    }
+    return false
+  }
+  const isLabelOrDiscard = (n: any): boolean => {
+    const p = n.parent
+    return !!p && (p.type === "goto_statement" || p.type === "break_statement" ||
+      p.type === "continue_statement" || p.type === "labeled_statement" || p.type === "discard")
+  }
+  /** The declared NAME of an entity — the grammar's own `name` field where there is one, else the
+   *  first direct identifier, which is the spelling rule every declaration shares. */
+  /** local | member | null -- is this declarator's name binding a local, or naming a member of
+   *  its class? Decided by climbing to the nearest scope boundary, and asked by BOTH the binding
+   *  path and the entity-name path, because when the two disagreed the reconciler found 742
+   *  TRUTH-only rows in 200 files and every one of them was a member DECLARATION being published
+   *  as a read of itself: `public const X AddBraces` is the only place `AddBraces` occurs in
+   *  EnforceOnBuildValues.cs, and the truth claimed the class read it. A local declarator binds
+   *  (the frame silences later reads); a member declarator NAMES something, and names are the
+   *  one thing that never reads. One helper, so the two sides cannot drift. */
+  const declaratorRole = (n: any): "local" | "member" | null => {
+    let cur: any = n.parent
+    while (cur) {
+      const ct = cur.type
+      if (ct === "method_declaration" || ct === "constructor_declaration" || ct === "destructor_declaration" ||
+          ct === "operator_declaration" || ct === "conversion_operator_declaration" ||
+          ct === "local_function_statement" || ct === "lambda_expression" || ct === "block" ||
+          ct === "accessor_declaration" || ct === "top_level_statement" ||
+          (ct.includes("statement") && ct !== "field_declaration" && ct !== "event_field_declaration" &&
+            ct !== "using_statement" && ct !== "foreach_statement" && ct !== "fixed_statement")) return "local"
+      if (ct === "class_declaration" || ct === "struct_declaration" || ct === "interface_declaration" ||
+          ct === "record_declaration" || ct === "enum_declaration") return "member"
+      cur = cur.parent
+    }
+    return null
+  }
+  const isEntityName = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    // The declarator test comes FIRST, and it has to. `variable_declarator` ends in
+    // `_declarator`, so the `_declaration(s)?` guard below rejects it -- and an earlier version
+    // of this function put the declarator test AFTER that guard, where it was unreachable. The
+    // symptom was 742 TRUTH-only rows in 200 files, all of them member declarations published as
+    // reads of themselves, and the first fix appeared to do nothing at all because it was in the
+    // dead branch too. An unchanged count after a fix is information: it means the fix was never
+    // executed, which is worth more than the fix was.
+    if (p.type === "variable_declarator") return declaratorRole(n) === "member"
+    const entities = /_(declaration|declarations)$/
+    if (!entities.test(p.type) && p.type !== "constructor_initializer") return false
+    if (p.type === "variable_declaration") return false
+    const nf = namedOf(p)
+    if (nf && same(nf, n)) return true
+    return same(firstIdent(p), n)
+  }
+  const isAssignLhs = (n: any): boolean => {
+    let cur: any = n
+    let p: any = n.parent
+    while (p && p.type === "parenthesized_expression") { cur = p; p = p.parent }
+    if (!p || p.type !== "assignment_expression") return false
+    const lhs = p.namedChild(0)
+    return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+  }
+  const isOutWrite = (n: any): boolean => {
+    const p = n.parent
+    if (!p || p.type !== "argument") return false
+    let sawOut = false
+    for (let i = 0; i < p.childCount; i++) {
+      const c = p.child(i)
+      if (!c) continue
+      if (!c.isNamed && c.type === "out") { sawOut = true; continue }
+      if (c.isNamed) {
+        if (c.type === "declaration_expression") return false
+        return sawOut && same(c, n)
+      }
+    }
+    return false
+  }
+  const isForeachWrite = (n: any): boolean => {
+    const p = n.parent
+    if (!p || p.type !== "foreach_statement") return false
+    let last: any = null
+    for (let i = p.namedChildCount - 1; i >= 0; i--) {
+      const c = p.namedChild(i)
+      if (c && c.type !== "block") { last = c; break }
+    }
+    if (!last || last.type === "block") return false
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (!c || c === last || c.type === "block") continue
+      if (c.type === "identifier" && same(c, n)) return true
+    }
+    return false
+  }
+  const isDeconWrite = (n: any): boolean => {
+    let cur: any = n
+    let q: any = n.parent
+    while (q && (q.type === "tuple_expression" || q.type === "argument" || q.type === "parenthesized_expression")) {
+      cur = q
+      q = q.parent
+    }
+    if (!q || q.type !== "assignment_expression") return false
+    const lhs = q.namedChild(0)
+    return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+  }
+  const isInValueSetter = (n: any): boolean => {
+    if (n.text !== "value") return false
+    let cur: any = n.parent
+    while (cur) {
+      if (cur.type === "accessor_declaration") {
+        for (let i = 0; i < cur.childCount; i++) {
+          const c = cur.child(i)
+          if (c && !c.isNamed && (c.type === "set" || c.type === "init" || c.type === "add" || c.type === "remove")) return true
+        }
+        return false
+      }
+      if (cur.type === "method_declaration" || cur.type === "constructor_declaration" ||
+          cur.type === "local_function_statement" || cur.type === "lambda_expression" ||
+          cur.type === "class_declaration" || cur.type === "struct_declaration" ||
+          cur.type === "interface_declaration" || cur.type === "record_declaration" ||
+          cur.type === "enum_declaration") return false
+      cur = cur.parent
+    }
+    return false
+  }
+  const isImportName = (n: any): boolean => {
+    let cur: any = n.parent
+    while (cur) { if (cur.type === "using_directive" || cur.type === "extern_alias_directive") return true; cur = cur.parent }
+    return false
+  }
+  /** A designator: the identifier NAMES a member, so it never reads one. Covers an attribute's
+   *  name, a named-argument designator, an anonymous-type member designator, and a `with` /
+   *  subpattern designator — all of which are "the first identifier of a fresh segment". */
+  const isDesignator = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    if (p.type === "attribute") {
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "alias_qualified_name")) {
+          return same(c, n)
+        }
+      }
+      return false
+    }
+    if (p.type === "attribute_argument" || p.type === "assignment_expression" && false) {
+      return same(firstIdent(p), n)
+    }
+    if (p.type === "with_initializer" || p.type === "subpattern") return same(firstIdent(p), n)
+    return false
+  }
+  /** An anonymous-object member designator: `new { X = 1, Y = v }` — `X` names a member, `v`
+   *  reads one. Segment discipline: a fresh segment starts after `,` `;` `{` `}`. */
+  const isAnonDesignator = (n: any): boolean => {
+    let q: any = n.parent
+    while (q && q.type !== "anonymous_object_creation_expression" && q.type !== "block" &&
+           q.type !== "method_declaration" && q.type !== "constructor_declaration" &&
+           q.type !== "local_function_statement" && q.type !== "lambda_expression") q = q.parent
+    if (!q || q.type !== "anonymous_object_creation_expression") return false
+    let fresh = true
+    let foundFirst = false
+    for (let i = 0; i < q.childCount; i++) {
+      const c = q.child(i)
+      if (!c) continue
+      if (!c.isNamed) {
+        if (c.type === "," || c.type === ";" || c.type === "{" || c.type === "}") { fresh = true; foundFirst = false }
+        else if (c.type === "=" || c.type === ":") fresh = false
+        continue
+      }
+      if (c.type === "identifier") {
+        if (!foundFirst && fresh) {
+          if (same(c, n)) {
+            // designating only when an `=` follows in this segment
+            for (let k = i + 1; k < q.childCount; k++) {
+              const d = q.child(k)
+              if (!d) break
+              if (!d.isNamed && (d.type === "," || d.type === ";" || d.type === "{" || d.type === "}")) break
+              if (!d.isNamed && d.type === "=") return true
+            }
+            return false
+          }
+          foundFirst = true
+        } else if (same(c, n)) return false
+      }
+    }
+    return false
+  }
+
+  // ---- the walk ----------------------------------------------------------------------------
+  interface Item { node: any; exit?: boolean; pushed?: boolean }
+  const stack: Item[] = [{ node: root }]
+
+  while (stack.length > 0) {
+    const item = stack.pop()!
+    const n = item.node
+    if (item.exit) {
+      if (item.pushed && frames.length > 0) frames.pop()
+      continue
+    }
+    const t = n.type
+    let pushed = false
+
+    // --- frames ------------------------------------------------------------------------------
+    if (isCallableKind(t)) {
+      const fr: Frame = { names: new Set<string>(), cls: null }
+      const pl = (n.namedChildren ?? []).find((c: any) => c.type === "parameter_list")
+      for (const p of pl?.namedChildren ?? []) {
+        if (p?.type !== "parameter") continue
+        const pn = paramName(p)
+        if (pn && pn !== "_") fr.names.add(pn)
+      }
+      // A local function's NAME binds in the ENCLOSING scope, so `F(); ... F() {}` reads nothing.
+      if (t === "local_function_statement") {
+        const nm = namedOf(n)?.text ?? firstIdent(n)?.text
+        const outer = frames[frames.length - 1]
+        if (outer && nm && nm !== "_") outer.names.add(nm)
+      }
+      frames.push(fr)
+      pushed = true
+    } else if (
+      t === "block" || t === "lambda_expression" || t === "switch_expression_arm" ||
+      t === "query_expression" || t === "foreach_statement" || t === "for_statement" ||
+      t === "using_statement" || t === "catch_clause"
+    ) {
+      const fr: Frame = { names: new Set<string>(), cls: null }
+      if (t === "lambda_expression") {
+        const walk: any[] = [n]
+        while (walk.length > 0) {
+          const m = walk.pop()!
+          if (m !== n && (m.type === "block" || m.type === "lambda_expression")) continue
+          if (m.type === "parameter") {
+            const pn = paramName(m)
+            if (pn && pn !== "_") fr.names.add(pn)
+          } else if (m.type === "implicit_parameter") {
+            for (let i = 0; i < m.namedChildCount; i++) {
+              const c = m.namedChild(i)
+              if (c && c.type === "identifier" && c.text !== "_") fr.names.add(c.text)
+            }
+          }
+          for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) walk.push(c) }
+        }
+      } else if (t === "foreach_statement") {
+        // `foreach (var x in ys)` and `foreach (Point p in ps)` BIND x / p; `foreach (x in ys)`
+        // ASSIGNS an existing x, which is a write. With a type node present the binding is the
+        // first identifier after it; with an all-bare header it is everything between the first
+        // (the positional type) and the last (the source).
+        const isTypeish = (c: any): boolean =>
+          c.type === "implicit_type" || c.type === "predefined_type" || c.type === "generic_name" ||
+          c.type === "qualified_name" || c.type === "nullable_type" || c.type === "array_type" ||
+          c.type === "pointer_type" || c.type === "tuple_type" || c.type === "ref_type"
+        const kids: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.type === "block") break
+          kids.push(c)
+        }
+        if (kids.some((c) => isTypeish(c))) {
+          let seenType = false
+          let bound = false
+          for (const c of kids) {
+            if (isTypeish(c)) { seenType = true; continue }
+            if (!bound && seenType && c.type === "identifier" && c.text !== "_") { fr.names.add(c.text); bound = true }
+          }
+        } else {
+          const ids = kids.filter((c) => c.type === "identifier" && c.text !== "_")
+          for (let i = 1; i + 1 < ids.length; i++) fr.names.add(ids[i].text)
+        }
+      } else if (t === "catch_clause") {
+        const cd = (n.namedChildren ?? []).find((c: any) => c.type === "catch_declaration")
+        for (let i = 0; i < (cd?.namedChildCount ?? 0); i++) {
+          const c = cd!.namedChild(i)
+          if (c && c.type === "identifier" && c.text !== "_") {
+            // the variable is the one with an EARLIER sibling (the type comes first)
+            for (let k = 0; k < i; k++) if (cd!.namedChild(k)) { fr.names.add(c.text); break }
+          }
+        }
+      }
+      frames.push(fr)
+      pushed = true
+    } else if (t === "class_declaration" || t === "struct_declaration" || t === "interface_declaration" || t === "record_declaration") {
+      const fr: Frame = { names: new Set<string>(), cls: null }
+      const nm = namedOf(n)?.text ?? firstIdent(n)?.text ?? null
+      if (nm) fr.cls = nm
+      // Primary-constructor parameters bind in the class body. A RECORD's positionals are NOT
+      // bound: they coincide with the properties, so a read of one must flow to the member.
+      if (t !== "record_declaration") {
+        const pl = (n.namedChildren ?? []).find((c: any) => c.type === "parameter_list")
+        for (const p of pl?.namedChildren ?? []) {
+          if (p?.type !== "parameter") continue
+          const pn = paramName(p)
+          if (pn && pn !== "_") fr.names.add(pn)
+        }
+      }
+      frames.push(fr)
+      pushed = true
+    } else if (t === "variable_declarator") {
+      // A LOCAL declaration binds; a MEMBER declaration is an entity NAME (excluded above) --
+      // see `declaratorRole`, which decides this once for both paths.
+      if (declaratorRole(n) === "local") {
+        // the LEFTMOST name, through declarator wrappers (`int *p` -> p, `int x` -> x)
+        let d: any = n
+        while (d) {
+          if (d.type === "identifier") { if (d.text !== "_") frames[frames.length - 1]?.names.add(d.text); break }
+          let next: any = null
+          for (let i = 0; i < d.namedChildCount; i++) {
+            const c = d.namedChild(i)
+            if (c && (c.type === "identifier" || c.type.endsWith("declarator"))) { next = c; break }
+          }
+          if (!next) break
+          d = next
+        }
+      }
+    } else if (t === "declaration_pattern") {
+      // `Point p`, `List<int> x`, `var v`: skip the first child (the type), bind the rest.
+      const fr = frames[frames.length - 1]
+      if (fr) for (let i = 1; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier" && c.text !== "_") fr.names.add(c.text)
+      }
+    } else if (t === "declaration_expression") {
+      // `out int v`, `out v`: the LAST direct identifier declares.
+      const fr = frames[frames.length - 1]
+      if (fr) {
+        let last: any = null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "identifier") last = c
+        }
+        if (last && last.text !== "_") fr.names.add(last.text)
+      }
+    } else if (t === "from_clause" || t === "join_clause" || t === "let_clause") {
+      // `from x in src`, `join y in ys`, `let b = a`: the FIRST identifier binds.
+      const fr = frames[frames.length - 1]
+      const id = firstIdent(n)
+      if (fr && id && id.text !== "_") fr.names.add(id.text)
+    } else if (t === "tuple_expression") {
+      // Deconstruction `(int a, int b) = t`: only when this tuple is the LHS. A typed argument
+      // binds its identifiers; an all-bare argument binds all but the first (the positional
+      // type); a lone bare identifier ASSIGNS an existing variable, so it binds nothing.
+      const p = n.parent
+      if (p && p.type === "assignment_expression" && p.namedChild(0)) {
+        const lhs = p.namedChild(0)
+        if (n.startIndex >= lhs.startIndex && n.endIndex <= lhs.endIndex) {
+          const fr = frames[frames.length - 1]
+          const isTypeish = (c: any): boolean =>
+            c.type === "implicit_type" || c.type === "predefined_type" || c.type === "generic_name" ||
+            c.type === "qualified_name" || c.type === "nullable_type" || c.type === "array_type" ||
+            c.type === "pointer_type" || c.type === "tuple_type" || c.type === "ref_type"
+          if (fr) for (let i = 0; i < n.namedChildCount; i++) {
+            const arg = n.namedChild(i)
+            if (!arg || arg.type !== "argument") continue
+            const ids: any[] = []
+            let typed = false
+            for (let k = 0; k < arg.namedChildCount; k++) {
+              const c = arg.namedChild(k)
+              if (!c) continue
+              if (isTypeish(c)) typed = true
+              else if (c.type === "identifier" && c.text !== "_") ids.push(c)
+            }
+            const bind = typed ? ids : ids.slice(1)
+            for (const b of bind) fr.names.add(b.text)
+          }
+        }
+      }
+    }
+
+    // --- the read itself ---------------------------------------------------------------------
+    if (t === "identifier") {
+      const name = n.text
+      if (
+        name && name !== "_" &&
+        !isEntityName(n) &&
+        !isDesignator(n) &&
+        !isAnonDesignator(n) &&
+        !isOutWrite(n) &&
+        !isDeconWrite(n) &&
+        !isForeachWrite(n) &&
+        !isImportName(n) &&
+        !isTypePosition(n) &&
+        !isInValueSetter(n) &&
+        !isNameofOperand(n) &&
+        !isCalleeShaped(n) &&
+        !isMemberLeaf(n) &&
+        !inQualifiedName(n) &&
+        !isNamePosition(n) &&
+        !isPreprocText(n) &&
+        !isLabelOrDiscard(n) &&
+        !isAssignLhs(n) &&
+        !shadowed(name) &&
+        resolvable(name)
+      ) {
+        const src = containingFn(n) ?? innermostClass() ?? "global"
+        const key = `${src}|${name}`
+        if (!emitted.has(key)) {
+          emitted.add(key)
+          out.push({ label: "uses", from: src, target: name })
+        }
+      }
+    }
+
+    stack.push({ node: n, exit: true, pushed })
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ node: c })
+    }
+  }
+  return out
 }
