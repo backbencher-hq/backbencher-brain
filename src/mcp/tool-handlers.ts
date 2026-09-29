@@ -946,9 +946,27 @@ const handlers: Record<string, ToolHandler> = {
     if (edgeLimitArg !== undefined && (!Number.isFinite(edgeLimitArg) || edgeLimitArg < 1)) {
       return textResult("bb_graph edgeLimit must be a positive number", true)
     }
+    // Validated here rather than trusted: an unknown direction or a non-string
+    // entry in relationshipTypes would otherwise reach the SQL and produce a
+    // silently wrong traversal instead of an error.
+    const directionArg = args.direction === undefined ? undefined : String(args.direction)
+    if (directionArg !== undefined && !["callers", "callees", "both"].includes(directionArg)) {
+      return textResult("bb_graph direction must be one of: callers, callees, both", true)
+    }
+    const relTypesArg = args.relationshipTypes === undefined ? undefined : (args.relationshipTypes as unknown[]).map((t) => String(t))
+    if (relTypesArg !== undefined && relTypesArg.length === 0) {
+      return textResult("bb_graph relationshipTypes must name at least one relationship kind", true)
+    }
+    const crossLangArg = args.includeCrossLanguage === undefined ? undefined : args.includeCrossLanguage !== false
     let result
     try {
-      result = await graphTraversal(projectId as any, symbol, { maxDepth, edgeLimit: edgeLimitArg })
+      result = await graphTraversal(projectId as any, symbol, {
+        maxDepth,
+        edgeLimit: edgeLimitArg,
+        direction: directionArg as any,
+        relationshipTypes: relTypesArg,
+        includeCrossLanguage: crossLangArg,
+      })
     } catch (error) {
       return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
     }
@@ -963,11 +981,23 @@ const handlers: Record<string, ToolHandler> = {
       if (IMPORT.has(e.relationshipType)) return "import_based"
       return "inferred"
     }
+    // Every edge names its two endpoints by symbol id, and a symbol id is
+    // `<projectId>:<file>:<name>:<line>`. That is decodable, but an agent
+    // reading 36 callee edges should not have to parse a string to learn that
+    // one of them is `ext:Errorf`, and must never have to guess which file a
+    // caller lives in. `describe` renders one endpoint out of the engine's own
+    // node map — already computed by the traversal, previously discarded here
+    // — so each edge is self-contained and needs no second call.
+    const describe = (id: string) => {
+      const n = (result.nodes as Record<string, any> | undefined)?.[id]
+      if (!n) return null
+      return { id: n.id, name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+    }
     const edgesOf = (list: any[], direction: "caller" | "callee") =>
       list.map((e) => ({
         direction,
-        from: e.from,
-        to: e.to,
+        from: describe(e.from),
+        to: describe(e.to),
         relationshipType: e.relationshipType,
         confidence: e.confidence,
         tier: tierFor(e),
@@ -975,10 +1005,31 @@ const handlers: Record<string, ToolHandler> = {
         bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
         depth: e.depth,
         callSite: e.callSite ?? null,
+        // Whether this edge is about the symbol that was asked for, or about
+        // one of its members folded on by the owner cascade. Surfacing it is
+        // what makes the documented superset usable: an agent can count the
+        // exact callers without issuing a second, differently-shaped query.
+        match: e.targetMatch ?? e.sourceMatch ?? null,
+        matchedMember: e.matchedMember ?? null,
+        // M26.W2 / GraphEdge.rowId: the stored brain_relationship row this edge
+        // came from. The engine emits it and the contract calls it mandatory
+        // ("an edge without one must never be emitted, never rendered"), but
+        // this handler dropped it — so the tool's own description ("every edge
+        // still traces to a stored relationship row") was a claim the payload
+        // gave an agent no way to check. An edge nobody can audit is an edge
+        // they have to take on faith.
+        rowId: e.rowId ?? null,
       }))
     return textResult(JSON.stringify({
       symbol,
-      root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
+      root: {
+        id: result.root?.id,
+        name: result.root?.name,
+        symbolType: result.root?.symbolType ?? null,
+        file: result.root?.file ?? null,
+        line: result.root?.line ?? null,
+        filePath: result.root?.filePath ?? null,
+      },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
       summary: {
@@ -988,7 +1039,13 @@ const handlers: Record<string, ToolHandler> = {
         // "totalCallers" for a symbol with 3,437 sites and said nothing.
         totalCallers: result.summary?.totalCallers ?? result.callers.length,
         totalCallees: result.summary?.totalCallees ?? result.callees.length,
-        maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
+        // `maxDepthReached` is what the traversal actually walked, not what it
+        // was allowed to walk. The previous fallback reported the REQUESTED
+        // maxDepth whenever the summary was absent, so a graph that stopped at
+        // depth 0 (a leaf with no edges) claimed to have reached depth 3. A
+        // fallback that upgrades a measured fact into a permitted one is worse
+        // than an explicit unknown, so the unknown is what ships.
+        maxDepthReached: result.summary?.maxDepthReached ?? null,
         crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
@@ -997,6 +1054,28 @@ const handlers: Record<string, ToolHandler> = {
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,
         calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
         totalsAreLowerBounds: result.summary?.totalsAreLowerBounds === true,
+        // How much of the answer is about the symbol that was asked for, and
+        // how much the owner cascade folded in from its members. The cascade is
+        // documented; without these numbers a reader cannot use it.
+        exactCallers: result.summary?.exactCallers ?? 0,
+        cascadedCallers: result.summary?.cascadedCallers ?? 0,
+        exactCallees: result.summary?.exactCallees ?? 0,
+        cascadedCallees: result.summary?.cascadedCallees ?? 0,
+        // Rows present in BOTH the caller and the callee list. Each is one
+        // relationship seen from two ends, so `totalCallers + totalCallees`
+        // overstates the distinct relationship count by exactly this much.
+        edgesInBothDirections: result.summary?.edgesInBothDirections ?? 0,
+        dedupedAtToolLayer: result.summary?.dedupedAtToolLayer ?? { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
+        // What was actually searched. Without this a caller that asked for
+        // direction:"callers" cannot tell an empty callee list from a callee
+        // list that was never computed, and `relationshipTypes` narrowing is
+        // invisible in the results — a graph of 0 edges reads identically
+        // whether the filter matched nothing or matched everything.
+        scope: {
+          direction: directionArg ?? "both",
+          relationshipTypes: relTypesArg ?? ["calls", "instantiates", "extends", "implements"],
+          includeCrossLanguage: crossLangArg !== false,
+        },
       },
       provenance: result.provenance ?? null,
     }, null, 2))
