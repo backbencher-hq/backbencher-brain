@@ -91,7 +91,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
 
   // Pass 1: the class/method skeleton, so `overrides` can be derived from it in pass 2
   // rather than guessed at while walking bodies.
-  interface Klass { name: string; line: number; bases: string[]; methods: Map<string, number> }
+  interface Klass { name: string; line: number; bases: string[]; qualifiedBases: Set<string>; methods: Map<string, number> }
   const classes: Klass[] = []
   const stack: Array<{ kind: "module" } | { kind: "class"; cls: Klass } | { kind: "func"; name: string; line: number }> = [
     { kind: "module" },
@@ -105,14 +105,28 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const nameNode = k.childForFieldName("name")
         const name = nameNode ? nameNode.text : ""
         const supNode = k.childForFieldName("superclasses")
+        // `bases` holds the LEAF — that is the spelling the relationship contract uses
+        // and the spelling the analyzer publishes, so the two can be compared. The
+        // `qualified` flag rides alongside because the leaf alone is ambiguous:
+        // `urllib.request.HTTPRedirectHandler` and the local `HTTPRedirectHandler` share
+        // a leaf and are different classes, and this file reproduced exactly that
+        // collision before the analyzer's was fixed.
         const bases: string[] = []
+        const qualifiedBases = new Set<string>()
         if (supNode) {
           for (let i = 0; i < supNode.namedChildCount; i++) {
             const b = supNode.namedChild(i)
             if (b && b.type === "identifier") bases.push(b.text)
             else if (b && b.type === "attribute") {
+              // A QUALIFIED base is external, full stop. `class
+              // HTTPRedirectHandler(urllib.request.HTTPRedirectHandler)` does NOT
+              // inherit from the local class of the same bare name, and resolving it to
+              // that class is a name-collision bug this file reproduced INDEPENDENTLY
+              // before it was fixed in the analyzer — which is the clearest evidence yet
+              // that bare-name base resolution is hazardous. So the dotted spelling is
+              // kept and the local-match step below compares the WHOLE spelling.
               const a = b.childForFieldName("attribute")
-              if (a) bases.push(a.text)
+              if (a) { bases.push(a.text); qualifiedBases.add(a.text) }
             } else if (b && b.type === "subscript") {
               // `class C(Generic[T], X)` — the base is the subscript's VALUE. Python's
               // MRO runs through `Generic[T]` exactly as it does through `Generic`, so
@@ -120,12 +134,12 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
               const v = b.childForFieldName("value")
               if (v) {
                 if (v.type === "identifier") bases.push(v.text)
-                else if (v.type === "attribute") { const a = v.childForFieldName("attribute"); if (a) bases.push(a.text) }
+                else if (v.type === "attribute") { const a = v.childForFieldName("attribute"); if (a) { bases.push(a.text); qualifiedBases.add(a.text) } }
               }
             }
           }
         }
-        const cls: Klass = { name, line: k.startPosition.row + 1, bases, methods: new Map() }
+        const cls: Klass = { name, line: k.startPosition.row + 1, bases, qualifiedBases, methods: new Map() }
         classes.push(cls)
         // A class is contained by whatever encloses it. Python has no module
         // declaration, so a module-level class is contained by nothing — that is the
@@ -187,7 +201,9 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   for (const c of classes) {
     for (const [m, line] of c.methods) {
       for (const b of c.bases) {
-        const base = classes.find((x) => x.name === b)
+        // A base the SOURCE qualified is external even when a local class shares its
+        // leaf, so it can never be a local override target.
+        const base = c.qualifiedBases.has(b) ? undefined : classes.find((x) => x.name === b)
         if (base && base.methods.has(m)) add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
         else if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
       }
@@ -262,11 +278,28 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // descended into functions and derived 3,225 class attributes that do not exist,
     // which is the mirror image of PY-6 and just as wrong: every local became a member.
     if (n.type === "function_definition" || n.type === "lambda") return
-    if (n.type === "assignment") {
+    // Nor into a NESTED class: `_Multipart._Part`'s members belong to `_Part`, and
+    // attributing them to `_Multipart` is how a class ends up owning a member that is
+    // one level deeper than the reader is.
+    if (n.type === "class_definition") return
+    if (n.type === "assignment" || n.type === "expression_statement") {
       const left = n.childForFieldName("left")
-      if (left && left.type === "identifier" && !classAttrSeen.has(`${cls}\u0000${left.text}`)) {
-        classAttrSeen.add(`${cls}\u0000${left.text}`)
-        add("contains", cls, left.text, n.startPosition.row + 1)
+      // An ANNOTATED declaration (`name: bytes`) is a member too, and in a TypedDict it
+      // is the ONLY declaration there is — those fields are the class's whole surface.
+      // The grammar gives a bare `name: bytes` in a class body as an
+      // `expression_statement` holding a `type`, so there is no `left` field to read;
+      // the declared name is the `type` node's own first child identifier.
+      const nameNode = left && left.type === "identifier"
+        ? left
+        : n.type === "expression_statement" && n.namedChildCount > 0 && n.namedChild(0).type === "type"
+          ? n.namedChild(0).childForFieldName("name") ?? (n.namedChild(0).namedChildCount > 0 ? n.namedChild(0).namedChild(0) : null)
+          : null
+      if (nameNode && nameNode.type === "identifier") {
+        // PER-SITE, not per-name. `if c: X = A else: X = B` is two assignments in the
+        // source and the analyzer publishes two per-site members, which is what lets a
+        // `contains` edge resolve by name AND line. Deduplicating by name is right for an
+        // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
+        add("contains", cls, nameNode.text, n.startPosition.row + 1)
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) walkClassBody(n.namedChild(i), cls)
