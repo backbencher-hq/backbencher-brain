@@ -1921,14 +1921,25 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
       const n = st.pop()!
       if (n.type === "class_declaration" || n.type === "object_declaration") {
         const ownerName = firstNamedOf(n, ["type_identifier", "simple_identifier"])?.text
-        const body = namedOf(n, "class_body")
+        // An enum's body is `enum_class_body`, not `class_body` — reading only
+        // `class_body` inventories an enum with NO members, so every read of an
+        // entry (`when (e) { TestEnum.A -> ... }`, `setOf(A, B, C)`) fails gate
+        // A and the oracle misses it. Measured on Exposed: every
+        // `uses TestEnum -> A|B|C` row, one per entry reference.
+        //
+        // The enum body also carries ordinary declarations — `enum class G(val
+        // n: Int) { A(1); fun f() {} }` puts `fun f` in the SAME
+        // `enum_class_body` — so this is one body read covering both, not a
+        // second special case.
+        const body = namedOf(n, "class_body") || namedOf(n, "enum_class_body")
         if (ownerName && body) {
           for (let i = 0; i < body.namedChildCount; i++) {
             const d = body.namedChild(i)
             if (!d) continue
             if (
               d.type === "property_declaration" || d.type === "function_declaration" ||
-              d.type === "class_declaration" || d.type === "object_declaration"
+              d.type === "class_declaration" || d.type === "object_declaration" ||
+              d.type === "enum_entry"
             ) {
               addMember(ownerName, declaredName(d) ?? "")
             }
@@ -3021,6 +3032,33 @@ export function deriveJavaScriptEdges(root: any): { label: string; from: string;
         // literal) is not a symbol — the analyzer stopped emitting it as a
         // target, so the truth must not derive it either (lockstep).
         if (head && head !== "this" && head !== "super" && cur && cur.type === "identifier") push("uses", head)
+      } else if (isCallee && !isWrite) {
+        // X1 (RULED 2026-09-27): the RECEIVER of a member call is a read. The guard
+        // above skips the whole chain when the member is a call's callee, on the
+        // assumption that "calls covers it" — true for a BARE callee (`fn(x)` has
+        // `calls fn`), FALSE for a member one, where `calls` names only the LEAF. The
+        // receiver is then named by nothing at all: this rule skips the chain, and the
+        // bare-read rule below skips the root via its own `isCallee` gate.
+        //
+        // Measured on the analyzer before its side was fixed: `title.toUpperCase()`,
+        // `value.trim()` and `items.slice().sort()` published NO `uses` for the
+        // receiver, while `title.length` (a property access) and `fn(title)` (a call
+        // argument) both did. So the loss was specific to the receiver position.
+        //
+        // ONLY THE ROOT, never the segments: the leaf is what the `calls` edge names,
+        // and publishing it here would be the double-emission the guard exists to
+        // prevent. `this`/`super` are excluded for the same reason as the branch above
+        // — they are keywords, not symbols. Mirrors the analyzer's `callReceiver`
+        // emission exactly, which is the point: two implementations of one spec must
+        // agree, and here they were reading the same spec and reaching the same wrong
+        // answer, which is why the lane read clean at 100% coverage for as long as it
+        // did.
+        let recvCur: any = n
+        while (recvCur && recvCur.type === "member_expression") recvCur = recvCur.childForFieldName("object")
+        const recvHead = recvCur ? recvCur.text : ""
+        if (recvHead && recvHead !== "this" && recvHead !== "super" && recvCur && recvCur.type === "identifier") {
+          push("uses", recvHead)
+        }
       }
     }
     // M49 #744 mirror: BARE identifier reads (return config; / if (flag)) —
