@@ -326,6 +326,13 @@ export async function traverseGraph(
    *  Only observable when `truncated` is true, but published always so the rule
    *  is not something a reader has to find in the engine's SQL. */
   edgeKindPriority: string[]
+  /** The relationship kinds this run ACTUALLY searched — the resolved list,
+   *  not a restatement of the default. Measured: the handler's scope echo used
+   *  to name four kinds while the answer contained 120 `uses` and 11
+   *  `contains` edges, because it carried its own hardcoded copy of a default
+   *  that lives in this module and had been widened. A scope field is only
+   *  useful if it is true. */
+  relationshipTypesUsed: string[]
   /** M59 (#895): stored rows collapsed at the tool layer before becoming
    *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
    *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
@@ -822,6 +829,7 @@ export async function traverseGraph(
     edgesInBothDirections,
     edgesByType,
     edgeKindPriority: [...Object.keys(EDGE_KIND_PRIORITY)],
+    relationshipTypesUsed: relTypes,
     dedupedAtToolLayer: {
       cascadeRepeatsCollapsed: collapsedCascadeRepeats,
       spellingVariantsCollapsed: collapsedSpellingVariants,
@@ -949,6 +957,7 @@ export async function graphTraversal(
     edgesInBothDirections,
     edgesByType,
     edgeKindPriority,
+    relationshipTypesUsed,
     dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
@@ -999,6 +1008,11 @@ export async function graphTraversal(
       // caller that wanted calls had no way to find out how many of the
       // returned edges were calls without walking all of them.
       edgesByType,
+      // The kinds this run actually searched, resolved — not a restatement of
+      // the default. The handler's scope echo carried its own hardcoded copy
+      // and went stale the moment the default was widened, so it named four
+      // kinds while the answer held `uses` and `contains` edges.
+      relationshipTypesUsed,
       // Which kinds survive a bound first. Only observable under truncation,
       // but published always: the cap's ORDER BY used to be indifferent to
       // kind, so asking for MORE kinds returned FEWER call edges (measured on
