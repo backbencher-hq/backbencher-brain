@@ -5306,7 +5306,9 @@ class TypeScriptAnalysisRunner {
       // `calls → require` edge instead: the dependency was missing AND the
       // module loader was published as if the file called a function named
       // `require` — two wrong edges from one construct.
-      if (callee && (callee.text === "import" || callee.type === "import" || (callee.type === "identifier" && callee.text === "require"))) {
+      const isDynamicImport = !!callee && (callee.text === "import" || callee.type === "import")
+      const isRequireCall = !!callee && callee.type === "identifier" && callee.text === "require"
+      if (isDynamicImport || isRequireCall) {
         const args = node.childForFieldName("arguments")
         const pathArg = args && args.namedChildCount > 0 ? args.namedChild(0) : null
         if (pathArg && (pathArg.type === "string" || pathArg.type === "template_string")) {
@@ -5320,7 +5322,11 @@ class TypeScriptAnalysisRunner {
             ...this.lineField(pathArg),
             metadata: {
               module: modulePath,
-              isDynamic: true,
+              // A `require` is a STATIC CommonJS dependency, not a dynamic import.
+              // Labelling it `isDynamic` was wrong in the first cut of the require
+              // port, which reused the dynamic branch wholesale — the edge was
+              // right and its metadata claimed the module was loaded lazily.
+              ...(isDynamicImport ? { isDynamic: true } : { isRequire: true, isDefault: requireBindsDefault(node) }),
             },
           })
         }
