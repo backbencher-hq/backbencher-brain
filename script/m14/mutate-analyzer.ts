@@ -11469,6 +11469,58 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
   },
   {
+    id: "typescript/commonjs-require-not-a-dependency",
+    language: "typescript",
+    defectClass: "finding-loss",
+    description: "R11 regression: CommonJS `require()` stops being a module dependency, and the module loader starts being published as a call instead \u2014 the two halves of the same construct, which is why the twin skips the bare `require` callee while still recording the dependency. The transform drops every `imports` edge carrying `meta.isRequire` and re-publishes each as a `calls` edge to a function named `require`, which is what the analyzer did before the port. It covers all four require spellings at once \u2014 the plain call, a destructuring binding, a bare-identifier binding, and TypeScript's `import m = require(\"m\")` whose path lives in an `import_require_clause` rather than the statement's `source` field \u2014 because the last one is the shape most likely to regress silently: reading only the `source` field skips it with no error. `imports` is the second-largest edge class in this lane (2,692 edges over 600 tracked files) so a silently missing dependency is a hole in impact analysis. commonjs-require-module-graph kills it, including the exact-count pins that separate a legitimate member call named `require` from a spurious one.",
+    transform: (r: any) => {
+      const rels = ((r as any).relationships ?? []) as any[]
+      const dropped = rels.filter((x: any) => String(x.type) === "imports" && (x.metadata ?? {}).isRequire === true)
+      if (dropped.length === 0) return r
+      const kept = rels.filter((x: any) => !dropped.includes(x))
+      const spurious = dropped.map((x: any) => ({
+        source: x.source,
+        target: "require",
+        type: "calls",
+        confidence: 1.0,
+        metadata: {},
+      }))
+      return { ...r, relationships: [...kept, ...spurious] }
+    },
+  },
+  {
+    id: "typescript/declaration-in-body-inherits-owner",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R10 regression: a declaration inside a function body inherits the enclosing class or namespace as its owner again, so `contains Report->helper` \u2014 the graph claims the class has a member that belongs to a closure inside one of its methods. Two causes, both restored by re-attributing every ownerless declaration to the file's containers: the eager scope pop in extractClass/extractInterface/extractEnum, and `getOwnerInfo()` being asked about lexical nesting that an accumulating resource stack cannot answer. The transform adds a containment edge from every container to every ownerless function/type/interface symbol, which is the observable shape of the pre-fix output; the lane's new independent contains oracle is the instrument that found it (8 false edges over 200 files of an external corpus). declaration-in-body-is-local kills it on the forbidRelationships pins, and its positives \u2014 three ordered members, and a body-local type alias still containing its own members \u2014 are what stop a fix that simply suppressed ownership from passing.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      // SymbolKind serialises LOWERCASE ("class", "function", "interface",
+      // "namespace") — the first cut of this mutant matched "Class"/"Function",
+      // so `containers` was always empty, the transform was a no-op, and the
+      // mutant SURVIVED. A surviving mutant is worse than none: it reports that
+      // the suite cannot fail.
+      const containers = symbols.filter((s: any) => ["class", "interface", "namespace", "enum"].includes(String(s.kind)))
+      if (containers.length === 0) return r
+      const orphanDecls = symbols.filter(
+        (s: any) => !s.ownerName && ["function", "type", "interface", "method"].includes(String(s.kind)),
+      )
+      if (orphanDecls.length === 0) return r
+      const extra: any[] = []
+      const seen = new Set(rels.map((x: any) => `${x.type}|${x.source}|${x.target}`))
+      for (const c of containers) {
+        for (const o of orphanDecls) {
+          const k = `contains|${c.name}|${o.name}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          extra.push({ source: c.name, target: o.name, type: "contains", confidence: 1.0, metadata: {} })
+        }
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
+  },
+  {
     id: "typescript/ambient-signature-drop",
     language: "typescript",
     defectClass: "finding-loss",
