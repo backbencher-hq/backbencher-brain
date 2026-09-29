@@ -112,10 +112,75 @@ function resolveSafeReadPath(projectPath: string, requested: string): { absolute
   const root = realpathSync(projectPath)
   const candidate = path.resolve(root, requested)
   ensureWithinProject(root, candidate)
-  if (!existsSync(candidate) || !statSync(candidate).isFile()) throw new Error(`file not found: ${requested}`)
+  if (!existsSync(candidate)) throw new Error(`not found: ${requested}`)
+  // A directory is named as such. The old message said "file not found" for a
+  // path that exists, which sent callers looking for a missing file.
+  if (!statSync(candidate).isFile()) throw new Error(`not a file: ${requested}`)
   const absolute = realpathSync(candidate)
+  // The second containment check is the one that matters: realpath resolves
+  // symlinks, so an in-project link pointing outside the project is caught here
+  // and not by the pre-resolution check. It is re-established at the point of
+  // read by readIndexedFile, which re-validates the path it is about to open.
   ensureWithinProject(root, absolute)
   return { absolute, relative: path.relative(root, absolute).split(path.sep).join("/") }
+}
+
+/**
+ * Open an index-verified file, or return an error the caller can act on.
+ *
+ * The handler used to readFileSync bare after the DB lookup, and to THROW for
+ * "file is not indexed", so both a delete between the two statements and an
+ * unindexed file reached the caller as a raw ENOENT / raw Error instead of the
+ * isError envelope this handler's own contract demands.
+ */
+function readIndexedFile(absolute: string, projectPath: string, relative: string): { content: string } | { error: string } {
+  try {
+    // Re-verify containment at the point of use — the check in
+    // resolveSafeReadPath ran before a DB round-trip, and a symlink swapped in
+    // that window would otherwise be followed out of the project.
+    ensureWithinProject(realpathSync(projectPath), realpathSync(absolute))
+  } catch (error: any) {
+    return { error: `refused: ${error?.message ?? String(error)}` }
+  }
+  try {
+    return { content: readFileSync(absolute, "utf8") }
+  } catch (error: any) {
+    return { error: `could not read ${relative}: ${error?.code ?? error?.message ?? String(error)}` }
+  }
+}
+
+/**
+ * Reject a language / symbolKind value this project's index does not hold.
+ *
+ * Both are free-form strings in the public schema compared with SQL `=`, so
+ * "TypeScript" or "Function" produced a byte-identical "no results" to a wrong
+ * symbol name — the caller could not tell a filter that excluded everything
+ * from a symbol that does not exist. The message lists the indexed values, so
+ * the correction arrives in the same round trip. Comparison is
+ * case-insensitive, the same rule the engines' NOCASE equality uses.
+ */
+async function describeUnknownFilters(projectId: string, args: Record<string, any>): Promise<string | null> {
+  const language = typeof args.language === "string" ? args.language.trim() : ""
+  const symbolKind = typeof args.symbolKind === "string" ? args.symbolKind.trim() : ""
+  if (!language && !symbolKind) return null
+  const raw = await BrainDatabase.getRawInstance(projectId)
+  if (language) {
+    const known = (raw.prepare("SELECT DISTINCT language FROM brain_file WHERE project_id=? ORDER BY language").all(projectId) as any[])
+      .map((row) => row.language)
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+    if (!known.some((value) => value.toLowerCase() === language.toLowerCase())) {
+      return `bb_search: language "${language}" is not in this project's index — indexed languages: ${known.join(", ") || "(none)"}`
+    }
+  }
+  if (symbolKind) {
+    const known = (raw.prepare("SELECT DISTINCT symbol_type FROM brain_symbol WHERE project_id=? ORDER BY symbol_type").all(projectId) as any[])
+      .map((row) => row.symbol_type)
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+    if (!known.some((value) => value.toLowerCase() === symbolKind.toLowerCase())) {
+      return `bb_search: symbolKind "${symbolKind}" is not in this project's index — indexed kinds: ${known.join(", ") || "(none)"}`
+    }
+  }
+  return null
 }
 
 // M48.P1 (#696): canonical impact report for bb_analyze mode=impact.
@@ -255,6 +320,14 @@ const handlers: Record<string, ToolHandler> = {
     if (args.mode !== undefined && !"symbols content symbol file".split(" ").includes(String(args.mode))) {
       return textResult(`bb_search: unknown mode "${args.mode}" (known: symbols, content, symbol, file)`, true)
     }
+    // A language / symbolKind value the index does not contain is reported as
+    // an error, because a filter that excludes everything is indistinguishable
+    // from a symbol that does not exist. Checked before any search work so the
+    // correction arrives in the same round trip.
+    if (mode === "symbols" || mode === "content") {
+      const unknown = await describeUnknownFilters(projectId as string, args)
+      if (unknown) return textResult(unknown, true)
+    }
     if (mode === "file") {
       let target: { absolute: string; relative: string }
       try {
@@ -263,9 +336,26 @@ const handlers: Record<string, ToolHandler> = {
         return textResult(`bb_search mode=file: ${e?.message ?? "invalid path"}`, true)
       }
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      const row = raw.prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?").get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined
-      if (!row) throw new Error(`file is not indexed: ${target.relative}`)
-      const content = readFileSync(target.absolute, "utf8")
+      // Looked up by the INDEXED relative path first, not by the realpath'd
+      // absolute one. resolveSafeReadPath returns realpathSync(candidate) while
+      // brain_file.path holds the path the indexer was given, so a project
+      // reached through a symlink (/tmp, /var on macOS, a symlinked checkout)
+      // reported "file is not indexed" for a file that IS indexed. The relative
+      // path is symlink-independent; the absolute path stays as a fallback for
+      // an index built from realpaths.
+      const byRelative = raw
+        .prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND relative_path=?")
+        .get(projectId, target.relative) as { id: string; language: string; file_hash: string } | undefined
+      const row = byRelative ?? (raw
+        .prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?")
+        .get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined)
+      // An error envelope, not a throw: this handler's own contract (M40.A7,
+      // stated above) is that invalid input returns isError, and the sibling
+      // branches here already do.
+      if (!row) return textResult(`bb_search mode=file: file is not indexed: ${target.relative}`, true)
+      const read = readIndexedFile(target.absolute, projectPath, target.relative)
+      if ("error" in read) return textResult(`bb_search mode=file: ${read.error}`, true)
+      const content = read.content
       const maxChars = 100_000
       const truncated = content.length > maxChars
       // M35.E1: freshness from the shared resolver — per-item flag + envelope
@@ -280,6 +370,9 @@ const handlers: Record<string, ToolHandler> = {
         content: truncated ? content.slice(0, maxChars) : content,
         contentLength: content.length,
         truncated,
+        // Declared so every mode's response names its match set, even the one
+        // that can only ever match a single file.
+        totalMatches: 1,
         stale: fileStatus !== "fresh",
         freshness: buildStalenessEnvelope(detail.summary, { kind: "file", path: target.relative }),
       }, null, 2))
@@ -295,7 +388,15 @@ const handlers: Record<string, ToolHandler> = {
       // files within budget we repair them inline and run AGAIN so the answer
       // reflects the repair, with the decision declared on the answer.
       const runPass = async () => {
-        const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
+        // offset was never forwarded, although searchContent fully supports it —
+        // so offset:100 returned page 1 byte-identically and an agent paging
+        // until the page came back empty never terminated.
+        const results = await searchContent(projectId as any, String(args.query ?? ""), {
+          maxResults: Number(args.limit ?? 15),
+          offset: Number(args.offset ?? 0),
+          languages: args.language ? [String(args.language)] : undefined,
+          symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
+        })
         // M35.E1: freshness block from the shared resolver (rows carry fileId;
         // per-row stale flags are set by searchContent itself).
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
@@ -303,10 +404,15 @@ const handlers: Record<string, ToolHandler> = {
           answer: {
             searchMode: "content",
             query: String(args.query ?? ""),
-            total: results.length,
+            // `total` is the MATCH SET and `returned` is the page. Reporting the
+            // page length as `total` meant a caller could not tell one match
+            // from fifteen, and a truncated page read as a complete one.
+            total: results.totalMatches ?? results.length,
+            returned: results.length,
             staleCount: results.staleCount ?? 0,
             freshCount: results.freshCount ?? 0,
             truncated: results.truncated ?? false,
+            ...(results.truncationReason ? { truncationReason: results.truncationReason } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
           },
@@ -335,25 +441,47 @@ const handlers: Record<string, ToolHandler> = {
       // M43.A1 (#657): rerunnable pass — repair stale files inline within
       // budget, then answer from the SECOND pass so the answer reflects the
       // repair (declared).
-      const runPass = async () => {
-        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
+      // Both branches produce either an answer or an error envelope, so the
+      // call sites must narrow the type before reading answer/rows/statuses.
+      type SymbolPass = { answer: Record<string, unknown>; rows: Array<{ filePath: string }>; statuses: Map<string, string> } | { envelope: string }
+      const runPass = async (): Promise<SymbolPass> => {
+        let found: { matches: any[] }
+        try {
+          found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? "").trim(), args.filePath ? String(args.filePath) : undefined)
+        } catch (error: any) {
+          // findSymbol's internals (dynamic import, DB handle) threw. The
+          // handler returns an error envelope rather than letting a raw driver
+          // or loader message reach the caller as a "successful" answer.
+          return { envelope: `bb_search mode=symbol: ${error?.message ?? String(error)}` }
+        }
         // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
         // fileId to the file PATH, so the resolver gets filePath rows.
         const matches = (found as { matches: any[] }).matches ?? []
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
         for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
         return {
-          answer: { ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }) },
+          answer: {
+            ...found,
+            // A symbol name can legitimately be declared in many files (a common
+            // method name) and the whole set is returned. The envelope says so,
+            // instead of leaving the caller to guess whether a long list is
+            // complete.
+            totalMatches: matches.length,
+            truncated: false,
+            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+          },
           rows: matches.map((m: any) => ({ filePath: m.fileId })),
           statuses: detail.statuses,
         }
       }
       const pass1 = await runPass()
+      if ("envelope" in pass1) return textResult(pass1.envelope, true)
       const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
       if (staleFiles.length > 0) {
         const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
         if (decision.action === "refreshed") {
           const pass2 = await runPass()
+          if ("envelope" in pass2) return textResult(pass2.envelope, true)
           return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
         }
         if (decision.action === "declined") {
@@ -362,7 +490,10 @@ const handlers: Record<string, ToolHandler> = {
       }
       return textResult(JSON.stringify(pass1.answer, null, 2))
     }
-    const query = String(args.query ?? "")
+    // Trimmed once, here, so the value echoed back in "no results for …" is the
+    // value that was actually searched.
+    const query = String(args.query ?? "").trim()
+    if (!query) return textResult("bb_search: query must not be empty", true)
     // M43.A1 (#657): rerunnable pass — the pass answers from the SECOND run
     // after an inline repair, with the decision declared on a trailing line.
     // No staleness (searchCode's own resolution found none) ⇒ one pass, zero
@@ -378,15 +509,34 @@ const handlers: Record<string, ToolHandler> = {
         regex: args.regex === true,
         offset: Number(args.offset ?? 0),
       })
+      // A stale row's snippet is read from CURRENT disk while its line numbers
+      // come from the index, so the two describe different revisions of the
+      // file. The [STALE] marker qualifies the record; the snippet line is
+      // marked separately, because the bytes are on the NEXT line.
       const lines = results.map((result: any) => {
         const stale = result.stale ? " [STALE]" : ""
         const snippet = result.snippet && result.snippet !== result.symbolName
-          ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}`
+          ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}${result.stale ? "\n    [snippet read from the current file; the line numbers above are from the index]" : ""}`
           : ""
         return `${result.symbolName} [${result.symbolType}] ${result.file}:${result.line} (${result.language})${stale}${snippet}`
       })
+      // The engine already computed totalMatches / truncated / staleCount, and
+      // this response is a rendered STRING — so those fields were structurally
+      // dropped and a truncated page read as a complete one. The footer is what
+      // makes the page legible: how many matches exist, whether the page is all
+      // of them, and how many rows are stale.
+      const total = results.totalMatches ?? results.length
+      const footer: string[] = []
+      if (total > lines.length) {
+        footer.push(
+          `showing ${lines.length} of ${total} match${total === 1 ? "" : "es"}` +
+            (results.truncated ? " — TRUNCATED: a candidate cap or the noise filter kept matches out of this page" : ""),
+        )
+      }
+      if ((results.staleCount ?? 0) > 0) footer.push(`${results.staleCount} of ${lines.length} results are STALE — the file changed after indexing`)
+      if (results.freshnessError) footer.push("freshness could not be resolved for these results (staleCount is not a freshness claim)")
       return {
-        text: lines.length ? lines.join("\n") : `no results for "${query}"`,
+        text: lines.length ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "") : `no results for "${query}"`,
         results,
         lines,
         rows: results.map((r: any) => ({ fileId: r.fileId })),
@@ -690,19 +840,41 @@ const handlers: Record<string, ToolHandler> = {
     // recorded state; staleness applies to live reads only.
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
     if (scope === "orphaned") {
-      const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
+      // Default 0, not 0.6. Orphan confidence is now EVIDENCE-DERIVED and spans
+      // [0.30, 0.70] for symbols and [0.30, 0.55] for files, so a 0.6 default
+      // would drop most symbol findings AND every single file finding — the
+      // silent whole-rule loss this tool had before, re-created because the
+      // number was left in place while the scale underneath it changed. With
+      // 0, everything the scan found is reported and the ranking decides the
+      // order; a caller who wants only the strongest passes 0.6 and gets them.
+      const threshold = args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold)
+      const report = await detectOrphans(projectId, { minConfidence: threshold, maxResults: Math.max(limit, 100) })
       const items = report.findings.slice(0, limit)
       const derived = derivedStaleness(rawDb, projectId as any, items.map((f) => f.location.file))
       const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)${derived.isStale(f.location.file) ? " [stale]" : ""}`)
-      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; ${report.findings.length} findings${report.provenance.truncated ? "; truncated" : ""}; limitations: ${report.provenance.limitations.length}]`
+      // The census, not the page. This used to print summary.total, which IS
+      // the engine's page length (100), while printing 20 lines: "orphaned code
+      // (100)" above twenty findings, with nothing saying where the other 80
+      // went or how many existed. Every number is now named, including what
+      // the scan suppressed and why — a report of 0 is only honest if the
+      // reader can see that it was not caused by suppression.
+      const census = Number(report.summary?.candidatesTotal ?? items.length)
+      const byRule = Object.entries(report.summary?.candidatesByRule ?? {} as Record<string, number>)
+        .sort((a: any, b: any) => b[1] - a[1]).map(([r, n]) => `${r}=${n}`).join(" ")
+      const suppressed = (report.summary as any)?.suppressedByReason as Record<string, number> | undefined
+      const suppressedLine = suppressed
+        ? `\n[suppressed: ${Object.entries(suppressed).filter(([, n]) => n > 0).map(([k, n]) => `${k}=${n}`).join(" ") || "nothing"}]`
+        : ""
+      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; scanned ${report.summary?.scannedSymbols ?? 0} symbol(s) in ${report.summary?.scannedFiles ?? 0} file(s); limitations: ${report.provenance.limitations.length}]`
+      const countLine = `\n[scan: ${census} orphan candidate(s) ${byRule ? `(${byRule})` : ""}; showing ${items.length}${census > items.length ? ` — raise \`limit\` to see more` : ""}]`
       const footer = derived.footer ? `\n${derived.footer}` : ""
-      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}${footer}`)
+      return textResult(`orphaned code (${census} found):\n${lines.join("\n") || "  none"}${countLine}${suppressedLine}${prov}${footer}`)
     }
     const result: any = await PatternBrainTools.detectPatterns(projectId, {
       includeOrphaned: args.includeOrphaned !== false,
       includeFramework: args.includeFramework !== false,
       includeAntiPatterns: args.includeAntiPatterns !== false,
-      confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
+      confidenceThreshold: args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold),
       maxResults: Math.max(limit, 100),
     })
     const allPatterns = result?.patterns ?? []
@@ -710,7 +882,35 @@ const handlers: Record<string, ToolHandler> = {
     const derived = derivedStaleness(rawDb, projectId as any, items.map((item: any) => item.location?.file))
     const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)${derived.isStale(item.location?.file) ? " [stale]" : ""}`)
     const stalenessFooter = derived.footer ? `\n${derived.footer}` : ""
+    // The census and the page are different numbers and the header used to
+    // print neither: it printed statistics.totalFound, which was the page
+    // length, under the words "patterns (N)". With the default limit of 20 the
+    // tool fetched 100, printed 20 and said 100. All three numbers are now
+    // named.
+    const census = Number(result?.scan?.findingsBeforeDisplayLimit ?? result?.statistics?.totalFound ?? allPatterns.length)
+    const typeCounts = Object.entries(result?.statistics?.byType ?? {} as Record<string, number>)
+      .sort((a: any, b: any) => b[1] - a[1])
+      .map(([t, n]) => `${t}=${n}`)
+    const countLine = `\n[scan: ${census} finding(s) across ${typeCounts.join(" ") || "no"} rule(s); showing ${items.length}${census > items.length ? ` — raise \`limit\` to see more` : ""}]`
     if (args.recordRun === true) {
+      // The comment below used to claim the FULL analyzed set was persisted.
+      // It was not: M57.T3 bounded the page inside detectPatterns, so
+      // allPatterns was min(census, max(limit,100)) and the auto-resolve pass
+      // would mark every finding past the page as resolved on the next run —
+      // the exact failure the comment said it prevented. recordRun therefore
+      // re-scans for the whole census. The cost is one finding object per
+      // census entry, which is why it is only paid on this path; the cap keeps
+      // a pathological project from exhausting memory, and the response says so
+      // if the cap was hit.
+      const RECORD_RUN_CENSUS_CAP = 50_000
+      const full: any = await PatternBrainTools.detectPatterns(projectId, {
+        includeOrphaned: args.includeOrphaned !== false,
+        includeFramework: args.includeFramework !== false,
+        includeAntiPatterns: args.includeAntiPatterns !== false,
+        confidenceThreshold: args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold),
+        maxResults: RECORD_RUN_CENSUS_CAP,
+      })
+      const censusPatterns: any[] = full?.patterns ?? []
       const recorded = await executeAnalysis({
         projectId,
         kind: "patterns",
@@ -719,7 +919,7 @@ const handlers: Record<string, ToolHandler> = {
         // history must reflect the run, not the truncated preview. Otherwise
         // findings past `limit` would be silently auto-resolved on the next
         // run even though they still exist.
-        persist: () => allPatterns.map((item: any): AnalysisFindingInput => ({
+        persist: () => censusPatterns.map((item: any): AnalysisFindingInput => ({
           fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
           rule: item.type ?? "pattern",
           title: item.description ?? item.type ?? "pattern finding",
@@ -729,10 +929,12 @@ const handlers: Record<string, ToolHandler> = {
           location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
         })),
       })
-      const found = result?.statistics?.totalFound ?? allPatterns.length
-      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+      const found = full?.statistics?.totalFound ?? censusPatterns.length
+      const capped = found > RECORD_RUN_CENSUS_CAP
+      const capNote = capped ? ` — CAPPED at ${RECORD_RUN_CENSUS_CAP}; ${found} findings exist and ${found - RECORD_RUN_CENSUS_CAP} were not recorded, so they will be auto-resolved on the next run` : ""
+      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}${capNote}\n${lines.join("\n") || "  none"}${countLine}${stalenessFooter}`)
     }
-    return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+    return textResult(`patterns (${census} found):\n${lines.join("\n") || "  none"}${countLine}${stalenessFooter}`)
   },
 
   bb_security: async (args, { projectId }) => {
