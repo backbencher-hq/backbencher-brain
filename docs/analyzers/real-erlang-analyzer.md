@@ -93,6 +93,17 @@ edge is a heuristic guess** — the corpus dual lens reports a heuristic class o
 - **A dynamic remote** — `M:f(X)`, `erlang:F(X)`, `apply/3` (ER-D23). The bare
   leaf would conflate every module's `f`; nothing is emitted and the count is
   kept in the review's accounting.
+- **A remote call whose MODULE is a macro** — `?FILE_MODULE:read_file_info(Priv)`,
+  `?OTHER:start_link(M, S, A)` (ER-D35). Only `?MODULE` names this file's module
+  (ER-D25, the self-dispatch idiom); every other macro there is a preprocessor
+  constant the analyzer does not expand, so no callee is derivable. Substituting
+  this file's module — which is what the code used to do for *every* macro in
+  that position — reports `?FILE_MODULE:acceptor(A,B,C,D)` inside
+  `httpd_acceptor.erl` as `httpd_acceptor:acceptor`, a self-call that is nowhere
+  in the source: 922 fabricated edges over the corpus. The macro USE is still
+  emitted at these sites; only the callee is underivable. Measured class size:
+  3,322 sites. Also true of a fun value: `fun ?OTHER:f/1 end` emits the macro
+  reference and nothing else.
 - **BIFs.** A local call resolves only when the callee is declared in the file,
   which keeps `length/1`, `self/0`, `is_record/2` and every auto-import out of
   the call graph. `spawn/1`, `spawn_link/1`, `spawn_monitor/1` set the OTP
@@ -195,6 +206,37 @@ stride): 12,869 symbols, 68,846 relationships, **0 parse failures**,
 `erlang-oracle.ts`), 150 files: 38,560 relationships, **0 unexplained, 0
 missing, 0 line-contract mismatches, 0 symbol mismatches**.
 
+## Ownership when there is no module (ER-D32)
+
+An `.erl` file may declare **no `-module` at all**: it is an include fragment
+that gets textually included into another module. OTP ships them —
+`lib/syntax_tools/examples/merl/basic_test.erl` has its `-module(basic_test).`
+line commented out, with a comment on line 1 saying it is for including in
+another module.
+
+Nothing in such a file names the module it will end up in, and the analyzer
+cannot know it. Its members are therefore owned by the **file path**: the
+outermost container that definitely holds them, and the only identity the file
+has. The alternatives were both rejected — synthesizing a module name from the
+filename fabricates a module no compile can produce, and an empty owner loses
+the containment of every real declaration. Every module-scope declaration routes
+through one helper (`ownerNameOf`) rather than repeating the fallback, because
+the duplicated version had already drifted: macros took the bare module name
+while functions, records, types and callbacks took the path, so in a module-less
+file a macro had no owner and the function beside it did.
+
+A file-scope unit is top-level for the export rule: an `-export` in an include
+fragment names an importable bare name, and the harness counts a symbol owned by
+its own file as one.
+
+When the module name arrives **through a macro** — `-module(?FILE_SUITE).`, the
+Common Test convention (ER-D34) — the module symbol is named by what the macro
+**expands to**, never by the macro's own name, and the macro reference is
+emitted as well. A macro whose body is not a bare atom
+(`-define(BAD, atom_to_list(x))`) mints no module symbol at all: an unknown name
+is not a reason to guess, and the macro use is still recorded, sourced to the
+file and tagged `moduleNameResolved: false`.
+
 ## Line contract (M59 #825)
 
 Every relationship carries `line_number`, 1-based, on the **name-bearing** node,
@@ -202,6 +244,18 @@ per-site. The include path STRING, not the `-include` keyword; the behaviour
 ATOM, not `-behaviour(`; the remote callee LEAF; the record NAME; the member's
 declaration for `contains`. The fixture `callsite-lines-825` splits constructs
 across lines precisely so each of those is a distinguishable wrong answer.
+
+`contains` follows the same rule and it is the one that bites: the member's
+declaration NODE can start a line above the member's NAME. A multi-line
+`-define(\n  worker(S, Worker, Failer, State),\n …)` puts the keyword on 208 and
+the name on 209 — which is what OTP's `snmpm_net_if.erl` does in both branches
+of its conditional-compilation block, and the analyzer originally reported 208
+and 219. `contains` now reads the name line every declaration already records
+(ER-D33), which also fixed the merged callback/definition case: after a
+`-callback` is satisfied by a real definition, `contains` follows the
+DEFINITION, not the contract (ER-D30). `line-owner-er3` writes every kind of
+declaration split across lines, requires the name lines and forbids the construct
+lines.
 
 ## Supported / unsupported, honestly
 
