@@ -815,12 +815,41 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             pushedName = cName
             nextParentClass = cName
           }
-          if (isInterface) {
-            this.extractInterface(n, symbols, ctx, pClass)
-          } else if (isEnum) {
-            this.extractEnumClass(n, symbols, ctx, pClass)
-          } else {
-            this.extractClass(n, symbols, ctx, pClass)
+          // M60 K4: the owner rule that aa6a2beb applied to properties and the
+          // local-function fix applied to functions, now applied to type
+          // declarations. A class is a NESTED MEMBER of another class exactly
+          // when it is declared in that class's body; one declared inside a
+          // function is LOCAL to that function.
+          //
+          //   fun testSubtypesFilterIsInstance() = runTest {
+          //       open class Super
+          //       class Sub : Super()
+          //       ...
+          //   }
+          //   published: contains FilterTrivialTest -> Super
+          //
+          // The walk threads pClass through every node it does not intercept, and
+          // a function body is not intercepted, so a local class was given the
+          // enclosing test class as owner. Kotlin scoping is unambiguous: `Super`
+          // is visible only inside the test function.
+          //
+          // Found by the first 400-file kotlinx-coroutines run, where four of the
+          // six remaining unexplained contains rows were this shape across three
+          // files (a local class, a local `class` with a supertype, and a local
+          // `open class`). `nextParentClass` is deliberately NOT gated: the
+          // class is still the scope owner of its own body, which is a different
+          // question from being a member of the enclosing class.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition = pt === "class_body" || pt === "enum_class_body"
+            const ownerForDecl = isMemberPosition ? pClass : undefined
+            if (isInterface) {
+              this.extractInterface(n, symbols, ctx, ownerForDecl)
+            } else if (isEnum) {
+              this.extractEnumClass(n, symbols, ctx, ownerForDecl)
+            } else {
+              this.extractClass(n, symbols, ctx, ownerForDecl)
+            }
           }
           break
         }
