@@ -15413,14 +15413,23 @@ export function deriveScssEdges(root: any): { label: string; from: string; targe
         break
       }
       case "variable": {
-        if (variables.has(textOf(n))) {
-          // the left-hand side of its own assignment is not a read of itself
-          const parent = n.parent
-          const isOwnLhs =
-            parent?.type === "declaration" &&
-            textOf(kidOfType(parent, "property_name")) === textOf(n)
-          if (!isOwnLhs) push("references", nextOwner, textOf(n))
-        }
+        // A `variable` node inside a `declaration` is ALWAYS a read.
+        //
+        // This branch used to suppress the read when the text equalled the declaration's
+        // `property_name` — text standing in for node identity. In a well-formed
+        // declaration the two coincide. In a region the grammar could not read they do
+        // not: `form-item.scss` L8 declares `$form-item-margin-bottom` and its broken
+        // `map.merge((...))` value READS that variable on L14, so the read's parent is the
+        // declaring node and the texts match.
+        //
+        // The oracle had the SAME bug as the analyzer, which is why the pair disagreed on
+        // exactly these rows: the truth derived reads the lane discarded, and they surfaced
+        // as MISSING rather than as a recognisable defect on either side. Two
+        // implementations agreeing on a bug is the failure mode independence exists to
+        // prevent, and it is worth naming: both copies of this rule were written from the
+        // same reasoning and the reasoning was wrong the same way twice. Measured across
+        // the corpus, the guard cost 156 derivations and protected none.
+        if (variables.has(textOf(n))) push("references", nextOwner, textOf(n))
         break
       }
       // A `@function` CALLED in a value: `width: double(4px)`.
