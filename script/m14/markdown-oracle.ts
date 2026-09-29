@@ -335,6 +335,13 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
   // pair. A shared helper would have made them agree and told us nothing.
   type Frame = { name: string; id: string; level: number }
   const stack2: Frame[] = []
+  // Same-document references: an anchor per heading, and the fragments waiting to be
+  // resolved against them. Derived here from the TREE, independently of the
+  // analyzer's own slug function — a shared helper would make the two agree by
+  // construction, which is the mistake this file's own header records at length.
+  const anchors = new Map<string, string>()
+  const anchorOcc = new Map<string, number>()
+  const pendingAnchors: { section: string; fragment: string }[] = []
   let currentSection = "document"
   let currentSectionId = "document"
   // Repeated sites are ordinaled so a per-site truth can be compared with a
@@ -359,6 +366,16 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
         const qualifiedBase = parent ? `${parent.id}.${text}` : text
         const { id, name } = siteIdentity(qualifiedBase, text)
         if (parent) add("contains", parent.name, name)
+        // Register the anchor under the ORACLE's spelling for this heading, so a
+        // fragment resolves to the same name the analyzer publishes. The ordinal is
+        // per anchor, because two headings under different parents can share one.
+        const slug = mdAnchorSlug(text)
+        if (slug) {
+          const seen = (anchorOcc.get(slug) ?? 0) + 1
+          anchorOcc.set(slug, seen)
+          const key = seen === 1 ? slug : `${slug}-${seen - 1}`
+          if (!anchors.has(key)) anchors.set(key, name)
+        }
         stack2.push({ name, id, level })
         currentSection = name
         currentSectionId = id
@@ -373,14 +390,14 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
       })()
       if (inline && text) {
         const t = inlineByStart.get(inline.startIndex)
-        if (t) mdCollectLinks(t, currentSection, definitions, add)
+        if (t) mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
       }
       continue
     }
 
     if (node.type === "inline") {
       const t = inlineByStart.get(node.startIndex)
-      if (t) mdCollectLinks(t, currentSection, definitions, add)
+      if (t) mdCollectLinks(t, currentSection, definitions, add, pendingAnchors)
       continue
     }
 
@@ -420,6 +437,15 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
     }
   }
 
+  // Same-document references, resolved now that every heading's spelling is known.
+  // A fragment that names no heading is NOT a truth row: it is the internal twin of
+  // the undefined-reference-link case, and publishing it would assert an endpoint the
+  // document does not contain.
+  for (const p of pendingAnchors) {
+    const hit = anchors.get(mdDecodeFragment(p.fragment))
+    if (hit) add("uses", p.section, hit)
+  }
+
   return edges
 }
 
@@ -430,11 +456,56 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
  * excluded rather than filtered: the inline grammar gives a `code_span` only
  * anonymous children, so no `link_destination` exists beneath one.
  */
+/**
+ * A heading's GitHub anchor from its display text, and a link fragment decoded for
+ * comparison against one. Both are specified by the RENDERER, not by this repository,
+ * which is why they are written out here instead of shared with the analyzer: the
+ * specification is external and checkable, so two implementations agreeing is
+ * evidence, whereas a shared helper would only be evidence that one function was
+ * called twice.
+ *
+ * Character codes rather than a pattern, to keep the oracle's own zero-regex property
+ * — it matters here for a second reason: the oracle exists to disagree with the
+ * analyzer, and a pattern is exactly the kind of shared assumption two implementations
+ * can be wrong about identically.
+ */
+function mdAnchorSlug(text: string): string {
+  let out = ""
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const ch = text[i]
+    if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57)) out += ch.toLowerCase()
+    else if (c === 32 || c === 9 || c === 45) out += "-"
+  }
+  return out
+}
+
+function mdDecodeFragment(frag: string): string {
+  const hex = (c: number): number =>
+    c >= 48 && c <= 57 ? c - 48 : c >= 97 && c <= 102 ? c - 87 : c >= 65 && c <= 70 ? c - 55 : -1
+  let out = ""
+  for (let i = 0; i < frag.length; i++) {
+    const c = frag.charCodeAt(i)
+    if (c === 37 && i + 2 < frag.length) {
+      const hi = hex(frag.charCodeAt(i + 1))
+      const lo = hex(frag.charCodeAt(i + 2))
+      if (hi >= 0 && lo >= 0) {
+        out += String.fromCharCode(hi * 16 + lo)
+        i += 2
+        continue
+      }
+    }
+    out += frag[i]
+  }
+  return out.toLowerCase()
+}
+
 function mdCollectLinks(
   root: any,
   section: string,
   definitions: Map<string, string>,
   add: (label: string, from: string, target: string) => void,
+  pending: { section: string; fragment: string }[],
 ): void {
   const stack: any[] = [root]
   while (stack.length > 0) {
@@ -442,7 +513,13 @@ function mdCollectLinks(
     switch (n.type) {
       case "link_destination": {
         const t = n.text.trim()
-        if (t) add("uses", section, t)
+        // A destination that is ONLY a fragment names a heading in THIS document, so
+        // it is an internal reference. It is deferred because the heading it names may
+        // come LATER in the document, and its oracle-side spelling is only known once
+        // the heading is reached. Published verbatim it would be a truth row naming a
+        // fragment, which the analyzer cannot match by construction.
+        if (t && t.charCodeAt(0) === 35) pending.push({ section, fragment: t.slice(1) })
+        else if (t) add("uses", section, t)
         break
       }
       case "uri_autolink":
