@@ -1937,11 +1937,33 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
         // A `class C(val x)` names x in its PRIMARY CONSTRUCTOR, not the body —
         // a constructor val IS a member, and without this gate A rejects every
         // read of a constructor property.
+        //
+        // But ONLY a `val`/`var` is a member. `class P(base: Int) : Base(base)`
+        // also parses its header as `class_parameter`, and `base` is a
+        // constructor ARGUMENT, not a property — it is in scope for the
+        // superclass delegation and initializers and nowhere else. The grammar
+        // states the difference exactly: a property parameter carries a
+        // `binding_pattern_kind` child (`val`/`var`) and an argument parameter
+        // does not. Read by NODE, never by text.
+        //
+        // This distinction is load-bearing rather than tidiness, because the
+        // delegation is where the difference bites:
+        //
+        //   class PowerFunction(base, exponent, precision, scale)
+        //       : CustomFunction(..., DecimalColumnType(precision, scale))
+        //
+        // `precision` and `scale` are read in the superclass delegation, which
+        // hangs off the `class_declaration` itself. gate B's walk breaks AT the
+        // class and so never reaches a function scope to find them bound — with
+        // plain parameters inventoried as members, gate A passes on a
+        // non-member and gate B cannot catch it, and the oracle fabricates
+        // `uses PowerFunction -> precision` for every delegation argument in
+        // the corpus. Measured on Exposed: 12 of the first 25 MISSING rows.
         const pc = namedOf(n, "primary_constructor")
         if (ownerName && pc) {
           for (let i = 0; i < pc.namedChildCount; i++) {
             const cp = pc.namedChild(i)
-            if (cp && (cp.type === "class_parameter" || cp.type === "value_parameter")) {
+            if (cp && (cp.type === "class_parameter" || cp.type === "value_parameter") && namedOf(cp, "binding_pattern_kind")) {
               addMember(ownerName, firstNamedOf(cp, ["simple_identifier"])?.text ?? "")
             }
           }
