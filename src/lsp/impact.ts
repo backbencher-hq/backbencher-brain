@@ -44,7 +44,7 @@
 //                  with a declared note; a genuinely unknown symbol still
 //                  errors (never an empty set that would read as "no impact")
 
-import { graphTraversal } from "../intelligence/graph/graph-engine"
+import { graphTraversal, resolveGraphRootDetailed } from "../intelligence/graph/graph-engine"
 import { AnalysisExclusions } from "../ast/analysis-exclusions"
 import type { GraphNode } from "../intelligence/contracts"
 
@@ -82,7 +82,12 @@ export {
 } from "./identity"
 
 export interface ImpactResult {
-  root: { id: string; name: string; file: string }
+  /** The symbol the walk rooted at, with the identity a reader needs to check
+   *  it: M63.T1 the engine's node already carries the type, the line and the
+   *  language, and an impact answer about a symbol with no line and no type is
+   *  hard to argue with (the same shape the bb_graph door adopted when it
+   *  declared name ambiguity). */
+  root: { id: string; name: string; file: string; filePath: string; line: number; symbolType: string; language: string }
   /** Reverse dependencies, bounded, deepest last. */
   impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
   shownCount: number
@@ -127,6 +132,24 @@ export interface ImpactResult {
    *  members), rooted through its owner with the member named. First-class
    *  so the UI states what it rooted at — never a silent relabel. */
   resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string; memberFile?: string }
+  /** M63.T1: HOW the requested name became this root, stated on the answer.
+   *
+   *  The engine resolves a name in three steps (exact among traversable kinds,
+   *  exact among any kind, then a documented containment match). A reader of an
+   *  impact answer cannot tell which step ran: measured on the lane's corpora,
+   *  `bb_impact {symbol:"push"}` on graphql-js answers "0 reverse dependencies"
+   *  for a `push` that 141 stored relationships point at, and ripgrep `filter`
+   *  answers "0" for a symbol 8 depend on — a confident empty set about
+   *  somebody else's symbol, with no field that says the name was not exact.
+   *
+   *  `via` is derived, not guessed: a containment match can only win when no
+   *  exact name exists, so `root.name === requested` is exactly "the name was
+   *  an exact hit" and anything else is a containment match (or the declared
+   *  member substitution, which the `resolution` record already describes).
+   *  `candidates` is how many stored symbols the name resolved among, counted
+   *  with the predicate of the winning step (the same number bb_graph
+   *  publishes, from the same resolver). */
+  rootMatch: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; candidates: number }
 }
 
 export interface ImpactDb {
@@ -443,7 +466,15 @@ export async function computeImpact(
   const direct = counts.hitScanCeiling ? null : counts.direct
   const summary = result.summary
   return {
-    root: { id: result.root.id, name: result.root.name, file: result.root.file },
+    root: {
+      id: result.root.id,
+      name: result.root.name,
+      file: result.root.file,
+      filePath: result.root.filePath ?? "",
+      line: result.root.line ?? 0,
+      symbolType: result.root.symbolType ?? "",
+      language: result.root.language ?? "",
+    },
     impact,
     shownCount: impact.length,
     totalCountIfKnown: total,
@@ -467,5 +498,30 @@ export async function computeImpact(
     truncated,
     truncationReason,
     resolution,
+    rootMatch: {
+      requested: symbolName,
+      via:
+        resolution.through === "owning-declaration"
+          ? "owning-declaration"
+          : result.root.name === symbolName
+            ? "exact"
+            : "fuzzy-containment",
+      candidates: await countRootCandidates(projectId, symbolName),
+    },
+  }
+}
+
+/** How many stored symbols the requested name resolved among, counted with the
+ *  predicate of the step that won (the engine's own resolver, so both doors
+ *  publish the same number for the same name). Declared 1 when the resolver
+ *  cannot answer — one row is certainly there, the answer is a flag, not a
+ *  claim about the index, and an unreadable index is not a reason to fail an
+ *  impact answer that was already computed. */
+async function countRootCandidates(projectId: string, symbolName: string): Promise<number> {
+  try {
+    const { candidates } = await resolveGraphRootDetailed(projectId as never, symbolName)
+    return Number.isFinite(candidates) && candidates > 0 ? candidates : 1
+  } catch {
+    return 1
   }
 }
