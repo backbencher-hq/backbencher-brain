@@ -1,5 +1,5 @@
 import { BrainDatabase } from "../../brain/database"
-import { AnalysisExclusions } from "../../ast/analysis-exclusions"
+import { AnalysisExclusions, isNonCodeLanguage, NON_CODE_LANGUAGES } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { OrphanOptions, PatternFinding, PatternReport } from "../contracts"
 import { makeProvenance } from "../evidence"
@@ -47,22 +47,16 @@ const REPORTED_SYMBOL_TYPES = new Set(["function", "method", "class", "interface
 const CLASS_LIKE_TYPES = new Set(["class", "interface", "struct", "enum"])
 
 // Languages whose indexed "symbols" are structural keys, not executable
-// declarations. A YAML mapping key, a Markdown heading, a JSON property and a
-// CSS selector have no callers and never will, so reporting them as orphaned
-// code is not a finding, it is noise — and because the page is confidence
-// ordered it is the noise that fills the page. Measured on a 45,018-symbol
-// repository: 1,188 of 5,190 symbol candidates (23%) were in these files.
+// declarations, live in analysis-exclusions.NON_CODE_LANGUAGES and are shared
+// with the anti-pattern rules. This engine used to carry its own list while the
+// rules branch excluded none of these languages at all, and its top-ranked
+// god-class finding on a real index was a JSON file's members. One definition,
+// because a second, weaker copy of a language rule is exactly how the qualified
+// references and the import-stem collisions went missing in the first place.
 //
 // These files are NOT excluded from the index, from bb_search, or from
-// orphaned_file detection. Only their individual symbols stop being orphan
-// candidates. The list is derived from the 24 distinct `brain_file.language`
-// values present across a 9-repository, 9-language corpus.
-const NON_CODE_LANGUAGES = new Set([
-  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "less",
-  "html", "htm", "vue", "svelte",
-  "ini", "cfg", "conf", "properties", "env", "csv", "tsv", "text", "plaintext",
-  "rst", "tex", "bib", "org", "adoc", "asciidoc",
-])
+// orphaned_file detection. Only their individual symbols stop being
+// code-rule candidates.
 
 // Project manifests and build manifests. These are read by tooling, not
 // imported by source, so a directory-aware import match cannot clear them and
@@ -140,7 +134,7 @@ function isManifestFile(relativePath: string): boolean {
 }
 
 function isNonCodeFile(language: string | null): boolean {
-  return NON_CODE_LANGUAGES.has((language ?? "").toLowerCase())
+  return isNonCodeLanguage(language)
 }
 
 function locFor(sym: { line: number; lineEnd: number }): number {
