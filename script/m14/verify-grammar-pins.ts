@@ -97,6 +97,63 @@ export interface LaneDecision {
 }
 
 export const LANES: Record<string, LaneDecision> = {
+  c: {
+    wired: "wasm/tree-sitter-c.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "tree-sitter/tree-sitter-c", version: "0.24.1" },
+      patches: [
+        "P1 (#743, grammar.js): `macro_prefixed_type_specifier` as a VISIBLE node, with the conflict entries the ordinary reading (`A B;` = a B of type A) needs. Upstream hides the rule, so the analyzer could not name the type position at all; the `#743` note in the vendored file records that two conflict variants became unnecessary once the rule carried `prec(-1)`.",
+        "P2 (#743b, grammar.js): a header name in a PREPROCESSOR-ARGUMENT position -- `__has_include(<vector>)`, `__has_include(\"meta\")` and the wrapper form `FMT_HAS_INCLUDE(<string_view>)`. Upstream parses every one of these as an ERROR node, because `<string_view>` is not a preproc expression: `<` would have to be a binary operator with a missing left operand. The shape reaches 16 files across the two cpp corpora, in the guard of every portable header. Scoped to the ARGUMENT position deliberately: `<` cannot BEGIN a `_preproc_expression` (the unary operators are `! ~ - +`), so there is no competing `<` token to lose the tie to at the start of an argument.",
+      ],
+      patchEvidence:
+        "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at fixtures/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-c",
+      note:
+        "grammar.js -- the PATCHED upstream 0.24.1 grammar, carrying this repository's own #743/#743b edits and their measured rationale in comments, not a pristine copy -- plus src/grammar.json and src/node-types.json REGENERATED from that patched grammar.js by `tree-sitter generate` (tree-sitter CLI 0.25.10) on 2026-09-29, plus package.json, tree-sitter.json and LICENSE byte-identical to npm tree-sitter-c@0.24.1. The generated src/ is the point of the exercise: before it, the vendored tree carried no node-types.json/grammar.json pair, so this gate's source<->wasm check could not run for C at all and the lane had no offline proof that its bytes were a build of its own source. src/parser.c (3.9 MB) is deliberately NOT vendored -- `tree-sitter generate` rebuilds it from grammar.js, and the check runs on the generated JSONs.",
+    },
+    decision:
+      "Pin as a LOCAL REBUILD OF THE PATCHED VENDORED SOURCE, and the reason is that the prior question had to be answered before provenance could be stated at all. `wasm/tree-sitter-c.wasm` (650,175 B, sha256 f9a2d771...) was recorded in validation/m14/results/wasm-provenance-census.json with NO byte-identical local copy and the verdict \"provenance cannot be re-derived offline\", while grammars/tree-sitter-c/ carried only grammar.js/LICENSE/package.json/tree-sitter.json, so this gate could not compare the source to the bytes either. `byte-identical-to-npm-tarball` -- the kind every other lane in this file uses -- was therefore unavailable: the vendored grammar.js differs from npm tree-sitter-c@0.24.1's by 75 diff lines and carries this repository's #743/#743b markers. So the real question was whether the WIRED bytes are a build of the PATCHED source or a pristine build predating the patch, and it decides what every C measurement means, because the F1 oracle, the 2,498-file census, the clang layout probe and all 28 mutants are all measurements of a parse produced by these bytes. Measured answer: the patch IS live. A rebuild of the committed patched source is surface-identical to WIRED in both directions (128 named types) and behaviourally identical on all 10 constructs, while pristine upstream differs by exactly the 3 node types the patch adds and fails all 3 `#743b` shapes. The consequence is the useful one: the incumbent was already a verified build, so no C measurement needs re-baselining, and had the wired bytes matched pristine the #743b fix would not have been live and the whole lane would have needed re-measuring. This also retires a live hazard recorded in this wave's own review: the #936 defect was a node-type literal (`attributed_type_specifier`) written from memory of a different tree-sitter-c release, which F1 caught only because the vocabulary happened to be checked -- the pin makes the release explicit rather than remembered.",
+    alternatives: [
+      {
+        option: "Adopt npm tree-sitter-c@0.24.1's own published wasm (sha c852c2a8..., 625,918 B) as the wired bytes",
+        measured:
+          "REJECTED, and this is the load-bearing measurement of the lane: it DELETES capability. It is 3 named types short of the wired bytes -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and it parses all three `#743b` shapes as ERROR nodes where the wired build parses them clean. The first is a node the C analyzer itself names (the `macro_prefixed_type_specifier` note in the vendored grammar.js is a #743 record, and the analyzer's member/enumerator rules key on macro names), and the second is 16 files across the two cpp corpora whose portable-header guards would move from clean to damaged.",
+        artifact: "validation/m14/results/c-grammar-pin.json (constructs[], patchAddsNamedTypes[])",
+      },
+      {
+        option: "Pin the wired bytes as `unnamed-build-sha-only`",
+        measured:
+          "REJECTED as insufficient, not as wrong. It would record the sha256 and stop, which does protect against future drift -- but it leaves the central question open, and the answer turned out to be available and cheap: the patch is live, the source is in-tree, and a rebuild reproduces the bytes' surface and behaviour exactly. A sha-only pin on bytes that are demonstrably a build of committed source understates what is actually known.",
+        artifact: "validation/m14/results/c-grammar-pin.json (verdict.patchIsLiveInWiredBytes)",
+      },
+      {
+        option: "Regenerate the wired bytes from the patched source and adopt the rebuild",
+        measured:
+          "NOT NEEDED, and worth recording as a negative result. The rebuild is 630,720 B against the wired 650,175 B -- a toolchain difference, not a grammar difference -- with identical surface and identical behaviour on all 10 constructs. Swapping would have churned every C measurement for no observable gain, and the pin does not require byte identity: it requires that the committed source and the committed bytes agree, which the gate now re-measures on every run.",
+        artifact: "validation/m14/results/c-grammar-pin.json (builds.surfaceDiff.wiredVsRebuiltPatched)",
+      },
+    ],
+    evidence: [
+      "validation/m14/results/c-grammar-pin.json",
+      "validation/m14/results/wasm-provenance-census.json",
+      "grammars/tree-sitter-c/PIN.md",
+    ],
+    copies: [],
+    notVendored: [
+      { path: "src/parser.c", why: "generated from grammar.js by `tree-sitter generate`; 3.9 MB; the source<->wasm check runs on the generated JSONs" },
+      { path: "src/tree_sitter/*.h", why: "the runtime headers the generated parser includes; shipped by the CLI, not by the grammar" },
+      { path: "bindings/, binding.gyp, binding_test.js", why: "node-native bindings; not parser source" },
+      { path: "prebuilds/", why: "platform .node binaries; not parser source" },
+      { path: "queries/highlights.scm, queries/tags.scm", why: "editor queries; the engine does not load them" },
+      { path: "README.md", why: "upstream's readme, not required by any check" },
+      { path: "tree-sitter-c.wasm (the 0.24.1 tarball's own)", why: "kept instead at fixtures/c/grammar/pristine-tree-sitter-c-0.24.1.wasm, outside the repository, where the A/B can use it without the repo pinning a build it has decided against" },
+    ],
+  },
+
   haskell: {
     wired: "wasm/tree-sitter-haskell.wasm",
     provenance: { kind: "byte-identical-to-npm-tarball", package: "tree-sitter-haskell", version: "0.23.1" },
@@ -363,6 +420,71 @@ export const LANES: Record<string, LaneDecision> = {
   //     analyzer work; it is NOT taken here because it would re-baseline the
   //     M12 corpus claims and every other lane's pinned row for a gain that is
   //     already fully captured by the analyzer's fieldNodes() read.
+  // C++ — added 2026-09-29 by the cpp deep review. The lane had NO pin at all,
+  // and the version string in tree-sitter.json understated what is wired: the
+  // bytes are a LOCAL FORK of 0.23.4, not the published release. Every claim below
+  // is measured, and the measurements are re-runnable:
+  //   bun run script/cpp-review/grammar-provenance.ts wasm/tree-sitter-cpp.wasm <tarball>/package/tree-sitter-cpp.wasm <repo...>
+  cpp: {
+    wired: "wasm/tree-sitter-cpp.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "tree-sitter/tree-sitter-cpp", version: "0.23.4" },
+      patches: [
+        "#743 (rebuildability): `require('tree-sitter-c/grammar')` -> `require('../tree-sitter-c/grammar.js')`. Upstream reads the C grammar through a node_modules entry, and node_modules/ is gitignored repo-wide, so the require made this grammar unrebuildable from a fresh checkout. The C grammar is vendored beside it, so the dependency became a relative path; the same parser.c is generated, with no install step.",
+        "#743 (C++ port of the C wave, NARROWED for `::`): a new `macro_prefixed_type_specifier` rule = `prec(-1, seq(alias($.identifier, $.macro_specifier), $._macro_decorated_type))`, with `_macro_decorated_type` restricted to the KEYWORD-LED specifiers (struct/union/enum/class/sized_type_specifier/primitive_type/decltype). The C rule it ports uses the FULL type_specifier, and that breadth does not port: in cpp `_scope_resolution` has an OPTIONAL scope, so `A::B` reads as either the qualified type `A::B` or macro `A` decorating `::B`. Ported verbatim, the new derivation demanded a conflict declaration, and declaring it flipped runtime path selection in unrelated code — `fmt::format_to(std::back_inserter(buf), ...)` parsed as a DECLARATION of a function named `::format_to` in a file with zero ERRORs before and after. `A::B` was never a macro decoration, so the fix removes the ambiguity rather than arbitrating it: restricting the decorated type to keyword-led specifiers makes the bad derivation ungrammatical, and no identifier can start any of them, so no conflict is even possible.",
+        "#743 (header name): a `preproc_header_name` token, so a header can be an ARGUMENT of a preprocessor conditional (`#if __has_include(<vector>)`). The rule is scoped to the argument position because `<` cannot BEGIN a preprocessor expression (the unary operators are `! ~ - +`), so no competing `<` token exists there and the header token wins purely on match length; adding `<...>` anywhere in `_preproc_expression` instead would read `< B && C >` as a header name and turn every comparison into something else.",
+      ],
+      patchEvidence:
+        "The vendored tree is byte-identical to the tree-sitter-cpp@0.23.4 npm tarball for 4 of its 5 files (src/scanner.c cf60387d, tree-sitter.json ce25741b, LICENSE 2e0110e0, package.json bfde98d5) and DIFFERS in exactly one: grammar.js (upstream d0242291 -> vendored 817fc8a0, +54/-2 lines, which is the three patches above and nothing else). The wired wasm is NOT the published bytes: 3,552,974 vs the tarball's 3,434,931, because it was rebuilt with the patches. The fork adds three named node types and no fields — macro_prefixed_type_specifier, macro_specifier, preproc_header_name — with namedIds 256 -> 259, namedUnique 206 -> 209, and an UNCHANGED fieldSetDigest (891be791). The patches are LOAD-BEARING, not cosmetic: over this lane's own 28 cpp fixtures the fork parses 22 clean against upstream's 20, and the two files that separate them are cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp — the fixtures that were written FOR those two rules, which do not parse at all without them. On the fmt corpus the two agree on all 47 files, so the fork neither helps nor hurts ordinary library C++.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-cpp",
+      note:
+        "grammar.js (the FORKED file, see patches) + src/scanner.c + tree-sitter.json + package.json + LICENSE. Four of the five are byte-for-byte from the npm tarball tree-sitter-cpp@0.23.4; grammar.js carries the three #743 patches. The GENERATED src/ (parser.c, grammar.json, node-types.json, tree_sitter/ headers) is NOT vendored, so the offline source<->wasm proof reports `not applicable` for this lane. That is a lane-specific reason, not the generic '41 MB, do not vendor' one the unpatched lanes give: publishing tree-sitter-cpp@0.23.4's own generated JSONs would make the check run and report a PERMANENT three-type delta (macro_prefixed_type_specifier, macro_specifier, preproc_header_name present in the wasm and absent from the source), because the fork's JSONs are what the proof would need and they can only be produced by `tree-sitter generate` from the forked grammar.js. A generated file that must be hand-corrected to make a proof pass is worse than a proof that honestly says it does not apply, so the surface is pinned by the digests below and the fork by the three named types named in the provenance. Rebuild with `tree-sitter generate` then `tree-sitter build --wasm`, from a tree that also has grammars/tree-sitter-c present — grammar.js requires ../tree-sitter-c/grammar.js, so unlike every unpatched lane this one is NOT rebuildable from its own directory alone.",
+    },
+    decision:
+      "Pin as-is, as a local rebuild from vendored source with the patch set recorded. The wired bytes are not the published release and must not be recorded as such: a reader who ran `npm pack tree-sitter-cpp@0.23.4` and compared would find a 118 KB difference and no way to account for it, which is precisely the failure M63.5 (#954, 'bind corpus measurements to a grammar hash') is about. The patch set is small, fully enumerated above, and provably load-bearing, so the honest record is the base version PLUS the patches — not the base version alone, which is what the analyzer's own documentation claimed until this entry existed ('Parser: tree-sitter-cpp 0.23.4 (npm, latest)'). A version-only string cannot express a fork, and tree-sitter.json's own `metadata.version: 0.23.4` does not either.",
+    alternatives: [
+      {
+        option: "keep the wired fork (sha 5a1b78be)",
+        measured:
+          "28/28 cpp fixtures parse; the differential's fmt:cpp and nlohmann-json:cpp rows are measured against these bytes; 47/47 identical trees to upstream on fmt, and 22 vs 20 clean fixtures overall",
+        artifact: "script/cpp-review/grammar-provenance.ts",
+      },
+      {
+        option: "swap to the published tree-sitter-cpp@0.23.4 wasm",
+        measured:
+          "cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp stop parsing (2 of 28 fixtures go from clean to errored) and the #743 header-name and macro-decorator rules are lost with them; surface drops to 256 named ids",
+        artifact: "script/cpp-review/grammar-provenance.ts",
+      },
+      {
+        option: "drop the fork and re-apply the patches upstream",
+        measured:
+          "NOT MEASURED — recorded as the obvious successor rather than a claim. The three patches are the kind that belong in tree-sitter-cpp (the C wave already landed the first of them there), but this repo cannot verify an upstream merge, and an unverified successor is worse than a recorded fork.",
+        artifact: "n/a — see the note; nothing is claimed",
+      },
+    ],
+    evidence: [
+      "validation/m14/results/cpp-defect-register.json",
+      "script/cpp-review/grammar-provenance.ts",
+      "script/m12/cpp-node-types-compare.ts",
+      "script/m12/cpp-wasm-compare.ts",
+      "docs/analyzers/real-cpp-analyzer.md",
+    ],
+    copies: [
+      { label: "mirror", path: path.join(MIRROR, "tree-sitter-cpp.wasm") },
+    ],
+    notVendored: [
+      { path: "binding.gyp, bindings/, prebuilds/", why: "native bindings; not parser source" },
+      { path: "queries/", why: "editor queries; the engine does not load them" },
+      { path: "src/parser.c, src/grammar.json, src/node-types.json, src/tree_sitter/", why: "generated from the FORKED grammar.js; publishing upstream's would make the source-vs-wasm check report a permanent 3-type delta (the fork's own types), so the proof is recorded as not applicable and the surface is pinned by digest instead" },
+      { path: "README.md, CHANGELOG.md", why: "upstream docs; the provenance and decision live in this record" },
+      { path: "tree-sitter-cpp.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+
   perl: {
     wired: "wasm/tree-sitter-perl.wasm",
     provenance: {
