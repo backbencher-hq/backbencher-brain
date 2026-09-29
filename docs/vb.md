@@ -97,27 +97,31 @@ Corpus-wide through `parseFile`, 435 files: `implements` **56 → 176**,
 relationships 38,312 → **38,432**, symbols unchanged, 0 crashes. The full-corpus
 figure is now **13,684 / 13,689 = 99.96 %, 0 unexplained**.
 
-### The primary corpus, in full: 1,880 files
-
-The draw is 60 files. The primary corpus is 1,880, and it has now been swept
-whole:
+### Both corpora, in full, with all seven labels audited
 
 | corpus | files | truth edges | covered | missing | unexplained |
 |---|---:|---:|---:|---:|---:|
-| `DISMTools` (full) | 483 of 483 | 13,689 | 13,684 (**99.96 %**) | 5 | 0 |
-| `P3D-Legacy` (full) | 1,880 of 1,880 | 20,283 | 20,280 (**99.99 %**) | 3 | **0** |
+| `P3D-Legacy` | **1,880 of 1,880** | 23,356 | **23,353 (100 %)** | 3 | **0** |
+| `DISMTools` | **483 of 483** | 15,689 | **15,685 (100 %)** | 4 | **0** |
 
-`P3D-Legacy` went 11 missing → 3 across this wave, and the three that remain are
-constructions the analyzer does not publish. Two of the three are confirmed inside
-a `Sub New*` handler — `NewGameButton` at `MainMenuScreen.vb:1605`, with the
-dropped `New OfflineGameWarningScreen(Me)` twelve lines below it — so they are
-the grammar defect below. The third, `SoundManager -> SoundContainer`, is in a
-file that contains **no** `Sub New*`, so it is either a second cause or an
-instance of the same one reached another way; it is not yet explained, and it is
-listed here rather than folded into the count it resembles.
+**39,045 audited truth edges, 39,038 covered, 7 missing, 0 unexplained.** The
+audited set grew from 878 to 23,356 on the primary corpus when `references` and
+`overrides` joined it — 3,073 edges that were previously published and agreed
+with by nobody.
 
-Two whole declaration kinds and the member-level heritage form were found by
-these sweeps and are fixed; the numbers above are after those fixes.
+All seven missing rows are dropped constructions:
+
+| file | row | cause |
+|---|---|---|
+| `MainMenuScreen.vb` | `calls … -> GetGameModes` | `Sub New*` — the grammar defect below |
+| `MainMenuScreen.vb` | `calls … -> OfflineGameWarningScreen` | inside `Sub NewGameButton` |
+| `SoundManager.vb` | `calls … -> SoundContainer` | **not** `Sub New*` — unexplained |
+| `NewProj.vb`, `NewTestingEnv.vb` ×3, `NewUnattendWiz.vb` | 5 rows | `Sub New*` — DISMTools |
+
+Six of the seven are the one grammar defect, which is now confined to 2,823
+`New*` identifiers in the grammar. The seventh — `SoundManager`, in a file with no
+`Sub New*` at all — is genuinely unexplained and is recorded as such rather than
+folded into the class it resembles.
 
 ### The `New*` grammar defect, and why a lane cannot fix it
 
