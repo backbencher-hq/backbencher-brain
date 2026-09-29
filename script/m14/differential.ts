@@ -334,6 +334,17 @@ export const LANG_REPOS: Record<string, string> = {
   // one, and pointing the lane at fresh repositories instead would leave the
   // pre-wave claim un-refuted rather than superseded.
   bash: "otp",
+  // M14.6 perl: mojo IS the M12 pinned perl corpus (validation/m12/corpus-manifest.json
+  // perl.corpusTarget = "mojo", revision 93f59174), so the differential audits the
+  // same files the pinned ground truth was audited on.
+  //
+  // RE-APPLIED after the branch merge: `--lang perl` died with "no corpus repo
+  // mapped for language perl - extend LANG_REPOS", and the error names the fix. A
+  // lane whose gate cannot find its own corpus is a gate that cannot fail, and perl
+  // was still registered in LANGS, in GATED_LANGS, in the fixture map and in the
+  // mutant harness. The merge dropped this one line and nothing noticed, because no
+  // project typecheck covers script/ either.
+  perl: "mojo",
   scss: "element-plus",
 
   // scss's corpus is element-plus: 170 of the 254 `.scss` files across 13 corpora,
@@ -615,6 +626,11 @@ export const SECOND_CORPUS: Record<string, string> = {
   // primary has 0 pipe tables worth speaking of and kubernetes has them everywhere,
   // and the primary's setext headings have no counterpart there at all.
   markdown: "kubernetes",
+  // M14.6 perl: plack is an independent corpus with a different dialect profile --
+  // PSGI middleware, no Moose, heavy filehandles -- so a defect with zero sites in
+  // mojo (a Mojo-flavoured codebase) is still exercised. Also re-applied: without it
+  // the lane silently measured ONE corpus and reported it as the two-corpus F5 gate.
+  perl: "plack",
 }
 const REPO = process.argv.includes("--repo") ? process.argv[process.argv.indexOf("--repo") + 1] : undefined
 const SAMPLE_PER_LANG = process.argv.includes("--sample") ? parseInt(process.argv[process.argv.indexOf("--sample") + 1]) : 60
@@ -684,11 +700,56 @@ const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).to
 // it is not the same kind of thing. It imports NOTHING from the analyzer.
 import { deriveMarkdownEdges } from "./markdown-oracle"
 
-export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[]; fileNames?: readonly string[] }> = {
+export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[]; fileNames?: readonly string[]; excludeDirs?: readonly string[] }> = {
   // `ext` carries the WHOLE production surface. language-detection.ts routes .R and .r,
   // and the corpora hold .R only -- so claiming `r` as well would be harmless here but
   // claiming an extension the router does not reach is the inert-pin class #884 documents.
   r: { wasm: "tree-sitter-r.wasm", analyzerFile: "real-r-analyzer", className: "RealRAnalyzer", ext: "R,r" },
+
+  // M14.6 groovy: `excludeDirs` names paths inside the corpus that are NOT source in the
+  // language, so a lane can say so instead of having its parse-error count dominated by
+  // files that cannot parse by construction.
+  //
+  // grails-core ships 14 `.groovy` SCAFFOLDING TEMPLATES under
+  // `src/main/templates/scaffolding/` -- `Spec.groovy` contains 42 `${className}` and
+  // `<%= ... %>` placeholders. They carry a `.groovy` extension and are not Groovy. Left in
+  // the universe they were 5 of the 6 parse-error files in a 600-file sample, and the sealed
+  // groovy-corpus-errors record carries their signature (`<%=ID ? ID : ID%>`, 24 files) as
+  // if it were a grammar defect.
+  //
+  // Excluding them is not the same as hiding them: the count of excluded files is REPORTED
+  // beside the lane's numbers, so a universe that quietly empties is visible. The 14 files
+  // are 0.2% of the 7,114 the corpus holds.
+  //
+  // This is NOT the same as the R lane's S4 case, where a name inside a STRING is still a
+  // real declaration R parses. A template is not a program.
+  groovy: {
+    wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer",
+    ext: "groovy,gradle",
+    // The Grails profile/scaffolding template roots. 107 of the 218 corpus files that fail
+    // to parse are these: profiles ship `.groovy` TEMPLATES with `${className}` and
+    // `<%= ... %>` interpolated by the generator at build time, and `skeleton/` holds files
+    // whose paths and contents are placeholders (`@grails.codegen.defaultPackage@`). They
+    // carry a .groovy extension and are not programs.
+    //
+    // `src/main/templates/` alone covered 8 of 600 sampled files; the full set is
+    // ~107 of 7,114. What REMAINS after this is ~111 real-source files with genuine parse
+    // failures (1.6% of the corpus) -- the grammar gaps, which are a different problem and
+    // are NOT swept away by this.
+    //
+    // The count is reported beside the lane's numbers, so an over-broad exclusion is
+    // visible rather than quietly improving the parse rate.
+    excludeDirs: [
+      "src/main/templates/",
+      "grails-profiles/base/templates/",
+      "grails-profiles/profile/templates/",
+      "grails-profiles/web/templates/",
+      "grails-profiles/rest-api/templates/",
+      "grails-profiles/plugin/templates/",
+      "grails-profiles/base/skeleton/",
+      "grails-test-examples/mongodb/gson-templates/",
+    ],
+  },
 
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
   // reading precision 1.000, which was a measurement of the analyzer against a
@@ -727,7 +788,6 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // row, depth draw and fixture. grails-core alone holds 454 `.gradle` files
   // against 6,564 `.groovy`; unlike objc's headers this needs no content guard,
   // because the router decides `.gradle` by NAME.
-  groovy: { wasm: "tree-sitter-groovy.wasm", analyzerFile: "real-groovy-analyzer", className: "RealGroovyAnalyzer", ext: "groovy,gradle" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
   svelte: { wasm: "tree-sitter-svelte.wasm", analyzerFile: "real-svelte-analyzer", className: "RealSvelteAnalyzer", ext: "svelte" },
   // M14 F10: css joins the differential lane. It had an M12 `css-differential.json`
@@ -16094,6 +16154,23 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       walkScoped(root, "", new Map(), null)
     }
 
+    // ---- phase 1b: nearest enclosing ELEMENT for every non-element node
+    //
+    // Keyed by byte span for the same reason the tables above are: this pass and
+    // the emission phase walk the tree separately, so node identity cannot
+    // correlate them.
+    const enclosingElement = new Map<string, string>()
+    {
+      const findOwner = (n: any, cur: string) => {
+        for (let i = 0; i < n.childCount; i++) {
+          const c = n.child(i)
+          if (c.type === "element") findOwner(c, spanKey(c))
+          else { enclosingElement.set(spanKey(c), cur); findOwner(c, cur) }
+        }
+      }
+      findOwner(root, "")
+    }
+
     // ---- phase 2: emit edges from the tables
     const pushed = new Set<string>()
     const push = (from: string, to: string, label: string, cls?: string) => {
@@ -16145,6 +16222,29 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         // ancestor, read off the tree.
         push(owner, self, "contains")
       }
+    }
+
+    // ---- phase 3: PROCESSING INSTRUCTIONS are declared names
+    //
+    // Found by the differential, not by reading the analyzer: sweeping all 314
+    // grails-core XML files left exactly two unexplained `contains` edges, both
+    // `contains metadata -> xpacket`, in two SVGs. The oracle read only
+    // `element` nodes, and an XMP metadata block's `<?xpacket begin=…?>` is a
+    // `PI`, so the oracle was silent on a name the analyzer publishes and the
+    // row read as spurious. A processing instruction DOES name a thing — its
+    // target is the name, `PITarget` is a real node for it, and the enclosing
+    // element is its owner — so this is derivable from the tree, which is the
+    // only thing that makes it an oracle rather than a copy of the analyzer's
+    // output.
+    for (const n of nodes) {
+      if (n.type !== "PI") continue
+      const target = first(n, "PITarget")?.text ?? ""
+      if (target.length === 0) continue
+      const ownerKey = enclosingElement.get(spanKey(n))
+      if (!ownerKey) continue
+      const ownerName = nameOf.get(ownerKey) ?? ""
+      if (ownerName.length === 0) continue
+      push(ownerName, target, "contains")
     }
     return edges
   }

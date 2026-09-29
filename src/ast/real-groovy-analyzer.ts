@@ -89,6 +89,8 @@ const GROOVY_DECLARATION_TYPES = new Set([
  */
 interface GroovyWalkState {
   content: string
+  /** Declarations refused because the name was empty (a MISSING node from error recovery). */
+  emptyNameRefusals?: number
   symbols: ASTEngine.UniversalSymbol[]
   relationships: ASTEngine.UniversalRelationship[]
   imports: ASTEngine.ImportInfo[]
@@ -272,6 +274,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         complexity: this.calculateGroovyMethodComplexity(rootNode),
         cyclomaticComplexity: this.calculateGroovyMethodComplexity(rootNode),
         linesOfCode: content.split("\n").length,
+        // Refusals, surfaced. A declaration whose name came back EMPTY (a MISSING node
+        // from error recovery) is dropped rather than published, because an empty name is
+        // not a name -- but a silent drop is a hole exactly like the one it closes, so the
+        // count travels with the result. Non-zero means the file had a parse that did not
+        // happen, which is worth knowing even when the symbol list looks clean.
+        emptyNameRefusals: walk.emptyNameRefusals ?? 0,
         currentPackage: walk.currentPackage,
         framework: fw.framework,
         detectedFrameworks: fw.detected,
@@ -705,8 +713,23 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `private test` has no same-line method, typed fields never match
           // a trivia-only gap to a method consuming their own tokens.
       if (this.isDuplicateParseField(node, s.content)) continue
+      // A MISSING node has a zero-width range, so `.text` on it is the empty string. The
+      // `!idNode` guard above does not catch that -- the node EXISTS, it is simply empty --
+      // so error recovery could publish a field whose name is "". A symbol with an empty
+      // name is not a name, and the M60 surface audit reported exactly two of them
+      // (grails-scaffolding Spec.groovy / AsyncSpec.groovy, 8:18), both from a
+      // `field_declaration` this recovery produced.
+      //
+      // Refused rather than repaired, and COUNTED: an empty name is a symptom of a parse
+      // that did not happen, so inventing one would hide the parse failure behind a
+      // plausible symbol. The count makes the refusal visible.
+      const fieldName = idNode.text.trim()
+      if (fieldName === "") {
+        s.emptyNameRefusals = (s.emptyNameRefusals ?? 0) + 1
+        continue
+      }
       symbols.push({
-        name: idNode.text,
+        name: fieldName,
         kind: isConstant ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Property,
         range: this.symbolRange(child),
         visibility,
@@ -723,9 +746,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const type = node.type
     const nameNode = this.findChild(node, (n) => n.type === "identifier")
     const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
-    if (nameNode && ownerName) {
+    // Same refusal as the field path above: a MISSING identifier node is present but
+    // empty, and an enum constant with an empty name is not a constant.
+    const enumMemberName = nameNode?.text.trim() ?? ""
+    if (enumMemberName !== "" && ownerName) {
       symbols.push({
-        name: nameNode.text,
+        name: enumMemberName,
         kind: ASTEngine.SymbolKind.EnumMember,
         range: this.symbolRange(node),
         visibility: "public",
@@ -940,7 +966,14 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           visibility: s.parentContext.visibility || "public",
           ownerName: s.parentContext.name,
           ownerKind: s.parentContext.kind,
-          metadata: { nodeType: type, isAnonymousClass: true, superTypes: superName ? [superName] : [] },
+          // `synthesized: true` is a DECLARATION, not an exemption request. The name is
+          // invented from the supertype because an anonymous class has no spelling, and
+          // the M60 surface audit's "name not present in source" / "ghost target" rows
+          // cannot tell that from a name the analyzer made up and passed off. Declaring
+          // it moves both rows into the audit's own "named by contract, not by source
+          // spelling" category -- counted, disclosed, and still failing for any
+          // UNDECLARED synthesized name, which is the case that actually matters.
+          metadata: { nodeType: type, isAnonymousClass: true, synthesized: true, superTypes: superName ? [superName] : [] },
         }
         symbols.push(anonSym)
         symbolMap.set(anonFqn, anonSym)

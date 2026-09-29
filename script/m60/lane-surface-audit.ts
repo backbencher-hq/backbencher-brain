@@ -170,6 +170,8 @@ async function main() {
     const kinds = new Map<string, number>()
     const badNames: any[] = []
     const ghosts: any[] = []
+    const excludedDirs: any[] = []
+    const synthesizedNames = new Set<string>()
     const contractNames: any[] = []
     const contractTargets: any[] = []
     const unlinedSample: Array<{ file: string; label: string; target: string; from: string; reason: string }> = []
@@ -177,7 +179,22 @@ async function main() {
     let files = 0, filesWithEdges = 0, edges = 0, symbols = 0
 
     for (const repo of repos) {
-      const paths = filesUnder(corpusPath(repo), exts, [], LIMIT)
+      // A lane may declare paths inside its corpus that are NOT source in the language:
+      // groovy's corpus ships 14 `.groovy` SCAFFOLDING TEMPLATES under
+      // `src/main/templates/`, full of `${...}` placeholders, which carry a .groovy
+      // extension and are not Groovy. Applied here AND COUNTED, because a universe that
+      // quietly empties is indistinguishable from a clean result -- which is how this lane
+      // reported 0 files for a long time.
+      const excluded = (cfg.excludeDirs ?? []) as readonly string[]
+      const root = corpusPath(repo)
+      const all = filesUnder(root, exts, [], LIMIT)
+      const paths = all.filter((f) => {
+        const rel = path.relative(root, f)
+        return !excluded.some((d) => rel.includes(d))
+      })
+      if (excluded.length && all.length !== paths.length) {
+        excludedDirs.push({ dir: excluded, filesInSample: all.length, filesExcluded: all.length - paths.length })
+      }
       for (const file of paths) {
         if (files >= LIMIT) break
         let src: string
@@ -197,12 +214,37 @@ async function main() {
         if (rels.length) filesWithEdges++
         edges += rels.length
         symbols += syms.length
+        // Names the analyzer DECLARES as synthesized, collected before either check so
+        // both the symbol row and the ghost-target row can consult them.
+        //
+        // The audit already has a "named by contract, not by source spelling" category, but
+        // it is a small NAME allowlist (`constructor`, `operator`), keyed to the kind so a
+        // class genuinely called `constructor` in some language still reports. That shape
+        // cannot express an open-ended family: Groovy has anonymous classes, whose name is
+        // synthesized from the supertype (`anonymous_Runnable`, `anonymous_PropertyValueIndexer`,
+        // ...), and a name allowlist would have to enumerate an infinite set.
+        //
+        // A DECLARED flag is the general form and it cuts the other way from a concession:
+        // an undeclared synthesized name still fails both rows, which is the hazard that
+        // matters (a name invented and passed off as if the source contained it). Groovy's
+        // analyzer sets `synthesized: true` on exactly the symbols it invents.
+        for (const s of syms) {
+          if (s?.metadata?.synthesized === true || s?.metadata?.isAnonymousClass === true) {
+            synthesizedNames.add(String(s.name ?? ""))
+          }
+        }
         for (const s of syms) {
           const k = String(s.kind ?? "?")
           kinds.set(k, (kinds.get(k) ?? 0) + 1)
           const n = String(s.name ?? "")
           if (isPlaceholderName(n, k)) {
             badNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: JSON.stringify(n), kind: k, line: s.range?.startLine })
+          } else if (synthesizedNames.has(n)) {
+            // A name the analyzer declares it invented. Counted and disclosed with the
+            // contract literals, and NOT a violation -- an anonymous class is a real class
+            // in the language that simply has no spelling, so the absence of the text is
+            // the truth rather than a defect.
+            contractNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: n, kind: k, line: s.range?.startLine, declared: true })
           } else if (CONTRACT_LITERALS[n.toLowerCase()]?.has(k.toLowerCase())) {
             // a name by contract — counted, disclosed, and not a ghost
             contractNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: n, kind: k, line: s.range?.startLine })
@@ -274,7 +316,7 @@ async function main() {
           const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
           const w = writtenForm(tgt)
           if (w.length > 1 && !src.includes(w)) {
-            if (CONTRACT_LITERALS[w.toLowerCase()]) {
+            if (synthesizedNames.has(w) || CONTRACT_LITERALS[w.toLowerCase()]) {
               contractTargets.push({ file: path.relative(CORPUS_ROOT, file), label: t, target: tgt, line: ln ?? null })
             } else {
               ghosts.push({ file: path.relative(CORPUS_ROOT, file), label: t, target: tgt, line: ln ?? null })
@@ -297,6 +339,7 @@ async function main() {
       unlinedSample: unlinedSample.slice(0, 40), unlinedSampleCount: unlinedSample.length,
       badNames, ghosts: ghosts.slice(0, 40), ghostCount: ghosts.length,
       contractNames, contractNameCount: contractNames.length,
+      excludedDirs,
       contractTargets, contractTargetCount: contractTargets.length,
       parseErrors: parseErrors.slice(0, 20), parseErrorCount: parseErrors.length,
     }
@@ -335,6 +378,9 @@ async function main() {
       console.log(`  contract literals (named by contract, not by source spelling)  ${row.contractNameCount ?? 0} symbols, ${row.contractTargetCount ?? 0} relationship targets`)
       console.log(`  ghost targets ${row.ghostCount}`)
       for (const g of row.ghosts.slice(0, 12)) console.log(`      ${g.file} :: ${g.label} -> ${g.target}${g.line ? ` (line ${g.line})` : ""}`)
+      for (const e of row.excludedDirs ?? []) {
+        console.log(`  excluded as not-source  ${JSON.stringify(e.dir)} -- ${e.filesExcluded} of ${e.filesInSample} sampled file(s)`)
+      }
       console.log(`  parse errors  ${row.parseErrorCount}`)
       for (const p of row.parseErrors.slice(0, 6)) console.log(`      ${p.file} :: ${p.error}`)
     }
