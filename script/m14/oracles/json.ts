@@ -121,6 +121,7 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   const refs: { from: string; refPath: string }[] = []
   const deps: { from: string; name: string }[] = []
   const endpoints: { from: string; target: string }[] = []
+  const composed: { from: string; target: string }[] = []
   const HTTP_METHOD_KEYS = new Set(["get", "put", "post", "delete", "options", "head", "patch", "trace"])
 
   const keyText = (pair: any): string | null => {
@@ -200,6 +201,19 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
         }
       }
       if (key === "$ref" && value.type === "string") {
+        // The enclosing key of a `$ref` tells us whether it composes. The path
+        // writes an array index with BRACKETS (`…allOf[0].$ref`), which two earlier
+        // attempts got wrong — one matched only the object form and one stripped a
+        // dot-separated index, each finding 1 edge where the corpus has 1,226.
+        const bracket = here.lastIndexOf("[")
+        const owner = bracket > 0 && here.endsWith("]") ? here.slice(0, bracket) : here
+        if (owner.endsWith(".allOf")) {
+          const ptr = unquote(value)
+          if (ptr.startsWith("#/")) {
+            const pointed = `${scriptName}.${ptr.slice(2).replaceAll("/", ".")}`
+            if (pathToName.has(pointed)) composed.push({ from: owner, target: pointed })
+          }
+        }
         refs.push({ from: here, refPath: unquote(value) })
       } else if (isObject(value) || isArray(value)) {
         walk(value, here, key)
@@ -281,6 +295,12 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   for (const e of endpoints) edges.push({ label: "uses", from: e.from, target: e.target })
 
   // The manifest's dependencies are `uses`, sourced by the file's own module.
+  // JSON Schema COMPOSITION as `extends`. `allOf` means "must satisfy ALL of these",
+  // which is a superset-of relationship; `anyOf`/`oneOf` are ALTERNATIVES and have no
+  // ontology type, so they contribute only the `references` their `$ref`s already
+  // produce. Recorded during the ref emission below, where the enclosing path is known.
+  for (const c of composed) edges.push({ label: "extends", from: c.from, target: c.target })
+
   if (opts?.manifest) {
     // the root object is the document's only named child
     const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
