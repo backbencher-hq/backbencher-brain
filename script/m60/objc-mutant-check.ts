@@ -79,6 +79,30 @@ const MIRRORED: Mutant[] = [
     }),
   },
   {
+    id: "objc/drop-availability-annotated-protocol",
+    defectClass: "symbol-loss",
+    description: "the @protocol enclosing an availability-annotated method is lost with all of its methods",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !["removeImageForKey:options:", "flushPendingWrites"].includes(s.name)),
+      relationships: (r.relationships ?? []).filter((x: any) => !["removeImageForKey:options:", "flushPendingWrites"].includes(x.target)),
+    }),
+  },
+  {
+    id: "objc/availability-annotation-into-selector",
+    defectClass: "payload-corruption",
+    description: "a trailing availability annotation is read as another method selector, publishing a method that does not exist",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" && s.name === "flushPendingWrites"
+          ? { ...s, name: "flushPendingWritesAF_API_UNAVAILABLE" }
+          : s),
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.target === "flushPendingWrites" ? { ...x, target: "flushPendingWritesAF_API_UNAVAILABLE" } : x),
+    }),
+  },
+  {
     id: "objc/drop-guarded-class-properties",
     defectClass: "symbol-loss",
     description: "the class swallowed by an unreachable macro-prefixed rule loses its properties and their contains rows",
