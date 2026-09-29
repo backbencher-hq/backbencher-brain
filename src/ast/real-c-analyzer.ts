@@ -963,6 +963,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // { ... }` still resolves, while a never-defined forward declaration
     // (`struct ForwardOnly;`) emits no dangling use edge.
     const declaredTypes = new Set<string>()
+    /**
+     * #953: every function name DECLARED in this file -- a definition or a
+     * prototype. Needed because a C name can be both a macro and a function in one
+     * translation unit, and the two must be told apart before a call edge is
+     * suppressed: `#define FOO(x) bar(x)` beside a real `void FOO(int)` means an
+     * invocation of `FOO` is a macro use, while `#define MIN(a,b)` in a file that
+     * also defines its own `MIN` function means it is a call. Suppressing on the
+     * macro name alone would delete real call edges.
+     *
+     * Collected in the same pre-pass as `declaredTypes` and for the same measured
+     * reason: a separate walk cost real time on files like `vdbe.c` (3.6 s/file
+     * measured, per the note above).
+     */
+    const declaredFunctionNames = new Set<string>()
     {
       // CGD20-mirror (PERF, measured): function-local type declarations are
       // execution artifacts (C-D1) — they must not enter declaredTypes, else
@@ -988,6 +1002,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         } else if (n.type === "type_definition") {
           const identNode = this.getIdentifierFromDeclarator(n.childForFieldName("declarator"))
           if (identNode && identNode.text.trim()) declaredTypes.add(identNode.text)
+        } else if (n.type === "function_definition" || n.type === "declaration") {
+          // `function_declaration` was in this list too, and F1 rejected it: the node
+          // type does not exist in this grammar. A prototype parses as
+          // `declaration` with a `function_declarator` inside it, which is already
+          // covered, so the literal could never match. That is the second time this
+          // wave's own grammar-audit run caught a dead node-type literal I had
+          // written from memory of a different grammar -- the first was
+          // `attributed_type_specifier` -- and the response is the same both times:
+          // delete it rather than waive it.
+          const d = n.childForFieldName("declarator")
+          const fn = d ? this.getIdentifierFromDeclarator(d) : null
+          if (fn && fn.text.trim() && (fn.type === "identifier" || fn.type === "field_identifier")) {
+            declaredFunctionNames.add(fn.text.trim())
+          }
         }
         }
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -1769,7 +1797,62 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             // still emits its own `calls make` (probe c-emit3 C1: previously
             // the entire subtree was skipped).
             suppressCall = true
+          } else if (fnNode.type !== "identifier" && fnNode.type !== "field_identifier") {
+            // #954: a callee that is not a NAME node is not a call.
+            //
+            // `#if PCRE2_CODE_UNIT_WIDTH == 8` in libgit2's pcre2_dfa_match.c
+            // published `calls pcre2_dfa_match -> "8"`. A number is not callable, and
+            // the edge asserted that a function called a numeric literal. Every
+            // earlier guard on this branch listed the shapes it RECOGNISED and let
+            // everything else fall through to `fnNode.text` -- so a callee that was
+            // none of the known shapes became a call target by default, which is the
+            // wrong default for a field that is supposed to hold a name.
+            //
+            // The test is the NODE TYPE rather than a pattern on the text, which is
+            // both exact and the only version this lane is allowed: P11 holds this
+            // file to zero regex literals, and a shape test on the target string
+            // would reintroduce one on the hottest path in the analyzer.
+            //
+            // The recognised callee shapes are `identifier` and `field_identifier`,
+            // plus the four handled above (`field_expression`, `subscript_expression`,
+            // `call_expression`, `parenthesized_expression`). Anything else -- a
+            // number, a string, a character, a `sizeof`, a type name -- is not a
+            // callable name, and `subscript_expression` already declines to invent
+            // one for the same reason.
+            suppressCall = true
           }
+
+          // REVERTED, and the reason is a pinned contract this wave violated.
+          //
+          // The call-edge fidelity probe reported ~4,000 "phantom" call edges whose
+          // callee is a file-local macro -- `UNUSED(interval)` publishing
+          // `calls anetKeepAlive -> UNUSED` -- and suppressing them looked obviously
+          // right: the lane refuses macro-named members (#928) and macro-named
+          // enumerators (#931), so a macro-named callee looked like the same rule
+          // applied a third time.
+          //
+          // It is not. #908's ruling, pinned by
+          // c/function-like-macro-not-a-binding-908 and derived from the M12 TRUTH,
+          // is explicit: "the truth counts a macro invocation as `calls (expr)` AND
+          // `uses (expr)`". The `calls` edge to a macro name is not an oversight to
+          // be tidied up -- it is what the ground truth requires, and a fixture
+          // expects `calls c908_read -> YY_INITIAL_VALUE` by name. Suppressing it
+          // would have deleted a required edge, and the fixture caught that in one
+          // run.
+          //
+          // What the two failures together establish is worth keeping, because the
+          // distinction is sharp and it is not in the analyzer's favour everywhere:
+          //   - a REAL function-like macro invocation gets BOTH a `calls` and a
+          //     `uses` edge (#908, truth-driven);
+          //   - a `#define` REPLACEMENT LIST that recovery reads as a call gets
+          //     NEITHER, because it is not an invocation at all -- it is a definition
+          //     site (#912, pinned by c/call-shaped-declarator-912, whose note says
+          //     the call-shaped text "must not become a `uses` of a symbol either").
+          //
+          // So the macro-name rule is real but it is about DEFINITION SITES, not
+          // about callees, and the analyzer was already right on both. The probe's
+          // model was the thing that was wrong: it took the literal parse as ground
+          // truth and so counted a documented divergence as a defect.
 
           if (
             !suppressCall &&
