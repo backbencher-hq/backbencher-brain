@@ -8,7 +8,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "66/66 fixtures pass",
+      "detail": "67/67 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -20,19 +20,19 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "34/34 fixtures pass",
+      "detail": "37/37 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "79/79 fixtures pass",
+      "detail": "85/85 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "46/46 fixtures pass",
+      "detail": "48/48 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
@@ -44,7 +44,7 @@
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "44/44 fixtures pass",
+      "detail": "46/46 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -140,7 +140,7 @@
     },
     {
       "description": "yaml adversarial fixtures",
-      "detail": "27/27 fixtures pass",
+      "detail": "28/28 fixtures pass",
       "id": "fixtures-yaml",
       "status": "pass"
     },
@@ -158,7 +158,7 @@
     },
     {
       "description": "clean adversarial fixtures",
-      "detail": "5/5 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-clean",
       "status": "pass"
     },
@@ -181,21 +181,39 @@
       "status": "pass"
     },
     {
+      "description": "markdown adversarial fixtures",
+      "detail": "8/8 fixtures pass",
+      "id": "fixtures-markdown",
+      "status": "pass"
+    },
+    {
+      "description": "scss adversarial fixtures",
+      "detail": "9/9 fixtures pass",
+      "id": "fixtures-scss",
+      "status": "pass"
+    },
+    {
       "description": "bash adversarial fixtures",
       "detail": "17/17 fixtures pass",
       "id": "fixtures-bash",
       "status": "pass"
     },
     {
+      "description": "json adversarial fixtures",
+      "detail": "7/7 fixtures pass",
+      "id": "fixtures-json",
+      "status": "pass"
+    },
+    {
       "description": "powershell adversarial fixtures",
-      "detail": "9/9 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-powershell",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "4f7f78ebd6e1cb67701ac0e5474f211114b30894",
-  "committedAt": "2026-09-27T21:13:11-04:00",
+  "commit": "1d116064bda4f8642f55974484ccb393fde1ca17",
+  "committedAt": "2026-09-28T23:25:59-04:00",
   "data": {
     "details": [
       {
@@ -500,6 +518,11 @@
       },
       {
         "fixture": "javascript/deep-cjs-exports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "javascript/default-export-declaration-name",
         "ok": true,
         "problems": []
       },
@@ -894,6 +917,11 @@
         "problems": []
       },
       {
+        "fixture": "svelte/directive-carriers",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/each-block",
         "ok": true,
         "problems": []
@@ -959,7 +987,17 @@
         "problems": []
       },
       {
+        "fixture": "svelte/reserved-svelte-namespace",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "svelte/rune-call-filter",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "svelte/rune-filter-coverage",
         "ok": true,
         "problems": []
       },
@@ -1049,6 +1087,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/ambient-function-signature",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/ambient-global",
         "ok": true,
         "problems": []
@@ -1094,6 +1137,11 @@
         "problems": []
       },
       {
+        "fixture": "typescript/commonjs-require-module-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/complexity-parity",
         "ok": true,
         "problems": []
@@ -1120,6 +1168,11 @@
       },
       {
         "fixture": "typescript/ctor-param-property-lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/declaration-in-body-is-local",
         "ok": true,
         "problems": []
       },
@@ -1274,12 +1327,22 @@
         "problems": []
       },
       {
+        "fixture": "typescript/named-class-expression-is-declaration",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "typescript/namespace-member-export-boundary",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/node-builtin-subpaths",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/object-literal-accessor-pair",
         "ok": true,
         "problems": []
       },
@@ -1310,6 +1373,11 @@
       },
       {
         "fixture": "typescript/param-prop-default",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "typescript/parameter-shadows-file-symbol",
         "ok": true,
         "problems": []
       },
@@ -1584,6 +1652,11 @@
         "problems": []
       },
       {
+        "fixture": "java/modern-pattern-rules",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "java/multi-interface-extends",
         "ok": true,
         "problems": []
@@ -1595,6 +1668,11 @@
       },
       {
         "fixture": "java/overload-arity-varargs-multicatch",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "java/override-guess-tier",
         "ok": true,
         "problems": []
       },
@@ -2214,6 +2292,11 @@
         "problems": []
       },
       {
+        "fixture": "kotlin/quoted-name-surface-924",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "kotlin/safe-nav-chain",
         "ok": true,
         "problems": []
@@ -2235,6 +2318,11 @@
       },
       {
         "fixture": "kotlin/type-usage-graph",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "kotlin/uses-gates",
         "ok": true,
         "problems": []
       },
@@ -3714,6 +3802,11 @@
         "problems": []
       },
       {
+        "fixture": "yaml/tag-include-inc-spelling",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "yaml/value-vocabulary",
         "ok": true,
         "problems": []
@@ -3774,6 +3867,11 @@
         "problems": []
       },
       {
+        "fixture": "clean/declaration-forms",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clean/definition-module-interface",
         "ok": true,
         "problems": []
@@ -3794,7 +3892,17 @@
         "problems": []
       },
       {
+        "fixture": "clean/qualified-names",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "clean/signature-definition-merge",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "clean/type-and-expression-shapes",
         "ok": true,
         "problems": []
       },
@@ -3939,6 +4047,91 @@
         "problems": []
       },
       {
+        "fixture": "markdown/code-block-site-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/heading-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/heading-parent-name-collision",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/indented-code-block",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/internal-anchor-links",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/payload-lines-evidence",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/reference-links",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "markdown/table-structure",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/control-flow-and-extend",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/error-recovery-is-reported",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/functions-return-and-undeclared-uses",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/identically-named-scopes-are-distinct",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/module-system-and-mixins",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/reads-recovered-from-error-regions",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/scope-containment-and-complexity",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/self-referential-assignment-reads-itself",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "scss/variables-flags-and-identity",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "bash/arithmetic-reads-gap-closure",
         "ok": true,
         "problems": []
@@ -4024,6 +4217,46 @@
         "problems": []
       },
       {
+        "fixture": "json/Arrays",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/Dotted.name",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/Imports",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/Invalid",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/Lines",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/OpenApi",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "json/Refs",
+        "ok": true,
+        "problems": []
+      },
+      {
+        "fixture": "powershell/class-inherit-psa2",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/data-shapes-psb10",
         "ok": true,
         "problems": []
@@ -4049,6 +4282,11 @@
         "problems": []
       },
       {
+        "fixture": "powershell/new-object-psa3",
+        "ok": true,
+        "problems": []
+      },
+      {
         "fixture": "powershell/payload-psb11",
         "ok": true,
         "problems": []
@@ -4067,6 +4305,11 @@
         "fixture": "powershell/suppression-and-params-psb7",
         "ok": true,
         "problems": []
+      },
+      {
+        "fixture": "powershell/variable-reads-psa4",
+        "ok": true,
+        "problems": []
       }
     ],
     "summary": {
@@ -4080,7 +4323,7 @@
       },
       "clean": {
         "fail": 0,
-        "pass": 5
+        "pass": 8
       },
       "clojure": {
         "fail": 0,
@@ -4128,15 +4371,23 @@
       },
       "java": {
         "fail": 0,
-        "pass": 46
+        "pass": 48
       },
       "javascript": {
         "fail": 0,
-        "pass": 66
+        "pass": 67
+      },
+      "json": {
+        "fail": 0,
+        "pass": 7
       },
       "kotlin": {
         "fail": 0,
-        "pass": 44
+        "pass": 46
+      },
+      "markdown": {
+        "fail": 0,
+        "pass": 8
       },
       "objc": {
         "fail": 0,
@@ -4148,7 +4399,7 @@
       },
       "powershell": {
         "fail": 0,
-        "pass": 9
+        "pass": 12
       },
       "python": {
         "fail": 0,
@@ -4166,9 +4417,13 @@
         "fail": 0,
         "pass": 54
       },
+      "scss": {
+        "fail": 0,
+        "pass": 9
+      },
       "svelte": {
         "fail": 0,
-        "pass": 34
+        "pass": 37
       },
       "swift": {
         "fail": 0,
@@ -4180,7 +4435,7 @@
       },
       "typescript": {
         "fail": 0,
-        "pass": 79
+        "pass": 85
       },
       "vue": {
         "fail": 0,
@@ -4192,7 +4447,7 @@
       },
       "yaml": {
         "fail": 0,
-        "pass": 27
+        "pass": 28
       },
       "zig": {
         "fail": 0,
@@ -4213,8 +4468,8 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-28T01:14:28.880Z",
-  "regeneratedAtCommit": "4f7f78ebd6e1cb67701ac0e5474f211114b30894",
+  "regeneratedAt": "2026-09-29T03:33:29.730Z",
+  "regeneratedAtCommit": "1d116064bda4f8642f55974484ccb393fde1ca17",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Adversarial fixture corpus"
