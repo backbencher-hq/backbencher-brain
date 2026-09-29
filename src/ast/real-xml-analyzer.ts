@@ -256,6 +256,13 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     processing_instruction_href: "import_based",
     schema_location: "import_based",
     attribute_qname_reference: "reference_qualified",
+    // An entity use is reached through a NAME in the document's own DTD, not
+    // through a declared namespace prefix — but it is a reference to a
+    // declaration all the same, and `usage_contextual` would say the document is
+    // only *using* the entity, which understates it: `&logo;` in content means the
+    // element's value IS that entity's replacement text. `reference_qualified` is
+    // the same claim an XSLT named-template call makes.
+    entity_reference: "reference_qualified",
     xslt_named_template_reference: "reference_qualified",
   }
 
@@ -380,6 +387,27 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       bareNameReference?: boolean
     }
     const referenceCandidates: ReferenceCandidate[] = []
+
+    /**
+     * ENTITY USES — M60 M18. `&name;` in content is a real reference to a
+     * declared entity, and this analyzer emitted nothing for it.
+     *
+     * The grammar has an `EntityRef` node for exactly this and it was classified
+     * as PASS-THROUGH with the note "a USE; the declaration is GEDecl /
+     * PEDecl" — which is the observation that it is a use, followed by the decision
+     * to record only the declaration. So the graph could say that entity `greeting`
+     * is declared and nothing at all about which element's content depends on it.
+     *
+     * Measured over the corpus: **12,066 `EntityRef` sites across 268 files, of
+     * which 4,423 name an entity NOTHING DECLARES.** A document containing
+     * `&undefined;` indexed as clean. That is the same defect X13 fixed for bare
+     * type references, in a different syntax: a claim the document makes, dropped
+     * because the analyzer could not decide it, and the not-deciding was invisible.
+     *
+     * Deferred, for the same reason the QName pass is: an entity may be declared
+     * after it is used, and resolving on the spot would drop every forward use.
+     */
+    const entityReferenceCandidates: { ownerName: string; name: string; node: Node; textNode: Node }[] = []
 
     /**
      * Names a `contains` edge is about to point at that this document may not
@@ -947,6 +975,20 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // M18: an entity USE in content. Collected, not decided — the declaration
+      // may come later, and the DTD's own declarations are resolved in the
+      // deferred pass with everything else.
+      if (node.type === "EntityRef" && ownerName) {
+        const text = node.text.trim()
+        // `&name;` — the name is between the ampersand and the semicolon, and it
+        // is written in the SOURCE, so the line below is the name's line and the
+        // M60 rule is satisfied by construction rather than by a convention.
+        if (text.length > 2 && text.startsWith("&") && text.endsWith(";")) {
+          const name = text.slice(1, -1)
+          if (name.length > 0 && name.length <= 256) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+        }
+      }
+
       const childDepth = bindDepth ?? 0
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
@@ -1145,6 +1187,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // having to guess from the namespace alone
         ...(imported ? { importedFrom: imported.path, importedBy: imported.element } : {}),
       }, candidate.valueNode)
+    }
+
+    // ── entity uses, decided now that every declaration is known ─────────────
+    for (const cand of entityReferenceCandidates) {
+      const declared = declaredNames.has(cand.name)
+      // Dangling uses are RECORDED, not refused: `&undefined;` is a claim the
+      // document makes about itself, and refusing it is what made 4,423 of them
+      // invisible. Same ruling as X13's `unresolved` class, for the same reason,
+      // and the target symbol is still not published — a use is not a declaration.
+      addRelationship(cand.ownerName, cand.name, ASTEngine.RelationshipType.References, {
+        role: "entity_reference",
+        entityName: cand.name,
+        resolvable: declared ? "in-document" : "unresolved",
+        ...(declared ? {} : { danglingEntityReference: true }),
+      }, cand.textNode)
     }
 
     const hasSyntaxErrors = errorNodes > 0 || missingNodes > 0
