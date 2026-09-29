@@ -1550,6 +1550,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // call, while no class name is claimed.
         receiver = child.text
         receiverNode = child
+      } else if (child.type === "self") {
+        // `self` is a NAMED node in this grammar, so without this it fell into
+        // the expression-receiver branch and `self.new` — which constructs the
+        // ENCLOSING instance — would be suppressed along with `X.new(...).new`.
+        // It names no class and no anonymous scope, so it is neither: the
+        // receiverless branch below resolves it to the enclosing class, which is
+        // the shape the callsite-lines-825 fixture pins.
       } else {
         hasExpressionReceiver = true
       }
@@ -1573,13 +1580,38 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- require / require_relative / load ---
-    if (methodName === "require" || methodName === "require_relative" || methodName === "load") {
+    //
+    // RECEIVERLESS ONLY, and that qualifier is the whole rule. `require`,
+    // `require_relative` and `load` are Kernel/private methods invoked without a
+    // receiver, so `require "x"` is a load and `coder.load("--- ")` is some
+    // object's method that happens to share the name. The branch used to match
+    // on the method NAME alone, so every `YAMLColumn.new("attr_name").load "--- "`
+    // and `@serializer.load "hey there"` in a real corpus published a
+    // `references` edge naming a document fragment. Found by the payload
+    // hygiene sweep, which looks for names that cannot be a name.
+    // `!hasExpressionReceiver` as well as `!receiver`: `serializer(format).load("")`
+    // leaves `receiver` UNSET (the receiver is a call, which takes the expression
+    // branch) and so passed a receiver-only guard, still publishing a
+    // `references` edge with an empty target.
+    if ((methodName === "require" || methodName === "require_relative" || methodName === "load") &&
+        !receiver && receiverNode === null && !hasExpressionReceiver) {
       const args = this.findChild(node, "argument_list")
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
           const arg = args.child(i)
           if (arg && arg.type === "string") {
             const cleanText = this.stripQuotes(arg.text)
+            // An INTERPOLATED path is a TEMPLATE, not a path:
+            // `require "#{__dir__}/mixin/x"` names no file on disk, so both the
+            // import record and the `references` edge would carry a target that
+            // resolves to nothing. The autoload branch below has said since it
+            // was written that it takes "string paths only (dynamic paths are
+            // unresolvable, mirroring require)" -- the intent was documented and
+            // never implemented, because the check was only `type === "string"`
+            // and an interpolated path IS a string.
+            // Measured: 217 sites (rails 208, rubocop 9, mastodon 0) per
+            // fixtures/repositories.
+            if (cleanText.indexOf("#{") >= 0) continue
             imports.push({
               module: cleanText,
               names: [],
@@ -1615,13 +1647,16 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (probe: previously recorded nothing at all). String paths only
     // (dynamic paths are unresolvable, mirroring require); the const name
     // itself declares nothing here (defined in the loaded file).
-    if (methodName === "autoload") {
+    if (methodName === "autoload" && !receiver && receiverNode === null && !hasExpressionReceiver) {
       const args = this.findChild(node, "argument_list")
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
           const arg = args.child(i)
           if (arg && arg.type === "string") {
             const cleanText = this.stripQuotes(arg.text)
+            // Same rule as the require family above, and this is the branch whose
+            // comment claimed the rule already existed.
+            if (cleanText.indexOf("#{") >= 0) continue
             imports.push({
               module: cleanText,
               names: [],
@@ -1677,6 +1712,18 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
+    // #825, applied to the member SYMBOL and not only to the edge: the node that
+    // NAMES a macro member is its ARGUMENT, not the call that wraps it. A
+    // multi-line `attr_accessor :a, :b, :c` gave every property the line the call
+    // starts on, so `contains -> c` claimed a line that does not contain `c`.
+    // Found by the M59 line oracle on 3,000 real files: 49 inconsistent
+    // `contains` in 4 files, every one a macro whose argument list wraps. The
+    // call node's range is right for the CALL; it was only ever the wrong anchor
+    // for a member. All four macro member kinds are fixed together — `attr_*`,
+    // the associations, `scope`/`default_scope`, and `define_method` — because a
+    // fix that handled only the one the sample happened to contain would leave
+    // the same defect in the other three.
+    //
     // --- attr_reader / attr_writer / attr_accessor ---
     if (methodName === "attr_reader" || methodName === "attr_writer" || methodName === "attr_accessor") {
       const args = this.findChild(node, "argument_list")
@@ -1691,7 +1738,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: propName,
               kind: ASTEngine.SymbolKind.Property,
-              range: this.nodeToRange(node),
+              range: this.nodeToRange(arg),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { accessorType: methodName },
@@ -1722,7 +1769,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Method,
-              range: this.nodeToRange(node),
+              range: this.nodeToRange(arg),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { isDynamicMethod: true },
@@ -1803,7 +1850,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               symbols.push({
                 name,
                 kind: ASTEngine.SymbolKind.Property,
-                range: this.nodeToRange(node),
+                range: this.nodeToRange(arg),
                 ownerName: owner,
                 visibility: "public" as any,
                 metadata: { associationType: methodName, ...anonMd },
@@ -1829,7 +1876,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: scopeName,
               kind: ASTEngine.SymbolKind.Method,
-              range: this.nodeToRange(node),
+              range: this.nodeToRange(firstArg),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { scopeType: methodName },
@@ -1852,6 +1899,25 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `Class.new(...)` is a constructor expression, not an ordinary call.
     // A bare `new(...)` inside a class method constructs the owning class.
     if (methodName === "new") {
+      // RB-A FIRST, before anything is emitted.
+      //
+      // The expression-receiver guard used to sit BELOW the emit, which made it
+      // unreachable in practice: `target` falls back to `owner`, and `owner` is
+      // truthy for any capitalized class, so `X.new(...).new` inside a class
+      // emitted `instantiates <EnclosingClass> -> <EnclosingClass>` — an edge
+      // claiming the enclosing class constructs itself, on a line that does not
+      // contain its name. Found by the M59 line oracle on 3,000 real files: 118
+      // inconsistent `instantiates` edges in 43 files, every one of this shape
+      // (`Class.new(Configuration).new`, `Encoding.json_encoder.new(options)`,
+      // `retrieve_store_class(store).new(...)`, `default_scope Struct.new(:call).new(...)`).
+      //
+      // An expression receiver constructs an ANONYMOUS class, so there is no
+      // nameable target and nothing is emitted. `self.new` is unaffected: `self`
+      // is an anonymous token, so it never appears in `namedChild`, which means
+      // `hasExpressionReceiver` stays false and the receiverless branch below
+      // still resolves `self.new` to the enclosing class with its declared
+      // `resolvedTarget: "enclosing-class"` marker.
+      if (hasExpressionReceiver) return
       const target = receiverLeaf || (!receiver ? owner : undefined)
       const firstChar = target?.charCodeAt(0) ?? 0
       if (target && (!receiverLeaf || (firstChar >= 65 && firstChar <= 90))) {
@@ -1876,14 +1942,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         return
       }
-      // RB-A (rack wave): not a constant instantiation. Two shapes must NOT
-      // fall through to a generic `calls:new`:
-      //  1. expression receivers (`Class.new { ... }.new`) instantiate an
-      //     anonymous class — no nameable target exists;
-      //  2. a receiverless `new` at top level has no owning class either.
+      // Not a constant instantiation. The expression-receiver half of this rule
+      // moved ABOVE the emit (see the RB-A note there); what remains is a
+      // receiverless `new` at top level, which has no owning class either.
       // Lowercase receivers (`task_class.new`) still fall through — that is a
       // genuine member call (truth parity: deriveRubyEdges pushes calls:new).
-      if (hasExpressionReceiver) return
       if (!receiver && !owner) return
     }
 

@@ -120,53 +120,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { node, scopePath, callOwner, bodyDepth } = walkStack.pop()!
       const type = node.type
 
-      // FS-D15 + FS-D16. A parse-recovery region is a fact about the PARSER, not about
-      // the program, and this analyzer was doing two wrong things with one.
-      //
-      // It mined them. Inside an `ERROR` node the grammar hands back a recovery
-      // artifact, and this walk reads that artifact as if it were code: in
-      // fsharp/src/Compiler/Interactive/fsi.fsi the recovery for a malformed
-      // `type IEventLoop =` produced a chain of `typecast_expression` ending in an
-      // `application_expression`, and the analyzer published
-      // `calls GetDefaultConfiguration -> abstract`, `-> member` and `-> Sealed` — the
-      // language keywords and an attribute name, called by a symbol that appears
-      // nowhere near them. Fabrication is the worst class there is, because it is
-      // indistinguishable from a real edge to a consumer.
-      //
-      // And it never said so. `errors` was declared on line 48 and returned on line 937
-      // and never pushed to, so the analyzer's own contract — "syntax errors: ERROR/
-      // MISSING nodes pushed as warning ParseError (never silently dropped)" — had been
-      // a claim in the docs with no code behind it. The region that produced those three
-      // fabricated calls was reported NOWHERE.
-      //
-      // Both are fixed by the same two lines, and they are one decision rather than two:
-      // a recovery region is DISCLOSED and not MINED. Disclosing it means the caller can
-      // see exactly which spans to distrust, which is strictly more information than the
-      // fabricated edges ever were, and it makes the grammar gaps the lane already knows
-      // about (`member val`, `not null` — 6/400 files collapsing to a root ERROR)
-      // visible in the result instead of only in a probe. Suppressing the edges is the
-      // part that costs something, and the cost is measured rather than assumed: see
-      // script/m14/tmp/fs031-error-region-delta.ts, which counts what the rule removes
-      // before and after.
-      if (type === "ERROR") {
-        errors.push({
-          message: "parse recovery region: the tree here is the parser's reconstruction, not the source",
-          range: { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column },
-          severity: "warning",
-        })
-        // Do NOT descend. The whole subtree is recovery, and descending would re-derive
-        // the same artifact through a different node type.
-        continue
-      }
-      if (node.isMissing) {
-        errors.push({
-          message: `missing ${node.type} — the parser inserted this token`,
-          range: { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column },
-          severity: "warning",
-        })
-        continue
-      }
-
       let currentScope = [...scopePath]
       let childCallOwner = callOwner
       let childBodyDepth = bodyDepth
@@ -674,12 +627,11 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         childCallOwner = callOwner
         childBodyDepth = bodyDepth
       } else if (type === "object_expression") {
-        const iface = this.objectExpressionInterface(node)
-        if (iface) {
-          const { written, leaf } = iface
+        const ifaceName = this.findDescendant(node, (n) => n.type === "long_identifier" || n.type === "identifier")
+        if (ifaceName && ifaceName.text) {
           const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           symbols.push({
-            name: "new " + written,
+            name: "new " + ifaceName.text,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             ownerName,
@@ -695,11 +647,13 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // docs/docs/subscription.fsx:71,144,803,833. The scope is opened under the
           // SAME name the symbol is published under, so the `contains` edge resolves to
           // a symbol that exists.
-          currentScope.push("new " + written)
+          currentScope.push("new " + ifaceName.text)
           if (ownerName) {
             // FS-D9 (R10 spelling), same rule: `{ new System.IDisposable with … }`
             // implements `IDisposable`, which is the name the leaf declares. Measured: 13
             // dotted `implements` targets per 400 real files, all of them this shape.
+            const written = ifaceName.text
+            const leaf = written.includes(".") ? (written.split(".").pop() as string) : written
             pushRel(
               ownerName,
               leaf,
@@ -1067,65 +1021,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /** The member's declared name: `method_or_prop_defn -> property_or_ident`, LAST identifier. */
-  /**
-   * The interface an OBJECT EXPRESSION constructs, as `{ written, leaf }`.
-   *
-   * FS-D14. The object-expression branch used to take the first `long_identifier`
-   * descendant of the node and call that the interface name, which is right exactly
-   * when the name is unqualified. A qualified name is NESTED in this grammar —
-   *
-   *     object_expression
-   *       new
-   *       typed_expression "System.Collections.Generic.IEqualityComparer<InferedType>"
-   *         dot_expression "System.Collections.Generic.IEqualityComparer"
-   *           long_identifier_or_op "System.Collections"
-   *             long_identifier "System"        <-- what the old code found
-   *           . identifier "Collections"
-   *           . long_identifier_or_op "Generic.IEqualityComparer"
-   *         types "InferedType"
-   *
-   * — so "first `long_identifier`" is the FIRST SEGMENT, and the published name was
-   * `new System` with `implements -> System`, a target that resolves to nothing.
-   *
-   * The differential found it twice and in the most useful way available: the lane's
-   * truth side read the SECOND segment. `{ new System.Collections.Generic.IEqualityComparer
-   * with … }` gave the analyzer `System` and the truth `Collections`, which cannot both
-   * be the interface and makes it obvious that the name is somewhere else entirely
-   * rather than that one of them is off by a rule. Two implementations independently
-   * wrong in the same place is the cheapest kind of evidence there is.
-   *
-   * The written name is therefore read from the `dot_expression` that carries it — a
-   * node whose own text IS the full dotted path — and the leaf from the LAST identifier
-   * inside it, so R10's spelling rule applies to the same leaf a consumer would join.
-   * The tree this is built on is printed by script/m14/tmp/fs030-object-expr-name.ts.
-   */
-  private objectExpressionInterface(node: Node): { written: string; leaf: string } | undefined {
-    const carrier =
-      this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
-      this.findDescendant(
-        node,
-        (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
-        4,
-      )
-    if (!carrier) return undefined
-    // `typed_expression` text carries the type ARGUMENTS too, and an argument list is
-    // not part of the type's name.
-    const written = carrier.text.split("<")[0]!.trim()
-    if (!written) return undefined
-    // The leaf is the LAST identifier IN THE CARRIER — the segment after the final dot.
-    //
-    // Scoped to the carrier, not to the object expression: an object expression's
-    // subtree is the interface name AND every member body, so the last identifier in
-    // the whole node is whatever the last member happened to mention. The first version
-    // of this fix read the subtree and published `implements -> x` for
-    // `member _.Equals(x, y) = …` and `-> failwith` for a body that calls it — a
-    // strictly worse answer than `System`, because it now varied with the body. The
-    // name is the carrier's business alone.
-    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 8)
-    const leaf = idents.length ? idents[idents.length - 1]!.text : written
-    return { written, leaf: leaf || written }
-  }
-
   private memberNameOf(decl: Node): string | undefined {
     const mop = this.findChild(decl, (n) => n.type === "method_or_prop_defn")
     const prop = mop ? this.findChild(mop, (n) => n.type === "property_or_ident") : undefined

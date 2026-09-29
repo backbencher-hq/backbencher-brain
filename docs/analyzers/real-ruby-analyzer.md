@@ -90,10 +90,43 @@ audited, which is what made the two identity defects below findable at all: both
 | reading | value |
 |---|---|
 | outside the audited set | **0%** (was 34%) |
-| MISSING | **63 (0.025%)** — `contains` 59, `instantiates` 3, `calls` 1 |
-| UNEXPLAINED | **507 (0.177%)** — `contains` 451, `calls` 31, `uses` 18, `overrides` 5, `instantiates` 2 |
+| MISSING | **3 (0.001%)** — `instantiates` 2, `calls` 1 |
+| UNEXPLAINED | **507 (0.178%)** — `contains` 451, `calls` 31, `uses` 18, `overrides` 5, `instantiates` 2 |
 
-The first number in this lane's history taken over the whole corpus rather than a stride.
+The first number in this lane's history taken over the whole corpus rather than a stride. The 507 are
+dominated by `contains` on symbols created inside a dynamic or `class_eval` block — the SIG-B class, where
+the graph cannot say which class owns the member.
+
+## Line numbers
+
+Measured on **3,000 real files** with `script/m59/oracle-callsite.ts`, which re-derives every edge from the
+tree and requires the target token to be present on the claimed line:
+
+| | relationships | with a line | no line | **inconsistent** |
+|---|---|---|---|---|
+| before | 252,674 | 252,674 | 0 | **118** |
+| after | 252,292 | 252,292 | 0 | **0** |
+
+No edge lacks a line, and every remaining claim is either verified against the tree or explicitly declared
+structurally uncheckable. The 118 were one bug: an expression receiver (`X.new(...).new`) constructs an
+**anonymous** class, and the guard saying so sat *below* the emit, so the edge claimed the enclosing class
+constructs itself on a line that does not name it.
+
+## Unknown symbols
+
+`script/m14/tmp/rb-payload-hygiene.ts` sweeps the whole published payload for names that name nothing —
+empty strings, sentinels, interpolation templates, non-leaf paths, unstripped quotes or colons, whitespace,
+and call syntax — each scoped to the labels where that shape is actually wrong. Over **8,528 files /
+81,869 symbols / 702,948 relationships**: **13 occurrences in 2 classes**, and both are named in the
+review. A name that reaches a consumer of the graph and resolves to nothing is the failure this exists to
+catch, and before this sweep nothing had ever looked.
+
+## Known cross-cutting issue, not fixed here
+
+`SYMBOL_NAME_DENYLIST` contains `"unknown"` for every language, and `parallel-indexer.ts:2181` silently
+drops a symbol with that name. `Logger#unknown` — one of Ruby's five standard log severities, mixed into
+ActiveSupport's `ColorizeLogging` — therefore never reaches the graph. Shared-file finding; recorded rather
+than patched from this lane.
 
 ## Scope rules that are easy to get wrong
 

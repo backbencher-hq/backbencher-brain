@@ -161,41 +161,6 @@ function typeNameOf(tn: any): string | null {
 }
 
 /** The last dotted segment of a callee spelling. */
-/**
- * The module or namespace a FILE declares, or null.
- *
- * `module internal FSharp.Compiler.CommandLineMain` at the top of a file declares the
- * whole file's scope, and an `open` that follows it is at THAT scope — but in this grammar
- * the `open` is a SIBLING of the module node, not a child, so a scope stack maintained by
- * walking down the tree is still empty when the `open` is reached. The analyzer has a
- * pre-pass for exactly this and sources the import from the module; this oracle did not, and
- * fell back to `Global`.
- *
- * Measured: 122 UNEXPLAINED rows per 120 real files, every one of them a module path the
- * analyzer attributes to the file's own module and this oracle attributes to `Global`. The
- * rows are REAL and the analyzer is RIGHT — in F# the file's module is its top-level scope,
- * so `open System` in CommandLineMain.fs is a dependency of CommandLineMain.
- */
-function fileScopeName(root: any): string | null {
-  const cands = [
-    ...descendantsOfType(root, "module_defn", 3),
-    ...descendantsOfType(root, "named_module", 3),
-    ...descendantsOfType(root, "namespace_defn", 3),
-  ]
-  for (const n of cands) {
-    const tn = descendantsOfType(n, "type_name", 2)[0] ?? descendantsOfType(n, "long_identifier", 2)[0] ??
-      descendantsOfType(n, "identifier", 2)[0]
-    const raw = tn?.text
-    // The FULL dotted path, not its leaf. A module's scope is the name it DECLARES —
-    // `FSharp.Compiler.CommandLineMain` — and the analyzer publishes exactly that. Taking
-    // the leaf here (`CommandLineMain`) matched no scope and turned 0 rows into 9 on both
-    // sides of the comparison at once, which is the cheapest possible signal that the
-    // rule, not the corpus, was wrong.
-    if (raw) return raw.trim()
-  }
-  return null
-}
-
 function leafOf(text: string): string {
   return text.includes(".") ? (text.split(".").pop() as string) : text
 }
@@ -213,7 +178,6 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   const edges: TruthEdge[] = []
   const line = (n: any) => (n && typeof n.startPosition?.row === "number" ? n.startPosition.row + 1 : 0)
   const seen = new Set<string>()
-  const fileScope = fileScopeName(root)
 
   const emit = (label: string, from: string, to: string, n: any, declaredOn?: string) => {
     if (!from || !to) return
@@ -251,23 +215,6 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   while (stack.length) {
     const { node, scope, callOwner, inBody } = stack.pop()!
     const t = node.type
-    //
-    // FS-D16, truth side. A parse-recovery region is the PARSER's reconstruction, not the
-    // program, and both implementations now refuse to read one: the analyzer stops its
-    // walk at an `ERROR` node and discloses the region as a ParseError (FS-D15/16), and
-    // the oracle stops here.
-    //
-    // Without this the two disagree in the most expensive direction available — truth
-    // derives rows from recovery artifacts the analyzer has correctly declined to
-    // publish, and every one of them is reported MISSING. Measured: fsharp-data went from
-    // 0 MISSING to 516 on the strength of this one asymmetry, which is the same class of
-    // bug as the harness allowlist asymmetry, one layer down. Two of the three biggest
-    // numbers in this lane's history were harness and oracle scope mismatches rather than
-    // anything about F#.
-    //
-    // The rule is not "ignore errors", it is "a recovery artifact is not a fact about the
-    // source". The regions are still DISCLOSED by the analyzer, so nothing is hidden.
-    if (t === "ERROR" || node.isMissing) continue
     let cur = scope.slice()
     let owner = callOwner
     let body = inBody
@@ -311,27 +258,6 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
         const iface = descendantsOfType(impl, "long_identifier", 3)[0] ?? descendantsOfType(impl, "identifier", 3)[0]
         if (iface && extName) emit("implements", extName, leafOf(iface.text), iface)
       }
-    } else if (t === "import_decl") {
-      // FS-A1 (analyzer side) established that `open X` in F# is an `import_decl` and
-      // that `open_statement`/`open_decl` occur ZERO times in the corpus shape census —
-      // so a truth arm written for the other two names would have derived nothing at all,
-      // silently, which is the same failure as an absent arm except that it reads as an
-      // absence of facts rather than as an absence of code.
-      //
-      // The FACT is that the file depends on a module, and the module is a PATH:
-      // `open Microsoft.FSharp.Collections` is a reference to a namespace-qualified
-      // name, not to the leaf. This is the one place in the lane where a dotted target is
-      // CORRECT and the R10 leaf rule does not apply — a module's leaf is not the module.
-      // The analyzer publishes the full path at confidence 0.9 with `isImport: true`.
-      //
-      // Source: the enclosing scope, or `Global` in a file with no namespace or module.
-      // That `Global` fallback is FSD10 and it is not cosmetic — sourcing the edge from
-      // the opened name itself would make the import unfalsifiable, since every target
-      // would then "reference" itself.
-      const target = firstChildOfType(node, "long_identifier") ?? firstChildOfType(node, "identifier")
-      if (target?.text) {
-        emit("references", cur.length ? cur[cur.length - 1] : fileScope ?? "Global", target.text, node)
-      }
     } else if (t === "object_expression") {
       // `{ new System.IDisposable with … }` implements `System.IDisposable`. There is
       // NO `interface_implementation` node in this shape — the grammar records the
@@ -347,49 +273,16 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
       // the 13 dotted `implements` targets per 400 corpus files are where this lane
       // diverged from it.
       if (firstTokenIs(node, "new")) {
-        // FS-D14, oracle side. The old route was
-        //   descendantsOfType(node, "long_identifier_or_op", 2)[0] ?? …"long_identifier", 2
-        // and the DEPTH is the whole story: a two-segment name puts its first
-        // `long_identifier_or_op` two levels under the object expression, and a
-        // four-segment name puts it three. So the rule worked for
-        // `{ new System.IDisposable with … }` and found nothing at all for
-        // `{ new System.Collections.Generic.IEqualityComparer<T> with … }` — no `implements`,
-        // and no scope, which is worse, because the object's members then lost their owner
-        // here too and every member row became UNEXPLAINED as well. A bound that is right
-        // for the common case and silently absent for the uncommon one is the same defect
-        // in a different costume.
-        //
-        // The route here is the CARRIER: a dotted name's full text lives on one node, and
-        // that node is identified by TYPE rather than by how deep it happens to sit. The
-        // analyzer reaches the same node by a different mechanism (findDescendant with a
-        // generous bound, then the last identifier inside it); the traversal differs, which
-        // is the part that makes a disagreement mean something.
-        const carrier =
-          descendantsOfType(node, "dot_expression", 6)[0] ??
-          descendantsOfType(node, "typed_expression", 6)[0] ??
-          descendantsOfType(node, "long_identifier_or_op", 6)[0] ??
-          descendantsOfType(node, "long_identifier", 6)[0]
-        const written = (carrier?.text ?? "").split("<")[0]!.trim()
-        // The LAST identifier IN DOCUMENT ORDER — which is NOT the last element of the
-        // array this oracle's own `descendantsOfType` returns. That helper walks a LIFO
-        // stack, so siblings come out reversed, and `out[out.length - 1]` is the FIRST
-        // identifier in the name. The symptom is a leaf that reads like a plausible
-        // segment: `System.Collections.Generic.IEqualityComparer` came back as `System`,
-        // which is the same wrong answer the analyzer's own first fix produced, reached
-        // by an unrelated route. Ordering by `startIndex` is the only thing in the array
-        // that means "later in the source".
-        const carrierIdents = (carrier ? descendantsOfType(carrier, "identifier", 6) : [])
-          .slice()
-          .sort((a: any, b: any) => a.startIndex - b.startIndex)
-        const ifaceLeaf = carrierIdents.length ? carrierIdents[carrierIdents.length - 1]!.text : written
+        const iface =
+          descendantsOfType(node, "long_identifier_or_op", 2)[0] ?? descendantsOfType(node, "long_identifier", 2)[0]
         const owner = cur.length ? cur[cur.length - 1] : undefined
-        if (written && owner) emit("implements", owner, ifaceLeaf || leafOf(written), carrier ?? node)
+        if (iface?.text && owner) emit("implements", owner, leafOf(iface.text), iface)
         // The object's MEMBERS belong to the object, so its scope is opened here. The
         // analyzer opens the same scope (FS-D7); deriving it independently is what makes
         // an `overrides Owner.VisitPat` inside `{ new SyntaxVisitorBase with … }` a
         // comparable fact rather than an unmatched row — a first draft of this oracle did
         // NOT open the scope and produced 218 UNEXPLAINED rows on 120 real files.
-        if (written) cur = cur.concat([`new ${written}`])
+        if (iface?.text) cur = cur.concat([`new ${iface.text}`])
       }
     } else if (t === "member_defn" || t === "function_or_value_defn" || t === "value_declaration") {
       // A binding inside a body is a LOCAL, never a call source and never a member.
