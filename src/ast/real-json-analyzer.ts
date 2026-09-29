@@ -106,6 +106,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.extractSymbols(rootNode, ctx)
     this.extractRelationships(ctx)
     this.extractManifestExports(ctx)
+    this.extractSchemaComposition(ctx)
     this.extractPackageDependencies(ctx)
 
     const rootSymbol: ASTEngine.UniversalSymbol = {
@@ -465,6 +466,57 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
       }
+    }
+  }
+
+  /**
+   * JSON Schema COMPOSITION, as `extends`.
+   *
+   * `allOf` means "must satisfy ALL of these" — a superset-of relationship, and the
+   * only schema keyword that means one. `anyOf` and `oneOf` are ALTERNATIVES and have
+   * no ontology type, so they are correctly emitted as nothing beyond the `references`
+   * their `$ref`s already produce.
+   *
+   * This was ruled out twice on the same wrong reasoning, and the pattern is now
+   * recognisable: a grammar inventory says the PARSER cannot express a construct, which
+   * is not the same as the LANGUAGE lacking one. `allOf` is a keyword, and a grammar
+   * has no node type for a keyword any more than it has one for a manifest's `exports`
+   * field. Measured over the corpus: **1,226 `allOf` `$ref`s** against 88 `anyOf` and
+   * 89 `oneOf`, which is the shape the reading predicts — composition is the common
+   * case and alternatives are rare.
+   */
+  private extractSchemaComposition(ctx: JsonContext): void {
+    for (const ref of ctx.referenceSymbols) {
+      const fullPath = ref.metadata?.fullPath as string | undefined
+      if (!fullPath) continue
+      // `…$ref` whose ENCLOSING object is the member of an `allOf` array.
+      let parent = fullPath.slice(0, fullPath.lastIndexOf("."))
+      // `allOf` is normally an ARRAY, and the path writes the index with BRACKETS
+      // appended to the keyword — `…allOf[0].$ref` — not as a separate dot segment.
+      // Two attempts missed this: the first matched only the object form and found 1
+      // edge where the corpus has 1,226, and the second stripped a trailing `.0` and
+      // still found 1. Both looked like working checks. The shape was read off a real
+      // relationship's source rather than assumed, which is the only reason it was
+      // caught before it was committed.
+      const bracket = parent.lastIndexOf("[")
+      if (bracket > 0 && parent.endsWith("]")) parent = parent.slice(0, bracket)
+      if (!parent.endsWith(".allOf")) continue
+      const refPath = ref.metadata?.refPath as string | undefined
+      if (!refPath || !refPath.startsWith("#/")) continue
+      const target = this.referenceTarget(ctx, refPath)
+      ctx.relationships.push({
+        source: parent,
+        target,
+        type: ASTEngine.RelationshipType.Extends,
+        confidence: 1,
+        line_number: this.declLine(ref),
+        metadata: {
+          jsonSpecific: true,
+          composition: "allOf",
+          note: "allOf is a superset-of relationship; anyOf/oneOf are alternatives and emit only `references`",
+          evidenceClass: "structural",
+        },
+      })
     }
   }
 

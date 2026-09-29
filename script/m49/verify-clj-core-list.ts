@@ -84,6 +84,20 @@ export const DECLARED_EXTRAS: Record<string, readonly string[]> = {
     "code-char", "join", "lower-case", "split", "trim", "trim-newline", "triml",
     "trimr", "upper-case",
   ],
+  // Real clojure.core vars that this CORPUS SNAPSHOT predates. Measured, not
+  // assumed: the corpus is a 1.11-era snapshot — it defines `update-keys`,
+  // `update-vals`, `random-uuid`, `abs`, `parse-long`, `parse-double`,
+  // `hash-set` and `partition-all` — yet it defines `tap>` UN-deprecated at
+  // core.clj:8225 and does not define `tap->` anywhere in the file. So the
+  // constant naming `tap->` is correct for current Clojure and the corpus is
+  // simply behind it, which is the opposite defect from a fabricated name: a
+  // mirror with nothing behind it. Recorded as a version gap rather than
+  // deleted from the constant, because deleting a real core var from the
+  // suppression set would make every `(tap-> x)` in a modern codebase a
+  // fabricated `calls` edge — the CLJ-D17 class this gate exists to catch.
+  versionAheadOfCorpus: [
+    "tap->",
+  ],
   // Java-side and historical spellings with no clojure.core var behind them.
   other: [
     ".", "agent?", "atom?", "bit-count", "byte?", "delayed?", "equiv", "java.util.Date",
@@ -266,51 +280,6 @@ export function selfTest(shippedNames: string[], surface: Set<string>): { fired:
   return { fired, total: probes.length, ok: fired === probes.length }
 }
 
-// ── The gate ────────────────────────────────────────────────────────────────
-// ── Self-test (the `npx … --selftest` house pattern) ────────────────────────
-// A gate nobody has shown CAN fail is not a gate. These four proofs run the
-// comparison against a MUTATED shipped set, and the mode FAILS if any of them
-// fails to fire — which is the property that makes the real verdict mean
-// something. The fourth is the literal 2026-09-20 condition: a list missing the
-// names the hand transcription omitted, which is the state the lane shipped for
-// three waves.
-export function selfTest(shippedNames: string[], surface: Set<string>): { fired: number; total: number; ok: boolean } {
-  const dropCore = shippedNames.filter(n => n !== "mapcat")
-  const addUndeclared = [...shippedNames, "my-app-fn"]
-  const dropExtra = shippedNames.filter(n => n !== "Math/abs")
-  const probes: [string, string[], boolean][] = [
-    ["derived-not-shipped: a core var deleted from the constant", dropCore, true],
-    ["shipped-undeclared: a name that is neither derived nor declared", addUndeclared, true],
-    ["stale-extra: a declared extra the constant no longer carries", dropExtra, true],
-    ["the 2026-09-20 condition: a list missing the omitted core names",
-      shippedNames.filter(n => n !== "mapcat" && n !== "ex-info" && n !== "with-meta" && n !== "transduce" && n !== "dedupe" && n !== "run!" && n !== "some-fn" && n !== "every-pred" && n !== "quot" && n !== "NaN?" && n !== "with-out-str" && n !== "hash-set" && n !== "update-keys" && n !== "volatile!" && n !== "vary-meta" && n !== "complement" && n !== "macroexpand" && n !== "re-matcher" && n !== "shuffle" && n !== "random-uuid" && n !== "partition-all" && n !== "take-last" && n !== "drop-last" && n !== "doall" && n !== "dorun"), true],
-  ]
-  let fired = 0
-  for (const [label, mutated, mustFire] of probes) {
-    const c = compare(surface, mutated)
-    const n = c.missing.length + c.undeclared.length + c.staleExtras.length
-    if (mustFire) {
-      if (n > 0) fired++
-      console.log(`    ${n > 0 ? "ok  " : "FAIL"} ${label} — fires on ${n}`)
-    } else {
-      if (n === 0) fired++
-      console.log(`    ${n === 0 ? "ok  " : "FAIL"} ${label}`)
-    }
-  }
-  return { fired, total: probes.length, ok: fired === probes.length }
-}
-
-export function compare(surface: Set<string>, shippedNames: string[]) {
-  const extras = new Set(Object.values(DECLARED_EXTRAS).flat())
-  return {
-    missing: [...surface].filter(n => !shippedNames.includes(n)).sort(),
-    undeclared: shippedNames.filter(n => !surface.has(n) && !extras.has(n)).sort(),
-    staleExtras: [...extras].filter(n => !shippedNames.includes(n)).sort(),
-    extrasCount: extras.size,
-  }
-}
-
-// ── The gate ────────────────────────────────────────────────────────────────
 export function compare(surface: Set<string>, shippedNames: string[]) {
   const extras = new Set(Object.values(DECLARED_EXTRAS).flat())
   return {
