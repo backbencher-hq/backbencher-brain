@@ -128,11 +128,30 @@ export interface TraceResult {
 
 export interface ProjectStats {
   files: number
+  /** Sums brain_file.line_count — NON-BLANK lines, not physical lines. */
   linesOfCode: number
   avgFileSize: number
+  /** The unit `avgFileSize` is measured in. */
+  avgFileSizeUnit: string
   symbols: number
+  /** How many of `symbols` carry a complexity measurement. `avgComplexity` is
+   *  a SQL AVG, which skips nulls, so its denominator is exactly this number. */
+  symbolsWithComplexity: number
   avgComplexity: number
+  /** Every stored relationship row, whatever its type. */
   relationships: number
+  /** The subset of `relationships` that is an actual dependency edge. */
+  callEdges: number
+  /** Which relationship types `callEdges` counted — `exports` and `contains`
+   *  are index bookkeeping and are excluded. */
+  couplingRelationshipTypes: string[]
+  /** brain_file.is_test_file=1. Depends on the indexer's classifier, so a
+   *  project whose tests are not recognisable counts as having none. */
+  testFiles: number
+  productionFiles: number
+  /** Per-language file/line/symbol counts, largest first. A file with no
+   *  recorded language is reported as "unknown" rather than dropped. */
+  languages: Array<{ language: string; files: number; linesOfCode: number; symbols: number }>
   projectId: string
   provenance: EvidenceProvenance
 }
@@ -350,6 +369,14 @@ export interface GraphTraversalResult {
     /** Rows present in both the caller and the callee list — one relationship
      *  seen from two ends. `totalCallers + totalCallees` double-counts these. */
     edgesInBothDirections: number
+    /** Composition of the RETURNED edges by stored relationship kind, counted
+     *  from the emitted edges. With every stored kind in the default filter
+     *  this is how a reader learns how many of the edges are calls without
+     *  walking all of them. */
+    edgesByType: Record<string, number>
+    /** The cap's kind ordering, in survival order. A cap that keeps `calls`
+     *  and drops `contains` is a decision; this publishes it. */
+    edgeKindPriority: string[]
     /** M59 (#895, #854): stored rows collapsed at the tool layer before
      *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
      *  a deeper cascade; spellingVariantsCollapsed: same call site + same
@@ -399,6 +426,12 @@ export interface FileDependency {
     resolution?: "resolved" | "suffix-match" | "unresolved"
   }>
   dependents: Array<{ path: string; fileId: string }>
+  /** The TRUE sizes of the two lists above. They are capped so one widely
+   *  imported file cannot dominate a page; these are the real counts. */
+  dependenciesTotal: number
+  dependentsTotal: number
+  dependenciesTruncated: boolean
+  dependentsTruncated: boolean
   /** Internal specifiers this file wrote that resolve to no indexed file.
    *  Declared so an incomplete graph reads as incomplete rather than small. */
   unresolvedSpecifiers?: number
@@ -605,7 +638,11 @@ export interface TestMappingEntry {
   line: number
   complexity: number
   gravity: number
+  /** At most DEFAULT_MAX_LINKS rows. `strongestEvidence` and every summary
+   *  count are computed from the COMPLETE set, so a trimmed entry still says
+   *  how strongly this symbol is tested. Absent when nothing was trimmed. */
   links: TestLink[]
+  linksTruncated?: boolean
   strongestEvidence: TestEvidenceKind | "none"
 }
 
@@ -614,10 +651,14 @@ export interface TestMappingReport {
   provenance: EvidenceProvenance
   summary: {
     productionSymbols: number
+    /** How many entries this answer returned, against the population above. */
+    returned: number
+    truncated: boolean
     testedSymbols: number
     untestedSymbols: number
     testFiles: number
     scannedTestSymbols: number
+    evidenceLinks: number
   }
 }
 
@@ -644,6 +685,9 @@ export interface TestGapReport {
   provenance: EvidenceProvenance
   summary: {
     total: number
+    /** How many gap rows this answer returned, against `total`. */
+    returned: number
+    truncated: boolean
     byCategory: Record<string, number>
     highRisk: number
   }

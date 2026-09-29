@@ -58,6 +58,56 @@ const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
 
 /**
+ * Which relationship kinds survive a cap first, and why.
+ *
+ * The cap's ORDER BY used to be `fileRel, lineNumber, rowId` — stable, but
+ * indifferent to KIND. When DEFAULT_REL_TYPES was four kinds that did not
+ * matter; now that it is all ten it does, because every kind competes for the
+ * same slots and the survivor set becomes a function of the target's file
+ * rather than of the graph. Measured on lodash's `baseConvert`:
+ *
+ *     relationshipTypes: ["calls"]  ->  99 edges, all calls
+ *     default (all ten kinds)       -> 230 edges, of which 71 are calls
+ *
+ * Asking for more returned fewer calls. That is the wrong direction for a tool
+ * whose question is "what depends on this", and it was invisible: the payload
+ * said nothing about which kinds had lost.
+ *
+ * The order below is a statement about what an edge MEANS, not about
+ * importance. `calls`, `instantiates`, `extends`, `implements` and `overrides`
+ * are dependencies between two symbols. `contains` is membership, `uses` and
+ * `references` are lexical, `imports` and `exports` are module-level. When a
+ * bound forces a choice, it should fall on the dependency side.
+ *
+ * KINDS NOT LISTED sort last but are still returned — this is a cap ordering,
+ * not a filter. `relTypes` is what filters; nothing here hides anything.
+ *
+ * The prefix keeps the order a strict TOTAL order (kind, then file, then line,
+ * then rowId), so two identical questions still produce identical answers.
+ */
+const EDGE_KIND_PRIORITY: Record<string, number> = {
+  calls: 0,
+  instantiates: 1,
+  extends: 2,
+  implements: 3,
+  overrides: 4,
+  uses: 5,
+  references: 6,
+  imports: 7,
+  exports: 8,
+  contains: 9,
+}
+const UNRANKED_KIND_ORDER = 100
+
+/** A SQL CASE expression yielding each row's rank, for use as an ORDER BY prefix. */
+function kindRankSql(column = "relType"): string {
+  const arms = Object.entries(EDGE_KIND_PRIORITY)
+    .map(([kind, rank]) => `WHEN '${kind}' THEN ${rank}`)
+    .join(" ")
+  return `CASE ${column} ${arms} ELSE ${UNRANKED_KIND_ORDER} END`
+}
+
+/**
  * M59.A12 (#888): the per-symbol site limit for one edge query.
  *
  * This bound always existed (a bare `LIMIT 200`), but it was INVISIBLE: a symbol
@@ -254,6 +304,14 @@ export async function traverseGraph(
    *  one relationship seen from two ends, so the sum of the two totals
    *  overstates the distinct relationship count by exactly this much. */
   edgesInBothDirections: number
+  /** Composition of the RETURNED edges by stored relationship kind. Counted
+   *  from the emitted edges, so it describes what the caller received after
+   *  cascade attribution, overlap and the cap — not what was queried. */
+  edgesByType: Record<string, number>
+  /** The cap's kind ordering, declared: which kinds survive a bound first.
+   *  Only observable when `truncated` is true, but published always so the rule
+   *  is not something a reader has to find in the engine's SQL. */
+  edgeKindPriority: string[]
   /** M59 (#895): stored rows collapsed at the tool layer before becoming
    *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
    *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
@@ -273,6 +331,12 @@ export async function traverseGraph(
   const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
+
+  // The two cap orderings. Callers are ranked by the CALLER's file, callees by
+  // the CALLEE's, so the two are spelled out rather than shared — the stable
+  // suffix is the same in both.
+  const CALLER_ORDER = `${kindRankSql()}, fileRel, lineNumber, rowId`
+  const CALLEE_ORDER = `${kindRankSql()}, fileRel, lineNumber, rowId`
 
   const nodes: Record<string, GraphNode> = {}
   let truncated = false
@@ -431,7 +495,7 @@ export async function traverseGraph(
     // deterministically ordered query are exactly the rows the old query
     // returned, so the visible answer is unchanged for every non-capped call.
     const fetched = raw
-      .prepare(callerSql + " ORDER BY fileRel, lineNumber, rowId LIMIT ?")
+      .prepare(callerSql + " ORDER BY " + CALLER_ORDER + " LIMIT ?")
       .all(...callerParams, edgeLimit + 1) as EdgeRow[]
     const capped = fetched.length > edgeLimit
     const rows = capped ? fetched.slice(0, edgeLimit) : fetched
@@ -442,7 +506,9 @@ export async function traverseGraph(
       // is countable in one bounded scan. Deeper symbols report the cap itself
       // (cappedQueries) rather than a total nobody could cheaply compute.
       if (depth === 0 && totalCallersIfKnown === null) {
-        totalCallersIfKnown = countSurviving(callerSql + " ORDER BY fileRel, lineNumber, rowId", callerParams, (r) => r.symName)
+        // Same ordering as the capped query, so the declared total and the
+        // returned rows are computed over one list rather than two.
+        totalCallersIfKnown = countSurviving(callerSql + " ORDER BY " + CALLER_ORDER, callerParams, (r) => r.symName)
       }
     }
 
@@ -606,7 +672,7 @@ export async function traverseGraph(
         symbolId, prefix, upper, projectId, projectId, ...relTypes,
         symbolId, prefix, upper, projectId, projectId, ...relTypes,
       ]
-      const calleeOrder = " ORDER BY fileRel, lineNumber, rowId"
+      const calleeOrder = " ORDER BY " + CALLEE_ORDER
       // Same one-row-over rule as the callers side: `LIMIT edgeLimit` cannot
       // tell "exactly at the limit" from "over it", and a compound query needs
       // the probe row just as much as a simple one.
@@ -704,6 +770,15 @@ export async function traverseGraph(
     if (emittedCalleeRows.has(edge.rowId)) edgesInBothDirections++
   }
 
+  // What the answer is made of, counted from the EMITTED edges rather than from
+  // the query. With ten kinds in the default filter, a reader otherwise has to
+  // walk every edge to learn how many are calls — and the walk is per-call
+  // work an agent will not always do.
+  const edgesByType: Record<string, number> = {}
+  for (const edge of [...callers, ...callees]) {
+    edgesByType[edge.relationshipType] = (edgesByType[edge.relationshipType] ?? 0) + 1
+  }
+
   return {
     callers,
     callees,
@@ -728,6 +803,8 @@ export async function traverseGraph(
     callerBudgetExhausted,
     calleeBudgetExhausted,
     edgesInBothDirections,
+    edgesByType,
+    edgeKindPriority: [...Object.keys(EDGE_KIND_PRIORITY)],
     dedupedAtToolLayer: {
       cascadeRepeatsCollapsed: collapsedCascadeRepeats,
       spellingVariantsCollapsed: collapsedSpellingVariants,
@@ -853,6 +930,8 @@ export async function graphTraversal(
     callerBudgetExhausted,
     calleeBudgetExhausted,
     edgesInBothDirections,
+    edgesByType,
+    edgeKindPriority,
     dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
@@ -899,6 +978,16 @@ export async function graphTraversal(
       calleeBudget,
       callerBudgetExhausted,
       calleeBudgetExhausted,
+      // What the answer is made of. With ten kinds in the default filter, a
+      // caller that wanted calls had no way to find out how many of the
+      // returned edges were calls without walking all of them.
+      edgesByType,
+      // Which kinds survive a bound first. Only observable under truncation,
+      // but published always: the cap's ORDER BY used to be indifferent to
+      // kind, so asking for MORE kinds returned FEWER call edges (measured on
+      // lodash: 99 calls alone, 71 inside the 230-edge default answer). The
+      // rule that decides that is now declared here.
+      edgeKindPriority,
       // Rows present in BOTH callers and callees. `totalCallers + totalCallees`
       // counts each of these twice, and the number above is the correction.
       edgesInBothDirections,
