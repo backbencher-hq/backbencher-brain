@@ -1801,6 +1801,323 @@ function stripNameQuoting(text: string): string {
   return out
 }
 
+/**
+ * M60 (K2, kotlin deep review, 2026-09-27): the `uses` truth.
+ *
+ * `deriveKotlinEdges` derives CALLS only, and keys on label+target with
+ * from="(expr)" — and the site-agnostic comparison ignores `from` anyway (it
+ * matches label + target only; the scss block below records a `from` that never
+ * matched the analyzer's and was "invisible to a green row"). So all five
+ * `uses` emission sites — 1,758 edges on the primary corpus — were compared by
+ * nothing. This derives them independently from the AST.
+ *
+ * The five classes, and why each exists:
+ *   1. extension receiver on a PROPERTY — `val String.foo: Int`
+ *   2. extension receiver on a FUNCTION — `fun String.go()`
+ *   3. indexing READ (`xs[i]`) — a WRITE lhs is gated out by SPAN, never by
+ *      text; plus the string-template read (`"hi $name"`), which kotlin's
+ *      grammar exposes as a real node (unlike groovy's opaque GStrings, the
+ *      groovy S1 ruling).
+ *   4. bare member read — the property read is the most common read form in
+ *      kotlin and the read that used to produce NOTHING. Gate A: the name must
+ *      be a member the enclosing type DECLARES. Gate B: a name the enclosing
+ *      function/lambda binds as a parameter or local is not a member read —
+ *      without gate B `val x = 9` inside a method fabricates uses(method -> x)
+ *      on a property it only shadows.
+ *   5. coroutine dispatcher — `launch` / `async` / `withContext` are the
+ *      standard library's structured-concurrency entry points.
+ *
+ * The member inventory is derived from DECLARATIONS, not from the analyzer's
+ * symbol table: an oracle that read the analyzer's `symbols[].ownerName` would
+ * be tautological for the very rule the oracle exists to check. Every
+ * disagreement that falls out is adjudicated, not silently absorbed.
+ */
+export function deriveKotlinUsesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (from: string, target: string): void => {
+    const t = stripNameQuoting((target ?? "").trim())
+    if (!t) return
+    const k = `uses|${from}|${t}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "uses", from, target: t })
+  }
+
+  const namedOf = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const firstNamedOf = (n: any, types: string[]): any => {
+    if (!n) return null
+    for (const t of types) {
+      const c = namedOf(n, t)
+      if (c) return c
+    }
+    return null
+  }
+
+  // ── owner contract ──────────────────────────────────────────────────────
+  // The enclosing DECLARATION that owns a use: a constructor is attributed to
+  // its class (KAD-MR3 K11), a function/object/class to itself, and anything
+  // at file scope to "Global".
+  const resolveSource = (start: any): string => {
+    let p = start
+    while (p) {
+      if (p.type === "secondary_constructor" || p.type === "primary_constructor") {
+        const cls = p.parent
+        const nm = cls ? firstNamedOf(cls, ["type_identifier", "simple_identifier"]) : null
+        return nm ? nm.text : "constructor"
+      }
+      if (p.type === "function_declaration" || p.type === "class_declaration" || p.type === "object_declaration") {
+        const nm = firstNamedOf(p, ["simple_identifier", "type_identifier"])
+        if (nm) return nm.text
+      }
+      p = p.parent
+    }
+    return "Global"
+  }
+  // The enclosing TYPE — the class/object the member inventory is keyed by.
+  const resolveOwner = (start: any): string | null => {
+    let p = start
+    while (p) {
+      if (p.type === "class_declaration" || p.type === "object_declaration") {
+        const nm = firstNamedOf(p, ["type_identifier", "simple_identifier"])
+        return nm ? nm.text : null
+      }
+      p = p.parent
+    }
+    return null
+  }
+
+  // ── gate A's inventory, derived from declarations ───────────────────────
+  // Everything a type body DECLARES is a member name. Derived by walking each
+  // class/object body's own declarations — deliberately not from the analyzer's
+  // symbol table, so gate A is checked rather than assumed.
+  const membersByOwner = new Map<string, Set<string>>()
+  const addMember = (owner: string, name: string): void => {
+    if (!owner || !name) return
+    let set = membersByOwner.get(owner)
+    if (!set) { set = new Set<string>(); membersByOwner.set(owner, set) }
+    set.add(name)
+  }
+  const declaredName = (decl: any): string | null => {
+    if (!decl) return null
+    if (decl.type === "property_declaration") {
+      const vd = namedOf(decl, "variable_declaration")
+      const id = vd ? namedOf(vd, "simple_identifier") : null
+      return id ? id.text : null
+    }
+    const id = firstNamedOf(decl, ["simple_identifier", "type_identifier"])
+    return id ? id.text : null
+  }
+  {
+    const st: any[] = [root]
+    while (st.length) {
+      const n = st.pop()!
+      if (n.type === "class_declaration" || n.type === "object_declaration") {
+        const ownerName = firstNamedOf(n, ["type_identifier", "simple_identifier"])?.text
+        const body = namedOf(n, "class_body")
+        if (ownerName && body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const d = body.namedChild(i)
+            if (!d) continue
+            if (
+              d.type === "property_declaration" || d.type === "function_declaration" ||
+              d.type === "class_declaration" || d.type === "object_declaration"
+            ) {
+              addMember(ownerName, declaredName(d) ?? "")
+            }
+          }
+        }
+        // A `class C(val x)` names x in its PRIMARY CONSTRUCTOR, not the body —
+        // a constructor val IS a member, and without this gate A rejects every
+        // read of a constructor property.
+        const pc = namedOf(n, "primary_constructor")
+        if (ownerName && pc) {
+          for (let i = 0; i < pc.namedChildCount; i++) {
+            const cp = pc.namedChild(i)
+            if (cp && (cp.type === "class_parameter" || cp.type === "value_parameter")) {
+              addMember(ownerName, firstNamedOf(cp, ["simple_identifier"])?.text ?? "")
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+
+  // ── gate B: local bindings shadow members ───────────────────────────────
+  // Bindings are collected ONLY from scopes inside a function/lambda/ctor: a
+  // class-level property is a member, not a local, so a class body must not
+  // bind its own members.
+  const boundCache = new Map<number, Set<string>>()
+  const boundOf = (scope: any): Set<string> => {
+    const hit = boundCache.get(scope.id)
+    if (hit) return hit
+    const out = new Set<string>()
+    const w: any[] = [scope]
+    while (w.length) {
+      const m = w.pop()!
+      if (m.type === "simple_identifier") {
+        const pt = m.parent?.type ?? ""
+        if (pt === "parameter" || pt === "class_parameter" || pt === "variable_declaration") out.add(m.text)
+      }
+      for (let i = m.namedChildCount - 1; i >= 0; i--) {
+        const c = m.namedChild(i)
+        if (c) w.push(c)
+      }
+    }
+    boundCache.set(scope.id, out)
+    return out
+  }
+  const isLocallyBound = (n: any, name: string): boolean => {
+    let p = n.parent
+    while (p) {
+      if (
+        p.type === "function_declaration" || p.type === "lambda_literal" ||
+        p.type === "primary_constructor" || p.type === "secondary_constructor"
+      ) {
+        if (boundOf(p).has(name)) return true
+      }
+      if (p.type === "class_declaration" || p.type === "object_declaration") break
+      p = p.parent
+    }
+    return false
+  }
+
+  // Positions that DECLARE rather than read. A navigation leaf and a chain base
+  // ARE read positions and are deliberately absent.
+  const NOT_A_READ = new Set([
+    "parameter", "class_parameter", "variable_declaration", "type_identifier",
+    "user_type", "nullable_type", "import_header", "package_header",
+    "function_declaration", "class_declaration", "object_declaration",
+    "property_declaration", "value_parameter",
+  ])
+  // Span-gated write detection, never text matching.
+  const isWriteLhs = (n: any): boolean => {
+    let a = n.parent
+    while (a && (a.type === "directly_assignable_expression" || a.type === "navigation_expression" || a.type === "navigation_suffix")) {
+      a = a.parent
+    }
+    if (a && a.type === "assignment") {
+      const lhs = a.namedChild(0)
+      return !!lhs && lhs.startIndex <= n.startIndex && lhs.endIndex >= n.endIndex
+    }
+    return false
+  }
+  // The receiver's NAME spine, so `xs[0]` targets `xs` and not the text `xs[0]`.
+  const identifierPath = (n: any): string | null => {
+    let cur = n
+    while (cur && cur.type === "navigation_expression") cur = cur.namedChild(0)
+    if (!cur) return null
+    if (cur.type === "simple_identifier") return cur.text
+    if (cur.type === "navigation_suffix") {
+      const inner = cur.namedChild(cur.namedChildCount - 1)
+      return inner && inner.type === "simple_identifier" ? inner.text : null
+    }
+    return null
+  }
+  // The extension receiver: the first type-shaped named child, stopping before
+  // the declaration's own name. `String?` publishes `String` — the nullability
+  // is not part of the receiver type's name.
+  const extensionReceiverOf = (decl: any): string | null => {
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const c = decl.namedChild(i)
+      if (!c) continue
+      if (c.type === "simple_identifier") break
+      if (c.type === "receiver_type" || c.type === "user_type" || c.type === "nullable_type" || c.type === "type_identifier") {
+        return c.text.endsWith("?") ? c.text.slice(0, -1) : c.text
+      }
+    }
+    return null
+  }
+
+  // ── the walk ────────────────────────────────────────────────────────────
+  const DISPATCHERS = new Set(["launch", "async", "withContext"])
+  const walk = (n: any): void => {
+    switch (n.type) {
+      case "property_declaration": {
+        const recv = extensionReceiverOf(n)
+        const nm = declaredName(n)
+        if (recv && nm) push(nm, recv)
+        break
+      }
+      case "function_declaration": {
+        const recv = extensionReceiverOf(n)
+        if (recv) {
+          const nm = firstNamedOf(n, ["simple_identifier", "type_identifier"])
+          if (nm) push(nm.text, recv)
+        }
+        break
+      }
+      case "indexing_expression":
+      case "directly_assignable_expression": {
+        let hasIndexing = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          if (n.namedChild(i)?.type === "indexing_suffix") { hasIndexing = true; break }
+        }
+        const parent = n.parent
+        const lhs = parent && parent.type === "assignment" ? parent.namedChild(0) : null
+        const isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+        if (hasIndexing && !isWrite) {
+          const recv = n.namedChild(0)
+          if (recv) {
+            const path = identifierPath(recv)
+            if (path) push(resolveSource(n.parent), path)
+          }
+        }
+        break
+      }
+      case "interpolated_identifier":
+        push(resolveSource(n.parent), n.text)
+        break
+      case "call_expression": {
+        // A coroutine dispatcher is attributed to the ENCLOSING FUNCTION, not to
+        // the file: the edge is a statement of what that function uses.
+        const callee = n.namedChild(0)
+        const nm = callee && callee.type === "simple_identifier" ? callee.text : null
+        if (nm && DISPATCHERS.has(nm)) {
+          let p = n.parent
+          while (p && p.type !== "function_declaration") p = p.parent
+          const fname = p ? firstNamedOf(p, ["simple_identifier", "type_identifier"]) : null
+          if (fname) push(fname.text, nm)
+        }
+        break
+      }
+      case "simple_identifier": {
+        const txt = n.text
+        const pt = n.parent?.type ?? ""
+        const owner = resolveOwner(n.parent)
+        const isMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
+        if (
+          !NOT_A_READ.has(pt) &&
+          pt !== "call_expression" &&
+          !isWriteLhs(n) &&
+          !isLocallyBound(n, txt) &&
+          isMember
+        ) {
+          push(resolveSource(n.parent), txt)
+        }
+        break
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
 export function deriveKotlinEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -16854,6 +17171,12 @@ async function main() {
         for (const e of deriveKotlinEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 K2: kotlin `uses` — the five emission sites (1,758 edges on the
+        // primary corpus) were compared by nothing before this. See
+        // deriveKotlinUsesTruth.
+        for (const e of deriveKotlinUsesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "scala") {
         // M37.21 #610: scala calls oracle (JD-oracle gap, java precedent).
@@ -17234,6 +17557,13 @@ async function main() {
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
           ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
+          // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
+          // 1,758 `uses` edges on the primary corpus, every one of them from
+          // five emission sites that NO oracle derived and the allowlist dropped
+          // from the ANALYZER side. Enabling deriveKotlinUsesTruth without this
+          // measured 0 of the derived truth covered — the same G7 shape
+          // documented on the powershell chain below, in a fifth direction.
+          ...(lang === "kotlin" ? ["uses"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
