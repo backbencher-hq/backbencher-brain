@@ -641,10 +641,43 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (symModifiers[j] === "data") { hasData = true; break }
       }
       if (symbol.kind === ASTEngine.SymbolKind.Class && hasData) {
+        // M60 K4 (kotlin deep review): componentN is generated ONLY for the
+        // data class's PRIMARY CONSTRUCTOR properties — the `val`/`var`
+        // parameters. This counted EVERY property carrying the class as owner,
+        // which under the family-wide owner contract is strictly larger.
+        //
+        //   data class ColumnDiff(val nullability, val type, val autoInc,
+        //       val defaults, val caseSensitiveName, val sizeAndScale, val comment)
+        //       : /* 7 properties */
+        //
+        // published component1..componentNINE. component8 and component9 do not
+        // exist: the two extra came from the COMPANION object's properties
+        // (`NoneChanged`, `AllChanged`), which the owner contract correctly
+        // flattens onto the class and which therefore satisfied
+        // `ownerName === class && kind === Property`.
+        //
+        // So the defect was a consequence of aa6a2beb's owner flattening being
+        // RIGHT: fixing local ownership made the owner set correct, and this
+        // count — which was written against the looser set — became wrong. The
+        // two fixes are only consistent together. A phantom naming a method
+        // that does not exist is a fabrication, and marking it `isPhantom`
+        // describes how it was made rather than excusing it: a tool offering
+        // `ColumnDiff.component9` navigates to a member Kotlin never generates.
+        //
+        // The same narrowing also excludes a data class's BODY properties, which
+        // is correct: Kotlin generates no componentN for them either.
+        //
+        // `isConstructorProperty` is set where ctor val/var parameters are
+        // extracted, so this reads a fact the extractor already established
+        // rather than re-deriving one.
         const properties: ASTEngine.UniversalSymbol[] = []
         for (let j = 0; j < symbols.length; j++) {
            const s = symbols[j]
-           if (s.ownerName === symbol.name && s.kind === ASTEngine.SymbolKind.Property) properties.push(s)
+           if (
+             s.ownerName === symbol.name &&
+             s.kind === ASTEngine.SymbolKind.Property &&
+             s.metadata?.isConstructorProperty === true
+           ) properties.push(s)
         }
 
         for (let index = 0; index < properties.length; index++) {
