@@ -174,6 +174,133 @@ const FLOW_KEYWORDS = new Set([
  * naming one is a fabrication by construction — the name is reserved, so it can
  * never be a command name.
  */
+/**
+ * ZERO REGEX — the policy, and the eight helpers that satisfy it.
+ *
+ * This analyzer once claimed "zero regex usages (census 10 → 0)" in a doc that
+ * cited a census which did not exist, while the source carried eight regexes put
+ * back by later waves after the original ten were removed. The claim is now true
+ * for real, and it is worth saying what it means rather than leaving it as a count:
+ *
+ *   NO REGEX IN THIS FILE DECIDES A FACT.
+ *
+ * Every symbol, relationship, type and parameter is read off the AST. What remains
+ * is string NORMALIZATION on text the tree has already told us is a flag, a type
+ * name, a comment body or a filesystem path — cases where the string is the value
+ * and the decision was made structurally. A reader counting `.test(` calls would
+ * have concluded the AST was bypassed; the honest statement is that eight normalizers
+ * were regexes and are now character loops, each written to be provably equivalent
+ * to the pattern it replaced.
+ *
+ * Every replacement below was checked against its ORIGINAL PATTERN over generated
+ * inputs rather than by reading (script/m60/powershell-zero-regex-equiv.ts), because
+ * "looks the same" is not a proof and `\s` is a specific 25-code-point set that a
+ * naive `c <= 32` would get wrong.
+ */
+
+/** JavaScript's `\s`, exactly: whitespace, line terminators, and the Unicode
+ *  separators. Spelled out rather than approximated — `/[\s]/` also matches NBSP
+ *  and \uFEFF, and a `<= 32` test would silently stop matching both. */
+const isSpaceCode = (code: number): boolean =>
+  code === 32 || (code >= 9 && code <= 13) ||
+  code === 0xa0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) ||
+  code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
+  code === 0x3000 || code === 0xfeff
+
+/**
+ * F9 — could this string be a SYMBOL NAME at all?
+ *
+ * Not a reserved-word test and not an identifier test: the question is only whether
+ * the text could name a stored symbol, and the answer is used to DROP an edge rather
+ * than to keep one. Letters, digits, `_`, `.`, `:` and `-` are allowed because real
+ * PowerShell names use all of them (`$script:x`, `$a.b`, `Get-ChildItem`, a COM
+ * ProgID). Whitespace, a newline, a sigil or a quote is not a name, and an edge
+ * carrying one is a target nothing can ever resolve to.
+ *
+ * This exists because `unknownTargets` did not catch it. That metric asks whether a
+ * target MATCHES a symbol, and a target containing a newline matches nothing exactly
+ * as quietly as a correct target matches something — so the malformed here-string
+ * targets sat at 0 unknown for as long as they existed.
+ */
+const isPlausibleSymbolName = (name: string): boolean => {
+  if (name.length === 0) return false
+  for (let i = 0; i < name.length; i++) {
+    const c = name.charCodeAt(i)
+    const ok =
+      (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) ||
+      c === 95 /* _ */ || c === 46 /* . */ || c === 58 /* : */ || c === 45 /* - */
+    if (!ok) return false
+  }
+  return true
+}
+
+/** `/^-/` — one leading dash, so `-ErrorAction` and `ErrorAction` compare equal. */
+const stripLeadingDash = (text: string): string =>
+  text.length > 0 && text.charCodeAt(0) === 45 ? text.slice(1) : text
+
+/** `/(\[[\s]*\])+/g` — array/generic SUFFIX brackets on a declared type, so
+ *  `string[]` and `Dictionary[string,int][]` reduce to their bare name. It matches
+ *  only `[]` (with optional inner space), never `[T]`, which is why the scan below
+ *  consumes a bracket pair and copies everything else through verbatim. */
+const stripTypeSuffixBrackets = (text: string): string => {
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 91 /* [ */) {
+      let j = i + 1
+      while (j < text.length && isSpaceCode(text.charCodeAt(j))) j++
+      if (j < text.length && text.charCodeAt(j) === 93 /* ] */) { i = j + 1; continue }
+    }
+    out += text[i]
+    i++
+  }
+  return out
+}
+
+/** `/\.[A-Za-z0-9]+$/` — "ends in something shaped like a file extension".
+ *  Anchoring on the LAST dot is equivalent, not an approximation: if the text after
+ *  the last dot is not all alphanumerics then no earlier dot can be followed by
+ *  alphanumerics to the end either, because that remainder would contain the same
+ *  offending character. */
+const hasTrailingExtension = (text: string): boolean => {
+  const dot = text.lastIndexOf(".")
+  if (dot < 0 || dot === text.length - 1) return false
+  for (let i = dot + 1; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    const alnum = (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)
+    if (!alnum) return false
+  }
+  return true
+}
+
+/** `/^\s*<#/` — leading whitespace then the block-comment opener. */
+const stripOpenCommentDelim = (line: string): string => {
+  let i = 0
+  while (i < line.length && isSpaceCode(line.charCodeAt(i))) i++
+  if (line.charCodeAt(i) === 60 /* < */ && line.charCodeAt(i + 1) === 35 /* # */) return line.slice(i + 2)
+  return line
+}
+
+/** `/#>\s*$/` — the block-comment closer and any whitespace after it. */
+const stripCloseCommentDelim = (line: string): string => {
+  let end = line.length
+  while (end > 0 && isSpaceCode(line.charCodeAt(end - 1))) end--
+  if (end >= 2 && line.charCodeAt(end - 1) === 62 /* > */ && line.charCodeAt(end - 2) === 35 /* # */) {
+    return line.slice(0, end - 2)
+  }
+  return line
+}
+
+/** `/^#+\s?/` — a run of comment markers and AT MOST ONE following space. The
+ *  "at most one" is load-bearing: a markdown-style `##  Title` keeps its second
+ *  `#` and loses one space, which is what makes the retained text a heading. */
+const stripCommentMarkerRun = (text: string): string => {
+  let i = 0
+  while (i < text.length && text.charCodeAt(i) === 35 /* # */) i++
+  if (i > 0 && i < text.length && isSpaceCode(text.charCodeAt(i))) i++
+  return text.slice(i)
+}
+
 const NAMED_BLOCK_KEYWORDS = new Set(["begin", "process", "end", "clean", "dynamicparam"])
 
 /**
@@ -228,7 +355,7 @@ const QUALIFIED_PREFIXES = ["$global:", "$script:", "$env:", "$using:", "$local:
  * carries.
  */
 const isTypeAccelerator = (declared: string): boolean => {
-  const bare = declared.replace(/(\[\s*\])+/g, "").trim()
+  const bare = stripTypeSuffixBrackets(declared).trim()
   return TYPE_ACCELERATORS.has(bare.toLowerCase()) || TYPE_ACCELERATORS.has(bare)
 }
 
@@ -250,6 +377,8 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
+    /** Exported names already emitted, lowercased — see `addExport` for why a module exports a name once. */
+    const exportedNames = new Set<string>()
     /** PS2 — the per-site relationship key. */
     const relKeys = new Set<string>()
 
@@ -302,6 +431,13 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * pair is a sound identity for this use.
      */
     const dscBlocks = new Set<string>()
+    // PS-A2 — the same push/pop discipline for an INTERFACE declaration block. The
+    // first version pushed a frame and never popped it, and the measured damage was
+    // worse than the bug being fixed: every class declared after an interface in the
+    // same file was re-owned by the interface (`contains IShape -> Circle`), because
+    // the leaked frame made the interface the attribution scope for the rest of the
+    // file. Scoping without an exit is not a narrower fix, it is a different defect.
+    const interfaceBlocks = new Set<string>()
     const nodeKey = (n: Node): string => `${n.startIndex}:${n.endIndex}`
     /**
      * A DSC block's DECLARED NAME, so the frame it pushes can be popped on the
@@ -332,6 +468,38 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * that line is part of the identity, so two sites of one callee are two
      * rows.
      */
+    /**
+     * The EVIDENCE TIER of an edge: how it was derived, which is analyzer knowledge
+     * and therefore the analyzer's to emit. The same shape as bash's `evidenceClassFor`
+     * and applied centrally so no call site can forget it; a caller may override it in
+     * its own metadata, which is why the spread puts `metadata` LAST.
+     *
+     * The tiers are the graph engine's, not invented here. `structural` means the tree
+     * states the fact — a container holds a declared child, a class header literally
+     * lists its base. `usage_contextual` means the edge comes from a node's POSITION
+     * rather than a named field: a variable read has no field saying "this is read
+     * here", and a `New-Object` target is read out of a flag's VALUE.
+     * `import_based` is for an import edge. `inferred` is reserved for a fact this
+     * analyzer derives by matching rather than reading, and exactly one relationship
+     * in this lane is that: `overrides`, which matches a subclass member's name
+     * against the base's declared member set because PowerShell has no `override`
+     * keyword. Calling that `structural` would overstate it.
+     */
+    const evidenceClassFor = (type: ASTEngine.RelationshipType, isImport = false): string => {
+      if (isImport) return "import_based"
+      switch (type) {
+        case ASTEngine.RelationshipType.Contains:
+        case ASTEngine.RelationshipType.Extends:
+        case ASTEngine.RelationshipType.Implements:
+        case ASTEngine.RelationshipType.Exports:
+          return "structural"
+        case ASTEngine.RelationshipType.References:
+          return "import_based"
+        default:
+          return "usage_contextual"
+      }
+    }
+
     const addRel = (
       source: string,
       target: string,
@@ -344,11 +512,39 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const key = `${source}\u0000${type}\u0000${target}\u0000${line}`
       if (relKeys.has(key)) return
       relKeys.add(key)
-      relationships.push({ source, target, type, confidence, line_number: line, metadata })
+      const isImport = (metadata as { import?: boolean }).import === true
+      relationships.push({
+        source,
+        target,
+        type,
+        confidence,
+        line_number: line,
+        // The caller's metadata comes LAST so an explicit `evidenceClass` at a call
+        // site wins over the default — that is how the `overrides` edges say `inferred`
+        // without every other call site having to repeat the reasoning.
+        metadata: { evidenceClass: evidenceClassFor(type, isImport), ...metadata },
+      })
     }
 
-    const stripDollar = (text: string): string =>
-      text.length > 1 && text.charCodeAt(0) === 36 ? text.slice(1) : text
+    // F9 (M60 #278): a BRACED variable — `${a}` — is the SAME variable as `$a`, and
+    // this helper used to return `{a}` for it, so the two spellings became two
+    // different symbols. Measured on a probe: `$a = 1` declared `a`, and
+    // `"... ${a}"` published `uses -> {a}`, a read naming a symbol nothing declares
+    // and nothing can own. The braced form is how PowerShell writes a variable whose
+    // name would otherwise run into adjacent text, so it is not rare — and a graph
+    // that gives one variable two names has lost the reference.
+    //
+    // Fixed in `stripDollar` rather than at the two call sites, because a variable's
+    // name is normalized on many paths and the scope-qualified check (`isQualified`)
+    // reads the RAW text, so `$env:FOO` is still recognised as qualified and
+    // suppressed exactly as before.
+    const stripDollar = (text: string): string => {
+      if (text.length < 2 || text.charCodeAt(0) !== 36 /* $ */) return text
+      if (text.charCodeAt(1) === 123 /* { */ && text.charCodeAt(text.length - 1) === 125 /* } */) {
+        return text.slice(2, -1)
+      }
+      return text.slice(1)
+    }
 
     /** PS8 — a scope-qualified name (`$global:x`) is never a local declaration. */
     const isQualified = (raw: string): boolean => {
@@ -490,19 +686,138 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * interpolation subexpressions, where the pre-wave lane read only the
      * method call and never the variable.
      */
-    const emitVariableReads = (node: Node) => {
+    // `marker` names WHAT KIND of read this pass is, so each kind is independently
+    // attributable in the output and a mutant can revert one without touching the
+    // others. Without it an argument read and a here-string read are the same row
+    // shape — `uses` + `isVariableReference` — and reverting either from the result
+    // alone would silently revert both. Two of the five PS-A4 mutants cannot be
+    // written faithfully without it, and a mutant that cannot fail is decoration,
+    // which is the standard this file already states.
+    const emitVariableReads = (node: Node, skipBlocks = false, marker?: string) => {
       const work: Node[] = [node]
       const seen = new Set<number>()
       while (work.length > 0) {
         const n = work.pop()!
         if (n.type === "comment") continue
-        if (n.type === "variable") {
+        // A script block is a SCOPE. When this pass runs over a command's arguments,
+        // descending into one would attribute the block's locals to the CALLER —
+        // `ForEach-Object { $x }` would publish `uses $x` from the command's owner.
+        // The block's own body is read by the main switch, which pushes the frame, so
+        // skipping here loses nothing and gains correct attribution.
+        if (skipBlocks && (n.type === "script_block_expression" || n.type === "named_block")) continue
+        // An ELEMENT ACCESS is likewise not this pass's business, and reading into it
+        // is actively wrong rather than merely redundant. `$names[$index]` has two
+        // variables in it, and PS9's ruling is that the readable one is the KEY:
+        // `uses -> index`. This pass would also read the RECEIVER, publishing
+        // `uses -> names` beside it, which `member-reads-psb5` forbids by name as
+        // the pre-fix shape of form 4 ("the RECEIVER instead of the key"). The
+        // dedicated `element_access` case already reads the key with the right grain,
+        // so the correct behaviour here is to skip the node entirely.
+        //
+        // Caught by the fixture on the run that introduced this pass, which is the
+        // gate working: +15,354 edges is not a licence to add a shape a fixture has
+        // already ruled on.
+        if (skipBlocks && n.type === "element_access") continue
+        // F9: a `braced_variable` (`${a}`) is the same node the analyzer must read
+        // as `${a}`, and it is a DIFFERENT node type from `variable`, so the read
+        // pass walked straight past it: `Write-Host ${braced}` published no `uses` at
+        // all. Both spellings now enter the same branch, and `stripDollar` collapses
+        // them to one name.
+        if (n.type === "variable" || n.type === "braced_variable") {
           if (seen.has(n.startIndex)) continue
           seen.add(n.startIndex)
-          const name = stripDollar(n.text)
-          if (!name || isQualified(n.text) || isAutomatic(name)) continue
-          addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9, n.startPosition.row + 1, {
+          // F9: SPLATTING. The grammar models `@name` as a `variable` node whose
+          // text is `@name` — no sigil — so `stripDollar` left it alone and
+          // `New-PSOptions @OptionsArguments` published `uses -> @OptionsArguments`.
+          // That is the same dangling-target defect as the braced form, in the same
+          // family, and `@name` and `$name` are one variable in PowerShell.
+          //
+          // Found by a line-level check over all 25,205 variable-reference edges in
+          // the corpora, asking whether the declared line actually contains
+          // `$<target>`: 96.75% did, and the residue was dominated by braced
+          // variables (a false negative in the CHECK, since `"${x}"` does not
+          // contain `$x`) with splatting as the one real defect in it.
+          //
+          // Only a leading `@` on a `variable` node is stripped. `@()` and `@{}` are
+          // array- and hashtable literals and arrive as `array_literal_expression`
+          // and `hash_literal_expression`, never as `variable`, so they cannot reach
+          // here.
+          // F9, the here-string half. A `variable` inside an EXPANDABLE HERE-STRING
+          // carries the surrounding line break in its own span: the grammar reports
+          // `variable [6,8]-[7,8]` for `$message` on its own line, so `n.text` is
+          // "\n$message\n". Two things went wrong from that. `stripDollar` did
+          // nothing, because the text does not START with `$`; and the resulting edge
+          // published `uses -> "\n$message"`, a target no symbol can have.
+          //
+          // The grammar was not fixed and should not be: the span is the text the
+          // interpolation occupies, and trimming the TEXT is the whole correction.
+          // Verified on a reproduction built from build.psm1:2248-2254, where the
+          // emitted targets were `"\n$message"` and `"\n$stack_trace"`.
+          const trimmed = n.text.trim()
+          const rawName = stripDollar(trimmed)
+          const name = rawName.length > 1 && rawName.charCodeAt(0) === 64 /* @ */
+            ? rawName.slice(1)
+            : rawName
+          // And a GUARD, so a name that is still not a plausible identifier is
+          // dropped rather than published. Every surface metric stayed at 0 while
+          // these two malformed targets were being emitted — `unknownTargets` counts
+          // a target that matches no symbol, and a target with a newline in it
+          // matches nothing just as silently as a correct one. A line-level check
+          // over all 25,202 variable-reference edges is what found them, at
+          // 99.98% justified and 5 residue.
+          if (!isPlausibleSymbolName(name)) continue
+          // The qualified check runs against BOTH the raw text and the name with
+          // its sigil restored, because `QUALIFIED_PREFIXES` are written WITH the
+          // `$` (`"$env:"`) and a braced qualified variable arrives as `${env:FOO}`,
+          // which matches neither form on its own. Without the second check a
+          // `${env:FOO}` read would be published as a project variable — trading one
+          // gap for a worse one, since the whole point of PS8 was to suppress these.
+          // F9, the scope-qualified READ. A scope-qualified name is still not a
+          // DECLARATION — PS8 stands, and `$env:PATH = 'x'` declares nothing, pinned
+          // by suppression-and-params-psb7. But a READ of one is a real dependency on
+          // something outside the file, and the read path was reusing the DECLARATION
+          // guard, so `Write-Host $env:Temp` published nothing at all.
+          //
+          // The independent F5 oracle expects these (`uses Sign-Package -> env:Temp`,
+          // 7 rows in the non-test sample, all from one file), and the reasoning
+          // agrees with it: the graph already records external dependencies — a
+          // `calls -> Write-Host` target is equally unresolvable — so `$env:WINDIR`
+          // is a dependency of exactly the same kind, and dropping it loses a fact
+          // about what the script needs from its environment.
+          //
+          // The qualified name is KEPT (`env:Temp`, not `Temp`), so the target can
+          // never be confused with a project variable: nothing this lane declares
+          // carries a colon, and a scope prefix is the only thing that produces one.
+          // AUTOMATIC variables stay suppressed — those are the engine's own bindings
+          // (`$_`, `$args`, `$PSVersionTable`), which is the subject PS8 actually
+          // ruled on, and no oracle asks for them.
+          const isScoped = isQualified(n.text) || isQualified(`$${name}`)
+          if (!name || isAutomatic(name)) continue
+          if (isScoped && name.indexOf(":") < 0) continue
+          // The LINE must skip the leading break too, not just the name. A
+          // here-string interpolation's node starts at the END of the previous line
+          // (the grammar reports `variable [6,8]-[7,8]` for a `$message` written on
+          // line 7), so `startPosition.row + 1` published the edge one line ABOVE the
+          // variable — measured as `build.psm1:2251 -> message` when `$message` is
+          // on line 2252. This lane has a fixture (`per-site-lines-psb2`) and a
+          // mutant for exactly this class of error, so an off-by-one here is not a
+          // rounding matter.
+          const lead = n.text.length - n.text.trimStart().length
+          let skippedLines = 0
+          for (let i = 0; i < lead; i++) {
+            if (n.text.charCodeAt(i) === 10 /* \n */) skippedLines++
+          }
+          addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9,
+            n.startPosition.row + 1 + skippedLines, {
             powershellSpecific: true, isVariableReference: true,
+            ...(marker ? { [marker]: true } : {}),
+            ...(isScoped ? { isScopedEnvironmentRead: true } : {}),
+            // A read written in the BRACED spelling. The marker's job is to make the
+            // normalization independently revertible: once `${a}` and `$a` are the
+            // same string in the result, nothing distinguishes them, so a mutant for
+            // "the braces come back" has nothing to key on and would be a no-op — a
+            // mutant that cannot fail is decoration.
+            ...(trimmed.charCodeAt(0) === 36 && trimmed.charCodeAt(1) === 123 ? { isBracedVariable: true } : {}),
           })
           continue
         }
@@ -756,7 +1071,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      * VALUE is the switch-value set, not its shape.
      */
     const looksLikeModulePath = (text: string): boolean =>
-      text.length > 0 && (text.includes("/") || text.includes("\\") || /\.[A-Za-z0-9]+$/.test(text))
+      text.length > 0 && (text.includes("/") || text.includes("\\") || hasTrailingExtension(text))
 
     const addImport = (moduleName: string, via: string, line: number, node: Node) => {
       if (!moduleName) return
@@ -781,6 +1096,22 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
      */
     const addExport = (name: string, via: string, line: number) => {
       if (!name || name.startsWith("*")) return
+      // A MODULE EXPORTS A NAME ONCE. The pre-G6 reader could only reach one value
+      // per flag, so the duplicate case never arose; the G6 comma-list reader walks
+      // the whole value list, which means a name can be reachable by two paths in
+      // the same statement — `Export-ModuleMember -Function F` is seen both by the
+      // flag's value walk and by the bare-value branch, because a value in
+      // `command_elements` is preceded by a `command_argument_sep` that both match.
+      // `module-surface-psb9` caught it as a violated export invariant on
+      // `Get-Setting`, which is exactly what an invariant is for: the fixture
+      // asserted a property of the lane's output that the change would otherwise
+      // have quietly broken, and the corpus would not have shown it.
+      //
+      // Deduplicated on the name, case-insensitively, because PowerShell's
+      // identifiers are — `Export-ModuleMember -Function Get-Setting, get-setting`
+      // is one export, and a reader keying the graph on the name would see two.
+      if (exportedNames.has(name.toLowerCase())) return
+      exportedNames.add(name.toLowerCase())
       exports.push({ name, range: this.lineRange(line), metadata: { powershellSpecific: true, via } })
       addRel(top().scope, name, ASTEngine.RelationshipType.Exports, 1.0, line, {
         powershellSpecific: true, viaExportModuleMember: true, fileLevel: atFileScope(),
@@ -830,6 +1161,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           dscOwner.delete(nodeKey(node))
           if (declared !== undefined) frames.pop()
           dscDepth--
+        }
+        // PS-A2 — leaving an interface block, mirroring the DSC exit above.
+        if (interfaceBlocks.has(nodeKey(node))) {
+          interfaceBlocks.delete(nodeKey(node))
+          frames.pop()
         }
         // PS3 — a method is a SCOPE whose OWNER stays the class, so popping its
         // frame restores the class as the attribution scope.
@@ -1035,6 +1371,40 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // ----------------------------------------------------- assignments
         case "assignment_expression": {
           const left = findFirstChild(node, "left_assignment_expression")
+          // F9: a COMPOUND assignment reads its left side. `$m += 1` is a read of
+          // `$m` and a write to it; the write is the declaration, and the read was
+          // published nowhere, so the same variable that `$m = 1` declares had a use
+          // the graph could not see. The operator is what decides it: `=` writes only,
+          // and every `+=`/`-=`/`*=`/`/=`/`%=` reads first. Reading the operator's
+          // own text is what keeps the plain assignment from gaining a read edge it
+          // does not have — the distinction is the whole point and is pinned by the
+          // fixture's two rows on the same construct.
+          if (left) {
+            const op = findFirstChild(node, "assignement_operator")
+            const opText = op ? op.text.trim() : "="
+            if (opText.length > 1) {
+              // `findDescendantVariable`, not a depth guess: the left side of an
+              // assignment sits at the BOTTOM of the expression ladder
+              // (left_assignment_expression > logical > bitwise > comparison >
+              // additive > multiplicative > format > range > array_literal >
+              // unary > variable — eleven levels), and the neighbouring member-write
+              // search uses depth 14 for the same reason. The helper is the one the
+              // declaration path already uses, so the read and the declaration cannot
+              // drift apart on a different depth constant.
+              const lhsVar = findDescendantVariable(left)
+              if (lhsVar) {
+                const lname = stripDollar(lhsVar.text.trim())
+                if (isPlausibleSymbolName(lname) && !isQualified(lhsVar.text) && !isAutomatic(lname)) {
+                  addRel(top().scope, lname, ASTEngine.RelationshipType.Uses, 0.9, lhsVar.startPosition.row + 1, {
+                    powershellSpecific: true,
+                    isVariableReference: true,
+                    isCompoundAssignmentRead: true,
+                    assignmentOperator: opText,
+                  })
+                }
+              }
+            }
+          }
           if (left) {
             // PS9 — a member WRITE (`$this.Name = …`, `$cfg.Retries = 3`) is a
             // use of the member, at the member's own line. The pre-wave lane
@@ -1249,6 +1619,59 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        // F9: an INCREMENT or DECREMENT reads its operand. `$n++` / `++$n` are the
+        // one remaining place a variable is read and nothing was published — the F9
+        // audit found these four types in the "the analyzer never names it" set, and
+        // probing them confirmed all four emit nothing at all, so `$n++` left the
+        // graph with `contains -> n` and no read.
+        //
+        // A `uses` is the right edge and not a weaker one: the operand is genuinely
+        // read, and the WRITE half has no edge in this lane's model because a write to
+        // a local is not a fact the graph can express (a member write can, which is
+        // what `isMemberWrite` is for). The metadata says which operation it was so a
+        // reader is not left guessing, and so a fixture can pin the distinction.
+        case "post_increment_expression":
+        case "post_decrement_expression":
+        case "pre_increment_expression":
+        case "pre_decrement_expression": {
+          // A DESCENDANT search, not a direct child, and the reason is the prefix
+          // forms: `++$n` nests its operand as
+          // `pre_increment_expression > unary_expression > variable`, while `$n++`
+          // puts it directly under the increment node. A direct-child lookup found the
+          // postfix pair and silently missed the prefix pair — the same shape of
+          // miss as `sub_expression` (PS16) and `left_assignment_expression` (PS2),
+          // both of which this lane has already been bitten by.
+          const operand = findDescendant(node, "variable", 6)
+          if (operand) {
+            const name = stripDollar(operand.text.trim())
+            if (isPlausibleSymbolName(name) && !isQualified(operand.text) && !isAutomatic(name)) {
+              addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.9, operand.startPosition.row + 1, {
+                powershellSpecific: true,
+                isVariableReference: true,
+                isCounterUpdate: true,
+                isPostfix: node.type.startsWith("post_"),
+              })
+            }
+          }
+          break
+        }
+
+        case "expandable_here_string_literal": {
+          // F9: a HERE-STRING interpolates exactly as a double-quoted string does,
+          // and this node type was simply not in the switch — so `@"… $name …"@`
+          // published no read at all while the identical text in `"… $name …"` did.
+          // It is a distinct node type from `expandable_string_literal`, which is why
+          // the existing case could not have caught it: the grammar parses
+          // `variable [6,8]-[7,8]` for a here-string's `$message`, a span that starts
+          // at the END of the previous line, and the read pass now trims that and
+          // skips the leading break when it stamps the line. The marker makes this
+          // read independently revertible: without it an argument read and a
+          // here-string read are the same row shape, so a mutant for either would
+          // silently revert both.
+          emitVariableReads(node, false, "isHereStringInterpolation")
+          break
+        }
+
         // ---------------------------------------- invocation (PS17/PS18/PS19)
         case "invokation_expression": {
           const typeLit = findFirstChild(node, "type_literal")
@@ -1273,6 +1696,23 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // METHOD, not the class.
           const receiver = findFirstChild(node, "variable")
           if (member) {
+            // F9: a DYNAMIC method target — `$type::$method()` — has a `$`-prefixed
+            // member, and publishing it as a `calls` edge wrote the sigil into the
+            // target: `calls -> $method`, a name no symbol can have, measured on the
+            // same ConstrainedLanguageRestriction.Tests.ps1 line as the residue
+            // above. A `$`-prefixed member is not a method name at all — it is a
+            // VARIABLE holding one — so it is published as a `uses` of that variable,
+            // which is what the source says.
+            const dynamicTarget = member.text.length > 0 && member.text.charCodeAt(0) === 36 /* $ */
+            if (dynamicTarget) {
+              const dynName = stripDollar(member.text)
+              if (isPlausibleSymbolName(dynName)) {
+                addRel(top().scope, dynName, ASTEngine.RelationshipType.Uses, 0.9, member.startPosition.row + 1, {
+                  powershellSpecific: true, isDynamicMethodTarget: true, isVariableReference: true,
+                })
+              }
+              break
+            }
             addRel(top().scope, member.text, ASTEngine.RelationshipType.Calls, 0.6, line, {
               powershellSpecific: true, methodCall: true,
               on: receiver ? stripDollar(receiver.text) : "",
@@ -1299,6 +1739,47 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const leaf = cmdName.includes("::") ? cmdName.slice(cmdName.lastIndexOf("::") + 2) : cmdName
           const lowerLeaf = leaf.toLowerCase()
           const nameLine = (findFirstChild(node, "command_name") ?? node).startPosition.row + 1
+
+          // PS-A2 — a class INTERFACE declaration. `interface IShape { … }` is a
+          // PowerShell 5.0 construct the GRAMMAR does not model at all: it parses as
+          // a plain `command` named `interface`. Two consequences, and the second is
+          // the worse one. (1) The analyzer published `calls -> interface` — a
+          // language keyword promoted to a call edge, which is the PS5 defect class
+          // reached through a grammar gap rather than a missing guard, and the reason
+          // `interface` is missing from LANGUAGE_KEYWORD_COMMANDS while its siblings
+          // `class` and `enum` are both present. (2) `IShape` was never DECLARED, so
+          // every `implements` edge pointed at a target no symbol could ever have —
+          // a permanently dangling row the store cannot resolve. Authoring the
+          // fixture that pins `implements` is what found this: the type had zero
+          // fixture rows and zero mutants, so the path was live and unguarded.
+          //
+          // The GRAMMAR can fix it, and that version was built, measured and
+          // REJECTED. An `interface_statement` rule plus an optional method body
+          // reshaped 491 of 550 clean corpus files — making a body optional in a hot
+          // rule shifts global tie-breaking, and the visible symptom was zero-width
+          // `command_argument_sep` nodes appearing throughout otherwise-untouched
+          // files. Removing the `reserved()` wrapper did not help (491 either way), so
+          // the cost is the optional, not the keyword. This branch is therefore keyed
+          // on STRUCTURE, the same way the DSC branch below is: the keyword as command
+          // name, plus a first positional argument, plus a script block. The tree is
+          // unchanged from G9, so F11's G2 gate has nothing to object to.
+          if (lowerLeaf === "interface") {
+            const ifaceElements = findFirstChild(node, "command_elements")
+            const ifaceBlock = ifaceElements ? findDescendant(ifaceElements, "script_block_expression") : null
+            const ifaceName = ifaceElements
+              ? this.collectChildrenByType(ifaceElements, "generic_token")[0] ?? null
+              : null
+            if (ifaceBlock && ifaceName) {
+              const ifaceLine = ifaceName.startPosition.row + 1
+              declareSymbol(ifaceName.text, ASTEngine.SymbolKind.Interface, ifaceName, ifaceLine, {
+                powershellSpecific: true,
+                docstring: this.docstringAbove(ifaceName.startPosition.row, lines),
+              })
+              interfaceBlocks.add(nodeKey(node))
+              frames.push({ owner: ifaceName.text, scope: ifaceName.text, containerLine: ifaceLine })
+            }
+            break
+          }
 
           // PS5 — a reserved word is not a command. The named blocks come first
           // because the grammar models them as `command` nodes; the keyword set
@@ -1390,9 +1871,18 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const op = findFirstChild(node, "command_invokation_operator")
           if (op) {
             if (leaf.startsWith("$")) {
-              addRel(top().scope, stripDollar(leaf), ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
-                powershellSpecific: true, isInvokedVariable: true, isVariableReference: true,
-              })
+              // F9: guard the name. `$type::$method()` leaves the command-name node
+              // holding `$method()` plus the rest of the recovered line, so the
+              // stripped text was `method()\n                }` — published as a
+              // `uses` target that no symbol can have, on
+              // ConstrainedLanguageRestriction.Tests.ps1:513. Found by the
+              // line-level check, the last of its residue at 100.00% justified.
+              const invoked = stripDollar(leaf)
+              if (isPlausibleSymbolName(invoked)) {
+                addRel(top().scope, invoked, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
+                  powershellSpecific: true, isInvokedVariable: true, isVariableReference: true,
+                })
+              }
             } else if (looksLikeModulePath(leaf)) {
               addRel(top().scope, leaf, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
                 powershellSpecific: true, invokationOperator: op.text,
@@ -1414,33 +1904,98 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           // PS18 — `New-Object -TypeName X` is THE PowerShell instantiation
           // form and the pre-wave lane emitted no `instantiates` edge for it.
+          // `New-Object` is a CONSTRUCTOR CALL, and PowerShell spells the thing
+          // being constructed two ways: `-TypeName <managed type>` and
+          // `-ComObject <ProgID>`. Only the first was read, so the second produced
+          // NO EDGE AT ALL — not a wrong edge, none. Found by hand-auditing the F5
+          // differential's MISSING samples, where `instantiates Extract-ZipLegacy ->
+          // Shell.Application` appears on ansible's own Windows modules, and
+          // confirmed in isolation: `New-Object -ComObject Shell.Application`
+          // published neither a call nor an instantiation.
+          //
+          // `-ComObject` is not a rarer spelling of `-TypeName`, it is the ONLY
+          // spelling for a COM object, and `$shell = New-Object -ComObject
+          // Shell.Application` is how the language gets a Shell handle. The COM
+          // ProgID is a dotted name, so its target is external by nature — which is
+          // the designed handling for a name the file does not declare, the same as
+          // a cmdlet name.
           if (leaf === "New-Object") {
+            // THREE spellings, and the first version of this fix read one of them
+            // for the wrong reason — it keyed `isComObject` on the constructed name
+            // containing a dot, so `-TypeName System.Text.StringBuilder` was
+            // published as a COM object. The flag decides the kind, never the
+            // spelling of the type: a dotted .NET name and a COM ProgID look alike
+            // and mean different things. Caught by the fixture's two metadata rows
+            // before it was committed.
+            const comObject = this.parameterValue(node, "ComObject") ?? this.parameterValue(node, "comobject")
             const typeName = this.parameterValue(node, "TypeName") ?? this.parameterValue(node, "typename")
-            if (typeName && !isTypeAccelerator(typeName)) {
-              addRel(top().scope, typeName, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
-                powershellSpecific: true, viaNewObject: true,
+            // The POSITIONAL form: `New-Object System.Collections.ArrayList` and
+            // `New-Object System.Version`, which is how the cmdlet is written
+            // whenever the author did not bother with a flag. `commandArgs` returns
+            // values only, having already skipped every `command_parameter`, so the
+            // first entry is the positional type name and the flagged forms leave it
+            // empty.
+            const positional = commandArgs(node)[0]
+            const constructed = comObject ?? typeName ?? positional
+            if (constructed && !isTypeAccelerator(constructed)) {
+              addRel(top().scope, constructed, ASTEngine.RelationshipType.Instantiates, 0.9, nameLine, {
+                powershellSpecific: true,
+                viaNewObject: true,
+                ...(comObject ? { isComObject: true } : {}),
               })
             }
             break
           }
 
           // PS20 — `Export-ModuleMember -Function F`.
+          //
+          // G6 (M60 #278): a flag's value is a LIST, not one token. The reader used
+          // to take `valueAfterNode(elements, i)` — the single next named child —
+          // which is correct for `-Function F` and silently drops every name after
+          // the first in `-Function A, B`. That never showed, because the grammar
+          // could not parse a comma-separated command argument at all, so the only
+          // way this line reached the reader before the G6 grammar patch was as
+          // ERROR-recovery text and the recovery path emitted BOTH names by
+          // accident. The moment the line parses correctly the latent gap is
+          // visible: on powershell/test/perf/perf.psm1:207
+          // (`Export-ModuleMember -Function 'Start-Benchmarking', 'Compare-BenchmarkResult'`)
+          // the wired grammar reported two exports and the corrected grammar
+          // reported one. A patch that fixes 28 files and adds 243 edges should not
+          // quietly cost a real module-surface edge, so the reader now walks to the
+          // next flag instead of taking one token, and also accepts a bare
+          // `string_literal` / `generic_token` child, which is what a value after a
+          // comma is in the new tree.
           if (leaf === "Export-ModuleMember") {
             const elements = findFirstChild(node, "command_elements")
             if (elements) {
+              const isFlag = (t: string) => t === "function" || t === "cmdlet" || t === "variable" || t === "alias"
               for (let i = 0; i < elements.namedChildCount; i++) {
                 const c = elements.namedChild(i)
                 if (!c) continue
                 if (c.type === "command_parameter") {
-                  const flag = stripDollar(c.text).replace(/^-/, "").toLowerCase()
-                  if (flag !== "function" && flag !== "cmdlet" && flag !== "variable" && flag !== "alias") continue
-                  const next = this.valueAfterNode(elements, i)
-                  if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
-                    addExport(this.stripQuotes(next.text), leaf, next.startPosition.row + 1)
+                  const flag = stripLeadingDash(stripDollar(c.text)).toLowerCase()
+                  if (!isFlag(flag)) continue
+                  // Walk the whole value list, stopping at the next flag.
+                  for (let j = i + 1; j < elements.namedChildCount; j++) {
+                    const v = elements.namedChild(j)
+                    if (!v) break
+                    if (v.type === "command_parameter") break
+                    if (v.type === "command_argument_sep") continue
+                    if (v.type === "generic_token" || v.type === "string_literal" || v.type === "expandable_string_literal") {
+                      addExport(this.stripQuotes(v.text), leaf, v.startPosition.row + 1)
+                    } else {
+                      for (const t of this.literalTokens(v)) addExport(t, leaf, v.startPosition.row + 1)
+                    }
                   }
                   continue
                 }
-                if (c.type === "array_literal_expression" || c.type === "unary_expression" || c.type === "command_argument_sep") {
+                if (
+                  c.type === "array_literal_expression" ||
+                  c.type === "unary_expression" ||
+                  c.type === "command_argument_sep" ||
+                  c.type === "string_literal" ||
+                  c.type === "generic_token"
+                ) {
                   for (const t of this.literalTokens(c)) addExport(t, leaf, c.startPosition.row + 1)
                 }
               }
@@ -1463,6 +2018,19 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
             break
           }
 
+          // F9 (M60 #278): a bare VARIABLE passed as a command argument is a USE,
+          // and it was emitting nothing. Measured on a probe: `$a = 1` then
+          // `Write-Host $a` published `calls -> Write-Host` and no `uses -> a` at
+          // all — so every variable handed to a cmdlet was invisible in the graph,
+          // while the same variable interpolated in a string was read. Passing a
+          // variable to a cmdlet is one of the commonest things PowerShell does.
+          //
+          // Read from `command_elements` rather than the whole `command` node, and
+          // with `skipBlocks`, so a nested script block's locals stay with the block
+          // that declares them. `addRel` dedupes on source|type|target|line, so a
+          // variable that is also interpolated on the same line is published once.
+          const argElements = findFirstChild(node, "command_elements")
+          if (argElements) emitVariableReads(argElements, true, "isArgumentReference")
           addRel(top().scope, leaf, ASTEngine.RelationshipType.Calls, leaf.includes("-") ? 0.9 : 0.6, nameLine, {
             powershellSpecific: true,
           })
@@ -1508,6 +2076,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (inherited && inherited.has(cand.memberName)) {
           addRel(cand.className, base, ASTEngine.RelationshipType.Overrides, 0.9, cand.line, {
             powershellSpecific: true, overridesMember: cand.memberName,
+            // The one edge in this lane that is INFERRED rather than read: PowerShell
+            // has no `override` keyword, so this is a name match between a subclass
+            // member and the base's declared member set. Calling it `structural` would
+            // overstate the evidence, and the tier is the whole point of emitting one.
+            evidenceClass: "inferred",
           })
           break
         }
@@ -1550,7 +2123,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** PS1 — the file's own basename, extension included. */
   private basenameOf(filePath: string): string {
-    const normalized = filePath.replace(/\\/g, "/")
+    const normalized = filePath.split("\\").join("/")
     const base = normalized.slice(normalized.lastIndexOf("/") + 1)
     return base.length > 0 ? base : "script.ps1"
   }
@@ -1631,11 +2204,11 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private parameterValue(node: Node, flag: string): string | null {
     const elements = this.findChildByType(node, "command_elements")
     if (!elements) return null
-    const wanted = flag.replace(/^-/, "").toLowerCase()
+    const wanted = stripLeadingDash(flag).toLowerCase()
     for (let i = 0; i < elements.namedChildCount; i++) {
       const c = elements.namedChild(i)
       if (!c || c.type !== "command_parameter") continue
-      if (this.stripQuotes(c.text).replace(/^-/, "").toLowerCase() !== wanted) continue
+      if (stripLeadingDash(this.stripQuotes(c.text)).toLowerCase() !== wanted) continue
       const next = this.valueAfterNode(elements, i)
       if (next && (next.type === "generic_token" || next.type === "string_literal" || next.type === "expandable_string_literal")) {
         return this.stripQuotes(next.text)
@@ -1786,7 +2359,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (open < 0) return undefined
       const last = i
       const body = lines.slice(open, last + 1)
-        .map((l, k) => (k === 0 ? l.replace(/^\s*<#/, "") : k === last - open ? l.replace(/#>\s*$/, "") : l))
+        .map((l, k) => (k === 0 ? stripOpenCommentDelim(l) : k === last - open ? stripCloseCommentDelim(l) : l))
         .join("\n")
         .trim()
       return body.length > 0 ? body : undefined
@@ -1802,7 +2375,7 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       i--
     }
     if (collected.length === 0) return undefined
-    const text = collected.join("\n").replace(/^#+\s?/, "").trim()
+    const text = stripCommentMarkerRun(collected.join("\n")).trim()
     return text.length > 0 ? text : undefined
   }
 

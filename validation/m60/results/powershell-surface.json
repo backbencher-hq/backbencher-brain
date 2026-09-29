@@ -1,8 +1,13 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-27T16:02:14.681Z",
-  "commit": "2c5c01970e561bf5df9d59da263b4aebe5ca15a1",
+  "at": "2026-09-29T03:03:45.693Z",
+  "commit": "5b123be70e2f8bc42d55a70a3e9b7acaf2fff095",
+  "loadContext": {
+    "loadAvg1": 20.3,
+    "cores": 8
+  },
+  "perfIsQualified": false,
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -14,19 +19,19 @@
       "files": 49,
       "digest": "ef448ff5",
       "damage": {
-        "damaged": 14,
-        "errNodes": 112,
-        "missing": 15
+        "damaged": 8,
+        "errNodes": 56,
+        "missing": 6
       },
       "symbols": 2588,
-      "relationships": 9595,
+      "relationships": 12028,
       "kinds": {
-        "contains": 2532,
+        "contains": 2538,
         "references": 24,
-        "calls": 3163,
-        "uses": 3796,
-        "instantiates": 60,
-        "exports": 20
+        "uses": 5675,
+        "calls": 3676,
+        "instantiates": 78,
+        "exports": 37
       },
       "absent": [
         "extends",
@@ -35,8 +40,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 9595,
-        "total": 9595
+        "withLine": 12028,
+        "total": 12028
       },
       "unknownTargets": {
         "count": 0,
@@ -51,9 +56,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 10339,
-        "perFileMs": 210.994,
-        "factsPerMs": 1.178
+        "wallMs": 4136,
+        "perFileMs": 84.401,
+        "factsPerMs": 3.534
       }
     },
     {
@@ -61,19 +66,19 @@
       "files": 24,
       "digest": "4fb726b4",
       "damage": {
-        "damaged": 15,
-        "errNodes": 98,
-        "missing": 23
+        "damaged": 10,
+        "errNodes": 26,
+        "missing": 1
       },
-      "symbols": 556,
-      "relationships": 2161,
+      "symbols": 573,
+      "relationships": 2298,
       "kinds": {
         "references": 52,
-        "calls": 634,
-        "contains": 532,
-        "uses": 880,
-        "instantiates": 61,
-        "exports": 2
+        "contains": 549,
+        "calls": 616,
+        "uses": 1003,
+        "instantiates": 70,
+        "exports": 8
       },
       "absent": [
         "extends",
@@ -82,8 +87,8 @@
         "imports"
       ],
       "lineNumber": {
-        "withLine": 2161,
-        "total": 2161
+        "withLine": 2298,
+        "total": 2298
       },
       "unknownTargets": {
         "count": 0,
@@ -98,17 +103,17 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 2149,
-        "perFileMs": 89.545,
-        "factsPerMs": 1.264
+        "wallMs": 727,
+        "perFileMs": 30.304,
+        "factsPerMs": 3.947
       }
     }
   ],
   "summary": {
     "files": 73,
-    "symbols": 3144,
-    "relationships": 11756,
-    "withLine": 11756,
+    "symbols": 3161,
+    "relationships": 14326,
+    "withLine": 14326,
     "absentKinds": [
       "extends",
       "implements",
@@ -120,10 +125,12 @@
     "reservedTargets": 0,
     "perFileMs": [
       {
-        "repo": "powershell"
+        "repo": "powershell",
+        "ms": 84.401
       },
       {
-        "repo": "ansible"
+        "repo": "ansible",
+        "ms": 30.304
       }
     ]
   },

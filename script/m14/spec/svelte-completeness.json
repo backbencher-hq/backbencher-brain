@@ -1,289 +1,390 @@
 {
- "language": "svelte",
- "grammar": "tree-sitter-svelte.wasm",
- "handled_verified": {
-  "types": [
-   "attribute",
-   "attribute_name",
-   "attribute_value",
-   "await_statement",
-   "catch_block",
-   "comment",
-   "const_tag",
-   "debug_tag",
-   "document",
-   "each_statement",
-   "element",
-   "else_block",
-   "else_if_block",
-   "end_tag",
-   "expression",
-   "expression_tag",
-   "html_tag",
-   "if_statement",
-   "key_statement",
-   "quoted_attribute_value",
-   "raw_text",
-   "render_tag",
-   "script_element",
-   "self_closing_tag",
-   "snippet_name",
-   "snippet_statement",
-   "start_tag",
-   "style_element",
-   "svelte_raw_text",
-   "tag_name",
-   "text",
-   "then_block"
-  ]
- },
- "internal_silent": {
-  "types": [
-   "await_end",
-   "await_start",
-   "block_end_tag",
-   "block_start_tag",
-   "block_tag",
-   "catch_start",
-   "doctype",
-   "each_end",
-   "each_start",
-   "else_if_start",
-   "else_start",
-   "entity",
-   "erroneous_end_tag",
-   "erroneous_end_tag_name",
-   "if_end",
-   "if_start",
-   "key_end",
-   "key_start",
-   "snippet_end",
-   "snippet_start",
-   "then_start"
-  ]
- },
- "gap": {
-  "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
-  "gaps": [
-   {
-    "id": "S1",
-    "node_type": "expression,attribute (template expressions)",
-    "severity": "high",
-    "missing": "template expressions emit NO references to the component's own members — {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
-    "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) emit Uses edges (isTemplateExpression) to member symbols. Scope collision coverage is extended by S5: each-loop and declaration-order-aware {@const} shadowing is separately pinned by svelte/each-shadow-collision."
-   },
-   {
-    "id": "S2",
-    "node_type": "$props() destructure",
-    "severity": "medium",
-    "missing": "let { a, b } = $props() double-declares each binding — extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
-    "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/rune-props-dedupe expectSymbolCount == 1) + mutant svelte/reduplicate-rune-props CAUGHT (2026-08-27). $props() destructured bindings (let { a, b, c = 5 } = $props()) are now declared EXACTLY once as component-owned Properties; the JS sub-analyzer's parallel destructured Variables are dropped during the merge."
-   },
-   {
-    "id": "S5",
-    "node_type": "each_statement, const_tag",
-    "severity": "high",
-    "missing": "template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
-    "evidence": "probe + fixture: members row/item/total colliding with {#each rows as row}, nested {#each ... as item}, and {@const total = ...}; pre-fix emitted false uses -> row/item/total; post-fix svelte/each-shadow-collision passes and the scope-order probe preserves a legitimate use before the const declaration while suppressing later local reads",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/each-shadow-collision) + focused mutant svelte/reemit-shadowed-member-uses CAUGHT. Lexical template scopes now share state among siblings for declaration-order-aware {@const} bindings, isolate nested blocks, and register each-loop variables; no false member Uses remain for the tested collision shapes."
-   },
-   {
-    "id": "S6",
-    "node_type": "labeled_statement ($: reactive declaration)",
-    "severity": "medium",
-    "missing": "the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment.",
-    "evidence": "probe + fixture: reactive-dedupe pre-fix emitted doubled three times and total twice; post-fix expectSymbolCount equals 1 for doubled, total, and count",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/reactive-dedupe) + focused mutant svelte/reduplicate-reactive-targets CAUGHT. Reactive targets are deduplicated within Svelte extraction and the sub-analyzer copy is dropped in favor of the component-owned reactive symbol."
-   },
-   {
-    "id": "H1",
-    "node_type": "attribute (shorthand {value})",
-    "severity": "high",
-    "missing": "shorthand attributes `<Comp {value} />` parse as attribute with the whole `{value}` as the NAME (no expression child), so no walk ever visited them — the most idiomatic Svelte 5 prop-passing shape emitted no use.",
-    "evidence": "probe S-shorthand-attr: pre-fix uses=[] for member value; post-fix uses=value. Rejected-shape guard: named attributes WITH an expression child stay on the generic expression path (no double collection).",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects uses value) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Attribute-name scan collects {value} into templateExprNames for the same member-resolved Uses emission as every other template read."
-   },
-   {
-    "id": "H2",
-    "node_type": "attribute (this= on svelte:component/svelte:element)",
-    "severity": "high",
-    "missing": "bare `this={X}` values were never read, so dynamic component targets were invisible. Member-bound targets (this={fn}) already flowed through the generic expression path as Uses; import-bound targets had no edge at all.",
-    "evidence": "probe S-dynamic-this: pre-fix zero edges to imported Comp; post-fix instantiates Comp. Member-bound this={currentView} keeps exactly one Uses edge (no double emission) per the attr probe.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects instantiates DynComp + uses currentView, forbids instantiates currentView) + mutant svelte/drop-dynamic-this-instantiates CAUGHT (2026-09-11). Import-bound bare identifiers in component position resolve post-merge to instantiates (static-<Comp/> semantics); member-resolved targets keep their 3c Uses only."
-   },
-   {
-    "id": "H3",
-    "node_type": "attribute (spread {...props})",
-    "severity": "high",
-    "missing": "`<Comp {...props} />` carries the whole spread expression in the attribute NAME with no expression child — member use for props was never emitted. Full key expansion would be constant evaluation (out of scope); the spread argument reads as one use.",
-    "evidence": "probe S-spread-attr: pre-fix uses=[] for member props; post-fix uses=props.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-attr-shapes expects uses props) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Spread arguments are stripped of `...` and collected through the same char-walk tokenizer as every other template read."
-   },
-   {
-    "id": "H4",
-    "node_type": "script_element subtree ranges (symbols, imports, errors)",
-    "severity": "high",
-    "missing": "script-derived ranges were half-mapped: symbols shifted lines (columns only when starting on the script's first line, indices never); imports shifted lines only; exports and errors were pushed fully raw. Same disease class as Vue H2/H3, wider (all three dimensions on errors).",
-    "evidence": "probe S-script-ranges: pre-fix helper range startIndex script-relative (1); post-fix SFC-absolute (20) with SFC line/column. Engine already supplied sfcScriptStartIndex (Vue wave); the analyzer now consumes it.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/script-range-coherence pins work startLine 4/startColumn 1/startIndex 50/endIndex 86 via expectSymbolRanges, the first user of that gate class) + mutant svelte/script-relative-indices CAUGHT (2026-09-11). offsetRange mirrors the Vue contract (single-line endColumn rule, guarded index shifts); sub-symbol/import/error loops shift lines + first-line columns + byte indices."
-   },
-   {
-    "id": "M1",
-    "node_type": "await_statement (then/catch shadow seeding)",
-    "severity": "medium",
-    "missing": "the then/catch seeding appended a phantom literal entry shadowing identifier x in EVERY await block subtree, so a real member x read inside any await block emitted nothing — over-shadowing by hardcoded hack.",
-    "evidence": "probe S-await-x-shadow / S2-await-block-x: pre-fix member x suppressed; post-fix uses x alongside promise. Empty blocks already collect nothing, so the hack was pure harm.",
-    "status": "CLOSED",
-    "closure": "CLOSED — phantom entry deleted; fixture-gated (svelte/await-inline-shadow expects uses x read inside the await block alongside the M4 pins) + mutant svelte/readd-phantom-x-shadow CAUGHT (2026-09-11). Empty blocks already collect nothing, so the hack was pure harm."
-   },
-   {
-    "id": "M2",
-    "node_type": "expression text scan (string contents)",
-    "severity": "medium",
-    "missing": "the flat identifier regex read string contents as member reads: f(\"a=b\") emitted Uses(a) + Uses(b) alongside the real f (Vue D1 analog, unshared code).",
-    "evidence": "probe S2-string-contents / S-const-eq-string: pre-fix a+b emitted for f(\"a=b\")/f(\"x\"); post-fix only f. Backtick ${...} re-enters code (brace-tracked); backslash escapes honored.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-string-safety expects uses f, forbids uses a/b with same-named members present) + mutant svelte/reemit-string-content-uses CAUGHT (2026-09-11). Char-walk tokenizer with quote states implements the Vue D1/M1 contract locally."
-   },
-   {
-    "id": "M3",
-    "node_type": "expression text scan (member chains)",
-    "severity": "medium",
-    "missing": "member-chain leaves misattributed: user.name emitted Uses(name) alongside Uses(user) when a member shared the leaf name (Vue M1 analog). Dotted callee leaves and ?./#-preceded tokens skipped as receivers.",
-    "evidence": "probe S2-member-chain: pre-fix name emitted for {user.name} with member name present; post-fix only user.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-string-safety expects uses user, forbids uses name with member name present) + mutant svelte/reemit-chain-leaf-uses CAUGHT (2026-09-11). Receiver-only emission inside the same char-walk as M2."
-   },
-   {
-    "id": "M4",
-    "node_type": "await_statement (inline then/as vars)",
-    "severity": "medium",
-    "missing": "`{#await promise then value}` / `as d` (no explicit block node) never registered the inline vars as template-locals, so {value}/{d} leaked as false member uses — companion to M1 (block form over-shadowed, inline form under-shadowed).",
-    "evidence": "probe S3-inline-await-value: pre-fix uses value leaked (and the malformed-probe incident — missing {/await} parses with no await_statement at all, fixed in the probe, documented in #736); post-fix uses promise only. Both then and as spellings covered.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/await-inline-shadow expects uses promise+data, forbids uses value+d with same-named members present, both then and as spellings) + mutant svelte/reemit-inline-await-uses CAUGHT (2026-09-11; the value half additionally covered by svelte/reemit-shadowed-uses)."
-   },
-   {
-    "id": "D1",
-    "node_type": "script context=module export ranges",
-    "severity": "high",
-    "missing": "module-block exports were pushed raw with script-relative ranges — the H4 wave shifted symbols/imports/errors but missed the export push. Same disease, one loop.",
-    "evidence": "probe D1-module-export-ranges: pre-fix VERSION at startLine 2/startIndex 14 (script-relative); post-fix SFC line 3/index 50.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/module-block-exports gains expectExportRanges pinning VERSION at SFC line 2/columns 14-21/indices 39-46, the first user of that new gate class) + mutant svelte/script-relative-export-ranges CAUGHT (2026-09-11)."
-   },
-   {
-    "id": "D3",
-    "node_type": "expression text scan (comments)",
-    "severity": "medium",
-    "missing": "the template char-walk had no comment states: `{f(a) /* b */}` read member b, multi-line `{url // pick}` read member pick. D2 (aliased this=) probed clean in the same battery — items carry local names.",
-    "evidence": "probes D3-comment-contents / D3-line-comment: pre-fix uses b/pick alongside real reads; post-fix only real reads. Comment skipping runs in code context only, so '//' inside string literals stays literal.",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-comment-safety: block + line comments with adversarial same-named members) + mutant svelte/reemit-comment-uses CAUGHT (2026-09-11). Family follow-up flagged: Vue's twin machine has the same hole, fixed here where probe-proven."
-   },
-   {
-    "id": "D4",
-    "node_type": "render_tag (dotted targets)",
-    "severity": "medium",
-    "missing": "`{@render helpers.row(it)}` resolved to the FIRST segment (calls helpers — a namespace object, never callable) while on: dotted handlers resolve to the LAST (`box.open` -> open). Same shape, opposite answers.",
-    "evidence": "probe D4-render-dotted: pre-fix calls helpers; post-fix calls row with children?.() fallback intact. F5 oracle mirror updated in lockstep (M37.21 protocol).",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-calls gains the dotted render case: expects row, forbids helpers) + mutant svelte/render-first-segment-calls CAUGHT (2026-09-11). Callable leaf = last all-identifier segment; non-conforming shapes keep the leading-identifier fallback."
-   },
-   {
-    "id": "D5",
-    "node_type": "if_start / else_if_start / key_start (conditions)",
-    "severity": "high",
-    "missing": "{#if cond}, {:else if cond} and {#key exp} heads carry opaque svelte_raw_text with no `expression` node — nothing ever collected them. Every earlier fixture masked the hole because each condition member was ALSO read elsewhere; isolated conditions emitted zero edges.",
-    "evidence": "probes D5-if-only / D5-else-if-key-only + MECH dump (if_start->[block_start_tag, svelte_raw_text]): pre-fix uses=[] for condition-only members; post-fix all read. Pure reads, no bindings (unlike each/await).",
-    "status": "CLOSED",
-    "closure": "CLOSED — fixture-gated fix (svelte/template-condition-uses: if-only, else-if and key-only reads) + mutant svelte/drop-condition-uses CAUGHT (2026-09-11)."
-   }
-  ]
- },
- "design_decision": {
-  "decisions": [
-   {
-    "id": "D1",
-    "node_type": "style_element",
-    "status": "RULED",
-    "question": "style blocks (CSS) are skipped entirely — no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script) — same ruling as vue D1.",
-    "resolution": "RULED — DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script (same as vue D1)."
-   },
-   {
-    "id": "D2",
-    "node_type": "erroneous_end_tag,erroneous_end_tag_name",
-    "status": "RULED",
-    "question": "error-recovery end-tag nodes — recommend INTERNAL SILENT (error handling, same as vue D3).",
-    "resolution": "RULED — INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed (same as vue D3)."
-   },
-   {
-    "id": "D3",
-    "node_type": "entity,doctype",
-    "status": "RULED",
-    "question": "HTML entities and doctype declarations are document structure, not code — recommend INTERNAL SILENT.",
-    "resolution": "RULED — INTERNAL SILENT (2026-08-27): entity and doctype are HTML document structure, not code symbols; no extraction."
-   },
-   {
-    "id": "D4",
-    "node_type": "block_start_tag,block_tag,block_end_tag",
-    "status": "RULED",
-    "question": "the {#...}/{:...}/{/...} brace markers are grammar scaffolding around the real block statements — recommend INTERNAL SILENT (structure-only; the statements themselves are handled).",
-    "resolution": "RULED — INTERNAL SILENT (2026-08-27): block_start_tag/block_tag/block_end_tag are the {#}/{:}/{/} brace scaffolding markers; the block statements themselves (if/each/await/key/snippet) are handled_verified."
-   },
-   {
-    "id": "D5",
-    "node_type": "typeParameters",
-    "status": "RULED",
-    "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level (same as vue D4).",
-    "resolution": "RULED — DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the svelte Matrix (family contract)."
-   },
-   {
-    "id": "D6",
-    "node_type": "apiContract",
-    "status": "RULED",
-    "question": "apiContract payload: Svelte has no framework API-contract concept (like groovy/JS/vue) — recommend DECLARED N/A.",
-    "resolution": "RULED — DECLARED N/A (2026-08-27): Svelte has no framework API-contract concept (like groovy/JS/vue); the apiContract payload row is omitted from the svelte Matrix."
-   },
-   {
-    "id": "D7",
-    "node_type": "member rune calls ($derived.by(fn), $effect.pre(fn))",
-    "status": "FIXED",
-    "question": "Are member-call runes call edges?",
-    "ruling": "NO — language keywords. The analyzer gates on isRuneCallee(FULL callee text): $-prefixed callees whose leaf is in RUNE_LEAF_SEGMENTS are suppressed. The F5 oracle previously matched only the bare LEAF target so $derived.by surfaced as fake MISSING 'by'/'pre' (4 in the svelte repo lane); the oracle now mirrors isRuneCallee on the carried fullCallee text. fixture: rune-call-filter (forbids by/root/state)."
-   },
-   {
-    "id": "D8",
-    "node_type": "template-side calls: on:click={inc}, on:submit={() => save()}, on:click={box.open}, {@render row(it)}",
-    "status": "PINNED",
-    "question": "Do template event handlers and render tags produce call relationships?",
-    "ruling": "YES (0.85 usage_contextual) — the template pass emits them via pure-String scanning of opaque svelte_raw_text attribute values (bare identifier / first ident-then-paren / dotted callable leaf) and render_tag opaque-text scan (0.9). The embedded-JS oracle cannot see template constructs; the F5 oracle now derives the SAME truth from the template tree. fixture: template-calls (pins inc/save/open/row)."
-   },
-   {
-    "id": "D9",
-    "node_type": "HTML builtin tag set drift (analyzer vs F5 oracle)",
-    "status": "FIXED",
-    "question": "Can <search> (2023 HTML element) or camelCase SVG tags surface as component instantiates?",
-    "ruling": "NO — HTML_BUILTIN_TAGS covers all 134 modern-HTML + SVG tags; the F5 oracle's ORACLE_HTML_TAGS drifted (126 tags, missing search + 7 SVG camelCase) and faked a MISSING instantiates->search in vue-element-admin. Lesson (family-wide): parallel builtin lists on analyzer and oracle sides must be diffed by a set-comparison probe, not trusted. fixture: vue/modern-html-svg-builtin-tags (forbids search + 7 SVG tags)."
-   },
-   {
-     "id": "D10",
-     "node_type": "svelte:component / svelte:element `this={X}` (F5 ORACLE contract)",
-     "status": "FIXED",
-     "question": "M49 W13 (W12 residual): the analyzer's H2 rule emits `instantiates X` when a `<svelte:component this={X}/>` target is an import-bound bare identifier, but the oracle's component-usage walk skipped `svelte:component` as a builtin tag - and the dynamic target is named by an ATTRIBUTE, so the tag-name walk never saw it either. The analyzer's correct edge therefore surfaced as the one unexplained edge W12's 400-file svelte measurement left open (corpus file: packages/svelte/tests/runtime-legacy/samples/event-handler-shorthand-dynamic-component/main.svelte).",
-     "decision": "RULED - the oracle mirrors the analyzer's gate and nothing more: `deriveSvelteComponentUsages(root, importBindings)` emits `instantiates` for a bare-identifier `this={X}` when X is an import binding. The analyzer's second gate (skip a target that resolves to a declared member, which carries a `uses` edge instead) is deliberately NOT mirrored: an ES module cannot both import and declare the same name, so an import-bound name can never trip it and a non-import name is rejected by the import gate. Measured: the bindings are NOT available from the embedded-script truth (probed - `deriveTreeEdges(st, \"javascript\")` emits zero edges for `import Widget from './Widget.svelte'`), so they are walked off the JS-parsed script tree, mirroring the analyzer's `imports[].items`. Per-file parity on the real corpus file: analyzer `instantiates|Widget` vs oracle `instantiates|Widget`, 0 missing / 0 unexplained; lane re-run at 60 files svelte 100%/0/0, javascript 744/744, typescript 100%, baseline gate no regressions. Pinned by F9-PROBE-SVELTE-DYNAMIC-COMPONENT (both directions asserted, so the mirror cannot trade an unexplained edge for a fabricated one) and proven load-bearing by revert; the analyzer side was already pinned by fixture svelte/relationship-kinds.",
-     "date": "2026-09-13"
-   }
-  ]
- }
+  "language": "svelte",
+  "grammar": "tree-sitter-svelte.wasm",
+  "handled_verified": {
+    "types": [
+      "ERROR",
+      "MISSING",
+      "attribute",
+      "attribute_name",
+      "attribute_value",
+      "await_statement",
+      "catch_block",
+      "comment",
+      "const_tag",
+      "debug_tag",
+      "document",
+      "each_statement",
+      "element",
+      "else_block",
+      "else_if_block",
+      "end_tag",
+      "expression",
+      "expression_tag",
+      "html_tag",
+      "if_statement",
+      "key_statement",
+      "quoted_attribute_value",
+      "raw_text",
+      "render_tag",
+      "script_element",
+      "self_closing_tag",
+      "snippet_name",
+      "snippet_statement",
+      "start_tag",
+      "style_element",
+      "svelte_raw_text",
+      "tag_name",
+      "text",
+      "then_block"
+    ],
+    "note": "THIRTY-FOUR types, each read in src/ast/real-svelte-analyzer.ts and each pinned. `ERROR` and `MISSING` are here on CORPUS MEASUREMENT, and they are the two types that made this lane's section A red \u2014 both sat in no bucket, which is silence, and for html and toml silence was the right answer. It is not the right answer here, and the precedent had to be set aside to see it. Over Svelte's grammar is **ERROR- and MISSING-live on the real corpus**, which is why both types are classified `handled_verified` rather than silent. The html and toml precedents point the OTHER way for MISSING \u2014 set aside to measure, they were right to point elsewhere here. AND THE MAGNITUDE MATTERED MORE THAN THE OCCURRENCE. The first measurement sampled 410 of 6,143 files and found 10 files (2.44%) carrying 55 ERROR and 5 MISSING. Re-measured across the FULL pool: **131 files (2.13%) carrying 1,002 ERROR and 17 MISSING** \u2014 the same incidence, roughly 18x the volume. The sample was representative of how OFTEN a file carries a recovery node and wildly unrepresentative of how MANY it has, because files with many errors were undersampled. The ruling never depended on magnitude (it needed only 'does this occur'), so it stands \u2014 but a note citing 55 as the corpus figure was wrong by more than an order of magnitude, and the sampling error is the one the toml lane had made hours earlier. **A sample can be representative of frequency and still useless for magnitude; a ruling that turns on 'never happens' must be measured on the whole population, not on a rotation.** Eight of twelve deliberately malformed documents also produce ERROR, and the remaining recovery nodes sit overwhelmingly in the corpus's own `compiler-errors/` and `parser-legacy/` samples \u2014 the project's deliberate-invalid fixtures. reads both at the node's OWN span and reports `Syntax <type> detected. The Brain Engine is bypassing this broken node`, alongside the engine's own parse diagnostic \u2014 two messages per site, both wanted: the analyzer says what it skipped, the engine says what failed to parse. The read initially covered `ERROR` but NOT `MISSING`, because the walk iterated `namedChild` and the expected `>` is an ANONYMOUS node; the engine's walk uses `children` and did report it, so nothing was lost operationally, but the contract was honoured for one recovery type and silently not the other. Fixed by matching the engine's walk. Pinned by `svelte/error-recovery` and the mutant `svelte/recovery-stops-walk`. That fixture arranges the damage so it cannot be faked: an unclosed `{#if}` makes the parser's ERROR span swallow the REST OF THE FILE, so valid markup sits inside the error region, and a walk that stopped at the recovery node would publish the module, `shared` and one component at L7 and then nothing \u2014 while the document still looked analysed, because the module symbol spans the whole root. That truncation is the defect class no count-based gate here can see."
+  },
+  "internal_silent": {
+    "types": [
+      "await_end",
+      "await_start",
+      "block_end_tag",
+      "block_start_tag",
+      "block_tag",
+      "catch_start",
+      "doctype",
+      "each_end",
+      "each_start",
+      "else_if_start",
+      "else_start",
+      "entity",
+      "erroneous_end_tag",
+      "erroneous_end_tag_name",
+      "if_end",
+      "if_start",
+      "key_end",
+      "key_start",
+      "snippet_end",
+      "snippet_start",
+      "then_start"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
+    "gaps": [
+      {
+        "id": "S1",
+        "node_type": "expression,attribute (template expressions)",
+        "severity": "high",
+        "missing": "template expressions emit NO references to the component's own members \u2014 {count}, label={label}, {#each items as item} (collection), {#await promise then value}, {@html raw}, {@const x = items.length}, {@debug items}, <svelte:component this={Comp}> all read script-side state but zero Uses/references edges are emitted. Only on: directives (calls) and {@render} (calls) produce edges; the template<->script data-flow is otherwise entirely silent.",
+        "evidence": "probe: <span>{count}</span> + <MyButton label={label}/> + {#each items as item}<p>{item}</p>{/each} + {#await promise then value}<p>{value}</p>{/await} + {@html raw} -> only instantiates for MyButton; zero edges to count/label/items/promise/raw",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-member-uses) + mutants svelte/drop-template-member-uses + svelte/reemit-shadowed-uses CAUGHT (2026-08-27). Template expressions ({count}, label={label}, {#each items as item}, {#await promise then value}, {@html raw}, {@const total}, {@debug x}, <svelte:component this={Comp}>) emit Uses edges (isTemplateExpression) to member symbols. Scope collision coverage is extended by S5: each-loop and declaration-order-aware {@const} shadowing is separately pinned by svelte/each-shadow-collision."
+      },
+      {
+        "id": "S2",
+        "node_type": "$props() destructure",
+        "severity": "medium",
+        "missing": "let { a, b } = $props() double-declares each binding \u2014 extractSvelteDeclarations emits Property symbols (isSvelteProp/fromRunes, component-owned) AND the JS sub-analyzer's destructured Variable symbols (isConst/isDestructured, unowned) both survive the merge. Every rune-prop binding appears twice with conflicting kinds/ownership, polluting symbol consumers.",
+        "evidence": "probe: let { a, b } = $props() -> a: 2x (property owner=comp [isSvelteProp,fromRunes] | variable owner=- [isConst,isDestructured]); same for b",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/rune-props-dedupe expectSymbolCount == 1) + mutant svelte/reduplicate-rune-props CAUGHT (2026-08-27). $props() destructured bindings (let { a, b, c = 5 } = $props()) are now declared EXACTLY once as component-owned Properties; the JS sub-analyzer's parallel destructured Variables are dropped during the merge."
+      },
+      {
+        "id": "S5",
+        "node_type": "each_statement, const_tag",
+        "severity": "high",
+        "missing": "template-local each-loop and {@const} bindings that collide with same-named component members leaked false template Uses edges. {#each rows as row} and nested {#each ... as item} read local values, not member functions; {@const total = ...} is local to its enclosing block and must shadow the member only after its declaration.",
+        "evidence": "probe + fixture: members row/item/total colliding with {#each rows as row}, nested {#each ... as item}, and {@const total = ...}; pre-fix emitted false uses -> row/item/total; post-fix svelte/each-shadow-collision passes and the scope-order probe preserves a legitimate use before the const declaration while suppressing later local reads",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/each-shadow-collision) + focused mutant svelte/reemit-shadowed-member-uses CAUGHT. Lexical template scopes now share state among siblings for declaration-order-aware {@const} bindings, isolate nested blocks, and register each-loop variables; no false member Uses remain for the tested collision shapes."
+      },
+      {
+        "id": "S6",
+        "node_type": "labeled_statement ($: reactive declaration)",
+        "severity": "medium",
+        "missing": "the same reactive state variable assigned by multiple `$:` blocks was emitted once per block, and the JS/TS sub-analyzer's plain declaration survived alongside the Svelte-owned reactive symbol, producing duplicate symbols and ambiguous containment.",
+        "evidence": "probe + fixture: reactive-dedupe pre-fix emitted doubled three times and total twice; post-fix expectSymbolCount equals 1 for doubled, total, and count",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/reactive-dedupe) + focused mutant svelte/reduplicate-reactive-targets CAUGHT. Reactive targets are deduplicated within Svelte extraction and the sub-analyzer copy is dropped in favor of the component-owned reactive symbol."
+      },
+      {
+        "id": "H1",
+        "node_type": "attribute (shorthand {value})",
+        "severity": "high",
+        "missing": "shorthand attributes `<Comp {value} />` parse as attribute with the whole `{value}` as the NAME (no expression child), so no walk ever visited them \u2014 the most idiomatic Svelte 5 prop-passing shape emitted no use.",
+        "evidence": "probe S-shorthand-attr: pre-fix uses=[] for member value; post-fix uses=value. Rejected-shape guard: named attributes WITH an expression child stay on the generic expression path (no double collection).",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-attr-shapes expects uses value) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Attribute-name scan collects {value} into templateExprNames for the same member-resolved Uses emission as every other template read."
+      },
+      {
+        "id": "H2",
+        "node_type": "attribute (this= on svelte:component/svelte:element)",
+        "severity": "high",
+        "missing": "bare `this={X}` values were never read, so dynamic component targets were invisible. Member-bound targets (this={fn}) already flowed through the generic expression path as Uses; import-bound targets had no edge at all.",
+        "evidence": "probe S-dynamic-this: pre-fix zero edges to imported Comp; post-fix instantiates Comp. Member-bound this={currentView} keeps exactly one Uses edge (no double emission) per the attr probe.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-attr-shapes expects instantiates DynComp + uses currentView, forbids instantiates currentView) + mutant svelte/drop-dynamic-this-instantiates CAUGHT (2026-09-11). Import-bound bare identifiers in component position resolve post-merge to instantiates (static-<Comp/> semantics); member-resolved targets keep their 3c Uses only."
+      },
+      {
+        "id": "H3",
+        "node_type": "attribute (spread {...props})",
+        "severity": "high",
+        "missing": "`<Comp {...props} />` carries the whole spread expression in the attribute NAME with no expression child \u2014 member use for props was never emitted. Full key expansion would be constant evaluation (out of scope); the spread argument reads as one use.",
+        "evidence": "probe S-spread-attr: pre-fix uses=[] for member props; post-fix uses=props.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-attr-shapes expects uses props) + mutant svelte/drop-attr-shape-uses CAUGHT (2026-09-11). Spread arguments are stripped of `...` and collected through the same char-walk tokenizer as every other template read."
+      },
+      {
+        "id": "H4",
+        "node_type": "script_element subtree ranges (symbols, imports, errors)",
+        "severity": "high",
+        "missing": "script-derived ranges were half-mapped: symbols shifted lines (columns only when starting on the script's first line, indices never); imports shifted lines only; exports and errors were pushed fully raw. Same disease class as Vue H2/H3, wider (all three dimensions on errors).",
+        "evidence": "probe S-script-ranges: pre-fix helper range startIndex script-relative (1); post-fix SFC-absolute (20) with SFC line/column. Engine already supplied sfcScriptStartIndex (Vue wave); the analyzer now consumes it.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/script-range-coherence pins work startLine 4/startColumn 1/startIndex 50/endIndex 86 via expectSymbolRanges, the first user of that gate class) + mutant svelte/script-relative-indices CAUGHT (2026-09-11). offsetRange mirrors the Vue contract (single-line endColumn rule, guarded index shifts); sub-symbol/import/error loops shift lines + first-line columns + byte indices."
+      },
+      {
+        "id": "M1",
+        "node_type": "await_statement (then/catch shadow seeding)",
+        "severity": "medium",
+        "missing": "the then/catch seeding appended a phantom literal entry shadowing identifier x in EVERY await block subtree, so a real member x read inside any await block emitted nothing \u2014 over-shadowing by hardcoded hack.",
+        "evidence": "probe S-await-x-shadow / S2-await-block-x: pre-fix member x suppressed; post-fix uses x alongside promise. Empty blocks already collect nothing, so the hack was pure harm.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 phantom entry deleted; fixture-gated (svelte/await-inline-shadow expects uses x read inside the await block alongside the M4 pins) + mutant svelte/readd-phantom-x-shadow CAUGHT (2026-09-11). Empty blocks already collect nothing, so the hack was pure harm."
+      },
+      {
+        "id": "M2",
+        "node_type": "expression text scan (string contents)",
+        "severity": "medium",
+        "missing": "the flat identifier regex read string contents as member reads: f(\"a=b\") emitted Uses(a) + Uses(b) alongside the real f (Vue D1 analog, unshared code).",
+        "evidence": "probe S2-string-contents / S-const-eq-string: pre-fix a+b emitted for f(\"a=b\")/f(\"x\"); post-fix only f. Backtick ${...} re-enters code (brace-tracked); backslash escapes honored.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-string-safety expects uses f, forbids uses a/b with same-named members present) + mutant svelte/reemit-string-content-uses CAUGHT (2026-09-11). Char-walk tokenizer with quote states implements the Vue D1/M1 contract locally."
+      },
+      {
+        "id": "M3",
+        "node_type": "expression text scan (member chains)",
+        "severity": "medium",
+        "missing": "member-chain leaves misattributed: user.name emitted Uses(name) alongside Uses(user) when a member shared the leaf name (Vue M1 analog). Dotted callee leaves and ?./#-preceded tokens skipped as receivers.",
+        "evidence": "probe S2-member-chain: pre-fix name emitted for {user.name} with member name present; post-fix only user.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-string-safety expects uses user, forbids uses name with member name present) + mutant svelte/reemit-chain-leaf-uses CAUGHT (2026-09-11). Receiver-only emission inside the same char-walk as M2."
+      },
+      {
+        "id": "M4",
+        "node_type": "await_statement (inline then/as vars)",
+        "severity": "medium",
+        "missing": "`{#await promise then value}` / `as d` (no explicit block node) never registered the inline vars as template-locals, so {value}/{d} leaked as false member uses \u2014 companion to M1 (block form over-shadowed, inline form under-shadowed).",
+        "evidence": "probe S3-inline-await-value: pre-fix uses value leaked (and the malformed-probe incident \u2014 missing {/await} parses with no await_statement at all, fixed in the probe, documented in #736); post-fix uses promise only. Both then and as spellings covered.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/await-inline-shadow expects uses promise+data, forbids uses value+d with same-named members present, both then and as spellings) + mutant svelte/reemit-inline-await-uses CAUGHT (2026-09-11; the value half additionally covered by svelte/reemit-shadowed-uses)."
+      },
+      {
+        "id": "D1",
+        "node_type": "script context=module export ranges",
+        "severity": "high",
+        "missing": "module-block exports were pushed raw with script-relative ranges \u2014 the H4 wave shifted symbols/imports/errors but missed the export push. Same disease, one loop.",
+        "evidence": "probe D1-module-export-ranges: pre-fix VERSION at startLine 2/startIndex 14 (script-relative); post-fix SFC line 3/index 50.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/module-block-exports gains expectExportRanges pinning VERSION at SFC line 2/columns 14-21/indices 39-46, the first user of that new gate class) + mutant svelte/script-relative-export-ranges CAUGHT (2026-09-11)."
+      },
+      {
+        "id": "D3",
+        "node_type": "expression text scan (comments)",
+        "severity": "medium",
+        "missing": "the template char-walk had no comment states: `{f(a) /* b */}` read member b, multi-line `{url // pick}` read member pick. D2 (aliased this=) probed clean in the same battery \u2014 items carry local names.",
+        "evidence": "probes D3-comment-contents / D3-line-comment: pre-fix uses b/pick alongside real reads; post-fix only real reads. Comment skipping runs in code context only, so '//' inside string literals stays literal.",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-comment-safety: block + line comments with adversarial same-named members) + mutant svelte/reemit-comment-uses CAUGHT (2026-09-11). Family follow-up flagged: Vue's twin machine has the same hole, fixed here where probe-proven."
+      },
+      {
+        "id": "D4",
+        "node_type": "render_tag (dotted targets)",
+        "severity": "medium",
+        "missing": "`{@render helpers.row(it)}` resolved to the FIRST segment (calls helpers \u2014 a namespace object, never callable) while on: dotted handlers resolve to the LAST (`box.open` -> open). Same shape, opposite answers.",
+        "evidence": "probe D4-render-dotted: pre-fix calls helpers; post-fix calls row with children?.() fallback intact. F5 oracle mirror updated in lockstep (M37.21 protocol).",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-calls gains the dotted render case: expects row, forbids helpers) + mutant svelte/render-first-segment-calls CAUGHT (2026-09-11). Callable leaf = last all-identifier segment; non-conforming shapes keep the leading-identifier fallback."
+      },
+      {
+        "id": "D5",
+        "node_type": "if_start / else_if_start / key_start (conditions)",
+        "severity": "high",
+        "missing": "{#if cond}, {:else if cond} and {#key exp} heads carry opaque svelte_raw_text with no `expression` node \u2014 nothing ever collected them. Every earlier fixture masked the hole because each condition member was ALSO read elsewhere; isolated conditions emitted zero edges.",
+        "evidence": "probes D5-if-only / D5-else-if-key-only + MECH dump (if_start->[block_start_tag, svelte_raw_text]): pre-fix uses=[] for condition-only members; post-fix all read. Pure reads, no bindings (unlike each/await).",
+        "status": "CLOSED",
+        "closure": "CLOSED \u2014 fixture-gated fix (svelte/template-condition-uses: if-only, else-if and key-only reads) + mutant svelte/drop-condition-uses CAUGHT (2026-09-11)."
+      },
+      {
+        "id": "X1",
+        "node_type": "call_expression (identifier as the RECEIVER of a method call)",
+        "severity": "high",
+        "missing": "A `uses` edge was lost whenever an identifier was the RECEIVER of a member call. CLOSED on all three sides. ANALYZER (`src/ast/real-javascript-analyzer.ts`): the chain ROOT identifier is emitted for a call-callee `member_expression` at 0.6 with `metadata.callReceiver`; the leaf is left to the `calls` edge and `this`/`super` are excluded as keywords. ORACLE (`script/m14/differential.ts`, `deriveJavaScriptEdges`): the mirror `else if (isCallee && !isWrite)` branch, which pushes the chain root and never the segments. FIXTURE (`javascript/template-substitution-reads`): `uses obj` moved from a forbid at 0 to an expectation at 1.",
+        "evidence": "**MECHANISM, MEASURED.** J4's rule skips a call-callee `member_expression` ENTIRELY on the assumption that \"calls covers it\". That holds for a BARE callee (`fn(x)` has `calls fn`) and is FALSE for a MEMBER callee, where `calls` names only the LEAF. Two rules then cover the receiver between them: the member rule skips the callee, and the bare-read rule skips the root via `isCallee`. Before the fix, on the analyzer's own output: `title.toUpperCase()`, `value.trim()` and `items.slice().sort()` published NO `uses` for the receiver, while `title.length` (a property access) published `title` and `fn(title)` (a call argument) published it too. After: all nine receiver shapes publish, and the one apparent exception is CORRECT \u2014 `this.x.push(y)` does not publish `this`, because `this` is a keyword, not a symbol. **MY OWN CHARACTERISATION WAS WRONG TWICE, AND THE ROTATION TRAP CAUSED BOTH.** I first called this a shared premise. A pinned-rotation ablation then showed truth UNCHANGED (2532/12461) with analyzer edges +305, which looked like the oracle had been right all along \u2014 so I recorded a correction saying it was not a shared premise. That correction was itself wrong: instrumenting the oracle's identifier branch showed it is **never entered** for the receiver, and calling `deriveJavaScriptEdges` directly returns only `calls toUpperCase`. Truth is unchanged precisely because the oracle never derived these edges at all, so adding or removing them on the analyzer side cannot move it. It IS a shared premise; the ablation could not show that, and only a direct call could. **THE ORACLE HALF IS STILL OPEN, and the cost is visible.** The analyzer's new edges are at 0.6, below the harness's 0.7 resolution threshold, and unmatched by the truth, so they land in the `heuristic` bucket: on a pinned 200-file javascript sample, `heuristic` went 0 -> 294 and 0 -> 228 across two corpora while `unexplained` stayed 0. That is the honest state \u2014 the analyzer is right, the truth is incomplete, and the harness reports the disagreement as suspicion rather than as a fabrication, which is the correct classification for a 0.6-confidence read. **WHAT THE ORACLE FIX NEEDS**, for whoever takes it: the receiver is not reaching the oracle's identifier branch at all, so the fix is at the DESCENT, not at the `!isCallee` gate. The walk's own structure is two stacked loops in `deriveJavaScriptEdges` (a `pre`-stack carrying `ns`/`inFn`/`inClass`, and a `ctx` stack), and the member subtree is consumed before the identifier branch is reached. Emitting the receiver where the member callee is handled \u2014 mirroring `pushInstantiation`'s funnel \u2014 is where it belongs. **ORACLE HALF \u2014 CLOSED, AND THE SPEC'S OWN DIAGNOSIS WAS THE ONE THAT HELD. This entry's earlier text said the receiver never reaches the oracle's identifier branch, so the fix belongs at the DESCENT 'where the member callee is handled'. That was correct, and following it is what closed the gap. The site is the `if (!isCallee && !isWrite)` gate in `deriveJavaScriptEdges`, which skips the whole chain on a callee \u2014 the exact mirror of the analyzer's rule, which is why the two agreed. The fix is the `else if (isCallee && !isWrite)` sibling: descend the member chain to its root, push the root only, and leave the leaf to `calls`. **THE MISDIAGNOSIS THAT ALMOST SENT THE FIX ELSEWHERE: I instrumented the wrong function twice.** Both times I added a counter to `deriveCppBareUses` (C++), because I was grepping from a STALE line number \u2014 the file had shifted under my own edits and 2182 was no longer `deriveJavaScriptEdges`. A counter that never increments looks exactly like a correct 'the branch is not reached' finding, so the stale line number did not merely slow the search, it produced a confidently wrong answer twice. Re-locating the function with a fresh grep found the real site immediately. **A COMMIT THAT DESCRIBED A FIX IT DID NOT CONTAIN.** Commit 12fc55ac's message announces the analyzer fix, but its diff is the spec file alone \u2014 the analyzer hunk was never staged, and it was absent from the working tree, from HEAD, and from all three stashes. It is not recoverable, so it was re-applied from the diff. The only durable lesson is the check that was missing: before committing, print the STAGED blob (`git show :<file>`) and confirm the hunk is in it. Content assertions in the pre-commit step, not after the fact. **MEASURED CLOSURE, rotation pinned.** Oracle truth 2532 -> 2606 on the svelte corpus, because the oracle now derives the receivers it previously omitted; analyzer edges 2529 -> 2607; `heuristic` 294 -> 0 and 228 -> 0 across the two corpora; `MISSING` 0; `unexplained` 0 -> 1. The residual row is recorded as OPEN below and is not folded into this closure. F3 javascript all pass, F4 all 56 mutants still caught, so the fixture's two mutants remain load-bearing.",
+        "status": "CLOSED \u2014 analyzer, oracle and fixture all fixed (2026-09-27)",
+        "closure": "Closed on all three sides (analyzer, oracle, fixture). Re-test with the rotation PINNED and compare identical `sampleSetHash` values: on a 200-file javascript sample `tree-truth` rises 2532 -> 2606 and `heuristic` returns to 0. One `unexplained` row surfaced by the oracle fix is tracked separately as X9 and is NOT part of this closure. A single unpinned run is not evidence \u2014 this harness rotates its sample every wave by design, and that is what produced two wrong readings of this very gap."
+      },
+      {
+        "id": "X2",
+        "node_type": "new_expression (anonymous class expression) \u2014 ORACLE defect, TypeScript side",
+        "severity": "medium",
+        "missing": "The TYPESCRIPT oracle's `new_expression` branch derives its constructor target from `ctor.text` with no nameability guard, so an ANONYMOUS class expression publishes raw source text as a name. Measured, not inferred: `validator/samples/inline-new-class/input.svelte` contains `const a = new class { foo = $state(0) }`; the typescript grammar yields `new_expression` with `ctor.type === \"class\"` and `ctor.text` equal to the whole `class {\\n\\t\\tfoo = $state(0)\\n\\t}` body, and the oracle emits `instantiates -> 'class { ... }'`. A target that is a span of source text is the same class the TOML lane recorded as an unresolvable identity, and here it is produced by the TRUTH side, which is worse: a differential charges the analyzer for the oracle's mistake.",
+        "evidence": "THE JAVASCRIPT ORACLE ALREADY HAS THE GUARD THIS ONE LACKS, at deriveJavaScriptEdges' `new_expression` branch: it restricts candidates to nameable leaves (identifier / member_expression / qualified_identifier / template_type / generic_type / type_identifier / type_descriptor / primitive_type) and its comment records the exact reason \u2014 deriving raw expression text `fabricated unmatchable oracle edges (lodash corpus)`. The typescript twin, which this same file describes as carrying the same contract, was never hardened. WHY THE JAVASCRIPT GRAMMAR NEVER HIT IT: on this input the javascript grammar produces NO `new_expression` at all, so the JS oracle is never asked the question \u2014 which is precisely how a twin drifts from its twin. THE FIX, for the owner, is the JS guard applied to the TS branch at the `new_expression` case: require `ctor.type` to be a nameable leaf before reading `ctor.text` as a name, and drop the edge otherwise. An anonymous class expression has no honest target name. OWNER: the typescript oracle, in `script/m14/differential.ts` \u2014 a file under active parallel edit, so this is recorded rather than changed from the svelte lane, on the same reasoning as X1. IMPACT ON THIS LANE, stated so the number is not misread: svelte's differential at 1,000 files per corpus is 99.7-99.9% with `MISSING` equal to exactly this shape, and `unexplained` 0-2. The svelte ANALYZER does not produce the bad edge and does not miss a real one on this evidence; the single MISSING is the truth side's defect. Until it is fixed, svelte's depth figure cannot be 100%, and reporting it as 100% would mean quietly excluding the one disagreement that exists.",
+        "status": "CLOSED \u2014 fixed in the oracle; the analyzer half is X8",
+        "closure": "Closed. Ablated on a rotation-pinned sample: the guard removes exactly 1 truth row (the anonymous `parenthesized_expression` in vue-core) and exposes the analyzer's identical defect as X8. Not reverted, because reverting would restore an agreement wrong on both sides."
+      },
+      {
+        "id": "X3",
+        "node_type": "call_expression \u2014 rune filter table ($state.eager, $effect.pending)",
+        "severity": "high",
+        "missing": "The rune filter did not recognise two runes, so BOTH LEAKED: `$state.eager(0)` published `calls -> eager` and `$effect.pending()` published `calls -> pending` \u2014 framework plumbing named in the graph as though the component called it. 15 and 11 corpus occurrences respectively. The filter's whole purpose is to stop exactly this, and it is the reason `$state`, `$derived`, `$effect` and the rest never appear as call targets.",
+        "evidence": "FOUND BY THE CONSTRUCT CENSUS, NOT BY ANY DIFFERENTIAL. The F5 oracle missed the same two runes from the same spec, so analyzer and oracle AGREED and the lane read 100% \u2014 which is the entire argument for a census that consults neither side. CONFIRMED BY EFFECT ON THE PRIMARY GATE: at 1,000 files per corpus the svelte corpus's `unexplained` count went from 2 to 0, identifying those two rows as exactly this defect. FIXED AS EXACT NAMES, NOT LEAF SEGMENTS, and that is load-bearing: the same `$name.member` shape is how ordinary user data is written \u2014 `$order.scoops` (6), `$value.foo` (6), `$a.foo` (5), `$formData.dob` (5), `$storeDeeper.items` (3) \u2014 plus SvelteKit's `$lib` (3,549) and `$app` (25), across 78 distinct dotted forms. Adding the bare leaves `eager`/`pending` to the segment set would suppress `$my.eager` and `$my.pending`, i.e. ordinary user data; that repair was tried as a negative control on the census and correctly FAILED. Pinned by `svelte/rune-filter-coverage` with LINE-SCOPED forbids: `calls -> eager` is simultaneously the defect (at the rune's line) and a legitimate edge (at `$my.eager`), which a target-only forbid cannot express. DELIBERATELY NO MUTANT: a harness transforms output and this defect is a missing SUPPRESSION, so reproducing it means adding an edge at a line the transform cannot know without reading source. The first attempt removed the edge instead and SURVIVED, because removing a fabricated edge makes a forbidding fixture pass more. Deleted rather than shipped; the census's positive probes are the instrument that can see this direction.",
+        "status": "CLOSED \u2014 found by the construct census, fixed, effect measured on F5 (unexplained 2 -> 0)",
+        "closure": "Closed by adding $state.eager and $effect.pending as exact names in SVELTE_RUNES. Re-verified by script/m14/verify-svelte-census.ts, whose completeness rule fails if any $-form on a declared rune base is not itself a declared rune."
+      },
+      {
+        "id": "X4",
+        "node_type": "deriveSvelteComponentUsages \u2014 reserved-namespace emit condition",
+        "severity": "high",
+        "missing": "The F5 oracle derives `instantiates` for an UNDECLARED member of the reserved `svelte:` namespace \u2014 the same class as its own TS-oracle defect X2 in that a truth-side mistake is charged to the analyzer. Concretely: `svelte:selfdestructive` is in neither `ORACLE_HTML_TAGS` nor `VUE_STYLE_BUILTINS`, so both sides published it.",
+        "evidence": "THE ANALYZER IS FIXED (D11). The oracle is not, and cannot be from this lane: `differential.ts` is under active parallel edit. The fix is one condition \u2014 reject any tag matching /^svelte:/ that is not in VUE_STYLE_BUILTINS \u2014 mirroring the analyzer. CONSEQUENCE, STATED SO THE NUMBER IS NOT MISREAD: once the analyzer stops publishing the edge, this oracle row reads as MISSING rather than as agreement, because the differential charges the analyzer for the truth's mistake. So svelte's depth figure is expected to read 1 MISSING on any rotation containing that file, and that MISSING is the oracle's defect, not the analyzer's under-claim. The harness's own rule is that a lane carrying its own missing/unexplained is never pinned, precisely so an anomaly is not buried.",
+        "status": "CLOSED \u2014 fixed in the oracle, verified in both directions",
+        "closure": "Closed. `deriveSvelteComponentUsages` on the compiler-rejected `svelte:selfdestructive` now derives nothing, and a real component (`Nested`) still derives \u2014 so the rule is not over-broad. Not ablatable on the corpus by construction: the shape occurs once in 6,143 files, so no 400-file sample contains it, which is why it was verified by calling the exported oracle function directly."
+      },
+      {
+        "id": "X5",
+        "node_type": "differential-baseline.json perf rows for the svelte lane",
+        "severity": "high",
+        "missing": "The lane had NO performance measurement of its own \u2014 the doc carried no cost row at all \u2014 and when one was finally taken on the PRODUCTION path (`ASTEngine.parseFile`, so the script sub-parse and every seam are included) it disagreed with the pinned baseline by 2.5x to 4.7x: svelte repo 16.81 ms/file measured against a pinned 3.6, and shadcn-svelte 42.10 against a pinned 16.7. Section F passes on the pinned number, so the perf gate is green on a figure the lane cannot reproduce.",
+        "evidence": "MEASURED, per corpus, 150 files each, 15 warm-up files, production path: `svelte` 16.81 ms/file and 84.29 ms/KiB; `shadcn-svelte` 42.10 ms/file and 27.99 ms/KiB. The two populations are very different \u2014 svelte's own repo is mostly files under 0.5 KiB, where a large FIXED cost dominates and ms/KiB is high, while shadcn's files are larger and amortise it \u2014 which is why a single mixed figure (37.54 ms/KiB over 410 files) is less informative than the split. The cost IS linear in size within a population: ms/KiB falls monotonically as files grow (65.5 -> 38.9 -> 24.2 -> 19.2 -> 12.7), the signature of a constant overhead rather than superlinearity. WHY THE GAP CANNOT BE EXPLANED FROM THE FILE: both baseline rows record `avgMsPerFile` and NO `method`, no `filesMeasured`, no load figure. The toml lane's baseline rows by contrast record all three. So the artefact cannot say whether it was measured on the production path, on the analyzer alone, or on an earlier build of the analyzer before it gained the rune pass, the reserved-namespace rule, the error walk and the range-coherence work. THE html LANE ALREADY FELL INTO THIS EXACT TRAP once \u2014 1.4 ms/KiB was measured calling the analyzer DIRECTLY and omitted the inline-block seam and its JS sub-parse, and the real figure was 4.7-5.3. A 4.7x understatement here has the same shape, and the fix for html was to record the METHOD so the number can be read. NOT CHANGED HERE, deliberately: `differential-baseline.json` is canonical evidence written by the canonical sweep, and overwriting a pinned baseline from a scoped run would replace a claim with a smaller one \u2014 the same rule the differential itself enforces when it refuses to write M14.0.F5 from a probe. The figure is recorded here and in the doc, and reconciling the baseline is a ceremony item.",
+        "status": "OPEN \u2014 baseline unreconciled; measurement recorded, canonical baseline not rewritten from a scoped run",
+        "closure": "Closes when the canonical sweep records a perf row for the svelte lane WITH a method, filesMeasured and load figure, and the value either agrees with a production-path measurement or the difference is explained. Until then section F's green rests on a number this lane cannot reproduce, which is the same failure as quoting a gate's result instead of re-running it."
+      },
+      {
+        "id": "X6",
+        "node_type": "attribute / attribute_name \u2014 the DIRECTIVE carrier space (bind:, use:, transition:, in:, out:, animate:, class:, style:)",
+        "severity": "medium",
+        "missing": "The FRAMEWORK-INVOKED carrier families produced no edge of any kind and had no declared ruling: `use:action`, `transition:slide`, `in:fly`, `out:fade`, `animate:flip` \u2014 measured corpus weight 292 occurrences (use 114, transition 80, out 45, in 29, animate 24). The MEMBER-READ families (`bind:`, `class:`, `style:`) were NOT a gap: they were already published as `uses` by the general attribute-expression walk, because the grammar wraps an attribute value in an `expression` node that walk already visits.",
+        "evidence": "**CORRECTED BY 7x, AND THE CORRECTION IS THE FINDING.** The first version of this entry claimed eight silent families at roughly 2,049 corpus occurrences including `bind:value` at 581, the most common attribute interaction in the corpus. That was WRONG, and it was wrong because the probe that produced it IMPORTED the identifiers it then expected to see: `uses` only publishes for a name that resolves to a DECLARED COMPONENT MEMBER, so every `import { m } from './f.js'` read nothing and I read that silence as a missing carrier. With the identifiers DECLARED as state, `bind:value={m}`, `class:active={c}` and `style:color={tint}` all published `uses` before this work began. **WHAT CAUGHT IT** was a census negative control that did not fire. The carrier probe originally asserted that a declared READ family publishes a `uses` edge; emptied the read set, the census still PASSED \u2014 which is only possible if the read was already being published by another path. That control is now the standing regression test, retargeted on the `carrierDirective` provenance flag rather than on mere presence, because asserting presence would test nothing about D12 and would let the false claim back in. THE REAL GAP, then: 292 corpus occurrences of `use:`/`transition:`/`in:`/`out:`/`animate:` silently, with no ruling anywhere \u2014 zero mentions in this spec and zero in the analyzer before D12. `on:click` emitted `calls` because the framework calls the name, and Svelte calls an action on mount and a transition on state change by the same mechanism, so the silence was an internal INCONSISTENCY rather than a position. NOT the shared-premise kind in the way X4 was, but with the same cause: the F5 oracle is silent here too, so the differential reports MISSING=0 and the lane reads clean. `bind:value` alone occurs in roughly a quarter of corpus files, so a 1,000-file sample holds hundreds of them. WHAT THIS WORK ACTUALLY ADDS beyond the gap fix: the `uses` edges from a carrier now carry `metadata.carrierDirective`, which is what makes a two-way binding distinguishable from an ordinary template read \u2014 a question the edge could not answer before, and one a consumer will ask.",
+        "closure": "Closed by D12: member reads for bind:/class:/style:, call sites for use:/transition:/in:/out:/animate:, let: declared silent. Pinned by svelte/directive-carriers and two mutants; gated by the census carrier dimension, which fails if a new directive prefix appears in the corpus without a declared obligation.",
+        "status": "CLOSED \u2014 ruled D12; 292 invoked-carrier occurrences implemented, read families given provenance, gated by the census carrier dimension",
+        "status_note": "NOT the shared-premise kind: the F5 oracle is silent here too, which is why the differential reports MISSING=0 and the lane reads clean. Confirmed by inference from measurements already taken rather than by a separate run \u2014 `bind:value` occurs in roughly a quarter of corpus files, so a 1,000-file sample contains hundreds of them, and MISSING=0 across those samples cannot be reconciled with an oracle that derived bind: edges. This is the same class as X4 and the reserved-namespace finding: the only gate that compares the two sides is blind because both read the same spec, and neither enumerated this space."
+      },
+      {
+        "id": "X7",
+        "node_type": "svelte oracle \u2014 the directive carrier space (D12's other half)",
+        "severity": "high",
+        "missing": "The F5 oracle derives NO edge for the framework-invoked carriers, so the analyzer's D12 edges read as UNEXPLAINED. Measured at 400 files per corpus: svelte's `unexplained` went from 0 to 34, of which 29 carry a D12 carrier context (`use:`/`transition:`/`in:`/`out:`/`animate:`). The analyzer is correct and the oracle is silent, and a differential charges the ANALYZER for the truth's silence.",
+        "evidence": "This is the COST of fixing the analyzer side of D12 while the oracle lives in a file under active parallel edit, and it is recorded rather than absorbed. Before D12 the lane read `unexplained=0`; after it, 34. The number is not a regression in the analyzer \u2014 it is the oracle's missing half becoming visible, which is the first honest signal this space has ever produced. The harness's own rule covers it: a lane carrying its own missing/unexplained is never pinned, precisely so an anomaly is not buried. THE FIX, for the owner, is the oracle's carrier walk: for an `attribute` whose name is `use:`/`transition:`/`in:`/`out:`/`animate:`, derive `calls` to the name's last dotted segment, mirroring `deriveSvelteComponentUsages`' existing tag-name handling. Same file and same class as X2 and X4, which is why all three are recorded together rather than worked around. WHAT WAS CHECKED SO THIS IS NOT MISREAD AS NOISE: of the 34, 29 are carrier `calls`; the remaining 5 are script-derived and already oracle-known. The 141 other `calls` in the same 406-file sample carry no carrier context and come from the delegated js/ts sub-analyzer \u2014 they are matched by the oracle and are not part of this count.",
+        "status": "CLOSED \u2014 fixed in the oracle, ablated on a rotation-pinned sample",
+        "closure": "Closed. Ablation with the rotation pinned (identical sample hashes): WITH the fix truth 383/2929 and unexplained 0/0; WITHOUT it truth 360/2923 and unexplained 22/6. So the fix adds 23+6 truth rows and eliminates 28 unexplained on the same sample."
+      },
+      {
+        "id": "X8",
+        "node_type": "new_expression (anonymous constructor) \u2014 the TYPESCRIPT ANALYZER, found by making the oracle independent",
+        "severity": "high",
+        "missing": "The typescript ANALYZER publishes fabricated names for ANONYMOUS constructor expressions, the same class its javascript twin's oracle already refused with the comment \"deriving their raw expression text fabricated unmatchable oracle edges (lodash corpus)\". Measured, on the analyzer's own output: `new (e.constructor as any)(e.type, e)` -> `instantiates -> \"constructor as any)\"`; `new (getCtor())()` -> `instantiates -> \"(getCtor())\"`; `new (class {})()` -> `instantiates -> \"(class {})\"`. The control `new Foo()` -> `Foo` is correct, so the defect is specifically the un-nameable constructor.",
+        "evidence": "**FOUND BY FIXING THE ORACLE, NOT BY COMPARING THE TWO.** The typescript ORACLE had the identical bug (that was X2), so analyzer and oracle AGREED on the fabricated name and the differential reported 100% \u2014 the same shared-premise shape as the reserved-namespace finding. Fixing the truth side converted that agreement into a visible disagreement: on a rotation-pinned 200-file typescript sample, `unexplained` went 1 -> 2 and `tree-truth` 3388 -> 3387. The ablation is what makes the claim sound \u2014 two runs, IDENTICAL sample hashes, guard present vs absent \u2014 because this harness rotates its sample on every wave by design, so a before/after comparison without pinning the rotation is reading noise. **THE ORACLE FIX IS KEPT ANYWAY.** Reverting it would restore an agreement that is wrong on both sides and hide the defect; that is the one outcome the differential exists to prevent, and the harness's own rule is that a lane carrying its own missing/unexplained is never pinned so an anomaly is not buried. The cost is stated plainly: typescript's `unexplained` rises by one, and that row is this defect rather than a regression. **BLAST RADIUS CHECKED BEFORE TRUSTING IT.** Applying the javascript oracle's nameability list to TYPESCRIPT was the obvious way to write X2 and the obvious way to be wrong \u2014 the TypeScript grammar has more node types. A first comparison suggested it had removed 302 legitimate truth rows, which would have made the fix a serious regression; that comparison was INVALID because the samples differed. Re-measured properly on a rotation-pinned sample, the guard removes exactly 1 truth row, and a direct tree walk of vue-core found exactly 2 non-nameable constructors, both `parenthesized_expression`. The 302 was rotation noise, and the same discipline that caught it here is what keeps the narrow list defensible. **OWNER: the typescript analyzer, which is under active parallel work.** The oracle half (X2) is done; this half is recorded with the reproduction and left alone, on the same reasoning as X1.",
+        "status": "OPEN \u2014 CROSS-LANE, owner is the typescript analyzer",
+        "closure": "Closes when the typescript analyzer refuses a non-nameable constructor, mirroring its javascript twin. Re-test with the rotation pinned; `unexplained` should return to 0 for typescript."
+      },
+      {
+        "id": "X9",
+        "node_type": "javascript differential \u2014 the single `unexplained` row exposed by the X1 oracle fix",
+        "severity": "low",
+        "missing": "One analyzer relationship on the svelte javascript corpus matches no oracle truth row, and the two sides disagree by exactly one edge after the X1 receiver fix. NOT yet attributed to a shape: the residual was surfaced by a pinned 200-file run and then not chased to a file and line, so the cause is unknown rather than established.",
+        "evidence": "**WHY IT IS RECORDED INSTEAD OF FOLDED INTO X1'S CLOSURE.** Closing X1 moved `unexplained` 0 -> 1 on a rotation-pinned javascript sample. Two honest options: revert the oracle fix and return to a clean 0, or keep it and own the row. Reverting was rejected on the merits \u2014 it would restore an agreement that is wrong on both sides and hide the receiver gap, which is the single outcome a differential exists to prevent. A lane carrying its own unexplained is also never pinned, so the row cannot be hidden by being forgotten. **WHAT IS KNOWN.** `MISSING` stayed 0 and `heuristic` returned to 0, so the receiver rule is now agreed by both sides; the row is a different label or a different shape, not the receiver. **WHAT IS NOT KNOWN, stated plainly: the cause.** A first probe was inconclusive because it compared the analyzer against `deriveJavaScriptEdges` alone, which does not emit `instantiates` at all; the 64 mismatches it printed were an artifact of the wrong truth set, not 64 real disagreements. The harness's own figure of 1 is the trustworthy number. **HOW TO CLOSE IT.** Re-run the residual probe against the same truth assembly the differential itself builds, not against one derive function, then walk the single file to the line and read both sides for that row. Until that is done the honest label is UNATTRIBUTED, and it stays OPEN rather than being reported as noise or folded into a neighbouring fix. **THE RESIDUAL DID NOT REPRODUCE, and that is a measurement, not a closure.** It was seen on the svelte corpus at sample hash 69b7592c53d31be5 (200 files). A later pinned 200-file run at hash 2faf2a585a1d7cc2 read MISSING=0 / unexplained=0 / heuristic=0, and the lodash corpus read 0/0/0 at hash 494e1b94766e8ade \u2014 the SAME hash as the pre-fix run, so that row is directly comparable and shows the X1 oracle fix changed nothing there. Two readings follow, and the lane does not get to pick the convenient one: either the row was sample-specific and the remaining disagreement is rarer than 1-in-200, or it lives in a part of the corpus neither sample reached. Distinguishing them needs the FILE, which is exactly what the inconclusive probe failed to produce. So X9 stays OPEN and unattributed. A residual that cannot be reproduced is weaker evidence than one that can, and recording it as closed because a later run was clean would be the same move \u2014 reporting the agreement rather than the measurement \u2014 that let X1 hide for as long as it did.",
+        "status": "OPEN \u2014 unattributed; seen once at sample hash 69b7592c53d31be5, did not reproduce at 2faf2a585a1d7cc2 or 494e1b94766e8ade",
+        "closure": "Closes when the row is attributed to a file, line and shape, and either the two sides agree on it or the correct side is corrected. Probe against the differential's own truth assembly, not `deriveJavaScriptEdges` in isolation. Re-test with the rotation PINNED and an identical `sampleSetHash`."
+      }
+    ]
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "D1",
+        "node_type": "style_element",
+        "status": "RULED",
+        "question": "style blocks (CSS) are skipped entirely \u2014 no extraction. Recommend: DECLARED LIMITATION (CSS is handled by the dedicated css analyzer; the SFC analyzer owns structure + script) \u2014 same ruling as vue D1.",
+        "resolution": "RULED \u2014 DECLARED LIMITATION (2026-08-27): style blocks are skipped entirely; CSS extraction belongs to the dedicated css analyzer, the SFC analyzer owns structure + script (same as vue D1)."
+      },
+      {
+        "id": "D2",
+        "node_type": "erroneous_end_tag,erroneous_end_tag_name",
+        "status": "RULED",
+        "question": "error-recovery end-tag nodes \u2014 recommend INTERNAL SILENT (error handling, same as vue D3).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): erroneous_end_tag nodes are tree-sitter error-recovery artifacts; the analyzer already reports parse errors, no extraction needed (same as vue D3)."
+      },
+      {
+        "id": "D3",
+        "node_type": "entity,doctype",
+        "status": "RULED",
+        "question": "HTML entities and doctype declarations are document structure, not code \u2014 recommend INTERNAL SILENT.",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): entity and doctype are HTML document structure, not code symbols; no extraction."
+      },
+      {
+        "id": "D4",
+        "node_type": "block_start_tag,block_tag,block_end_tag",
+        "status": "RULED",
+        "question": "the {#...}/{:...}/{/...} brace markers are grammar scaffolding around the real block statements \u2014 recommend INTERNAL SILENT (structure-only; the statements themselves are handled).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): block_start_tag/block_tag/block_end_tag are the {#}/{:}/{/} brace scaffolding markers; the block statements themselves (if/each/await/key/snippet) are handled_verified."
+      },
+      {
+        "id": "D5",
+        "node_type": "typeParameters",
+        "status": "RULED",
+        "question": "typeParameters payload: the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. Recommend: DECLARED N/A at the SFC level (same as vue D4).",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): the SFC component itself has no generics; script-side TS generics are handled by the TS sub-analyzer. typeParameters payload row omitted from the svelte Matrix (family contract)."
+      },
+      {
+        "id": "D6",
+        "node_type": "apiContract",
+        "status": "RULED",
+        "question": "apiContract payload: Svelte has no framework API-contract concept (like groovy/JS/vue) \u2014 recommend DECLARED N/A.",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): Svelte has no framework API-contract concept (like groovy/JS/vue); the apiContract payload row is omitted from the svelte Matrix."
+      },
+      {
+        "id": "D7",
+        "node_type": "member rune calls ($derived.by(fn), $effect.pre(fn))",
+        "status": "RULED",
+        "question": "Are member-call runes call edges?",
+        "ruling": "NO \u2014 language keywords. The analyzer gates on isRuneCallee(FULL callee text): $-prefixed callees whose leaf is in RUNE_LEAF_SEGMENTS are suppressed. The F5 oracle previously matched only the bare LEAF target so $derived.by surfaced as fake MISSING 'by'/'pre' (4 in the svelte repo lane); the oracle now mirrors isRuneCallee on the carried fullCallee text. fixture: rune-call-filter (forbids by/root/state).",
+        "resolution": "RULED \u2014 YES, a call edge (2026-09-27). A rune that INVOKES its argument turns a named function reference into a real call site, on exactly the argument that makes `on:click={inc}` one. Before this, `$effect(fn)`, `$effect.pre(fn)`, `$effect.root(fn)`, `$effect.untracked(fn)` and `$derived.by(fn)` all emitted NOTHING: the js delegate correctly suppresses the rune itself, but the argument is an ordinary identifier and no edge was made for it, so a component's own graph could not show that it runs `fn` on every effect tick. THE SET IS THE INVOKING HALF of the rune surface \u2014 $effect, $effect.pre, $effect.root, $effect.untracked, $derived.by, $host \u2014 and that split IS the ruling, not an implementation detail. The value-taking runes ($derived(count), $state(0), $state.raw(v), $bindable(v), $props(), $inspect(v), $effect.tracking()) hand over something that is never called, so an edge there would point a call at an expression; the read is already a `uses` edge, so refusing the call loses no data flow. Pinned by `svelte/rune-invocations` and the mutant `svelte/rune-invocation-dropped`, which removes only rune-pass edges so the js-delegate call inside `$effect(inlineCall())` and the D8 template-handler call both survive and a failure is attributable to this ruling rather than to the delegate. TWO SHAPES REMAIN SILENT BY DESIGN: an arrow argument is not a name and its body is already walked, and a member argument ($effect(obj.m)) names a method this lane does not resolve. A user's own `$`-prefixed function is not a rune \u2014 the same reason `isRuneCallee` refuses a bare `$` prefix. OBSERVED, NOT CHANGED: a downstream dedupe collapses repeated (source, target, type) pairs to one edge, so two runes invoking the SAME function leave a single row and the other call site becomes invisible. That is pre-existing shared behaviour across relationship types, it is why the fixture gives every call site a distinct callee, and it is left alone here rather than fixed inside a contract ruling \u2014 but it is a real loss of call-site resolution and belongs on the list with the `#914` residual and the go separator retraction."
+      },
+      {
+        "id": "D8",
+        "node_type": "template-side calls: on:click={inc}, on:submit={() => save()}, on:click={box.open}, {@render row(it)}",
+        "status": "RULED",
+        "question": "Do template event handlers and render tags produce call relationships?",
+        "ruling": "YES (0.85 usage_contextual) \u2014 the template pass emits them via pure-String scanning of opaque svelte_raw_text attribute values (bare identifier / first ident-then-paren / dotted callable leaf) and render_tag opaque-text scan (0.9). The embedded-JS oracle cannot see template constructs; the F5 oracle now derives the SAME truth from the template tree. fixture: template-calls (pins inc/save/open/row).",
+        "resolution": "RULED \u2014 YES, call edges, current behaviour ratified (2026-09-27). A template event handler and a render tag are call sites: `on:click={inc}`, `on:submit={() => save()}`, `on:click={box.open}` and `{@render row(it)}` all emit `calls`, and a dotted target resolves to its LAST segment \u2014 verified at three depths (`box.open`->open, `helpers.row`->row, `box.deep.fn`->fn), which also closes the D4 note that render tags and `on:` handlers used to answer the same shape in opposite directions. The arrow-param form (`on:click={(e) => ...}`) emits nothing, because an arrow is not a name. CROSS-FAMILY DISAGREEMENT, recorded rather than smoothed over: the sibling vue lane emits NO calls for its equivalents \u2014 `@click=\"inc\"` and `@submit=\"save()\"` both produce nothing, and only `uses` edges for a receiver or a collection. So the two SFC siblings now differ on this ruling and on nothing else measured. Vue's silence has the shape of the same under-claim, and it is NOT changed from this lane: vue is not svelte's to edit, and the parallel to the cross-lane gap X1 (a javascript-owned defect found from here and deliberately not fixed here) is exact. If the family wants them aligned, that is a separate ruling against the vue lane. Pinned by `svelte/rune-invocations` (the handler row) plus the pre-existing `svelte/template-calls`, `svelte/onclick-handler-lines` and the `svelte/render-first-segment-calls` / `svelte/drop-on-handler-calls` mutants."
+      },
+      {
+        "id": "D9",
+        "node_type": "HTML builtin tag set drift (analyzer vs F5 oracle)",
+        "status": "FIXED",
+        "question": "Can <search> (2023 HTML element) or camelCase SVG tags surface as component instantiates?",
+        "ruling": "NO \u2014 HTML_BUILTIN_TAGS covers all 134 modern-HTML + SVG tags; the F5 oracle's ORACLE_HTML_TAGS drifted (126 tags, missing search + 7 SVG camelCase) and faked a MISSING instantiates->search in vue-element-admin. Lesson (family-wide): parallel builtin lists on analyzer and oracle sides must be diffed by a set-comparison probe, not trusted. fixture: vue/modern-html-svg-builtin-tags (forbids search + 7 SVG tags)."
+      },
+      {
+        "id": "D10",
+        "node_type": "svelte:component / svelte:element `this={X}` (F5 ORACLE contract)",
+        "status": "FIXED",
+        "question": "M49 W13 (W12 residual): the analyzer's H2 rule emits `instantiates X` when a `<svelte:component this={X}/>` target is an import-bound bare identifier, but the oracle's component-usage walk skipped `svelte:component` as a builtin tag - and the dynamic target is named by an ATTRIBUTE, so the tag-name walk never saw it either. The analyzer's correct edge therefore surfaced as the one unexplained edge W12's 400-file svelte measurement left open (corpus file: packages/svelte/tests/runtime-legacy/samples/event-handler-shorthand-dynamic-component/main.svelte).",
+        "decision": "RULED - the oracle mirrors the analyzer's gate and nothing more: `deriveSvelteComponentUsages(root, importBindings)` emits `instantiates` for a bare-identifier `this={X}` when X is an import binding. The analyzer's second gate (skip a target that resolves to a declared member, which carries a `uses` edge instead) is deliberately NOT mirrored: an ES module cannot both import and declare the same name, so an import-bound name can never trip it and a non-import name is rejected by the import gate. Measured: the bindings are NOT available from the embedded-script truth (probed - `deriveTreeEdges(st, \"javascript\")` emits zero edges for `import Widget from './Widget.svelte'`), so they are walked off the JS-parsed script tree, mirroring the analyzer's `imports[].items`. Per-file parity on the real corpus file: analyzer `instantiates|Widget` vs oracle `instantiates|Widget`, 0 missing / 0 unexplained; lane re-run at 60 files svelte 100%/0/0, javascript 744/744, typescript 100%, baseline gate no regressions. Pinned by F9-PROBE-SVELTE-DYNAMIC-COMPONENT (both directions asserted, so the mirror cannot trade an unexplained edge for a fabricated one) and proven load-bearing by revert; the analyzer side was already pinned by fixture svelte/relationship-kinds.",
+        "date": "2026-09-13"
+      },
+      {
+        "id": "D11",
+        "node_type": "element tag matching /^svelte:/",
+        "status": "RULED",
+        "question": "Can an undeclared member of the reserved `svelte:` namespace ever name a component? The corpus carries `<svelte:selfdestructive x=\"{x - 1}\"/>` in its own compiler-errors sample.",
+        "resolution": "RULED \u2014 NO, the `svelte:` prefix is a RESERVED NAMESPACE (2026-09-27). Only the ten declared builtins exist \u2014 svelte:component, svelte:element, svelte:self, svelte:window, svelte:document, svelte:body, svelte:head, svelte:options, svelte:fragment, svelte:boundary \u2014 and an undeclared `svelte:*` is a compile error that cannot name a component, so it is not published as one. The analyzer had published `instantiates -> svelte:selfdestructive` and reported ZERO errors, because the grammar parses an unknown element name perfectly well; a name being illegal is not a parse failure. THE FINDING THAT MATTERS IS WHY NOTHING CAUGHT IT. The F5 oracle's emit condition is `!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)`, and that name is in neither set \u2014 so the oracle derived the SAME edge. Both sides agreed, the differential reported 0 missing and 0 unexplained, and the lane read clean. This is the worst kind of defect there is: the one gate that compares the two sides is blind to it BY CONSTRUCTION, which is the entire argument for a census that consults neither. It was found by the census's template dimension, not by any comparison. THE RULING IS NOW A GATE, not a code comment: every `svelte:*` tag in the corpus must be a declared builtin or carry a REJECTED ruling, and a REJECTED ruling that no longer matches anything in the corpus fails as stale \u2014 otherwise the rejection table becomes a place to hide a construct that has since become legal. Recorded as gap X4 for the oracle side. Pinned by `svelte/reserved-svelte-namespace`, which asserts real components are STILL published, because a rule that suppressed the whole neighbourhood would pass the forbids while destroying the lane \u2014 the same failure mode as the bare-leaf rune fix, caught by probing both directions."
+      },
+      {
+        "id": "D12",
+        "node_type": "attribute / attribute_name \u2014 the DIRECTIVE carrier space (bind:, use:, transition:, in:, out:, animate:, class:, style:, let:)",
+        "status": "RULED",
+        "question": "Svelte carries behaviour and data through ATTRIBUTE NAMES. The lane implemented `on:` (D8) and `<svelte:component this={X}>` (H2) and was otherwise SILENT across the whole remaining carrier space, with no ruling anywhere: zero mentions in this spec and zero in the analyzer. What does each family owe the graph?",
+        "resolution": "RULED \u2014 THREE FAMILIES, THREE OBLIGATIONS (2026-09-27). READS A MEMBER -> `uses` at 0.95, on the S1 argument: `bind:value={m}`, `bind:this={el}`, `class:active={c}`, `style:color={col}`. `bind:` is TWO-WAY, so `uses` understates it; the read half is what the vocabulary expresses and the write half is a declared non-emission rather than a new relationship invented to hold it. The emitted edge carries `metadata.carrierDirective` so a consumer can tell a two-way binding from an ordinary template read \u2014 that is information a reader wants, and without it the collection site is unrecoverable. INVOKED BY THE FRAMEWORK -> `calls` at 0.85, on the D8 argument: `use:action`, `use:tooltip`, `transition:slide`, `in:fly`, `out:fade`, `animate:flip`. The target is the directive's OWN NAME, written in the attribute name, so the line is the attribute's; a dotted value's callable leaf is the target. Their previous silence was an internal INCONSISTENCY rather than a position: `on:click` emitted `calls` because the framework calls the name, and Svelte calls an action on mount and a transition on state change by the same mechanism. A directive's PARAMETER expression is a template read and still yields `uses` \u2014 `use:action={p}` publishes both `calls action` and `uses p`, which are different facts about the same attribute. DECLARES, DOES NOT READ -> silent: `let:item` names a slot prop the component ACCEPTS, so there is no member read. This was the one silent carrier that was always right, and it is now pinned rather than merely left alone. TAILWIND CANNOT COLLIDE, and the reason is worth stating because it is the shape-collision trap twice over. `md:grid-cols-2`, `dark:bg-background`, `hover:text-primary` and `after:absolute` have the exact `prefix:value` shape of a directive and live INSIDE a quoted `class` value; only ATTRIBUTE NAMES are examined, so all four stay silent. The obvious repair for a missing family \u2014 matching the shape \u2014 would publish every one of them, which is the same failure the bare-leaf rune fix had when it swallowed `$my.eager`. `after:*` is not a Svelte directive at all and is absent from the corpus carrier set once quoted values are stripped. PINNED by `svelte/directive-carriers` (both obligations, plus both silent cases, plus the Tailwind guard) and the mutants `svelte/member-read-carriers-dropped` and `svelte/invoked-carriers-dropped`. The first mutant SURVIVED on its first form because it keyed on a `metadata.context` marker only the CALL edges carry, and a blanket `uses` drop would have been caught by a dozen unrelated fixtures while proving nothing about D12 \u2014 so the edge gained real provenance and the mutant targets that. GATED by the census's carrier dimension, which is the instrument that found it: a node-type census classifies `attribute` as handled and can never see a space INSIDE it. **MEASURED CORRECTION, appended after the census controls ran.** The ruling originally described EIGHT silent families at ~2,049 corpus occurrences. That was overstated ~7x: only the FIVE INVOKED families were actually silent (292 occurrences), while `bind:`/`class:`/`style:` were already published as `uses` by the general attribute-expression walk and this work's contribution there is PROVENANCE (`metadata.carrierDirective`), not the edge itself. The overstatement came from a probe that imported the identifiers it expected to read \u2014 `uses` publishes only for a declared member \u2014 and it was caught by a census negative control that failed to fire. So the ruling's substance stands and its magnitude did not; both are recorded rather than the first one quietly edited away."
+      }
+    ]
+  }
 }

@@ -1155,6 +1155,31 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+  /**
+   * M60 (#924, haskell E half): the TYPE NAME at the head of an applied type.
+   *
+   * An instance declaration such as  instance GArbitrary (M1 i c f)  declares an
+   * implementation FOR the type M1 i c f, whose name is its head type constructor
+   * M1; the published symbol was the whole application (M1 i c), i.e. a payload
+   * where a name belongs — measured as 2 distinct strings over 6 occurrences on the
+   * census's own haskell samples (script/m14/tmp/c924-name-surface-probe.ts). Walks
+   * the APPLICATION SPINE (apply / parens / strict) to the leftmost leaf and returns
+   * its text verbatim (a qualified head keeps its dots). The class head already
+   * takes this same left-spine descent; only the instance TARGET did not.
+   */
+  private haskellAppliedHeadName(node: Node | null | undefined): string | undefined {
+    let cur: Node | null | undefined = node
+    let guard = 0
+    while (cur && guard++ < 64) {
+      if (cur.type === "apply" || cur.type === "parens" || cur.type === "strict") {
+        cur = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+        continue
+      }
+      break
+    }
+    return cur?.text || undefined
+  }
+
   private processInstance(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
     let className = ""
     let targetType = ""
@@ -1179,7 +1204,10 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (parens) {
             const ap = this.findNamedChildByType(parens, ["apply"])
             const first = ap?.namedChildCount ? ap.namedChild(0) : null
-            if (first) targetType = first.text
+            // M60 (#924, haskell E half): the TARGET TYPE's NAME, not the whole
+            // application — (M1 i c f) names the type M1, and publishing M1 i c
+            // put a payload where a name belongs. See haskellAppliedHeadName.
+            if (first) targetType = this.haskellAppliedHeadName(first) ?? first.text
           }
         }
       }

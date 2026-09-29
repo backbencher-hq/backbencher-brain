@@ -1,58 +1,147 @@
 {
   "analyzer": "json",
-  "fixture": "validation/m12/fixtures/json/schema.json",
   "checks": [
     {
-      "id": "schema.properties.id.required",
-      "actual": true,
-      "expected": true
+      "name": "module is the file's own basename",
+      "pass": true,
+      "detail": "got: Basic"
     },
     {
-      "id": "schema.properties.email.required",
-      "actual": true,
-      "expected": true
+      "name": "no 'global' owner symbol",
+      "pass": true,
+      "detail": "the phantom endpoint no symbol can resolve to"
     },
     {
-      "id": "schema.properties.profile.properties.displayName.required",
-      "actual": true,
-      "expected": true
+      "name": "top-level property is owned by the module",
+      "pass": true,
+      "detail": "ownerName=Basic"
     },
     {
-      "id": "schema.$defs.Address.properties.city.required",
-      "actual": true,
-      "expected": true
+      "name": "contains edges are emitted",
+      "pass": true,
+      "detail": "8 contains edges"
     },
     {
-      "id": "schema.properties.id.validation",
-      "actual": true,
-      "expected": true
+      "name": "EVERY contains edge carries a positive line_number",
+      "pass": true,
+      "detail": "0 of 8 have none"
     },
     {
-      "id": "schema.properties.email.validation",
-      "actual": true,
-      "expected": true
+      "name": "nested object is contained by its parent",
+      "pass": true,
+      "detail": ""
     },
     {
-      "id": "schema.$defs.Address.properties.city.validation",
-      "actual": false,
-      "expected": false
+      "name": "array-valued key is contained",
+      "pass": true,
+      "detail": ""
     },
     {
-      "id": "no anonymous value symbols",
-      "actual": false,
-      "expected": false
+      "name": "scalar-valued key is contained",
+      "pass": true,
+      "detail": ""
     },
     {
-      "id": "indexed array paths are unique",
-      "actual": true,
-      "expected": true
+      "name": "null-valued key is contained",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "EVERY relationship carries a positive line_number",
+      "pass": true,
+      "detail": "0 of 8 have none"
+    },
+    {
+      "name": "EVERY relationship source is a declared symbol",
+      "pass": true,
+      "detail": "0 do not resolve: "
+    },
+    {
+      "name": "string-valued key is a property",
+      "pass": true,
+      "detail": "got property"
+    },
+    {
+      "name": "object-valued key is a class/object",
+      "pass": true,
+      "detail": "got class"
+    },
+    {
+      "name": "array-valued key is a leaf (property), not a shell-style 'variable'",
+      "pass": true,
+      "detail": "got property"
+    },
+    {
+      "name": "the array really is a leaf (no contains edges for its elements)",
+      "pass": true,
+      "detail": "elements are positional, not named"
+    },
+    {
+      "name": "boolean-valued key is a property",
+      "pass": true,
+      "detail": "got property"
+    },
+    {
+      "name": "number-valued key is a property",
+      "pass": true,
+      "detail": "got property"
+    },
+    {
+      "name": "schema module is detected",
+      "pass": true,
+      "detail": "framework=JSON Schema"
+    },
+    {
+      "name": "$schema key is present as a symbol",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "$ref resolves to its target",
+      "pass": true,
+      "detail": "Schema.properties.child.$ref -> Schema.definitions.Leaf"
+    },
+    {
+      "name": "at least one references edge is emitted",
+      "pass": true,
+      "detail": "1"
+    },
+    {
+      "name": "an internal $ref is not marked external",
+      "pass": true,
+      "detail": "[false]"
+    },
+    {
+      "name": "a repeated key in DIFFERENT objects is two distinct symbols",
+      "pass": true,
+      "detail": "2 symbol(s) named \"dup\""
+    },
+    {
+      "name": "the two 'dup' symbols have different owners",
+      "pass": true,
+      "detail": "Duplicate | outer"
+    },
+    {
+      "name": "invalid JSON reports a syntax error",
+      "pass": true,
+      "detail": "errors=2"
+    },
+    {
+      "name": "invalid JSON still yields its module",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "analyzer source has NO regex literals",
+      "pass": true,
+      "detail": "ctor=0 methodUses=0 delimiter=false"
+    },
+    {
+      "name": "analyzer never reads the file as text",
+      "pass": true,
+      "detail": "structure must come from the tree; node.text is fine, the file body is not"
     }
   ],
   "passed": true,
-  "parseErrors": 0,
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.915Z",
-    "contentSha256": "a15d639457fb712394390b5b2010f11a3848ece2c45960bf182140f28365ad88"
-  }
+  "total": 28
 }

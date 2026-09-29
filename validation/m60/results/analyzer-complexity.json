@@ -1,0 +1,2569 @@
+{
+  "gate": "M60.R6/dimension-9",
+  "at": "2026-09-25T19:29:36.853Z",
+  "question": "Is every analyzer's time-complexity envelope a MEASUREMENT — a file set, an extension rule and a load context, scored against a declared budget — or a number nobody can re-derive?",
+  "method": "Read each lane's committed artifact (validation/m12/results/<lang>[-corpus]-complexity.json), check #909's frame facts for the artifact's own shape, parse the lane's declared budget out of docs/analyzers/<analyzer>.md, and adjudicate. Unattributed rows are reported as unscorable rather than scored; a declared file count that differs from the measured one is reported as count-mismatch rather than converted into a pass by normalizing.",
+  "lanes": 41,
+  "byVerdict": {
+    "unscorable": 39,
+    "within-budget": 2
+  },
+  "selfTests": {
+    "cases": 36,
+    "passed": 36,
+    "failures": []
+  },
+  "disclosure": "This instrument reads artifacts; it does not time anything, and it deliberately does not normalize across file counts or assume linearity — both are the questions §9 asks. The static quadratic-shape census (repeated full-tree queries inside a visitor) and the per-1k-node normalization are registered here as NOT BUILT, with their size measured: no artifact in this repo records a node count.",
+  "census": [
+    {
+      "lang": "bash",
+      "analyzerFile": "src/ast/real-bash-analyzer.ts",
+      "doc": "docs/analyzers/real-bash-analyzer.md",
+      "artifact": "validation/m12/results/bash-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "bash-corpus-production",
+            "files": 30,
+            "wallMs": 1020.38129,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 674,
+            "relationships": 1311
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "bash-corpus-production",
+        "files": 30,
+        "wallMs": 1020.38129,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 674,
+        "relationships": 1311
+      }
+    },
+    {
+      "lang": "c",
+      "analyzerFile": "src/ast/real-c-analyzer.ts",
+      "doc": "docs/analyzers/real-c-analyzer.md",
+      "artifact": "validation/m12/results/c-complexity.json",
+      "verdict": "within-budget",
+      "severity": 0,
+      "reasons": [
+        "corpus row 6515 ms <= declared 120000 ms on 400 files"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-c-analyzer.md:116",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.48 s); 400-file corpus < 120 s (met: 6.5 s, attributed re-measure below).",
+        "fixturesMs": 2000,
+        "corpusMs": 120000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 480,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:c",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "07cb4b7f997b820c",
+        "extensionFiltered": true,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 4,
+            "wallMs": 481.354023,
+            "userCpuMsPerFile": 100.218,
+            "loadAvg1": 3.98,
+            "loadQuiet": true,
+            "symbols": 49,
+            "relationships": 49
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 6514.785911,
+            "userCpuMsPerFile": 26.886727500000003,
+            "loadAvg1": 3.9,
+            "loadQuiet": true,
+            "symbols": 3205,
+            "relationships": 14214
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 6514.785911,
+        "userCpuMsPerFile": 26.886727500000003,
+        "loadAvg1": 3.9,
+        "loadQuiet": true,
+        "symbols": 3205,
+        "relationships": 14214
+      }
+    },
+    {
+      "lang": "clean",
+      "analyzerFile": "src/ast/real-clean-analyzer.ts",
+      "doc": "docs/analyzers/real-clean-analyzer.md",
+      "artifact": "validation/m12/results/clean-complexity.json",
+      "verdict": "within-budget",
+      "severity": 0,
+      "reasons": [
+        "corpus row 4483 ms <= declared 60000 ms on 309 files"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-clean-analyzer.md:80",
+        "raw": "Declared budget: fixtures < 5 s (met: 0.33 s); corpus (309 files) < 60 s, symbols/s ≥ 200, relationships/s ≥ 200. **Met**, with the margins stated below rather than asserted — but see the *how many draws* paragraph: the declaration fixes the wall bound, and the load-stable comparison is `userCpuMsPerFile`.",
+        "fixturesMs": 5000,
+        "corpusMs": 60000,
+        "corpusFiles": 309,
+        "symbolsPerSecMin": 200,
+        "relationshipsPerSecMin": 200,
+        "selfReportedFixturesMs": 330,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:clean",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "27935ec564834992",
+        "extensionFiltered": true,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 357.510222,
+            "userCpuMsPerFile": 153.288,
+            "loadAvg1": 2.9,
+            "loadQuiet": true,
+            "symbols": 29,
+            "relationships": 40
+          },
+          {
+            "label": "corpus_subset",
+            "files": 309,
+            "wallMs": 4483.31554,
+            "userCpuMsPerFile": 28.15594498381877,
+            "loadAvg1": 3.22,
+            "loadQuiet": true,
+            "symbols": 6338,
+            "relationships": 10878
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 309,
+        "wallMs": 4483.31554,
+        "userCpuMsPerFile": 28.15594498381877,
+        "loadAvg1": 3.22,
+        "loadQuiet": true,
+        "symbols": 6338,
+        "relationships": 10878
+      }
+    },
+    {
+      "lang": "clojure",
+      "analyzerFile": "src/ast/real-clojure-analyzer.ts",
+      "doc": "docs/analyzers/real-clojure-analyzer.md",
+      "artifact": "validation/m12/results/clojure-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-clojure-analyzer.md:91",
+        "raw": "Declared budget: fixture wall < 500 ms; corpus (141 files) < 20 s, symbols/s ≥ 1,000, relationships/s ≥ 3,000. **Met.** (Old grammar baseline on the same corpus: 2,955 symbols / 5,378 rels in 15.3 s — the upgrade roughly doubled extraction density and cut wall time ~7×.)",
+        "fixturesMs": 500,
+        "corpusMs": 20000,
+        "corpusFiles": 141,
+        "symbolsPerSecMin": 1000,
+        "relationshipsPerSecMin": 3000,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:clojure",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 141.882705,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 21,
+            "relationships": 29
+          },
+          {
+            "label": "corpus_subset",
+            "files": 141,
+            "wallMs": 2047.662657,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 4450,
+            "relationships": 8708
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 141,
+        "wallMs": 2047.662657,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 4450,
+        "relationships": 8708
+      }
+    },
+    {
+      "lang": "cpp",
+      "analyzerFile": "src/ast/real-cpp-analyzer.ts",
+      "doc": "docs/analyzers/real-cpp-analyzer.md",
+      "artifact": "validation/m12/results/cpp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "corpus row \"corpus_subset\" was measured on a busy box (loadQuiet=false)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-cpp-analyzer.md:126",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.20 s); 195-file corpus < 60 s (met: 5.2 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 195,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 200,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:cpp",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "7cc6ab20ae1e737b",
+        "extensionFiltered": true,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 4,
+            "wallMs": 2426.3759,
+            "userCpuMsPerFile": 130.20675,
+            "loadAvg1": 10.63,
+            "loadQuiet": false,
+            "symbols": 41,
+            "relationships": 51
+          },
+          {
+            "label": "corpus_subset",
+            "files": 58,
+            "wallMs": 45006.407719,
+            "userCpuMsPerFile": 709.9521034482759,
+            "loadAvg1": 12.91,
+            "loadQuiet": false,
+            "symbols": 8587,
+            "relationships": 28039
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 58,
+        "wallMs": 45006.407719,
+        "userCpuMsPerFile": 709.9521034482759,
+        "loadAvg1": 12.91,
+        "loadQuiet": false,
+        "symbols": 8587,
+        "relationships": 28039
+      }
+    },
+    {
+      "lang": "csharp",
+      "analyzerFile": "src/ast/real-csharp-analyzer.ts",
+      "doc": "docs/analyzers/real-csharp-analyzer.md",
+      "artifact": "validation/m12/results/csharp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-csharp-analyzer.md:101",
+        "raw": "Declared budget: fixtures < 2 s; 400-file corpus < 60 s.",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:csharp",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 576.926805,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 66,
+            "relationships": 101
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 10311.285318,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 4451,
+            "relationships": 17563
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 10311.285318,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 4451,
+        "relationships": 17563
+      }
+    },
+    {
+      "lang": "css",
+      "analyzerFile": "src/ast/real-css-analyzer.ts",
+      "doc": "docs/analyzers/real-css-analyzer.md",
+      "artifact": "validation/m12/results/css-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-css-analyzer.md:117",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.77 s); 181-file corpus < 60 s (met: 2.25 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 181,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 770,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:css",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 774.800894,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 22,
+            "relationships": 10
+          },
+          {
+            "label": "corpus_subset",
+            "files": 181,
+            "wallMs": 2252.477538,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 722,
+            "relationships": 1854
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 181,
+        "wallMs": 2252.477538,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 722,
+        "relationships": 1854
+      }
+    },
+    {
+      "lang": "dart",
+      "analyzerFile": "src/ast/real-dart-analyzer.ts",
+      "doc": "docs/analyzers/real-dart-analyzer.md",
+      "artifact": "validation/m12/results/dart-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-dart-analyzer.md:100",
+        "raw": "Declared budgets: fixtures < 2 s (met: 1.14 s); 400-file corpus < 600 s (met: 281.9 s — flutter framework files are large; 20 files > 100 KB and one 1.8 MB generated `icons.dart` in the sample).",
+        "fixturesMs": 2000,
+        "corpusMs": 600000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 1140,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:dart",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 1144.294969,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 48,
+            "relationships": 72
+          },
+          {
+            "label": "corpus_subset",
+            "files": 399,
+            "wallMs": 281912.319237,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 23952,
+            "relationships": 88098
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 399,
+        "wallMs": 281912.319237,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 23952,
+        "relationships": 88098
+      }
+    },
+    {
+      "lang": "elixir",
+      "analyzerFile": "src/ast/real-elixir-analyzer.ts",
+      "doc": "docs/analyzers/real-elixir-analyzer.md",
+      "artifact": "validation/m12/results/elixir-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:elixir",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 327.784716,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 32,
+            "relationships": 38
+          },
+          {
+            "label": "corpus_subset",
+            "files": 243,
+            "wallMs": 14676.118091,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 7704,
+            "relationships": 23777
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 243,
+        "wallMs": 14676.118091,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 7704,
+        "relationships": 23777
+      }
+    },
+    {
+      "lang": "erlang",
+      "analyzerFile": "src/ast/real-erlang-analyzer.ts",
+      "doc": "docs/analyzers/real-erlang-analyzer.md",
+      "artifact": "validation/m12/results/erlang-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:erlang",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 236.281652,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 29,
+            "relationships": 40
+          },
+          {
+            "label": "corpus_subset",
+            "files": 225,
+            "wallMs": 7342.659469,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 5400,
+            "relationships": 19207
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 225,
+        "wallMs": 7342.659469,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 5400,
+        "relationships": 19207
+      }
+    },
+    {
+      "lang": "fsharp",
+      "analyzerFile": "src/ast/real-fsharp-analyzer.ts",
+      "doc": "docs/analyzers/real-fsharp-analyzer.md",
+      "artifact": "validation/m12/results/fsharp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-fsharp-analyzer.md:103",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.76 s); 376-file corpus dominated by giant self-hosting compiler files (top sample files are 290–755 KB — `CheckExpressions.fs` 696 KB parses in ~8 s, `IlxGen.fs` 546 KB, etc.), so the wall budget for the F# compiler corpus is declared as \"large-file bound\" rather than a fixed seconds target. The analyzer's own `analyze()` pass is faster than the previous implementation (854 ms vs 1,247 ms on `CheckExpressions.fs` with identical tree) — the corpus wall time is dominated by tree-sitter parse + the shared engine pipeline on 700 KB files.",
+        "fixturesMs": 2000,
+        "corpusMs": null,
+        "corpusFiles": 376,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 760,
+        "unparsed": [
+          "376-file corpus dominated by giant self-hosting compiler files (top sample files are 290–755 KB — `CheckExpressions.fs` "
+        ]
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:fsharp",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 4,
+            "wallMs": 764.948721,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 52,
+            "relationships": 64
+          },
+          {
+            "label": "corpus_subset",
+            "files": 376,
+            "wallMs": 219073.977287,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 36901,
+            "relationships": 128401
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 376,
+        "wallMs": 219073.977287,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 36901,
+        "relationships": 128401
+      }
+    },
+    {
+      "lang": "go",
+      "analyzerFile": "src/ast/real-go-analyzer.ts",
+      "doc": "docs/analyzers/real-go-analyzer.md",
+      "artifact": "validation/m12/results/go-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:go",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 1112.660099,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 30,
+            "relationships": 34
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 25066.990755,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 7157,
+            "relationships": 28187
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 25066.990755,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 7157,
+        "relationships": 28187
+      }
+    },
+    {
+      "lang": "graphql",
+      "analyzerFile": "src/ast/real-graphql-analyzer.ts",
+      "doc": "docs/analyzers/real-graphql-analyzer.md",
+      "artifact": "validation/m12/results/graphql-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "graphql-corpus-production",
+            "files": 2,
+            "wallMs": 1237.592947,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 3251,
+            "relationships": 6042
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "graphql-corpus-production",
+        "files": 2,
+        "wallMs": 1237.592947,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 3251,
+        "relationships": 6042
+      }
+    },
+    {
+      "lang": "groovy",
+      "analyzerFile": "src/ast/real-groovy-analyzer.ts",
+      "doc": "docs/analyzers/real-groovy-analyzer.md",
+      "artifact": "validation/m12/results/groovy-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-groovy-analyzer.md:163",
+        "raw": "Declared budget: fixtures < 2 s; 400-file corpus < 60 s.",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:groovy",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 346.219036,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 51,
+            "relationships": 79
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 3635.802114,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 2953,
+            "relationships": 14053
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 3635.802114,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 2953,
+        "relationships": 14053
+      }
+    },
+    {
+      "lang": "haskell",
+      "analyzerFile": "src/ast/real-haskell-analyzer.ts",
+      "doc": "docs/analyzers/real-haskell-analyzer.md",
+      "artifact": "validation/m12/results/haskell-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:haskell",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 295.850354,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 33,
+            "relationships": 42
+          },
+          {
+            "label": "corpus_subset",
+            "files": 637,
+            "wallMs": 16016.823243,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 17828,
+            "relationships": 34755
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 637,
+        "wallMs": 16016.823243,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 17828,
+        "relationships": 34755
+      }
+    },
+    {
+      "lang": "hcl",
+      "analyzerFile": "src/ast/real-hcl-analyzer.ts",
+      "doc": "docs/analyzers/real-hcl-analyzer.md",
+      "artifact": "validation/m12/results/hcl-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "hcl-corpus-production",
+            "files": 2295,
+            "wallMs": 6137.387918,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 14226,
+            "relationships": 10667
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "hcl-corpus-production",
+        "files": 2295,
+        "wallMs": 6137.387918,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 14226,
+        "relationships": 10667
+      }
+    },
+    {
+      "lang": "html",
+      "analyzerFile": "src/ast/real-html-analyzer.ts",
+      "doc": "docs/analyzers/real-html-analyzer.md",
+      "artifact": "validation/m12/results/html-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-html-analyzer.md:95",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.17 s); 230-file corpus < 60 s (met: 0.34 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 230,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 170,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:html",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 173.972824,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 11,
+            "relationships": 23
+          },
+          {
+            "label": "corpus_subset",
+            "files": 230,
+            "wallMs": 344.934957,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 251,
+            "relationships": 41
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 230,
+        "wallMs": 344.934957,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 251,
+        "relationships": 41
+      }
+    },
+    {
+      "lang": "java",
+      "analyzerFile": "src/ast/real-java-analyzer.ts",
+      "doc": "docs/analyzers/real-java-analyzer.md",
+      "artifact": "validation/m12/results/java-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-java-analyzer.md:86",
+        "raw": "Declared budget: fixture wall < 500 ms; corpus subset (400 files) < 15 s, symbols/s ≥ 1,000, relationships/s ≥ 4,000. **Met.**",
+        "fixturesMs": 500,
+        "corpusMs": 15000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": 1000,
+        "relationshipsPerSecMin": 4000,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:java",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 4,
+            "wallMs": 160.200626,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 40,
+            "relationships": 78
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 4462.696496,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 7812,
+            "relationships": 30483
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 4462.696496,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 7812,
+        "relationships": 30483
+      }
+    },
+    {
+      "lang": "javascript",
+      "analyzerFile": "src/ast/real-javascript-analyzer.ts",
+      "doc": "docs/analyzers/real-javascript-analyzer.md",
+      "artifact": "validation/m12/results/javascript-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-javascript-analyzer.md:83",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.62 s); 400-file corpus < 60 s (met: 14.6 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 620,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:javascript",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 620.792867,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 44,
+            "relationships": 67
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 14577.382754,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 2935,
+            "relationships": 17483
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 14577.382754,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 2935,
+        "relationships": 17483
+      }
+    },
+    {
+      "lang": "json",
+      "analyzerFile": "src/ast/real-json-analyzer.ts",
+      "doc": "docs/analyzers/real-json-analyzer.md",
+      "artifact": "validation/m12/results/json-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "json-corpus-production",
+            "files": 119,
+            "wallMs": 45160.844267,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 69512,
+            "relationships": 70074
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "json-corpus-production",
+        "files": 119,
+        "wallMs": 45160.844267,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 69512,
+        "relationships": 70074
+      }
+    },
+    {
+      "lang": "kotlin",
+      "analyzerFile": "src/ast/real-kotlin-analyzer.ts",
+      "doc": "docs/analyzers/real-kotlin-analyzer.md",
+      "artifact": "validation/m12/results/kotlin-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-kotlin-analyzer.md:83",
+        "raw": "Declared budget: fixture wall < 500 ms; corpus subset (300 files) < 20 s, symbols/s ≥ 1,000, relationships/s ≥ 4,000. **Met.**",
+        "fixturesMs": 500,
+        "corpusMs": 20000,
+        "corpusFiles": 300,
+        "symbolsPerSecMin": 1000,
+        "relationshipsPerSecMin": 4000,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:kotlin",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 3,
+            "wallMs": 179.94947,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 34,
+            "relationships": 45
+          },
+          {
+            "label": "corpus_subset",
+            "files": 300,
+            "wallMs": 8865.918019,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 11286,
+            "relationships": 43364
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 300,
+        "wallMs": 8865.918019,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 11286,
+        "relationships": 43364
+      }
+    },
+    {
+      "lang": "lua",
+      "analyzerFile": "src/ast/real-lua-analyzer.ts",
+      "doc": "docs/analyzers/real-lua-analyzer.md",
+      "artifact": "validation/m12/results/lua-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "lua_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "lua-corpus-tracked",
+            "files": 162,
+            "wallMs": 10471.769458,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 6746,
+            "relationships": 12032
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "lua-corpus-tracked",
+        "files": 162,
+        "wallMs": 10471.769458,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 6746,
+        "relationships": 12032
+      }
+    },
+    {
+      "lang": "make",
+      "analyzerFile": "src/ast/real-makefile-analyzer.ts",
+      "doc": "docs/analyzers/real-make-analyzer.md",
+      "artifact": "validation/m12/results/make-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "make-corpus-production",
+            "files": 7,
+            "wallMs": 1074.305353,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 273,
+            "relationships": 518
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "make-corpus-production",
+        "files": 7,
+        "wallMs": 1074.305353,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 273,
+        "relationships": 518
+      }
+    },
+    {
+      "lang": "markdown",
+      "analyzerFile": "src/ast/real-markdown-analyzer.ts",
+      "doc": "docs/analyzers/real-markdown-analyzer.md",
+      "artifact": "validation/m12/results/markdown-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "markdown-corpus-production",
+            "files": 734,
+            "wallMs": 13312.798989,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 6673,
+            "relationships": 9112
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "markdown-corpus-production",
+        "files": 734,
+        "wallMs": 13312.798989,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 6673,
+        "relationships": 9112
+      }
+    },
+    {
+      "lang": "objective-c",
+      "analyzerFile": "src/ast/real-objective-c-analyzer.ts",
+      "doc": "docs/analyzers/real-objective-c-analyzer.md",
+      "artifact": "validation/m12/results/objective-c-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:objective-c",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 4,
+            "wallMs": 310.448368,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 34,
+            "relationships": 39
+          },
+          {
+            "label": "corpus_subset",
+            "files": 7,
+            "wallMs": 208.312258,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 100,
+            "relationships": 333
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 7,
+        "wallMs": 208.312258,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 100,
+        "relationships": 333
+      }
+    },
+    {
+      "lang": "perl",
+      "analyzerFile": "src/ast/real-perl-analyzer.ts",
+      "doc": "docs/analyzers/real-perl-analyzer.md",
+      "artifact": "validation/m12/results/perl-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "perl_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "93f591742a7dbc0cee36875ab80a38f0666e32ae",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "perl-corpus-tracked",
+            "files": 164,
+            "wallMs": 22808.004933,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 1681,
+            "relationships": 5991
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "perl-corpus-tracked",
+        "files": 164,
+        "wallMs": 22808.004933,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 1681,
+        "relationships": 5991
+      }
+    },
+    {
+      "lang": "php",
+      "analyzerFile": "src/ast/real-php-analyzer.ts",
+      "doc": "docs/analyzers/real-php-analyzer.md",
+      "artifact": "validation/m12/results/php-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "php_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "php-corpus-tracked-sample",
+            "files": 400,
+            "wallMs": 5442.949954,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 3073,
+            "relationships": 4276
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "php-corpus-tracked-sample",
+        "files": 400,
+        "wallMs": 5442.949954,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 3073,
+        "relationships": 4276
+      }
+    },
+    {
+      "lang": "powershell",
+      "analyzerFile": "src/ast/real-powershell-analyzer.ts",
+      "doc": "docs/analyzers/real-powershell-analyzer.md",
+      "artifact": "validation/m12/results/powershell-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "powershell-corpus-production",
+            "files": 34,
+            "wallMs": 997.447668,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 460,
+            "relationships": 590
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "powershell-corpus-production",
+        "files": 34,
+        "wallMs": 997.447668,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 460,
+        "relationships": 590
+      }
+    },
+    {
+      "lang": "python",
+      "analyzerFile": "src/ast/real-python-analyzer.ts",
+      "doc": "docs/analyzers/real-python-analyzer.md",
+      "artifact": "validation/m12/results/python-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "python_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "python-corpus-tracked",
+            "files": 243,
+            "wallMs": 41630.401818,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 15558,
+            "relationships": 30901
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "python-corpus-tracked",
+        "files": 243,
+        "wallMs": 41630.401818,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 15558,
+        "relationships": 30901
+      }
+    },
+    {
+      "lang": "r",
+      "analyzerFile": "src/ast/real-r-analyzer.ts",
+      "doc": "docs/analyzers/real-r-analyzer.md",
+      "artifact": "validation/m12/results/r-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "r_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "d5e94e7f",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "r-corpus-tracked",
+            "files": 195,
+            "wallMs": 7346.62607,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 3509,
+            "relationships": 6127
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "r-corpus-tracked",
+        "files": 195,
+        "wallMs": 7346.62607,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 3509,
+        "relationships": 6127
+      }
+    },
+    {
+      "lang": "ruby",
+      "analyzerFile": "src/ast/real-ruby-analyzer.ts",
+      "doc": "docs/analyzers/real-ruby-analyzer.md",
+      "artifact": "validation/m12/results/ruby-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "corpus_tracked",
+        "kind": "ruby_corpus_tracked_complexity",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": "dd5e851d75fd850a730aae4482f6ca59843ac869",
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "ruby-corpus-tracked",
+            "files": 95,
+            "wallMs": 1284.091478,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 1309,
+            "relationships": 6524
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "ruby-corpus-tracked",
+        "files": 95,
+        "wallMs": 1284.091478,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 1309,
+        "relationships": 6524
+      }
+    },
+    {
+      "lang": "rust",
+      "analyzerFile": "src/ast/real-rust-analyzer.ts",
+      "doc": "docs/analyzers/real-rust-analyzer.md",
+      "artifact": "validation/m12/results/rust-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-rust-analyzer.md:103",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.29 s); 400-file corpus < 60 s (met: 11.1 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 290,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:rust",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 3,
+            "wallMs": 286.989719,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 32,
+            "relationships": 54
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 11139.658534,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 11634,
+            "relationships": 80199
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 11139.658534,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 11634,
+        "relationships": 80199
+      }
+    },
+    {
+      "lang": "scala",
+      "analyzerFile": "src/ast/real-scala-analyzer.ts",
+      "doc": "docs/analyzers/real-scala-analyzer.md",
+      "artifact": "validation/m12/results/scala-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-scala-analyzer.md:103",
+        "raw": "Declared budget: fixtures < 2 s; 400-file corpus < 60 s.",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:scala",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 6,
+            "wallMs": 236.010832,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 54,
+            "relationships": 57
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 14951.662166,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 25008,
+            "relationships": 79260
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 14951.662166,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 25008,
+        "relationships": 79260
+      }
+    },
+    {
+      "lang": "sql",
+      "analyzerFile": "src/ast/real-sql-analyzer.ts",
+      "doc": "docs/analyzers/real-sql-analyzer.md",
+      "artifact": "validation/m12/results/sql-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "sql-corpus-production",
+            "files": 207,
+            "wallMs": 6869.968737,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 3039,
+            "relationships": 4181
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "sql-corpus-production",
+        "files": 207,
+        "wallMs": 6869.968737,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 3039,
+        "relationships": 4181
+      }
+    },
+    {
+      "lang": "svelte",
+      "analyzerFile": "src/ast/real-svelte-analyzer.ts",
+      "doc": "docs/analyzers/real-svelte-analyzer.md",
+      "artifact": "validation/m12/results/svelte-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-svelte-analyzer.md:110",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.48 s); 400-file corpus < 60 s (met: 2.3 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 480,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:svelte",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 481.174578,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 29,
+            "relationships": 35
+          },
+          {
+            "label": "corpus_subset",
+            "files": 396,
+            "wallMs": 2292.297411,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 913,
+            "relationships": 655
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 396,
+        "wallMs": 2292.297411,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 913,
+        "relationships": 655
+      }
+    },
+    {
+      "lang": "swift",
+      "analyzerFile": "src/ast/real-swift-analyzer.ts",
+      "doc": "docs/analyzers/real-swift-analyzer.md",
+      "artifact": "validation/m12/results/swift-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:swift",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 2,
+            "wallMs": 320.22045,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 37,
+            "relationships": 43
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 28414.112307,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 13464,
+            "relationships": 31189
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 28414.112307,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 13464,
+        "relationships": 31189
+      }
+    },
+    {
+      "lang": "typescript",
+      "analyzerFile": "src/ast/real-typescript-analyzer.ts",
+      "doc": "docs/analyzers/real-typescript-analyzer.md",
+      "artifact": "validation/m12/results/typescript-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-typescript-analyzer.md:99",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.23 s). The 399-file corpus subset is dominated by the TypeScript compiler's own self-hosting sources (the top sample files are 200–750 KB — `src/compiler/checker.ts` at 3.1 MB exceeds the 1 MB measurement cap and is excluded by design, matching the F#/Java corpus methodology), so wall time is parse-bound rather than analyzer-bound.",
+        "fixturesMs": 2000,
+        "corpusMs": null,
+        "corpusFiles": 399,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 230,
+        "unparsed": [
+          "The 399-file corpus subset is dominated by the TypeScript compiler's own self-hosting sources (the top sample files are "
+        ]
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:typescript",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 228.148528,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 67,
+            "relationships": 105
+          },
+          {
+            "label": "corpus_subset",
+            "files": 399,
+            "wallMs": 32206.068353,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 26513,
+            "relationships": 100594
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 399,
+        "wallMs": 32206.068353,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 26513,
+        "relationships": 100594
+      }
+    },
+    {
+      "lang": "vue",
+      "analyzerFile": "src/ast/real-vue-analyzer.ts",
+      "doc": "docs/analyzers/real-vue-analyzer.md",
+      "artifact": "validation/m12/results/vue-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": "docs/analyzers/real-vue-analyzer.md:102",
+        "raw": "Declared budgets: fixtures < 2 s (met: 0.52 s); 400-file corpus < 60 s (met: 7.9 s).",
+        "fixturesMs": 2000,
+        "corpusMs": 60000,
+        "corpusFiles": 400,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": 520,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:vue",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 5,
+            "wallMs": 520.485936,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 27,
+            "relationships": 30
+          },
+          {
+            "label": "corpus_subset",
+            "files": 400,
+            "wallMs": 7907.786319,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 2033,
+            "relationships": 8532
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 7907.786319,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 2033,
+        "relationships": 8532
+      }
+    },
+    {
+      "lang": "xml",
+      "analyzerFile": "src/ast/real-xml-analyzer.ts",
+      "doc": "docs/analyzers/real-xml-analyzer.md",
+      "artifact": "validation/m12/results/xml-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "xml-corpus-production",
+            "files": 154,
+            "wallMs": 2188.860221,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 6195,
+            "relationships": 2388
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "xml-corpus-production",
+        "files": 154,
+        "wallMs": 2188.860221,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 6195,
+        "relationships": 2388
+      }
+    },
+    {
+      "lang": "yaml",
+      "analyzerFile": "src/ast/real-yaml-analyzer.ts",
+      "doc": "docs/analyzers/real-yaml-analyzer.md",
+      "artifact": "validation/m12/results/yaml-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "flat_corpus",
+        "kind": null,
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "yaml-corpus-production",
+            "files": 273,
+            "wallMs": 4737.996237,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 12210,
+            "relationships": 11739
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "yaml-corpus-production",
+        "files": 273,
+        "wallMs": 4737.996237,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 12210,
+        "relationships": 11739
+      }
+    },
+    {
+      "lang": "zig",
+      "analyzerFile": "src/ast/real-zig-analyzer.ts",
+      "doc": "docs/analyzers/real-zig-analyzer.md",
+      "artifact": "validation/m12/results/zig-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budget": {
+        "source": null,
+        "raw": null,
+        "fixturesMs": null,
+        "corpusMs": null,
+        "corpusFiles": null,
+        "symbolsPerSecMin": null,
+        "relationshipsPerSecMin": null,
+        "selfReportedFixturesMs": null,
+        "unparsed": []
+      },
+      "frame": {
+        "shape": "per_analyzer",
+        "kind": "per_analyzer_complexity:zig",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null,
+        "revision": null,
+        "corpusRows": 1,
+        "timedRows": [
+          {
+            "label": "fixtures",
+            "files": 3,
+            "wallMs": 682.920642,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 39,
+            "relationships": 24
+          },
+          {
+            "label": "corpus_subset",
+            "files": 398,
+            "wallMs": 22854.917344,
+            "userCpuMsPerFile": null,
+            "loadAvg1": null,
+            "loadQuiet": null,
+            "symbols": 29771,
+            "relationships": 16559
+          }
+        ]
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 398,
+        "wallMs": 22854.917344,
+        "userCpuMsPerFile": null,
+        "loadAvg1": null,
+        "loadQuiet": null,
+        "symbols": 29771,
+        "relationships": 16559
+      }
+    }
+  ]
+}

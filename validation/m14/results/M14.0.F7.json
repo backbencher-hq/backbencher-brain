@@ -143,11 +143,17 @@
       "findings": 0,
       "id": "analyzer-hygiene-elixir",
       "status": "pass"
+    },
+    {
+      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
+      "findings": 0,
+      "id": "analyzer-hygiene-html",
+      "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
-  "committedAt": "2026-09-26T18:12:46-04:00",
+  "commit": "bb20dbc6798e06caa1bd5ce4e4b47e4abac45a93",
+  "committedAt": "2026-09-28T23:11:58-04:00",
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
@@ -158,8 +164,8 @@
       "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)"
     }
   ],
-  "regeneratedAt": "2026-09-27T05:32:52.597Z",
-  "regeneratedAtCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "regeneratedAt": "2026-09-29T03:12:26.610Z",
+  "regeneratedAtCommit": "bb20dbc6798e06caa1bd5ce4e4b47e4abac45a93",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"

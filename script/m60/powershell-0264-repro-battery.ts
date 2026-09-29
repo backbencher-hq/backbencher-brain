@@ -86,7 +86,7 @@ function readPinIdentity(): { package: string; version: string; sha256: string; 
   const pkg = prov.package ?? prov.base?.repo ?? "tree-sitter-powershell"
   const patched = prov.kind !== "byte-identical-to-npm-tarball"
   const patches = Array.isArray(prov.patches) && prov.patches.length ? ` + ${prov.patches.length} local patch(es): ${prov.patches.join("; ")}` : ""
-  if (!version) return { package: pkg, version: "UNREADABLE PROVENANCE", sha256: sha, evidence: `the pin's provenance (${prov.kind}) carries neither `version` nor `base.version` — the reader is out of date with the shape` }
+  if (!version) return { package: pkg, version: "UNREADABLE PROVENANCE", sha256: sha, evidence: `the pin's provenance (${prov.kind}) carries neither 'version' nor 'base.version' — the reader is out of date with the shape` }
   return { package: pkg, version: `${version}${patched ? " (patched)" : ""}`, sha256: sha, evidence: `sha matches the gated pin record (${prov.kind})${patches}` }
 }
 const PINNED_IDENTITY = readPinIdentity()
@@ -145,11 +145,32 @@ const BATTERY: Case[] = [
 
   // --- subexpression with static / member chains (1 file) ------------------
   { id: "subexpr-static-chain", construct: "`$([math]::Round($x))`", control: false, source: "$x = 1.5\n$s = \"$([math]::Round($x))\"\n", from: "tools/AttackSurfaceAnalyzer/Run-AttackSurfaceAnalyzer.ps1" },
-  { id: "subexpr-member-chain", construct: "`$($_.Length/1KB)`", control: false, source: "$items = 1..3 | ForEach-Object { $_ }\n$s = \"$($items.Length/1KB)\"\n" },
+  // RENAMED from `subexpr-member-chain`. That name said the class was about a
+  // SUBEXPRESSION and a MEMBER CHAIN, and it is neither: `$($_.Length)` parses, and so
+  // does `$($x/2)`. The real class is a numeric literal whose CASE-INsensitive multiplier
+  // suffix was listed lowercase-only, which is invisible in an assignment (`$c = 1KB`
+  // parses, because the token falls back to a generic one) and fatal in operand position.
+  { id: "multiplier-suffix-case", construct: "`$($_.Length/1KB)` — UPPERCASE multiplier", control: false, source: "$items = 1..3 | ForEach-Object { $_ }\n$s = \"$($items.Length/1KB)\"\n" },
+  // The lowercase control is the important one: an early fix used the grammar's own
+  // caseInsensitive() helper and REGRESSED this ok into 3 ERROR. A battery that only
+  // asserted the broken direction would have called that fix a success.
+  { id: "multiplier-suffix-case-ctrl-lower", construct: "CONTROL: `$($x/1kb)` — lowercase worked before the fix", control: true, source: "$x = 5\n$c = $($x/1kb)\n" },
+  { id: "multiplier-suffix-case-ctrl-plain", construct: "CONTROL: `$x/12`, `$x/1.5`, `$x/0x1F` — unsuffixed literals", control: true, source: "$x = 5\n$c = $x/12\n$d = $x/1.5\n$e = $x/0x1F\n" },
   { id: "subexpr-control", construct: "CONTROL: plain subexpression", control: true, source: "$x = 3\n$s = \"$($x)\"\n" },
 
   // --- variable-prefixed path as a command argument (2 files) ---------------
-  { id: "var-prefixed-path", construct: "`& $Destination/pwsh -x`", control: false, source: "$Destination = '/d'\n& $Destination/pwsh -x\n", from: "tools/install-powershell.ps1" },
+  // RENAMED from `var-prefixed-path`. That name said the class was about a VARIABLE,
+  // and it is not: `& $Destination` alone parses, `& $Destination -x` parses, and a
+  // LITERAL POSIX path fails identically. The cause is that `path_command_name_token`
+  // allowed `\\` but not `/`, so a Windows path parsed and a POSIX one could not.
+  // The controls below are the ones that make that separable from every theory that
+  // was tried first (variables, trailing arguments, the operator itself).
+  { id: "invokation-path-slash", construct: "`& $Destination/pwsh -x`", control: false, source: "$Destination = '/d'\n& $Destination/pwsh -x\n", from: "tools/install-powershell.ps1" },
+  { id: "invokation-path-slash-literal", construct: "`& /usr/bin/pwsh` — no variable at all", control: false, source: "& /usr/bin/pwsh\n" },
+  { id: "invokation-path-slash-ctrl-var", construct: "CONTROL: `& $Destination` — variable, no slash", control: true, source: "$Destination = '/d'\n& $Destination\n" },
+  { id: "invokation-path-slash-ctrl-arg", construct: "CONTROL: `& $Destination -x` — variable, then a flag", control: true, source: "$Destination = '/d'\n& $Destination -x\n" },
+  { id: "invokation-path-slash-ctrl-div", construct: "CONTROL: `$a/$b` — DIVISION must stay division", control: true, source: "$a = 1\n$b = 2\n$c = $a/$b\n" },
+  { id: "invokation-path-slash-ctrl-argpath", construct: "CONTROL: `cd /tmp/x` — a path as an ARGUMENT already worked", control: true, source: "cd /tmp/x\n" },
   { id: "var-prefixed-path-2", construct: "`$PSHOME\\pwsh` as an argument", control: false, source: "$exe = \"$PSHOME\\pwsh\"\n& $exe -NoLogo\n" },
   { id: "var-prefixed-control", construct: "CONTROL: plain variable argument", control: true, source: "$Destination = '/d'\n& $Destination -x\n" },
 ]

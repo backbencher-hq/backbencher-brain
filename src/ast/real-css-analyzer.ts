@@ -9,6 +9,20 @@ interface CssContext {
   errors: ASTEngine.ParseError[]
   content: string
   keyframeNames: Record<string, boolean>
+  /** family name -> declared by an `@font-face` in THIS file. Pre-collected. */
+  fontFaceNames: Record<string, boolean>
+  /** counter-style name -> declared by a `@counter-style` in THIS file. Pre-collected. */
+  counterStyleNames: Record<string, boolean>
+  /** custom-media name (`--x`) -> the `@custom-media` in THIS file that declares it. */
+  customMediaNames: Record<string, boolean>
+  /** font family -> declared by a `@font-feature-values` in THIS file. */
+  fontFeatureValuesNames: Record<string, boolean>
+  /** `@layer` names already published, so the ORDERING form cannot duplicate them. */
+  layerNames: Record<string, boolean>
+  /** namespace prefix -> the published `@namespace` symbol that declares it. */
+  namespacePrefixes: Record<string, string>
+  /** the order an `@layer a, b, c;` statement declares. A fact about the file. */
+  layerOrder: string[]
   mixinNames: Record<string, boolean>
   frameworks: Record<string, boolean>
   patterns: Record<string, boolean>
@@ -49,6 +63,13 @@ interface CssContext {
 interface StackFrame {
   node: Node
   media: string
+  /**
+   * An `@supports` condition. Its own frame field, for the same reason `scope` has
+   * one: folding it into `media` would MISNAME the edge (`@supports (display:grid)`
+   * is a feature query, not a media condition), and dropping it is what happened —
+   * 16 `@supports` scopes published, 0 `contains` edges.
+   */
+  supports: string
   layer: string
   container: string
   /**
@@ -107,6 +128,45 @@ function replaceAll(text: string, needle: string, replacement: string): string {
 // must be single-line and deterministic: an at-rule prelude can wrap across
 // lines in real stylesheets, and two spellings of the same name would be two
 // graph nodes. Pure-String.
+/**
+ * The leading `--ident` of a `@custom-media` prelude, or `""`.
+ *
+ * `--narrow (max-width: 400px)` -> `--narrow`. The condition is the declaration's
+ * VALUE; the name is the referable part, and it is the name `@media (--narrow)`
+ * resolves against. Deliberately not a node-type match: the grammar has no
+ * `custom_media` node, so a type-shaped rule would have nothing to match and would
+ * silently keep returning `""`.
+ */
+function leadingCustomIdent(prelude: string): string {
+  const m = /^(--[A-Za-z0-9_-]+)/.exec(prelude.trim())
+  return m ? m[1] : ""
+}
+
+/**
+ * Whether a `selectors` node's text is a SELECTOR rather than mis-spanned block
+ * content.
+ *
+ * A `;` is never part of a selector. A `{` is part of one only when it opens an
+ * INTERPOLATION — SCSS spells `#{$x}` with braces — so a blanket brace test would throw
+ * away every interpolated selector, which in a real Sass corpus is most of them.
+ * Measured: the blanket version cost 231 truth rows and produced 237 unexplained edges.
+ * Any other `{` is a block, and a selector containing a block is not a selector.
+ *
+ * Defined HERE rather than imported from the differential harness, on purpose: the
+ * analyzer must not depend on a test file in order to know what a selector is. The same
+ * predicate exists in `differential.ts` because an oracle that shares code with the
+ * thing it checks is not an independent check — two implementations of one rule is the
+ * price of independence, and it is worth paying in a predicate this small.
+ */
+function looksLikeSelectorText(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === ";") return false
+    if (c === "{" && text.charAt(i - 1) !== "#") return false
+  }
+  return text.trim().length > 0
+}
+
 function collapseWhitespace(text: string): string {
   let out = ""
   let pendingSpace = false
@@ -124,6 +184,26 @@ function collapseWhitespace(text: string): string {
     out += c
   }
   return out
+}
+
+/**
+ * Does this selector text contain a NESTING `&`?
+ *
+ * Escape-aware, and it has to be: the corpora carry Tailwind arbitrary values whose
+ * class names contain an escaped ampersand — `.\[\&_p\]\:leading-relaxed` — and
+ * `\&` is a legitimate CSS escape that belongs in the name. A plain `indexOf("&")`
+ * would call 101 real Tailwind class names unresolvable and suppress every one of
+ * them, which is the same class of over-correction as the dead `\s` floor.
+ */
+function hasNestingAmp(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "&") continue
+    // count the backslashes immediately before it: an ODD run escapes the `&`
+    let bs = 0
+    for (let k = i - 1; k >= 0 && text[k] === "\\"; k--) bs++
+    if (bs % 2 === 0) return true
+  }
+  return false
 }
 
 // Universal reset selector: `*` or `*::before`/`*::after`/`*::selection`.
@@ -216,6 +296,13 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: [],
       content,
       keyframeNames: {},
+      fontFaceNames: {},
+    counterStyleNames: {},
+    customMediaNames: {},
+    fontFeatureValuesNames: {},
+      layerNames: {},
+      namespacePrefixes: {},
+      layerOrder: [],
       mixinNames: {},
       frameworks: {},
       patterns: {},
@@ -241,11 +328,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // So the names are collected in a PRE-PASS over the tree, which makes the
     // walk order-independent by construction rather than by a heuristic.
     this.collectKeyframeNames(rootNode, ctx)
+    this.collectFontFaceNames(rootNode, ctx)
+    this.collectCustomDefinitionNames(rootNode, ctx)
+    this.collectNamespacePrefixes(rootNode, ctx)
 
-    const stack: StackFrame[] = [{ node: rootNode, media: "", layer: "", container: "", scope: "", currentSelector: "" }]
+    const stack: StackFrame[] = [{ node: rootNode, media: "", supports: "", layer: "", container: "", scope: "", currentSelector: "" }]
 
     while (stack.length > 0) {
-      const { node, media, layer, container, scope, currentSelector } = stack.pop()!
+      const { node, media, supports, layer, container, scope, currentSelector } = stack.pop()!
 
       // Record every parse error the tree reports, and NEVER claim otherwise.
       //
@@ -287,6 +377,14 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       let nextMedia = media
+      // `@supports` is a CONDITIONAL SCOPE exactly like `@media`, and the walk
+      // already carries one variable per scope kind. It was missing here, so
+      // `processSupports` published the scope symbol and nothing ever attributed a
+      // rule to it: measured 16 `@supports` scope symbols published across the
+      // corpora and **0** `contains` edges, while `@media` emits 2,921, `@layer`
+      // 7,601 and `@container` 11. The corpus rotation is what exposed it — this
+      // construct had not been in a previous 60-file draw.
+      let nextSupports = supports
       let nextLayer = layer
       let nextContainer = container
       let nextScope = scope
@@ -294,7 +392,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       switch (node.type) {
         case "rule_set":
-          nextSelector = this.processRuleSet(node, media, layer, container, scope, currentSelector, ctx) || nextSelector
+          nextSelector = this.processRuleSet(node, media, supports, layer, container, scope, currentSelector, ctx) || nextSelector
           break
         case "import_statement":
           this.processImport(node, ctx)
@@ -309,9 +407,11 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "keyframes_statement":
           this.processKeyframes(node, ctx)
           break
-        case "supports_statement":
-          this.processSupports(node, ctx)
+        case "supports_statement": {
+          const newSupports = this.processSupports(node, ctx)
+          if (newSupports) nextSupports = newSupports
           break
+        }
         case "at_rule":
         case "postcss_statement":
         case "namespace_statement":
@@ -352,6 +452,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           stack.push({
             node: child,
             media: nextMedia,
+            supports: nextSupports,
             layer: nextLayer,
             container: nextContainer,
             scope: nextScope,
@@ -493,6 +594,98 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!sym.metadata) sym.metadata = {}
       sym.metadata.selectorChain = merged
     }
+    // ONE SYMBOL PER IDENTITY, and a repeated selector is ONE identity.
+    //
+    // The fixture harness caught this as `export invariant violated: duplicate
+    // export name(s) [".btn"]` — my own fixture, which used the same selector twice
+    // because that is what real stylesheets do. Measured across the corpora it is not
+    // an edge case: **166 of 454 files (36.6%) publish a duplicate symbol name**,
+    // 2,654 distinct duplicated names, and the worst file publishes the same selector
+    // TWELVE times. Every `contains` / `uses` / `references` edge naming one of those
+    // is therefore AMBIGUOUS — a consumer asking "what applies to `div.svelte-xyz`"
+    // gets twelve indistinguishable nodes, and no edge says which.
+    //
+    // Merging is the semantically correct fix rather than a dedupe of convenience,
+    // because in CSS a selector is a MATCH PATTERN, not a declaration. Two rules
+    // written `.a { … }` are not two declarations of a thing named `.a`; they are
+    // two rules that the same selector matches, and the selector is the identity.
+    // So the graph node is the selector, and the rules are occurrences of it.
+    //
+    // Identity is (kind, name, scope) — not name alone — because a nested rule's
+    // scope is part of what it resolves to. Two nested rules with the same resolved
+    // name under the same parent ARE the same node and do merge.
+    //
+    // Metadata is MERGED rather than dropped: the union of the properties declared
+    // across the occurrences, the union of class names, the max specificity, and the
+    // OR of the boolean shape flags. Taking the first occurrence's metadata instead
+    // would silently drop what the other rules declare, which is the same class of
+    // loss as discarding an edge.
+    {
+      const byIdentity = new Map<string, ASTEngine.UniversalSymbol>()
+      const merged: ASTEngine.UniversalSymbol[] = []
+      for (const sym of ctx.symbols) {
+        // IDENTITY IS (kind, RESOLVED NAME). The scope is provenance, not identity.
+        //
+        // Two cases forced this, both measured:
+        //
+        //  - a custom property: `--bg-1` under `:root` and again under `.dark` is the
+        //    SAME property and the cascade picks a winner. It is a registry entry —
+        //    the same line as the ruling that a custom property is a THING while
+        //    `color` is a keyword.
+        //
+        //  - a nested selector: `div.svelte-xyz { &.x { … } }` resolves to
+        //    `div.svelte-xyz.x`, which is the SAME selector as a top-level
+        //    `div.svelte-xyz.x` a few lines away. They match the same elements, so
+        //    they are one node. This is already the lane's own chain rule — "the
+        //    rule's own NAME is the resolved chain" — applied to identity.
+        //
+        // Keeping scope in the key left 9 corpus files (2.0%) still publishing a
+        // duplicate name, 281 duplicated names, worst 2x, every one of them this
+        // case. An edge naming one of those is ambiguous, and an ambiguous endpoint is
+        // the failure the export invariant exists to convict.
+        const key = `${sym.kind}\u0000${sym.name}`
+        const first = byIdentity.get(key)
+        if (!first) {
+          byIdentity.set(key, sym)
+          merged.push(sym)
+          continue
+        }
+        const a = (first.metadata ?? {}) as Record<string, any>
+        const b = (sym.metadata ?? {}) as Record<string, any>
+        const out: Record<string, any> = { ...a }
+        for (const [k, v] of Object.entries(b)) {
+          const cur = out[k]
+          if (Array.isArray(v) && Array.isArray(cur)) {
+            // union, order-preserving
+            for (const item of v) if (!cur.includes(item)) cur.push(item)
+          } else if (typeof v === "boolean" && typeof cur === "boolean") {
+            out[k] = cur || v
+          } else if (typeof v === "number" && typeof cur === "number" && /specificity|omplexity/.test(k)) {
+            out[k] = Math.max(cur, v)
+          } else if (cur === undefined) {
+            out[k] = v
+          }
+        }
+        first.metadata = out
+        // the merged node spans every occurrence, and says how many there were
+        const firstLine = first.range?.startLine ?? 0
+        const lastLine = sym.range?.endLine ?? firstLine
+        if (lastLine > (first.range?.endLine ?? 0)) {
+          first.range = { ...(first.range as any), endLine: lastLine }
+        }
+        const occ = (first.metadata.occurrences as number | undefined) ?? 1
+        first.metadata.occurrences = occ + 1
+        // the scopes it was written under, so the provenance of a merged node is not
+        // lost — `scope` keeps the first, `scopes` keeps them all
+        const prevScopes = (first.metadata.scopes as string[] | undefined)
+          ?? (first.scope ? [first.scope] : [])
+        if (sym.scope && !prevScopes.includes(sym.scope)) prevScopes.push(sym.scope)
+        if (prevScopes.length > 1) first.metadata.scopes = prevScopes
+        if (firstLine > 0) first.metadata.firstLine = Math.min(first.metadata.firstLine ?? firstLine, firstLine)
+      }
+      ctx.symbols = merged
+    }
+
     for (const s2 of ctx.symbols) attachChain(s2)
     for (const s of ctx.symbols) attachDeclared(s)
 
@@ -585,6 +778,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: {
         complexity: ctx.symbols.length,
         linesOfCode: content.split("\n").length,
+        // NB: the cascade order is NOT recorded here. `parseFile` rebuilds file
+        // metadata as a fresh literal of specific keys (engine.ts:1572 — its own
+        // comment says an omitted key is "computed and DISCARDED — silently"), so a
+        // key added at the analyzer would never reach a consumer, and a key that
+        // looks present but is always dropped is worse than an absent one. The order
+        // rides each layer SYMBOL as `layerIndex`, which is passed through.
         // 0 on every real corpus file; present so a non-zero value is a number
         // someone can go and look at rather than a branch nobody can observe.
         cssUnrankedRelationships: unrankable,
@@ -946,6 +1145,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processRuleSet(
     node: Node,
     media: string,
+    supports: string,
     layer: string,
     container: string,
     scope: string,
@@ -1011,6 +1211,28 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
 
+    //
+    // A `selectors` node whose text is not a SELECTOR publishes nothing.
+    //
+    // Grammar recovery can give the node a text range that covers DECLARATIONS, and it
+    // does so WITHOUT an ERROR ancestor. Measured on
+    // `element-plus/packages/theme-chalk/src/input-number.scss`, where one `selectors`
+    // node's text was
+    //
+    //   `.#{$namespace}-input__wrapper padding-left: #{map.get(…)};\n  padding-right: …`
+    //
+    // and the lane published it as a symbol name — a "selector" containing braces,
+    // colons and semicolons, which nothing can reference and no consumer splitting on
+    // commas can use. It reached the differential as an UNEXPLAINED edge, i.e. a
+    // fabrication.
+    //
+    // The test rejects a `;` outright and a `{` that is not part of an INTERPOLATION:
+    // in SCSS `#{$x}` is spelled with braces, so a blanket brace test throws away every
+    // interpolated selector — which in the element-plus corpus is most of them. The
+    // first version made exactly that mistake and the truth fell from 594 rows to 363
+    // with 237 edges unexplained, which is the signature of a truth that got SMALLER,
+    // and the only honest reading of that is that the truth is wrong.
+    if (!looksLikeSelectorText(selectorsNode.text)) return null
     const rawParts = selectorsNode.text.split(",")
     const rawSelectors: string[] = []
     for (let i = 0; i < rawParts.length; i++) {
@@ -1031,7 +1253,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < rawSelectors.length; i++) {
       if (!isResetSelector(rawSelectors[i])) keptSelectors.push(rawSelectors[i])
     }
-    if (keptSelectors.length === 0) return null
+    if (keptSelectors.length === 0) {
+      return null
+    }
     if (keptSelectors.length !== rawSelectors.length) {
       rawSelectors.length = 0
       for (let i = 0; i < keptSelectors.length; i++) rawSelectors.push(keptSelectors[i])
@@ -1046,13 +1270,29 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // A `&` WITH NO PARENT cannot be resolved. That happens when the enclosing rule
+    // published nothing — measured case: `* { &:hover .class { … } }`, where `*` is
+    // a universal reset and is suppressed by CSS-D5, so the nested rule had no parent
+    // and kept its raw text. The lane then published a symbol literally named
+    // `&:hover .class.svelte-xyz`: a name containing `&`, which is not a selector
+    // anything can reference. M60 R7's placeholder-literal class, reached from the
+    // other direction.
+    //
+    // A rule whose name cannot be resolved is not addressable, so it publishes
+    // nothing — the same suppression as its parent, applied one level down. That
+    // makes "no published name in this lane contains a nesting `&`" a structural
+    // property rather than a hope.
+    for (const r of rawSelectors) {
+      if (!parentSelector && hasNestingAmp(r)) return null
+    }
+
     const resolvedSelectors: string[] = []
     for (let i = 0; i < parentSelectors.length; i++) {
       const p = parentSelectors[i]
       for (let j = 0; j < rawSelectors.length; j++) {
         const r = rawSelectors[j]
         if (p) {
-          if (r.indexOf("&") !== -1) {
+          if (hasNestingAmp(r)) {
             resolvedSelectors.push(replaceAll(r, "&", p))
           } else {
             resolvedSelectors.push(`${p} ${r}`)
@@ -1231,6 +1471,34 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       else if (specId === maxSpecificity[0] && specClass === maxSpecificity[1] && specTag > maxSpecificity[2])
         maxSpecificity = [specId, specClass, specTag]
 
+      // A SELECTOR THAT USES A DECLARED NAMESPACE PREFIX references that
+      // declaration. `svg|a` can only be resolved given `@namespace svg url(…)`, so
+      // the dependency is real and the graph was silent about it: the prefix was
+      // published as a `module` symbol, the selector as a `type` symbol, and nothing
+      // connected them.
+      //
+      // The omission audit marked this PARTIAL rather than missing, because the
+      // corpus carries it once (svelte's supports-namespace sample) — which is
+      // exactly the shape of defect a small count hides.
+      if (selectorText) {
+        const bar = selectorText.indexOf("|")
+        if (bar > 0) {
+          const prefix = selectorText.slice(0, bar).trim()
+          const declared = ctx.namespacePrefixes[prefix]
+          if (declared) {
+            ctx.relationships.push({
+              source: selectorText,
+              target: declared,
+              type: ASTEngine.RelationshipType.References,
+              // the name on this edge is the DECLARATION, which is written on the
+              // `@namespace` line — not the selector's own line
+              line_number: this.lineOf(selectorsNode),
+              metadata: { cssSpecific: true, isNamespaceRef: true },
+            })
+          }
+        }
+      }
+
       if (isComplex && chain.length >= 2) {
         // RULING (2026-09-26). A selector chain is DEFERRED, not emitted blind.
         //
@@ -1353,13 +1621,52 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // would be the same as the selector's here — but the SELECTOR is the name,
     // and taking the name is the rule that survives a formatting change.
     const selectorLine = this.lineOf(selectorsNode)
+    //
+    // …and that claim is TRUE only when the name is actually written on that line,
+    // which it is not for a NESTED rule. `selectorText` is the RESOLVED name: a
+    // nested rule composes to parent + own (`th` under `table … tr:nth-child(odd)`
+    // resolves to `table … tr:nth-child(odd) th`), so its line writes only `th`.
+    // The five scope edges below claimed the line regardless, and asserted a name
+    // the line does not contain.
+    //
+    // This is not new behaviour being invented here — it is the lane's OWN rule,
+    // applied one edge too few. The nested-selector edge below already compared
+    // the written text with the composed name and dropped the line when they
+    // differed; testing for `&` is not enough, because an implicit descendant
+    // (`.a { .b { … } }`, no `&` at all) composes too. The scope edges were the
+    // same case with the test missing, which is why they were the last ones to
+    // fail: nothing in pure CSS nests the way SCSS does, so the CSS corpus rarely
+    // reaches them, and the 40-file M59 sample read 86/86 on the strength of that
+    // rarity. The SCSS lane, whose entire corpus nests, exposed all 10 at once.
+    //
+    // So the test is hoisted here and both families consume one answer. A name the
+    // line does not write gets NO line, which is the same choice the nested edge
+    // already made and for the same stated reason: never checkable rather than
+    // silently unaccused, and never a claim that accuses a correct edge.
+    const asWritten = selectorsNode.text.trim()
+    const composedName = collapseWhitespace(asWritten) !== selectorText
+    const nameLine = composedName ? {} : { line_number: selectorLine }
+    const nameProvenance = composedName ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}
     if (media) {
       ctx.relationships.push({
         source: media,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isMediaScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isMediaScope: true, ...nameProvenance },
+      })
+    }
+    // `@supports` is a conditional scope: the same shape as `@media`, so the same
+    // `contains` edge, named by the rule's selector. Emitted with its own metadata
+    // class so a consumer can tell a feature-query scope from a media condition
+    // without re-parsing the name.
+    if (supports) {
+      ctx.relationships.push({
+        source: supports,
+        target: selectorText,
+        type: ASTEngine.RelationshipType.Contains,
+        ...nameLine,
+        metadata: { cssSpecific: true, isSupportsScope: true, ...nameProvenance },
       })
     }
     if (layer) {
@@ -1367,8 +1674,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: layer,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isLayerScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isLayerScope: true, ...nameProvenance },
       })
     }
     if (container) {
@@ -1376,8 +1683,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: container,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isContainerScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isContainerScope: true, ...nameProvenance },
       })
     }
     if (scope) {
@@ -1385,8 +1692,8 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         source: scope,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        line_number: selectorLine,
-        metadata: { cssSpecific: true, isScopeScope: true },
+        ...nameLine,
+        metadata: { cssSpecific: true, isScopeScope: true, ...nameProvenance },
       })
     }
     if (parentSelector) {
@@ -1411,17 +1718,21 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // INCONSISTENT edges left after the `&` test. The exact test is whether the
       // two texts coincide — cheap, and it keeps a real line in the one case
       // where the name genuinely is written.
-      const asWritten = selectorsNode.text.trim()
-      const synthesized = collapseWhitespace(asWritten) !== selectorText
+      //
+      // That test, and the two answers it drives, are the ones hoisted above as
+      // `asWritten` / `composedName` / `nameLine` / `nameProvenance`: this edge and
+      // the five scope edges ask the same question of the same two strings, so they
+      // read one answer rather than each re-deriving it. Two copies of a
+      // correctness rule is one copy waiting for the other to be edited.
       ctx.relationships.push({
         source: parentSelector,
         target: selectorText,
         type: ASTEngine.RelationshipType.Contains,
-        ...(synthesized ? {} : { line_number: selectorLine }),
+        ...nameLine,
         metadata: {
           cssSpecific: true,
           isNestedSelector: true,
-          ...(synthesized ? { isSynthesizedName: true, asWrittenSelector: asWritten } : {}),
+          ...nameProvenance,
         },
       })
     }
@@ -1537,6 +1848,30 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           },
         })
         ctx.mediaScopeFirstRange[mediaName] = this.nodeToRange(node)
+
+        // `@media (--narrow)` is a REFERENCE to the `@custom-media --narrow`
+        // declaration, exactly as `var(--brand)` is a reference to a
+        // registration or an `animation:` to a `@keyframes`. Without this the
+        // scope existed and the declaration existed and nothing joined them, so
+        // the graph could not answer "which media scopes depend on this custom
+        // media query" — the question both halves exist to answer.
+        //
+        // Only idents THIS FILE declares become edges, for the reason the
+        // animation and font-family edges give: a `@media (--x)` may legitimately
+        // come from another stylesheet, and inventing an endpoint for it is the
+        // `global` phantom this lane removed once.
+        const declared = leadingCustomIdent(collapseWhitespace(queryNode.text).replace(/^\(/, "").replace(/\)$/, ""))
+        if (declared && ctx.customMediaNames[declared]) {
+          ctx.relationships.push({
+            source: mediaName,
+            target: declared,
+            type: ASTEngine.RelationshipType.References,
+            // the NAME is the condition's own line, the same rule as the
+            // font-family edge: the reference is the condition, not the statement
+            line_number: this.lineOf(queryNode),
+            metadata: { cssSpecific: true, isCustomMediaRef: true },
+          })
+        }
       }
       return mediaName
     }
@@ -1547,6 +1882,98 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Every `@keyframes` name in the file, collected before the main walk so that
    * an `animation:` reference resolves regardless of where the block sits.
    */
+  /**
+   * The published name of an `@font-face` declaration. Used by BOTH the symbol push
+   * and the `uses` edge, because when they were written separately the edge named
+   * the bare family while the symbol carried the keyword — a dangling endpoint, the
+   * same defect fixed for `@property` one commit earlier, in the other direction.
+   * One expression is the only way two names cannot drift apart.
+   */
+  /**
+   * The leading `--ident` of an at-rule prelude, or `""`.
+   *
+   * Written against the DECLARED name rather than a node type on purpose: the
+   * grammar has no `custom_media` node at all (all three of these at-rules are a
+   * bare `at_rule`), so there is nothing type-shaped to key on, and CSS itself says
+   * a custom media query name is a `<custom-ident>` followed by a condition.
+   */
+  private atRulePrelude(node: Node, keyword: string): string {
+    const block = this.findChild(node, (c) => c?.type === "block")
+    const raw = block
+      ? node.text.slice(node.text.indexOf(keyword) + keyword.length, node.text.indexOf(block.text))
+      : node.text.replace(/^@\S+/, "").replace(/;\s*$/, "").trim()
+    return collapseWhitespace(raw)
+  }
+
+  /**
+   * The family of the `@font-face` block a declaration sits in, or `undefined`.
+   *
+   * Walks UP from the declaration to its enclosing `@font-face` and reads that
+   * block's own `font-family` declaration — the same two-step the symbol push does,
+   * and deliberately so: CSS binds a `font-feature-settings` value to the family of
+   * the `@font-face` it appears in, so the edge target cannot be derived from the
+   * value alone.
+   */
+  private fontFamilyOf(decl: Node): string | undefined {
+    let n: Node | null = decl
+    while (n) {
+      if (n.type === "at_rule") {
+        const kw = this.findChild(n, (c) => c?.type === "at_keyword")
+        if (kw && kw.text.trim().toLowerCase() === "@font-face") {
+          const block = this.findChild(n, (c) => c?.type === "block")
+          const family = block
+            ? this.findDescendant(block, (d) => {
+                if (d.type !== "declaration") return false
+                const prop = this.findChild(d, (g) => g?.type === "property_name")
+                return prop !== null && prop.text === "font-family"
+              })
+            : null
+          if (family) {
+            const value = this.findChild(family, (c) => c?.type === "plain_value" || c?.type === "string_value")
+            if (value) return stripAllQuotes(value.text)
+          }
+          return undefined
+        }
+      }
+      n = n.parent
+    }
+    return undefined
+  }
+
+  private fontFaceSymbolName(family: string): string {
+    return `@font-face ${family}`
+  }
+
+  /**
+   * Namespace prefixes declared by `@namespace`, collected before the walk for the
+   * same order-independence reason as keyframes and font faces: a selector may use a
+   * prefix before the `@namespace` that declares it, and CSS does not care.
+   *
+   * The value is the PUBLISHED symbol name, so the edge and the symbol cannot name
+   * different things — the same single-expression discipline as `@font-face`.
+   */
+  private collectNamespacePrefixes(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "namespace_statement") {
+        const nameNode = this.findChild(n, (c) => c?.type === "namespace_name")
+        if (nameNode) {
+          const prefix = nameNode.text.trim()
+          // the published name is the keyword plus the whole prelude, which is what
+          // the symbol push below builds
+          const prelude = collapseWhitespace(n.text.replace(/^@namespace\s*/, "").replace(/;\s*$/, "").trim())
+          if (prefix && prelude) ctx.namespacePrefixes[prefix] = `@namespace ${prelude}`
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
   private collectKeyframeNames(root: Node, ctx: CssContext): void {
     const stack: Node[] = [root]
     while (stack.length > 0) {
@@ -1558,6 +1985,87 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           (c) => c && (c.type === "keyframes_name" || c.type === "identifier" || c.type === "string_value"),
         )
         if (nameNode) ctx.keyframeNames[stripAllQuotes(nameNode.text)] = true
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /**
+   * Families declared by an `@font-face` in this file, collected BEFORE the walk for
+   * the same reason `collectKeyframeNames` runs first: a rule may use a family
+   * before the `@font-face` that declares it, and CSS does not care about order, so
+   * an edge that resolved during the walk would depend on where the author happened
+   * to put the declaration.
+   */
+  /**
+   * `@counter-style`, `@custom-media` and `@font-feature-values` are the last three
+   * at-rules that DECLARE a named, referable thing, and until now all three were
+   * dropped on the floor: the analyzer published no symbol for them, so a
+   * `list-style: thumbs` had nothing to point at and a `@media (--narrow)` named
+   * itself by raw text. That is the `@font-face` / `@property` defect class a
+   * second time — and it survived because NO CORPUS FILE USES ANY OF THE THREE, so
+   * they were classified NO OCCURRENCE and recorded as "not a defect". That is the
+   * cost of that label: it means the corpus cannot speak about them, not that they
+   * work. Three of three turned out to be broken.
+   *
+   * Pre-collected for the same order-independence reason as keyframes and font
+   * faces: CSS does not care whether a use precedes its declaration.
+   */
+  private collectCustomDefinitionNames(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "at_rule") {
+        const kwNode = this.findChild(n, (c) => c?.type === "at_keyword")
+        const keyword = kwNode ? kwNode.text.trim().toLowerCase() : ""
+        const prelude = this.atRulePrelude(n, keyword)
+        if (keyword === "@counter-style" && prelude) ctx.counterStyleNames[prelude] = true
+        // `@custom-media --narrow (max-width: 400px)` declares `--narrow`; the
+        // condition is the VALUE of the declaration, not part of its name, so the
+        // prelude is sliced to its leading custom-ident. The published symbol uses
+        // the same slice, so the two cannot name different things.
+        else if (keyword === "@custom-media") {
+          const name = leadingCustomIdent(prelude)
+          if (name) ctx.customMediaNames[name] = true
+        } else if (keyword === "@font-feature-values" && prelude) {
+          ctx.fontFeatureValuesNames[prelude] = true
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  private collectFontFaceNames(root: Node, ctx: CssContext): void {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop() as Node
+      if (this.isErrorNode(n)) continue
+      if (n.type === "at_rule") {
+        const kw = this.findChild(n, (c) => c?.type === "at_keyword")
+        if (kw && kw.text.trim() === "@font-face") {
+          // The declaration lives inside the `block` child, so finding it is a
+          // DESCENDANT search. The first version looked for a `property_name`
+          // among the at-rule's DIRECT children, which finds nothing for the same
+          // reason the symbol-naming code above says it must not — `@font-face` has
+          // an empty prelude and everything it declares is inside the block.
+          const block = this.findChild(n, (c) => c?.type === "block")
+          const decl = block ? this.findDescendant(block, (d) => {
+            if (d.type !== "declaration") return false
+            const prop = this.findChild(d, (g) => g?.type === "property_name")
+            return prop !== null && prop.text.trim().toLowerCase() === "font-family"
+          }) : null
+          if (decl) {
+            const value = this.findChild(decl, (c) => c?.type === "string_value" || c?.type === "plain_value" || c?.type === "identifier")
+            if (value) ctx.fontFaceNames[stripAllQuotes(value.text.trim())] = true
+          }
+        }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -1590,7 +2098,7 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processSupports(node: Node, ctx: CssContext) {
+  private processSupports(node: Node, ctx: CssContext): string | null {
     // The predicate used to be `c.type !== "at_keyword" && c.type !== "block"`,
     // on the belief that `supports_statement` carries an `at_keyword` child. It
     // does NOT: the pinned grammar's shape is
@@ -1634,7 +2142,12 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         },
       })
       ctx.patterns["Feature Queries (@supports)"] = true
+      // RETURNED so the walk can attribute the rules inside to this scope. It used
+      // to return nothing, which is the whole defect: the scope symbol was
+      // published and nothing could ever point at it.
+      return `@supports ${condition}`
     }
+    return null
   }
 
   private processAtRule(node: Node, currentSelector: string, ctx: CssContext): { layer?: string; container?: string; scope?: string } {
@@ -1718,6 +2231,10 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   @use/@forward  Sass module imports, emitted as `imports` like @import
     const DECLARING = new Set([
       "@layer", "@container", "@scope", "@font-face", "@property", "@namespace", "@mixin",
+      // the three that were silently dropped: each DECLARES a named, referable
+      // thing, so each belongs here. Measured, not assumed — a probe of all three
+      // returned zero symbols before this line and the fixtures pin them now.
+      "@counter-style", "@custom-media", "@font-feature-values",
     ])
     const CONSUMING = new Set(["@tailwind", "@apply", "@theme", "@config", "@include", "@use", "@forward"])
 
@@ -1770,6 +2287,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (family) {
           const value = this.findChild(family, (c) => c?.type === "plain_value" || c?.type === "string_value")
           if (value) namePartOverride = collapseWhitespace(stripAllQuotes(value.text))
+          // the published name comes from ONE expression, shared with the `uses`
+          // edge, so the symbol and the edge can never name different things
+          void namePartOverride
         }
       }
 
@@ -1780,15 +2300,122 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (braceAt !== -1) cut = braceAt
       if (semiAt !== -1 && semiAt < cut) cut = semiAt
       const namePart = namePartOverride || stripAllQuotes(collapseWhitespace(afterKeyword.slice(0, cut)))
-      const ruleName = `${keyword}${namePart ? " " + namePart : ""}`
+      const ruleName =
+        keyword === "@font-face" && namePart ? this.fontFaceSymbolName(namePart) : `${keyword}${namePart ? " " + namePart : ""}`
 
       // A CONSUMING at-rule gets NO symbol. `@apply flex` is an instruction to a
       // Tailwind build, not a declaration; `@theme` is a block whose custom
       // properties are already published in their own right; `@config` names a
       // file; `@include` is a USE, and the `uses` edge below is the fact.
+      // The ORDERING form of `@layer` — `@layer reset, base, components;`, no block.
+      //
+      // It used to publish ONE symbol named after the whole statement text
+      // (`@layer reset, base, components`), which is the placeholder-literal name
+      // M60 R7 exists to forbid: nothing can reference that string, so it is a name
+      // with no referent — and it DUPLICATED the individually declared layers, so a
+      // file carried both `@layer base` and `@layer base, special` for the same
+      // layer. Found by the omission audit, and the corpus has the form for real
+      // (`@layer theme, base, components, utilities;`).
+      //
+      // The layers are the symbols — named exactly as the block form names them, so
+      // the statement and the declaration agree — and the ORDER is a fact about the
+      // file rather than an edge, because it has no container to source from. It
+      // rides file metadata instead, which is where a whole-file fact belongs.
+      if (keyword === "@layer" && !this.findChild(node, (c) => c?.type === "block")) {
+        const names = namePart
+          .split(",")
+          .map((x) => x.trim())
+          .filter((x) => x.length > 0)
+        for (const nm of names) {
+          ctx.layerOrder.push(nm)
+          if (ctx.layerNames[nm]) continue
+          ctx.layerNames[nm] = true
+          ctx.symbols.push({
+            name: `${keyword} ${nm}`,
+            kind: ASTEngine.SymbolKind.Module,
+            range: this.nodeToRange(node),
+            scope: "",
+            visibility: "public",
+            complexity: 1,
+            metadata: {
+              isAtRule: true,
+              atKeyword: keyword,
+              isLayerOrdering: true,
+              // The cascade position this statement gives the layer. Per-SYMBOL
+              // rather than per-file, and that is not a style choice: `parseFile`
+              // rebuilds the file metadata as a fresh literal listing specific keys
+              // (engine.ts:1572, whose own comment records that anything it omits is
+              // "computed and DISCARDED — silently"), so a file-level key added here
+              // would never reach a consumer. Symbol metadata is passed through, and
+              // the position is a property of the LAYER anyway.
+              layerIndex: ctx.layerOrder.length - 1,
+            },
+          })
+        }
+        return {}
+      }
+
       if (DECLARING.has(keyword)) {
+        // A REGISTERED custom property is published under the PROPERTY'S OWN NAME.
+        //
+        // The omission audit (script/m14/tmp/css-omission-audit.ts) found the
+        // defect this fixes: `var(--brand)` emits `references body -> --brand`, and
+        // the only symbol for `--brand` in the file was `@property --brand`. So the
+        // read pointed at a name nothing published — a DANGLING endpoint, in a lane
+        // whose whole chain-resolution rule is that both ends must resolve. 273
+        // registered properties in 3 corpus files, every read of them dangling.
+        //
+        // `--brand` is also the right name on its own terms: it is a namespaced CSS
+        // name that cannot collide with a class, a type or a scope, and a
+        // registration and a rule-level `--brand: …` declare the SAME thing, so
+        // publishing them under one name is the point rather than a hazard.
+        //
+        // `@font-face` KEEPS its keyword prefix (`@font-face Inter`), and the
+        // asymmetry is deliberate: a font family is a bare identifier that could
+        // collide with a class or a type of the same name, so the keyword says which
+        // KIND of thing it is. A `--x` name needs no such help.
+        //
+        // `@custom-media` is the same shape as `@property`: a namespaced `--x` name
+        // plus a value, where only the name is referable. `@property --brand
+        // { syntax: … }` drops the keyword and the block; `@custom-media --narrow
+        // (max-width: 400px)` drops the keyword and the CONDITION. Both publish the
+        // bare ident, so the declaration and the `@media (--narrow)` that uses it
+        // meet on one name.
+        const publishedName =
+          keyword === "@property"
+            ? namePart || ruleName
+            : keyword === "@custom-media"
+              ? // `namePart` is the PRELUDE; `ruleName` is the keyword plus the
+                // prelude, so slicing the latter matches nothing and the first
+                // version published `@custom-media --narrow (max-width: 400px)` —
+                // a name the `@media (--narrow)` can never resolve against.
+                leadingCustomIdent(namePart) || ruleName
+              : ruleName
+        if (keyword === "@layer" && namePart) {
+          if (ctx.layerNames[namePart]) {
+            // The ORDERING statement got here first (`@layer a, b;` precedes the
+            // blocks, which is the normal order), so the existing symbol's range
+            // points at the statement. The BLOCK is where the layer's content is, so
+            // the range is corrected to it and the symbol marked as having one — one
+            // symbol per layer, located where its rules are.
+            const existing = ctx.symbols.find((sy) => sy.name === `${keyword} ${namePart}`)
+            if (existing) {
+              existing.range = this.nodeToRange(node)
+              const em = (existing.metadata ?? {}) as Record<string, unknown>
+              existing.metadata = { ...em, hasLayerBlock: true }
+            }
+            // The SYMBOL is a duplicate — but the SCOPE is not. Returning `{}` here
+            // (the first version) silently dropped the layer from the returned
+            // scope, so the rules inside the block were attributed to no layer and
+            // every `contains` edge for them disappeared: 5 symbols and ZERO
+            // relationships. The dedup is about publishing a name once, not about
+            // pretending the layer does not exist.
+            return { layer: `${keyword} ${namePart}` }
+          }
+          ctx.layerNames[namePart] = true
+        }
         ctx.symbols.push({
-          name: ruleName,
+          name: publishedName,
           // A declared `@font-face` and a registered `@property` are both
           // declarations of a named thing, which is what `variable` means in this
           // ontology; `@mixin` is a callable, so `function`; the rest are
@@ -1796,7 +2423,9 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind:
             keyword === "@mixin"
               ? ASTEngine.SymbolKind.Function
-              : keyword === "@font-face" || keyword === "@property"
+              : keyword === "@font-face" || keyword === "@property" ||
+                  keyword === "@counter-style" || keyword === "@custom-media" ||
+                  keyword === "@font-feature-values"
                 ? ASTEngine.SymbolKind.Variable
                 : ASTEngine.SymbolKind.Module,
           range: this.nodeToRange(node),
@@ -1806,6 +2435,22 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             isAtRule: true,
             atKeyword: keyword,
+            // the keyword is dropped from a `@property` symbol's NAME, so it is
+            // recorded here — the declaration is still identifiable as a
+            // registration rather than a rule-level declaration
+            ...(keyword === "@property" ? { isPropertyRegistration: true } : {}),
+            // the three late additions carry which construct declared them, because
+            // a `@custom-media` symbol is a BARE `--x` name — identical in shape to
+            // a registered `@property` symbol and to a rule-level custom property,
+            // so without this the three declarations are indistinguishable in the
+            // graph
+            ...(keyword === "@counter-style"
+              ? { isCounterStyleDeclaration: true }
+              : {}),
+            ...(keyword === "@custom-media" ? { isCustomMediaDeclaration: true } : {}),
+            ...(keyword === "@font-feature-values"
+              ? { isFontFeatureValuesDeclaration: true }
+              : {}),
             // (the descriptor-count complexity is set on the symbol above)
           },
         })
@@ -1993,6 +2638,126 @@ export class RealCssAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       // Reached only by `--`, so the pattern test needs no prefix guard.
       ctx.patterns["CSS Custom Properties"] = true
+    }
+
+    // A `font-family` that names a family this file DECLARES with `@font-face` is
+    // a USE of that declaration — the exact analogue of `animation: spin` naming a
+    // `@keyframes spin`, which has been emitted since the order-dependence fix.
+    //
+    // Found by the omission audit: 135 corpus files declare a `font-family` and 21
+    // declare an `@font-face`, 344 family symbols were published, and NOTHING
+    // connected a rule that uses a family to the declaration that provides it. So
+    // the graph could answer "which rules use Inter" and "where is Inter declared"
+    // but not "which rule uses the Inter this file declares" — the one question
+    // both halves exist to answer. The asymmetry was historical: the animation path
+    // was built, this one never was.
+    //
+    // Only families the file DECLARES become edges, for the same reason animations
+    // only name declared keyframes: a `font-family` may legitimately come from
+    // another stylesheet, and inventing an endpoint for it is the `global` phantom
+    // this lane removed once.
+    // `list-style: thumbs` / `list-style-type: thumbs` is a USE of the
+    // `@counter-style thumbs` this file declares — the same shape as
+    // `animation: spin` naming a `@keyframes spin`, and for the same reason it
+    // was missing: the construct had no corpus file, so it was never measured.
+    //
+    // `list-style` is a SHORTHAND, so the name can appear under either the
+    // shorthand or the longhand; both are checked because a file that spells it
+    // one way and another the other way is the normal case, not the exotic one.
+    if ((propName === "list-style" || propName === "list-style-type") && currentSelector) {
+      const nameStack = [node]
+      while (nameStack.length > 0) {
+        const n = nameStack.pop()!
+        if (n.type === "plain_value" || n.type === "identifier" || n.type === "string_value") {
+          const style = n.text.trim()
+          if (style.length > 0 && ctx.counterStyleNames[style]) {
+            ctx.relationships.push({
+              source: currentSelector,
+              target: `@counter-style ${style}`,
+              type: ASTEngine.RelationshipType.Uses,
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isCounterStyleRef: true },
+            })
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) nameStack.push(c)
+        }
+      }
+    }
+
+    // `font-feature-settings: "nice"` inside a `@font-face` for `Font One` is a
+    // USE of the `@font-feature-values Font One` block that defines the feature.
+    // It is the last of the three dropped at-rules to get its use edge.
+    //
+    // The family comes from the ENCLOSING `@font-face`, because that is where CSS
+    // binds the feature name: a feature setting only means anything against the
+    // family it is declared for. Without the family the edge would have to target
+    // the bare feature name, which nothing publishes.
+    if (propName === "font-feature-settings") {
+      const enclosing = this.fontFamilyOf(node)
+      // Deliberately NOT `&& currentSelector`: a `@font-face` block has no
+      // selector, so the first version guarded on one and never fired — the same
+      // guard that is right for `list-style` and wrong here, because the entity
+      // that uses a feature is the FACE DECLARATION, not a rule.
+      //
+      // Also deliberately NOT extended to a rule-level
+      // `.x { font-feature-settings: "nice" }`, which is legal CSS. Which family's
+      // feature that names depends on the cascade — the family `font-family`
+      // resolves to for that element — and guessing it would invent an endpoint
+      // for a relationship this lane cannot actually see. A missing edge that is
+      // declared beats a wrong edge that is not.
+      if (enclosing && ctx.fontFeatureValuesNames[enclosing]) {
+        const valueStack = [node]
+        while (valueStack.length > 0) {
+          const n = valueStack.pop()!
+          if (n.type === "string_value" || n.type === "plain_value") {
+            ctx.relationships.push({
+              source: this.fontFaceSymbolName(enclosing),
+              target: `@font-feature-values ${enclosing}`,
+              type: ASTEngine.RelationshipType.Uses,
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isFontFeatureValuesRef: true },
+            })
+          }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c) valueStack.push(c)
+          }
+        }
+      }
+    }
+
+    if (propName === "font-family" && currentSelector) {
+      const famStack = [node]
+      while (famStack.length > 0) {
+        const n = famStack.pop()!
+        if (n.type === "plain_value" || n.type === "identifier" || n.type === "string_value") {
+          const family = stripAllQuotes(n.text.trim())
+          if (family.length > 0 && ctx.fontFaceNames[family]) {
+            ctx.relationships.push({
+              source: currentSelector,
+              // The edge names the DECLARATION, which is the published symbol — not
+              // the bare family, which nothing publishes. A resolvable endpoint, and
+              // the same both-ends-must-resolve rule the chain edges follow.
+              target: this.fontFaceSymbolName(family),
+              type: ASTEngine.RelationshipType.Uses,
+              // M59.A7, the same rule as the animation edge: the name is the FAMILY
+              // as written in the value, so the line is the value's line — not the
+              // `font-family` property's, and for a fallback list
+              // (`"Inter", sans-serif`) the specific family that matched rather
+              // than the first token on the line.
+              line_number: this.lineOf(n),
+              metadata: { cssSpecific: true, isFontFamilyRef: true },
+            })
+          }
+        }
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const child = n.namedChild(i)
+          if (child) famStack.push(child)
+        }
+      }
     }
 
     if ((propName === "animation" || propName === "animation-name") && currentSelector) {
