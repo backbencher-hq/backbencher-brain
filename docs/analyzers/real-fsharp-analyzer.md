@@ -258,32 +258,56 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 | --- | --- |
 | F1 dead-literal / unknown-symbol | `PASS refs=58 unknown=0 unknownFields=0` |
 | F3 fixtures | 4/4 PASS |
-| F4 mutants | 11/11 CAUGHT |
-| oracle vs analyzer, fixtures | 95 truth, 0 MISSING, 0 UNEXPLAINED |
-| F5 differential | **not clean — open, see below** |
+| F4 mutants | 13/13 CAUGHT |
+| oracle vs analyzer, fixtures | 102 truth, 0 MISSING, 0 UNEXPLAINED |
+| F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
+| all-label probe, 120 files | MISSING 205 / UNEXPLAINED 200 — the honest current number |
 
-**The differential is the one open item and it is not small.** Across rotating 60-file
-samples the harness reports, on the compiler corpus, 21–42% of tree-truth covered with
-3,270–3,979 MISSING, against 5–6 UNEXPLAINED (0.2–0.4%); on `fsharp-data`, 21–23% covered,
-6,370–7,242 MISSING, 15–18 UNEXPLAINED. The sample is a rotating cold pool so the totals
-move between runs.
+**Two differential numbers exist and they measure DIFFERENT THINGS. Quoting either alone
+would mislead, so both are here.**
 
-The shape of that residual is the finding: the two implementations agree closely on which
-edges the analyzer **emits** (under 1% unexplained on both corpora) and disagree
-substantially on **how much containment there is to emit** (60–80% unmatched), one
-directionally. That is the signature of truth rows whose source is not a published symbol,
-which no join can cover. **It is not adjudicated**, and the lane is therefore L4
-`DIFFERENTIAL-BOUNDED`, not L5.
+The canonical harness (`bun script/m14/differential.ts --lang fsharp`) filters the ANALYZER
+side of a comparison by an allowlist of labels and does **not** filter the TRUTH side, so a
+truth row with no allowance is counted MISSING forever. With this lane's oracle deriving six
+labels and only `contains` allowed, the lane charged itself for the other five and reported
+21–42% covered and 3,270–3,979 MISSING — which reads exactly like a containment defect and
+was almost entirely that asymmetry. After making the three labels this lane's truth can
+adjudicate symmetric (`contains` + `calls` + `references`), the same corpora measured:
 
-`fsharp` is now registered in the harness's audited-label set for `contains` **only**. It
-audited nothing before, and reported 1.1% coverage with **0 unexplained** — a number that
-reads as agreement and is not. Registering the label exposed the gap. The other labels are
-absent deliberately, each with its count recorded in the closure review; the largest is an
-**undecided contract question** rather than a bug — F#'s secondary constructor creates a
-value by a bare application with no `new` token, and the analyzer says `instantiates` where
-the lane's truth says `calls` (124 vs 15 per 120 files). An attempt to settle it by reading
-the callee against the file's own type declarations made the differential **worse**
-(202/151 → 297/246) and was reverted; the record is in the oracle at the application arm.
+| Corpus | tree-truth | covered | MISSING | analyzer edges | UNEXPLAINED |
+|---|---|---|---|---|---|
+| `fsharp` (compiler) | 4,106 | 4,105 (**100%**) | 1 | 2,751 | 3 (0.1%) |
+| `fsharp-data` | 8,810 | 8,810 (**100%**) | 0 | 3,359 | 5 (0.1%) |
+
+**"100% covered" here means 100% of the rows whose label is allowed — three of six.** It is
+not a claim about the other three labels, and it is not a claim about the current state of
+the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained its
+`open`-path and file-scope arms. The all-label number is the lane-owned probe
+(`script/m14/tmp/fs028-residual-shapes.ts`, 120 files of `dotnet/fsharp`, every label):
+
+| | count | dominant classes |
+|---|---|---|
+| MISSING (truth derives, analyzer does not) | 205 | 116 `calls`/source-other, 52 `declared_type(parameter)`, 10 `implements` |
+| UNEXPLAINED (analyzer emits, truth does not) | 200 | 123 open-path `references`, 26 `calls`/source-other, 18 `overrides`, 14 `instantiates` |
+
+The single largest class on both sides is the **undecided `calls`/`instantiates` boundary** on
+a bare application (§6.1 of the closure review): 116 against 14. The second is the
+`open`-path `references` class, where the two implementations disagree on the SCOPE an
+`import_decl` is attributed to — 123 rows. That one is understood and partly fixed: an `open`
+at file scope belongs to the file's declared module, and `FscMain.fs` now agrees 12/12 after
+the oracle gained a file-scope fallback; the rest of the class is not yet adjudicated.
+
+Two harness-level facts belong here because both produced numbers that were wrong while
+looking right. This lane's allowlist entry was deleted by another lane's edit of the shared
+physical line, and the differential did not fail — it reported **1.9% coverage and 4,696
+MISSING on an analyzer emitting 2,751 edges**, because with the allowlist emptied the harness
+was comparing almost nothing. The entry is now on a line of its own, and the clojure lane's
+RESTORED note documents the same mechanism losing 17 lanes' `calls` at once. A green that
+measures the harness is worse than a red.
+
+Still open, and not things a differential can settle: the `calls`/`instantiates` boundary,
+alias-versus-one-case-DU classification (resolution-bound), the grammar gaps in §5, and the
+`isMeasure` text test.
 
 ## Issue
 
