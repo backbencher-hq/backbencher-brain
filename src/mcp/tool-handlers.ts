@@ -1106,10 +1106,23 @@ const handlers: Record<string, ToolHandler> = {
         // How much of the answer is about the symbol that was asked for, and
         // how much the owner cascade folded in from its members. The cascade is
         // documented; without these numbers a reader cannot use it.
+        // DEPTH 0 only — these four describe the ROOT. An edge at depth >= 1
+        // is about a symbol the traversal discovered, and is counted as
+        // `deeper*`, so the partition is total:
+        //   exact + cascaded + deeper === the number of edges returned.
         exactCallers: result.summary?.exactCallers ?? 0,
         cascadedCallers: result.summary?.cascadedCallers ?? 0,
         exactCallees: result.summary?.exactCallees ?? 0,
         cascadedCallees: result.summary?.cascadedCallees ?? 0,
+        deeperCallers: result.summary?.deeperCallers ?? 0,
+        deeperCallees: result.summary?.deeperCallees ?? 0,
+        // The fan-out bound, and whether it bit. `truncationReason` can name
+        // `caller-budget-exhausted`; before this it did so without ever saying
+        // what the budget was, so the bound was announced and never quantified.
+        callerBudget: result.summary?.callerBudget ?? 0,
+        calleeBudget: result.summary?.calleeBudget ?? 0,
+        callerBudgetExhausted: result.summary?.callerBudgetExhausted === true,
+        calleeBudgetExhausted: result.summary?.calleeBudgetExhausted === true,
         // Rows present in BOTH the caller and the callee list. Each is one
         // relationship seen from two ends, so `totalCallers + totalCallees`
         // overstates the distinct relationship count by exactly this much.

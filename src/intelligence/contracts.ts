@@ -322,13 +322,27 @@ export interface GraphTraversalResult {
     callersIfUncapped: number | null
     calleesIfUncapped: number | null
     totalsAreLowerBounds: boolean
-    /** Caller edges naming the traced symbol exactly, vs. those the owner
-     *  cascade attributed to it through a member. The cascade is a declared
-     *  superset; these make it a REDUCIBLE one. */
+    /** DEPTH 0 ONLY — these four describe the ROOT. `exactCallers` names the
+     *  root itself; `cascadedCallers` names one of its members, folded on by
+     *  the owner cascade. The cascade is a declared superset; these make it a
+     *  REDUCIBLE one. An edge at depth >= 1 is about another symbol entirely
+     *  and is counted as `deeperCallers`; folding those in here would make
+     *  this number describe something other than the root. */
     exactCallers: number
     cascadedCallers: number
     exactCallees: number
     cascadedCallees: number
+    /** Edges at depth >= 1, about symbols the traversal discovered.
+     *  exactCallers + cascadedCallers + deeperCallers === totalCallers. */
+    deeperCallers: number
+    deeperCallees: number
+    /** The fan-out bound in force (symbols expanded per direction) and whether
+     *  it was exhausted. `truncationReason` names the bound when it fires; this
+     *  says what the bound was, which it previously did not. */
+    callerBudget: number
+    calleeBudget: number
+    callerBudgetExhausted: boolean
+    calleeBudgetExhausted: boolean
     /** Rows present in both the caller and the callee list — one relationship
      *  seen from two ends. `totalCallers + totalCallees` double-counts these. */
     edgesInBothDirections: number
