@@ -99,13 +99,23 @@ const EDGE_KIND_PRIORITY: Record<string, number> = {
 }
 const UNRANKED_KIND_ORDER = 100
 
-/** A SQL CASE expression yielding each row's rank, for use as an ORDER BY prefix. */
-function kindRankSql(column = "relType"): string {
-  const arms = Object.entries(EDGE_KIND_PRIORITY)
+/**
+ * The rank expression, PROJECTED under the alias `kindRank`.
+ *
+ * It has to be projected rather than written inline in the ORDER BY. The
+ * callee query is a compound select (`... UNION ALL ...`), and for those SQLite
+ * restricts ORDER BY to output column names, integer literals and parameters —
+ * an arbitrary expression is refused outright, with
+ * "1st ORDER BY term does not match any column in the result set". The caller
+ * query is a simple select and would have taken it inline, but both project it
+ * so there is one ordering expression in the module rather than two.
+ */
+const KIND_RANK_SQL =
+  "CASE relType " +
+  Object.entries(EDGE_KIND_PRIORITY)
     .map(([kind, rank]) => `WHEN '${kind}' THEN ${rank}`)
-    .join(" ")
-  return `CASE ${column} ${arms} ELSE ${UNRANKED_KIND_ORDER} END`
-}
+    .join(" ") +
+  ` ELSE ${UNRANKED_KIND_ORDER} END AS kindRank`
 
 /**
  * M59.A12 (#888): the per-symbol site limit for one edge query.
@@ -332,11 +342,12 @@ export async function traverseGraph(
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
 
-  // The two cap orderings. Callers are ranked by the CALLER's file, callees by
-  // the CALLEE's, so the two are spelled out rather than shared — the stable
-  // suffix is the same in both.
-  const CALLER_ORDER = `${kindRankSql()}, fileRel, lineNumber, rowId`
-  const CALLEE_ORDER = `${kindRankSql()}, fileRel, lineNumber, rowId`
+  // The cap orderings, over the projected `kindRank`. The trailing keys make
+  // each a strict TOTAL order, which is what makes two identical questions
+  // produce identical answers: a cap that returned a different 200 rows per run
+  // would make every count in the summary a sample of something arbitrary.
+  const CALLER_ORDER = "kindRank, fileRel, lineNumber, rowId"
+  const CALLEE_ORDER = "kindRank, fileRel, lineNumber, rowId"
 
   const nodes: Record<string, GraphNode> = {}
   let truncated = false
@@ -465,7 +476,8 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "f.relative_path AS srcFileRel, NULL AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL + " " +
       "FROM brain_relationship r " +
       "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
       "JOIN brain_file f ON f.id = s.file_id " +
@@ -611,7 +623,8 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "src.relative_path AS srcFileRel, r.target_external AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile "
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL
 
     let rows: EdgeRow[]
     if (isExternal) {
