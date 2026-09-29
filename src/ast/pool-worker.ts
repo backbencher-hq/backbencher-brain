@@ -362,7 +362,118 @@ const NOISE_TARGETS = new Set([
  *   declares cannot be a web-tree-sitter API leak, so the NOISE_TARGETS check is
  *   skipped for it. See the note at the check itself.
  */
-function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
+/**
+ * M60: exported so the output-coverage audit can ask THIS function whether a
+ * SYMBOL loss is real, for the same reason `filterNoiseRelationships` is exported
+ * beside it. The symbol filter used to be an inline `.filter()` callback, so an
+ * audit could only re-state the rule and hope it still matched; the lane reported
+ * 68 unexplained-looking drops and no attribution. One implementation, called from
+ * both places.
+ *
+ * `lang` is passed in rather than read from a closure so the decision is a pure
+ * function of (symbol, language) and can be exercised directly.
+ */
+export function keepSymbol(s: any, lang: string): boolean {
+  const name = s.name || ""
+  if (s.qualifiedName?.startsWith("__global__")) return false
+  // The denylist targets JS/TS global-object noise (window, process, module,
+  // exports, ...). XML/Make/Markdown use names like "module" and "export" as
+  // legitimate declaration identifiers, so the filter must not apply there — their
+  // dedicated analyzers already exclude real noise (xmlns, CharData, ...).
+  if (lang === "json" || lang === "yaml" || lang === "xml" || lang === "make" || lang === "markdown") return true
+  // JS-global names are only noise for JS-family languages. A method named
+  // `process` (Scala/Python/Java), `window` or `module` is a legitimate
+  // declaration elsewhere — applying the JS global list cross-language silently
+  // dropped real symbols.
+  const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+  const JS_GLOBALS = new Set([
+    "window", "document", "console", "process", "global",
+    "__dirname", "__filename", "module", "exports", "default", "globalThis",
+  ])
+  if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return false
+  // Universal denylist: language keywords / conventions and synthetic tree-sitter
+  // artifact names — never legitimate declarations in any language.
+  // "constructor" is a first-class declaration in TS/JS, so it is NOT here.
+  const UNIVERSAL = new Set([
+    "this", "super", "self", "Self", "me", "My",
+    "destructor",
+    "root", "program", "source_file", "module_declaration",
+    "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+    "unknown",
+  ])
+  if (UNIVERSAL.has(name)) return false
+  return true
+}
+
+/** Why `keepSymbol` rejected a symbol, for the audit's report. Never decides anything. */
+export function nameTheSymbolRule(s: any, lang: string): string {
+  const name = s.name || ""
+  if (s.qualifiedName?.startsWith("__global__")) return "qualifiedName is the __global__ sentinel"
+  if (["json", "yaml", "xml", "make", "markdown"].includes(lang)) return "language-exempt (kept)"
+  if (new Set(["javascript", "typescript", "tsx", "vue", "svelte"]).has(lang) && new Set([
+    "window", "document", "console", "process", "global",
+    "__dirname", "__filename", "module", "exports", "default", "globalThis",
+  ]).has(name)) return "JS-family global name"
+  return "UNIVERSAL denylist (a keyword or a synthetic tree-sitter artifact name)"
+}
+
+/**
+ * M60: exported so the output-coverage audit can ask THIS function whether a
+ * relationship loss is real, instead of keeping a copy of these rules.
+ *
+ * That distinction is the whole point. An audit that re-implements the filter
+ * agrees with the filter only for as long as the copy stays in step, and a copy
+ * that has drifted reports confident, wrong reasons for missing edges — which is
+ * the failure this repo already paid for once, in the classifier that "excused
+ * edges by inferring" and let a collapsed analyzer pass clean. Calling the
+ * production function means the audit cannot disagree with it by construction.
+ *
+ * Behaviour is unchanged; this only makes an existing pure function reachable.
+ */
+/**
+ * M60 LUA-16: which languages each family of `NOISE_TARGETS` names is actually
+ * noise for. A name absent from this table is universal noise and keeps the old
+ * behaviour.
+ *
+ * Two groups are language-owned and are now scoped:
+ *
+ *   - the tree-sitter API names (`type`, `parent`, `text`, `childForFieldName`, …)
+ *     are a web-tree-sitter LEAK: JS/TS analyzers that walk a tree by property
+ *     read as if the file called them. `type` and `parent` are ordinary
+ *     identifiers in most languages, and a Lua `type(x)` is a stdlib query that
+ *     no JS-style leak can explain.
+ *   - the CSS property names are CSS/derived-syntax values, which only appear as
+ *     relationship targets in a stylesheet.
+ *
+ * The JS list is the same five values the SYMBOL filter beside this uses, and
+ * deliberately no wider: `.jsx` is routed to `js` by language-detection, so
+ * "jsx" is not a language value in this codebase and listing it would be a
+ * name that can never match — the claim-without-coverage shape, in a table whose
+ * whole job is to say which languages own which noise.
+ *
+ * The test-lifecycle hooks are deliberately NOT listed: they stay universal,
+ * because a `beforeEach` is framework noise in whatever language it is written
+ * in, and deciding which languages have such frameworks is not this function's
+ * call.
+ */
+const JS_FAMILY_LANGUAGES = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
+const CSS_FAMILY_LANGUAGES = new Set(["css", "scss", "less"])
+const NOISE_TARGET_FAMILIES: Record<string, Set<string>> = {}
+for (const n of [
+  "namedChild", "childForFieldName", "namedChildren", "childCount", "namedChildCount",
+  "type", "text", "startIndex", "endIndex", "startPosition", "endPosition",
+  "nextSibling", "previousSibling", "firstChild", "lastChild", "parent",
+]) {
+  NOISE_TARGET_FAMILIES[n] = JS_FAMILY_LANGUAGES
+}
+for (const n of [
+  "font-size", "background-color", "align-items", "justify-content", "flex-direction",
+  "border-radius", "font-weight", "line-height", "margin-bottom", "min-width",
+]) {
+  NOISE_TARGET_FAMILIES[n] = CSS_FAMILY_LANGUAGES
+}
+
+export function filterNoiseRelationships(rels: any[], language: string, declaredNames?: Set<string>): any[] {
   if (!rels || rels.length === 0) return rels
 
   // M60 (objc lane, 2026-09-25): the leaf must be the last NON-EMPTY segment.
@@ -482,7 +593,29 @@ function filterNoiseRelationships(rels: any[], language: string, declaredNames?:
     // accidentally emits `node.type` emits a name the file never declares, while
     // a variable the file declares is a real node in the graph. So the list keeps
     // its power against the bug it was written for and stops eating the graph.
-    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) return false
+    if (NOISE_TARGETS.has(leaf) && !(declaredNames && declaredNames.has(String(r.target ?? r.to ?? "")))) {
+      // M60 LUA-16: `NOISE_TARGETS` bundles three groups whose names are noise
+      // ONLY in the languages that own the convention, and all three were applied
+      // to every language. Measured over every Lua file of two pinned corpora, the
+      // cost was 351 real edges: 345 `calls` to the Lua stdlib `type()` and 6 to
+      // `parent`, all of which the Lua analyzer resolved correctly and the product
+      // then discarded.
+      //
+      // A `type(...)` call in Lua is a stdlib type query. It is not a web-tree-sitter
+      // `node.type` leak, and no Lua file can produce one — same for a CSS property
+      // name reached from Lua. So those two groups are scoped to the languages that
+      // own them, mirroring the `JS_GLOBALS`/`JS_FAMILY` split the SYMBOL filter
+      // beside this already does. The change is a `return true` for every language
+      // that never had this noise, so it cannot introduce noise anywhere.
+      //
+      // The third group — `setUp`/`tearDown`/`beforeEach`/`afterEach` — stays
+      // universal on purpose. A test-lifecycle hook is framework noise in whatever
+      // language it appears in, and scoping it means judging which languages have
+      // such frameworks, which is not a question this function can answer.
+      const family = NOISE_TARGET_FAMILIES[leaf]
+      if (family && !family.has(language)) return true
+      return false
+    }
 
     return true
   })
@@ -601,41 +734,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
       sizeBytes,
       lastModified,
       symbols: parsed.symbols
-        .filter((s: any) => {
-          const name = s.name || ""
-          if (s.qualifiedName?.startsWith("__global__")) return false
-          // The denylist targets JS/TS global-object noise (window, process,
-          // module, exports, ...). XML/Make/Markdown use names like "module"
-          // and "export" as legitimate declaration identifiers, so the filter
-          // must not apply there — their dedicated analyzers already exclude
-          // real noise (xmlns, CharData, comments, .PHONY, ...).
-          const lang = parsed.language || language
-          if (lang === "json" || lang === "yaml" || lang === "xml" || lang === "make" || lang === "markdown") return true
-          // JS-global names are only noise for JS-family languages. A method
-          // named `process` (Scala/Python/Java), `window` or `module` is a
-          // legitimate declaration elsewhere — applying the JS global list
-          // cross-language silently dropped real symbols.
-          const JS_FAMILY = new Set(["javascript", "typescript", "tsx", "vue", "svelte"])
-          const JS_GLOBALS = new Set([
-            "window", "document", "console", "process", "global",
-            "__dirname", "__filename", "module", "exports", "default", "globalThis",
-          ])
-          if (JS_FAMILY.has(lang) && JS_GLOBALS.has(name)) return false
-          // Universal denylist: language keywords / conventions and synthetic
-          // tree-sitter artifact names — never legitimate declarations in any
-          // language.
-          const UNIVERSAL = new Set([
-            "this", "super", "self", "Self", "me", "My",
-            // "constructor" is a first-class declaration in TS/JS —
-            // do NOT filter it here. Only truly synthetic/noise names below.
-            "destructor",
-            "root", "program", "source_file", "module_declaration",
-            "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-            "unknown",
-          ])
-          if (UNIVERSAL.has(name)) return false
-          return true
-        })
+        .filter((s: any) => keepSymbol(s, parsed.language || language))
         .map((s: any) => {
         let snippet = ""
         if (["function", "class", "method", "interface"].includes(s.kind)) {
@@ -839,6 +938,22 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           })
       }),
       relationships: filterNoiseRelationships(parsed.relationships, language, new Set((parsed.symbols ?? []).map((s: any) => String(s?.name ?? "")).filter(Boolean))),
+      // M60 LUA-14: the analyzer's `exports` were never forwarded here, so the
+      // entire export surface of every language was invisible to the index. This
+      // is the same defect the `metadata` line below already documents for
+      // metadata — two entry points that disagreed, with the worker the lossy one
+      // — except that nobody had measured the size of it. Now measured, over
+      // every Lua file of two pinned corpora: 1,587 exports on kong and 187 on
+      // luvit, emitted by the analyzer and returned by nobody. Zero of 1,774
+      // reached the product.
+      //
+      // `ParseResult.exports` was already declared optional and `engine.ts`
+      // already forwards it, so this adds no new contract: it makes the worker
+      // agree with the engine it wraps. `?? []` rather than a bare field, because
+      // `extractFallback` and the size/extension early-returns build their own
+      // objects and a consumer must not have to distinguish "no exports" from
+      // "this path never set the key".
+      exports: (parsed as any).exports ?? [],
       errors: parsed.errors || [], // <-- Stage 4: propagate syntax errors from the AST Engine
       // The analyzer's WHOLE `metadata` object was being dropped here, and this
       // is the function `parallel-indexer.ts:889` uses — the production indexing
