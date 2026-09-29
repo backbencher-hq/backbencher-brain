@@ -1,42 +1,29 @@
 {
   "name": "make-corpus-production",
-  "wallTimeMs": 2787.073603,
-  "userCpuMs": 2240.065,
-  "systemCpuMs": 494.423,
-  "peakRssBytes": 242864128,
-  "rssDeltaBytes": 209772544,
+  "wallTimeMs": 2341.011662,
+  "userCpuMs": 1732.679,
+  "systemCpuMs": 412.933,
+  "peakRssBytes": 242249728,
+  "rssDeltaBytes": 211881984,
   "databaseBytes": null,
   "files": 14,
-  "symbols": 622,
-  "relationships": 2480,
-  "filesPerSecond": 5.023189909635121,
-  "symbolsPerSecond": 223.17315169950325,
-  "relationshipsPerSecond": 889.8222125639358,
+  "symbols": 630,
+  "relationships": 2490,
+  "filesPerSecond": 5.9803204859045245,
+  "symbolsPerSecond": 269.1144218657036,
+  "relationshipsPerSecond": 1063.6427149930191,
   "trackedFiles": 14,
-  "errors": 9,
-  "errorFiles": 2,
+  "errors": 0,
+  "errorFiles": 0,
   "crashFiles": 0,
   "crashSamples": [],
-  "acceptanceFiles": 12,
+  "acceptanceFiles": 14,
   "residual": {
     "policy": "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
-    "expected": [
-      {
-        "file": "boundary/Makefile",
-        "errorNodes": 8,
-        "cause": "target-scoped `target: export VAR = value`, unparsed by tree-sitter-make 1.1.1 — spec gap MAKE-G3"
-      },
-      {
-        "file": "vault/Makefile",
-        "errorNodes": 1,
-        "cause": "`MAIN_PACKAGES=$$($(GO_CMD) list …)` — a shell command inside an escaped-dollar expansion"
-      }
-    ],
-    "erroredFiles": [
-      "boundary/Makefile",
-      "vault/Makefile"
-    ],
+    "expected": [],
+    "erroredFiles": [],
     "hasErrorNoNodeFiles": [
+      "boundary/Makefile",
       "torrentinim/Makefile"
     ],
     "matches": true

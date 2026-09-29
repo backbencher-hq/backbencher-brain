@@ -62,30 +62,25 @@
     "*.mk"
   ],
   "trackedFiles": 14,
-  "errorFiles": 2,
-  "errorNodes": 9,
+  "errorFiles": 0,
+  "errorNodes": 0,
   "crashFiles": 0,
-  "unexpectedErrorFiles": 2,
+  "unexpectedErrorFiles": 0,
   "residual": {
     "policy": "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
-    "expected": [
-      {
-        "repo": "boundary",
-        "file": "Makefile",
-        "errorNodes": 8,
-        "cause": "target-scoped `target: export VAR = value`, which tree-sitter-make 1.1.1 does not parse — spec gap MAKE-G3"
-      },
-      {
-        "repo": "vault",
-        "file": "Makefile",
-        "errorNodes": 1,
-        "cause": "`MAIN_PACKAGES=$$($(GO_CMD) list …)` — a shell command inside an escaped-dollar expansion with a nested reference"
-      }
-    ],
+    "expected": [],
     "hasErrorNoNodeFiles": [
+      "boundary/Makefile",
       "torrentinim/Makefile"
     ],
     "hasErrorNoNodeDetail": [
+      {
+        "repo": "boundary",
+        "file": "Makefile",
+        "reportedRows": [
+          1
+        ]
+      },
       {
         "repo": "torrentinim",
         "file": "Makefile",
@@ -97,33 +92,9 @@
     "hasErrorNoNodeNote": "hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token that web-tree-sitter does not surface. The file parses into the correct tree and the analyzer's output for it is correct, so this is NOT a file error. It is the engine's conservative fallback (engine.ts:1264) doing its job."
   },
   "residualMatches": true,
-  "cleanFiles": 12,
+  "cleanFiles": 14,
   "crashes": [],
-  "errors": [
-    {
-      "repo": "boundary",
-      "file": "Makefile",
-      "count": 8,
-      "rows": [
-        67,
-        71,
-        101,
-        102,
-        103,
-        104,
-        401,
-        402
-      ]
-    },
-    {
-      "repo": "vault",
-      "file": "Makefile",
-      "count": 1,
-      "rows": [
-        5
-      ]
-    }
-  ],
+  "errors": [],
   "passed": true,
   "policy": "Every tracked Makefile in the six pinned clean repos is audited through the production parseFile pipeline. The analyzer never crashes, never synthesizes phantom rows, and the vendored tree-sitter-make grammar models the full corpus with zero ERROR/MISSING nodes. Clean acceptance files are those with zero parse errors."
 }
