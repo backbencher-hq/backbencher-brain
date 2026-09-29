@@ -151,11 +151,12 @@ function writtenForm(name: string): string {
 }
 
 async function main() {
-  const { LANGS, LANG_REPOS, SECOND_CORPUS } = await import(path.join(ROOT, "script/m14/differential.ts"))
+  const { LANGS, LANG_REPOS, SECOND_CORPUS, corpusPath } = await import(path.join(ROOT, "script/m14/differential.ts"))
   const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
 
   const wanted = LANGS_ARG ? LANGS_ARG.split(",").map((s) => s.trim()) : Object.keys(LANGS)
   const rows: any[] = []
+  let vacuous = false
   for (const lang of wanted) {
     const cfg: any = (LANGS as any)[lang]
     if (!cfg) { console.error(`lane-surface-audit: unknown language ${lang}`); process.exit(2) }
@@ -176,7 +177,7 @@ async function main() {
     let files = 0, filesWithEdges = 0, edges = 0, symbols = 0
 
     for (const repo of repos) {
-      const paths = filesUnder(path.join(CORPUS_ROOT, repo), exts, [], LIMIT)
+      const paths = filesUnder(corpusPath(repo), exts, [], LIMIT)
       for (const file of paths) {
         if (files >= LIMIT) break
         let src: string
@@ -301,6 +302,17 @@ async function main() {
     }
     rows.push(row)
 
+    // A gate that reads all-zero because it measured NOTHING is not a pass. The groovy lane
+    // was reporting exactly that -- 0 files, 0 edges, 0 symbols, every row 0 -- because its
+    // corpus pin named a directory that did not exist. The numbers above are indistinguishable
+    // from a clean result unless the file count is stated as a gate, so it is: a run that
+    // examined no file exits non-zero, the same guard the R positions oracle carries.
+    if (files === 0) {
+      console.error(`\nVACUOUS: ${lang} measured 0 files. Corpus pin(s) ${JSON.stringify(repos)} resolved to ${
+        repos.map((r) => corpusPath(r)).join(", ")} -- a pin that does not resolve reads as a clean pass here.`)
+      vacuous = true
+    }
+
     if (!AS_JSON) {
       console.log(`\n=== ${lang} — ${repos.join(" + ")} — ${files} file(s), ${edges} edge(s), ${symbols} symbol(s), ${filesWithEdges} file(s) with edges (${pct(filesWithEdges, files)})`)
       console.log(`  labels        ${Object.entries(row.labels).map(([k, v]) => `${k}=${v}`).join(" ")}`)
@@ -328,6 +340,10 @@ async function main() {
     }
   }
   if (AS_JSON) console.log(JSON.stringify(rows, null, 2))
+  // Placed before the JSON dump rather than after it: the guard has to fire for the
+  // human-readable run AND the machine one, or `process.exitCode` is the only thing
+  // standing between an empty measurement and a green result.
+  if (vacuous) process.exitCode = 1
 }
 
 if (import.meta.main) main()
