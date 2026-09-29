@@ -350,11 +350,16 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
     const raw = await BrainDatabase.getRawInstance(projectId)
 
     // "total symbols" with no explicit noun still means symbols.
-    const wantsTotalOnly = has(lowerQuery, "total") && !COUNTABLE.some((entry) => entry.nouns.some((n) => lowerQuery.includes(n)))
+    const wantsTotalOnly = has(lowerQuery, "total") && !COUNTABLE.some((entry) => entry.nouns.some((n) => tokens.includes(n)))
 
     if (!wantsTotalOnly) {
+      // Nouns match WHOLE WORDS, never substrings. A substring test routes
+      // "how many typescript files" to the `type` counter, because "typescript"
+      // contains "type" — caught by the behavioural half of the M15.A2 gate,
+      // and a whole class of defect a source-text census cannot see.
+      const tokenSet = new Set(tokens)
       for (const entry of COUNTABLE) {
-        if (!entry.nouns.some((noun) => lowerQuery.includes(noun))) continue
+        if (!entry.nouns.some((noun) => tokenSet.has(noun))) continue
         let value: number
         let aggregate: string
         const types = entry.types
