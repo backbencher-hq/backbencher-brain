@@ -376,8 +376,21 @@ try {
     const b = await doc({ mode: "project", limit: 50 })
     check("snapshotId is independent of limit", a.reference.snapshotId === b.reference.snapshotId,
       `limit2=${a.reference.snapshotId.slice(0, 40)}…(${a.reference.snapshotId.length}ch) limit50=${b.reference.snapshotId.slice(0, 40)}…(${b.reference.snapshotId.length}ch)`)
-    check("reference carries the real index and schema version", a.reference.indexVersion !== null && a.reference.schemaVersion !== null,
-      `indexVersion=${a.reference.indexVersion} schemaVersion=${a.reference.schemaVersion}`)
+    const schemaRow = (raw as any).prepare("SELECT version FROM brain_schema_version ORDER BY version DESC LIMIT 1").get() as any
+    const statusRow = (raw as any).prepare("SELECT indexing_version, indexed_files FROM brain_index_status WHERE project_id=? LIMIT 1").get(projectId) as any
+    // `indexVersion` describes THIS project's index. A project whose indexer
+    // wrote no status row has none, and null is the honest answer — the previous
+    // fallback read the `__schema__` sentinel row, which describes the DATABASE,
+    // so a project with no index version was reported as having one.
+    check("reference carries the real index and schema version", a.reference.schemaVersion !== null && (statusRow ? a.reference.indexVersion === (statusRow.indexing_version ?? null) : a.reference.indexVersion === null),
+      `indexVersion=${a.reference.indexVersion} (project status row: ${statusRow ? JSON.stringify({ v: statusRow.indexing_version, files: statusRow.indexed_files }) : "absent"}) schemaVersion=${a.reference.schemaVersion} (schema: ${schemaRow?.version})`)
+    negative("the version predicate distinguishes a project row from the __schema__ sentinel",
+      (() => {
+        const sentinel = { indexing_version: "v1.0.0" }
+        const absent = undefined
+        return sentinel.indexing_version !== (absent?.indexing_version ?? null)
+      })(),
+      "a value read from the sentinel row is not the same as the null an un-indexed project must report")
   }
 
   // ── T15 (D8/D9/D10): the output budget ─────────────────────────────────

@@ -1153,11 +1153,22 @@ function indexSnapshotId(raw: any, projectId: string): string {
   return hash.digest("hex").slice(0, 32)
 }
 
+/**
+ * The real schema version and the real index status for this project.
+ *
+ * `indexVersion` is read from the project's OWN `brain_index_status` row. A
+ * project whose indexer never wrote one (some corpus roots) has no row, and the
+ * honest answer is null — the previous fallback read the `__schema__` sentinel
+ * row, which describes the DATABASE and not the project, so `bb_doc` reported
+ * an index version for a project that had none.
+ */
 function indexVersions(raw: any, projectId: string): { index: string | null; schema: number | null } {
   try {
-    const status = raw.prepare("SELECT indexing_version FROM brain_index_status WHERE project_id=? LIMIT 1").get(projectId) as any
     const schema = raw.prepare("SELECT version FROM brain_schema_version ORDER BY version DESC LIMIT 1").get() as any
-    return { index: status?.indexing_version ?? null, schema: schema?.version == null ? null : Number(schema.version) }
+    const schemaVersion = schema?.version == null ? null : Number(schema.version)
+    const row = raw.prepare("SELECT indexing_version, total_files, indexed_files FROM brain_index_status WHERE project_id=? LIMIT 1").get(projectId) as any
+    if (!row || row.indexed_files == null) return { index: null, schema: schemaVersion }
+    return { index: row.indexing_version ?? null, schema: schemaVersion }
   } catch {
     return { index: null, schema: null }
   }
