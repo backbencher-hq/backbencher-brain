@@ -37,6 +37,34 @@
       "missedSample": [],
       "spuriousSample": []
     },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 150,
+        "checks": 300
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 150,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 150,
+        "distinctValues": 6,
+        "values": [
+          70,
+          75,
+          80,
+          85,
+          90,
+          95
+        ],
+        "mean": 85.9,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
     "surfaceDisclosures": {
       "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
       "filesWithDisclosures": 150,

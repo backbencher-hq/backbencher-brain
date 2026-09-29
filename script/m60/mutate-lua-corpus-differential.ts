@@ -42,7 +42,26 @@ interface Mutant {
   find: string
   replace: string
   /** Which signal must move for the mutant to count as caught. */
-  signal: "analyzer-missing" | "unexplained" | "line" | "exports" | "rel-spurious" | "disclosures"
+  signal: "analyzer-missing" | "unexplained" | "line" | "exports" | "rel-spurious" | "disclosures" | "metadata"
+  /**
+   * A mutant the CURRENT leg provably cannot decide, with the reason. Reported
+   * as INCONCLUSIVE-BY-DESIGN rather than SURVIVED, because a survivor is a claim
+   * about the instrument and this is a claim about the SCOPE OF THE INSTRUMENT.
+   * M17 is the case: the metadata leg asks "does this file contain a member
+   * access at all?", which catches a framework claimed in a file with none. That
+   * is a NARROWER defect than LUA-04, which claimed a framework from a bare
+   * identifier in a file that has plenty of member accesses — and kong has 333
+   * files with a bare framework-namespace identifier, every one of them with
+   * member accesses elsewhere. Measured: the mutant moves
+   * frameworkClaimsWithoutMemberAccess 0 -> 0 on those 333.
+   *
+   * Deciding LUA-04 properly needs the framework -> namespace TABLE, and taking
+   * that table from the analyzer is the mirror trap this lane has paid for twice
+   * (LUA-27, LUA-33): a table copied from the implementation agrees by
+   * construction. So the scope is recorded rather than the gap hidden, and
+   * LUA-04 keeps its dedicated gate as its real test.
+   */
+  knownInconclusive?: string
   /**
    * A source pattern that MUST occur in the corpus slice, or the mutant has no
    * trigger and its result is INCONCLUSIVE rather than SURVIVING.
@@ -233,6 +252,30 @@ const MUTANTS: Mutant[] = [
     replace: '        void path',
     signal: "disclosures",
   },
+  {
+    id: "M16",
+    trigger: /coroutine\.(create|wrap)/,
+    // LUA-02: the coroutine count was structurally always zero. The metadata leg
+    // did not exist when that shipped — the differential compared relationships
+    // and exports and nothing else, so a metadata defect had one test instead of
+    // two, and one test is how it got through.
+    what: "LUA-02 again: coroutineUsage is structurally always 0",
+    find: "  private countCoroutineSymbols(ctx: LuaContext): number {\n    return ctx.coroutineCalls",
+    replace: "  private countCoroutineSymbols(ctx: LuaContext): number {\n    return 0 * ctx.coroutineCalls",
+    signal: "metadata",
+  },
+  {
+    id: "M17",
+    trigger: /\b(use|setup|GetTime|love|vim)\b/,
+    // LUA-04: framework detection fired on BARE IDENTIFIERS, so a variable named
+    // `use` labelled a file a framework. The guard that rejects an unqualified name
+    // is the whole fix, and deleting it is the whole defect.
+    what: "LUA-04 again: a bare identifier names a framework",
+    find: '    if (!text.includes(".")) return',
+    replace: '    if (false) return',
+    signal: "metadata",
+    knownInconclusive: "the metadata leg's framework rule is coarser than LUA-04 (see the interface doc). LUA-04 remains covered by verify-lua-published-claims; this mutant documents the limit rather than pretending the leg decides it.",
+  },
 ]
 
 // ── pre-flight: EVERY anchor must exist before a single mutant runs ───────────
@@ -273,6 +316,9 @@ interface OracleRun {
   relSpurious: number
   relMissed: number
   disclosures: number
+  coroMismatches: number
+  frameworkSpurious: number
+  scoreDistinct: number
 }
 
 const runOracle = (): OracleRun => {
@@ -314,6 +360,7 @@ const runOracle = (): OracleRun => {
   const x = out.match(/exports \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) spurious=(\d+)/)
   const rl = out.match(/relationships \(DIRECT path, (\d+) files\): truth=(\d+) hit=(\d+) missed=(\d+) SPURIOUS=(\d+)/)
   const dc = out.match(/disclosures \(nameless surfaces\): files=(\d+) total=(\d+)/)
+  const md = out.match(/coroutineMismatches=(\d+) frameworkClaimsWithoutMemberAccess=(\d+) scoreDistinctValues=(\d+)/)
   return {
     analyzerMissing: m ? Number(m[1]) : -1,
     unexplained: m ? Number(m[2]) : -1,
@@ -325,6 +372,9 @@ const runOracle = (): OracleRun => {
     relSpurious: rl ? Number(rl[5]) : -1,
     relMissed: rl ? Number(rl[4]) : -1,
     disclosures: dc ? Number(dc[2]) : -1,
+    coroMismatches: md ? Number(md[1]) : -1,
+    frameworkSpurious: md ? Number(md[2]) : -1,
+    scoreDistinct: md ? Number(md[3]) : -1,
   }
 }
 
@@ -359,6 +409,7 @@ console.log(`  line accuracy:                 ${base.lineAccuracy}  (wrong ${bas
 console.log(`  direct-path exports missed:    ${base.exportMissed}  (spurious ${base.exportSpurious}, of ${base.exportTruth} truth)`)
 console.log(`  direct-path relationships:     missed ${base.relMissed}  SPURIOUS ${base.relSpurious}`)
 console.log(`  surface disclosures:           ${base.disclosures}`)
+console.log(`  metadata: coro mismatches ${base.coroMismatches} | framework-without-member ${base.frameworkSpurious} | score distinct ${base.scoreDistinct}`)
 if (base.lineAccuracy !== 1) {
   console.error("refusing to mutate: the baseline is not line-clean, so a line mutant proves nothing")
   process.exit(2)
@@ -368,12 +419,18 @@ console.log()
 let survived = 0
 let skipped = 0
 let inconclusive = 0
+let designInconclusive = 0
 const results: string[] = []
 try {
   for (const m of MUTANTS) {
     if (!original.includes(m.find)) {
       skipped++
       results.push(`  ${m.id.padEnd(4)} SKIPPED  anchor not found — the analyzer moved on; fix the harness`)
+      continue
+    }
+    if (m.knownInconclusive) {
+      designInconclusive++
+      results.push(`  ${m.id.padEnd(4)} INCONCLUSIVE-BY-DESIGN  ${m.what}\n        ${m.knownInconclusive}`)
       continue
     }
     if (m.trigger) {
@@ -407,6 +464,9 @@ try {
     } else if (m.signal === "analyzer-missing") {
       caught = r.analyzerMissing > base.analyzerMissing
       how = `analyzer-attributable ${base.analyzerMissing} -> ${r.analyzerMissing}`
+    } else if (m.signal === "metadata") {
+      caught = r.coroMismatches > base.coroMismatches || r.frameworkSpurious > base.frameworkSpurious
+      how = `coroutine mismatches ${base.coroMismatches} -> ${r.coroMismatches}, framework claims with no member access ${base.frameworkSpurious} -> ${r.frameworkSpurious}`
     } else if (m.signal === "disclosures") {
       caught = r.disclosures < base.disclosures
       how = `surface disclosures ${base.disclosures} -> ${r.disclosures}`
@@ -447,7 +507,7 @@ for (const line of results) console.log(line)
   writeFileSync(SRC, original.replace(noop.find, noop.replace))
   const r = runOracle()
   writeFileSync(SRC, original)
-  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious && r.relSpurious === base.relSpurious && r.relMissed === base.relMissed && r.disclosures === base.disclosures
+  const noopSurvived = r.analyzerMissing === base.analyzerMissing && r.unexplained === base.unexplained && r.lineAccuracy === 1 && r.exportMissed === base.exportMissed && r.exportSpurious === base.exportSpurious && r.relSpurious === base.relSpurious && r.relMissed === base.relMissed && r.disclosures === base.disclosures && r.coroMismatches === base.coroMismatches && r.frameworkSpurious === base.frameworkSpurious && r.scoreDistinct === base.scoreDistinct
   console.log()
   console.log(`  M0    ${noopSurvived ? "SURVIVED" : "caught"}    a no-op mutant ${noopSurvived ? "correctly reported as surviving — the harness does not call everything caught" : "WRONGLY REPORTED CAUGHT — the harness is broken"}`)
   if (!noopSurvived) survived++
@@ -459,6 +519,6 @@ console.log()
 console.log(`analyzer restored byte-for-byte: ${restored === original ? "YES" : "NO — INVESTIGATE"}`)
 // The canonical corpus artifact is never this file's business.
 console.log(`mutant runs wrote only to ${MUTANT_OUT}; validation/m60/results/lua-truth-oracle-kong.json untouched`)
-console.log(`${MUTANTS.length - skipped - inconclusive} run, ${inconclusive} inconclusive (no trigger in the slice), ${skipped} skipped, ${survived} survived`)
+console.log(`${MUTANTS.length - skipped - inconclusive - designInconclusive} run, ${inconclusive} inconclusive (no trigger in the slice), ${designInconclusive} inconclusive by design, ${skipped} skipped, ${survived} survived`)
 console.log(`A survivor is a real gap in the instrument. An INCONCLUSIVE is a gap in the SLICE — widen it with --sample or --files.`)
 process.exit(survived === 0 && restored === original ? 0 : 1)
