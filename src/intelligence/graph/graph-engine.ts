@@ -61,6 +61,14 @@ type EdgeRow = {
   fileLang: string | null
   srcFileRel: string | null
   extName: string | null
+  /** The endpoint the OWNER CASCADE matched, not the symbol being traced.
+   *  Equal to the traced symbol ⇒ the stored row names it exactly; different
+   *  ⇒ the row names one of its members and the edge is attributed to the
+   *  owner. This is the only way a reader can undo the cascade, and it was
+   *  unrecoverable before: the `IN (cascade)` filter discarded it in SQL. */
+  matchedId: string | null
+  matchedName: string | null
+  matchedFile: string | null
 }
 
 /** The owner-cascade: a relationship whose stored target is any member of a
@@ -107,6 +115,33 @@ function edgeMetadata(meta: string | null): EdgeMetadata | undefined {
   }
 }
 
+/**
+ * How a stored row came to be an edge of the SYMBOL BEING TRACED.
+ *
+ *   "exact"          the row names the traced symbol itself
+ *   "owner-cascade"  the row names one of its members (a method, a nested
+ *                    symbol) and the edge is attributed to the owner
+ *
+ * The cascade is deliberate and documented, but until this field existed the
+ * distinction was DESTROYED inside the SQL (`target_symbol_id IN (cascade)`
+ * keeps the row or drops it and says nothing about which), so a reader could
+ * not subtract cascade edges to recover the exact set. Measured consequence on
+ * cobra: `Command` answers with 184 of 1,078 caller sites, only 24 of which
+ * target `Command` itself — and all 184 were indistinguishable.
+ */
+type CascadeMatch = "exact" | "owner-cascade"
+
+function cascadeMatch(row: EdgeRow, tracedId: string): CascadeMatch {
+  return row.matchedId == null || row.matchedId === tracedId ? "exact" : "owner-cascade"
+}
+
+/** The member the row actually named, when the cascade (not the trace) matched. */
+function matchedMember(row: EdgeRow, tracedId: string): { name: string; file: string } | undefined {
+  if (row.matchedId == null || row.matchedId === tracedId) return undefined
+  if (!row.matchedName) return undefined
+  return { name: row.matchedName, file: row.matchedFile || "" }
+}
+
 function nodeFromEdge(row: EdgeRow): GraphNode {
   const external = !row.symId
   return {
@@ -147,6 +182,17 @@ export async function traverseGraph(
   totalCalleesIfKnown: number | null
   /** The count is a lower bound because the counting scan itself is bounded. */
   totalsAreLowerBounds: boolean
+  /** Caller edges that name the traced symbol exactly, vs. those the owner
+   *  cascade attributed to it through one of its members. The cascade is a
+   *  declared superset; these make it a REDUCIBLE one. */
+  exactCallers: number
+  cascadedCallers: number
+  exactCallees: number
+  cascadedCallees: number
+  /** Stored rows that appear in the caller list AND the callee list. Each is
+   *  one relationship seen from two ends, so the sum of the two totals
+   *  overstates the distinct relationship count by exactly this much. */
+  edgesInBothDirections: number
   /** M59 (#895): stored rows collapsed at the tool layer before becoming
    *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
    *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
@@ -236,6 +282,21 @@ export async function traverseGraph(
   const emittedCalleeSites = new Set<string>()
   let collapsedCascadeRepeats = 0
   let collapsedSpellingVariants = 0
+  // The owner cascade is a deliberate SUPERSET: a call to `Command.Execute` is
+  // reported as an edge of `Command`. Counting the two populations separately
+  // is what lets a reader use that superset instead of being drowned by it.
+  // Measured on cobra: `Command` returns 184 caller edges of which 24 name the
+  // symbol itself — a ratio no per-edge field alone makes obvious.
+  let exactCallers = 0
+  let cascadedCallers = 0
+  let exactCallees = 0
+  let cascadedCallees = 0
+  // Rows that legitimately appear in BOTH directions. The engine already knew
+  // this — it holds one rowId set per direction and re-encounters a row when a
+  // deeper cascade reaches it — but never reported it, so `totalCallers +
+  // totalCallees` overstated the number of distinct relationships in the
+  // answer by exactly this much.
+  let edgesInBothDirections = 0
 
   // ---- callers ----
   const callers: GraphEdge[] = []
@@ -253,20 +314,42 @@ export async function traverseGraph(
       "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
-      "f.relative_path AS srcFileRel, NULL AS extName " +
+      "f.relative_path AS srcFileRel, NULL AS extName, " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile " +
       "FROM brain_relationship r " +
       "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
       "JOIN brain_file f ON f.id = s.file_id " +
-      "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-      "AND r.target_symbol_id IN (" + cascade + ")"
-    const callerParams = [projectId, ...relTypes, symbolId, prefix, upper, projectId]
+      // A JOIN, not `target_symbol_id IN (cascade)`. The IN form filters
+      // correctly but discards WHICH id matched, and that is the only thing
+      // separating "someone calls Command" from "someone calls
+      // Command.Execute, attributed to its owner". Binding order follows the
+      // text, so the cascade's four parameters now precede the WHERE clause's.
+      "JOIN (" + cascade + ") casc ON casc.id = r.target_symbol_id " +
+      "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
+      "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
+      "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ")"
+    const callerParams = [symbolId, prefix, upper, projectId, projectId, ...relTypes]
     // Deterministic order (M59.A12, #888 sibling of #885): a bare LIMIT on an
     // unordered query returned a DIFFERENT 200 rows per run, so two identical
     // questions could disagree. Stable order makes the bound reproducible.
-    const rows = raw
+    //
+    // The cap is decided by asking for ONE ROW MORE than the limit, not by
+    // comparing `rows.length >= edgeLimit` against a `LIMIT edgeLimit` query.
+    // Those two are indistinguishable when the true count is exactly the limit:
+    // the measured consequence on cobra (IsAdditionalHelpTopicCommand, 12
+    // stored caller rows) was `edgeLimit: 12` returning all 12 rows WITH
+    // `truncated: true, truncationReason: "caller-site-limit"` — a traversal
+    // that dropped nothing declaring that it had dropped something, which is
+    // the same class of lie the M59.A12 work existed to remove, one row later.
+    // The extra row is never emitted: the first `edgeLimit` rows of a
+    // deterministically ordered query are exactly the rows the old query
+    // returned, so the visible answer is unchanged for every non-capped call.
+    const fetched = raw
       .prepare(callerSql + " ORDER BY fileRel, lineNumber, rowId LIMIT ?")
-      .all(...callerParams, edgeLimit) as EdgeRow[]
-    if (rows.length >= edgeLimit) {
+      .all(...callerParams, edgeLimit + 1) as EdgeRow[]
+    const capped = fetched.length > edgeLimit
+    const rows = capped ? fetched.slice(0, edgeLimit) : fetched
+    if (capped) {
       cappedQueries++
       noteReason(depth === 0 ? "caller-site-limit" : "caller-site-limit-at-depth")
       // The root's true total is the number an agent actually asks for, and it
@@ -301,6 +384,8 @@ export async function traverseGraph(
         }
         emittedCallerSites.add(siteKey)
       }
+      if (cascadeMatch(row, symbolId) === "exact") exactCallers++
+      else cascadedCallers++
       const node = nodeFromEdge(row)
       registerNode(node)
       callers.push({
@@ -321,6 +406,11 @@ export async function traverseGraph(
         }),
         depth,
         rowId: row.rowId,
+        // Whether the stored row names the traced symbol or one of its
+        // members. Without it, a class with 180 methods answers every caller
+        // question as if all 180 methods were the class.
+        targetMatch: cascadeMatch(row, symbolId),
+        matchedMember: matchedMember(row, symbolId),
         metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
@@ -358,7 +448,8 @@ export async function traverseGraph(
       "s.id AS symId, s.name AS symName, s.line_start AS line, s.line_end AS lineEnd, " +
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
-      "src.relative_path AS srcFileRel, r.target_external AS extName "
+      "src.relative_path AS srcFileRel, r.target_external AS extName, " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile "
 
     let rows: EdgeRow[]
     if (isExternal) {
@@ -371,8 +462,11 @@ export async function traverseGraph(
           "JOIN brain_file f ON f.id = s.file_id " +
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
+          "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
+          "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
+          "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-          "AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id IN (" + cascade + ") " +
+          "AND r.target_symbol_id IS NOT NULL " +
           "UNION ALL " +
           selectCols +
           "FROM brain_relationship r " +
@@ -380,15 +474,23 @@ export async function traverseGraph(
           "LEFT JOIN brain_file f ON f.id = s.file_id " +
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
+          "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
+          "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
+          "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-          "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL AND r.source_symbol_id IN (" + cascade + ")"
+          "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL"
       const calleeParams = [
-        projectId, ...relTypes, symbolId, prefix, upper, projectId,
-        projectId, ...relTypes, symbolId, prefix, upper, projectId,
+        symbolId, prefix, upper, projectId, projectId, ...relTypes,
+        symbolId, prefix, upper, projectId, projectId, ...relTypes,
       ]
       const calleeOrder = " ORDER BY fileRel, lineNumber, rowId"
-      rows = raw.prepare(calleeSql + calleeOrder + " LIMIT ?").all(...calleeParams, edgeLimit) as EdgeRow[]
-      if (rows.length >= edgeLimit) {
+      // Same one-row-over rule as the callers side: `LIMIT edgeLimit` cannot
+      // tell "exactly at the limit" from "over it", and a compound query needs
+      // the probe row just as much as a simple one.
+      const fetched = raw.prepare(calleeSql + calleeOrder + " LIMIT ?").all(...calleeParams, edgeLimit + 1) as EdgeRow[]
+      const capped = fetched.length > edgeLimit
+      rows = capped ? fetched.slice(0, edgeLimit) : fetched
+      if (capped) {
         cappedQueries++
         noteReason(depth === 0 ? "callee-site-limit" : "callee-site-limit-at-depth")
         if (depth === 0 && totalCalleesIfKnown === null) {
@@ -418,6 +520,8 @@ export async function traverseGraph(
         }
         emittedCalleeSites.add(calleeKey)
       }
+      if (cascadeMatch(row, symbolId) === "exact") exactCallees++
+      else cascadedCallees++
       const node = nodeFromEdge(row)
       registerNode(node)
       callees.push({
@@ -436,6 +540,8 @@ export async function traverseGraph(
         }),
         depth,
         rowId: row.rowId,
+        sourceMatch: cascadeMatch(row, symbolId),
+        matchedMember: matchedMember(row, symbolId),
         metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
@@ -459,6 +565,14 @@ export async function traverseGraph(
   if (options.direction !== "callees") traceCallers(root.id, 0)
   if (options.direction !== "callers") traceCallees(root.id, root.relativePath, root.line, 0)
 
+  // A stored row is one fact; being an incoming AND an outgoing edge of the
+  // same family does not make it two. Counted from the emitted edges rather
+  // than from the rowId sets, because the sets also absorb cross-depth repeats
+  // that never became a second edge.
+  for (const edge of callers) {
+    if (emittedCalleeRows.has(edge.rowId)) edgesInBothDirections++
+  }
+
   return {
     callers,
     callees,
@@ -471,6 +585,11 @@ export async function traverseGraph(
     totalCallersIfKnown,
     totalCalleesIfKnown,
     totalsAreLowerBounds,
+    exactCallers,
+    cascadedCallers,
+    exactCallees,
+    cascadedCallees,
+    edgesInBothDirections,
     dedupedAtToolLayer: {
       cascadeRepeatsCollapsed: collapsedCascadeRepeats,
       spellingVariantsCollapsed: collapsedSpellingVariants,
@@ -488,8 +607,16 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     "COALESCE(f.language,'unknown') AS language, COALESCE(s.complexity,0) AS complexity " +
     "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id AND f.project_id = s.project_id " +
     "WHERE s.project_id = ? "
+  // Every ranking is a TOTAL order. `ORDER BY gravity_score DESC LIMIT 1` alone
+  // leaves the winner undefined when two same-named symbols tie on gravity, and
+  // SQLite is free to return either one — the answer would then depend on the
+  // page layout, not on the question. `s.id` is the primary key, so appending it
+  // makes the pick a function of the data alone. (Measured ambiguity in real
+  // corpora is not hypothetical: cobra indexes 50 structural symbols all named
+  // `code_block.go`.)
+  const RANK = " ORDER BY s.gravity_score DESC, s.id ASC LIMIT 1"
   // 1) exact name among the structural kinds the graph can traverse
-  let rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ? ORDER BY s.gravity_score DESC LIMIT 1`).all(projectId, name) as SymbolRow[]
+  let rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?${RANK}`).all(projectId, name) as SymbolRow[]
   if (rows.length === 0) {
     // M48.C1 (#699) corpus catch: previously the fallback went STRAIGHT to a
     // fuzzy substring match, so a real exact-name symbol of a non-structural
@@ -497,13 +624,39 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
     // bb_graph and bb_analyze then answered the same query with different
     // roots. Exact-name of ANY kind must win over fuzzy containment.
-    rows = raw.prepare(base + "AND s.name = ? ORDER BY s.gravity_score DESC LIMIT 1").all(projectId, name) as SymbolRow[]
+    rows = raw.prepare(base + "AND s.name = ?" + RANK).all(projectId, name) as SymbolRow[]
   }
   if (rows.length === 0) {
-    // 3) documented near-miss fallback: fuzzy containment among structural kinds
-    rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ORDER BY s.gravity_score DESC LIMIT 1`).all(projectId, `%${name}%`) as SymbolRow[]
+    // 3) documented near-miss fallback: fuzzy containment among structural kinds.
+    //
+    // The caller's string becomes a LIKE PATTERN, so `%`, `_` and the escape
+    // character itself are metacharacters that silently widen the search.
+    // Unescaped, `bb_graph({symbol: "%"})` matched every symbol in the project
+    // and returned a confident graph rooted at an unrelated symbol (measured on
+    // cobra: asked for "%", rooted at `Command`) — the tool answered a question
+    // nobody asked, with nothing in the payload saying so. `likeContains`
+    // neutralises the metacharacters by value (not by deleting them from the
+    // name) and pins the escape character so SQLite cannot re-interpret it.
+    rows = raw
+      .prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'` + RANK)
+      .all(projectId, likeContains(name)) as SymbolRow[]
   }
   return rows[0] ?? null
+}
+
+/**
+ * Build a `LIKE '%needle%'` pattern in which the needle matches itself and
+ * nothing else. `%` and `_` are LIKE wildcards; `\` is SQLite's LIKE escape
+ * character, so a literal backslash in a name must become two. This is
+ * character-wise escaping — there is no pattern here to get wrong.
+ */
+export function likeContains(needle: string): string {
+  let escaped = ""
+  for (const ch of needle) {
+    if (ch === "\\" || ch === "%" || ch === "_") escaped += "\\" + ch
+    else escaped += ch
+  }
+  return `%${escaped}%`
 }
 
 export async function graphTraversal(
@@ -525,6 +678,11 @@ export async function graphTraversal(
     totalCallersIfKnown,
     totalCalleesIfKnown,
     totalsAreLowerBounds,
+    exactCallers,
+    cascadedCallers,
+    exactCallees,
+    cascadedCallees,
+    edgesInBothDirections,
     dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
@@ -551,6 +709,18 @@ export async function graphTraversal(
       callersIfUncapped: totalCallersIfKnown,
       calleesIfUncapped: totalCalleesIfKnown,
       totalsAreLowerBounds,
+      // The owner cascade is a superset by design. These four numbers are how
+      // much of it is about the symbol that was actually asked for. An agent
+      // that sees `totalCallers: 184, exactCallers: 24` knows at once that the
+      // answer is mostly about the symbol's members — which no count above this
+      // line would ever have told it.
+      exactCallers,
+      cascadedCallers,
+      exactCallees,
+      cascadedCallees,
+      // Rows present in BOTH callers and callees. `totalCallers + totalCallees`
+      // counts each of these twice, and the number above is the correction.
+      edgesInBothDirections,
       // M59 (#895, #854): what the tool layer collapsed before handing edges
       // to the agent. cascadeRepeatsCollapsed: the same stored row re-fetched
       // by a deeper cascade. spellingVariantsCollapsed: same call site + same

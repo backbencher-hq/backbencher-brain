@@ -74,6 +74,27 @@ export type SearchResults = SearchResult[] & {
   freshCount?: number
   searchMode?: string
   truncated?: boolean
+  /**
+   * Size of the ranked MATCH SET the page was cut from — not the size of the
+   * returned page. `results.length` is the page; a caller that used it as the
+   * total could not tell one match from fifteen, and a truncated page read as a
+   * complete one. 0 when not computed.
+   */
+  totalMatches?: number
+  /**
+   * Why the candidate set is smaller than the raw match set, when it is: a
+   * per-phase candidate cap was reached, the noise filter removed rows after
+   * the cap, or (regex mode) the row cap or the time budget stopped the scan.
+   * Absent means the candidate set is believed complete.
+   */
+  truncationReason?: string
+  /**
+   * Freshness could not be resolved (the resolver threw). The answer is still
+   * returned and the counts keep their conservative default, but this flag
+   * exists so `staleCount: 0` is never read as "everything is fresh" when the
+   * check did not run.
+   */
+  freshnessError?: boolean
 }
 
 export interface CallGraphEntry {
@@ -203,6 +224,18 @@ export interface GraphEdge {
    *  (M26.W2 evidence requirement); an edge without one must never be
    *  emitted, never rendered. */
   rowId: string
+  /** Callers: whether the stored row names the TRACED symbol ("exact") or one
+   *  of its members, folded onto it by the owner cascade ("owner-cascade").
+   *  Absent means the engine could not resolve the match, which is NOT the
+   *  same as "exact" — consumers must read this rather than infer it. */
+  targetMatch?: "exact" | "owner-cascade"
+  /** Callees: the same question from the other end — whether the stored row's
+   *  SOURCE is the traced symbol or one of its members. */
+  sourceMatch?: "exact" | "owner-cascade"
+  /** Set only when the match was cascade-derived: the member the stored row
+   *  actually named, so the owner-family superset can be reduced to the exact
+   *  set without a second query. */
+  matchedMember?: { name: string; file: string }
   /** Stored edge metadata (parsed from brain_relationship.metadata).
    *  Only declared fields pass through; the graph renderer derives the
    *  evidence tier from evidenceClass when present. Enrichment fields
@@ -266,6 +299,16 @@ export interface GraphTraversalResult {
     callersIfUncapped: number | null
     calleesIfUncapped: number | null
     totalsAreLowerBounds: boolean
+    /** Caller edges naming the traced symbol exactly, vs. those the owner
+     *  cascade attributed to it through a member. The cascade is a declared
+     *  superset; these make it a REDUCIBLE one. */
+    exactCallers: number
+    cascadedCallers: number
+    exactCallees: number
+    cascadedCallees: number
+    /** Rows present in both the caller and the callee list — one relationship
+     *  seen from two ends. `totalCallers + totalCallees` double-counts these. */
+    edgesInBothDirections: number
     /** M59 (#895, #854): stored rows collapsed at the tool layer before
      *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
      *  a deeper cascade; spellingVariantsCollapsed: same call site + same
