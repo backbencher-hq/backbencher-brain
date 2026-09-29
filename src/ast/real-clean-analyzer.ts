@@ -509,6 +509,18 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+      // DAMAGE, not loss. A declaration the pinned grammar could not read survives
+      // as an `ERROR` subtree, and whatever is inside it is reached with NO enclosing
+      // `where_block` scope — so a callable in there looks module-level and used to
+      // be published `visibility: "public"`, which put a parse artifact into the
+      // module's EXPORT surface. Measured on the 2,179-file corpus:
+      // `clean-libraries/Examples/GEC/APLAS.icl`'s local `check` (and its three
+      // clauses) and `fromDynStr` were both exported by a module that never declared
+      // them. The symbols are KEPT — the code exists and the lane formula says damage
+      // is not loss — but they are flagged and excluded from the export surface,
+      // because "this module exports `check`" is a claim about its API and the parse
+      // cannot support one.
+      const inErrorRegion = entry.inError === true || node.type === "ERROR"
       let frame: FrameSpec | null = null
       let openedScope = false
 
@@ -534,7 +546,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "function_declaration":
         case "operator_definition":
         case "generic_case_definition":
-          frame = this.processCallableNode(node, ctx, currentScope)
+          frame = this.processCallableNode(node, ctx, currentScope, inErrorRegion)
           break
         case "macro_definition":
           frame = this.processMacro(node, ctx, currentScope)
@@ -546,7 +558,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processFixityDeclaration(node, ctx)
           break
         case "type_signature":
-          this.processTypeSignature(node, ctx, currentScope)
+          this.processTypeSignature(node, ctx, currentScope, inErrorRegion)
           break
         case "where_block":
         case "with_block":
@@ -640,7 +652,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const child = node.namedChild(i)
-        if (child) stack.push({ node: child })
+        if (child) stack.push({ node: child, inError: inErrorRegion })
       }
     }
 
@@ -1953,6 +1965,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     node: Node,
     ctx: CleanContext,
     currentScope: Scope | undefined,
+    inErrorRegion = false,
   ): FrameSpec | null {
     const name = this.callableDeclaredName(node)
     if (!name) return null
@@ -2032,7 +2045,9 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       ...(scopedName ? { qualifiedName: scopedName } : {}),
       ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
       ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
-      visibility: isLocal ? "local" : "public",
+      // A callable reached only through an ERROR region has no knowable scope, so it
+      // is not part of the module's API and must not claim to be exported.
+      visibility: isLocal || inErrorRegion ? "local" : "public",
       complexity: 1,
       metadata: md,
     }
@@ -2253,7 +2268,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `function_declaration` / `operator_definition` sibling did), and a where-local
    * signature was discarded. All three publish through this one handler now.
    */
-  private processTypeSignature(node: Node, ctx: CleanContext, currentScope: Scope | undefined): void {
+  private processTypeSignature(node: Node, ctx: CleanContext, currentScope: Scope | undefined, inErrorRegion = false): void {
     const name = this.declarationName(node)
     if (!name) return
     const isLocal = this.isLocalScope(currentScope)
@@ -2278,7 +2293,9 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       ...(isLocal ? { qualifiedName: ctx.currentFrame === undefined ? name : `${ctx.currentFrame}.${name}` } : {}),
       ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
       ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
-      visibility: isLocal ? "local" : "public",
+      // A callable reached only through an ERROR region has no knowable scope, so it
+      // is not part of the module's API and must not claim to be exported.
+      visibility: isLocal || inErrorRegion ? "local" : "public",
       // A member whose only occurrence is a signature is an ABSTRACT member: the
       // class declares it and no instance in this file defines it.
       isAbstract: isMember ? true : undefined,
@@ -3456,6 +3473,8 @@ interface StackEntry {
   restoreFrame?: string | undefined
   /** The frame-is-local flag to restore on exit. */
   restoreLocal?: boolean
+  /** True when this entry is inside an `ERROR` node — see `inErrorRegion`. */
+  inError?: boolean
 }
 
 /**
