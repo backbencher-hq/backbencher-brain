@@ -239,6 +239,13 @@ measurement.)
   | `redis/src` | 49 | 42 (**85.7%**) | **37/37 (100.0%)** |
   | `libgit2/include` | 69 | 40 (58.0%) | **20/20 (100.0%)** |
 
+  after #950 (inline aggregate widths) and #951 (member-path ownership):
+
+  | Corpus | Compared | Agreed (overall) | Agreed, **types the analyzer claims to model** |
+  |---|---|---|---|
+  | `redis/src` | 49 | 44 (**89.8%**) | **39/39 (100.0%)** |
+  | `libgit2/include` | 69 | 40 (58.0%) | **20/20 (100.0%)** |
+
   The claimed-type count *rose* from 32 to 37 on redis, because five bitfield types
   stopped being guesses and became computations. Both corpora now report **no
   actionable misses at all**: every type the analyzer claims to model matches clang,
@@ -285,6 +292,50 @@ measurement.)
   **withdrawn as unsound**. Silence over invention, the #928 answer. The struct is
   then one member short, so its size is marked as a lower bound rather than published
   as a wrong number.
+
+- **An INLINE aggregate member had no computable width at all.** C11's
+  `struct { int a; int b; } inner;` — and its union counterpart. A struct's fields
+  are registered under its *name*, and an anonymous one has none, so the guard
+  `if (structName !== "anonymous_struct")` dropped them and the member fell through
+  to the 4-byte unknown fallback. Measured over the three declared corpora: **141
+  such members across 59 files**, and `struct { struct { int a; int b; } inner;
+  char c; }` published 8 bytes where clang says 12. Fixed by registering the nested
+  fields under a synthetic key and letting the member carry it, which handles a
+  nested inline struct and an inline *array* of one as well as the flat case.
+
+- **Two anonymous aggregates are not one type, and they were being collapsed.** The
+  members of every anonymous struct in a file were attributed to the placeholder
+  owner `anonymous_struct`, so a consumer could not tell them apart and the corpus
+  census reported `anonymous_struct.main x2` for curl's ftplistparser.c — where
+  `main` appears once under `UNIX` and once under `NT`, two members of two *different*
+  structs inside a union. Legal C that the counter could not classify. The owner is
+  now the **member path** (`Outer.options`, `clar_counter.val`), derived from the
+  parse and unique by construction, which also removes the phantom placeholder TYPE
+  symbols from the graph: a consumer can now navigate `Outer` → `options` → `bits`,
+  which was impossible before. `duplicateMemberNames` over the three corpora fell
+  **73 → 31**, and the rows still sitting on a placeholder owner from many to **one**.
+
+  This is a two-for-one fix from one root cause, and the lane's own **P8 property**
+  is what found the second half: the new fixture grew five inline aggregates and P8
+  reported `anonymous_struct.a emitted 5x and 5 of them are UNCONDITIONAL --
+  mutually exclusive preprocessor arms are the only legal source of a repeated
+  member name`. The property was right; these are not arms, and they were not one
+  owner.
+
+- **A macro-mediated function pointer is detected by C's parenthesis rule.** The
+  refusal in the entry above looked for a `pointer_declarator` anywhere in the
+  subtree, which is wrong for the commonest shape of all —
+  `void * GIT_CALLBACK(gmalloc)(size_t n, ...)`. Tree-sitter puts that `*` in a
+  `pointer_declarator` around the whole declarator, because it belongs to the
+  **return type**, so the subtree search concluded the member was genuine and the
+  analyzer published two more members named `GIT_CALLBACK` in libgit2's
+  `git2/sys/alloc.h`. The rule is C's own and it is about parentheses: a
+  function-pointer member must be written `(*name)(args)`, so at the first
+  `function_declarator` in the declarator chain the `declarator` must be a
+  `parenthesized_declarator` — and if it is not, the `*` is not in the source. The
+  corpus is what found this, and the four genuine shapes
+  (`int (*f)(int)`, `void *(*f)(size_t)`, `void (*fns[3])(int)`,
+  `void (*(*cb)(int))(void)`) are all kept.
 
 - **`layoutUnknownMembers` — a number that was partly invented is now marked.**
   Every remaining disagreement with clang is a width the model **declines to
@@ -508,11 +559,11 @@ it was unbounded and crashed).
 | gate | result | how it was run |
 | --- | --- | --- |
 | M14.0.F3 fixtures | **26/26 pass** (18 pre-existing + 8 new) | `bun run script/m14/run-fixtures.ts --lang c` |
-| M14.0.F1 grammar conformance | **PASS**, 60 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 32/32 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 33/33 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
-| layout vs clang (independent reference) | **100.0% (37/37)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 85.7% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
+| layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
 | typecheck | clean for the analyzer and every probe in this lane | `npx tsc --noEmit -p tsconfig.json` |
 
