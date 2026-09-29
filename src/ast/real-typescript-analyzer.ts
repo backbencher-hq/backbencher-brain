@@ -3365,16 +3365,49 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    const resolveSource = (start: Node): string => {
+    /**
+     * The symbol that OWNS a type mention, or `null` when nothing does.
+     *
+     * This pass's walk list is deliberately the ORIGINAL, narrow one — a
+     * function, method, class, interface or module-level declarator — and the
+     * change here is only to the FALLBACK. It used to answer `"global"` when the
+     * walk found no owner, which published edges whose source is not a symbol in
+     * the file: `global` appeared as a source 185 times over 700 tracked files and
+     * was never once a real symbol, so all of those edges dangled at the source
+     * end.
+     *
+     * The tempting repair was to WIDEN the list so a type alias or enum would
+     * claim its own mentions. That is wrong, and measured: every one of those
+     * mentions is already emitted by the main reference pass under the correct
+     * owner. `type AutoIndexState = { index: IndexDetection }` already produced
+     * `AutoIndexState->IndexDetection`; what the fallback added was the SAME edge
+     * a second time with `global` in the source column. Widening the list
+     * therefore converted 212 wrong-source duplicates into 212 right-source
+     * duplicates — the row count did not fall, it rose. Verified on
+     * `auto-index.ts`, where `AutoIndexState->IndexDetection` went from one row to
+     * two.
+     *
+     * So the fallback was never carrying information. Where no listed declaration
+     * owns the mention, the honest answer is NO EDGE — which is what `null` means
+     * and what `emit` now does. A fabricated source is not a weaker claim than
+     * silence; it is a wrong one, and it was the only source in the graph that no
+     * consumer could resolve.
+     */
+    const resolveSource = (start: Node): string | null => {
       let p: Node | null = start.parent
       while (p) {
         if (
           p.type === "class_declaration" ||
           p.type === "class" ||
+          p.type === "abstract_class_declaration" ||
           p.type === "function_declaration" ||
           p.type === "generator_function_declaration" ||
           p.type === "method_definition" ||
           p.type === "interface_declaration" ||
+          p.type === "type_alias_declaration" ||
+          p.type === "enum_declaration" ||
+          p.type === "internal_module" ||
+          p.type === "module" ||
           p.type === "variable_declarator"
         ) {
           const name = this.findNamedChild(p)
@@ -3382,10 +3415,29 @@ class TypeScriptAnalysisRunner {
         }
         p = p.parent
       }
-      return "global"
+      return null
     }
 
-    const emit = (source: string, roots: Node[], relType: string): void => {
+    /**
+     * `references` rows already in the SHARED relationship array, so this pass
+     * does not re-add a mention the main reference pass already recorded.
+     *
+     * Two passes cover type mentions — this one and the main pass — and they
+     * overlap: `type AutoIndexState = { index: IndexDetection }` is emitted by
+     * both. The main pass keeps its own per-key `processed` set and this pass its
+     * own `emitted` set, and NEITHER can see the other, so an overlap used to
+     * reach the graph twice. That duplication is invisible while both rows are
+     * correct, which is why it survived; it only became visible when the source
+     * differed and the two rows stopped agreeing.
+     */
+    const alreadyPublished = new Set<string>()
+    for (const rel of relationships) {
+      if (rel.type === ASTEngine.RelationshipType.References) alreadyPublished.add(`${rel.source}|${rel.target}`)
+    }
+
+    const emit = (source: string | null, roots: Node[], relType: string): void => {
+      // No owning declaration means no edge. See `resolveSource`.
+      if (source === null) return
       for (const r of roots) {
         if (!r) continue
         // Expression-position targets (instanceof) lex as plain identifiers;
@@ -3399,7 +3451,12 @@ class TypeScriptAnalysisRunner {
         for (const { name: t, node: tNode } of pairs) {
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
+          // A mention the main reference pass already published under this owner
+          // is not published again here. See `alreadyPublished`.
+          const published = `${source}|${t}`
+          if (alreadyPublished.has(published)) continue
           emitted.add(key)
+          alreadyPublished.add(published)
           relationships.push({
             source,
             target: t,
