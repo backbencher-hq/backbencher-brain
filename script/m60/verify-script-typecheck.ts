@@ -115,7 +115,11 @@ let ran = false
 const TSC_BIN = [path.join(ROOT, "node_modules", "typescript", "bin", "tsc"), path.join(ROOT, "node_modules", ".bin", "tsc")].find((p) => existsSync(p)) ?? null
 
 if (!TSC_BIN) {
-  console.error('script typecheck: REFUSING to report — no TypeScript compiler found.\n  looked in: node_modules/typescript/bin/tsc and node_modules/.bin/tsc\n  (run `bun install` in the tree you are checking).\n  A typecheck that cannot find its compiler must FAIL, not report zero errors.`)
+  console.error(
+    'script typecheck: REFUSING to report \u2014 no TypeScript compiler found.\n' +
+      '  looked in: node_modules/typescript/bin/tsc and node_modules/.bin/tsc\n' +
+      '  (run `bun install` in the tree you are checking).',
+  )
   process.exit(2)
 }
 

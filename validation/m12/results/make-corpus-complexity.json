@@ -1,29 +1,34 @@
 {
   "name": "make-corpus-production",
-  "wallTimeMs": 1074.305353,
-  "userCpuMs": 1412.781,
-  "systemCpuMs": 315.835,
-  "peakRssBytes": 263901184,
-  "rssDeltaBytes": 224276480,
+  "wallTimeMs": 2341.011662,
+  "userCpuMs": 1732.679,
+  "systemCpuMs": 412.933,
+  "peakRssBytes": 242249728,
+  "rssDeltaBytes": 211881984,
   "databaseBytes": null,
-  "files": 7,
-  "symbols": 273,
-  "relationships": 518,
-  "filesPerSecond": 6.515838332604864,
-  "symbolsPerSecond": 254.1176949715897,
-  "relationshipsPerSecond": 482.17203661275994,
-  "trackedFiles": 7,
+  "files": 14,
+  "symbols": 630,
+  "relationships": 2490,
+  "filesPerSecond": 5.9803204859045245,
+  "symbolsPerSecond": 269.1144218657036,
+  "relationshipsPerSecond": 1063.6427149930191,
+  "trackedFiles": 14,
   "errors": 0,
   "errorFiles": 0,
   "crashFiles": 0,
   "crashSamples": [],
-  "acceptanceFiles": 7,
+  "acceptanceFiles": 14,
+  "residual": {
+    "policy": "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
+    "expected": [],
+    "erroredFiles": [],
+    "hasErrorNoNodeFiles": [
+      "boundary/Makefile",
+      "torrentinim/Makefile"
+    ],
+    "matches": true
+  },
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the make analyzer uses one iterative DFS over the tree with O(1) Map-backed symbol dedupe (name:kind) and Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol O(n) scans",
-  "corpusPolicy": "union of all tracked Makefiles across the six pinned clean repos (elixir, cabal, luarocks, terraform, cython, tree-sitter-clean) — the make ecosystem has no single representative repository",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.924Z",
-    "contentSha256": "06ceffb5b3cc0bc52d5bdcf3cbc19fae760e7abd95fafa8c98350b419770b1d0"
-  }
+  "corpusPolicy": "union of 13 repositories, pinned"
 }
