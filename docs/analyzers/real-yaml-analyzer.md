@@ -68,6 +68,53 @@ Two consequences of the format are worth stating because they look like omission
 - **Merge keys are not applied** on either side of the differential: PyYAML's
   `flatten_mapping` runs in the constructor, which `compose_all` never reaches.
 
+## Relationship emission census — the whole surface, measured
+
+The question "are any relationship types missing?" deserves a measured answer rather than a
+read of the ontology table, so here it is over the **entire eight-corpus draw (1,274 files,
+349,633 relationships)** and then over the **full 9,953-file corpus** for reachability.
+
+**Types emitted: 3 of the 13 the family ontology defines.**
+
+| type | count | carries line? | carries evidenceClass? |
+|---|---|---|---|
+| `contains` | 336,129 | yes | yes |
+| `references` | 12,674 | yes | yes |
+| `imports` | 830 | yes | yes |
+| **total** | **349,633** | **349,633 / 349,633** | **349,633 / 349,633** |
+
+**Not emitted, and each ruled with a reason rather than left blank:** `calls`,
+`implements`, `instantiates`, `overrides` (the format has no callable, no heritage clause,
+no constructor and no method to override), plus `uses`, `exports`, `depends` and
+`field_access`, whose YAML equivalents are carried as `contains` + `references` with a
+`relationshipType` that distinguishes them.
+
+**All nine `metadata.relationshipType` families, and whether each has real-corpus evidence:**
+
+| family | type | full-corpus occurrences | first seen at |
+|---|---|---|---|
+| `declared_type` | references | 65+ | `grails-core/…/application.yml:40` |
+| `yaml_json_pointer` | references | 9,689+ | `docker/api/docs/v1.25.yaml:214` |
+| `yaml_resource_ref` | references | 3,250+ | `ansible/…/test_no_log.yml:7` |
+| `yaml_keyword_include` | imports | 1,172+ | `grails-core/.github/workflows/gradle.yml:130` |
+| `yaml_action_use` | imports | 735+ | `grails-core/.github/workflows/codeanalysis.yml:36` |
+| `yaml_depends_on` | references | 150+ | `grails-core/.github/workflows/coverage.yml:102` |
+| `yaml_merge` | extends | 8+ | `ansible/lib/ansible/config/base.yml:1668` |
+| `yaml_action_use_unverified` | references | 2+ | `gh-cli/.github/codeql/codeql-config.yml:18` |
+| **`yaml_tag_include`** | imports | **0 — absent from all 9,953 files** | fixture only |
+
+The last row is the one honest gap in the surface, and it was already known: `!include`
+appears in **zero** of the eight pinned corpora, so `yaml_tag_include` is pinned by fixture
+and mutant only. That is a property of the corpus, not a dead code path — the tag reader is
+exercised by `tag-file-include` and its negative twin — and the recall cost of the closed
+tag list is declared rather than assumed.
+
+Note the two families a 250-per-repository draw can miss: `yaml_merge` and
+`yaml_tag_include` both read as **0** in the 1,274-file draw and only the full-corpus scan
+distinguishes "rare" from "never reached" — the first has 8 real occurrences, the second
+genuinely has none. A sampled census would have reported both as absent and been wrong about
+one of them.
+
 ## Supported constructs
 
 Each with its fixture under `validation/m14/fixtures/yaml/` (27 fixtures, all green):
