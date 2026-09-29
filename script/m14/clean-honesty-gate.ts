@@ -79,7 +79,16 @@ const bump = (t: Record<string, number>, k: string) => {
   t[k] = (t[k] || 0) + 1
 }
 
-const files = walk(REPOS).sort()
+// `--manifest <file>` reads an explicit newline-delimited list of absolute paths
+// instead of walking a directory. The WIDE corpus needs it twice over: it is
+// several separate clones rather than one tree, and it must be de-duplicated BY
+// CONTENT — iTasks vendors StdEnv, so a directory walk counts the same standard
+// library repeatedly and inflates every figure. The manifest is a committed
+// artifact, so a re-run measures the same files.
+const mi = process.argv.indexOf("--manifest")
+const files = (mi > 0
+  ? fs.readFileSync(process.argv[mi + 1], "utf8").split("\n").map((l) => l.trim()).filter(Boolean).sort()
+  : walk(REPOS).sort())
 if (files.length === 0) {
   console.error(`FAIL no Clean files under ${REPOS} — the gate read nothing`)
   process.exit(1)
