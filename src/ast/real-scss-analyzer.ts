@@ -309,16 +309,25 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (n.type === "function_statement") {
         const name = this.childForField(n, "name") ?? this.findChild(n, (c) => c.type === "identifier")
         if (name) ctx.functionNames[stripAllQuotes(name.text)] = functionName(stripAllQuotes(name.text))
-      } else if (n.type === "variable") {
-        // only a variable that is ASSIGNED somewhere is declared here. A bare `$var`
-        // in a value position is a READ, and publishing those as symbols is how a
-        // use becomes its own declaration — the graph then claims a file defines a
-        // variable it merely mentions.
-        if (this.findDescendant(n, (d) => d.type === "declaration") === null) continue
-        if (n.parent && n.parent.type === "declaration") {
-          const prop = this.findChild(n.parent, (c) => c.type === "property_name")
-          if (prop && prop.text === n.text) ctx.variableNames[n.text] = n.text
-        }
+      } else if (n.type === "property_name" && n.text.startsWith("$") && n.parent?.type === "declaration") {
+        // A variable is DECLARED by its declaration's left-hand side, and in this grammar
+        // the left-hand side is always a `property_name` node. Measured over the corpus:
+        // 14,216 declarations, `property_name` first in 14,216 of them and `variable` in
+        // ZERO — so no shape exists in which a `variable` node is an assignment's target,
+        // and reading declarations off `property_name` is not a preference but the only
+        // reading the grammar supports.
+        //
+        // This used to key on `variable` nodes behind
+        // `findDescendant(n, d => d.type === "declaration") === null -> continue`. A
+        // `variable` is a LEAF, so that guard held for every one of them and the branch
+        // was dead. `variableNames` was really being filled by pass 2's
+        // `processScssDeclaration`, which meant the map was built DURING the walk and a
+        // read resolved only if its declaration came earlier in the file. The
+        // differential's oracle builds its `variables` set in a full pre-pass, so the two
+        // disagreed on forward references, and agreed on this corpus only because Sass
+        // requires declaration before use almost everywhere. Keying off `property_name`
+        // makes the analyzer order-independent, which is what the oracle already was.
+        ctx.variableNames[n.text] = n.text
       } else if (n.type === "use_statement") {
         const module = this.findChild(n, (c) => c.type === "string_value")
         const ns = this.findChild(n, (c) => c.type === "plain_value" || c.type === "identifier")
@@ -333,10 +342,39 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // ── pass 2: the SCSS statements ────────────────────────────────────────────
 
-  private walk(node: Node, ctx: ScssContext): void {
+  /**
+   * @param recovered TRUE when this node sits inside a region the grammar could not read.
+   *   Threaded rather than recomputed because the read/call scan keeps its OWN notion of
+   *   recovery — it descends into errors on its own — and the two must agree. A claim the
+   *   outer walk reached by descending into a broken region and then handed to the inner
+   *   scan is recovered even though the inner scan arrived by a clean path, so the two are
+   *   OR'd, and that is what makes `scssRecoveredFromError` trustworthy rather than
+   *   merely present.
+   */
+  private walk(node: Node, ctx: ScssContext, recovered = false): void {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (!child || this.isErrorNode(child)) continue
+      if (!child) continue
+      // DESCEND THROUGH ERROR — and this is the fix the whole investigation turned on.
+      //
+      // The outer walk used to `continue` on an error node, so no `declaration` inside a
+      // broken region was ever VISITED and the read/call scan was never handed one.
+      // Recovering inside that scan while refusing to reach it from here is fixing the
+      // wrong level: the inner descent is dead code for every node the outer walk never
+      // delivers.
+      //
+      // `form-item.scss` is the proof and the reason it was worth the trouble: 359 error
+      // spans, 19 `rule_set` nodes of which 1 is publishable, and `rule_set` nodes whose
+      // "selectors" node actually contains DECLARATION text — which the analyzer
+      // correctly refuses, since a selector that reads `margin-bottom: #{map.get(…)}` is
+      // not a selector. The reads behind that were simply absent. In this instance the
+      // surviving defect turned out to be deeper still (see the `isOwnLhs` note above),
+      // which is worth recording: the traversal bug was real and worth fixing, and it
+      // was not the one causing the MISSING rows it looked like it was causing.
+      if (this.isErrorNode(child)) {
+        this.walk(child, ctx, true)
+        continue
+      }
 
       // `@content` has NO node type in this grammar. The rule list is
       // at_root/charset/debug/each/error/extend/for/forward/function/if/import/
@@ -385,7 +423,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
           this.processScssDeclaration(child, ctx)
           // the READS inside this declaration, found by descendant walk so a `$var`
           // nested in a `calc()`, a map, or an interpolated selector is found too
-          this.emitVariableReadEdges(child, ctx)
+          this.emitVariableReadEdges(child, ctx, recovered)
           break
         // A `$var` is also read in an `@include`'s ARGUMENT list and in a control
         // flow's condition or iterable, and those are reads like any other:
@@ -397,11 +435,11 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "for_statement":
         case "while_statement":
           this.processControlFlow(child, ctx, this.ownerForNode(child, ctx))
-          this.emitVariableReadEdges(child, ctx)
+          this.emitVariableReadEdges(child, ctx, recovered)
           break
         case "include_statement":
           this.processInclude(child, ctx)
-          this.emitVariableReadEdges(child, ctx)
+          this.emitVariableReadEdges(child, ctx, recovered)
           break
         // `@return` and an `@use … with (…)` configuration are the two remaining
         // places a `$var` can be READ outside a declaration's value, and both were
@@ -417,7 +455,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "return_statement":
         case "use_statement":
         case "forward_statement":
-          this.emitVariableReadEdges(child, ctx)
+          this.emitVariableReadEdges(child, ctx, recovered)
           break
         default:
           break
@@ -427,7 +465,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
       // threaded: the walk recurses into every child regardless of type, so a rule, a
       // mixin body and an `@if` block all reach their contents without this function
       // having to know they exist.
-      this.walk(child, ctx)
+      this.walk(child, ctx, recovered)
     }
   }
 
@@ -805,7 +843,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The read is found by DESCENDANT walk from each declaration, so a read inside a
    * nested value, a `calc()`, or an interpolated selector is found too.
    */
-  private emitVariableReadEdges(node: Node, ctx: ScssContext): void {
+  private emitVariableReadEdges(node: Node, ctx: ScssContext, outerRecovered = false): void {
     // Do NOT descend into a nested statement. The walk visits every node exactly
     // once, but this emitter walks a whole SUBTREE, so descending from
     // `@each … { .c { width: $v } }` into the block and then visiting the `declaration`
@@ -833,7 +871,7 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
     // same reason — but a consumer deserves to know it was recovered rather than read
     // cleanly, and a marker is what makes that legible to a GATE instead of to a
     // reader of this comment. A fixture can assert it; a mutant can remove it.
-    const stack: Array<{ node: Node; recovered: boolean }> = [{ node, recovered: false }]
+    const stack: Array<{ node: Node; recovered: boolean }> = [{ node, recovered: outerRecovered }]
     while (stack.length > 0) {
       const { node: n, recovered } = stack.pop() as { node: Node; recovered: boolean }
       if (this.isErrorNode(n)) {
@@ -866,24 +904,37 @@ export class RealScssAnalyzer implements ASTEngine.LanguageAnalyzer {
         continue
       }
       if (n.type === "variable" && ctx.variableNames[n.text]) {
-        // the declaration's own left-hand side is not a read of itself
-        const isOwnLhs = n.parent?.type === "declaration" && this.findChild(n.parent, (c) => c.type === "property_name")?.text === n.text
-        if (!isOwnLhs) {
-          const owner = this.ownerForNode(n, ctx)
-          if (!owner) continue
-          ctx.relationships.push({
-            source: owner,
-            target: n.text,
-            type: ASTEngine.RelationshipType.References,
-            line_number: this.lineOf(n),
-            metadata: {
-              evidenceClass: "usage_contextual",
-              cssSpecific: true,
-              isScssVarRef: true,
-              ...(recovered ? { scssRecoveredFromError: true } : {}),
-            },
-          })
-        }
+        // A `variable` node inside a `declaration` is ALWAYS a read, and the guard that
+        // used to say otherwise was TEXT equality standing in for NODE IDENTITY.
+        //
+        // In well-formed code the two coincide: a declaration mentions at most one
+        // variable and it is the left-hand side. In a region the grammar could not read
+        // they do not, because one `declaration` node can span a whole broken statement.
+        // `element-plus/.../form-item.scss` L8 declares `$form-item-margin-bottom` and its
+        // broken `map.merge((...))` value READS that same variable on L14 — the read's
+        // parent IS the declaring node, the texts match, and the read was discarded as
+        // "its own left-hand side".
+        //
+        // Measured across the corpus: 156 reads are text-equal to their declaration's
+        // `property_name` without being it, and 0 declarations target a `variable` node.
+        // The guard suppressed 156 real reads and protected nothing. Text comparison is
+        // not a safe proxy for identity in a language whose parser hands you recovery
+        // nodes, where a single "declaration" may be several statements wearing one
+        // node's name.
+        const owner = this.ownerForNode(n, ctx)
+        if (!owner) continue
+        ctx.relationships.push({
+          source: owner,
+          target: n.text,
+          type: ASTEngine.RelationshipType.References,
+          line_number: this.lineOf(n),
+          metadata: {
+            evidenceClass: "usage_contextual",
+            cssSpecific: true,
+            isScssVarRef: true,
+            ...(recovered ? { scssRecoveredFromError: true } : {}),
+          },
+        })
       }
       // A FUNCTION CALL in a value, found in the same walk for the same reason a
       // `$var` read is: `width: double(4px)` names a `@function` this file declares,
