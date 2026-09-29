@@ -204,7 +204,7 @@ function artifact(): Record<string, unknown> {
 // M35.D1: staleness section rendered from the executable registry + the
 // registered remediation constants — docs CANNOT drift from code because both
 // sides derive from the same source here.
-const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
+export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
   bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)" },
   bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], surfaces: "`freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode)" },
   bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
@@ -212,6 +212,16 @@ const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
   bb_patterns: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_security: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_doc: { modes: [], surfaces: "`freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh" },
+  // bb_ask reports per-source staleness but is NOT auto-refreshing, and it does
+  // NOT emit a `freshness` envelope. Both halves matter and the generated page
+  // used to get the first one wrong: it claimed the tool "does not report
+  // per-file index staleness", while the retrieval path has always marked every
+  // cited source whose file changed on disk with `[STALE — file changed since
+  // index]` (measured with a controlled edit; see fixtures/bb_ask). A verified
+  // aggregate answer — a count — carries no per-file marker, because a count
+  // describes the whole index rather than a file, and that is stated rather than
+  // left to be discovered.
+  bb_ask: { modes: ["answer"], surfaces: "per-source `[STALE — file changed since index]` markers on retrieval answers, repeated in the source list; a verified aggregate answer carries no per-file marker (it describes the whole index, not a file)" },
 }
 // M48.D1 (#701): explicit cross-reference map. Every overlapping tool pair
 // states when to use which — rendered into every per-tool doc so an agent or
@@ -236,6 +246,18 @@ export const RELATIONS: Record<string, string> = {
   bb_migrate: "For dependency structure use `bb_graph`; this tool produces migration plans with declared limitations.",
 }
 
+/**
+ * Tools whose staleness section is written by hand in `stalenessSection`
+ * rather than derived from FRESHNESS_TOOLS or from the "no freshness surface"
+ * default. Exported so the M48.D1 gate can hold these to their real text
+ * instead of to one of the two blanket phrasings — which is how bb_edit's page
+ * stayed stale and un-flagged: M59.A11 changed this generator, the committed
+ * markdown was never regenerated, and the gate was still checking the old
+ * wording, so the staleness check passed against text the generator no longer
+ * produces.
+ */
+export const CUSTOM_STALENESS_TOOLS = new Set(["bb_edit"])
+
 function stalenessSection(tool: any): string {
   // M59.A11 (#890): bb_edit is the one tool that CONSUMES a stale target by
   // refreshing it rather than reading around it or refusing. Stated here so the
@@ -251,6 +273,15 @@ function stalenessSection(tool: any): string {
     return `This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: \`${FRESHNESS_REMEDIATION.dir}\`).`
   }
   const modePart = info.modes.length ? `Freshness modes (registered as \`freshnessModes\`): ${info.modes.map((m) => `\`${m}\``).join(", ")}.` : "Freshness applies to the tool's read output (no registered per-mode split)."
+  // bb_ask reports staleness but never auto-refreshes, and unlike the graph
+  // tools it emits no `freshness` envelope. The two facts are stated so the
+  // page cannot be read as promising either — and its remediation text is the
+  // MANUAL one, because the shared constant names automatic refresh and would
+  // otherwise put "reads auto-refresh stale files within budget when enabled"
+  // two sentences after "this tool does not auto-refresh".
+  if (tool.name === "bb_ask") {
+    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does not auto-refresh, and it emits no \`freshness\` envelope: a verified aggregate answer is a count over the whole index rather than a per-file fact, so there is no per-file envelope to publish. When a cited source is stale, remediation is manual: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only). Nothing is stale → no marker. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
+  }
   return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
 }
 
