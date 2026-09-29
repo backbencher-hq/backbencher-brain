@@ -47,11 +47,26 @@ const OUT = path.join(ROOT, "validation/m60/results/powershell-fabricated-calls.
  */
 function implausibleAsCommand(target: string): boolean {
   if (target.length === 0) return true
-  const first = target[0]
-  if (/[A-Za-z_.]/.test(first)) return false
-  // Everything left is: digits, operators, punctuation, whitespace, quotes.
-  // `1..3`, `1`, `-1`, `+2`, `123` — none of these is a command name.
-  return true
+  // A quote inside a published callee name is ALWAYS wrong: a name that carries its
+  // own quotes names nothing any symbol can be called. This was 5 corpus sites and
+  // is the defect the analyzer fix closed, so it stays as its own test rather than
+  // being folded into a shape heuristic -- a regression here must be visible as this
+  // class and not diluted among the others.
+  if (target.includes('"') || target.includes("'")) return true
+  // A range literal: digits with a `..` operator. Nothing is called by `1..3`.
+  if (looksLikeRange(target)) return true
+  // A leading DIGIT. PowerShell command names begin with a letter, `_` or `.`, and
+  // the corpus's two real hits here (`calls -> 2RVerification`) come from
+  // `command_parameter` having no digits in its class, so `-R2RVerification` is cut
+  // at the digit and `2RVerification` is read as a command.
+  if (/[0-9]/.test(target[0])) return true
+  // A `$`-prefixed target that contains a path separator is NOT suspicious: it is a
+  // quoted interpolated path, `. "$PSScriptRoot\tools\x.ps1"`, and publishing
+  // `$PSScriptRoot\tools\x.ps1` unquoted is the CORRECT name. An earlier version of
+  // this predicate allowed only `[A-Za-z_.]` as a first character and so reported
+  // these as fabrications -- 4 rows of noise created by the instrument, which is the
+  // failure mode this file exists to prevent.
+  return false
 }
 
 /** A range literal in any of the shapes PowerShell writes. */
@@ -110,7 +125,7 @@ const out = {
   question:
     "How many `calls` edges name a target that cannot be a command name, and how many of those are range literals?",
   predicate: {
-    implausibleAsCommand: "first character is not [A-Za-z_.] — conservative by design, so 0 means 'no candidates', not 'none exist'",
+    implausibleAsCommand: "a published callee that contains a quote, is a range literal, or starts with a digit. A `$`-prefixed path is explicitly NOT suspicious: that is the correct unquoted name for a quoted interpolated path, and an earlier version of this predicate reported 4 such rows as fabrications.",
     looksLikeRange: "digits with a `..` range operator, e.g. 1..3, 0..9, 1..$n",
   },
   totalCallsEdges: Object.values(perRepo).reduce((s, a) => s + a.calls, 0),
