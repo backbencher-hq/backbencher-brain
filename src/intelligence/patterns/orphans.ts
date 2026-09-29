@@ -6,28 +6,67 @@ import { makeProvenance } from "../evidence"
 
 const ENGINE = "orphans@intelligence"
 
-// Relationship types that count as "somebody uses this symbol".
+// Relationship types that can express "somebody uses this symbol".
 //
-// `references` and `imports` and `overrides` were all missing from this list
-// until this revision, and each omission produced a measurable false-positive
-// class. All three are real consumers of a symbol, and all three carry resolved
-// `target_symbol_id` rows in a real index — they were simply never consulted:
-//
-//   references  19,203 rows on a 45,018-symbol repository; what analyzers emit
-//               for a type annotation or a bare identifier reference.
-//               Omitting it: 208 provably-used symbols stayed candidates.
-//   imports      1,570 resolved symbol targets on that repository, 354 on
-//               luarocks. An imported symbol is used by definition.
-//   overrides    1,229 on the Perl corpus, 561 on clojure, 48 on rake. A method
-//               that a subclass overrides is used by definition. Omitting it
-//               alone put 60% of the reported orphans on the Perl corpus into
-//               the false-positive column.
-//
-// Measured over a 9-repository, 9-language corpus, these are the ONLY
-// relationship types that ever carry a resolved target and are not in this list
-// or in NON_USAGE_TYPES below — so this list is now the complete set, not a
-// subset that happened to cover the cases someone thought of.
+// Membership here is NECESSARY BUT NOT SUFFICIENT. A row of one of these types
+// is treated as evidence of a consumer only if it also passes the evidence
+// quality gate below. The previous revision decided on the type alone, which
+// meant an `overrides` row produced by a name guess was accepted as proof.
 const USAGE_TYPES = ["calls", "instantiates", "extends", "implements", "uses", "references", "imports", "overrides"]
+
+// ---- evidence quality gate ------------------------------------------------
+//
+// A resolved target is necessary but not sufficient. The index publishes an
+// evidence class and a confidence per edge, and a meaningful share of rows
+// assert something that is not evidence of a CONSUMER. Measured on real
+// corpora with the current analyzers, over every resolved edge:
+//
+//   type          edges   selfLoop   inferred   conf<0.7   all-clean
+//   calls         12182       2.8%       0.0%       0.0%      97.2%
+//   uses           3086       1.2%       0.0%       0.0%      98.8%
+//   references     2057       0.7%       0.1%       0.0%      99.2%
+//   instantiates    664       0.0%       0.0%       0.0%     100.0%
+//   extends           2       0.0%       0.0%       0.0%     100.0%
+//   implements      180       0.6%       0.0%       0.0%      99.4%
+//   overrides        48      87.5%     93.8%      93.8%       2.1%   <- rake
+//   overrides         1     100.0%    100.0%     100.0%       0.0%   <- ripgrep
+//
+// Three defects, all of which the old type-only test accepted:
+//
+//   1. SELF-LOOPS. source_symbol_id == target_symbol_id asserts that a symbol
+//      is a consumer of ITSELF. The concrete case on rake is `test_files=` and
+//      `ruby_version` in lib/rake/testtask.rb, each with an `overrides` edge
+//      to itself and metadata
+//        reasonCode "first-parent-guess", evidenceClass "inferred", confidence 0.5
+//      A self-edge cannot be a consumer of anything.
+//
+//   2. INFERENCES. evidenceClass "inferred" marks a heuristic tier. The
+//      upstream review (60eb13ef) measures that tier at 65.2% wrong on real
+//      Kotlin and records that it "has NO oracle", because a per-file oracle
+//      cannot adjudicate a guess that fires precisely when the declaring
+//      ancestor is out of file. Those rows are not explained; they are filed
+//      under a different counter, so they never surface as a failure.
+//
+//   3. LOW CONFIDENCE. Rows published below 0.7 are the guess tier for this
+//      index; 0.5 is the default the guess tier emits.
+//
+// The gate is stated once, on the row's own evidence, rather than as a
+// per-type exception list. That is deliberate: a list of types that "happen to
+// be sound" is the same shape of decision that produced a second, weaker copy
+// of the import-stem rule and the six-symbol-type file map, and both were
+// wrong. The gate is also self-correcting — an analyzer that starts publishing
+// sound `overrides` rows automatically contributes them again, with no change to
+// this file.
+//
+// What this costs: on rake, 2.1% of `overrides` rows survive, so a small number
+// of symbols that a guess suppressed become candidates again. That is the
+// correct direction of error. The exposure is counted and reported in
+// summary.suppressedByReason and in every affected finding's evidence, so the
+// number of candidates a guess is keeping out of the report is never invisible.
+const MIN_EDGE_CONFIDENCE = 0.7
+const SELF_LOOP_EXCLUDED = "selfLoop"
+const INFERRED_EXCLUDED = "inferred"
+const LOW_CONFIDENCE_EXCLUDED = "lowConfidence"
 
 // Explicitly NOT usage. `contains` is the indexer's own ownership bookkeeping
 // (a file or class contains a member) and `exports` is a module offering a
@@ -133,6 +172,30 @@ function isManifestFile(relativePath: string): boolean {
   return MANIFEST_FILENAMES.has(baseNameOf(relativePath).toLowerCase())
 }
 
+/**
+ * Join a relative module specifier onto a directory the way a module resolver
+ * does, collapsing "." and "..".
+ *
+ * Written out rather than delegated to path.posix.join because this file has no
+ * filesystem import and the rule has to be byte-identical on every runtime the
+ * engine runs on (bun:sqlite under Bun, better-sqlite3 under Node). Segment
+ * arithmetic is also the whole rule: "." contributes nothing, ".." pops one
+ * segment, anything else is appended. No regex, and no dependence on the host
+ * platform's path separator.
+ */
+function posixJoin(dir: string, spec: string): string {
+  const out: string[] = []
+  for (const segment of ((dir === "" ? "" : dir + "/") + spec).split("/")) {
+    if (segment === "" || segment === ".") continue
+    if (segment === "..") {
+      if (out.length > 0) out.pop()
+      continue
+    }
+    out.push(segment)
+  }
+  return out.join("/")
+}
+
 function isNonCodeFile(language: string | null): boolean {
   return isNonCodeLanguage(language)
 }
@@ -216,28 +279,142 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   ).all(projectId, ...reportedTypes) as SymRow[]
 
   // ---- incoming usage evidence --------------------------------------------
-  const usageRows = raw.prepare(
-    "SELECT target_symbol_id AS id, target_external AS ext FROM brain_relationship " +
-      "WHERE project_id = ? AND relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
-  ).all(projectId, ...USAGE_TYPES) as Array<{ id: string | null; ext: string | null }>
-
+  // TWO channels, because "this name appears in the project" and "this symbol
+  // was consumed by another symbol" are different kinds of claim and the index
+  // distinguishes them, in a way that varies enormously by project:
+  //
+  //   ID evidence  an ANCHORED edge (source_symbol_id present) from a different
+  //                symbol to this one, structurally published. Decisive: it
+  //                clears the candidate outright.
+  //
+  //   NAME evidence a name match — the leaf of `target_external`, or the name of
+  //                the target of an UNANCHORED clean row. Clearing on this
+  //                requires the name to be unambiguous in the reporting scope.
+  //
+  //   NOTHING       a row that fails the quality gate contributes nothing, not
+  //                even its name. A guess is not a sighting.
+  //
+  // The split is not a stylistic choice. The share of edges that are unanchored
+  // is a property of the project, not of the relationship type, so no per-type
+  // rule can capture it:
+  //
+  //   repo      calls  uses  imports  references   (share with a NULL source)
+  //   rake        2%    0%      5%        97%
+  //   ripgrep     2%    4%      0%         0%
+  //   rebar3      0%    0%      0%         0%
+  //   clojure     0%    3%      0%         0%
+  //   lodash     83%   31%     65%        61%
+  //   luarocks   17%   14%     83%        13%
+  //
+  // Treating lodash's 3,775 unanchored `calls` edges as proof that a specific
+  // symbol was consumed is the error the old code made: 95.1% of that corpus's
+  // reported orphans were then provably used. Treated as NAME evidence and
+  // gated on uniqueness, the same edges can only clear a candidate whose name
+  // nobody else claims — which is the claim they actually support.
+  //
+  // The three quality criteria apply to both channels, from the row's own
+  // published evidence (see the gate's table above): a self-loop asserts that a
+  // symbol consumes itself, `evidenceClass: "inferred"` is the heuristic tier the
+  // analyzer documentation discloses has no oracle, and confidence below
+  // MIN_EDGE_CONFIDENCE is the guess tier. On lodash 5,639 rows fail that test;
+  // on rebar3 1,507 rows are self-loops; on clojure 6,442 fail. Every rejected
+  // row is counted in summary.unverifiedUsageEdges rather than dropped silently.
+  type EdgeRow = { rt: string; id: string | null; ext: string | null; src: string | null; srcFile: string | null }
+  const edgeRows: EdgeRow[] = []
+  const edgeRejects = { [SELF_LOOP_EXCLUDED]: 0, [INFERRED_EXCLUDED]: 0, [LOW_CONFIDENCE_EXCLUDED]: 0, unanchored: 0 }
+  const edgeRejectsByType: Record<string, Record<string, number>> = {}
+  const nameEvidence = new Set<string>()
+  // symbolId -> why a row about it was refused, so the finding can disclose it.
+  const rejectedFor = new Map<string, string[]>()
+  // Declared BEFORE the load loop that fills it. `usedIds` sat below the loop in
+  // the first draft of this two-channel version, so every call that reached the
+  // loop body threw "Cannot access 'usedIds' before initialization". It was
+  // invisible for a while because a probe pointed at a wrong BB_DATA_DIR, the
+  // database was empty, the loop never ran, and the tool reported a clean
+  // project. A crash and a clean result are indistinguishable if the corpus is
+  // not asserted to be real first.
   const usedIds = new Set<string>()
-  const usedNames = new Set<string>()
-  for (const row of usageRows) {
-    if (row.id) usedIds.add(row.id)
-    if (row.ext) {
-      // target_external is a bare name ("usedFn") or "module:item" or
-      // "fileId:Name:line". Take the tail after the last colon, and — this is
-      // the part the previous revision omitted — the tail after the last dot,
-      // because a qualified reference ("com.example.Service", "Mod.fn") can
-      // never equal a stored bare name otherwise. The indexer's own extractLeaf
-      // does both; a second, weaker copy of that rule is how the qualified
-      // references went missing.
-      const afterColon = row.ext.includes(":") ? row.ext.slice(row.ext.lastIndexOf(":") + 1) : row.ext
+  {
+    // json_extract keeps the metadata read in SQLite. A JS JSON.parse per edge
+    // would be 18k-30k parses per scan on a large index; the first version of
+    // this loop did that and then prepared a statement inside it, which is two
+    // mistakes in the same loop.
+    const rows = raw.prepare(
+      "SELECT r.relationship_type AS rt, r.target_symbol_id AS id, r.target_external AS ext, " +
+        "r.source_symbol_id AS src, r.confidence AS conf, " +
+        "json_extract(r.metadata, '$.evidenceClass') AS ev, " +
+        "json_extract(r.metadata, '$.bareRead') AS bareRead, " +
+        "CASE WHEN s.file_id IS NULL THEN NULL ELSE s.file_id END AS srcFile, " +
+        "t.name AS tgtName " +
+        "FROM brain_relationship r " +
+        "LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id " +
+        "LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id " +
+        "WHERE r.project_id = ? AND r.relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
+    ).all(projectId, ...USAGE_TYPES) as Array<{
+      rt: string; id: string | null; ext: string | null; src: string | null
+      conf: number | null; ev: string | null; bareRead: number | null; srcFile: string | null; tgtName: string | null
+    }>
+
+    /** The tail of a reference: after the last colon, then after the last dot. */
+    const leafName = (value: string): string => {
+      const afterColon = value.includes(":") ? value.slice(value.lastIndexOf(":") + 1) : value
       const dot = afterColon.lastIndexOf(".")
-      usedNames.add(dot > 0 ? afterColon.slice(dot + 1) : afterColon)
+      return dot > 0 ? afterColon.slice(dot + 1) : afterColon
+    }
+
+    for (const row of rows) {
+      const reason =
+        row.src !== null && row.id !== null && row.src === row.id ? SELF_LOOP_EXCLUDED
+        : row.ev === "inferred" ? INFERRED_EXCLUDED
+        : typeof row.conf === "number" && row.conf < MIN_EDGE_CONFIDENCE ? LOW_CONFIDENCE_EXCLUDED
+        : null
+      if (reason) {
+        // A row the index publishes as a guess establishes NOTHING — not even
+        // that a name was used. The first version of this loop forwarded the
+        // rejected row's name into the name channel "so the identifier was not
+        // lost", and the effect was that bb_patterns returned ZERO candidates
+        // for rake: `references` is 97% unanchored there, and once every
+        // rejected row's identifier became name evidence, `usedNames` covered
+        // nearly every symbol in the project and the ambiguity rule cleared
+        // them all. A guess is not a sighting.
+        edgeRejects[reason]++
+        const bucket = (edgeRejectsByType[row.rt] ??= {})
+        bucket[reason] = (bucket[reason] ?? 0) + 1
+        // It IS worth recording WHICH symbols a guess was keeping out of the
+        // report, so that a finding can say so. The concrete case that motivates
+        // this: `listen` in lib/Mojo/IOLoop/Server.pm has NO incoming call edge
+        // at all — the index never recorded its callers — and the only thing
+        // standing between it and a report was an `overrides` row that is
+        // simultaneously a self-loop, `inferred`, and published at 0.5. Calling
+        // it dead is the honest reading of the index; NOT telling the reader
+        // that a rejected guess pointed here is not.
+        if (row.id) {
+          const list = rejectedFor.get(row.id)
+          if (list) list.push(reason)
+          else rejectedFor.set(row.id, [reason])
+        }
+        continue
+      }
+      // Clean row. Two claims, at different strengths:
+      //   anchored   this symbol was consumed by another identified symbol.
+      //              Decisive: clears the candidate outright.
+      //   unanchored the row is ABOUT this target but names no consumer, so it
+      //              is a name match and only clears an unambiguous name.
+      if (row.src !== null) {
+        if (row.id) usedIds.add(row.id)
+      } else if (row.tgtName) {
+        nameEvidence.add(row.tgtName)
+      }
+      // The leaf of `target_external` is the name the edge is about, on either
+      // kind of row. Taken after the last colon and then after the last dot,
+      // matching the indexer's own extractLeaf, so a qualified reference
+      // ("com.example.Service", "Mod.fn") can still match a stored bare name.
+      if (row.ext) nameEvidence.add(leafName(row.ext))
+      edgeRows.push({ rt: row.rt, id: row.id, ext: row.ext, src: row.src, srcFile: row.srcFile })
     }
   }
+
+  const usedNames = nameEvidence
 
   // Ambiguity is computed over the REPORTING scope — the six types, in
   // non-test, non-noise files — not over every row in brain_symbol. The
@@ -255,85 +432,140 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   }
 
   // ---- cross-file referenced files -----------------------------------------
-  // Built from ALL symbol types, with both endpoints resolvable to files. This
-  // replaces a map keyed on six types that made a module-level `const`, a class
-  // field, or a type alias invisible as evidence.
+  // Built from ALL symbol types, with both endpoints resolvable to files, from
+  // the SAME gated edge set the symbol channel used. This replaces a map keyed
+  // on six types that made a module-level `const`, a class field, or a type
+  // alias invisible as evidence.
   const referencedFiles = new Set<string>()
-  {
-    const crossFile = raw.prepare(
-      "SELECT r.source_symbol_id AS src, r.target_symbol_id AS tgt FROM brain_relationship r " +
-        "WHERE r.project_id = ? AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id IS NOT NULL " +
-        "AND r.relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
-    ).all(projectId, ...USAGE_TYPES) as Array<{ src: string; tgt: string }>
-    for (const row of crossFile) {
-      const srcFile = fileOfSymbolId.get(row.src)
-      const tgtFile = fileOfSymbolId.get(row.tgt)
-      if (tgtFile && srcFile && srcFile !== tgtFile) referencedFiles.add(tgtFile)
-    }
+  for (const row of edgeRows) {
+    if (!row.id || !row.src) continue
+    const srcFile = fileOfSymbolId.get(row.src)
+    const tgtFile = fileOfSymbolId.get(row.id)
+    if (tgtFile && srcFile && srcFile !== tgtFile) referencedFiles.add(tgtFile)
   }
 
-  // ---- import agreement ----------------------------------------------------
-  // Two kinds of evidence, both path-based, neither a bare global stem set.
+  // ---- import resolution ----------------------------------------------------
+  // An `imports` row now carries its SOURCE, so the specifier can be resolved
+  // the way a module resolver would: relative to the importing file's own
+  // directory, then matched against the real indexed path set. This replaces
+  // two rounds of name matching that could not express "some OTHER file imports
+  // this one":
   //
-  //   importPathKeys — a specifier with two or more real path segments must
-  //     agree with the file's last two segments. `../../src/lsp/hub_protocol`
-  //     clears `src/lsp/hub_protocol.ts` and nothing else.
+  //   flat stem set     `node:fs` cleared a local `node.ts`; src/utils/foo.ts
+  //                     cleared src/other/foo.ts; 185 real files suppressed.
+  //   two-segment key   correct, but could not resolve `./used`, because a
+  //                     relative specifier's leading `.` and `..` are
+  //                     navigation rather than identity and the importer was
+  //                     unknown.
+  //   resolve then match the importer is known, so `./used` from src/main.ts
+  //                     resolves to src/used.ts and nothing else.
   //
-  //   importStems ∩ uniqueFileStems — a specifier like `./used` is RELATIVE:
-  //     its leading `.` / `..` segments are navigation, not identity, so the
-  //     only thing it names is a stem, and which file that stem belongs to
-  //     depends on the importer's directory. An import cannot be attributed to
-  //     its importer in this index, so the stem alone is evidence only when the
-  //     stem names exactly ONE file in the project. `./used` clearing
-  //     `src/used.ts` is right when only one `used.ts` exists and unsound when
-  //     two do. Uniqueness is decidable here, so it is used.
+  // Bare specifiers ("express", "node:fs", "com.example.Service") are package
+  // or namespace references and are deliberately NOT resolved: they say nothing
+  // about which local file, if any, was meant. That is the exact mistake the
+  // flat stem set made.
   //
-  // This is what the previous code got wrong in both directions at once. It
-  // compared every file against one flat set of stems, so `node:fs` (1,158 rows
-  // on a 45,018-symbol index) would clear a local `node.ts`, and
-  // `src/utils/foo.ts` cleared `src/other/foo.ts`. On that index 185 real files
-  // were suppressed by such a collision — mostly Markdown docs "imported"
-  // because a same-named .ts file was.
-  //
-  // Provenance caveat, now recorded rather than assumed away: 3,444 of 3,554
-  // `imports` rows on that index have a NULL source_symbol_id, so an import
-  // cannot be attributed to the file that made it. The previous code's comment
-  // claimed "we require incoming from another file"; the query it ran could
-  // not express that.
-  const importPathKeys = new Set<string>()
-  const importStems = new Set<string>()
+  // Where the index still cannot attribute an import to a file, the row is
+  // counted and the fallback stem rule is used ONLY for those rows, and only
+  // when the stem names exactly one file in the project. Measured provenance
+  // with the current analyzers: 96/96 attributable on ripgrep, 18/19 on rake,
+  // 0/3554 before the analyzer work — so the fallback is now a rare path
+  // rather than the main one, and the report says how often it was needed.
+  const importReferencedFiles = new Set<string>()
+  const importUnattributedStems = new Set<string>()
   let importRowsSeen = 0
+  let importRowsResolved = 0
+  let importRowsUnattributed = 0
   {
+    const indexedPaths = new Set<string>()
+    const fileDirById = new Map<string, string>()
+    const fileIdByPath = new Map<string, string>()
+    for (const f of files) {
+      indexedPaths.add(f.relativePath)
+      fileIdByPath.set(f.relativePath, f.id)
+      const slash = f.relativePath.lastIndexOf("/")
+      fileDirById.set(f.id, slash > 0 ? f.relativePath.slice(0, slash) : "")
+    }
+    // Module paths a specifier may stand for, in resolution order: the bare
+    // path first (a specifier that already names the extension), then the
+    // common source extensions, then the per-language index forms.
+    const RESOLVABLE_SUFFIXES = ["", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".rb", ".go", ".rs", ".lua", ".ex", ".exs", ".clj", ".java", ".kt", ".c", ".h", ".cpp", ".cs", ".php", ".pl", ".sh", ".erl", ".jl", ".swift", ".scala", ".json", ".yaml", ".yml", ".toml", ".md"]
+    const INDEX_STEMS = ["index", "mod", "init", "__init__"]
+    const resolveAgainst = (spec: string, importerDir: string): string | null => {
+      // Two bases, in order of authority:
+      //   relative ("../x")  — resolved against the IMPORTER's directory. This
+      //     is what a module resolver does and it is unambiguous now that the
+      //     importer is known.
+      //   root-relative ("rake/file_list", "src/lsp/hub") — resolved against the
+      //     project root. Ruby, Python, and JS-partial conventions all use it,
+      //     and it is safe precisely because it must name a path that EXISTS in
+      //     the index: a package specifier like "node" or "express" names no
+      //     indexed file and so matches nothing. That is the property the old
+      //     flat stem set lacked, which is why "node:fs" could clear a local
+      //     node.ts.
+      const bases = spec.startsWith(".") ? [importerDir] : [""]
+      for (const base of bases) {
+        const joined = posixJoin(base, spec)
+        for (const suffix of RESOLVABLE_SUFFIXES) {
+          const candidate = joined + suffix
+          if (indexedPaths.has(candidate)) return candidate
+        }
+        for (const stem of INDEX_STEMS) {
+          for (const suffix of RESOLVABLE_SUFFIXES) {
+            if (!suffix) continue
+            const candidate = joined + "/" + stem + suffix
+            if (indexedPaths.has(candidate)) return candidate
+          }
+        }
+      }
+      return null
+    }
     const importTargets = raw.prepare(
-      "SELECT target_external AS ext FROM brain_relationship WHERE project_id = ? AND relationship_type = 'imports'",
-    ).all(projectId) as Array<{ ext: string | null }>
+      "SELECT r.target_external AS ext, r.source_symbol_id AS src, s.file_id AS srcFile " +
+        "FROM brain_relationship r LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id " +
+        "WHERE r.project_id = ? AND r.relationship_type = 'imports'",
+    ).all(projectId) as Array<{ ext: string | null; src: string | null; srcFile: string | null }>
     for (const row of importTargets) {
       if (!row.ext) continue
       importRowsSeen++
       const spec = row.ext.includes(":") ? row.ext.slice(0, row.ext.indexOf(":")) : row.ext
-      const key = pathKey2(spec)
-      if (key) importPathKeys.add(key)
-      const stem = stemOf(spec)
-      if (stem) importStems.add(stem)
+      const importerDir = row.srcFile ? fileDirById.get(row.srcFile) : undefined
+      if (importerDir === undefined) {
+        // The index cannot say which file made this import. Fall back to a stem
+        // match, only where that stem is unambiguous, and count it.
+        importRowsUnattributed++
+        const stem = stemOf(spec)
+        if (stem) importUnattributedStems.add(stem)
+        continue
+      }
+      const resolved = resolveAgainst(spec, importerDir)
+      if (resolved === null) continue
+      importRowsResolved++
+      const resolvedId = fileIdByPath.get(resolved)
+      // "Some OTHER file imports this one" is now expressible, which the
+      // previous code's comment claimed and its query could not do.
+      if (resolvedId && resolvedId !== row.srcFile) importReferencedFiles.add(resolvedId)
     }
   }
 
-  // Stems that name exactly one indexed file. A stem shared by two or more
-  // files carries no information about which one was imported.
-  const fileStemCounts = new Map<string, number>()
-  for (const file of files) {
-    const stem = stemOf(file.relativePath)
-    fileStemCounts.set(stem, (fileStemCounts.get(stem) ?? 0) + 1)
-  }
+  /** Stems that name exactly one indexed file. A stem shared by two or more
+   *  files carries no information about which one was imported. */
   const uniqueFileStems = new Set<string>()
-  for (const [stem, count] of fileStemCounts) if (count === 1) uniqueFileStems.add(stem)
+  {
+    const stemCounts = new Map<string, number>()
+    for (const f of files) {
+      const stem = stemOf(f.relativePath)
+      stemCounts.set(stem, (stemCounts.get(stem) ?? 0) + 1)
+    }
+    for (const [stem, count] of stemCounts) if (count === 1) uniqueFileStems.add(stem)
+  }
 
-  /** Does an import specifier plausibly name this file? */
-  const importedBySomething = (relativePath: string): boolean => {
-    const key = pathKey2(relativePath)
-    if (key && importPathKeys.has(key)) return true
+  /** Does an import resolve to this file, or fall back to an unambiguous stem? */
+  const importedBySomething = (fileId: string, relativePath: string): boolean => {
+    if (importReferencedFiles.has(fileId)) return true
+    if (importUnattributedStems.size === 0) return false
     const stem = stemOf(relativePath)
-    return uniqueFileStems.has(stem) && importStems.has(stem)
+    return uniqueFileStems.has(stem) && importUnattributedStems.has(stem)
   }
 
   // ---- suppression accounting ---------------------------------------------
@@ -367,10 +599,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return v
   }
 
-  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; limitations?: string[] }
+  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[] }
   const candidates: OrphanCandidate[] = []
 
-  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean): PatternFinding => {
+  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[]): PatternFinding => {
     const classLike = CLASS_LIKE_TYPES.has(sym.symbolType)
     const rule = classLike ? "orphaned_class" : "orphaned_function"
     return {
@@ -386,9 +618,18 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
         { kind: "relationship", description: `No resolved incoming relationship of type ${USAGE_TYPES.join("/")} names this symbol id. (contains/exports are indexer bookkeeping and are not usage.)` },
         { kind: "reference", description: nameAmbiguous ? `No name-matched reference either, but '${sym.name}' is declared ${2}+ times in the reporting scope, so a name reference could not have been attributed to this declaration. Candidates in this class measured 14.4% false positive against 0.0% for unambiguous names.` : `No name-matched cross-file reference (target_external) names this symbol, and its name is declared exactly once in the reporting scope, so a name reference would have been decisive if one existed.` },
         { kind: "heuristic", description: fileReferenced ? `Its file IS reached from other files by a resolved cross-file edge, which correlates with a higher false-positive rate (11.4% vs 3.7% measured across a 9-repository corpus): a reachable file is where an unrecorded reference is most likely.` : `Its file has no incoming cross-file reference at all, which correlates with a lower false-positive rate (3.7% measured).` },
+        ...(rejectedReasons.length > 0
+          ? [{
+              kind: "heuristic" as const,
+              description: `REFUSED EVIDENCE: ${rejectedReasons.length} row(s) about this symbol were excluded as unverified (${[...new Set(rejectedReasons)].join(", ")}). A row like that is not proof of a consumer — on rake an \`overrides\` row that is simultaneously a self-loop, evidenceClass "inferred" and published at 0.5 was the only thing standing between \`listen\` in lib/Mojo/IOLoop/Server.pm and this report, and that symbol has no recorded callers at all. If you believe the excluded row, the declaring ancestor or caller is outside the indexed files and the analyzer did not capture it; this finding is then a coverage gap, not dead code.`,
+            }]
+          : []),
       ],
       limitations: [
         "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
+        ...(rejectedReasons.length > 0
+          ? [`${rejectedReasons.length} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
+          : []),
         ...(nameAmbiguous ? [`The name '${sym.name}' is declared more than once; unresolved name-only references are treated as uncertain and do not suppress this candidate.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
         "Build configs, plugin manifests (XML), and test conventions are not scanned.",
@@ -409,8 +650,8 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       remediation: "Confirm the file is not an entry point, dynamically loaded, or referenced by build/test tooling before removal.",
       evidence: [
         { kind: "relationship", description: "No resolved cross-file usage relationship lands in this file." },
-        { kind: "import", description: `No import specifier names this file: two-segment key ${pathKey2(row.relativePath) || "(none — the file is at the project root)"}; stem "${stemOf(row.relativePath)}"${uniqueFileStems.has(stemOf(row.relativePath)) ? " is unique in this project and is never imported" : " is shared with other files, so it carries no path evidence"}.` },
-        { kind: "heuristic", description: importRowsSeen > 0 ? `The index records ${importRowsSeen} import relationship(s), so the import channel was available as evidence.` : `The index records NO import relationships, so the only evidence channel available was cross-file symbol usage.` },
+        { kind: "import", description: `No import specifier resolves to this file. The index attributed ${importRowsResolved} of ${importRowsSeen} import row(s) to a source file and resolved ${importReferencedFiles.size} target file(s); ${importRowsUnattributed} row(s) could not be attributed and fell back to a stem match, which applies only to a stem naming exactly one file in the project.` },
+        { kind: "heuristic", description: importRowsSeen > 0 ? `The import channel was available as evidence (${importRowsSeen} row(s), ${importRowsUnattributed} unattributable).` : `The index records NO import relationships, so the only evidence channel available was cross-file symbol usage.` },
       ],
       limitations: [
         "Entry points and dynamically loaded files may appear orphaned.",
@@ -469,7 +710,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     if (confidence > 0.7) confidence = 0.7
 
     if (confidence < minConfidence) { suppressed.belowMinConfidence++; continue }
-    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym })
+    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym, rejectedReasons: rejectedFor.get(sym.id) ?? [] })
   }
 
   // ---- file candidates -----------------------------------------------------
@@ -488,7 +729,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       fileScope.add(file.id)
 
       const referencedBySymbol = referencedFiles.has(file.id)
-      if (referencedBySymbol || importedBySomething(file.relativePath)) continue
+      if (referencedBySymbol || importedBySomething(file.id, file.relativePath)) continue
 
       // Evidence-derived. A file rule is only as trustworthy as the channels it
       // could consult: when the index records no imports at all (Erlang, Rust,
@@ -516,7 +757,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const truncated = candidates.length > maxResults
   const page = candidates.slice(0, maxResults).map((c) =>
     c.symbol
-      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name))
+      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name), c.rejectedReasons ?? [])
       : buildFileFinding(c.fileRow!, c.conf),
   )
 
@@ -543,6 +784,9 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
         "Dynamic dispatch, reflection, string references, and external manifests are not fully observable.",
         ...(ambiguousNames.size ? [`${ambiguousNames.size} duplicate symbol name(s) in the reporting scope were treated as ambiguous rather than globally resolved.`] : []),
         ...(importRowsSeen === 0 ? ["The index records no import relationships, so file-level findings rest on the cross-file symbol channel alone."] : []),
+        ...(importRowsUnattributed > 0
+          ? [`${importRowsUnattributed} of ${importRowsSeen} import row(s) name no source file, so they could only be matched by stem; a stem shared by two or more files carries no path evidence and was ignored.`]
+          : []),
         `Non-code files (${[...NON_CODE_LANGUAGES].slice(0, 6).join(", ")}, ...) contribute no symbol candidates; they are still indexed and still checked as whole files.`,
       ],
       truncated,
@@ -560,6 +804,28 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       // discarded, so "the tool found nothing" is distinguishable from "the
       // tool suppressed everything it saw".
       suppressedByReason: suppressed,
+      // How much usage evidence the scan refused to believe, and why. The
+      // orphan page is the product of what is believed, so the volume that was
+      // NOT believed is part of the result and is reported with it. These rows
+      // are the index's own published confidence and evidence class, so the
+      // numbers are the analyzer's, not this tool's opinion of them.
+      unverifiedUsageEdges: {
+        total: edgeRejects[SELF_LOOP_EXCLUDED] + edgeRejects[INFERRED_EXCLUDED] + edgeRejects[LOW_CONFIDENCE_EXCLUDED],
+        byReason: {
+          [SELF_LOOP_EXCLUDED]: edgeRejects[SELF_LOOP_EXCLUDED],
+          [INFERRED_EXCLUDED]: edgeRejects[INFERRED_EXCLUDED],
+          [LOW_CONFIDENCE_EXCLUDED]: edgeRejects[LOW_CONFIDENCE_EXCLUDED],
+        },
+        byRelationshipType: edgeRejectsByType,
+        minimumConfidence: MIN_EDGE_CONFIDENCE,
+      },
+      importResolution: {
+        rowsSeen: importRowsSeen,
+        attributedToASourceFile: importRowsSeen - importRowsUnattributed,
+        unattributed: importRowsUnattributed,
+        resolvedToAFile: importRowsResolved,
+        filesClearedByImport: importReferencedFiles.size,
+      },
     } as PatternReport["summary"],
   }
 }

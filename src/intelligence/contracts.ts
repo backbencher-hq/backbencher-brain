@@ -447,7 +447,10 @@ export interface FileDependency {
    *  Declared so an incomplete graph reads as incomplete rather than small. */
   unresolvedSpecifiers?: number
   score: number
-  provenance: EvidenceProvenance
+  /** CONTRACT CHANGE: provenance moved to the report, not repeated per row. It
+   *  was the same object on every row and roughly a third of the payload. A
+   *  dependency page's evidence identity is on the page, not on each file. */
+  provenance?: EvidenceProvenance
 }
 
 export interface ComplexityMetric {

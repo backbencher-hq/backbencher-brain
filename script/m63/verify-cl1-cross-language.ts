@@ -115,16 +115,57 @@ JOIN brain_symbol ts ON ts.id = r.target_symbol_id
 JOIN brain_file   tf ON tf.id = ts.file_id
 WHERE r.project_id = '${projectId}' AND r.is_cross_language = 1 AND ss.name = :name`
 
+/** The member rows, derived independently of the component's query. A symbol
+ *  is a member here when the STORE says so (`owner_symbol_id` is the ownership
+ *  edge) and the owner carries the asked name. This is deliberately not the
+ *  graph engine's id-prefix range: that is a lexical superset, disclosed as
+ *  such, and importing it would make the gate agree with whatever the
+ *  component did instead of measuring it. */
+const INDEPENDENT_MEMBER_ROWS = (projectId: string) => `
+SELECT r.id AS rowId, r.relationship_type AS type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge, 'caller' AS direction,
+       m.id AS memberId, m.name AS memberName, mfile.language AS memberLang,
+       ss.name AS otherName, sf.relative_path AS otherFile, sf.language AS otherLang
+FROM brain_relationship r
+JOIN brain_symbol m ON m.id = r.target_symbol_id
+JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+JOIN brain_file mfile ON mfile.id = m.file_id
+JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+JOIN brain_file sf ON sf.id = ss.file_id
+WHERE r.project_id = '${projectId}' AND r.is_cross_language = 1 AND owner.name = :name
+  AND m.name <> owner.name
+UNION ALL
+SELECT r.id AS rowId, r.relationship_type AS type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge, 'callee' AS direction,
+       m.id AS memberId, m.name AS memberName, mfile.language AS memberLang,
+       ts.name AS otherName, tf.relative_path AS otherFile, tf.language AS otherLang
+FROM brain_relationship r
+JOIN brain_symbol m ON m.id = r.source_symbol_id
+JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+JOIN brain_file mfile ON mfile.id = m.file_id
+JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+JOIN brain_file tf ON tf.id = ts.file_id
+WHERE r.project_id = '${projectId}' AND r.is_cross_language = 1 AND owner.name = :name
+  AND m.name <> owner.name`
+
+const MEMBER_COPIES = (projectId: string) => `
+SELECT m.id AS id, m.name AS name
+FROM brain_symbol m
+JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+WHERE m.project_id = '${projectId}' AND owner.name = :name AND m.name <> owner.name`
+
 const NAME_COPIES = (projectId: string) =>
   `SELECT s.id AS id, s.name AS name, f.relative_path AS path, f.language AS language, s.line_start AS line
    FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
    WHERE s.project_id = '${projectId}' AND s.name = :name
    ORDER BY f.relative_path, s.line_start, s.id`
 
-function truthFor(raw: any, projectId: string, name: string): { rows: any[]; copies: any[] } {
+function truthFor(raw: any, projectId: string, name: string): { rows: any[]; copies: any[]; memberRows: any[]; memberIds: Set<string> } {
   const rows = raw.prepare(INDEPENDENT_ROWS(projectId)).all({ name }) as unknown as any[]
   const copies = raw.prepare(NAME_COPIES(projectId)).all({ name }) as unknown as any[]
-  return { rows, copies }
+  const memberRows = raw.prepare(INDEPENDENT_MEMBER_ROWS(projectId)).all({ name }) as unknown as any[]
+  const memberIds = new Set<string>((raw.prepare(MEMBER_COPIES(projectId)).all({ name }) as unknown as Array<{ id: string }>).map((m) => m.id))
+  return { rows, copies, memberRows, memberIds }
 }
 
 interface Sample {
@@ -211,25 +252,42 @@ async function main(): Promise<void> {
     const truth = truthFor(raw, projectId!, name)
     // Rows that cannot name a pair (unknown or equal endpoint languages) are
     // declared skipped by the contract, so the loss check counts pairable rows.
-    const pairable = truth.rows.filter((r) => r.selfLang && r.otherLang && r.selfLang.toLowerCase() !== r.otherLang.toLowerCase())
+    // A row names a pair only when both ends carry a language and the two
+    // differ. The own query carries its own language as `selfLang`; the member
+    // query carries the MEMBER's separately, because the member is the endpoint
+    // the row names. Two predicates, one per shape, rather than one predicate
+    // guessing which column is populated.
+    const differs = (a: string | null, b: string | null): boolean =>
+      Boolean(a) && Boolean(b) && String(a).toLowerCase() !== String(b).toLowerCase()
+    const ownPairable = truth.rows.filter((r) => differs(r.selfLang, r.otherLang))
+    const memPairable = truth.memberRows.filter((r) => differs(r.memberLang, r.otherLang))
+    const totalPairable = ownPairable.length + memPairable.length
     const result = await call("bb_cross_language", { symbol: name })
 
-    check(`CL1 B: every stored row is reported — ${name}`, result.parsed?.pairCount === pairable.length,
-      `tool=${result.parsed?.pairCount} independent=${pairable.length} copies=${truth.copies.length} storedRows=${truth.rows.length}`)
+    // B: the union. Before CL2 this compared pairCount against the OWN rows
+    // alone, which made every owner with member rows fail — the check was
+    // detecting the fix, not a defect.
+    check(`CL1 B: every stored row is reported — ${name}`,
+      result.parsed?.pairCount === totalPairable && result.parsed?.ownFactCount === ownPairable.length && result.parsed?.memberFactCount === memPairable.length,
+      `tool(pair/own/member)=${result.parsed?.pairCount}/${result.parsed?.ownFactCount}/${result.parsed?.memberFactCount} independent=${totalPairable}/${ownPairable.length}/${memPairable.length} copies=${truth.copies.length}`)
     check(`CL1 A: ${name} is answered, not refused`, result.isError === false, result.text.slice(0, 120))
-    check(`CL1 C: absence is never false — ${name}`, result.parsed?.declaredAbsent !== true || pairable.length === 0,
-      `declaredAbsent=${result.parsed?.declaredAbsent} independentPairableRows=${pairable.length}`)
+    // C: absence means THE NAME IS SILENT — neither the copies nor their
+    // members. Before CL2 this only knew about own rows, so the gate could not
+    // have caught the defect that motivated CL2 at all.
+    check(`CL1 C: absence is never false — ${name}`,
+      result.parsed?.declaredAbsent !== true || totalPairable === 0,
+      `declaredAbsent=${result.parsed?.declaredAbsent} independentPairableRows=${totalPairable}`)
     check(`CL1 A2: copy count matches the index — ${name}`, result.parsed?.copyCount === truth.copies.length,
       `tool=${result.parsed?.copyCount} independent=${truth.copies.length}`)
 
     // D: identity, and every rowId real and in-project
     const facts = (result.parsed?.facts ?? []) as any[]
+    const memberFacts = (result.parsed?.memberFacts ?? []) as any[]
     const rowIds = new Set(facts.map((f) => f.rowId))
     check(`CL1 D: facts are deduplicated by row id — ${name}`, rowIds.size === facts.length, `${facts.length} facts, ${rowIds.size} distinct rowIds`)
     let identityOk = true
     let rowIdOk = true
     for (const f of facts) {
-      if (!f.other || typeof f.other.symbol !== "string" && typeof f.other.symbol !== "object" && !f.other) identityOk = false
       if (!f.other || typeof f.other.file !== "string") identityOk = false
       if (typeof f.rowId !== "string") identityOk = false
       const owns = raw.prepare("SELECT 1 AS ok FROM brain_relationship WHERE id = ? AND project_id = ? AND is_cross_language = 1").get(f.rowId, projectId)
@@ -238,13 +296,44 @@ async function main(): Promise<void> {
     check(`CL1 D: every fact names its counterparty (symbol+file) — ${name}`, identityOk, `facts=${facts.length}`)
     check(`CL1 D2: every fact's rowId is a stored cross-language row of THIS project — ${name}`, rowIdOk, `facts=${facts.length}`)
 
+    // ── the M63.CL2 properties ────────────────────────────────────────────────
+    // I: a cascaded fact is marked AND names the member. An attribution the
+    //    reader cannot check is the thing this whole section exists to avoid.
+    let markOk = true
+    let memberReal = true
+    const claimedMembers = new Set<string>()
+    for (const f of memberFacts) {
+      if (f.match !== "owner-cascade") markOk = false
+      const mid = f.matchedMemberId
+      if (typeof mid !== "string" || !truth.memberIds.has(mid)) { memberReal = false } else { claimedMembers.add(mid) }
+      if (typeof f.matchedMember?.symbol !== "string" || typeof f.matchedMember?.file !== "string") markOk = false
+      const owns = raw.prepare("SELECT 1 AS ok FROM brain_relationship WHERE id = ? AND project_id = ? AND is_cross_language = 1").get(f.rowId, projectId)
+      if (!owns) rowIdOk = false
+    }
+    check(`CL1 I: every member fact is marked owner-cascade and names its member — ${name}`, markOk, `memberFacts=${memberFacts.length}`)
+    check(`CL1 I2: every claimed member is really a member of a copy — ${name}`, memberReal, `memberFacts=${memberFacts.length} realMembers=${truth.memberIds.size}`)
+    check(`CL1 I3: memberCount matches the distinct members the truth has — ${name}`,
+      (result.parsed?.memberCount ?? -1) === claimedMembers.size,
+      `tool=${result.parsed?.memberCount} toolClaimed=${claimedMembers.size}`)
+    // J: no row in both sections. A row counted twice inflates every number.
+    const overlap = memberFacts.filter((f) => rowIds.has(f.rowId))
+    check(`CL1 J: no stored row appears in both sections — ${name}`, overlap.length === 0, `overlap=${overlap.length}`)
+    // K: the own section never carries a cascade marker, and vice versa.
+    const ownMisMarked = facts.filter((f) => f.match !== "exact" || f.matchedMember)
+    check(`CL1 K: the own section is exactly the symbol's own rows — ${name}`, ownMisMarked.length === 0, `misMarked=${ownMisMarked.length}`)
+    // L: the symptom itself must be visible when it happens.
+    const expectSilent = ownPairable.length === 0 && memPairable.length > 0
+    check(`CL1 L: a silent symbol with loud members says so — ${name}`,
+      result.parsed?.silentItselfButNotItsMembers === expectSilent,
+      `tool=${result.parsed?.silentItselfButNotItsMembers} expected=${expectSilent}`)
+
     // E: nothing from another project
     const foreign = raw.prepare(
       `SELECT COUNT(*) AS c FROM brain_relationship r JOIN brain_symbol ts ON ts.id = r.target_symbol_id
        WHERE r.is_cross_language = 1 AND ts.name = ? AND r.project_id <> ?`).get(name, projectId) as any
     check(`CL1 E: no foreign row can appear — ${name}`, foreign.c === 0, `foreignRowsForName=${foreign.c}`)
 
-    samples.push({ name, copies: truth.copies.length, storedRows: truth.rows.length, toolFacts: result.parsed?.pairCount ?? -1, pairableRows: pairable.length })
+    samples.push({ name, copies: truth.copies.length, storedRows: truth.rows.length + truth.memberRows.length, toolFacts: result.parsed?.pairCount ?? -1, pairableRows: totalPairable })
   }
 
   // ── F: the bound, on the worst symbol in the corpus ────────────────────────
@@ -386,6 +475,45 @@ async function main(): Promise<void> {
       },
     },
     {
+      // M63.CL2 — the three ways the member section can lie. Each is caught by a
+      // different check, so passing means the checks are independent.
+      id: "M7", name: "cascade laundered: member rows absorbed into facts", file: "handler",
+      from: "      facts: ownShown,",
+      to: "      facts: [...ownShown, ...memberShown],",
+      probe: async (m, r, pid) => {
+        const name = await pickOwnerWithMembers(r, pid)
+        if (!name) return false
+        const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: name }, { projectId: pid, projectPath: "." } as any)
+        const p = JSON.parse(out.content[0].text)
+        return (p.facts ?? []).some((f: any) => f.match === "owner-cascade" || f.matchedMember)
+      },
+    },
+    {
+      id: "M8", name: "the pre-CL2 absence rule (own rows only)", file: "handler",
+      from: "      declaredAbsent: shownCount === 0,",
+      to: "      declaredAbsent: ownShown.length === 0,",
+      probe: async (m, r, pid) => {
+        const name = await pickOwnerWithMembers(r, pid)
+        if (!name) return false
+        const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: name }, { projectId: pid, projectPath: "." } as any)
+        const p = JSON.parse(out.content[0].text)
+        // The defect verbatim: a symbol with member rows, answered as absent.
+        return p.declaredAbsent === true && (p.memberFactCount ?? 0) > 0
+      },
+    },
+    {
+      id: "M9", name: "cascade reported with no member to check it against", file: "component",
+      from: "    }, row.member_language, row.member_id)",
+      to: "    }, row.member_language)",
+      probe: async (m, r, pid) => {
+        const name = await pickOwnerWithMembers(r, pid)
+        if (!name) return false
+        const out = await (m.createToolHandlers() as any).bb_cross_language({ symbol: name }, { projectId: pid, projectPath: "." } as any)
+        const p = JSON.parse(out.content[0].text)
+        return (p.memberFacts ?? []).some((f: any) => typeof f.matchedMemberId !== "string")
+      },
+    },
+    {
       id: "M6", name: "pair fabrication where the row has no languages", file: "component",
       from: "    const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()\n      ? `${selfLang} → ${otherLang}`\n      : null",
       to: "    const pair = `${selfLang ?? 'unknown'} → ${otherLang ?? 'unknown'}`",
@@ -414,6 +542,18 @@ async function main(): Promise<void> {
        WHERE r.project_id = ? AND r.is_cross_language = 1
          AND (SELECT COUNT(*) FROM brain_symbol s2 WHERE s2.project_id = ? AND s2.name = ss.name) = 1 LIMIT 1`).get(pid, pid) as any
     return row?.name ?? (r.prepare("SELECT name FROM brain_symbol WHERE project_id = ? LIMIT 1").get(pid) as any).name
+  }
+  /** An owner whose MEMBERS hold cross-language rows — the subject the CL2
+   *  mutants are about. Read from the index, never invented: a mutant probed
+   *  against a symbol with no member rows passes for the wrong reason. */
+  async function pickOwnerWithMembers(r: any, pid: string): Promise<string | null> {
+    const row = r.prepare(
+      `SELECT owner.name AS name FROM brain_relationship r
+       JOIN brain_symbol m ON m.id = r.target_symbol_id
+       JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+       WHERE r.project_id = ? AND r.is_cross_language = 1 AND m.name <> owner.name
+       GROUP BY owner.id ORDER BY COUNT(*) DESC LIMIT 1`).get(pid) as any
+    return row?.name ?? null
   }
   async function pickHub(r: any, pid: string): Promise<string> {
     const row = r.prepare(

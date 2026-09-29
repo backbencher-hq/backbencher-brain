@@ -1691,8 +1691,16 @@ const handlers: Record<string, ToolHandler> = {
       return textResult(`bb_cross_language: symbol '${symbol}' not found — declared error, not an empty set`, true)
     }
     const result = storedCrossLanguageFactsByName(raw, projectId as string, symbol)
-    const shown = result.facts.slice(0, limit)
-    const truncated = result.facts.length > shown.length
+    // ONE budget over the union, own rows first. Two independent limits would
+    // mean a caller holding one `limit` could not reason about the size of the
+    // answer, and the exact rows — the ones that name the symbol itself — must
+    // never be crowded out by a member's edges.
+    const totalFacts = result.facts.length + result.memberFacts.length
+    const ownShown = result.facts.slice(0, limit)
+    const remaining = Math.max(0, limit - ownShown.length)
+    const memberShown = result.memberFacts.slice(0, remaining)
+    const shownCount = ownShown.length + memberShown.length
+    const truncated = totalFacts > shownCount
     // `language` is only meaningful when the copies agree. On an ambiguous
     // name it is null and `languages` carries the truth, rather than the
     // single language of whichever copy the database happened to return first.
@@ -1732,15 +1740,13 @@ const handlers: Record<string, ToolHandler> = {
         ? `declared limit of ${limit} facts; ${totalFacts} stored cross-language rows matched this name (${result.facts.length} on the symbol itself, ${result.memberFacts.length} on its members)`
         : null,
       totalCountIfKnown: totalFacts,
-      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. Before this it was
-      // `facts.length === 0` alone, so a class whose members carried 109
-      // cross-language rows while it carried none was answered "absence
-      // declared, never guessed" — a false absence, on the most natural
-      // question a caller can ask ("is this class involved in cross-language
-      // code?"), and the direct opposite of what bb_graph said about the same
-      // symbol on the same index (measured: 7 of 10 such owners, docs/m63/CL2.md).
-      // An empty answer now requires that NEITHER the copies NOR their members
-      // hold a stored row.
+      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. A class whose members
+      // carried 109 cross-language rows while it carried none used to be answered
+      // "absence declared, never guessed" — a false absence, on the most natural
+      // question a caller can ask, and the direct opposite of what bb_graph said
+      // about the same symbol on the same index (measured: 7 of 10 such owners;
+      // docs/m63/CL2.md). An empty answer now requires that NEITHER the copies
+      // NOR their members hold a stored row.
       declaredAbsent: shownCount === 0,
       absenceNote: shownCount === 0
         ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its members — absence declared, never guessed`
