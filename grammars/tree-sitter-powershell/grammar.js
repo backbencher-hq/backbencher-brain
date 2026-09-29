@@ -85,12 +85,44 @@ export default grammar({
     integer_literal: ($) =>
       choice($.decimal_integer_literal, $.hexadecimal_integer_literal),
 
+    // G13 (M60 #278): the numeric multiplier suffix is CASE-INSENSITIVE. PowerShell
+    // accepts `1KB`, `1Mb`, `1GB` interchangeably with `1kb`, `1mb`, `1gb`, and
+    // `about_Numeric_Literals` describes the multiplier as a case-insensitive suffix —
+    // but all five literal rules listed them lowercase-only, so an UPPERCASE suffix did
+    // not lex as a numeric literal.
+    //
+    // The failure was invisible in the obvious place and loud in the real one.
+    // `$c = 1KB` PARSES, because `1KB` there falls back to a generic token and an
+    // assignment tolerates it. What breaks is the same literal in OPERAND position:
+    //
+    //     $c = $x/1KB     3 ERROR      <- the class, uppercase only
+    //     $c = $x/1kb     ok          <- lowercase worked before and still does
+    //     $c = $x/12      ok          <- plain integer
+    //     $c = $x/100     ok
+    //     $c = $x/1.5     ok          <- real literal
+    //     $c = $x/0x1F    ok          <- hexadecimal
+    //     Write-Host ($x/1KB)         2 ERROR
+    //     "$($x/1KB)"                2 ERROR
+    //     $($_.Length)    ok          <- member chain in a subexpression, never involved
+    //
+    // So the battery's name for this (`subexpr-member-chain`) pointed at the wrong
+    // construct twice over: it is neither about a subexpression nor a member chain. It
+    // is a numeric literal in operand position with a case the lexer rejected, and the
+    // battery name has been corrected with the measurement.
+    //
+    // A FIRST attempt used the grammar's own `caseInsensitive()` helper and REGRESSED
+    // the working lowercase form — `$x/1kb` went from ok to 3 ERROR — because routing
+    // the whole five-suffix list through a helper changed how the composed token lexed.
+    // The fix is therefore the most local thing that can work: a character class per
+    // suffix, in place, leaving the token's structure exactly as it was. Both spellings
+    // are verified, and the lowercase regression is the reason the class is pinned in
+    // both directions rather than only in the direction that was broken.
     decimal_integer_literal: ($) =>
       token(
         seq(
           /[0-9]+/,
           optional(choice('l', 'd')),
-          optional(choice('kb', 'mb', 'gb', 'tb', 'pb')),
+          optional(choice(/[kK][bB]/, /[mM][bB]/, /[gG][bB]/, /[tT][bB]/, /[pP][bB]/)),
         ),
       ),
 
@@ -100,7 +132,7 @@ export default grammar({
           '0x',
           /[0-9a-fA-F]+/,
           optional('l'),
-          optional(choice('kb', 'mb', 'gb', 'tb', 'pb')),
+          optional(choice(/[kK][bB]/, /[mM][bB]/, /[gG][bB]/, /[tT][bB]/, /[pP][bB]/)),
         ),
       ),
 
@@ -111,17 +143,17 @@ export default grammar({
           seq(
             /[0-9]+\.[0-9]+/,
             optional(token(seq('e', optional(choice('+', '-')), /[0-9]+/))),
-            optional(choice('kb', 'mb', 'gb', 'tb', 'pb')),
+            optional(choice(/[kK][bB]/, /[mM][bB]/, /[gG][bB]/, /[tT][bB]/, /[pP][bB]/)),
           ),
           seq(
             /\.[0-9]+/,
             optional(token(seq('e', optional(choice('+', '-')), /[0-9]+/))),
-            optional(choice('kb', 'mb', 'gb', 'tb', 'pb')),
+            optional(choice(/[kK][bB]/, /[mM][bB]/, /[gG][bB]/, /[tT][bB]/, /[pP][bB]/)),
           ),
           seq(
             /[0-9]+/,
             token(seq('e', optional(choice('+', '-')), /[0-9]+/)),
-            optional(choice('kb', 'mb', 'gb', 'tb', 'pb')),
+            optional(choice(/[kK][bB]/, /[mM][bB]/, /[gG][bB]/, /[tT][bB]/, /[pP][bB]/)),
           ),
         ),
       ),
@@ -323,7 +355,7 @@ export default grammar({
                 ':',
               ),
             ),
-            /[a-zA-Z0-9_]+|\?/,
+            /[a-zA-Z0-9_#]+|\?/,
           ),
         ),
         token(
@@ -343,7 +375,7 @@ export default grammar({
                 ':',
               ),
             ),
-            /[a-zA-Z0-9_]+|\?/,
+            /[a-zA-Z0-9_#]+|\?/,
           ),
         ),
         $.braced_variable,
@@ -903,7 +935,30 @@ export default grammar({
         ),
       ),
 
-    path_command_name_token: ($) => /[0-9a-zA-Z_?\-\.\\]+/,
+    // G12 (M60 #278): the forward SLASH, which the class was missing.
+    //
+    // `path_command_name` is `repeat1(choice(path_command_name_token, variable))` and
+    // the token class allowed `\` but not `/`, so a Windows path parsed and a POSIX one
+    // could not: `/usr/bin/pwsh` lexed as `usr`, `/`, `bin`, `/`, `pwsh` with no rule
+    // able to consume a separator. Measured before patching:
+    //
+    //     & /usr/bin/pwsh      3 ERROR      <- literal POSIX path
+    //     & $D/pwsh            3 ERROR      <- variable-prefixed
+    //     & $D                 ok          <- variable alone
+    //     & $D -x              ok          <- variable then a flag
+    //     & pwsh -x            ok          <- bare command then a flag
+    //     $a/$b                ok          <- DIVISION, which must stay division
+    //     cd /tmp/x            ok          <- a path as a command ARGUMENT, already fine
+    //
+    // So the class was correct for the language it was written for and wrong for the
+    // other one, which is why the battery's name (`var-prefixed-path`) pointed at the
+    // wrong thing: it is not about variables, it is about slashes. A literal POSIX path
+    // fails identically, and the battery name has been corrected with the class.
+    //
+    // Safe for division: `path_command_name` is reachable only from `command_name_expr`,
+    // which is reachable only after a `command_invokation_operator` (`&` or `.`), so
+    // the binary-operator route that reads `$a/$b` as division is not in scope here.
+    path_command_name_token: ($) => /[0-9a-zA-Z_?\-\.\\\/]+/,
 
     // Use to parse command path
     path_command_name: ($) =>
