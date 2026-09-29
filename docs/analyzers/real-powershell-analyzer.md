@@ -251,11 +251,22 @@ Sections A–D, G, H **pass**. Two sections do not, and the lane is not closed w
 do not:
 
 - **Section E — `section-e-differential`:** no baseline floor row for
-  `powershell:powershell`. Closing it requires a canonical F3/F5 differential baseline,
-  which is an owner-scoped unscoped run.
+  `powershell:powershell`. Closing it requires a **canonical unscoped** differential
+  baseline, and a lane-scoped run cannot supply one: `mergeBaseline()` writes
+  `loadContext` and `samplePerLang` unconditionally from the current run while merging
+  `counts` per lane, so a powershell-scoped run would re-stamp the load context of all
+  **182** existing rows. It also pins a lane only when `missing === 0 && unexplained === 0`,
+  and the lane-scoped F5 artifact records neither count for this lane — so the attempt
+  could rewrite the shared file without pinning powershell at all.
 - **Section F — `section-f-perf-budget`:** no `avgMsPerFile` for
-  `powershell:powershell`. The measured 246 ms/file above is from a draw made at load
-  ~30 and is **not** a usable budget row.
+  `powershell:powershell`. The only figure that exists is **50.7 ms/file, measured at
+  `loadAvg1` 39.42 on 8 cores with `loadAvgRetried: true`** — contention at 4–5× load, not
+  a lane budget. (For calibration: the baseline's own `loadContext` reads 41.85 → 39.16,
+  so its existing 182 rows were themselves pinned at ~5× load.)
+
+Both sections stay red deliberately, and the full measurement is in
+`validation/m14/results/powershell-lane-record.json`. A red section here says the
+ceremony has not happened; it is cheaper than a green one that measures the machine.
 
 ### Differential
 
