@@ -1193,13 +1193,46 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       list.push(s)
       byName.set(s.name, list)
     }
-    // First (leftmost) base class is the primary inheritance target — with
-    // multiple bases, overrides resolve against the first (Python MRO).
-    const baseByClass = new Map<string, string>()
+    // PY-8. ALL bases, in declaration order — not just the leftmost.
+    //
+    // Python's rule is "the first base in MRO order that actually DECLARES the name",
+    // and keeping only the first base is a different rule. It looks equivalent until a
+    // multi-base class inherits a name from a LATER base, which is ordinary Python:
+    //
+    //     class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple):
+    //         def __new__(cls, *args, **kwargs): ...
+    //
+    // `_ComputedReqKindsMixin` declares `__init__` and no `__new__`;
+    // `RequirementNamedTuple` is a NamedTuple and so necessarily has `__new__`. This
+    // analyzer emitted `Requirement.__new__ -> _ComputedReqKindsMixin.__new__` at 0.5 —
+    // naming a method that class does not have — and never considered the base that
+    // does, because it is not leftmost.
+    //
+    // The distinction that makes the old rule defensible in principle — the leftmost
+    // base is the most-derived ancestor — is exactly what makes it wrong here: a more-
+    // derived ancestor that does not define the name contributes nothing, and the name
+    // is inherited from further left in the MRO than the class itself.
+    //
+    // So: walk the bases in order, take the first that declares the method, and emit
+    // ONE verified edge to it. Guess only when NO base declares it, and then guess the
+    // leftmost, because the leftmost is the best candidate for where an unseen method
+    // would live.
+    const basesByClass = new Map<string, string[]>()
     for (const r of ctx.relationships) {
       if (r.type === ASTEngine.RelationshipType.Extends && r.source && r.target) {
-        if (!baseByClass.has(r.source)) baseByClass.set(r.source, r.target)
+        const list = basesByClass.get(r.source)
+        if (list) {
+          if (!list.includes(r.target)) list.push(r.target)
+        } else {
+          basesByClass.set(r.source, [r.target])
+        }
       }
+    }
+    // Every class name declared in this file. A base NOT in here is one this analyzer
+    // has never read, which is the distinction the guess below turns on.
+    const declaredClasses = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class && s.name) declaredClasses.add(s.name)
     }
     const overrideCompanion = (ctx as any)._overrideCompanion as Map<string, Set<string>> | undefined
     const baseDeclares = (base: string, method: string): boolean => {
@@ -1210,12 +1243,36 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
-        const base = baseByClass.get(s.ownerName)
-        if (!base) continue
-        const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
-        if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
-        } else if (!overrideCompanion?.has(base)) {
+        const bases = basesByClass.get(s.ownerName)
+        if (!bases || bases.length === 0) continue
+        // MRO order: the first base that DECLARES this name owns the override.
+        const declaring = bases.find((b) => {
+          const inFile = byName.get(s.name)?.some((bm) => bm.ownerName === b) ?? false
+          return inFile || !!overrideCompanion?.get(b)?.has(s.name)
+        })
+        if (declaring) {
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
+          continue
+        }
+        // No base declares it, so this is a guess. Guess the best candidate — and the
+        // best candidate is NOT always the leftmost.
+        //
+        // A base that is declared in THIS file and lacks the name is evidence of
+        // absence: we have read it. A base that is external is merely unknown. Guessing
+        // a base we have just ruled out names the one class we KNOW does not have the
+        // method, which is the worst possible guess — and it is what the leftmost rule
+        // did for `class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple)`,
+        // where the mixin was read and found to have `__init__` but no `__new__`, and
+        // the NamedTuple that necessarily has `__new__` was never named.
+        //
+        // So: prefer the first base we could not check, else the leftmost. Either way
+        // this stays a 0.5 guess with a reasonCode — the point is to make the guess
+        // answerable, not to promote it to a fact it is not.
+        // A base is "unchecked" when it is not declared anywhere in THIS file, so we
+        // have not read it and cannot rule it out. Build the set once, outside the loop.
+        const unchecked = bases.find((b) => !declaredClasses.has(b))
+        const base = unchecked ?? bases[0]
+        if (!overrideCompanion?.has(base)) {
           // Pass 3 (family parity with java/groovy resolveOverrides): the
           // base is not declared in this file and the companion index gave
           // no opinion (it is never populated in production — see M37.10).

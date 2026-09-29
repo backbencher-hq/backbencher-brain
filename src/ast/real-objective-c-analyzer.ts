@@ -525,7 +525,28 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       else if (node.type === "enum_specifier") {
         const ename = this.findChild(node, (n) => n.type === "type_identifier")
-        const tname = ename ? ename.text : this.typedefName(node)
+        // Apple's macro spelling carries the name INSIDE the macro's own arguments and has no
+        // trailing declarator at all — `typedef NS_ENUM(NSUInteger, Foo) { ... };` — so both of
+        // the ordinary routes to a name are unavailable: the C path looks for a
+        // `type_identifier` CHILD (the macro's arguments are `identifier` nodes), and
+        // `typedefName` looks for a trailing alias declarator on the `type_definition` (there
+        // is none). Both return null, the whole enum branch is skipped, and an 18-line
+        // declaration that now parses with ZERO error nodes still contributes no symbol and no
+        // members: a clean tree the analyzer reads as empty.
+        //
+        // So the name is resolved from the arguments, explicitly, as the LAST identifier —
+        // `NS_ENUM(underlying, Name)` puts the underlying type first. Taking the FIRST, which
+        // is what a bare "first identifier" rule would do, names every such enum
+        // `NSUInteger`, and 35 of them would then collide on one owner.
+        const macroArgs = this.findChild(node, (n) => n.type === "macro_enum_arguments")
+        let macroName: string | null = null
+        if (macroArgs) {
+          for (let i = macroArgs.namedChildCount - 1; i >= 0; i--) {
+            const c = macroArgs.namedChild(i)
+            if (c && c.text && c.text.trim()) { macroName = c.text.trim(); break }
+          }
+        }
+        const tname = macroName ?? (ename ? ename.text : this.typedefName(node))
         // Definition-only: `enum Color x` (no enumerator list, not under a
         // typedef) is a use, not a declaration.
         const defines = !!this.findChild(node, (n) => n.type === "enumerator_list") ||
