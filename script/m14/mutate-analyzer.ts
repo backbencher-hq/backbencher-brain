@@ -11563,8 +11563,23 @@ export const MUTANTS: Mutant[] = [
     defectClass: "finding-loss",
     description: "Restores the pre-fix signal scan, which read child_process only off an import_statement or an `import ... = require(...)` clause. A CommonJS `require(\"child_process\")` — a CALL, not an import — no longer arms the rule, so a bare exec-family call in such a file loses its command_injection sink and no flow into it can be reported: the false NEGATIVE direction, which costs a real vulnerability rather than adding noise. taint-sink-require-child-process kills it (a bare execFileSync whose only evidence is the require form). The transform is the exact inverse of the fix: a bare exec-family sink is kept when the file's import list already proves child_process, and stripped when the ONLY evidence was the call.",
     transform: (r: any) => {
-      const mods = ((r as any).imports ?? []).map((i: any) => String(i.module ?? i.path ?? ""))
-      if (mods.some((m: string) => m === "child_process" || m === "node:child_process")) return r
+      // The "already proven" early-return has to distinguish WHERE the proof
+      // came from. It used to test only that `imports` mentions child_process,
+      // which was true precisely when an import_statement did — the case the
+      // rule already handled. Once `require("child_process")` was recorded as an
+      // import (R11), a require-only file also satisfies that test, so the
+      // transform became a no-op and this mutant SURVIVED. The gate reported it,
+      // which is the only reason it was noticed: a still-green suite with one
+      // fewer real check in it. The fix is to ask the question the mutant means
+      // \u2014 "is child_process proven by something other than the require form?"
+      const mods = ((r as any).imports ?? []).map((i: any) => ({
+        module: String(i.module ?? i.path ?? ""),
+        viaRequire: (i.metadata ?? {}).type === "require",
+      }))
+      const provenByImport = mods.some(
+        (m: any) => (m.module === "child_process" || m.module === "node:child_process") && !m.viaRequire,
+      )
+      if (provenByImport) return r
       const leaves = ["exec", "execSync", "execFile", "execFileSync", "spawn", "spawnSync", "fork"]
       return {
         ...r,
