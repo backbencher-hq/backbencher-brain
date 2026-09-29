@@ -259,6 +259,18 @@ interface CleanContext {
    * dependency stays visible.
    */
   operatorImports: { count: number; names: string[] }
+  /**
+   * Foreign Code Imports — `import code from "ctty.o"`, `import code from
+   * library "CleanSerial_library"`.
+   *
+   * These name OBJECT FILES and LIBRARIES, not a Clean module: there is no
+   * module to bind, and the thing being bound is a linker input. An `imports`
+   * edge with an empty target would resolve to nothing, so none is emitted —
+   * but "no edge" is a decision, and a decision that is not counted is
+   * indistinguishable from a gap. Counted here so the 30 corpus files that
+   * carry one are visible in the published metadata.
+   */
+  foreignCodeImports: { count: number; objects: string[] }
   /** Locals whose enclosing frame was lost to a parse-ERROR region; see `localOwner`. */
   detachedLocals: number
   /** Scoped frame identity -> decision points counted inside it. */
@@ -327,6 +339,56 @@ function unparenthesizeText(text: string): string | null {
   if (!inner) return null
   if (inner.includes(",") || inner.includes("{") || inner.includes("}")) return null
   return inner
+}
+
+/** Drop one pair of surrounding double quotes from a STRING node's text.
+ *
+ *  The same shape as `unparenthesizeText` above, and for the same reason: a
+ *  `string` leaf's `text` is the source text, quotes included, and a published
+ *  NAME is the name. It is guarded on the quote being both first and last, so a
+ *  node that is not a quoted literal is returned unchanged rather than mangled,
+ *  and only ONE pair is removed — a string whose CONTENT starts or ends with a
+ *  quote is still delimited correctly, because the delimiters are the outermost
+ *  pair and this loop stops at the first match. */
+function unquoteText(text: string): string {
+  if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) return text.slice(1, -1)
+  return text
+}
+
+/**
+ * Words the grammar treats as RESERVED at a declaration head. A declaration
+ * whose name is one of these is parse damage, not a declaration.
+ *
+ * This exists because tree-sitter's recovery will re-lex a keyword as an
+ * identifier when the construct it belongs to has already failed. The corpus
+ * case is `ObjectIO Examples/hanoi/Hanoi.icl`, where lines 213 and 225 each
+ * open a nested `where` inside an already-damaged instance body, and the parse
+ * produced `function_declaration` nodes literally NAMED `where`. The lane then
+ * published a `function` symbol called `where` owned by the module, and the
+ * `x = nr*XOffs` on the next line — where `XOffs` is a `::`-defined synonym
+ * used as a value — was read as an ADT constructor applied to that fabricated
+ * function, emitting `instantiates -> where -> XOffs`. The honesty gate caught
+ * it as `instantiates.targetIsAMacro`; the FABRICATION is upstream of that, and
+ * a symbol named after a keyword can never be right, so it is declined here
+ * rather than published and diagnosed downstream.
+ *
+ * The list is the grammar's own alphabetic anonymous tokens (the 32 literal
+ * words in `node-types.json`), MINUS four that are context-reserved rather than
+ * reserved: `E`, `apply`, `inline` and `library` can each be an ordinary
+ * identifier where the grammar does not need the keyword, and declining a real
+ * symbol is worse than carrying a rare fabricated one. `library` is the FCI
+ * item keyword this lane's own grammar wave added.
+ */
+const RESERVED_DECLARATION_NAMES = new Set([
+  "as", "case", "class", "code", "definition", "derive", "else", "export",
+  "foreign", "from", "generic", "if", "implementation", "import", "in",
+  "infix", "infixl", "infixr", "instance", "let", "module", "of", "qualified",
+  "special", "system", "then", "where", "with",
+])
+
+/** A declared name that is a reserved word is damage; see the set above. */
+function isReservedDeclarationName(name: string | null | undefined): boolean {
+  return name !== null && name !== undefined && RESERVED_DECLARATION_NAMES.has(name)
 }
 
 /** The operator leaf node types an import item list or a constraint can carry.
@@ -428,6 +490,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       declinedInstantiations: { count: 0, names: [] },
       typeCoercions: { count: 0, names: [] },
       operatorImports: { count: 0, names: [] },
+      foreignCodeImports: { count: 0, objects: [] },
       detachedLocals: 0,
       frameComplexity: new Map(),
     }
@@ -694,6 +757,10 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // form cannot express, so it is counted rather than emitted unresolvable.
         operatorImports: ctx.operatorImports.count,
         operatorImportNames: ctx.operatorImports.names,
+        // Foreign code imports: a real dependency the `<module>:<item>` edge form
+        // cannot express, because a linker input is not a module.
+        foreignCodeImports: ctx.foreignCodeImports.count,
+        foreignCodeObjects: ctx.foreignCodeImports.objects,
         // Locals whose enclosing function the pinned grammar could not read, so the
         // module owns them instead of a frame that does not exist.
         detachedLocals: ctx.detachedLocals,
@@ -1007,6 +1074,26 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "import_declaration":
           this.collectImport(n, ctx, ctx.currentModule ?? "", importEdges)
           break
+        case "foreign_code_import": {
+          // A linker input, not a module: counted, not emitted as an `imports`
+          // edge (see `foreignCodeImports`).
+          //
+          // The name is on the ITEM's `object` field, not this node's — each
+          // item is `"a.o"` or `library "L"`, and the import is a bare sequence
+          // of them — so reading `object` here silently yields nothing and the
+          // counter would publish a count with no evidence behind it.
+          ctx.foreignCodeImports.count++
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const item = n.namedChild(i)
+            if (!item || item.type !== "foreign_code_item") continue
+            const obj = item.childForFieldName("object")
+            const name = obj ? unquoteText(obj.text) : undefined
+            if (name && ctx.foreignCodeImports.objects.length < 25 && !ctx.foreignCodeImports.objects.includes(name)) {
+              ctx.foreignCodeImports.objects.push(name)
+            }
+          }
+          break
+        }
         case "type_definition": {
           const nm = n.childForFieldName("name")
           if (nm) { ctx.declaredTypeNames.add(nm.text); ctx.declaredTypeDefNames.add(nm.text) }
@@ -1130,9 +1217,24 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < block.namedChildCount; i++) {
       const c = block.namedChild(i)
       if (!c) continue
-      if (c.type === "local_binding") {
+      // `record_binding` is the record-pattern member of a where/with block. It
+      // sits beside `local_binding` rather than inside it because the grammar
+      // keeps the record-pattern reading OUT of a `let`'s bindings (inside a
+      // `let`, a brace is a `let_group` instead), so the two arrive as siblings
+      // here and both are binders.
+      if (c.type === "local_binding" || c.type === "record_binding") {
         const inner = c.namedChild(0)
         if (inner) consider(inner)
+        continue
+      }
+      // `let_group` — `let { (C p) = gtk; q = r } in body` — is ONE node holding
+      // a REPEATED `pattern` field, so there is no single namedChild(0) to
+      // consider: every pattern in the group binds a name. Reading the field is
+      // what keeps the group's values out of it; walking named children would
+      // hand the right-hand sides to `callableDeclaredName`, which would treat a
+      // value that happens to be a bare identifier as a binder.
+      if (c.type === "let_group") {
+        for (const pat of this.fields(c, "pattern")) consider(pat)
         continue
       }
       consider(c)
@@ -1404,6 +1506,16 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** The declared name of a callable node, or undefined when it declares none. */
   private callableDeclaredName(node: Node): string | undefined {
+    // Declined HERE rather than at each caller, because this one function feeds
+    // all three consumers that have to agree: symbol emission, the
+    // "is this node a frame" test, and local-scope resolution. Guarding a
+    // caller instead would let a fabricated `where` still count as a frame and
+    // still absorb the scope of everything after it.
+    const declared = this.rawCallableDeclaredName(node)
+    return isReservedDeclarationName(declared) ? undefined : declared
+  }
+
+  private rawCallableDeclaredName(node: Node): string | undefined {
     switch (node.type) {
       case "function_declaration":
         return this.declaredName(node)?.text ?? undefined
@@ -2077,6 +2189,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processMacro(node: Node, ctx: CleanContext, currentScope: Scope | undefined): FrameSpec | null {
     const name = this.normalizeParenthesized(node.childForFieldName("name"))
     if (!name) return null
+    if (isReservedDeclarationName(name)) return null
     const isLocal = this.isLocalScope(currentScope)
     const key = declarationKey(ctx.currentFrame, this.ownerIdentity(currentScope, ctx), name)
     if (ctx.functionSymbolIndex[key] === undefined) {
