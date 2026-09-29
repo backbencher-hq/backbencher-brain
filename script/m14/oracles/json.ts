@@ -214,7 +214,6 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
             if (pathToName.has(pointed)) composed.push({ from: owner, target: pointed })
           }
         }
-      }
         refs.push({ from: here, refPath: unquote(value) })
       } else if (isObject(value) || isArray(value)) {
         walk(value, here, key)
