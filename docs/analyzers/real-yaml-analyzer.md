@@ -125,21 +125,32 @@ no constructor and no method to override), plus `uses`, `exports`, `depends` and
 
 | family | type | full-corpus occurrences | first seen at |
 |---|---|---|---|
-| `declared_type` | references | 65+ | `grails-core/…/application.yml:40` |
-| `yaml_json_pointer` | references | 9,689+ | `docker/api/docs/v1.25.yaml:214` |
-| `yaml_resource_ref` | references | 3,250+ | `ansible/…/test_no_log.yml:7` |
-| `yaml_keyword_include` | imports | 1,172+ | `grails-core/.github/workflows/gradle.yml:130` |
-| `yaml_action_use` | imports | 735+ | `grails-core/.github/workflows/codeanalysis.yml:36` |
-| `yaml_depends_on` | references | 150+ | `grails-core/.github/workflows/coverage.yml:102` |
-| `yaml_merge` | extends | 8+ | `ansible/lib/ansible/config/base.yml:1668` |
-| `yaml_action_use_unverified` | references | 2+ | `gh-cli/.github/codeql/codeql-config.yml:18` |
-| **`yaml_tag_include`** | imports | **0 — absent from all 9,953 files** | fixture only |
+| `declared_type` | references | 67 | `grails-core/…/application.yml:40` |
+| `yaml_json_pointer` | references | 9,689 | `docker/api/docs/v1.25.yaml:214` |
+| `yaml_resource_ref` | references | 3,250 | `ansible/…/test_no_log.yml:7` |
+| `yaml_keyword_include` | imports | 1,172 | `grails-core/.github/workflows/gradle.yml:130` |
+| `yaml_action_use` | imports | 735 | `grails-core/.github/workflows/codeanalysis.yml:36` |
+| `yaml_depends_on` | references | 151 | `grails-core/.github/workflows/coverage.yml:102` |
+| `yaml_merge` | extends | 11 | `ansible/lib/ansible/config/base.yml:1668` |
+| `yaml_tag_include` | imports | 4 | `pyyaml-include/tests/data/0.yaml:1` |
+| `yaml_action_use_unverified` | references | 2 | `gh-cli/.github/codeql/codeql-config.yml:18` |
 
-The last row is the one honest gap in the surface, and it was already known: `!include`
-appears in **zero** of the eight pinned corpora, so `yaml_tag_include` is pinned by fixture
-and mutant only. That is a property of the corpus, not a dead code path — the tag reader is
-exercised by `tag-file-include` and its negative twin — and the recall cost of the closed
-tag list is declared rather than assumed.
+**All nine have corpus evidence**, measured over the full **9,961-file** corpus with **no
+sampling** by `script/m60/yaml-family-census.ts`, which reads its repo list from the census
+rather than repeating it — a second copy of that list had already drifted and cheerfully
+reported a family as absent from a corpus it had never opened.
+
+Getting `yaml_tag_include` there took a ninth corpus and a correction to the tag set
+itself. Measured over the first eight, **every one of the ten include-family spellings the
+analyzer knew occurred zero times** — while the tags Ansible actually uses (`!vault` 30,
+`!unsafe` 31) were not in the set at all. The set had been guessed, not derived. Checking the
+libraries that define the construct showed `!include` is not an Ansible tag but a
+third-party PyYAML extension, and that **pyyaml-include 2.x — the current release — spells
+it `!inc`**, which the analyzer did not recognise. So there was a live recall gap *and* a
+corpus that genuinely contains the construct: `pyyaml-include` (pinned `fc096668`), the
+library that defines it, whose own test data is real `!include` YAML that PyYAML parses
+cleanly. It is a small test-data repository and is **not** evidence about YAML's general
+shape; it is here to make one construct corpus-backed, and it is declared as exactly that.
 
 Note the two families a 250-per-repository draw can miss: `yaml_merge` and
 `yaml_tag_include` both read as **0** in the 1,274-file draw and only the full-corpus scan
