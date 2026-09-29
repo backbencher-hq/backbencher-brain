@@ -1244,7 +1244,31 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     line?: number,
   ) {
     if (!source || !target) return
-    const key = `${type}\u001f${source}\u001f${target}`
+    // PY-6. The dedup key was (type, source, target) with NO LINE, which is STRICTLY
+    // COARSER than the store's own relationship key. The store's primary key is
+    // (source, type, target, line) — the M59 #822 rule — so a `contains` edge to each
+    // of two same-named members is a DISTINCT row the store is willing to keep, and the
+    // analyzer was discarding one of them before it ever got there.
+    //
+    // Python makes this common rather than exotic, and the shape is a getter/setter
+    // pair, which is idiomatic Python:
+    //
+    //     @property
+    //     def collection_finder(cls): ...
+    //     @collection_finder.setter
+    //     def collection_finder(cls, value): ...
+    //
+    // Both `def`s are real declarations, both published as symbols (measured:
+    // L50 and L54 in ansible's `_collection_config.py`), and ONE `contains` edge was
+    // emitted — the second member was unreachable from its class in the graph, so
+    // bb_graph's callers and bb_impact could not reach the setter. Same class of defect
+    // as markdown's MD-2, and it is the same fix markdown's analyzer already carries:
+    // the site's LINE is part of a relationship's identity, not a decoration on it.
+    //
+    // The line is included only when there is one. A relationship with no line keeps
+    // the coarse key, because there is nothing finer to distinguish it by and
+    // inventing a 0 would be a fabricated position.
+    const key = `${type}\u001f${source}\u001f${target}\u001f${line ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
     ctx.relationships.push({
