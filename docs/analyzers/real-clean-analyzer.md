@@ -417,8 +417,11 @@ handled types are now fixture-backed, and the gate says so on every run.
    know that type. Naming the receiver's NAME would be a `uses` edge to a value,
    which is the FP family the lane forbids. Recorded, not ruled.
 2. **An uppercase applied name that is not an in-file data constructor emits no
-   edge** (1,049 declined sites out of a 1,923-site population) — the
-   1,923-site row above.
+   edge** — the 1,923-site row above. The 1,049 sites are counted apart by how much
+   the analyzer knows: **984 it cannot classify** (`declinedInstantiations`) and
+   **65 it can** (`typeCoercions` — an application whose head is a declared type,
+   i.e. Clean's coercion). An earlier version of this document quoted the 1,049 as
+   one number, which overstated the uncertainty by 65 sites.
 3. **`?Just 0` in a body is an ERROR in the pinned grammar**, so the unboxed BUILD
    direction has no readable spelling and is unreachable (ruling `CL-D8`); the
    unboxed PATTERN direction is handled.
