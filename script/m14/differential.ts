@@ -2528,21 +2528,42 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
     const st: any[] = [root]
     while (st.length) {
       const n = st.pop()!
-      if (n.type === "object_literal" && namedOf(n, "class_body")) {
+      // A `simple_identifier` child means this is a NAMED object, which the
+      // pinned grammar mis-parses into infix_expression > object_literal. An
+      // anonymous object has a delegation_specifier or nothing at all. That is
+      // the discriminator — and it is a structural one, not a name check.
+      if (n.type === "object_literal" && !namedOf(n, "simple_identifier")) {
         const sup = delegationSuperType(n)
         const anonName = `anonymous_${sup ?? "object"}`
         const owner = ownerOfDecl(n.parent)
         if (owner) push(owner, anonName)
+        // Members ONLY from a real class_body, and that condition is load-bearing
+        // rather than defensive. The grammar gives the body a DIFFERENT shape
+        // depending on the delegation:
+        //
+        //   object : IntIdTable()   { val a = 1 }  -> object_literal > class_body
+        //   object : IntIdTable("t") { val a = 1 }  -> object_literal > call_suffix
+        //                                               > annotated_lambda
+        //                                               > lambda_literal > statements
+        //
+        // so the second form's members sit in a lambda and the analyzer does not
+        // extract them either. Requiring class_body is how the oracle AGREES with
+        // it; a "find the declarations wherever they are" oracle would have
+        // published members the analyzer does not, and been wrong in the
+        // opposite direction. The body location is a grammar fact, and the oracle
+        // states the same fact the analyzer states.
         const body = namedOf(n, "class_body")
-        for (let i = 0; i < body.namedChildCount; i++) {
-          const d = body.namedChild(i)
-          if (!d) continue
-          if (
-            d.type === "property_declaration" || d.type === "function_declaration" ||
-            d.type === "class_declaration" || d.type === "object_declaration" ||
-            d.type === "enum_entry"
-          ) {
-            push(anonName, declaredName(d) ?? "")
+        if (body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const d = body.namedChild(i)
+            if (!d) continue
+            if (
+              d.type === "property_declaration" || d.type === "function_declaration" ||
+              d.type === "class_declaration" || d.type === "object_declaration" ||
+              d.type === "enum_entry"
+            ) {
+              push(anonName, declaredName(d) ?? "")
+            }
           }
         }
       }
