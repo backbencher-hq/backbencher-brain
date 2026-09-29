@@ -35,8 +35,11 @@
 
 | | count |
 | --- | --- |
-| Clean files in the universe (312 corpus + 8 fixtures) | 320 |
+| Clean files measured (312-file corpus + 8 fixtures) | 320 |
+| **Clean files in the WIDE corpus** (`clean-wide-manifest.txt`) | **2,179** |
 | AST nodes over the 312-file corpus | 331,079 |
+| **AST nodes over the 2,179-file corpus** | **3,107,410** |
+| **files the pinned grammar parses with no ERROR** | **1,524 of 2,179 (69.9%)** |
 | distinct node types the grammar declares | 185 (139 named slots → **137** distinct named names) |
 | named types occurring in the corpus | 134 |
 | named types the analyzer HANDLES, each fixture-backed | **99** (98 occur in the corpus; `qualified_identifier` is fixture-only) |
@@ -412,7 +415,15 @@ handled types are now fixture-backed, and the gate says so on every run.
 
 ## Known limits, stated
 
-1. **`index_access` emits nothing** (307 corpus sites) — spec gap `CL-G1`. An array
+0. **30.1% of real Clean files do not parse under the pinned grammar.** 655 of the
+   2,179 wide-corpus files contain at least one ERROR node (25,683 in total), from
+   the compiler's `<<@` directive, the `import code from` FFI form, `*`-parameter
+   synonyms, mixed-arity class contexts, several names before one `::`, and nine
+   other sampled shapes (`clean-census.ts` reports the line; the shapes are in the
+   review). This is a grammar limitation and it caps the whole lane: for nearly a
+   third of real Clean the analyzer reasons about a damaged tree. Every percentage
+   in this document is a percentage OF WHAT PARSED.
+1. **`index_access` emits nothing** (2,823 corpus sites) — spec gap `CL-G1`. An array
    index is a real operation on the indexed value's type and the analyzer does not
    know that type. Naming the receiver's NAME would be a `uses` edge to a value,
    which is the FP family the lane forbids. Recorded, not ruled.
