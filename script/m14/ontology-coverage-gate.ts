@@ -141,11 +141,16 @@ const JSON_RULED: Ruled[] = [
   { type: "implements", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["implements_clause", "extends_clause", "superclass"], describe: "a supertype clause" },
   { type: "instantiates", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["new_expression", "object_creation_expression", "constructor_invocation"], describe: "a constructor call" },
   { type: "overrides", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["redefinition", "override_specifier"], describe: "a second declaration replacing a prior one" },
-  // `calls` and `exports` are here for completeness but are NOT grammar questions:
-  // json has no functions to call and no export mechanism, so no node type could
-  // carry either. They are listed so the gate reports on all ten.
+  // `exports` WAS here and was removed: it was ruled on a grammar inventory ("no
+  // export_statement node") and that is the same unsound reasoning that produced the
+  // wrong `imports` ruling. A grammar cannot see a CONVENTION, and a Node manifest's
+  // `exports`/`main`/`bin` are conventions written as ordinary object keys. The audit
+  // found 1 of 36 manifests carrying `exports`, so the mass is small and the
+  // principle is not: it is emitted now, and the gate re-measures rather than
+  // trusting this note.
+  // `calls` stays ruled: json has no functions to call, and no convention supplies
+  // one. It is listed so the gate reports on all ten types.
   { type: "calls", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["function_definition", "method_definition", "call_expression"], describe: "a function definition or call" },
-  { type: "exports", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["export_statement", "export_clause"], describe: "an export declaration" },
   {
     // `imports` is the one that is NOT settled by the grammar, and it is worth
     // stating why. The grammar has no import node, but that is the wrong question:
