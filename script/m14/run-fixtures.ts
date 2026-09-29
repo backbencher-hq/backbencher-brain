@@ -512,6 +512,38 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+
+    for (const want of exp.expectTaintSinks ?? []) {
+      // Mirror of expectTaintSources, for the SINK payload. The source side got
+      // this gate with the TS T9 wave; the sink side had NONE, which is how
+      // `re.exec(input)` (RegExp.prototype.exec) and any project-local
+      // `execute(q)` stayed reported as command_injection / sql_injection for
+      // the whole life of the analyzer — the false positive was simply not
+      // checkable. { symbol, includes?, notIncludes?, includesVuln? } over
+      // taintSinks snippets (and optionally the vulnerability_type).
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const tk: any[] = (sym as any)?.taintSinks ?? []
+      for (const tInc of want.includes ?? []) {
+        if (!tk.some((t: any) => (t.snippet ?? t) === tInc)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include "${tInc}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const tNot of want.notIncludes ?? []) {
+        if (tk.some((t: any) => (t.snippet ?? t) === tNot)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include "${tNot}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.includesVuln ?? []) {
+        if (!tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.notIncludesVuln ?? []) {
+        if (tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+    }
     for (const want of exp.expectSymbolRanges ?? []) {
       // Vue V1 wave (H3): pin line+byte coherence of a symbol range.
       // { symbol, ownerName?, startLine?, startColumn?, endLine?, endColumn?,
@@ -786,6 +818,19 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
+            // M14 (#888, html): an OBJECT payload compares by value. `range` is the one that
+            // matters — an import's line is what makes it checkable against the source, and
+            // the pre-fix html analyzer published the ELEMENT's range rather than the
+            // ATTRIBUTE's, so a multi-line start tag produced a wrong import line. With
+            // identity comparison a pin naming `range` could never match, which is exactly
+            // how that defect stayed unpinned. No existing pin names an object field on an
+            // import, so this changes no pin's existing meaning.
+            // Re-applied 2026-09-29 from origin/main during the merge. It is COMPLEMENTARY to
+            // the `note` clause above, not competing: upstream lacked the `note` clause
+            // (erlang ER3) and this side lacked the object comparison (html #888), so each side
+            // passed its own lane and failed the other's — the clearest evidence yet that a
+            // merge cannot be resolved by picking a side.
+            if (v !== null && typeof v === "object") return JSON.stringify(imp[k]) === JSON.stringify(v)
           return imp[k] === v
         }),
       )
@@ -930,6 +975,31 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
       )
       if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+    }
+
+    for (const want of exp.expectErrorCount ?? []) {
+      // M14 (#888, html): the only pre-existing channel for this was
+      // `expectErrors`, which is a >=1 match — so a lane that reported the SAME
+      // parse error twice passed it. That is exactly the html defect the parse
+      // walk carried: the analyzer walked for ERROR/MISSING nodes with an
+      // UNBOUNDED stack while the engine walks the same tree with a cap of 50,
+      // and a 300-line broken file published 350 warnings for 300 lines. Two
+      // copies of one error are indistinguishable to `expectErrors` and obvious
+      // to a count, so the count is the channel the class needed.
+      // `{ equals: N }` for the total, `{ atLeast: N }` / `{ atMost: N }` for a
+      // bound — the same shape `expectSymbolCount`'s `equals` uses, plus bounds
+      // because a cap is a bound and not a constant.
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const n = errList.length
+      if (want.equals !== undefined && n !== want.equals) {
+        problems.push(`expected ${want.equals} parse error(s); got ${n}`)
+      }
+      if (want.atLeast !== undefined && !(n >= want.atLeast)) {
+        problems.push(`expected at least ${want.atLeast} parse error(s); got ${n}`)
+      }
+      if (want.atMost !== undefined && !(n <= want.atMost)) {
+        problems.push(`expected at most ${want.atMost} parse error(s); got ${n}`)
+      }
     }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
