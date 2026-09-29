@@ -140,17 +140,35 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     evidence: "Impact derives from brain_relationship rows via the same engine the editor impact panel uses.",
   },
   bb_cross_language: {
-    returns: ["Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier", "Declared-absent result when no stored cross-language rows exist"],
-    errors: ["Missing symbol", "Symbol not found in the index (declared, not an empty set)"],
-    limitations: ["Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts", "Coverage depends on the analyzers that produced cross-language rows"],
-    performance: "Bounded by the stored cross-language rows for the symbol; no graph traversal.",
+    returns: [
+      "One fact per stored cross-language row touching the name, each naming BOTH ends — the copy of the requested name it came from (`self`: symbol, file, language, line) and the counterparty (`other`: symbol, file, language, line) — plus the stored `rowId`, the direction, the bridge, the evidence tier and the confidence",
+      "`copies`: every indexed symbol that carries the name, with its file, language, line and cross-row count, plus `ambiguous` and `ambiguityNote` when the index holds more than one (the index has one symbol per file/name/line, so a common name is many symbols)",
+      "Declared absent only when NO copy of the name holds a stored cross-language row, with the copy count in the note",
+      "Declared truncation: `truncated`, `truncationReason` and `totalCountIfKnown` when the `limit` bounded the answer; `unpairableRowCount` and `collapsedRowCount` report rows that could not name a pair and rows matched from both directions",
+    ],
+    errors: ["Missing or blank symbol", "Symbol not found in the index (declared, not an empty set)", "limit outside the declared 1..1000 range (refused, never clamped silently)"],
+    limitations: [
+      "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts",
+      "Coverage depends on the analyzers that produced cross-language rows — this tool reports what was stored, nothing more",
+      "A name is many symbols: the answer is the UNION over every copy, never a silent choice among them. Narrow with the `copies` list — every fact names the copy it came from",
+      "`bridge` is the stored `bridge_mechanism`. On a real polyglot corpus it is almost always the indexer's `name-resolution` placeholder, which means two identifiers matched by name — not that the two languages communicate by that mechanism. Weigh it with `tier` and `confidence`",
+      "A row whose endpoint file has no detected language cannot name a pair; those rows are counted in `unpairableRowCount` and never dressed up with a guessed language",
+    ],
+    performance: "Two indexed queries (the stored cross-language rows for the name, and every symbol carrying the name), no graph traversal; the response is bounded by `limit` and declares what it dropped.",
     safety: "Read-only. It does not modify source files or index data.",
-    evidence: "Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section.",
+    evidence: "Only brain_relationship rows with is_cross_language=1, filtered by the row's own project_id, classified by the single evidence-tier rule in src/lsp/evidence_tier.ts — the same stored rows and the same rule as the editor cross-language hover section, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over a real polyglot corpus (script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json).",
   },
   bb_annotate: {
-    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for missing symbol, empty body, or over-limit body"],
-    errors: ["Missing or unknown symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
-    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream"],
+    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for a missing/blank symbol, an empty body, or an over-limit body"],
+    // Honesty: this tool does NOT require the symbol to exist in the index. It is
+    // a free-form note store — an agent may annotate before a symbol is indexed,
+    // or a name the analyzer did not classify — so "unknown symbol" is a
+    // declared acceptance, not a refusal. The previous claim ("Missing or
+    // unknown symbol") was a doc-truth lie: the handler only ever refused a
+    // blank symbol, and a symbol absent from brain_symbol stored with
+    // stored:true. Corrected to the code's real behavior.
+    errors: ["Missing or blank symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
+    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream", "Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given"],
     performance: "Constant-time store write bounded by the 2000-char body limit.",
     safety: "Write-capable against the annotation store only. It never modifies source files.",
     evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.",
@@ -158,7 +176,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_annotations: {
     returns: ["Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)", "Declared-absent result when none exist — absence is never an error"],
     errors: ["limit outside the declared 1-200 range"],
-    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream"],
+    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream", "Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them"],
     performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
     safety: "Read-only. It does not modify source files, index data, or annotations.",
     evidence: "Rows come from brain_annotation with provenance fields preserved.",

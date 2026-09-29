@@ -1,6 +1,6 @@
 # `bb_annotate`
 
-Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph). To change source code use bb_edit; to read notes back use bb_annotations.
+Attach an agent-authored annotation to a symbol in the shared index. Provenance is enforced: the row records author class 'agent' (never spoofable), the calling tool identity, and timestamps. Re-annotating the same symbol+path updates the note in place — one note per author per location, enforced by a unique index over (project, symbol, author, path). The symbol is not checked against the index: a note may name anything, and a typo'd name is stored as given. Annotations are opinions layered on evidence, never index facts, and surface in the editor where the human reads (hover + graph). To change source code use bb_edit; to read notes back use bb_annotations.
 
 ## Contract
 
@@ -44,7 +44,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 ## Returns
 
 - Stored annotation id and provenance (tool identity, timestamp)
-- Declared refusals for missing symbol, empty body, or over-limit body
+- Declared refusals for a missing/blank symbol, an empty body, or an over-limit body
 
 ## Examples
 
@@ -52,7 +52,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 ## Errors
 
-- Missing or unknown symbol
+- Missing or blank symbol
 - Empty body (a refusal, not a silent no-op)
 - Body exceeds the declared 2000-char limit
 
@@ -60,6 +60,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 - Annotations are opinions layered on index evidence, never index truth
 - Annotation store semantics are owned by the M28 workstream
+- Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given
 
 ## Performance
 
