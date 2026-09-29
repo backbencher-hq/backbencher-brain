@@ -879,6 +879,52 @@ class Host
     )
   }
 
+  // ── GO-BARE-CALLABLE-SET (round 5: what a bare callee may resolve to) ──
+  // Two classes that only a tree the COMPILER would reject can reach, so no
+  // fixture may hold them (a non-compiling fixture would make every other pin
+  // in the lane untrustworthy) — which is exactly the situation the go lane
+  // recorded for `go-cycle-probe` (a hang cannot be fixture-pinned) and for
+  // `go-914-classify` (a harness pin, not a fixture).
+  //
+  // (1) An INTERFACE METHOD name is not a package-scope callable. A
+  //     `method_spec` is published as `kind: Method`, and the analyzer's
+  //     declared-callable set accepted it, so a name existing ONLY as an
+  //     interface method resolved and published a `calls` edge the F5 oracle
+  //     could not derive (UNEXPLAINED — the C5 asymmetry class, the mirror of
+  //     #914). `oracleForbid` is on: the oracle deriving it too would mean the
+  //     two sides had mirrored the same wrong rule and the lane could not see
+  //     the defect at all.
+  // (2) A type does not implement ITSELF. The oracle has always carried that
+  //     guard; the analyzer did not, so duplicate declaration names — which
+  //     tree-sitter-go accepts and error recovery produces — yielded
+  //     `implements I -> I`.
+  {
+    const goCfg = { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: ".go" }
+    const src = [
+      `package probe`,
+      ``,
+      `type I interface{ Handle(x int) error }`,
+      ``,
+      `var _ = Handle(1)`,
+      ``,
+      `func g() { Handle(1) }`,
+      ``,
+      `type H interface{ Loop() }`,
+      ``,
+      `type H struct{}`,
+      ``,
+      `func (h *H) Loop() {}`,
+      ``,
+    ].join("\n")
+    await probeLang("F9-PROBE-GO-BARE-CALLABLE-SET", "go",
+      "a bare callee resolves to a DECLARED function or method only: an interface-method name is not callable (package-scope and body sites alike), and a type never implements itself — the same rule the F5 oracle already applies",
+      goCfg, "deriveGoImplements", src,
+      [],
+      ["calls:Handle", "implements:H->H"],
+      { oracleForbid: true },
+    )
+  }
+
   // ── GO-IMPL-SIGNATURE (#914 round 4: the implements oracle) ─────────────
   // Real defects, all four found by classifying every remaining `implements`
   // disagreement on BOTH pinned corpora (go-tools 9 MISSING + 2 UNEXPLAINED,

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "kind": "r_fixture_set",
+  "why": "the differential and the mutation run are only evidence if they can be re-run; the fixture sources and the ground truth are committed and pinned by hash",
+  "dir": "validation/m14/fixtures/r",
+  "groundTruth": "validation/m12/ground-truth/r-differential.json",
+  "groundTruthSha256": "98dc81ba77d14f01b80d81bcf600211d21cf2b48a934814015ece449ada06c7b",
+  "fixtureCount": 16,
+  "fixtures": [
+    {
+      "file": "F01-assignments.R",
+      "sha256": "de0d2012750b052c1dd62fdf65bcd87f760f875a76e97681009c068096e941dd"
+    },
+    {
+      "file": "F02-s3.R",
+      "sha256": "6c7a033a3d8a03554e2e964201d2d317292319a4e75c8f3442f091676260c8a5"
+    },
+    {
+      "file": "F03-r6.R",
+      "sha256": "3a276f4530bcdc8a2b66d403f0988716389d3bdd1f5ae277bc9b77c73da0219b"
+    },
+    {
+      "file": "F04-s4.R",
+      "sha256": "ad5dc9deb78f56406ecb0ccd10f09a9178e2c957312879ec7cc30457add7706d"
+    },
+    {
+      "file": "F05-r5.R",
+      "sha256": "fc70f03ee27dfaea0f36073e787cf14e51697a9befeca277ee73ece4f369fd7e"
+    },
+    {
+      "file": "F06-s7.R",
+      "sha256": "0da9cf1bd6bed895f958ff144e8b711f4e1d8f8c6f2346099fb6a6b4eb7c3f80"
+    },
+    {
+      "file": "F07-imports.R",
+      "sha256": "62728ab64f4490f252bc16679267b6084bd39782a8e691bccc2772f245ecb4cc"
+    },
+    {
+      "file": "F08-closures.R",
+      "sha256": "7e8745d8f0b11d8a35699654ad8d8a475d8c469b55875c26fd830911f032a606"
+    },
+    {
+      "file": "F09-negative.R",
+      "sha256": "fc3113208224aa435976549cdb4903f02cff3ebb8a302be3877ef24f1ada629f"
+    },
+    {
+      "file": "F10-literals.R",
+      "sha256": "ba33eeb52b471b8862aaac5b211fa340166332022ae355dcd1d856e19e3358b9"
+    },
+    {
+      "file": "F11-triple-colon.R",
+      "sha256": "84697fd86d86b172283021ebeb09adeef8e857a3f21d578e66de52448d08c5f8"
+    },
+    {
+      "file": "F12-edges.R",
+      "sha256": "fba891d091ad1f1efa01020c1fa1a1d65dd31a6f1f3a2adc366ba0208745cac0"
+    },
+    {
+      "file": "F13-invalid-r.R",
+      "sha256": "e9b545536ef05f9639fe692de8f384231f1596679d94df9e74080e0dcdd9c1f8"
+    },
+    {
+      "file": "F14-local-boundary.R",
+      "sha256": "32b854f58239ad1b13a5126d73031c3c0685ba7d9d9157732ccc13654ee9f3da"
+    },
+    {
+      "file": "F15-dotdot.R",
+      "sha256": "838530292a6d616c0c5ab8d106d5fc5e8b71ac069a778ca3498dc2e8223bcf48"
+    },
+    {
+      "file": "F16-runtime-semantics.R",
+      "sha256": "6e4d4474ea75a3c0299c7fbd4f74a8f7f8e96fa079a997b97c4855a27e91e4e4"
+    }
+  ],
+  "setSha256": "f112088ca3c83d1490d8284f6dca17318c2a24840f8bf0999a6b72d19b9ca769",
+  "truthSource": "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
+  "reRun": "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
+  "spotCheck": "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-28T22:00:48.889Z",
+    "contentSha256": "116a97b990b57d8007ec9114d05d87789d8562429bfddb2b4ca40605485fbc62"
+  }
+}

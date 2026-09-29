@@ -171,28 +171,72 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-graphql/src/tree_sitter/alloc.h
 !grammars/tree-sitter-graphql/src/tree_sitter/array.h
 
-# --- from the m60 grammar-governance merge: the same trap, two more grammars ---
+# M60 Make wave (2026-09-27). tree-sitter-make vendors `src/parser.c` (928 KB)
+# and the same hermeticity argument as the lanes above applies with EXTRA force
+# here: this lane's central claim IS the source<->wasm identity proof, and that
+# proof is not checkable without the generated source. `src/parser.c` is
+# `#include "tree_sitter/parser.h"`, so committing parser.c without the headers
+# leaves the tracked set internally inconsistent — a fresh clone would not build
+# it and the pin could not be re-derived. The DIRECTORY must be re-included
+# before its contents can be: git does not descend into an excluded directory, so
+# negating the headers alone is silently a no-op.
+!grammars/tree-sitter-make/src/
+!grammars/tree-sitter-make/src/grammar.json
+!grammars/tree-sitter-make/src/node-types.json
+!grammars/tree-sitter-make/src/parser.c
+!grammars/tree-sitter-make/src/tree_sitter/
+!grammars/tree-sitter-make/src/tree_sitter/parser.h
+!grammars/tree-sitter-make/src/tree_sitter/alloc.h
+!grammars/tree-sitter-make/src/tree_sitter/array.h
+# tree-sitter-proto (amaanq/tree-sitter-proto @ e9f6b43, vendored AND PATCHED by
+# the protobuf lane) needs the same three roles graphql took, and for the same
+# reasons stated there: the two GENERATED JSONs, because `sourceVsWasmFor` needs
+# the pair to run the offline source<->wasm proof and without them the check
+# reports "not applicable" and the lane has no such proof at all; `src/parser.c`
+# because `measureVendored` hashes EVERY file in the tree, tracked or not, so an
+# untracked parser.c would turn the gate red after any `tree-sitter generate` —
+# 299 KB here, the same call graphql made at 283 KB and hcl at 600 KB, and the
+# opposite of nim at 41 MB. The DIRECTORY has to be re-included before its
+# contents can be: git does not descend into an excluded directory, so negating
+# the files alone is silently a no-op (it tracked 0 of them and reported no
+# error). tree-sitter.json is NOT ignored and is tracked — upstream has none, and
+# without it the CLI falls back to ABI 14 and `tree-sitter build --wasm` refuses.
+!grammars/tree-sitter-proto/src/grammar.json
+!grammars/tree-sitter-proto/src/node-types.json
+!grammars/tree-sitter-proto/src/parser.c
+!grammars/tree-sitter-proto/src/tree_sitter/
+!grammars/tree-sitter-proto/src/tree_sitter/parser.h
+!grammars/tree-sitter-proto/src/tree_sitter/alloc.h
+!grammars/tree-sitter-proto/src/tree_sitter/array.h
 
-# Same trap, second grammar: tree-sitter-css ships a hand-written external scanner
-# (src/scanner.c — DESCENDANT_OP, PSEUDO_CLASS_SELECTOR_COLON, ERROR_RECOVERY).
-# Without it the tracked tree cannot rebuild the wasm, and the wired wasm is a
-# LOCAL build of grammars/tree-sitter-css/grammar.js (two patched hunks), so the
-# scanner is now load-bearing for CSS exactly as it is for cpp. Found while
-# vendoring tree-sitter-css for the CSS lane's url(../..) parse class.
+# `libxslt/` is a 2,245-file git clone with its OWN `.git`, checked out as a
+# dependency. Nothing ignored it, which put it one `git add -A` away from
+# committing an entire dependency history as ordinary files — in a repo where
+# `node_modules` is a tracked SYMLINK and one mistaken add has already caused
+# real damage (see the `node_modules` comment above). A checkout is not source.
+libxslt/
+
+# `*.tmp-*` is a crashed or killed run's partial output: `M14.0.F8.json.tmp-2831056`
+# was 0 bytes. Same killed-run failure mode the Lua mutation harness just grew a
+# sidecar for, in a place with no sidecar to repair from.
+*.tmp-*
+# — the C lane's generated pair, and the reason it is tracked is hermeticity
+# rather than size. `measureVendored` hashes EVERY file in the vendored tree,
+# tracked or not, and the pin's source↔wasm proof runs on exactly these two JSONs.
+# Before they existed the C lane had NO offline proof that its wired bytes were a
+# build of its own source: `sourceVsWasmFor` reported "not applicable", and the
+# vendored tree held only grammar.js/LICENSE/package.json/tree-sitter.json.
+# `src/parser.c` (3.9 MB, rebuilt by `tree-sitter generate` from grammar.js) and
+# `src/tree_sitter/` stay ignored, so the tracked set is exactly the 6 files the
+# gate hashes and the recorded digest does not move on a regeneration.
+!grammars/tree-sitter-c/src/node-types.json
+!grammars/tree-sitter-c/src/grammar.json
+
+# --- carried forward from the m60 grammar-governance line: three entries the other
+# laptop's wave had not reached. Same trap, same reason: each is SOURCE, not build
+# output. `css/src/scanner.c` carries DESCENDANT_OP / PSEUDO_CLASS_SELECTOR_COLON /
+# ERROR_RECOVERY; `html/src/tag.h` is the 126-entry tag table the scanner looks names
+# up in, so it decides whether <LINK> is a void element at all. Without them the
 !grammars/tree-sitter-css/src/scanner.c
-
-# Third grammar, same trap: tree-sitter-html's tag vocabulary and its external
-# scanner are BOTH hand-written source (`src/tag.h` is the 126-entry tag table the
-# scanner looks names up in, and `src/scanner.c` is what tokenises tag names at
-# all) — without them the tracked tree cannot rebuild the wasm, and the tag table
-# is exactly the file that decides whether `<LINK>` is recognised as a void
-# element. Found while vendoring tree-sitter-html for #288: the html lane's whole
-# case/void behaviour is a property of these two files, so a vendored copy that
-# omitted them would be provenance theatre. NEITHER is modified from upstream —
-# the committed wasm was measured to behave identically to a fresh build of this
-# exact source — so this vendoring exists to make the provenance checkable, not to
-# carry a patch.
 !grammars/tree-sitter-html/src/scanner.c
 !grammars/tree-sitter-html/src/tag.h
-validation/m60/grammar-survey.cache.json
-node_modules/

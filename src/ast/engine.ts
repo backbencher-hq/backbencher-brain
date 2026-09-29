@@ -227,7 +227,11 @@ export namespace ASTEngine {
 
     // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     nim: "__generic__",
-    protobuf: "__generic__",
+    // Protobuf: the vendored, patched tree-sitter-proto. See
+    // grammars/tree-sitter-proto/README.md — the node surface is snake_case and
+    // is a contract, and this is the ONE routed language whose grammar had to
+    // be cloned and patched because no protobuf grammar is published on npm.
+    protobuf: "tree-sitter-protobuf",
   } as const
 
   type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES
@@ -241,8 +245,23 @@ export namespace ASTEngine {
       startColumn: number
       endLine: number
       endColumn: number
+      /**
+       * Start of the range as reported by the parser. For web-tree-sitter this is a UTF-16
+       * CODE-UNIT offset, NOT a byte offset -- the two coincide for ASCII and diverge by
+       * the surplus UTF-8 bytes before the position otherwise, and upstream tree-sitter
+       * reports bytes. Passed through unchanged so existing consumers do not move; use
+       * `byteStart` when a byte offset is what is needed.
+       *
+       * NOTE: a second, near-identical `UniversalSymbol` exists in src/ast/types.ts and is
+       * imported by nothing. This declaration is the live one.
+       */
       startIndex?: number
+      /** End of the range, in the same unit as `startIndex`. */
       endIndex?: number
+      /** Start of the range in BYTES. Optional: populated per analyzer. */
+      byteStart?: number
+      /** End of the range in BYTES. Optional: populated per analyzer. */
+      byteEnd?: number
     }
     scope?: string // Class/namespace/module scope
     visibility?: "public" | "private" | "protected" | "internal" | "global" | "local" | string
@@ -839,6 +858,10 @@ export namespace ASTEngine {
         }
         case "make": {
           languageWasmPath = resolveWasm("tree-sitter-make/tree-sitter-make.wasm")
+          break
+        }
+        case "protobuf": {
+          languageWasmPath = resolveWasm("tree-sitter-protobuf/tree-sitter-protobuf.wasm")
           break
         }
 
@@ -1761,6 +1784,10 @@ export namespace ASTEngine {
         return new (await import("./real-hcl-analyzer")).RealHclAnalyzer()
       case "graphql":
         return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
+      // Protobuf: the vendored, patched tree-sitter-proto (see the name map
+      // above and grammars/tree-sitter-proto/README.md).
+      case "protobuf":
+        return new (await import("./real-protobuf-analyzer")).RealProtobufAnalyzer()
       case "zig":
         return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
       case "nim":
@@ -2052,7 +2079,12 @@ export namespace ASTEngine {
       if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
         try {
           const fs = require("fs")
-          const content = fs.readFileSync(r.fileId, "utf8")
+          // Decoded the same way the indexer decodes, or the offsets computed here
+          // are offsets into a DIFFERENT string than the one that was parsed — a
+          // UTF-16 file's offsets would be measured against NUL-interleaved text
+          // while the tree was built from the transcoded text, and every symbol in
+          // the file would be misplaced. See src/util/source-text.ts.
+          const content = decodeSourceText(fs.readFileSync(r.fileId)).text
           const lines = content.split("\n")
           let offset = 0
           for (let i = 0; i < Math.min(r.lineStart, lines.length); i++) {

@@ -2038,7 +2038,6 @@ export async function storeResults(
            "this", "super", "self", "Self", "me", "My",
            "root", "program", "source_file", "module_declaration",
            "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-           "unknown",
          ])
          const isFallbackResult = !!result.fallback
          if (isFallbackResult) {
@@ -2052,6 +2051,20 @@ export async function storeResults(
            SYMBOL_NAME_DENYLIST.add("undefined")
            SYMBOL_NAME_DENYLIST.add("NaN")
            SYMBOL_NAME_DENYLIST.add("Infinity")
+           // `unknown` moved here from the universal set, and it is the one entry
+           // above that was not noise "everywhere" — it is noise from a REGEX
+           // FALLBACK, which is exactly what this block is for. The rationale
+           // three lines up already says it: language-literal words are legitimate
+           // identifiers in verified analyzer output, and only the fallback path
+           // picks them up as noise. `unknown` is a real method name — Ruby's
+           // Logger has five standard severities and `unknown` is one of them, so
+           // `ActiveSupport::Logger#unknown` (activesupport/lib/
+           // active_support/colorize_logging.rb:46) was parsed, stored, and then
+           // dropped here, and never reached the graph. Same for `Status.unknown`
+           // in protobuf/graphql lanes and an `unknown` field in a schema. It also
+           // matches the JS-family treatment right below: `undefined` is already
+           // gated rather than universal for precisely this reason.
+           SYMBOL_NAME_DENYLIST.add("unknown")
          }
          if (JS_FAMILY.has(fileLang)) {
            SYMBOL_NAME_DENYLIST.add("global")
