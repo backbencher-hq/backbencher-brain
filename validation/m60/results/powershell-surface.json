@@ -1,8 +1,13 @@
 {
   "gate": "M60.powershell-surface",
   "title": "PowerShell analyzer surface over the pinned real corpora",
-  "at": "2026-09-28T08:30:12.639Z",
-  "commit": "b5756b07e7f17654c0e6a7dc64857b2123189d8c",
+  "at": "2026-09-29T03:03:45.693Z",
+  "commit": "5b123be70e2f8bc42d55a70a3e9b7acaf2fff095",
+  "loadContext": {
+    "loadAvg1": 20.3,
+    "cores": 8
+  },
+  "perfIsQualified": false,
   "sampleLimit": 60,
   "corpora": [
     "powershell",
@@ -51,9 +56,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 11188,
-        "perFileMs": 228.326,
-        "factsPerMs": 1.306
+        "wallMs": 4136,
+        "perFileMs": 84.401,
+        "factsPerMs": 3.534
       }
     },
     {
@@ -98,9 +103,9 @@
         "samples": []
       },
       "perf": {
-        "wallMs": 1399,
-        "perFileMs": 58.271,
-        "factsPerMs": 2.053
+        "wallMs": 727,
+        "perFileMs": 30.304,
+        "factsPerMs": 3.947
       }
     }
   ],
@@ -120,10 +125,12 @@
     "reservedTargets": 0,
     "perFileMs": [
       {
-        "repo": "powershell"
+        "repo": "powershell",
+        "ms": 84.401
       },
       {
-        "repo": "ansible"
+        "repo": "ansible",
+        "ms": 30.304
       }
     ]
   },

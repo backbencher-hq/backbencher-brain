@@ -65,6 +65,7 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import { execSync } from "node:child_process"
 import * as WTS from "web-tree-sitter"
+import * as os from "node:os"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
@@ -247,6 +248,19 @@ const out = {
   title: "PowerShell analyzer surface over the pinned real corpora",
   at: new Date().toISOString(),
   commit: safeCommit(),
+  // #871 §1, the shape the differential already uses: a perf number without the load
+  // it was taken under is unreadable, and this artifact was publishing one. `perFileMs`
+  // moved 228 -> 246 across two runs of an UNCHANGED analyzer on an 8-core box whose
+  // loadavg1 sat at 22-30, which is contention, not the lane. A reader had no way to
+  // tell, because nothing here recorded the machine. So the number now carries its own
+  // context, and `perfIsQualified` says outright when the draw is too loaded to be a
+  // budget row. The F9 section-F gate wants a pinned `avgMsPerFile`; a value taken at
+  // this load must not be the one it gets.
+  loadContext: {
+    loadAvg1: Number(os.loadavg()[0].toFixed(2)),
+    cores: os.cpus().length,
+  },
+  perfIsQualified: os.loadavg()[0] < 8,
   sampleLimit: SAMPLE,
   corpora: REPOS,
   rows,
@@ -259,7 +273,12 @@ const out = {
     unknownTargets: rows.reduce((s, r) => s + r.unknownTargets.count, 0),
     dupKeys: rows.reduce((s, r) => s + r.dupKeys.count, 0),
     reservedTargets: rows.reduce((s, r) => s + r.forbiddenTargets.count, 0),
-    perFileMs: rows.map((r) => ({ repo: r.repo, ms: r.perFileMs })),
+    // Pre-existing defect: this read `r.perFileMs`, but the value lives at
+    // `r.perf.perFileMs`. `r.perFileMs` is undefined, and `JSON.stringify` DROPS an
+    // undefined property, so the summary rendered as `[{"repo":"powershell"}, …]` — an
+    // empty-looking list that reads as a deliberate "no samples" rather than a broken
+    // read. The per-row `perf` block was always correct, which is why nothing caught it.
+    perFileMs: rows.map((r) => ({ repo: r.repo, ms: r.perf.perFileMs })),
   },
   method:
     "Candidates are each corpus's production (non-test) tracked .ps1/.psm1/.psd1 files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a different set says so instead of being compared. Every file goes through the production `parseFile`. `parseDamage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — `contains`, `overrides`, `extends`, `implements` — whose target matches no symbol in the same file. `calls`, `uses` and `instantiates` are excluded because a cmdlet is an external command and a `uses` edge may name a .NET member; including them made the first run report 3,604 of 9,485 rows, which measured nothing. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once. The owner IS part of the key: a local declared in two functions is two correct declarations, and a proxy that omits the owner reported 186 rows in the first run that were all of that shape. `reservedTargets` uses the reserved set owned by powershell-keyword-census.ts, and skips member-call edges.",
