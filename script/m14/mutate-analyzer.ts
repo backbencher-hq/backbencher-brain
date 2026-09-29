@@ -11469,6 +11469,44 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: ((r as any).relationships ?? []).filter((x: any) => !(String(x.type) === "overrides" && (x.metadata ?? {}).extendedClass !== undefined)) }),
   },
   {
+    id: "typescript/parameter-shadow-reference",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R12 regression: a parameter stops shadowing a same-named file-level symbol, so the reference pass resolves the body read to the wrong declaration. With `interface Deps { root: string }` in the file, `function f(root: string) { return root }` publishes `f->root` again \u2014 the graph recording a function as referencing an interface property it never touches, purely because its own parameter had that name. The pass resolves by NAME, and it already suppressed locally-bound names through `locals` (destructuring patterns and local declarators); a parameter was simply missing, and the fix belongs at the references guard rather than in `locals` because `locals` also gates the `uses` edge, where an edge to a parameter is wanted (interp-uses pins `greet -> name`). The transform re-adds a `references` edge from every symbol to any of its own parameter names that also exists as a file-level symbol \u2014 the exact pre-fix shape. parameter-shadows-file-symbol kills it, and its positive pins (`usesConst -> root`, `callsHelper -> helper`, `annotates -> Deps`) are what stop a fix that over-suppresses from passing.",
+    transform: (r: any) => {
+      const symbols = ((r as any).symbols ?? []) as any[]
+      const rels = ((r as any).relationships ?? []) as any[]
+      const names = new Set(symbols.map((s: any) => s.name))
+      const extra: any[] = []
+      const seen = new Set(rels.filter((x: any) => String(x.type) === "references").map((x: any) => `${x.source}|${x.target}`))
+      const word = (raw: string): string[] => {
+        const out: string[] = []
+        let tok = ""
+        for (let i = 0; i <= raw.length; i++) {
+          const ch = raw[i] ?? ""
+          const ok = (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_" || ch === "$"
+          if (ok) tok += ch
+          else { if (tok) out.push(tok); tok = "" }
+        }
+        return out
+      }
+      for (const s of symbols) {
+        for (const prm of s.parameters ?? []) {
+          const raw = typeof prm === "string" ? prm : ((prm as any)?.name ?? "")
+          for (const nm of word(String(raw))) {
+            if (nm === s.name) continue
+            if (!names.has(nm)) continue
+            const k = `${s.name}|${nm}`
+            if (seen.has(k)) continue
+            seen.add(k)
+            extra.push({ source: s.name, target: nm, type: "references", confidence: 1.0, metadata: {} })
+          }
+        }
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
+  },
+  {
     id: "typescript/commonjs-require-not-a-dependency",
     language: "typescript",
     defectClass: "finding-loss",
