@@ -170,3 +170,14 @@ grammars/tree-sitter-*/tree-sitter-*.wasm
 !grammars/tree-sitter-graphql/src/tree_sitter/parser.h
 !grammars/tree-sitter-graphql/src/tree_sitter/alloc.h
 !grammars/tree-sitter-graphql/src/tree_sitter/array.h
+# — the C lane's generated pair, and the reason it is tracked is hermeticity
+# rather than size. `measureVendored` hashes EVERY file in the vendored tree,
+# tracked or not, and the pin's source↔wasm proof runs on exactly these two JSONs.
+# Before they existed the C lane had NO offline proof that its wired bytes were a
+# build of its own source: `sourceVsWasmFor` reported "not applicable", and the
+# vendored tree held only grammar.js/LICENSE/package.json/tree-sitter.json.
+# `src/parser.c` (3.9 MB, rebuilt by `tree-sitter generate` from grammar.js) and
+# `src/tree_sitter/` stay ignored, so the tracked set is exactly the 6 files the
+# gate hashes and the recorded digest does not move on a regeneration.
+!grammars/tree-sitter-c/src/node-types.json
+!grammars/tree-sitter-c/src/grammar.json
