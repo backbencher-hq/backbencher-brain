@@ -71,7 +71,14 @@ export function sampleSetHash(relPaths: string[]): string {
 }
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
-const CORPUS_ROOT = "$HOME/fixtures/repositories"
+// The `process.env.BB_CORPUS_ROOT ??` prefix was dropped by the m48-recovery merge — it was
+// present at 2f1c2320 and f21e0978. Restored 2026-09-29, and it is not a style preference:
+// the hardcoded default does not exist on this machine, so without the override every run dies
+// at `corpus repo missing:` before reading a single file, and that message is indistinguishable
+// from a genuinely absent corpus — a misleading way to learn a path is wrong. Third instance of
+// the same merge signature in this one file (the csharp oracles, the lost braces, and now an env
+// lookup): all small, all silent, all load-bearing, and none of them visible to any gate.
+const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
 // Crash-resume journal for full sweeps: each completed lane is persisted
 // immediately (see the per-lane write in the sweep loop). Cleared after a
 // successful final evidence emit.
@@ -19968,8 +19975,28 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
     visit(root)
   }
   return edges
+  }
+
 
   // --- lanes carried through the consolidation from the other line
+  // -------------------------------------------------------------------------------------
+  // m48-recovery half-merge (2026-09-29). This run of lane entries arrived at the END of the
+  // file with its OPENING line lost, which left the module unparseable for EVERY language: 4
+  // syntax errors, all reported on one line, all with the same cause. `hcl: { wasm: ... }` at
+  // top level parses as a LABELLED STATEMENT, so the parser reports `Expected ";" but found
+  // ":"` at each property key in the entry -- a shape that points at the entry rather than at
+  // the brace that is missing, which is why it survived review.
+  //
+  // The block's own braces do NOT balance: `make: {` opens an object whose body was lost, so the
+  // file's trailing `}` was closing THAT, and the literal needed a closer of its own.
+  //
+  // `Object.assign(LANGS, {` rather than folding the entries into the literal at line 604: this
+  // is a two-line change to make on an inference, where moving ~70 lines across 20k of another
+  // lane's text is not, and it is trivially reversible if the intended shape was something else.
+  // Verified after the change: 40 LANGS entries, no duplicate keys, and all 6 recoverable lanes
+  // present with the ext their own notes specify.
+  // -------------------------------------------------------------------------------------
+  Object.assign(LANGS, {
 
   // M60 HCL wave (2026-09-26): hcl was ABSENT from every M14 surface, exactly as
   // sql was — no entry in this map, no directory in validation/m14/fixtures/,
@@ -19980,7 +20007,13 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
 
-  make: {
+  // `make` is NOT restored here: the merge truncated its entry mid-declaration, so `make: {`
+  // survives and its body does not. Writing one would mean inventing a wasm, analyzerFile,
+  // className, ext and routeByContent for a lane I have not measured. `make` was absent from
+  // LANGS before the merge, so leaving it out restores this lane to its pre-merge state rather
+  // than to a state that merely looks repaired. Its owner should re-add it with the ext their
+  // census actually measured.
+  // make: {
 
   // NIM wave (2026-09-27). `ext` carries all three extensions the pinned grammar
   // declares (tree-sitter.json -> file-types ["nimble","nims","nim"]) minus the
@@ -20040,5 +20073,5 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   // and the router's decision is the one that decides which analyzer runs, so
   // the lane takes every one of the seven and lets the router hand it to xml.
   xml: { wasm: "tree-sitter-xml.wasm", analyzerFile: "real-xml-analyzer", className: "RealXmlAnalyzer", ext: "xml,xsd,dtd,xsl,xslt,svg,rng" },
-}
+})
 
