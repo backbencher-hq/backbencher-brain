@@ -402,8 +402,43 @@ export default grammar({
     // widening the single-dash class would make an INVALID form parse. A native
     // command's `--flag=value` really is one token, so this is the faithful shape
     // rather than a permissive one.
+    // G15 (M60 #278): the parameter classes had no `0-9`, so any parameter whose name
+    // contains a digit was cut at the digit and the remainder was REINTERPRETED. The
+    // two consequences are NOT the same severity, and an earlier note in this file
+    // conflated them; measured on the PRODUCT runtime, not natively:
+    //
+    //   Get-Thing -Verbose $x   ok    calls -> Get-Thing
+    //   Get-Thing -A $x         ok    calls -> Get-Thing
+    //   Get-Thing -R2R $x       ERROR, no MISSING
+    //                            calls -> 2R          <- FABRICATED, and the real
+    //                                                   callee Get-Thing is LOST
+    //   Get-Thing -PS7 $x       ERROR, MISSING [>]
+    //   Get-Thing -Base64 $x    ERROR, MISSING [>]
+    //                            calls -> Get-Thing  <- callee CORRECT
+    //
+    // CORRECTION: an earlier version of this comment claimed the `-PS7` case "carries
+    // no ERROR node anywhere", on the strength of a native run that reported 0e/0m. On
+    // the product runtime it is ERROR + MISSING, so the damage census counts it, and
+    // the analyzer's facts for it are CORRECT — the damage is a spurious
+    // `redirected_file_name` in the tree that nothing reads. Only `-R2R` is an
+    // analyzer-visible defect. The two are the same missing character and they are not
+    // the same bug, and the difference is exactly what a count would have hidden.
+    //
+    // A second-order finding worth more than the patch: `-PS7` reports 0 ERROR and 0
+    // MISSING NATIVELY and ERROR + MISSING on web-tree-sitter 0.25.9. The native
+    // pre-filter this lane relies on therefore CANNOT see part of what G15 repairs.
+    // That is a limit of the instrument, not of the patch, and it is the same runtime
+    // skew G10 was bitten by.
+    //
+    // Adding digits cannot collide with the redirection operators, the only other
+    // tokens beginning with a digit: `file_redirection_operator` is
+    // choice('>', '>>', '2>', '2>>', ...) and none starts with a dash, while both
+    // branches here require `-+` first. The only newly reachable text is a dash-led
+    // digit (`-2`), which is not a valid PowerShell parameter. `-a=1` stays an ERROR
+    // on purpose: G8 admitted `=` to the DOUBLE-dash branch only, because
+    // `-Name=value` is not valid PowerShell.
     command_parameter: ($) =>
-      token(choice(/--[a-zA-Z_?\-`=]+/, /-+[a-zA-Z_?\-`]+/, '--')),
+      token(choice(/--[a-zA-Z_0-9?\-`=]+/, /-+[a-zA-Z_0-9?\-`]+/, '--')),
 
     _verbatim_command_argument_chars: ($) =>
       repeat1(choice(/"[^"]*"/, /&[^&]*/, /[^\|\r\n]+/)),
