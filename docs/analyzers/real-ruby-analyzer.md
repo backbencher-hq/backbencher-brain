@@ -104,10 +104,27 @@ disagreement between the repo's graph paths, two of which already returned every
 The remaining **49.5%** is not a type problem: it is edges whose target resolves to no symbol, which every
 graph query excludes. The structure is a language fact — `contains` and `overrides` resolve at 100% because
 both sides are declared symbols, `references` at 2.9% (a require target is a *path*) and `uses` at 5.0% (an
-ivar read targets `@foo`). `references` is the sharpest case: **1,194 edges emitted, stored, and
-returnable by no graph query.** The same facts sit in `brain_import`, which the graph does not join. The
-reachability figures are a **lower bound** on production resolution, which
+ivar read targets `@foo`). `references` is the sharpest case: **1,194 edges emitted, stored, and invisible to graph traversal.**
+The reachability figures are a **lower bound** on production resolution, which
 `parallel-indexer.ts resolveRelationships` does more thoroughly than this measurement — review §25.
+
+**Measured, and it changes the fix.** Splitting those `references` edges by require method over three
+corpora (rails, rubocop, mastodon) inverts the picture:
+
+| require method | share of edges | names a file in the project |
+|---|---|---|
+| `require_relative` | 8.9% | **100.0%** |
+| `require` (bare) | 89.4% | **0.0%** |
+| `autoload` / `load` | 1.8% | 0.0% |
+
+So most of the 2.9% is **correct**: `require "active_support"` names a gem that is not in the
+repository, and no join can turn it into an in-project symbol without fabricating one. The genuinely
+actionable slice is `require_relative`, and it is 100% actionable — every one of those targets is a real
+file. The blocker is that both resolvers (`storeResults:2931`, `resolveRelationships:3078`) are
+name-based only, and `brain_relationship` has no `target_file_id` for a file-level fact. Correcting the
+earlier proposal: the facts are not unreachable —
+`intelligence/analysis/dependencies.ts:85` already joins `brain_relationship + brain_import`; they are
+invisible to *graph traversal* specifically. Review §27.
 
 **All 8 of the emitted types now have an independent oracle derivation.** `contains` and `references`
 were in no audited set and had no derivation at all — ~34% of the payload, correct as emitted and verified
