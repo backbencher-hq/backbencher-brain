@@ -29,7 +29,7 @@
 | qualified/container name | ✅ | `ownerName` = the innermost enclosing DECLARATION (M14 ledger #867 ruling) for **every** nested symbol: functions, types, struct, fields, protocol/impl members — and, since EX-A10, nested `defmodule`/`defprotocol` themselves, which previously carried only `scope` (`contains MyApp -> MyApp.User` was emitted, the symbol field was not) |
 | range (start/end line + column) | ✅ | the declaration node; for a MERGED multi-clause head the extent runs to the **last clause's end** (EX-D16 — the same rule real-clean-analyzer.ts applies to a multi-clause `f x = …`) and every clause's exact range is published as `metadata.clauseRanges`, because a span cannot be discontiguous: 195 of 2,321 merged groups in elixir@024beb1b carry other declarations between their first and last clause |
 | parameters | ✅ (metadata only) | `def` signature `arguments` children; `name = default` collapses to the name |
-| isDeclaration | ✅ | `@callback`/`@macrocallback` (EX-D21) and a BODILESS `def` head (the protocol callback) are declarations, not definitions; a clause with a body makes the merged symbol a definition and the flag is removed. Structurally: no `do_block` and no `do:` pair inside the def's `arguments` |
+| isDeclaration | ✅ | `@callback`/`@macrocallback` (EX-D21) and a BODILESS `def` head (the protocol callback) are declarations, not definitions; a clause with a body makes the merged symbol a definition and the flag is removed. Structurally: no `do_block` and no `do:` pair inside the def's `arguments`. **Published twice, on purpose (EX-D24):** the top-level field AND `metadata.isDeclaration` — the pool worker carries exactly that one metadata key across the process boundary, so the top-level field alone left `brain_symbol.is_declaration` NULL for every elixir declaration (0 rows on a real index) |
 | callbackSpec | ✅ (metadata) | the `@callback name(args) :: type` text, merged into the sibling `def`'s symbol (one function, one symbol). The `::` operator is found by a depth-bounded search, because a `when` constraint wraps it |
 | visibility | ✅ | `defp`/`defmacrop` → `private`, else `public` |
 
@@ -120,8 +120,10 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 | gate | result |
 | --- | --- |
-| F3 fixtures | **59/59 PASS** |
-| F4 mutants | **81/81 CAUGHT** (a 15-mutant payload wave found **9 survivors** — holes in this lane's own suite — and all 9 are now pinned; +4 for the callback class) |
+| F3 fixtures | **60/60 PASS** |
+| F4 mutants | **83/83 CAUGHT** (a 15-mutant payload wave found **9 survivors** — holes in this lane's own suite — and all 9 are now pinned; +4 callback, +1 parenthesized operator, +1 store-seam) |
+| **Store round trip** (new gate class) | **CLEAN** — a real Elixir app through the production `indexProjectParallel`, read back in SQL: 0 symbols lost, 0 orphan members, **0** relationships with an unresolved source, **31/31** relationship sources equal the analyzer's declared source, 0 zero-lines, docstrings + `scope_kind` + `is_declaration` persisted, the merged multi-clause extent intact (22..23), 0 id-key collisions. Tool: `script/m14/tmp/elixir-store-roundtrip.ts` |
+| Id / placeholder / determinism audit | **0** id collisions on the store's own key (`name`+`line_start`) and **0** non-deterministic files across 10,745 symbols; **19** placeholder symbols on the elixir repo, all 19 genuinely dynamic (`def unquote(name)` and friends) — the one missed static name (`defmacro (..)`) is fixed |
 | F5 differential | 6 corpora, 360 files, **9,974 oracle edges: coverage 100.0%, MISSING 0, unexplained 0**; the same-sample A/B is **161 MISSING before → 0 after** |
 | M12 differential | re-emitted **69/69, precision 1.000, recall 1.000** |
 | Deep audit (oracle-blind) | line contract, source attribution, contains integrity, symbol sanity, edge surface and complexity: **CLEAN** on the 60-file ecto_sql slice (3,852 edges) |
@@ -156,7 +158,8 @@ nothing.
 
 ## Supported / unsupported constructs
 
-Supported: modules (nested, and OWNED by the parent since EX-A10), functions
+Supported: modules (nested, and OWNED by the parent since EX-A10), parenthesized
+operator definitions (`defmacro (..)`, EX-A15 — the operator token is a name), functions
 (def/defp/defdelegate preserving local
 names independently of remote `as:` targets, multi-clause heads merged with the
 whole-function extent and per-clause ranges), macros (defmacro/defmacrop/defguard/
