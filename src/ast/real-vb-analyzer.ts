@@ -348,6 +348,17 @@ export class RealVbAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (inner && inner.type === "identifier") return inner
         return cur
       }
+      if (cur.type === "array_type") {
+        // `Private _t As New Timers.Timer()` puts an `array_type` in
+        // `declared_type`, because the `()` reads as bounds. The NAME is the
+        // element type, and without this the field published
+        // `references _t -> "Timers.Timer()"` -- the whole expression, parens
+        // included, which is not a name in the file, not navigable, and
+        // unmatchable by any independent oracle. Found by auditing `references`,
+        // the label that had been the largest unverified class in the index.
+        const el = cur.childForFieldName("element_type")
+        if (el && el.id !== cur.id) { cur = el; continue }
+      }
       if (cur.type === "generic_name") {
         // The name is the first named child; the `(Of ...)` tail is not the name.
         const inner = this.nc(cur, 0)
