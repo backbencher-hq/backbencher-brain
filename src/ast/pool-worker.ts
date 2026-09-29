@@ -743,7 +743,15 @@ export async function parseFile(filePath: string, projectPath: string, context?:
               : typeof i.module === "string"
                 ? !i.module.startsWith(".") && !i.module.startsWith("/")
                 : !!i.isExternal
-        const line = i.range?.startLine ?? i.line ?? 0
+        // The import's LINE. `line_number` is the field every analyzer in the tree
+        // actually writes (types, go, ruby, python, yaml — 45 call sites, zero of them
+        // write `line`), and this read looked for `range.startLine` and `line` only, so
+        // every import in EVERY language arrived at the store with `line: 0`. Found by
+        // running a real `!include` file through `parseFile` rather than through the
+        // analyzer: the analyzer reported `line_number: 1` and the production entry
+        // reported `line: 0`. The fallback is additive, so an analyzer that does set
+        // `line` or `range.startLine` is unaffected.
+        const line = i.range?.startLine ?? i.line ?? i.line_number ?? 0
         return items
           .filter((name: string) => typeof name === "string" && name.length > 0)
           .map((name: string) => {

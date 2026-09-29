@@ -766,6 +766,9 @@
   "symbolsWithDocstring": 2500,
   "symbolsWithApiContractPath": 0,
   "symbolsWithQualifiedCalls": 10734,
+  "importsWithLine": "540/540",
+  "importsMissingLine": 0,
+  "importsMissingLineSamples": [],
   "imports": 540,
   "symbolsWithApiContractPathAtWorkerBoundary": 0,
   "seamFindings": [
