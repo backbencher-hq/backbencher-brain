@@ -47,10 +47,10 @@
     "uses": "R has no import-binding indirection distinct from the dependency itself; `references` and `imports` cover it, and evidence_tier counts `references` as a usage context."
   },
   "note": "Every number here is re-derived from the parse tree and the fixture source in this run. `lineNamesTarget` counts edges whose line actually contains the edge's target, which is the M59.A7/#825 correctness condition, not just the presence of a line. Names are validated against the identifiers the GRAMMAR produced, so R's real infix names ([, +, %&%, diag<-) are not mistaken for unknown symbols.",
-  "currentCommit": "df610c61b6ae821e365833526f10a76a3fe3f08e",
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-27T17:20:06.379Z",
-    "contentSha256": "0abf96a888fe2815b9acb135e86732ed2e35aed9c3b9cf9691e26f3092138caf"
+    "sealedAt": "2026-09-28T22:00:49.997Z",
+    "contentSha256": "0d1b97eee42811b5d6349a06c8dac454d88e744179fd811e4d35ccb0a0b29b4e"
   }
 }
