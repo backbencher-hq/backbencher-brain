@@ -44,7 +44,7 @@
 //                  with a declared note; a genuinely unknown symbol still
 //                  errors (never an empty set that would read as "no impact")
 
-import { graphTraversal, resolveGraphRootDetailed } from "../intelligence/graph/graph-engine"
+import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { AnalysisExclusions } from "../ast/analysis-exclusions"
 import type { GraphNode } from "../intelligence/contracts"
 
@@ -146,10 +146,17 @@ export interface ImpactResult {
    *  exact name exists, so `root.name === requested` is exactly "the name was
    *  an exact hit" and anything else is a containment match (or the declared
    *  member substitution, which the `resolution` record already describes).
-   *  `candidates` is how many stored symbols the name resolved among, counted
-   *  with the predicate of the winning step (the same number bb_graph
-   *  publishes, from the same resolver). */
-  rootMatch: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; candidates: number }
+   *
+   *  `nameMatches` counts the stored symbols whose name IS the requested one —
+   *  more than one means the name was ambiguous even when the hit was exact
+   *  (lodash `build` names eight; the resolver picked one and said nothing).
+   *  It is deliberately NOT the resolver's `candidates`: that number is counted
+   *  with the winning step's predicate, and for a containment match that means
+   *  re-running a `LIKE '%x%'` scan, which measured 30–420 ms per call on the
+   *  lane's corpora — a real cost on the highest-stakes read surface, paid for
+   *  a flag the `via` field already carries. This count is one indexed
+   *  equality. */
+  rootMatch: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
 }
 
 export interface ImpactDb {
@@ -506,21 +513,21 @@ export async function computeImpact(
           : result.root.name === symbolName
             ? "exact"
             : "fuzzy-containment",
-      candidates: await countRootCandidates(projectId, symbolName),
+      nameMatches: countExactNameMatches(db, projectId, symbolName),
     },
   }
 }
 
-/** How many stored symbols the requested name resolved among, counted with the
- *  predicate of the step that won (the engine's own resolver, so both doors
- *  publish the same number for the same name). Declared 1 when the resolver
- *  cannot answer — one row is certainly there, the answer is a flag, not a
- *  claim about the index, and an unreadable index is not a reason to fail an
- *  impact answer that was already computed. */
-async function countRootCandidates(projectId: string, symbolName: string): Promise<number> {
+/** How many stored symbols carry exactly this name. One indexed equality —
+ *  `brain_sym_proj_name_idx` — so the declaration costs a fraction of a
+ *  millisecond; a declared 1 when the index cannot answer, because the root
+ *  that was just walked is itself one such row. */
+function countExactNameMatches(db: ImpactDb, projectId: string, symbolName: string): number {
   try {
-    const { candidates } = await resolveGraphRootDetailed(projectId as never, symbolName)
-    return Number.isFinite(candidates) && candidates > 0 ? candidates : 1
+    const row = db
+      .prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ? AND name = ?")
+      .get(projectId, symbolName) as { c: number }
+    return typeof row?.c === "number" && row.c > 0 ? row.c : 1
   } catch {
     return 1
   }
