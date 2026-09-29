@@ -14,6 +14,12 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
 interface JsonContext {
+  /** The document node, so a manifest pass can read the root object without
+   *  re-walking the tree. An earlier version of the exports pass reached for
+   *  `(root as any).__node` instead — nothing ever set that, so the function was a
+   *  SILENT NO-OP that type-checked and did nothing, which is the worst shape a newly
+   *  written feature can have: it looks implemented. */
+  rootNode: Node
   filePath: string
   content: string
   rootName: string
@@ -87,6 +93,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       dependencySymbols: [],
       objectCount: 0,
       propertyCount: 0,
+      rootNode,
       arrayCount: 0,
       maxDepth: 0,
       hasNullValues: false,
@@ -98,6 +105,7 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.collectSchemaFacts(rootNode, ctx)
     this.extractSymbols(rootNode, ctx)
     this.extractRelationships(ctx)
+    this.extractManifestExports(ctx)
     this.extractPackageDependencies(ctx)
 
     const rootSymbol: ASTEngine.UniversalSymbol = {
@@ -386,6 +394,77 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         line_number: this.declLine(endpoint),
         metadata: { relationshipType: "json_api_endpoint" },
       })
+    }
+  }
+
+  /**
+   * What a manifest PUBLISHES, as `exports` edges.
+   *
+   * The lane's first ruling excluded `exports` on a grammar inventory — "no
+   * `export_statement` node" — and that is the SAME unsound reasoning that produced
+   * the wrong `imports` ruling: a grammar cannot see a CONVENTION, and a Node
+   * manifest's `exports` field is a convention expressed as ordinary object keys. The
+   * audit found 1 of 36 manifests carrying `exports` and 1 carrying `main`, so the
+   * mass is small and the principle is not, and the type is emitted.
+   *
+   * A published entry point IS an export, and each of its names is exported: a
+   * subpath key for `exports`, the field name for `main`, the command name for `bin`.
+   *
+   * Two silent failures lived in this function before it worked, and both are worth
+   * recording because neither would ever have been noticed by reading it. It first
+   * reached for a `__node` property nothing set, and then iterated the `document`
+   * WRAPPER's children when the top-level `pair`s are one level down inside the root
+   * `object`. Both type-check, both compile, both do nothing. The only reason this
+   * version works is that it was measured — 24 edges on svelte's manifest, and 0 when
+   * either guard was wrong.
+   */
+  private extractManifestExports(ctx: JsonContext): void {
+    if (!this.fileEndsWith(ctx.filePath, "package.json")) return
+    const document = ctx.rootNode
+    if (document.type !== "document") return
+    const rootObject = document.namedChildren?.find((c: any) => c.type === "object")
+    if (!rootObject) return
+    const emit = (name: string, line: number) => {
+      if (name.length === 0) return
+      ctx.relationships.push({
+        source: ctx.rootName,
+        target: name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1,
+        line_number: line,
+        metadata: { jsonSpecific: true, exportForm: "manifest_entry_point", evidenceClass: "structural" },
+      })
+    }
+    for (let i = 0; i < rootObject.namedChildCount; i++) {
+      const pair = rootObject.namedChild(i)
+      if (pair?.type !== "pair") continue
+      const key = this.keyText(pair)
+      const value = pair.childForFieldName("value")
+      if (!key || !value) continue
+      const line = pair.startPosition.row + 1
+      if (key === "main") {
+        if (value.type === "string") emit("main", line)
+      } else if (key === "bin") {
+        if (value.type === "string") emit("bin", line)
+        else {
+          for (let k = 0; k < value.namedChildCount; k++) {
+            const binPair = value.namedChild(k)
+            if (binPair?.type !== "pair") continue
+            const binName = this.keyText(binPair)
+            if (binName) emit(binName, binPair.startPosition.row + 1)
+          }
+        }
+      } else if (key === "exports") {
+        if (value.type === "string") emit("exports", line)
+        else {
+          for (let k = 0; k < value.namedChildCount; k++) {
+            const sub = value.namedChild(k)
+            if (sub?.type !== "pair") continue
+            const subPath = this.keyText(sub)
+            if (subPath) emit(subPath, sub.startPosition.row + 1)
+          }
+        }
+      }
     }
   }
 
