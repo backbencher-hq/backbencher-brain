@@ -55,21 +55,25 @@ types, no fields), already under `notVendored`.
 | Invalid input | errors are engine-owned and surfaced; the module symbol is still emitted so a consumer can attribute the failure to a file. |
 | Regex | **zero regex literals**, enforced by `script/m12/json-contract-probe.ts` rather than asserted, and scanned with comments and strings stripped. The analyzer never reads the file as text: every decision comes from the tree. |
 
-## Relationship ontology — 4 of 10, and the 6 exclusions are enforced
+## Relationship ontology — 5 of 10, and the 5 exclusions are audited
 
-`contains`, `uses`, `references`, `imports` are **EMITTED**.
-`extends`, `implements`, `instantiates`, `calls`, `exports`, `overrides` are
-**RULED** on grammar-inventory evidence: the grammar yields **12 named types** —
+`contains`, `uses`, `references`, `imports`, `exports` are **EMITTED**.
+`extends`, `implements`, `instantiates`, `calls`, `overrides` are **RULED**: the grammar yields **12 named types** —
 `array comment document escape_sequence false null number object pair string
 string_content true` — and **none** expresses a class declaration, a supertype
-clause, a constructor, a function definition, an export or a redefinition.
+clause, a constructor, a function or a redefinition.
+
 `script/m14/ontology-coverage-gate.ts` re-measures that on every run and **fails**
-when a ruled type's construct actually occurs, so the ruling is falsifiable rather
-than asserted. It has already earned its keep: it falsified this lane's own first
-ruling on `imports`.
+when a ruled type's construct actually occurs, so a ruling is falsifiable rather than
+asserted. It has earned its keep twice: it falsified this lane's own first rulings on
+`imports` and on `exports`, **both of which had been made on a grammar inventory** —
+the reasoning that a grammar cannot see a CONVENTION, and a Node manifest's `exports`
+field is a convention written as ordinary object keys. The five surviving exclusions
+were then re-tested against the **corpus** for a convention that would satisfy them,
+not against the grammar again, and all five held.
 
 The contrast with bash is the point: bash emits 7 of 10 and rules 3 on a
-164-node-type inventory; **json emits 4 of 10 and rules 6 on a 12-node-type
+164-node-type inventory; **json emits 5 of 10 and rules 5 on a 12-node-type
 inventory.** Same ontology, same gate, opposite verdicts, neither arbitrary.
 
 ## Performance
@@ -124,8 +128,8 @@ Whole corpus — **3,334 admitted files** across 6 repositories, production
 
 | | |
 | --- | --- |
-| truth edges (independent oracle) | 772,352 |
-| covered | **772,352 (100.0%)** |
+| truth edges (independent oracle) | 772,376 |
+| covered | **772,376 (100.0%)** |
 | MISSING / unlined | **0 / 0** |
 | UNEXPLAINED | **3** — external refs the oracle deliberately does not assert |
 | files with truth edges | **2,201** == files emitting any edge |
