@@ -2904,6 +2904,32 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const membersByOwner = new Map<string, Set<string>>()
     for (const s of symbols) {
       if (!s.ownerName) continue
+      // M60 K8b: a CONSTRUCTOR is not a readable member, and excluding it is
+      // what stops gate A from accepting the class's own name.
+      //
+      // A primary constructor publishes a symbol named after the CLASS and owned
+      // by it — `BufferedChannel[constructor|owner=BufferedChannel]` — so the
+      // inventory contained the class's own name. Gate A is a WHITELIST, and a
+      // whitelist containing `X` admits every read of a name `X`, including the
+      // type name in a declaration position:
+      //
+      //   regFunc = BufferedChannel<*>::registerSelectForSend as RegistrationFunction
+      //
+      // published `uses BufferedChannel -> BufferedChannel` at conf 0.6, a
+      // self-referential edge claiming the class reads a member named after
+      // itself. The name is a TYPE position there, not a member read.
+      //
+      // It reproduces only for classes WITH a parameter list, because that is
+      // what creates a `primary_constructor` node and therefore the symbol —
+      // which is why a hand-written probe (`class Holder { fun use() = Holder::doThing }`,
+      // no parameter list) does NOT reproduce it and the defect survived being
+      // looked for. Measured on kotlinx-coroutines: 2 such rows in 96 files.
+      //
+      // The class CONTAINS its constructor, and that containment is still
+      // published — the contains class derives it deliberately and is
+      // unaffected. What is wrong is only its presence in the READ inventory:
+      // nothing is read through a constructor reference.
+      if (s.kind === ASTEngine.SymbolKind.Constructor || s.kind === ASTEngine.SymbolKind.Module) continue
       let set = membersByOwner.get(s.ownerName)
       if (!set) {
         set = new Set<string>()

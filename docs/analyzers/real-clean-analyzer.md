@@ -41,8 +41,8 @@
 | **AST nodes over the 2,179-file corpus** | **3,107,410** |
 | **files the pinned grammar parses with no ERROR** | **1,524 of 2,179 (69.9%)** |
 | distinct node types the grammar declares | 185 (139 named slots → **137** distinct named names) |
-| named types occurring in the corpus | 134 |
-| named types the analyzer HANDLES, each fixture-backed | **99** (98 occur in the corpus; `qualified_identifier` is fixture-only) |
+| named types occurring in the corpus | **137** (all of them) |
+| named types the analyzer HANDLES, each fixture-backed | **99**, and all 99 occur in CORPUS code |
 | named types classified `internal_silent` | 29 |
 | named types in a `gap` | 1 |
 | named types in a `design_decision` | 8 (+11 further rulings recorded against types already in a behaviour bucket) |
@@ -157,7 +157,7 @@ FIELD and has **no direct `constructor` child at all**. Measured over the corpus
 the field is 782 occurrences on 741 instances, of which only 489 are a bare
 `constructor`; the other 293 are `array_type` 127, `list_type` 97, `type_variable`
 32, `type_paren` 16, `question_type` 9, `tuple_type` 8, `unit_type` 4. On those 253
-declarations — across 51 files — the previous analyzer's
+declarations — across 203 files — the previous analyzer's
 `findChild(node, n => n.type === "constructor")` returned null and the instance was
 skipped whole: no Class symbol, no `implements` edge, no member scope, and every
 `instance_member` inside it (1,009 corpus-wide) left ownerless or attributed to
@@ -225,7 +225,7 @@ That is the name-keyed `contains`/export dedupe, which is deliberate and pinned 
 | `calls` | callable → qualified name | the head is a `single_quoted_name` (the corpus form, 233 sites) or a `qualified_identifier` (the alias form, 2 sites, both in this repo's fixtures). Target is the source-spelling with its quote characters dropped. | |
 | `calls` | callable → class | the head is a declared CLASS name: Clean's implicit dictionary passing makes `C x` a call of `C`'s class method. **84** uppercase applied sites resolve to a class the file declares | |
 | `calls` | callable → declared function | the head is a `constructor`-typed node that this file declares as a CALLABLE. Clean lets a constructor be a function and the grammar types both `constructor`, so 939 corpus sites were `instantiates` edges on names that are Clean uppercase FUNCTIONS (`FModified`, `NSMakeSize`, `ApplicationOptionsToFlags`) | |
-| `instantiates` | callable → data constructor | the head is a `constructor` this file declares via a `data_constructor` node. **Only these** — see [The 1,923-site row](#the-1923-site-row). | 122 |
+| `instantiates` | callable → data constructor | the head is a `constructor` this file declares via a `data_constructor` node. **Only these** — see [The 24,986-site row](#the-24986-site-row). | 122 |
 | `uses` | callable → record field | a `field_access` read, a `record_expression` construction, or a `record_update` write, where the field is declared in this file. 1,406 edges. The FP family emits no bare VALUE read: a receiver, a parameter or a pattern variable never produces an edge | |
 | `uses` | callable → data constructor | a `constructor_pattern` — a MATCH, which is a dependency and not a construction | |
 | `implements` | instance target → class | `instance C T` where the class name is the `name` field's own node, on that node's line | 739 |
@@ -241,31 +241,31 @@ per-site and not per-set** (30,558 of 30,558). The line is part of the DEDUPE
 KEY, so a function called from three lines is three edges at three lines, and a
 line that is not a positive integer is recorded as ABSENT, never as 0 (M59.O2).
 
-### The 1,923-site row
+### The 24,986-site row
 
 One edge class could not be made honest, and the analyzer now emits nothing for it.
 The question is what an uppercase applied name that is **not** a data constructor
 declared in this file actually is. The population is measured on the AST — every
 application whose innermost `function` field is a `constructor`-typed node,
 excluding names the file declares via `data_constructor` — because the DECLINED
-sites emit no edge and so cannot be counted from the output. Over the 312-file
-corpus that population is **1,923 sites**, and each site is classified against
-what its own file declares:
+sites emit no edge and so cannot be counted from the output. Over the **2,179-file**
+corpus that population is **24,986 sites**, each classified against what its own
+file declares:
 
 | the target is declared in this file as a… | sites | share |
 | --- | --- | --- |
-| function | 719 | 37.39% |
-| **not declared anywhere in this file** | 977 | 50.81% |
-| macro | 86 | 4.47% |
-| class | 84 | 4.37% |
-| type | 57 | 2.96% |
+| function | 4,472 | 17.90% |
+| **not declared anywhere in this file** | 19,566 | 78.31% |
+| macro | 465 | 1.86% |
+| class | 194 | 0.78% |
+| type | 289 | 1.16% |
 
-**946 sites (49.19%) are declared in-file as something that is definitively not a
-data constructor, and the other 977 are declared nowhere, so the analyzer cannot
-prove a construction. At most 2.96% could be a data constructor declared in
-StdEnv, which the corpus does not fully contain.** The node type alone proves a
+**19,566 sites (78.31%) name something no file in the corpus declares at all**, so
+the analyzer cannot prove a construction. Of the 5,420 the file CAN name, **zero are
+data constructors** — that is the population's definition — and 82.5% are functions.
+The node type alone proves a
 construction in zero cases, so the branch emits nothing, the count is published as
-`metadata.declinedInstantiations` (1,049 over the corpus) so the cost is visible in
+`metadata.declinedInstantiations` (19,430 over the corpus) so the cost is visible in
 the analyzer's own output, and the consequence is recorded: **the M14.0.F5 oracle
 is red on this lane**, and the disagreement is the point. The oracle derives an
 `instantiates` from every `constructor`-headed application, so satisfying it means
@@ -277,12 +277,21 @@ reference whatever the type is, an `implements` edge is an instance whatever the
 class is, and a `calls` edge to a source-spelled qualified name is that call.
 This one does not. See `reviews/clean/m14-0-clean-completeness.md` §6.
 
-**A retracted number.** An earlier draft of this document and of the review quoted
-"1,026 sites, 19.30% real constructors". That was a different population measured
-on an earlier analyzer state (it counted uppercase applied sites *including*
-declared constructors, before the decline existed), and no instrument reproduces
-it. It is replaced by the table above, which
-`bun run script/m14/clean-census.ts` recomputes on every run.
+### Retracted numbers, kept visible
+
+Three figures in this document's history were wrong, and each is named where it was
+wrong rather than quietly edited:
+
+- **"1,026 sites, 19.30% real constructors"** — a different population on an earlier
+  analyzer state (it counted uppercase applied sites *including* declared
+  constructors, before the decline existed), reproducible by no instrument.
+- **"4,107 applications inside where blocks"** — actually 5,085, and 42,289 at the
+  2,179-file scale.
+- **"`qualified_identifier` never occurs in the corpus"** — it does. The 312-file
+  census was too small to see it, and the branch was rare rather than dead.
+
+The table above is what `clean-census.ts` recomputes; the corrections tables in the
+review §6.1 and §12.1 record each one.
 
 ## Complexity and metrics
 
@@ -428,11 +437,12 @@ handled types are now fixture-backed, and the gate says so on every run.
    know that type. Naming the receiver's NAME would be a `uses` edge to a value,
    which is the FP family the lane forbids. Recorded, not ruled.
 2. **An uppercase applied name that is not an in-file data constructor emits no
-   edge** — the 1,923-site row above. The 1,049 sites are counted apart by how much
-   the analyzer knows: **984 it cannot classify** (`declinedInstantiations`) and
+   edge** — the 24,986-site row above. Those sites are counted apart by how much the
+   analyzer knows: **19,365 it cannot classify** (`declinedInstantiations`) and
    **65 it can** (`typeCoercions` — an application whose head is a declared type,
-   i.e. Clean's coercion). An earlier version of this document quoted the 1,049 as
-   one number, which overstated the uncertainty by 65 sites.
+   i.e. Clean's coercion). An earlier version of this document quoted 1,049 as one
+   number at the 312-file scale, which conflated the two and understated the
+   population thirteenfold.
 3. **`?Just 0` in a body is an ERROR in the pinned grammar**, so the unboxed BUILD
    direction has no readable spelling and is unreachable (ruling `CL-D8`); the
    unboxed PATTERN direction is handled.
@@ -450,5 +460,5 @@ handled types are now fixture-backed, and the gate says so on every run.
    line does not close it. A declaration between the two is required, which is what
    the corpus does and what `afterWhere` in the fixture does.
 7. **The M14.0.F5 differential is red on this lane** (527 MISSING on the Clyde
-   draw, 49 on clean-stdlib) for the reason in the 1,923-site row. The oracle is
+   draw, 49 on clean-stdlib) for the reason in the 24,986-site row. The oracle is
    shared (`script/m14/differential.ts`) and was not modified.
