@@ -191,6 +191,52 @@ inline = { x = 1, y = "two" }
   </body>
 </html>
 `)
+
+  // markdown (M14 #290, MD-5). The lane with the RICHEST symbol metadata of any
+  // language in the index — a heading carries its level, a code block its language,
+  // a repeated site a flag that says it is a repeat — and the pool-worker carries a
+  // CSS-only key allowlist on this path, so every one of those facts was dropped
+  // between the analyzer and the store while every fixture still passed against the
+  // analyzer's RETURN VALUE. A fixture cannot see this: it calls `engine.parseFile`,
+  // not the worker. This gate can, because it indexes through the real CLI.
+  //
+  // The document is written to produce one of each metadata class the lane publishes,
+  // plus the two shapes that only markdown produces: a REPEATED site (`dup#2`, the
+  // identity rewrite) and a same-document `#anchor` reference (MD-14).
+  fs.writeFileSync(path.join(TMP, "src", "seam.md"), `---
+title: Seam Document
+---
+
+# Seam
+
+## Install Now!
+
+\`\`\`scala
+val first = 1
+\`\`\`
+
+Prose between them, so these are two distinct sites and not one.
+
+\`\`\`scala
+val second = 2
+\`\`\`
+
+| Name | Meaning |
+| --- | --- |
+| seam | this document |
+
+## Registry
+
+The links live in their OWN section rather than in the heading they name. That is not
+stylistic: a link inside the section it points at is a self-edge, the analyzer drops
+self-edges because a section does not contain itself, and so the assertion below would
+have read 0 for a document whose links were all perfectly correct. The first version
+of this file put the links under \`Install Now!\` and the store showed no \`uses\` rows
+at all — which is a fact about self-edges, not about anchors.
+
+[to the install heading](#install-now)
+[to a heading that is not here](#no-such-heading)
+`)
 }
 
 async function main() {
@@ -319,6 +365,78 @@ async function main() {
   // page is the root of its own graph — and a duplicate `id` is the one shape that
   // only html produces (`dup-target#2`). Both are asserted by name, because a count
   // would pass just as happily on a row that means something else.
+  // markdown seam (M14 #290 / MD-5). Asserted in the DATABASE, because the whole
+  // point is that the analyzer's return value was never wrong: the loss is between
+  // the worker and the store, and only a row can witness it.
+  const mdFile = count(`SELECT COUNT(*) c FROM brain_file WHERE path LIKE '%.md'`)
+  expect(mdFile >= 1, `markdown file indexed (got ${mdFile}, want >=1)`)
+
+  // The REPEATED SITE, which is the shape only markdown produces and the one the
+  // identity rewrite exists for: two `scala` blocks under one heading must be two
+  // rows, the second ordinaled. `code_block.scala` alone would be the pre-rewrite
+  // behaviour and would pass a count of one per block by erasing one of them.
+  const mdRepeat = count(`SELECT COUNT(*) c FROM brain_symbol
+           WHERE name = 'code_block.scala#2' AND file_id LIKE '%.md'`)
+  expect(mdRepeat === 1, `markdown repeated site persisted as code_block.scala#2 (got ${mdRepeat}, want exactly 1: two sites, one of them ordinaled)`)
+
+  // The heading hierarchy survived as rows AND as an edge with a line.
+  const mdH1 = count(`SELECT COUNT(*) c FROM brain_symbol WHERE name = 'Seam' AND file_id LIKE '%.md'`)
+  expect(mdH1 === 1, `markdown h1 persisted as a symbol (got ${mdH1}, want 1)`)
+  const mdContainsLine = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.md' AND r.relationship_type = 'contains' AND r.line_number > 0`)
+  expect(mdContainsLine >= 3, `markdown contains edges persisted WITH their line (got ${mdContainsLine}, want >=3: h1→h2, h2→both blocks, h2→table)`)
+
+  // The TABLE COLUMN as its own row (MD-13): the column edge is useless if the
+  // symbol it points at is not in the index.
+  const mdColumn = count(`SELECT COUNT(*) c FROM brain_symbol WHERE name = 'Name' AND file_id LIKE '%.md' AND symbol_type = 'property'`)
+  expect(mdColumn === 1, `markdown table column persisted as a property row (got ${mdColumn}, want 1)`)
+
+  // The SAME-DOCUMENT ANCHOR (MD-14), resolved to the heading's row rather than to
+  // the raw fragment — the assertion is on the TARGET, because an edge to
+  // `#install-now` would be an edge to nothing and still be one row.
+  // brain_relationship has no file_id — the file is reached through the SOURCE symbol.
+  // These two links sit inside a heading, so their source is a real row and the join
+  // is exact; a `uses` edge whose source is the `document` pseudo-owner would have a
+  // NULL source_symbol_id and be invisible here, which is the attribution cost the
+  // review records and not something this gate should paper over by widening the join.
+  // Asserted through `target_symbol_id`, not `target_external`, and the first version
+  // of this assertion used `target_external` and read 0. That was the assertion being
+  // wrong, and being wrong in an informative direction: a resolved anchor points at a
+  // symbol in the SAME FILE, so the store binds it to a row and leaves
+  // `target_external` NULL. Asserting the external column would therefore have passed
+  // for a BROKEN edge and failed for a working one — an inverted test. The JOIN is the
+  // assertion: the edge resolves to the heading's own row, which is the whole claim.
+  const mdAnchor = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol src ON src.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = src.file_id
+           JOIN brain_symbol tgt ON tgt.id = r.target_symbol_id
+           WHERE f.path LIKE '%.md' AND r.relationship_type = 'uses' AND tgt.name = 'Install Now!'`)
+  expect(mdAnchor === 1, `markdown same-document anchor BOUND to the heading's row (got ${mdAnchor}, want 1: the link resolves to a symbol, not to a string)`)
+  const mdAnchorRaw = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_symbol s ON s.id = r.source_symbol_id
+           JOIN brain_file f ON f.id = s.file_id
+           WHERE f.path LIKE '%.md' AND r.relationship_type = 'uses' AND r.target_external LIKE '#%'`)
+  expect(mdAnchorRaw === 0, `no markdown uses edge targets a raw fragment (got ${mdAnchorRaw}, want 0: MD-14 published the fragment verbatim before this round)`)
+
+  // MD-5, THE SEAM ITSELF. The worker carries a CSS-only key allowlist, so these are
+  // the rows that were NULL while every fixture passed. Asserted as `LIKE` on the
+  // JSON text rather than through json_extract, so the gate does not depend on the
+  // sqlite build carrying the JSON1 extension.
+  const mdAnnotations = (needle: string): number =>
+    count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.md' AND annotations LIKE ?`, `%${needle}%`)
+  expect(mdAnnotations('"headingLevel":2') >= 1,
+    `markdown headingLevel survived the WORKER into brain_symbol.annotations (got ${mdAnnotations('"headingLevel":2')}, want >=1: pool-worker's metadata allowlist is CSS-only, so every markdown key is dropped here)`)
+  expect(mdAnnotations('"isRepeatedSite":true') >= 1,
+    `markdown isRepeatedSite survived the WORKER (got ${mdAnnotations('"isRepeatedSite":true')}, want >=1: the flag that tells two code blocks apart)`)
+  expect(mdAnnotations('"language":"scala"') >= 1,
+    `markdown code-block language survived the WORKER (got ${mdAnnotations('"language":"scala"')}, want >=1)`)
+  expect(mdAnnotations('"isMarkdownTable":true') >= 1,
+    `markdown isMarkdownTable survived the WORKER (got ${mdAnnotations('"isMarkdownTable":true')}, want >=1)`)
+  expect(mdAnnotations('"isMarkdownTableColumn":true') >= 1,
+    `markdown isMarkdownTableColumn survived the WORKER (got ${mdAnnotations('"isMarkdownTableColumn":true')}, want >=1: the column row without its own flag)`)
+
   const htmlSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.html'`)
   // Exactly six, and the arithmetic is the assertion: the document module, the
   // THREE elements that carry an `id` (site-header, content, order-list), and the

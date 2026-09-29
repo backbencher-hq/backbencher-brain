@@ -212,6 +212,27 @@ evidence behind it is the thing this repository forbids most loudly.
   and no edges, although in a Jekyll site those keys are the cross-file link
   carriers.
 
+### The worker seam, and why no fixture could have caught it (MD-5)
+
+`pool-worker.ts` carries symbol metadata across the worker boundary through an
+**explicit key allowlist**, and until this round that list named only CSS keys. Every
+markdown key was dropped: the store held **9 of 9 symbols with `annotations = NULL`**
+while every fixture passed against the analyzer's return value.
+
+That combination is the finding. A fixture calls `engine.parseFile`, which never
+crosses the worker boundary, so the F3 lane is *structurally* incapable of seeing
+this — the review recorded MD-5 as "unpinnable", and the reason was not that no gate
+existed but that the one gate that can see the worker
+(`script/m14/verify-pipeline-e2e.ts`, real CLI → `brain.db`) was not covering this
+language. It now is, and it asserts each key by name.
+
+`headingLevel` is the key that matters most: with it absent the index cannot
+reconstruct a document outline, so a heading row and a code-block row are
+indistinguishable. `isRepeatedSite` is the one that lets two sites of one construct be
+told apart. The full set now stored: `nodeType`, `headingLevel`, `language`,
+`isMarkdownHeading`, `isMarkdownTable`, `isMarkdownTableColumn`, `isMarkdownCodeBlock`,
+`isMarkdownFrontMatter`, `isRepeatedSite`.
+
 ## Regex inventory
 
 Zero regex literals and zero `RegExp` calls. Autolink angle brackets are

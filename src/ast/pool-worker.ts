@@ -708,6 +708,37 @@ export async function parseFile(filePath: string, projectPath: string, context?:
             if (typeof m.supportsCondition === "string") out.supportsCondition = m.supportsCondition
             if (typeof m.atKeyword === "string") out.atKeyword = m.atKeyword
             if (Array.isArray(m.selectorChain)) out.selectorChain = m.selectorChain
+            // M14 #290 / MD-5 — MARKDOWN, on the same terms as the CSS keys above:
+            // each of these is READ by a check, not merely produced. The reader is
+            // `script/m14/verify-pipeline-e2e.ts`, which indexes a markdown document
+            // through the REAL CLI and asserts the rows in brain.db — and it could not
+            // be written before this line existed, because there was nothing to assert:
+            // every markdown symbol arrived with `annotations = NULL` while every
+            // fixture passed against the analyzer's return value.
+            //
+            // That is the exact shape of the defect, and it is worth being precise
+            // about why no existing gate saw it. A fixture calls `engine.parseFile`,
+            // which never crosses the worker boundary, so the F3 lane is structurally
+            // incapable of observing this seam — which is why the review recorded MD-5
+            // as "unpinnable" rather than "unpinned". It was unpinnable, and the reason
+            // was that the one instrument in the repository that CAN see the worker was
+            // not covering this language. The instrument existed; the case did not.
+            //
+            // `headingLevel` is the load-bearing one: without it the index cannot
+            // reconstruct a document outline, so a markdown heading and a code block
+            // are indistinguishable rows. `isRepeatedSite` is the one that makes two
+            // sites of one construct tellable apart. `nodeType` is the grammar's own
+            // name for the node, which is the fact a reader needs in order to trust
+            // the other four.
+            if (typeof m.nodeType === "string") out.nodeType = m.nodeType
+            if (typeof m.headingLevel === "number") out.headingLevel = m.headingLevel
+            if (typeof m.language === "string") out.language = m.language
+            if (m.isMarkdownHeading === true) out.isMarkdownHeading = m.isMarkdownHeading
+            if (m.isMarkdownTable === true) out.isMarkdownTable = m.isMarkdownTable
+            if (m.isMarkdownTableColumn === true) out.isMarkdownTableColumn = m.isMarkdownTableColumn
+            if (m.isMarkdownCodeBlock === true) out.isMarkdownCodeBlock = m.isMarkdownCodeBlock
+            if (m.isMarkdownFrontMatter === true) out.isMarkdownFrontMatter = m.isMarkdownFrontMatter
+            if (m.isRepeatedSite === true) out.isRepeatedSite = m.isRepeatedSite
             return Object.keys(out).length > 0 ? out : undefined
           })(),
           snippet,
