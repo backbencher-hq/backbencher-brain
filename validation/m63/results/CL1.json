@@ -47,7 +47,7 @@
     }
   ],
   "failures": [],
-  "currentCommit": "564eacb42247e10642feb0fb2e1b409deafc1a62",
+  "currentCommit": "25ef68be44ee255057b3e33067228cf2933a7584",
   "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
   "evidenceFile": "CL1.json",
   "corpus": {
@@ -183,7 +183,7 @@
       "pairableRows": 0
     }
   ],
-  "generatedAt": "2026-09-29T04:35:31.756Z",
+  "generatedAt": "2026-09-29T04:48:25.549Z",
   "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
   "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
   "limitations": [
@@ -193,7 +193,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:35:31.758Z",
-    "contentSha256": "f6b802393b8c92e827e8c6b04e74b5447d593e22308b5021669d3177cdf1e2fc"
+    "sealedAt": "2026-09-29T04:48:25.565Z",
+    "contentSha256": "6ff23ba7ae26bbc259bfb87bc6316c006bf9efa54beb6da3bb0db9162ed789d9"
   }
 }
