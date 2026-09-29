@@ -16,7 +16,7 @@
 //
 // The slice is `--sample N` of the real kong corpus, not a fixture: a gate that
 // only ever sees a file it was written for has not been tested against the world.
-import { readFileSync, writeFileSync } from "node:fs"
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { join } from "node:path"
 
@@ -34,7 +34,69 @@ const FILES_ARG = process.argv.includes("--files") ? process.argv[process.argv.i
 const ENV = { ...process.env, PATH: `${process.env.HOME}/.local/bin:${process.env.PATH}` }
 const MUTANT_OUT = join("/tmp", `lua-mutant-oracle-${process.pid}.json`)
 
+/**
+ * M60: the harness mutates the REAL analyzer and restores it afterwards. That
+ * restore lived only in a `finally`, which is correct for a normal exit and
+ * worthless for a KILLED one — and this harness gets killed, because it runs for
+ * a long time under an outer `timeout`. SIGKILL runs no handler and no `finally`
+ * at all, so a mutant stayed in `src/ast/real-lua-analyzer.ts` and the next
+ * person to read that file — or commit it — was looking at `if (false) {`
+ * where the contains-edge guard used to be. Every contains edge in the
+ * repository had silently become zero.
+ *
+ * So restoration no longer depends on this process finishing:
+ *
+ *   - the original is written to a sidecar BEFORE the first mutation, so there
+ *     is always a copy on disk that does not require this process to be alive;
+ *   - SIGINT/SIGTERM/SIGHUP restore from the sidecar and exit non-zero, so a
+ *     `timeout` that does deliver a signal still cleans up;
+ *   - a LEFTOVER sidecar means an earlier run died mid-mutant, so the next run
+ *     repairs the source before it measures anything and says so loudly. That is
+ *     the case no signal handler can cover, and it is the one that actually bit.
+ */
+const SRC_BACKUP = `${SRC}.m60-mutant-original`
+
+// The order here is the whole point, and getting it wrong is worse than not
+// guarding at all. An earlier version of this block read `original` from the
+// file FIRST, repaired second, and then carried the MUTATED text forward as
+// `original` — so the pre-flight inspected the mutant, refused to run, and the
+// exit handler dutifully wrote the mutant BACK over the good file the repair had
+// just restored. The repair made things worse. So: repair, and only then read.
+//
+// The invariant is that `original` and the file on disk are the same string, and
+// everything downstream — the pre-flight anchors, the mutants, the restore, the
+// byte-for-byte check — reads that one value.
+if (existsSync(SRC_BACKUP)) {
+  const survivor = readFileSync(SRC_BACKUP, "utf8")
+  const onDisk = readFileSync(SRC, "utf8")
+  if (survivor !== onDisk) {
+    writeFileSync(SRC, survivor)
+    const marks = (onDisk.match(/if \(false\)/g) ?? []).length
+    console.log(
+      `REPAIRED: an earlier run of this harness was killed mid-mutant and left ${SRC} mutated` +
+        `${marks ? ` (${marks} \`if (false)\` in the file on disk)` : ""}.\n` +
+        `          The analyzer has been restored from the sidecar, which holds the pre-mutation\n` +
+        `          text. If a commit you already made contains a mutant, amend or revert it.`,
+    )
+  }
+  rmSync(SRC_BACKUP, { force: true })
+}
+
 const original = readFileSync(SRC, "utf8")
+writeFileSync(SRC_BACKUP, original)
+const restore = () => {
+  try {
+    writeFileSync(SRC, original)
+    rmSync(SRC_BACKUP, { force: true })
+  } catch {}
+}
+for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+  process.on(sig, () => {
+    restore()
+    process.exit(130)
+  })
+}
+process.on("exit", restore)
 
 interface Mutant {
   id: string
@@ -248,7 +310,12 @@ const MUTANTS: Mutant[] = [
     // disclosure must not invent a name. Deleting it makes the disclosure disappear —
     // silence, which is the state LUA-35 exists to end.
     what: "LUA-35 again: a nameless surface is silent instead of disclosed",
-    find: '        ctx.unpublishedSurface.push({ shape: "re-export", detail: path, line: target.startPosition.row + 1, why: "the surface is another module\'s, not this module\'s" })',
+    // The `?? null` is load-bearing for the anchor, not decoration: `detail` is
+    // typed `string | null` and `stringValue` can return `undefined`, which is a
+    // typecheck error. tsc rejects it, so the anchor below has to carry the
+    // coalesce — and the pre-flight exists precisely to fail loudly when an anchor
+    // drifts, which is what happened when this line was tightened for types.
+    find: '        ctx.unpublishedSurface.push({ shape: "re-export", detail: path ?? null, line: target.startPosition.row + 1, why: "the surface is another module\'s, not this module\'s" })',
     replace: '        void path',
     signal: "disclosures",
   },
@@ -516,6 +583,9 @@ for (const line of results) console.log(line)
 
 const restored = readFileSync(SRC, "utf8")
 console.log()
+// Clear the sidecar too, so a later run does not "repair" a file that was never
+// actually mutated and report a phantom incident.
+rmSync(SRC_BACKUP, { force: true })
 console.log(`analyzer restored byte-for-byte: ${restored === original ? "YES" : "NO — INVESTIGATE"}`)
 // The canonical corpus artifact is never this file's business.
 console.log(`mutant runs wrote only to ${MUTANT_OUT}; validation/m60/results/lua-truth-oracle-kong.json untouched`)
