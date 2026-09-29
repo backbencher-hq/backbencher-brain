@@ -305,6 +305,25 @@ export const FSHARP_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "fsharp/open-sourced-to-global",
+    language: "fsharp",
+    defectClass: "wrong-payload",
+    description:
+      "PRE-FIX (FS-D17): the source of an `open` was `wherever the walk happened to be`, and in this grammar an `open` is a SIBLING of the file's `module` declaration rather than a child of it — so a scope stack maintained by walking down the tree is empty when the walk reaches one. The rule that produced the answers was position, and position is not a property of the program: `AssemblyCheck.fs` (`open` at line 3, `module` at 10) was sourced to the module because the walk had entered it, and `docs/fcs/project.fsx` (same shape) was sourced to `Global` because the walk had not. Two files, one rule, two answers. Reverted by re-sourcing every open-path `references` edge to `Global`. The fix is a pre-pass over the file's declared scope, gated on there being exactly ONE top-level module/namespace and on nothing EXECUTING above it — the second condition is what keeps a script's top-level imports out of its first module, and the extra `module M` / `module N` in project.fsx are inside triple-quoted strings, so counting module nodes alone is not enough (script/m14/tmp/fs036-top-level.ts). Caught by the oracle, which is where both of the disagreeing files were adjudicated.",
+    transform: (r: any) => {
+      const imports = (r.relationships ?? []).filter(
+        (x: any) => x.type === "references" && (x.metadata ?? {}).isImport === true,
+      )
+      if (imports.length === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          x.type === "references" && (x.metadata ?? {}).isImport === true ? { ...x, source: "Global" } : x,
+        ),
+      }
+    },
+  },
+  {
     id: "fsharp/recursive-call-refused-as-a-self-edge",
     language: "fsharp",
     defectClass: "wrong-relationship",
