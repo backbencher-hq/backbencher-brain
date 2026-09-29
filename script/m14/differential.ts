@@ -1933,17 +1933,42 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
         // second special case.
         const body = namedOf(n, "class_body") || namedOf(n, "enum_class_body")
         if (ownerName && body) {
-          for (let i = 0; i < body.namedChildCount; i++) {
-            const d = body.namedChild(i)
-            if (!d) continue
-            if (
-              d.type === "property_declaration" || d.type === "function_declaration" ||
-              d.type === "class_declaration" || d.type === "object_declaration" ||
-              d.type === "enum_entry"
-            ) {
-              addMember(ownerName, declaredName(d) ?? "")
+          const addBodyDecls = (b: any): void => {
+            for (let i = 0; i < b.namedChildCount; i++) {
+              const d = b.namedChild(i)
+              if (!d) continue
+              if (
+                d.type === "property_declaration" || d.type === "function_declaration" ||
+                d.type === "class_declaration" || d.type === "object_declaration" ||
+                d.type === "enum_entry"
+              ) {
+                addMember(ownerName, declaredName(d) ?? "")
+              }
+              // A COMPANION's members are the enclosing class's members, for the
+              // same reason they are the analyzer's: `companion_object` is its own
+              // node type, NOT an `object_declaration`, so `resolveOwner` walks
+              // straight past it and a read inside `f()` resolves to the class.
+              // If the companion's declarations were not in the CLASS's
+              // inventory, gate A would reject every read of them and gate B
+              // cannot catch it — the read is inside a function scope, but the
+              // name is bound to a class member, not a local.
+              //
+              // Measured on Exposed: `uuidRegexp` (companion val, read from a
+              // protected extension function in the class body) and
+              // `NoneChanged` (companion val, read from a sibling method) — 2 of
+              // the 3 analyzer-only rows on 14 real files.
+              //
+              // The two gates only stay coherent if companion membership is
+              // FLATTENED into the owner: gate A is keyed on the owner that
+              // resolveOwner reports, so a member reachable only through a
+              // companion has to live in the owner's inventory.
+              if (d.type === "companion_object") {
+                const cbody = namedOf(d, "class_body") || namedOf(d, "enum_class_body")
+                if (cbody) addBodyDecls(cbody)
+              }
             }
           }
+          addBodyDecls(body)
         }
         // A `class C(val x)` names x in its PRIMARY CONSTRUCTOR, not the body —
         // a constructor val IS a member, and without this gate A rejects every
