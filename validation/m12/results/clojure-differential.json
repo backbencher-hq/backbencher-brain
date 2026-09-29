@@ -36,8 +36,8 @@
         "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "31880253f04c796a471a8225bb14533389be21eabb3d618ba0dec30b6171e7bf",
-        "bytes": 222646
+        "sha256": "6634a2cc12d416e57bca0688b7201015c027a9430839ae3713698f7c5575e122",
+        "bytes": 240752
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
@@ -52,8 +52,8 @@
         "bytes": 163435
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "970e9dee20531e09ca63635e3f55200d7fadeaf6236f0e4068c8b6572111aea7",
-        "bytes": 202089
+        "sha256": "380e0fd455c979696fb78e67c492e92e085fbeb1c72493ac9ab27b6e7146e5fc",
+        "bytes": 205562
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
@@ -68,16 +68,16 @@
         "bytes": 89804
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "17a33ed9759e67a7596bdd93bcc65a93508ec61339f78ae5684eb561bbd4440c",
-        "bytes": 73905
+        "sha256": "42aecca78bd0a88ff762d14d92ccc5c7fd4ba907177e220c4602cbadbb6a6a08",
+        "bytes": 76405
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "bytes": 0
+        "sha256": "00ea1e5a13a0c61a982a82e25a8e458bde359f7a9ea4600f2bb3766de4393a14",
+        "bytes": 80225
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "e8864d1651c65def80f40596b8ff3d3c3d2daf00241a8a7b1ddd777b845ee34e",
-        "bytes": 187918
+        "sha256": "fe12e773b47cc62732e0251efa424d882f3a4c8419e0df39cffe86aa9e404b4d",
+        "bytes": 189929
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "0b97146dce60edb84625d820b7c68d137c86b17b6177e352c61168d31af6c013",
@@ -156,8 +156,8 @@
         "bytes": 100699
       },
       "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "b827f1fe3434863747cdb3d001a14e94e92f365f8d1133877b3948c6047ae9c1",
-        "bytes": 104046
+        "sha256": "c1830a8002f88c3a0823c471ad495550ccbf3d283d2bf97f3e076a04f1da75e5",
+        "bytes": 106577
       },
       "src/ast/real-rust-analyzer.ts": {
         "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
@@ -200,8 +200,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "21a5a8a07a4439ba727b9835760be7e6fb1676f1596dfebf9c8c3ac6a806a130",
-        "bytes": 82173
+        "sha256": "03687dcb8cc906ac56280e9c88ebefb01b5aa5e23bb35302a8782675d42825fa",
+        "bytes": 85537
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -260,7 +260,7 @@
         "bytes": 10168
       }
     },
-    "digest": "26df2410177ed055464bcbc0e151e6a827d7e14bcb78283e15bdfdf1e938290c",
+    "digest": "d50171e795c4ccc168a07f93f4e8909acece854fdeec79aee7a96b364db900df",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-clojure_tree-sitter-clojure.wasm",
       "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
@@ -365,11 +365,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:clojure",
-      "wallTimeMs": 31.971131,
-      "userCpuMs": 42.807,
-      "systemCpuMs": 4.49,
-      "peakRssBytes": 210477056,
-      "rssDeltaBytes": -24576,
+      "wallTimeMs": 7.876744,
+      "userCpuMs": 25.14,
+      "systemCpuMs": 3.92,
+      "peakRssBytes": 216068096,
+      "rssDeltaBytes": 2564096,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
