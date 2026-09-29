@@ -737,8 +737,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidExports ?? []) {
       // Groovy G7 wave: anonymous-class noise names must never leak into the
       // export list. No negation existed (expectExports is >=1 match only).
-      // `note`/`comment` are documentation, not constraints — same exemption as
-      // matchConstraints and forbidImports above.
       const hit = (result.exports ?? []).find((e: any) =>
         Object.entries(want).every(([k, v]) => (k === "comment" || k === "note" ? true : e[k] === v)),
       )
