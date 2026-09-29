@@ -80,6 +80,43 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   // they are the same four keys because the FORMAT names those four, not because
   // the analyzer did.
   const MANIFEST_DEPENDENCY_KEYS = new Set(["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
+
+  /**
+   * What a manifest PUBLISHES, from the npm manifest format rather than from the
+   * analyzer's pass — so the two agreeing means something. A published entry point IS
+   * an export: a subpath key for `exports`, the field name for `main`, the command
+   * name for `bin`. The lane first ruled `exports` out on a grammar inventory and that
+   * is the same unsound reasoning that produced the wrong `imports` ruling: a grammar
+   * cannot see a convention. Mass is small (1 of 36 manifests carries `exports`) and
+   * the principle is not.
+   */
+  const manifestPublished = (rootObject: any): string[] => {
+    const out: string[] = []
+    const keyOf = (pair: any): string =>
+      String(pair?.childForFieldName?.("key")?.namedChildren?.find((c: any) => c.type === "string_content")?.text ?? "")
+    for (const pair of (rootObject?.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
+      const key = keyOf(pair)
+      const v = pair.childForFieldName?.("value")
+      if (!v) continue
+      if (key === "main") { if (v.type === "string") out.push("main"); continue }
+      if (key === "bin") {
+        if (v.type === "string") out.push("bin")
+        else for (const b of (v.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
+          const n = keyOf(b)
+          if (n) out.push(n)
+        }
+        continue
+      }
+      if (key === "exports") {
+        if (v.type === "string") out.push("exports")
+        else for (const sp of (v.namedChildren ?? []).filter((c: any) => c.type === "pair")) {
+          const n = keyOf(sp)
+          if (n) out.push(n)
+        }
+      }
+    }
+    return out
+  }
   const pathToName = new Map<string, string>()
   const refs: { from: string; refPath: string }[] = []
   const deps: { from: string; name: string }[] = []
@@ -244,6 +281,12 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
   for (const e of endpoints) edges.push({ label: "uses", from: e.from, target: e.target })
 
   // The manifest's dependencies are `uses`, sourced by the file's own module.
+  if (opts?.manifest) {
+    // the root object is the document's only named child
+    const rootObject = (root?.namedChildren ?? []).find((c: any) => c.type === "object") ?? (root?.type === "object" ? root : null)
+    for (const name of manifestPublished(rootObject)) edges.push({ label: "exports", from: scriptName, target: name })
+  }
+
   for (const d of deps) edges.push({ label: "uses", from: d.from, target: d.name })
 
   return edges
