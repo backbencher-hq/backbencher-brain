@@ -354,6 +354,26 @@ function countMemberAccess(root: any): number {
   return n
 }
 
+/**
+ * M60 LUA-37: the RESOLVABLE source a `contains` edge must point at, tracked
+ * alongside `scope` (the LABEL).
+ *
+ * The oracle walked one string, `scope`, and used it for two different jobs: the
+ * scope a body belongs to, and the source of the containment edges inside it.
+ * Those are not the same thing. `function fs.appendFile(...)` gives scope
+ * "fs.appendFile" — right for scoping, and not a name any symbol is filed
+ * under, because the method is filed as name `appendFile` with owner `fs`. Every
+ * containment edge inside that body therefore read `fs.appendFile -> …` and
+ * pointed at nothing, so a consumer walking symbol -> members could not follow
+ * 22.6% of kong's edges and 1,352 of luvit's.
+ *
+ * The analyzer was fixed first and this had to follow, in lockstep, or the two
+ * would simply disagree — which is what happened for one run (analyzer-attributable
+ * 725, spurious 497) before this change. Two implementations of one rule must be
+ * written from one measurement, and the measurement is the symbol table.
+ */
+let edgeSource: string | undefined
+
 const forBoundVars = new Set<string>()
 let loopCoincidence = 0
 const loopCoincidenceSample: string[] = []
@@ -437,7 +457,8 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
         // L802 and two more), all filed as analyzer misses, and the analyzer was
         // right to omit every one. Skipped rather than emitted, and not silently:
         // the count is reported.
-        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        const src = edgeSource ?? scope
+        if (id.text !== src) w.edges.push({ label: "contains", from: src, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
         else w.selfContainmentSkipped++
         // A bare `local x` carries no value, so there is nothing to test for a
         // table. A declaration WITH a value can bind a table, and the
@@ -498,7 +519,8 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
         // skip those. The analyzer answers the same question with an inherited
         // frame, which is the same rule expressed structurally.
         if (visibleInChain(w, scope, id.text)) continue
-        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        const src2 = edgeSource ?? scope
+        if (id.text !== src2) w.edges.push({ label: "contains", from: src2, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
         else w.selfContainmentSkipped++
       }
     }
@@ -527,7 +549,7 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     const fn = functionNameOf(node)
     if (fn) {
       // A method belongs to its RECEIVER, not to the enclosing scope.
-      w.edges.push({ label: "contains", from: fn.owner ?? scope, target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: fn.owner ? "method-decl" : "fn-decl", rel })
+      w.edges.push({ label: "contains", from: fn.owner ?? (edgeSource ?? scope), target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: fn.owner ? "method-decl" : "fn-decl", rel })
       if (!w.localsIn.has(fn.label)) w.localsIn.set(fn.label, new Set())
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
@@ -686,6 +708,13 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
   const childScope = node.type === "function_declaration" || node.type === "function_definition"
     ? (functionNameOf(node)?.label ?? scope)
     : scope
+  // The resolvable source: the member's OWN name for a method, the function's own
+  // name otherwise, and the enclosing one for an anonymous closure.
+  const childEdgeSource = node.type === "function_declaration" || node.type === "function_definition"
+    ? (functionNameOf(node)?.name ?? edgeSource ?? "global")
+    : edgeSource
+  const prevEdgeSource = edgeSource
+  edgeSource = childEdgeSource
   if (childScope !== scope) w.scopeParent.set(childScope, scope)
   // M60 LUA-24: an ANONYMOUS function must still count as a function for
   // anything that asks "is this lexically inside a function?", even though it
@@ -707,6 +736,7 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     const c = node.namedChild(i)
     if (c) walk(c, childScope, w, rel, childDepth)
   }
+  edgeSource = prevEdgeSource
 }
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
