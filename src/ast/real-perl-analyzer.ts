@@ -318,11 +318,29 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       state: WalkState,
       extra: Record<string, unknown> = {},
       ownerOverride?: string,
+      nameNode?: Node,
     ): ASTEngine.UniversalSymbol | undefined => {
       if (!name) return undefined
       const owner = ownerOverride ?? state.ownerName
       const key = `${kind}\u001f${owner || ""}\u001f${name}`
       if (symbolKeys.has(key)) return symbolsByKey.get(key)
+      // M59.A7 / #921: the line that NAMES the symbol, which is not always the
+      // line its DECLARATION starts on. Perl allows
+      //
+      //     sub
+      //       greeting { ... }
+      //
+      // where `subroutine_declaration_statement` starts on line 1 and the name is
+      // written on line 2, so an edge stamped from `range.startLine` names a line
+      // the symbol's name is not on. The c/cpp round found 166 such rows in a
+      // 120-file draw and the same trap is already the `cpp/contains-line-at-
+      // declaration-start` mutant. `meta.nameLine` records the name's own line
+      // where a name node is in hand; a `contains` edge prefers it and falls
+      // back to `range.startLine`, which is the pre-fix behaviour and therefore
+      // the honest fallback for any shape the name node is not found for.
+      const nameLineSource = nameNode ?? node.childForFieldName("name") ?? this.findChildByType(node, "bareword")
+      const nameLine =
+        name === node.text?.trim() ? node.startPosition.row + 1 : nameLineSource ? nameLineSource.startPosition.row + 1 : node.startPosition.row + 1
       const symbol: ASTEngine.UniversalSymbol = {
         name,
         kind,
@@ -331,7 +349,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerName: owner,
         ownerKind: owner ? state.ownerKind : undefined,
         visibility: state.visibility,
-        metadata: { perlSpecific: true, ...extra },
+        metadata: { perlSpecific: true, nameLine, ...extra },
       }
       symbolKeys.add(key)
       symbolsByKey.set(key, symbol)
@@ -347,6 +365,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * an inferred override) pass nothing and the field is absent, which is the
      * honest value.
      */
+    /**
+     * The line a symbol's NAME is written on, for an edge emitted outside the
+     * walk (where no `Node` is in hand). `meta.nameLine` is set at extraction;
+     * the `range.startLine` fallback is the pre-#921 behaviour, so an edge never
+     * loses its line to this accessor.
+     */
+    const nameLineOf = (symbol: ASTEngine.UniversalSymbol): number | undefined => {
+      const recorded = (symbol.metadata as Record<string, unknown> | undefined)?.nameLine
+      if (typeof recorded === "number" && recorded > 0) return recorded
+      const start = symbol.range?.startLine
+      return typeof start === "number" && start > 0 ? start : undefined
+    }
+
     const addRelationship = (
       source: string,
       target: string,
@@ -354,17 +385,19 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: Record<string, unknown> = {},
       confidence = 0.9,
       lineNode?: Node,
+      explicitLine?: number,
     ) => {
       if (!source || !target) return
       const key = `${type}\u001f${source}\u001f${target}`
       if (relationshipKeys.has(key)) return
       relationshipKeys.add(key)
+      const line = explicitLine ?? (lineNode ? lineNode.startPosition.row + 1 : undefined)
       relationships.push({
         source,
         target,
         type,
         confidence,
-        ...(lineNode ? { line_number: lineNode.startPosition.row + 1 } : {}),
+        ...(typeof line === "number" && line > 0 ? { line_number: line } : {}),
         metadata: { perlSpecific: true, ...metadata },
       })
     }
@@ -968,7 +1001,13 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
       const localDeclares = candidateNames.some((candidate) => localMethods?.has(candidate))
       const companionDeclares = candidateNames.some((candidate) => companionMethods?.has(candidate))
       if (localDeclares || companionDeclares) {
-        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95)
+        // The node that NAMES an override is the SUBCLASS's own method — that is
+        // where the overriding definition is written. Its name line is therefore
+        // the edge's line (#921). This edge previously carried none, on the stated
+        // ground that an inferred override has no naming node; the inference is
+        // about the BASE (a guess, kept honest at confidence 0.5 / `inferred`),
+        // while the method being overridden is not in doubt and is written here.
+        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95, undefined, nameLineOf(symbol))
       } else if (!context?.overrideCompanion) {
         // Pass 3 (family parity with java/groovy resolveOverrides): the base
         // is not declared in this file and no companion index was supplied
@@ -977,15 +1016,24 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (0.7): visible in raw output, counted as heuristic (honest
         // suspicion) by the differential. Pre-M37.10 this edge was silently
         // dropped for every externally-declared base package.
-        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5)
+        addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5, undefined, nameLineOf(symbol))
       }
     }
 
-    // Stable ownership edges are generated once, after extraction. They have no
-    // single naming node in the source (the membership is a fact about the two
-    // symbols), so they carry no line_number — declared, not fabricated.
+    // Stable ownership edges are generated once, after extraction, so there is no
+    // `Node` in hand at the emit site — but the CHILD's own name is a written node
+    // in this file, and M59.A7's rule is that an edge's line is the line that
+    // NAMES it. The previous comment here said membership "has no single naming
+    // node", which was true of the POST-PASS and false of the child: `run` in
+    // `sub run` is written, and c/cpp/objc all moved their `contains` edges onto
+    // it for exactly this reason (#921, `objc/contains-line-at-container`).
+    //
+    // `meta.nameLine` is the line the name is written on and
+    // `range.startLine` the line the declaration starts on. They differ for
+    // `sub\n  greeting { ... }`; the fallback is the pre-fix value, so a shape the
+    // name node is not found for keeps its old line rather than losing the field.
     for (const symbol of symbols) {
-      if (symbol.ownerName && symbol.ownerName !== symbol.name) addRelationship(symbol.ownerName, symbol.name, ASTEngine.RelationshipType.Contains, {}, 1.0)
+      if (symbol.ownerName && symbol.ownerName !== symbol.name) addRelationship(symbol.ownerName, symbol.name, ASTEngine.RelationshipType.Contains, {}, 1.0, undefined, nameLineOf(symbol))
     }
 
     const metadata: Partial<ASTEngine.FileMetadata> = {
