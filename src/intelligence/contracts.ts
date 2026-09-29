@@ -345,6 +345,14 @@ export interface GraphTraversalResult {
     /** M59.A12 (#888): the declared per-query site limit that was in force. */
     edgeLimit: number
     /** How many edge queries hit that limit (any depth). */
+    /** How many edge queries hit the per-symbol SITE limit specifically. Not a
+     *  count of all bounds: `truncationReason` can name the fan-out budget and
+     *  the depth cap as well, and this figure says which of them bit how often. */
+    /** How many edge queries hit the per-symbol SITE limit specifically — NOT a
+     *  count of every bound. `truncationReason` can also name the fan-out budget
+     *  and the depth cap, and those carry their own flags (`callerBudgetExhausted`,
+     *  `calleeBudgetExhausted`) and their own reasons, so this figure says which
+     *  bound bit how often. */
     cappedQueries: number
     /** The root's true site count, counted with the same query and the same
      *  noise filters. `null` = not counted (no cap reached, or not computable),
