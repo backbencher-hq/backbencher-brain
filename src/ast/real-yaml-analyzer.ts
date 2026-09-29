@@ -1269,7 +1269,7 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
     for (const use of ctx.pendingActionUses) {
-      this.addImport(ctx, use.action, "github_action", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"))
+      this.addImport(ctx, use.action, "github_action", undefined, !use.action.startsWith("./") && !use.action.startsWith("docker://"), use.line)
       this.addRelationship(ctx, use.source, use.action, ASTEngine.RelationshipType.Imports, {
         relationshipType: "yaml_action_use",
         isExternal: !use.action.startsWith("./") && !use.action.startsWith("docker://"),
@@ -1558,7 +1558,14 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.relationships.push(relationship)
   }
 
-  private addImport(ctx: YamlContext, target: string, importType: string, node: Node | undefined, isExternal: boolean): void {
+  private addImport(
+    ctx: YamlContext,
+    target: string,
+    importType: string,
+    node: Node | undefined,
+    isExternal: boolean,
+    lineOverride?: number,
+  ): void {
     if (!target) return
     if (ctx.imports.some((i) => i.module === target && i.importType === importType)) return
     ctx.imports.push({
@@ -1567,7 +1574,13 @@ export class RealYamlAnalyzer implements ASTEngine.LanguageAnalyzer {
       importType,
       isExternal,
       isNamespace: false,
-      line_number: node ? node.startPosition.row + 1 : undefined,
+      // `lineOverride` exists because one emission site has no node to read a position
+      // from — an action `uses:` is recorded in a pending list during the walk and
+      // resolved afterwards — and it was passing `undefined`, so 329 of this lane's 540
+      // corpus imports (every GitHub Actions `uses:`) reached the store with no line at
+      // all. The row is otherwise complete, which is the worst shape for a data loss:
+      // a count of imports looked perfectly healthy.
+      line_number: lineOverride ?? (node ? node.startPosition.row + 1 : undefined),
       metadata: { yamlSpecific: true, evidenceClass: "import_based" },
     })
   }

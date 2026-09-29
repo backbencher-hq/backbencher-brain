@@ -83,6 +83,23 @@ read of the ontology table, so here it is over the **entire eight-corpus draw (1
 | `imports` | 830 | yes | yes |
 | **total** | **349,633** | **349,633 / 349,633** | **349,633 / 349,633** |
 
+**Imports carry a line too — and for one day they did not.** `imports` is a separate payload
+from relationships, and the corpus census asserts it separately: **540 / 540 imports arrive with
+a 1-based line**, an invariant added in 2026-09-28 because the number was previously 0 and
+nothing measured it. Two independent causes, both found by running a *real* `!include` file
+through `parseFile` instead of through the analyzer:
+
+- `pool-worker.ts` read `range.startLine ?? line`, and **no analyzer in the tree writes
+  `line` on an import** — typescript, go, ruby, python and yaml all write `line_number`
+  (45 call sites, zero write `line`). So every import in **every** language reached the store
+  with `line: 0`.
+- yaml's own action-`uses:` site passed `undefined` for the node, so 329 of the lane's 540
+  imports had no line even after the first fix. It now threads the line the pending list
+  already carried.
+
+The shape of this defect is worth naming: **a count of imports looks perfectly healthy while
+every row is unlocatable.** Nothing in the milestone checked a field, only a quantity.
+
 **Not emitted, and each ruled with a reason rather than left blank:** `calls`,
 `implements`, `instantiates`, `overrides` (the format has no callable, no heritage clause,
 no constructor and no method to override), plus `uses`, `exports`, `depends` and

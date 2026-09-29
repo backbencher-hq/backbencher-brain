@@ -58,6 +58,8 @@ const nonTemplateErrorFiles: { file: string; count: number }[] = []
 const crashes: { file: string; error: string }[] = []
 let trackedFiles = 0, filesScanned = 0, errorNodes = 0
 let symbols = 0, relationships = 0, imports = 0
+let importsWithLine = 0, importsWithRealLine = 0
+const importLinesMissing: string[] = []
 let duplicateIdFiles = 0, duplicateIds = 0
 let relWithLine = 0, relWithEvidence = 0, unknownSentinels = 0
 let withDocstring = 0, withComplexity = 0, withApiContract = 0, withQualifiedCalls = 0, withLines = 0
@@ -103,6 +105,16 @@ for (const target of targets) {
     rRels += rels.length; relationships += rels.length
     const imps = (parsed.imports ?? []) as any[]
     rImports += imps.length; imports += imps.length
+    // An import must arrive with its LINE. It did not, for any language, until
+    // 2026-09-28: every analyzer writes `line_number` on an import and pool-worker read
+    // only `range.startLine` / `line`, so all 540 corpus imports reached the store with
+    // `line: 0`. Nothing measured it — a count of imports says nothing about whether the
+    // rows are locatable — so this invariant exists to make the loss loud if it returns.
+    for (const imp of imps) {
+      importsWithLine++
+      if (typeof (imp as any).line === "number" && (imp as any).line >= 1) importsWithRealLine++
+      else importLinesMissing.push(`${path.relative(target.dir, file)} :: ${(imp as any).path ?? (imp as any).module ?? "?"} line=${JSON.stringify((imp as any).line)}`)
+    }
 
     // IDENTITY AT THE PRODUCTION ENTRY. `poolWorker.parseFile` reshapes a symbol into
     // the store's row shape, and that row has NO `id` field at all: the indexer mints
@@ -199,6 +211,9 @@ const invariants = {
   symbolsWithDocstring: withDocstring,
   symbolsWithApiContractPath: withApiContract,
   symbolsWithQualifiedCalls: withQualifiedCalls,
+  importsWithLine: `${importsWithRealLine}/${importsWithLine}`,
+  importsMissingLine: importLinesMissing.length,
+  importsMissingLineSamples: importLinesMissing.slice(0, 8),
   imports,
   symbolsWithApiContractPathAtWorkerBoundary: withApiContract,
   seamFindings: [
