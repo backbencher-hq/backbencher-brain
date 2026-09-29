@@ -83,6 +83,52 @@ export function isTestPath(relativePath: string): boolean {
   return isTestFileCandidate(relativePath)
 }
 
+/**
+ * Languages whose indexed "symbols" are structural keys, not executable
+ * declarations.
+ *
+ * A YAML mapping key, a Markdown heading, a JSON property and a CSS selector
+ * have no callers and never will, so offering them to any dead-code or
+ * complexity rule is not a finding, it is noise — and because rule output is
+ * confidence-ordered, that noise is what fills the page. Measured on a
+ * 45,018-symbol repository: 1,188 of 5,190 orphan symbol candidates (23%) were
+ * in these files, and the top-ranked `god-class` finding was a JSON file's
+ * keys.
+ *
+ * These files are NOT excluded from the index, from search, or from
+ * orphaned_file detection. Only their individual symbols stop being
+ * code-rule candidates. Derived from the 24 distinct `brain_file.language`
+ * values present across a 9-repository, 9-language corpus.
+ *
+ * ONE definition on purpose. The orphan engine and the anti-pattern rules both
+ * need this, and a second, weaker copy of a path/language rule is precisely
+ * how the qualified references and the import-stem collisions went missing in
+ * the first place — see intelligence/patterns/orphans.ts.
+ */
+export const NON_CODE_LANGUAGES = new Set([
+  "markdown", "yaml", "toml", "json", "xml", "css", "scss", "less",
+  "html", "htm", "vue", "svelte",
+  "ini", "cfg", "conf", "properties", "env", "csv", "tsv", "text", "plaintext",
+  "rst", "tex", "bib", "org", "adoc", "asciidoc",
+])
+
+/** True when a file's language produces structural keys rather than executable
+ *  declarations. A null/unknown language is NOT treated as non-code: an
+ *  unrecognised language is still code, and guessing it away would hide real
+ *  findings in languages this list has not been updated for. */
+export function isNonCodeLanguage(language: string | null | undefined): boolean {
+  return NON_CODE_LANGUAGES.has((language ?? "").toLowerCase())
+}
+
+/** SQL fragment for a WHERE clause over a brain_file alias. Excludes the
+ *  non-code languages above, case-insensitively, with a bound parameter per
+ *  language so the list stays data rather than string-built SQL. */
+export function nonCodeLanguageSQL(fileAlias: string): { sql: string; params: string[] } {
+  const params = [...NON_CODE_LANGUAGES]
+  const placeholders = params.map(() => "?").join(",")
+  return { sql: `LOWER(COALESCE(${fileAlias}.language, '')) NOT IN (${placeholders})`, params }
+}
+
 export function isAnalysisExcluded(relativePath: string): boolean {
   return isHardNoisePath(relativePath) || isTestPath(relativePath)
 }
