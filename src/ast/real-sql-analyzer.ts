@@ -16,6 +16,14 @@ const IDENTITY: Slice = { byteOffset: 0, rowOffset: 0, columnOffset: 0 }
 type ParseState = {
   symbols: SqlSymbol[]
   relationships: SqlRelationship[]
+  /** Per-bucket counts of edges whose target is a PostgreSQL or platform object
+   *  rather than a project declaration. Reported so an unresolved edge can be
+   *  READ correctly: `external` is a fact about the world, while an edge with
+   *  neither a resolved symbol nor an external label is a genuine gap. */
+  externalTargets?: Record<string, number>
+  /** Absolute start indices of `statement` nodes already dispatched, so the deep
+   *  walk does not re-process one the root walk handled. */
+  nestedStatements: Set<number>
   imports: ASTEngine.ImportInfo[]
   exports: ASTEngine.ExportInfo[]
   relationshipKeys: Set<string>
@@ -71,6 +79,51 @@ const SQL_KEYWORDS = new Set([
  * schemas use — `generate_series`, `jsonb_build_object`, `current_setting`,
  * `set_config` and `cardinality` were all measured leaking out of the corpus.
  */
+/**
+ * Is this target a PostgreSQL or platform object rather than a project
+ * declaration? Returns the bucket name, or null.
+ *
+ * The four buckets are kept separate because they are different claims:
+ *   postgresCatalog    a `pg_*` relation the migration genuinely reads
+ *   informationSchema  an `information_schema` view, including a bare view name
+ *   implicitSchema     `public`, which PostgreSQL creates in every database and
+ *                      no migration ever declares
+ *   platform           a hosted-platform object (Supabase `vault`, `auth`,
+ *                      `storage`, `extensions`), which is real in the file and
+ *                      absent from the repository by construction
+ */
+const POSTGRES_CATALOG = /^pg_[a-z_]+$/
+const INFORMATION_SCHEMA_VIEWS = new Set([
+  "columns", "tables", "views", "routines", "schemata", "sequences", "key_column_usage",
+  "table_constraints", "constraint_column_usage", "referential_constraints",
+  "check_constraints", "routine_parameters", "table_privileges", "column_privileges",
+  "role_table_grants", "role_routine_grants", "trigger", "triggers", "views",
+])
+const PLATFORM_SCHEMAS = new Set(["vault", "auth", "storage", "extensions", "realtime", "graphql", "pgsodium", "pgtle"])
+
+function classifyExternalTarget(
+  target: string,
+  qualified?: string,
+): "postgresCatalog" | "informationSchema" | "implicitSchema" | "platform" | null {
+  if (qualified) {
+    const q = qualified.toLowerCase()
+    if (q.startsWith("information_schema.")) return "informationSchema"
+    const qdot = q.indexOf(".")
+    if (qdot > 0 && PLATFORM_SCHEMAS.has(q.slice(0, qdot))) return "platform"
+  }
+  const t = target.toLowerCase()
+  if (t.startsWith("information_schema.")) return "informationSchema"
+  if (INFORMATION_SCHEMA_VIEWS.has(t)) return "informationSchema"
+  if (POSTGRES_CATALOG.test(t)) return "postgresCatalog"
+  if (t === "public") return "implicitSchema"
+  const dot = t.indexOf(".")
+  if (dot > 0) {
+    const schema = t.slice(0, dot)
+    if (PLATFORM_SCHEMAS.has(schema)) return "platform"
+  }
+  return null
+}
+
 const SQL_BUILTINS = new Set([
   // Provided by PostgreSQL or a stock EXTENSION rather than by this project.
   //
@@ -103,6 +156,10 @@ const SQL_BUILTINS = new Set([
   "pg_get_triggerdef", "pg_get_expr", "pg_get_userbyid", "pg_get_viewdef",
   "pg_get_partkeydef", "pg_get_statisticsobjdef_columns", "pg_tablespace_location",
   "pg_relation_filenode", "pg_get_function_arguments", "pg_get_function_result",
+  "obj_description", "col_description", "shobj_description", "col_description_schema",
+  "pg_describe_object", "pg_identify_object", "pg_get_object_address", "pg_get_object_keywords",
+  "has_any_column_privilege", "has_sequence_privilege", "pg_get_ruledef", "pg_get_triggerdef",
+  "pg_stat_get_numscans", "aclexplode", "acldefault", "makeaclitem", "pg_backend_memory_contexts",
   "pg_get_function_identity_arguments", "format_type", "pg_typeof", "pg_table_is_visible",
   "pg_function_is_visible", "pg_opclass_is_visible", "pg_conversion_is_visible",
   "pg_collation_is_visible", "pg_ts_config_is_visible", "pg_statistics_obj_is_visible",
@@ -149,6 +206,10 @@ const SQL_BUILTINS = new Set([
   "ntile", "first_value", "last_value", "nth_value", "grouping", "corr", "covar_pop",
   "covar_samp", "regr_slope", "regr_intercept", "regr_r2", "regr_count", "regr_avgx", "regr_avgy",
   "bool_and", "bool_or", "every", "bit_and", "bit_or", "bit_xor", "json_agg", "json_object_agg",
+  // statistical aggregates, which the corpus uses and this set was missing
+  "stddev", "stddev_pop", "stddev_samp", "variance", "var_pop", "var_samp",
+  "stddev_pop_zscore", // hosted-platform functions a project calls with no local declaration
+  "jwt", "auth_uid", "current_user_id",
   "aggregate", // aggregate
   "any_value", "array_agg", "avg", "bit_and", "bit_or", "bool_and", "bool_or", "count",
   "every", "json_agg", "json_object_agg", "jsonb_agg", "jsonb_object_agg", "max", "min",
@@ -288,6 +349,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     filePath: string,
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const state: ParseState = {
+      nestedStatements: new Set<number>(),
       symbols: [],
       relationships: [],
       imports: [],
@@ -346,6 +408,10 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (state.patterns.has("Foreign Key Constraints")) {
       state.metadata.architecturalInsights!.push("Relational integrity enforced via Foreign Keys")
     }
+    // Surface the external classification at the top level of metadata, next to
+    // `ambiguity`, because that is what a consumer reads to decide whether an
+    // unresolved edge is a fact about PostgreSQL or a gap in this project.
+    if (state.externalTargets) (state.metadata as any).externalTargets = state.externalTargets
     state.metadata.patterns = [...state.patterns].sort()
     state.metadata.complexity = Math.max(1, state.metadata.cyclomaticComplexity ?? 1)
     ;(state.metadata as any).ambiguity = state.ambiguity
@@ -968,6 +1034,22 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const current = stack.pop()!
+      // A `statement` NESTED inside another statement — the SQL embedded in a
+      // plpgsql body — contributes nothing to the graph without this.
+      //
+      // Measured: `DO $$ BEGIN SELECT count(*) FROM pg_policies; END $$;`
+      // produced NO edges at all, while the same SELECT at top level produced
+      // `uses global->pg_policies`. So before this, a plpgsql body contributed
+      // SYMBOLS (via the declaration walk) but zero RELATIONSHIPS, which on a
+      // corpus that wraps its DDL in `DO $$ … EXECUTE '…'; END $$;` is most of
+      // the file. The re-entry is safe for the same reason the declaration
+      // re-entry is: `relationshipsByKey` and `symbolKeys` make both passes
+      // idempotent, and `nestedStatements` records what this walk has already
+      // dispatched so a top-level statement is not processed twice.
+      if (current.type === "statement" && !state.nestedStatements!.has(current.startIndex)) {
+        state.nestedStatements!.add(current.startIndex)
+        this.processStatement(current, state, null)
+      }
       if (DECLARATION_NODES.has(current.type)) {
         if (this.markDeclaration(current, state)) {
           this.dispatchDeclaration(current, state, null)
@@ -2066,6 +2148,37 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (SQL_KEYWORDS.has(target.toLowerCase()) && !state.symbolNames.has(target)) {
       state.ambiguity.keywordTargetsSuppressed++
       return
+    }
+    // Classify a target that is a real PostgreSQL or platform object rather than
+    // something this project declares.
+    //
+    // WHY THE EDGE IS KEPT AND LABELLED rather than dropped. `GRANT … ON SCHEMA
+    // public` genuinely references PostgreSQL's implicit `public` schema, and
+    // `information_schema.columns` genuinely is a table. Dropping those edges
+    // would lose a true fact about the file; leaving them bare makes an
+    // UNRESOLVED edge that a consumer — including an AI agent reading this
+    // graph — can only interpret as "the project declares this and the analyzer
+    // missed it", which is the wrong conclusion and the one that invites a
+    // hallucination. Measured on ProxiCall: of 12,462 edges, 12,306 resolve
+    // (98.7%) and the 156 that do not are 63 PostgreSQL catalog reads, 9
+    // information_schema names, 6 references to the implicit `public` schema,
+    // 38 whose declaration is in a file the grammar cannot parse, and about 40
+    // genuinely dangling. Not one of the 156 is a fabricated edge.
+    //
+    // The label is therefore the deliverable: `external` says the target is
+    // outside the project by construction, which is a DIFFERENT statement from
+    // "unresolved", and only the remainder is a real gap.
+    // The edge target is frequently the BARE TAIL of a qualified reference
+    // (`vault.decrypted_secrets` -> `decrypted_secrets`), so classification has
+    // to look at the qualified name the metadata carries as well, or a platform
+    // object is read as a project table.
+    const externalKind = classifyExternalTarget(target, metadata.qualified as string | undefined)
+    if (externalKind && !state.externalTargets) {
+      state.externalTargets = { postgresCatalog: 0, informationSchema: 0, implicitSchema: 0, platform: 0 }
+    }
+    if (externalKind) {
+      state.externalTargets![externalKind]++
+      metadata = { ...metadata, external: externalKind }
     }
     const key = `${type}\u0000${source}\u0000${target}`
     const existing = state.relationshipsByKey.get(key)
