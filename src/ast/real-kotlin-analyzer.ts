@@ -387,9 +387,37 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: _owner,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
+          // K1 (M60 kotlin deep review, 2026-09-27): a SYNTHESIZED member's
+          // name is written nowhere in the file. `data class C(val a: Int)`
+          // produces component1 / copy / equals / hashCode / toString, and the
+          // code above already knows it — `isSynthetic` is computed, and the
+          // LINE is correctly omitted for exactly this reason. The confidence
+          // was the one field left claiming otherwise.
+          //
+          // This is the same defect the java pass closed as JD-J13, verbatim in
+          // shape: an inference published at maximum confidence, on a branch
+          // that already carries the knowledge it is wrong about. Probed here:
+          //
+          //     data class C(val a: Int)
+          //       C->a           conf=1.0  line=1     (declared — correct)
+          //       C->component1  conf=1.0  line=-     (synthesized)
+          //       C->copy        conf=1.0  line=-     (synthesized)
+          //       C->equals      conf=1.0  line=-     (synthesized)
+          //       C->hashCode    conf=1.0  line=-     (synthesized)
+          //       C->toString    conf=1.0  line=-     (synthesized)
+          //
+          // Five of six containment edges name a method with no declaration, at
+          // maximum confidence, while the one real member sits beside them at the
+          // same confidence with a real line. A consumer cannot tell them apart
+          // without knowing the `isPhantom` convention.
+          //
+          // Fixed the way java's JD-J13 was: keep the edge (the containment is
+          // real and useful — `C.component1` does exist), mark it, and demote
+          // below the 0.7 fabrication threshold so it reads as declared
+          // suspicion and a consumer can filter on it.
+          confidence: isSynthetic ? 0.6 : 1.0,
           ...(!isSynthetic && s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: { isContained: true },
+          metadata: { isContained: true, ...(isSynthetic ? { inferred: true } : {}) },
         })
       }
       // Overrides: real methods with 'override' modifier, keyed by
