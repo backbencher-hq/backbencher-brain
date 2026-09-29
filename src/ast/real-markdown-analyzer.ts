@@ -83,6 +83,46 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    /**
+     * A heading's GitHub anchor, derived from its DISPLAY text.
+     *
+     * A same-document link `[see](#install)` names a heading by its anchor, not by its
+     * text, and the two are not the same string: GitHub lowercases, drops every
+     * character that is not a letter, digit, space or hyphen, turns spaces into
+     * hyphens, and gives a repeated anchor a `-1`, `-2` ordinal. So `## Install Now!`
+     * is `#install-now`, and a second `## Install Now!` is `#install-now-1`.
+     *
+     * This lane had no notion of an anchor at all, which is why 8,839 of the 10,182
+     * bare `#anchor` targets in a 420-file draw named no heading — not because the
+     * links are broken (most are not) but because the lane published heading TEXT
+     * where a link names a heading's ANCHOR, so the two spellings could never meet.
+     *
+     * Character codes, not a regex, for the reason the closing-run trim uses them:
+     * 0 regex literals is a measured, pinned property of this analyzer and a slug
+     * function is exactly the kind of place a `/[^a-z0-9]+/g` reaches for. What is
+     * left is a loop over code units and an if-chain, which is also easier to read as
+     * the specification it is: this IS the algorithm, spelled out.
+     *
+     * ASCII-only, and that is a DECLARED boundary (MD-D6) rather than an oversight:
+     * GitHub's slugger keeps Unicode letters, so `Café` is `#café` and this would be
+     * `#caf`. Measured on the pinned corpus: 24 headings contain non-ASCII characters
+     * and all 24 are Unicode PUNCTUATION (`What’s new in…`), which the renderer also
+     * drops, so ASCII-only matches every one of them; and 0 corpus links target a
+     * non-ASCII anchor. Telling a Unicode letter from Unicode punctuation without a
+     * pattern is the whole of the problem.
+     */
+    const anchorSlug = (text: string): string => {
+      let out = ""
+      for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i)
+        const ch = text[i]
+        if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57)) out += ch.toLowerCase()
+        else if (c === 32 || c === 9 || c === 45) out += "-"
+        // everything else — ASCII punctuation — is dropped
+      }
+      return out
+    }
+
     // A relationship's identity is (source, type, target, SITE LINE) — the M59 #822
     // rule, and the same key the store's own relationship primary key uses. Without
     // the line, the two `heading -> code_block.scala` edges of a two-block section
@@ -157,6 +197,18 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     let currentOwnerId: string | undefined = undefined
     // Document-level container for top-level facts.
     const DOC = "document"
+
+    // Same-document references, resolved after the walk.
+    //
+    // `anchorMap` is filled as headings are published, so by the time the walk ends
+    // every heading's ANCHOR and its RESOLVED spelling are both known. The ordinal is
+    // kept per anchor rather than per site, because two headings under DIFFERENT
+    // parents can share an anchor — `## Install` under `# A` and `## Install` under
+    // `# B` are two sites with distinct ids and one anchor, and GitHub disambiguates
+    // them with `-1` exactly as it does for two identical headings under one parent.
+    const anchorMap = new Map<string, { name: string; line: number }>()
+    const anchorOccurrences = new Map<string, number>()
+    const pendingAnchors: { source: string; fragment: string; literal: string; line?: number }[] = []
 
     // Collect all inline node byte offsets in source order for matching.
     const inlineStarts = new Set<number>(mdInlineStarts)
@@ -237,6 +289,15 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // construction, and the self-edge filter — which exists to stop a symbol
           // referring to itself — has nothing to stop here.
           if (owner) addRel(owner, ASTEngine.RelationshipType.Contains, target, { role: "heading_hierarchy" }, range.startLine, ownerId !== id)
+          // Register the anchor against the spelling this heading is PUBLISHED under,
+          // so a same-document link resolves to a name the file actually declares.
+          const slug = anchorSlug(name)
+          if (slug) {
+            const seen = (anchorOccurrences.get(slug) ?? 0) + 1
+            anchorOccurrences.set(slug, seen)
+            const key = seen === 1 ? slug : `${slug}-${seen - 1}`
+            if (!anchorMap.has(key)) anchorMap.set(key, { name: target, line: range.startLine })
+          }
           // The stack carries the RESOLVED spelling, so a child of a repeated parent
           // names the parent the way the parent is published and the way the parent's
           // own incoming edge names it. Three spellings of one thing would be the
@@ -247,7 +308,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         patterns.push("Markdown headings")
         // Emit inline-derived uses for this heading's inline content.
-        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions)
+        this.emitInlineUses(node, inlineByStart, addRel, currentOwner ?? DOC, definitions, pendingAnchors)
         continue
       }
 
@@ -258,7 +319,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
         const inline = inlineByStart.get(node.startIndex)
         if (inline?.tree?.rootNode) {
           const source = currentOwner ?? DOC
-          this.walkInlineTree(inline.tree.rootNode, addRel, source, inline.line, definitions)
+          this.walkInlineTree(inline.tree.rootNode, addRel, source, inline.line, definitions, pendingAnchors)
         }
         continue
       }
@@ -399,6 +460,57 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Same-document references, resolved now that every heading's published spelling
+    // is known.
+    //
+    // A fragment is URL-decoded and lowercased before lookup, because that is the form
+    // a fragment is written in: a link to `#Install%20Now` and one to
+    // `#install-now` name the same heading. The ANCHOR is already lowercase, so the
+    // comparison is on the decoded fragment.
+    let anchorsResolved = 0
+    let anchorsUndefined = 0
+    for (const p of pendingAnchors) {
+      const frag = this.decodeFragment(p.fragment)
+      const hit = frag ? anchorMap.get(frag) : undefined
+      if (!hit) {
+        // MD-D1's ruling, applied to the internal case: a reference that names nothing
+        // is NOT published. An undefined reference link already takes this path (a
+        // measured 171 fabricated endpoints, dominated by bare citation markers), and
+        // an unresolved fragment is the same defect with a different spelling — an
+        // edge whose endpoint is a name no symbol declares. Publishing it would put
+        // back, in the one class this round spent its effort removing, exactly what
+        // was removed. The COUNT is disclosed rather than dropped, so the information
+        // survives as a measurement even where the edge does not.
+        anchorsUndefined++
+        continue
+      }
+      anchorsResolved++
+      // The line is the HEADING's, not the link's, and that is the house convention
+      // rather than a preference: M59 #825 takes `line_number` from the node that
+      // CARRIES THE NAME the edge is about, and java's mapped-column edge does the
+      // same thing for the same reason (the column is named inside the annotation, so
+      // the annotation's line is the edge's line). It is also what makes the edge
+      // RESOLVE: the store keys an endpoint as `${fileId}:${name}:${line}`, so a
+      // target-name-plus-link-line pair would name a row that does not exist — the
+      // dangling-endpoint class again, one line away. The link's own line is kept in
+      // metadata, so where the author wrote it is not lost.
+      addRel(
+        p.source,
+        ASTEngine.RelationshipType.Uses,
+        hit.name,
+        {
+          role: "markdown_internal_anchor",
+          linkText: p.literal,
+          linkForm: "internal_anchor",
+          anchor: frag,
+          ...(p.line ? { linkLine: p.line } : {}),
+        },
+        hit.line,
+      )
+    }
+    if (anchorsResolved > 0) patterns.push("Markdown internal anchor references")
+    if (anchorsUndefined > 0) patterns.push(`Markdown undefined internal anchors: ${anchorsUndefined}`)
+
     this.classifyEvidenceTier(relationships)
 
     return {
@@ -512,11 +624,12 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     addRel: (source: string, type: string, target: string, metadata: Record<string, unknown>, line?: number) => void,
     source: string,
     definitions: Map<string, { destination: string; line: number }>,
+    pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
   ): void {
     const inline = this.findChildByType(node, new Set(["inline"]))
     if (!inline) return
     const entry = inlineByStart.get(inline.startIndex)
-    if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions)
+    if (entry?.tree?.rootNode) this.walkInlineTree(entry.tree.rootNode, addRel, source, entry.line, definitions, pendingAnchors)
   }
 
   /**
@@ -548,6 +661,7 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
     source: string,
     baseLine: number,
     definitions: Map<string, { destination: string; line: number }>,
+    pendingAnchors?: { source: string; fragment: string; literal: string; line?: number }[],
   ): void {
     const fileLine = (node: any): number | undefined => {
       if (typeof baseLine !== "number" || baseLine <= 0) return undefined
@@ -562,7 +676,21 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
           // destination and never a code span's punctuation.
           const target = inn.text.trim()
           if (target) {
-            addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_link", linkText: target }, fileLine(inn))
+            // A destination that is ONLY a fragment names a heading in THIS document,
+            // so it is an internal reference and not an external one. It is deferred
+            // rather than emitted here, for one reason: a link may precede the heading
+            // it points at, so at this point in the walk that heading's resolved
+            // spelling does not exist yet. Deferring costs one list and gets the
+            // resolution exact, where a pre-pass would have had to re-derive every
+            // heading's identity — and a second implementation of the identity rules
+            // is exactly the failure this lane has already paid for twice (the oracle
+            // and the analyzer agreeing on a name neither published, then 28.7% of
+            // relationships naming symbols the file did not declare).
+            if (pendingAnchors && target.charCodeAt(0) === 35 /* '#' */) {
+              pendingAnchors.push({ source, fragment: target.slice(1), literal: target, line: fileLine(inn) })
+            } else {
+              addRel(source, ASTEngine.RelationshipType.Uses, target, { role: "markdown_link", linkText: target }, fileLine(inn))
+            }
           }
           break
         }
@@ -683,6 +811,41 @@ export class RealMarkdownAnalyzer implements ASTEngine.LanguageAnalyzer {
       return t.slice(1, -1)
     }
     return t
+  }
+
+  /**
+   * A link fragment, percent-decoded and lowercased, for comparison against a heading
+   * anchor. No regex, and no `decodeURIComponent` either: that throws on a malformed
+   * escape (`#100%`), and a document with a typo in a link would then fail to parse
+   * rather than fail to resolve. The decode is skipped for any escape that is not a
+   * valid pair of hex digits and the raw text is used instead — a fragment that
+   * cannot be decoded cannot match a slug that contains only letters, digits and
+   * hyphens anyway, so the fallback loses nothing that could have resolved.
+   */
+  private decodeFragment(frag: string): string {
+    let out = ""
+    for (let i = 0; i < frag.length; i++) {
+      const c = frag.charCodeAt(i)
+      if (c === 37 /* '%' */ && i + 2 < frag.length) {
+        const hi = this.hexVal(frag.charCodeAt(i + 1))
+        const lo = this.hexVal(frag.charCodeAt(i + 2))
+        if (hi >= 0 && lo >= 0) {
+          out += String.fromCharCode(hi * 16 + lo)
+          i += 2
+          continue
+        }
+      }
+      out += frag[i]
+    }
+    return out.toLowerCase()
+  }
+
+  /** -1 for anything that is not a hex digit. */
+  private hexVal(c: number): number {
+    if (c >= 48 && c <= 57) return c - 48
+    if (c >= 97 && c <= 102) return c - 87
+    if (c >= 65 && c <= 70) return c - 55
+    return -1
   }
 
   private headingLevel(node: Node): number {

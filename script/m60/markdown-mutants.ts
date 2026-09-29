@@ -30,6 +30,7 @@
  *   `markdown/repeat-site-name-collapsed`   28.7% of relationships named a symbol the file did not declare
  *   `markdown/parent-name-collision-dropped` a heading under an identically-named parent published no edge
  *   `markdown/table-column-symbol-dropped`  every table-column edge named a symbol that was never declared
+ *   `markdown/internal-anchor-unresolved`  10,174 same-document references, none of them resolvable
  *
  * The last one is the most interesting, and it inverts the usual shape. Every other
  * mutant REMOVES a fact; that one ADDS one, by descending into `code_span` children that
@@ -367,6 +368,28 @@ export const MARKDOWN_MUTANTS = [
     transform: (r: MutantResult) => ({
       ...r,
       symbols: (r.symbols ?? []).filter((s: any) => !s.metadata?.isMarkdownTableColumn),
+    }),
+  },
+  {
+    id: "markdown/internal-anchor-unresolved",
+    language: "markdown",
+    defectClass: "dangling-endpoint",
+    description:
+      "REVERT: a same-document reference is published with its RAW FRAGMENT as the target, i.e. the " +
+      "state this round measured at 10,174 fragments in a 420-file draw, every one an edge to a name no " +
+      "symbol declared. A link writes a heading's ANCHOR and the lane published heading TEXT, so the two " +
+      "spellings could not meet: `## Install Now!` publishes as `Install Now!` and a link to it says " +
+      "`#install-now`, and nothing in the file is called `install-now`. 10,158 of those references now " +
+      "resolve and 16 name a heading that does not exist. The differential could not see it for the same " +
+      "reason it could not see MD-12: the oracle derived the same raw fragment, so the two agreed at 100% " +
+      "on a name neither published. Caught by markdown/internal-anchor-links' `forbidRelationships`, whose " +
+      "rows name the raw fragment specifically because an implementation that resolved nothing and one " +
+      "that resolved everything-but-wrote-the-fragment both look correct to a count.",
+    transform: (r: MutantResult) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.linkForm === "internal_anchor" ? { ...x, target: `#${x.metadata.anchor}` } : x,
+      ),
     }),
   },
 ]

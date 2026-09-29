@@ -82,6 +82,49 @@ Numbering stays per owner, not per file: a name shared by several sites is
 separated by the relationship's line, and 44% of symbols sharing a name is the
 store's design rather than a defect to renumber away.
 
+## Internal references: a link names a heading's ANCHOR, and the anchor is not the text
+
+A link whose destination is only a fragment names a heading in the same document,
+written as that heading's **GitHub anchor** rather than its text. Those are different
+strings: `## Install Now!` is published as `Install Now!` and its anchor is
+`#install-now`, and nothing in the file is called `install-now`. This lane had no
+notion of an anchor at all, so the two spellings could not meet.
+
+Measured over 420 pinned corpus files: **10,174 bare fragments, of which 10,158 now
+resolve** to a published heading and **16 name a heading that does not exist**.
+Before, none of the 10,174 could resolve, by construction.
+
+| | rule |
+|---|---|
+| anchor | lowercase; keep letters, digits and hyphens; spaces and tabs become hyphens; everything else dropped |
+| repeated anchor | a second `#duplicate` is `#duplicate-1` — two identical headings are two sites and therefore two anchors |
+| fragment | percent-decoded, then lowercased. An invalid escape falls back to the raw text rather than throwing, so a typo in a link cannot fail a parse |
+| resolution | **deferred to the end of the walk** — a link may precede the heading it names |
+| no match | **not published**, and counted in `metadata.patterns` as `Markdown undefined internal anchors: N` |
+| edge line | the **heading's** line, with the link's own line kept as `metadata.linkLine` |
+
+The last two rows carry most of the weight. Deferring is what makes the forward
+reference work, and a second implementation of the identity rules — the alternative, a
+pre-pass — is the failure this lane has now paid for twice: once when the oracle and
+the analyzer agreed on a name neither published, and once at 28.7% of relationships
+naming symbols the file did not declare.
+
+The edge carries the **heading's** line because M59 #825 takes `line_number` from the
+node that carries the name the edge is about — java's mapped-column edge does the same
+for the same reason — and because it is the only choice under which the store's
+`fileId:name:line` endpoint key resolves. The link's own line is not lost: it is
+`metadata.linkLine`.
+
+**Declared limitation.** GitHub's slugger keeps Unicode letters, so `Café` is
+`#café`; this lane's slug is ASCII-only and would produce `#caf`. The rule is
+ASCII-only deliberately and by measurement: the corpus has 24 headings with non-ASCII
+characters and all 24 are Unicode *punctuation* (`What’s new in…`), which the renderer
+also drops, so ASCII-only matches every one of them, and 0 corpus links target a
+non-ASCII anchor. Telling a Unicode letter from Unicode punctuation without a pattern is
+the whole problem, and the zero-regex property is measured and pinned — so the boundary
+is declared (MD-D6) rather than approximated. Documents affected: 0 as measured,
+unknown in general.
+
 ## Reference links, and the one place the lane deliberately emits nothing
 A reference link's destination lives in a block-level definition, so the whole
 form produced **no edge at all** before this round: 671 sites (44 uses + 627
@@ -125,7 +168,7 @@ why the M60 complexity gate refuses to score a row with no `loadRule` and no
 ## Known limitations
 - Grammar surface is enumerated in `script/m14/spec/markdown-completeness.json`:
   72 public named types across both grammars, **29 handled_verified / 41
-  internal_silent / 2 gap**, plus 5 design decisions. Every silent class carries a
+  internal_silent / 2 gap**, plus 6 design decisions. Every silent class carries a
   measured site count over the pinned corpus rather than a shrug.
 - `MD-G1` **open**: an *indented* (4-space) code block publishes nothing while a
   fenced one publishes `code_block.<lang>`. 2 sites in 2 of 738 files — a small
