@@ -1678,25 +1678,27 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           line_number: s.range?.startLine,
           metadata: { phpSpecific: true, isOverride: true },
         })
-      } else if (!inFileMethods && !context?.overrideCompanion?.get(base)) {
-        // Pass 3 (family parity with java/groovy resolveOverrides): the base
-        // is not declared in this file and the companion index gave no
-        // opinion (it is never populated in production — see M37.10), so
-        // declaring-parent verification is impossible. Emit the deterministic
-        // first-parent guess BELOW the patterns.ts threshold (0.7): visible
-        // in raw output, never contaminating thresholded analysis, and
-        // counted as heuristic (honest suspicion) by the differential. The
-        // pre-M37.10 behavior dropped the edge entirely when the base was
-        // external — silently losing every cross-file override.
-        relationships.push({
-          source: `${s.ownerName}.${s.name}`,
-          target: `${base}.${s.name}`,
-          type: ASTEngine.RelationshipType.Overrides,
-          confidence: 0.5,
-          line_number: s.range?.startLine,
-          metadata: { phpSpecific: true, isOverride: true, reasonCode: "first-parent-guess" },
-        })
       }
+      // M12.PHP-OVERRIDE-AUDIT: the 0.5 "first-parent-guess" edge that used to
+      // stand here asserted an override for EVERY method of a class whose base
+      // lives in another file, without ever checking that the base declares
+      // that method. The companion index that could verify it is never
+      // populated in production (M37.10), so in production EVERY cross-file
+      // override was that guess. `script/m12/php-override-audit.ts` measured it
+      // on phpunit@c8d6921f: of the guesses it could decide against the real
+      // declaring file, 66.7% were FALSE — e.g.
+      // StringEqualsStringIgnoringWhitespace.normalizeWhitespace "overrides"
+      // Constraint.normalizeWhitespace, and Repeat.times "overrides"
+      // Metadata.times; neither method is declared on the base at all.
+      //
+      // The edge sat below the 0.7 threshold, so pool-worker already dropped
+      // it and it never reached the graph — meaning the guess bought no real
+      // cross-file override while manufacturing a large majority-false
+      // unverified bucket (369 edges across the two sampled corpora, all of it
+      // `overrides`). An `overrides` edge is now emitted ONLY when the base's
+      // declaration is actually visible — in this file, or via the project
+      // companion index — at confidence 0.95. Restoring cross-file coverage
+      // honestly means populating that companion, not guessing.
     }
   }
 
