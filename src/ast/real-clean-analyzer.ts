@@ -252,6 +252,15 @@ interface CleanContext {
    * honest about how much it does not know.
    */
   typeCoercions: { count: number; names: string[] }
+  /**
+   * Imported OPERATOR items. A Clean operator cannot be written as
+   * `<module>:<item>` — every one contains a colon and the shared resolver splits
+   * that form on the LAST colon — so these emit no `imports` edge. Counted so the
+   * dependency stays visible.
+   */
+  operatorImports: { count: number; names: string[] }
+  /** Locals whose enclosing frame was lost to a parse-ERROR region; see `localOwner`. */
+  detachedLocals: number
   /** Scoped frame identity -> decision points counted inside it. */
   frameComplexity: Map<string, number>
 }
@@ -418,6 +427,8 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       fileComplexity: 1,
       declinedInstantiations: { count: 0, names: [] },
       typeCoercions: { count: 0, names: [] },
+      operatorImports: { count: 0, names: [] },
+      detachedLocals: 0,
       frameComplexity: new Map(),
     }
     const scopeStack: Scope[] = []
@@ -667,6 +678,13 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         // because the construct is known rather than unclassifiable.
         typeCoercions: ctx.typeCoercions.count,
         typeCoercionNames: ctx.typeCoercions.names,
+        // Imported operators: a real dependency the shared `<module>:<item>` edge
+        // form cannot express, so it is counted rather than emitted unresolvable.
+        operatorImports: ctx.operatorImports.count,
+        operatorImportNames: ctx.operatorImports.names,
+        // Locals whose enclosing function the pinned grammar could not read, so the
+        // module owns them instead of a frame that does not exist.
+        detachedLocals: ctx.detachedLocals,
       },
     }
   }
@@ -705,6 +723,31 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         const items = this.importItems(n, moduleNodes)
         for (const it of items) {
+          // An OPERATOR item cannot be written as `<module>:<item>`.
+          //
+          // The item is the shared edge form and `import-resolution.ts` splits it
+          // on the LAST colon (`:232` — "a specifier may itself contain one"),
+          // which is right for a file path and wrong for a Clean operator, because
+          // EVERY Clean operator contains a colon. `from UtilStrictLists import
+          // StrictListToList, :: List, :!, IsEmptyList` produced the target
+          // `UtilStrictLists::!`, and the resolver read module `UtilStrictLists::`
+          // and item `` — an edge that names a module which does not exist and an
+          // item that is empty. The 2,179-file corpus has 10 of these across 4
+          // files, and the honesty gate found every one.
+          //
+          // Parenthesising does not rescue it either: `(:!)` would split correctly
+          // but would not match the exporting module's export surface, where the
+          // operator is normalised to the BARE `:!`. So the two conventions cannot
+          // both hold, and the lane's rule is the tie-breaker: do not emit an edge
+          // that provably cannot resolve. The dependency is real, so it is counted
+          // and published rather than dropped.
+          if (it.name.includes(":")) {
+            ctx.operatorImports.count++
+            if (ctx.operatorImports.names.length < 25 && !ctx.operatorImports.names.includes(it.name)) {
+              ctx.operatorImports.names.push(it.name)
+            }
+            continue
+          }
           const key = `${edgeSource}|${it.module}:${it.name}|${it.line}`
           if (importEdges.has(key)) continue
           importEdges.add(key)
@@ -1676,16 +1719,33 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.childForFieldName("body")) ctx.patterns["Inline Machine Code"] = true
 
     ctx.patterns["Type Classes"] = true
-    // A polymorphic instance publishes no symbol, so it must not own a scope under
-    // the type VARIABLE's name either: the member `contains` edges would carry a
-    // source that resolves to nothing. Measured — the honesty gate failed on exactly
-    // that, 20 `contains` edges in `_SystemStrictLists.icl` reading `a -> _cons`,
-    // `_cons_u`, `decons_u` and six siblings, from the six `instance List [] a
-    // where` forms. Naming the frame after the CLASS keeps the ownership real
-    // (`List` is a symbol this file publishes) without inventing an instance row.
+    // The frame's name must be something THIS FILE publishes, or every member
+    // `contains` edge carries a source that resolves to nothing. Three cases, in the
+    // order they can satisfy it:
+    //
+    //   1. the instance publishes a symbol, so the frame is that symbol's name;
+    //   2. the instance is polymorphic (no symbol) but its CLASS is declared here,
+    //      so the class owns the members;
+    //   3. neither — the class is imported and the target is a variable
+    //      (`instance uSeq [] a` in clean-libraries' Loes, where `uSeq` lives in
+    //      StdEnv). Then the members are declared IN THIS FILE and the module is
+    //      the nearest owner that exists.
+    //
+    // Case 3 was found by the honesty gate on the 2,179-file corpus: 25
+    // `contains` edges across 3 files read `uSeq -> uCons`, `CollX -> Insert`,
+    // `Seq -> Head` and siblings, every source a class declared in another file.
+    // Attributing a member to an imported class is a real relationship the store
+    // cannot make without cross-file state, and a `contains` edge that resolves to
+    // nothing is worse than one that resolves to the file that really contains the
+    // member.
+    const frameOwner = !targetIsPolymorphic
+      ? targetType
+      : ctx.declaredClassNames.has(className)
+        ? className
+        : (ctx.currentModule ?? className)
     scopeStack.push({
       node,
-      name: targetIsPolymorphic ? className : targetType,
+      name: frameOwner,
       kind: ASTEngine.SymbolKind.Class,
     })
     return true
@@ -1860,6 +1920,35 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
    * case equations are ONE function, so they merge into one symbol with the case
    * kinds recorded, exactly as multi-clause definitions merge.
    */
+  /**
+   * The owner of a `where`/`with`/`let` binder.
+   *
+   * Normally the enclosing FRAME, which is what makes a local's identity scoped and
+   * its `contains` edge resolvable. But a local can be reached with no frame at all
+   * when the pinned grammar could not read the function it belongs to: a
+   * tuple-destructuring `where` binding — `(transition_nr, transition) =
+   * SelectTransition 0 head …` — is not in the grammar, so it becomes an ERROR node
+   * and everything after it inside that function sits inside the ERROR subtree,
+   * detached from the `function_declaration` that would have opened the frame.
+   *
+   * Measured on the 2,179-file corpus: 7 such locals — `left` and `right` in
+   * `ObjectIO/…/turing/tm.icl`, `key` and `keyIndex` in `Ed/EdKeyMapping.icl`,
+   * `toolBoxFun` and `okWindowKeyboardAtt` in `ObjectIO/…/keyboardevent.icl`, and
+   * `sp` in `Charlie.icl` — each found by the honesty gate as a symbol carrying an
+   * `ownerKind` with no `ownerName`.
+   *
+   * Falling back to the MODULE is the honest answer rather than a fudge: the binder
+   * really is declared in this file, and the module is the nearest owner that
+   * EXISTS. A symbol with no owner resolves to nothing, and the file-level count
+   * records that the enclosing function was lost to damage instead of pretending
+   * the local is module-level by design.
+   */
+  private localOwner(ctx: CleanContext): string | undefined {
+    if (ctx.currentFrame !== undefined) return ctx.currentFrame
+    if (ctx.currentModule !== undefined) ctx.detachedLocals++
+    return ctx.currentModule
+  }
+
   private processCallableNode(
     node: Node,
     ctx: CleanContext,
@@ -1941,7 +2030,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       // resolved against. A module-level symbol needs none: its name is already
       // unique in the file, and the store falls back to `name`.
       ...(scopedName ? { qualifiedName: scopedName } : {}),
-      ownerName: isLocal ? ctx.currentFrame : currentScope?.name || ctx.currentModule,
+      ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
       ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
       visibility: isLocal ? "local" : "public",
       complexity: 1,
@@ -1981,7 +2070,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Macro,
         range: this.nodeToRange(node),
         scope: currentScope?.name,
-        ownerName: isLocal ? ctx.currentFrame : currentScope?.name || ctx.currentModule,
+        ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
         ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
         visibility: isLocal ? "local" : "public",
         qualifiedName: isLocal ? (ctx.currentFrame === undefined ? name : `${ctx.currentFrame}.${name}`) : undefined,
@@ -2187,7 +2276,7 @@ export class RealCleanAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       scope: currentScope?.name,
       ...(isLocal ? { qualifiedName: ctx.currentFrame === undefined ? name : `${ctx.currentFrame}.${name}` } : {}),
-      ownerName: isLocal ? ctx.currentFrame : currentScope?.name || ctx.currentModule,
+      ownerName: isLocal ? this.localOwner(ctx) : currentScope?.name || ctx.currentModule,
       ownerKind: isLocal ? ASTEngine.SymbolKind.Function : currentScope?.kind,
       visibility: isLocal ? "local" : "public",
       // A member whose only occurrence is a signature is an ABSTRACT member: the
