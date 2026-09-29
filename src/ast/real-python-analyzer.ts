@@ -343,7 +343,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // swift/objc all do — python was the only managedoo analyzer with none).
     // classifyEvidenceTier runs LAST so every edge — including declared-type
     // refs and member uses created above — leaves with an evidenceClass.
-    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs)
+    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.classifyEvidenceTier(ctx.relationships)
 
@@ -1078,7 +1078,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scalar types (str/int/float/bool/bytes) are excluded from names; unions
    * (T | U), optionals, and generics descend via their children.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>): void {
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>, moduleName: string): void {
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
 
@@ -1112,7 +1112,29 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         p = p.parent
       }
-      return "global"
+      // PY-4. This used to return the LITERAL STRING "global" — a Python KEYWORD used
+      // as a scope name — whenever a statement had no enclosing function or class. Three
+      // things were wrong with it at once.
+      //
+      // A name that is not a name: `global` is not a scope, a module, or anything a
+      // reader can navigate to. This is the M60 R7 class, the same one markdown hit when
+      // an empty ATX heading published a symbol named `#`.
+      //
+      // Not tolerated by the store: `GENERIC_SOURCE_NAMES` is
+      // `["unknown", "SCSS_FILE_SCOPE", "window", "exports", "default", "GlobalScope"]` —
+      // the names the indexer knows are synthetic scopes — and `global` is not among
+      // them, so Python's synthetic scope took a path no other lane's takes.
+      //
+      // And INCONSISTENT WITH ITS OWN FILE: `imports` in the same module attributes the
+      // import to `ctx.moduleName`, the file's stem. One module, two spellings for one
+      // scope, from one analyzer, so neither can be trusted as the module's identity.
+      //
+      // So it returns the module name — the SAME derivation `imports` already uses, one
+      // line away, which is what makes this a consistency fix rather than a new
+      // convention. `__init__.py` yields `__init__`, which is a weak module name; that is
+      // a property of the file stem, it is the string `imports` has always published, and
+      // improving the stem derivation is a separate change with its own blast radius.
+      return moduleName
     }
 
     const emit = (source: string, roots: (Node | null | undefined)[], relType: string): void => {
