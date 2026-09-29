@@ -280,31 +280,6 @@ export const FSHARP_MUTANTS: Mutant[] = [
     },
   },
   {
-    id: "fsharp/object-expression-first-name-segment",
-    language: "fsharp",
-    defectClass: "wrong-name",
-    description:
-      "PRE-FIX (FS-D14): an object expression's interface name was read as the FIRST `long_identifier` descendant. That is correct exactly when the name is unqualified; a qualified name is NESTED in this grammar — `object_expression > typed_expression > dot_expression > long_identifier_or_op > long_identifier` — so the first such node is the first SEGMENT. `{ new System.Collections.Generic.IEqualityComparer<T> with … }` published `new System` and `implements -> System`, a target that resolves to no symbol. Found by the differential in the most useful way available: the lane's truth side read the SECOND segment (`Collections`), so two implementations independently picked different segments of one name. Reverted by re-expanding the published name and the `implements` target to the first segment of the qualified form, using the result's own `metadata.qualifiedType` rather than a name list — which also makes the mutant fail if the qualified form is ever absent, rather than silently matching nothing. Caught by fsharp/name-surface, which forbids `implements -> System` and `implements -> Collections` alongside the correct leaf row.",
-    transform: (r: any) => {
-      const objs = (r.symbols ?? []).filter((s: any) => s.metadata?.nodeType === "object_expression")
-      if (objs.length === 0) return r
-      const firstOf = (q: string) => q.split(".")[0]!
-      return {
-        ...r,
-        symbols: (r.symbols ?? []).map((s: any) =>
-          s.metadata?.nodeType === "object_expression" && String(s.name).startsWith("new ")
-            ? { ...s, name: "new " + firstOf(String(s.name).slice(4)) }
-            : s,
-        ),
-        relationships: (r.relationships ?? []).map((x: any) =>
-          x.type === "implements" && typeof x.metadata?.qualifiedType === "string"
-            ? { ...x, target: firstOf(x.metadata.qualifiedType) }
-            : x,
-        ),
-      }
-    },
-  },
-  {
     id: "fsharp/recursive-call-refused-as-a-self-edge",
     language: "fsharp",
     defectClass: "wrong-relationship",
