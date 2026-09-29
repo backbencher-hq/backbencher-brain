@@ -2232,6 +2232,191 @@ export function deriveKotlinUsesTruth(root: any): { label: string; from: string;
   return edges
 }
 
+/**
+ * M60 (K4, kotlin deep review, 2026-09-27): the `contains` truth.
+ *
+ * 2,654 edges on the primary corpus, from two emission sites: the owner/member
+ * class (every symbol carrying an `ownerName`) and a Compose UI-tree heuristic
+ * (a `@Composable` function's PascalCase calls, conf 0.8, stamped `heuristic`).
+ *
+ * As with `deriveKotlinUsesTruth`, the inventory is derived from DECLARATIONS.
+ * The analyzer's class builds these edges from `symbols[].ownerName`; an oracle
+ * reading that same field would be confirming the analyzer against itself and
+ * would report 100% forever. Everything below is derived from the AST, and
+ * every disagreement is adjudicated rather than absorbed.
+ *
+ * The member rule is "what does this type's body declare", which forces three
+ * distinctions the M60 probes settled:
+ *
+ *   - an enum's body is `enum_class_body`, and holds both `enum_entry` nodes and
+ *     ordinary declarations;
+ *   - a companion's declarations belong to the OWNER class, because
+ *     `companion_object` is not an `object_declaration` and owner resolution
+ *     cannot see it;
+ *   - only a `val`/`var` constructor parameter is a member — a bare parameter
+ *     is a constructor ARGUMENT, distinguishable by its `binding_pattern_kind`.
+ */
+export function deriveKotlinContainsTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (from: string, target: string): void => {
+    if (!from || !target) return
+    const t = stripNameQuoting(String(target).trim())
+    const f = stripNameQuoting(String(from).trim())
+    if (!t) return
+    const k = `contains|${f}|${t}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "contains", from: f, target: t })
+  }
+
+  const namedOf = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const firstNamedOf = (n: any, types: string[]): any => {
+    if (!n) return null
+    for (const t of types) {
+      const c = namedOf(n, t)
+      if (c) return c
+    }
+    return null
+  }
+  const bodyOf = (decl: any): any => namedOf(decl, "class_body") || namedOf(decl, "enum_class_body")
+  const declaredName = (decl: any): string | null => {
+    if (!decl) return null
+    if (decl.type === "property_declaration") {
+      const vd = namedOf(decl, "variable_declaration")
+      const id = vd ? namedOf(vd, "simple_identifier") : null
+      return id ? id.text : null
+    }
+    const id = firstNamedOf(decl, ["simple_identifier", "type_identifier"])
+    return id ? id.text : null
+  }
+
+  // ── the owner/member class ───────────────────────────────────────────────
+  {
+    const st: any[] = [root]
+    while (st.length) {
+      const n = st.pop()!
+      if (n.type === "class_declaration" || n.type === "object_declaration") {
+        const ownerName = firstNamedOf(n, ["type_identifier", "simple_identifier"])?.text
+        if (ownerName) {
+          const collect = (b: any): void => {
+            for (let i = 0; i < b.namedChildCount; i++) {
+              const d = b.namedChild(i)
+              if (!d) continue
+              if (
+                d.type === "property_declaration" || d.type === "function_declaration" ||
+                d.type === "class_declaration" || d.type === "object_declaration" ||
+                d.type === "enum_entry"
+              ) {
+                push(ownerName, declaredName(d) ?? "")
+              }
+              // A companion's members are the owner's.
+              if (d.type === "companion_object") {
+                const cb = bodyOf(d)
+                if (cb) collect(cb)
+              }
+            }
+          }
+          const body = bodyOf(n)
+          if (body) collect(body)
+
+          // Only a val/var constructor parameter is a member; a bare one is an
+          // argument, and the grammar states it with `binding_pattern_kind`.
+          const pc = namedOf(n, "primary_constructor")
+          if (pc) {
+            for (let i = 0; i < pc.namedChildCount; i++) {
+              const cp = pc.namedChild(i)
+              if (cp && (cp.type === "class_parameter" || cp.type === "value_parameter") && namedOf(cp, "binding_pattern_kind")) {
+                push(ownerName, firstNamedOf(cp, ["simple_identifier"])?.text ?? "")
+              }
+            }
+          }
+          // The analyzer publishes a CONSTRUCTOR symbol named after the class, so
+          // a data class contains its own name (`Money contains Money`). Derived
+          // here so the row is COMPARED rather than quietly unexplained; whether
+          // a self-referential containment is the right published shape is a
+          // separate question, recorded in the review rather than decided here.
+          if (pc) push(ownerName, ownerName)
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+
+  // ── the Compose UI-tree class ────────────────────────────────────────────
+  // A `@Composable` function's PascalCase calls, published as `contains` at
+  // conf 0.8 with `relationshipType: compose_ui_tree` and a `heuristic`
+  // classification. The annotation is matched by its SHORT name, because a
+  // fully-qualified `@androidx.compose.runtime.Composable` does not contain the
+  // literal "@Composable" — the analyzer's own stated reason for resolving it
+  // through the AST. Same rule here, for the same reason.
+  {
+    const shortAnnotationName = (a: any): string => {
+      const t = (a?.text ?? "").replace(/^@/, "")
+      const tail = t.split(".").pop() ?? t
+      return tail.replace(/`/g, "")
+    }
+    const st: any[] = [root]
+    while (st.length) {
+      const n = st.pop()!
+      if (n.type === "function_declaration") {
+        let isComposable = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && (c.type === "annotation" || c.type === "modifiers" || c.type === "modifier") && shortAnnotationName(c) === "Composable") {
+            isComposable = true
+          }
+          if (c && c.type === "annotation") {
+            // A modifier wrapper can hold the annotation; check one level in.
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const g = c.namedChild(j)
+              if (g && g.type === "annotation" && shortAnnotationName(g) === "Composable") isComposable = true
+            }
+          }
+        }
+        const nameNode = firstNamedOf(n, ["simple_identifier", "type_identifier"])
+        const bodyNode = namedOf(n, "function_body") || namedOf(n, "class_body")
+        if (isComposable && nameNode && bodyNode) {
+          const calls: any[] = []
+          const cw = (b: any): void => {
+            if (b.type === "call_expression") calls.push(b)
+            for (let i = 0; i < b.namedChildCount; i++) {
+              const c = b.namedChild(i)
+              if (c) cw(c)
+            }
+          }
+          cw(bodyNode)
+          for (const call of calls) {
+            // The callee's TERMINAL segment: `Text(...)` and `androidx.Text(...)`
+            // both name `Text`.
+            let sel: any = call.namedChild(0)
+            if (sel && sel.type === "navigation_expression") sel = sel.namedChild(sel.namedChildCount - 1)
+            if (sel && sel.type === "navigation_suffix") sel = sel.namedChild(sel.namedChildCount - 1)
+            const nm = sel && (sel.type === "simple_identifier" || sel.type === "identifier") ? sel.text : ""
+            if (nm.length > 0 && nm[0] >= "A" && nm[0] <= "Z") push(nameNode.text, nm)
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
+
+  return edges
+}
+
 export function deriveKotlinEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -17327,6 +17512,11 @@ async function main() {
         for (const e of deriveKotlinUsesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 K4: kotlin `contains` — 2,654 edges on the primary corpus from two
+        // emission sites, compared by nothing before this.
+        for (const e of deriveKotlinContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "scala") {
         // M37.21 #610: scala calls oracle (JD-oracle gap, java precedent).
@@ -17714,6 +17904,12 @@ async function main() {
           // measured 0 of the derived truth covered — the same G7 shape
           // documented on the powershell chain below, in a fifth direction.
           ...(lang === "kotlin" ? ["uses"] : []),
+          // M60 K4 (2026-09-27): kotlin joins the contains-audited set. 2,654
+          // edges on the primary corpus, from the owner/member class and the
+          // Compose UI-tree heuristic, with no oracle and no allowlist entry
+          // before this. The existing kotlin contains fixtures pinned ONE
+          // expect and zero forbids, so the class had no protection at all.
+          ...(lang === "kotlin" ? ["contains"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
@@ -17844,6 +18040,13 @@ async function main() {
         // already-gated language -- it can only remove duplicate fabrication.
         .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
 
+      if (process.env.BB_LABEL_DUMP === lang) {
+        const tc: Record<string, number> = {}; for (const te of truth) tc[te.label] = (tc[te.label] ?? 0) + 1
+        const ac: Record<string, number> = {}; for (const r of rels) ac[r.label] = (ac[r.label] ?? 0) + 1
+        const ta = (globalThis as any).__TD ??= {}, aa = (globalThis as any).__AD ??= {}
+        for (const [k, v] of Object.entries(tc)) ta[k] = (ta[k] ?? 0) + v
+        for (const [k, v] of Object.entries(ac)) aa[k] = (aa[k] ?? 0) + v
+      }
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
@@ -18010,6 +18213,12 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
+    if (process.env.BB_LABEL_DUMP === lang) {
+      const ta = (globalThis as any).__TD ?? {}, aa = (globalThis as any).__AD ?? {}
+      const keys = [...new Set([...Object.keys(ta), ...Object.keys(aa)])].sort()
+      console.log(`\n[label-dump] ${lang} truth-vs-comparable per label:`)
+      for (const k of keys) console.log(`[label-dump]   ${k.padEnd(14)} truth=${String(ta[k] ?? 0).padStart(5)}  analyzer=${String(aa[k] ?? 0).padStart(5)}`)
+    }
     console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
     // were captured for exactly this purpose and then had no output path —
