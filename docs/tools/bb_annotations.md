@@ -1,6 +1,6 @@
 # `bb_annotations`
 
-Read annotations for a symbol (or all annotations up to the declared limit) with full provenance on every row: author class, tool identity, and timestamps. No annotations is a declared absence, never an error. To write a note use bb_annotate.
+Read annotations for a symbol, one file's copy of a symbol (optional `path`), or all annotations up to the declared limit, with full provenance on every row: author class, tool identity, and timestamps. Every answer declares its bound: `count` is the page size, `totalCountIfKnown` the true total, and `truncated`/`truncationReason` fire when the limit actually dropped rows — a short page is never mistaken for a complete one. A `symbol` also matches notes written under a symbol's qualified name, the same predicate the editor uses. No annotations is a declared absence, never an error. To write a note use bb_annotate.
 
 ## Contract
 
@@ -23,7 +23,7 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
     },
     "path": {
       "type": "string",
-      "description": "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol"
+      "description": "optional file path; resolved to the index's own spelling first, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol"
     },
     "limit": {
       "type": "number",
@@ -36,7 +36,8 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
 
 ## Returns
 
-- Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)
+- Typed annotations for a symbol or the whole project, with full provenance on every row (author class, tool identity, timestamps)
+- `count` (the page size), `totalCountIfKnown` (the true number of matching annotations) and `truncated` with a `truncationReason` naming the fix — a bounded read declares its bound, like bb_search and bb_graph. This door used to return only `count`, so a project with 300 notes and the default limit answered a flat `count: 50` with no way to know 250 more existed
 - Declared-absent result when none exist — absence is never an error
 
 ## Examples
@@ -54,10 +55,12 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
 - Reads only stored annotations; absence is declared, not inferred
 - Annotation store semantics are owned by the M28 workstream
 - Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them
+- A `symbol` filter also matches notes written under a symbol's QUALIFIED name, because that is one of the two name forms the editor accepts. This is the same predicate `surfacing` reports, so a reader and the editor always agree on which notes exist
+- `path` is resolved to the index's own spelling before filtering, so a reader passing `./src/a.ts` finds the note a writer stored as `src/a.ts`
 
 ## Performance
 
-Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).
+Indexed lookup by project and symbol (brain_annotation_project_symbol_idx). The declared total is a second COUNT over the same predicate, so `totalCountIfKnown` costs one indexed count.
 
 ## Safety
 
