@@ -23,7 +23,7 @@
     "wiredBytes": 165855,
     "pristineSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
     "pristineBytes": 148909,
-    "pristineRetainedAt": "fixtures/make/ab/pristine-make.wasm (with pristine-src/ and grammar.patch, so the A/B is re-runnable)",
+    "pristineRetainedAt": "grammars/tree-sitter-make/ab/pristine-make.wasm (with pristine-src/ and grammar.patch, so the A/B is re-runnable)",
     "patches": [
       "P1 `_ordinary_rule`: target-scoped `target: export VAR = value` (closed MAKE-G3)",
       "P2 `_shell_escape`: `$$( ... )` as a shell command, not a make expansion (closed MAKE-G4)"
@@ -54,11 +54,11 @@
     "_errorNote": "Three of the corpus's 99 files produce a parse error, and the three are NOT the same thing. boundary/Makefile (8 ERROR nodes) and vault/Makefile (1) are real grammar gaps — MAKE-G3 and MAKE-G4. torrentinim/Makefile reports hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token web-tree-sitter does not surface, so the engine emits its generic warning (engine.ts:1264). That file parses into the CORRECT tree and the analyzer's output for it is correct, so it is not a file error. Counting it as one would have hidden the two real gaps behind a third phantom."
   },
   "handled_verified": {
-    "_rule": "The analyzer produces a SYMBOL or an EDGE from this node type, and the behaviour is pinned by a fixture in validation/m14/fixtures/make/ or measured over the corpus. A type is not in this bucket on the strength of the grammar declaring it.",
+    "_rule": "The analyzer produces a SYMBOL, an EDGE, or a METADATA ANNOTATION on a symbol from this node type, AND the behaviour is pinned by a fixture in validation/m14/fixtures/make/ or measured over the corpus. A type is not in this bucket on the strength of the grammar declaring it or a `case` label existing -- a `case` for a node type the walk can never reach is a PHANTOM, which is precisely how the dead `endif_directive` branch and the `undefine_directive` branch both survived until the corpus was asked which declared types it never fires.",
     "_perType": {
       "makefile": "becomes the per-file module symbol; the source of every contains/exports/imports edge",
       "variable_assignment": "Constant symbol, trimmed name, operator from node positions, contains edge, references to $(VAR) in the value",
-      "shell_assignment": "Constant symbol with `!=`; unexercised by this corpus (0 occurrences) and handled on the same path",
+      "shell_assignment": "Constant symbol with the `!=` operator and the shell command as its value; pinned by make/directive-flags",
       "define_directive": "FUNCTION symbol, not a Constant — a `$(call NAME)` that resolves to a constant is a callee that cannot be called",
       "rule": "one Function symbol per non-special target, contains + exports edges, and dependency edges for every prerequisite group including order-only",
       "targets": "read for literal targets; a computed target (`$(UI_TARGETS):`) yields a reference instead of inventing a buildable symbol",
@@ -75,11 +75,10 @@
       "shell_function": "what `include $(shell …)` actually produces — checked by measurement, not by guessing the node type",
       "shell_command": "the body of a shell function; walked, declares nothing",
       "export_directive": "an exports edge; `export NAME` with no `=` wraps a `list` and is the only place that name appears",
-      "unexport_directive": "clears the exported flag on an already-declared name; unexercised by this corpus",
-      "override_directive": "records `isOverride` on the variable it wraps (2 occurrences)",
-      "private_directive": "records `isPrivate`; unexercised by this corpus",
-      "undefine_directive": "records `isUndefine`; unexercised by this corpus",
-      "vpath_directive": "recorded as a search-path pattern; no edge, because a vpath names directories the file does not declare",
+      "unexport_directive": "retracts BOTH the exported flag and the `exports` edge; clearing only the flag left the graph contradicting the symbol table. Pinned by make/directive-flags.",
+      "override_directive": "records `isOverride` on the variable it wraps. The flag is applied AFTER the walk, because the assignment nested inside the directive has not run yet when the directive is read -- applying it eagerly dropped the annotation in the one-line spelling people actually write. Pinned by make/directive-flags and measured at tree-sitter-lua/Makefile:25.",
+      "private_directive": "records `isPrivate`, same deferral and same reason as override_directive. Pinned by make/directive-flags.",
+      "undefine_directive": "records `isUndefine`. Its operand is a bare word in the `variable` FIELD with no named children, so this needed the field rather than a child search -- and until make/directive-flags existed the child search made the branch unreachable.",
       "conditional": "counted for complexity and walked; the declarations inside are attributed to their own owners",
       "ifeq_directive": "control flow, walked",
       "ifneq_directive": "control flow, walked",
@@ -123,12 +122,18 @@
       "unexport_directive",
       "variable_assignment",
       "variable_reference",
-      "vpath_directive",
       "word"
-    ]
+    ],
+    "_verification": {
+      "shell_assignment": "fixture make/directive-flags (DYNAMIC on line 15); 0 corpus occurrences",
+      "unexport_directive": "fixture make/directive-flags (EXPORTED, lines 7-8: the `exports` edge must be RETRACTED, not just the flag cleared); 0 corpus occurrences",
+      "override_directive": "fixture make/directive-flags (OVERRIDDEN, line 12); MEASURED on the corpus at tree-sitter-lua/Makefile line 25, where CFLAGS now records isOverride",
+      "private_directive": "fixture make/directive-flags (SECRET, line 10); 0 corpus occurrences",
+      "undefine_directive": "fixture make/directive-flags (GONE, line 14); 0 corpus occurrences. This branch was a PHANTOM before the fixture: `undefine VAR` carries a bare word in its `variable` FIELD and has no named children, so the search for a nested variable_assignment could never match."
+    }
   },
   "internal_silent": {
-    "_rule": "A container, literal or escape that correctly produces NO symbol and NO edge. These are walked rather than skipped, because a reference nested inside one of them is still a real reference — the bug this bucket exists to prevent is `continue`-ing past a container and losing the declarations under it.",
+    "_rule": "A construct that correctly produces NO symbol and NO edge. These are walked rather than skipped, because a reference nested inside one of them is still a real reference -- the bug this bucket exists to prevent is `continue`-ing past a container and losing the declarations under it. Two reasons a type lands here, and which one applies is recorded per type: (a) it is a container, literal or escape whose contents are handled by their own types, or (b) the thing it names is something the file does not declare, so a symbol for it would assert a declaration that does not exist.",
     "_perType": {
       "recipe": "transparent: references inside are attributed to the enclosing target, not to the recipe",
       "recipe_line": "transparent, as recipe",
@@ -138,7 +143,8 @@
       "concatenation": "a glued path such as `$(TEST_EBIN)/%.beam`; read as its parent's text rather than as a name of its own",
       "pattern_list": "only ever produced INSIDE an ERROR node, by the grammar's partial recovery on target-specific variables; carrying it as silent rather than handled is deliberate, because the analyzer cannot act on a node the grammar itself rejected",
       "archive": "declared by the grammar, 0 occurrences in this corpus, and names no declaration",
-      "paths": "the operand list of a vpath; 0 occurrences, and its parent vpath_directive already records the fact"
+      "paths": "the operand list of a vpath; 0 occurrences, and its parent vpath_directive already records the fact",
+      "vpath_directive": "reason (b): `vpath %.c src` names DIRECTORIES and a wildcard pattern that the file does not declare, so it produces no symbol and no edge by design -- inventing either would assert a declaration that does not exist. It is not silent, though: it is recorded as the `Make vpath` pattern, and BOTH directions are pinned by make/directive-flags (the pattern present, no symbol invented). Before that fixture it produced nothing at all and nothing asserted it, and an unasserted silence is indistinguishable from an unimplemented construct."
     },
     "types": [
       "archive",
@@ -149,7 +155,8 @@
       "pattern_list",
       "recipe",
       "recipe_line",
-      "shell_text"
+      "shell_text",
+      "vpath_directive"
     ]
   },
   "gap": {
@@ -171,7 +178,7 @@
         "id": "MAKE-G3",
         "node_type": null,
         "status": "FIXED",
-        "description": "CLOSED by patching the vendored grammar, after the trade below was MEASURED instead of assumed. The target-scoped form `target: export VAR = value` was not parsed by tree-sitter-make 1.1.1: the line became an ERROR node, so 9 variable names (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH, AWS_PROFILE) were never extracted and the analyzer published error-recovery artefacts instead — `uses install -> BOUNDARY_INSTALL_BINARY=1` and `uses docker-build-dev -> GOOS=$(DEV_DOCKER_GOOS)`, i.e. whole assignment text used as a name. Cause: `variable_assignment` accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` puts the `export` keyword BEFORE the assignment and nothing allowed it after the colon. P1 adds that branch.\n\nThe original ruling was to REFUSE this patch, to protect the source<->wasm identity proof (0 missing / 0 extra, both directions, re-checkable offline) for 10 lines in 2 files. That trade does not survive measurement: the patch adds NO node type and NO field — 44 named / 24 fields before and after, zero added, zero removed — so the proof loses nothing and is re-established for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing and 0 extra. Product level: 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer needed NO change, which is the strongest evidence the patch is well-founded: the constructs it repairs were already modelled, just unreachable. The pristine build and the patch are retained under fixtures/make/ab/ so the A/B stays re-runnable.",
+        "description": "CLOSED by patching the vendored grammar, after the trade below was MEASURED instead of assumed. The target-scoped form `target: export VAR = value` was not parsed by tree-sitter-make 1.1.1: the line became an ERROR node, so 9 variable names (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH, AWS_PROFILE) were never extracted and the analyzer published error-recovery artefacts instead — `uses install -> BOUNDARY_INSTALL_BINARY=1` and `uses docker-build-dev -> GOOS=$(DEV_DOCKER_GOOS)`, i.e. whole assignment text used as a name. Cause: `variable_assignment` accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` puts the `export` keyword BEFORE the assignment and nothing allowed it after the colon. P1 adds that branch.\n\nThe original ruling was to REFUSE this patch, to protect the source<->wasm identity proof (0 missing / 0 extra, both directions, re-checkable offline) for 10 lines in 2 files. That trade does not survive measurement: the patch adds NO node type and NO field — 44 named / 24 fields before and after, zero added, zero removed — so the proof loses nothing and is re-established for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing and 0 extra. Product level: 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer needed NO change, which is the strongest evidence the patch is well-founded: the constructs it repairs were already modelled, just unreachable. The pristine build and the patch are retained under grammars/tree-sitter-make/ab/ so the A/B stays re-runnable.",
         "fixedBy": "grammar patches P1 (grammars/tree-sitter-make/grammar.js `_ordinary_rule`); measured in fixtures/make/out/grammar-ab.json + grammar-ab-product.json"
       },
       {
