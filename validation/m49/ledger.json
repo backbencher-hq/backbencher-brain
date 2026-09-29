@@ -172,11 +172,11 @@
     },
     {
       "id": "Z1",
-      "title": "Zig deep review waves 1 AND 2 (issue #800): wave 1 Z1 complexity, Z2 error columns, Z3 bare reads + Z5 oracle inventory, Z4 error-member resolution, Z6 switch-arm scope, Z7 param bind-by-name, Z8 blank symbols, Z9 local imports (Z10 ruled); wave 2 (2026-09-28) Z11 kind dispatch, Z12 opaque containers, Z13 declared-type leaf, Z14 the references oracle, Z15 compound assignment, Z16 the local annotation, Z17 dead code + declared-type payloads, Z18 the last regex, Z19 the executable body, Z20 export members, Z21 anonymous containers",
+      "title": "Zig deep + extreme review waves (issue #800): Z1 complexity, Z2 error columns, Z3 bare reads + Z5 oracle inventory, Z4 error-member resolution, Z6 switch-arm scope, Z7 param bind-by-name, Z8 blank symbols, Z9 local imports (Z10 ruled)",
       "status": "verified",
-      "notes": "WAVE 1 (2026-09-12): hostile synthetic battery + lane replicas at pinned and 2 rotated seeds (60-200 files, zig + zls) all 0/0. Gated: fixture zig/bare-value-reads (extended), 11 mutants, spec Z1-Z10. The F3 399/399 and F4 461/461 figures in this row were the WHOLE-REPO totals at the wave commit, not the lane's - a reader could not tell the difference, so the lane's own rows are stated instead: zig F3 4/4, F4 23/23 at 5c71e176. WAVE 2 (2026-09-28): the lane's own gates were green when it started (F3 4/4, F4 23/23, grammar audit PASS, differential 0/0) and the wave still found 11 classes - because the differential compared only calls/uses, so the largest class the analyzer emits (references) had NO second opinion (Z14). End of wave 2, at 3249bd33: F3 6/6, F4 37/37, grammar audit PASS at 45 refs, F5 6,866/6,866 covered on a 200-file draw and 7,491/7,491 at full extent on zls, both 0 missing / 0 unexplained, and M59.A7 20,972/20,972 relationships lined with 0 INCONSISTENT on a 200-file draw. Two new fixtures, 14 new mutants, machine-written evidence validation/m12/results/zig-deep-review.json. WAVE 2 LEDGER CORRECTION (#839): the M49.W9 wave row titles this lane's parameter-binding defect 'registered, not landed', which the same ledger contradicts - Z7 landed it, pinned by fixture zig/bare-value-reads (typeField->Flag, takeT->T, withDefault->Def) and mutation zig/param-subtree-bindings. The W9 title is the stale record; #839 needs the OWNER to close (agents do not self-close, M14 \u00a74). The same wave-2 run is what surfaced it.",
+      "notes": "Hostile synthetic battery + lane replicas at pinned and 2 rotated seeds (60-200 files, zig + zls) all 0/0. Fully gated: fixture zig/bare-value-reads (extended), 11 mutants, spec Z1-Z10. F3 399/399, F4 461/461 at the wave commit.",
       "evidenceFile": "reviews/zig/master-review.md",
-      "verifiedAtCommit": "3249bd33"
+      "verifiedAtCommit": "5c71e176"
     },
     {
       "id": "CS1",
