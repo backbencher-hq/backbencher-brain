@@ -26,15 +26,15 @@
       "caught": true
     }
   ],
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "23f0da6968831c89739f59bdcdf01b4bbcad5c6c",
   "verifierCommand": "npx tsx script/m28/verify-annotation-store.ts",
   "evidenceFile": "A1.json",
-  "generatedAt": "2026-09-20T02:25:01.530Z",
+  "generatedAt": "2026-09-29T05:22:50.672Z",
   "claimLevel": "verified — annotation store proven against a real sqlite db (fresh + pre-existing paths), provenance enforced in code, suite can-fail proven",
   "failures": [],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:25:01.531Z",
-    "contentSha256": "01210ccd922a5ff19813a04412d03c1fe0b94ed6eea1f0ec0f72deb04ba66718"
+    "sealedAt": "2026-09-29T05:22:50.676Z",
+    "contentSha256": "6ff1dd9de7313f1bca3f0cbec544ac37ddd09a2c645b99c284c1d9f0b30b280c"
   }
 }
