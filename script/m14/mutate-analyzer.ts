@@ -3709,6 +3709,65 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/long-field-name-dropped",
+    language: "zig",
+    defectClass: "symbol-loss",
+    description:
+      "Z28 regression: the container-field extraction goes back to requiring a name shorter than 50 characters, so real field declarations vanish from the index again \u2014 14 of 27,004 in 1,200 corpus files (0.05%), including a 74-character LSP capability flag. This is a LOSS class, so a count of published symbols cannot show it: the only instrument that convicts it is one that asks what SHOULD be published. Caught by zig/kinds-and-owners' expectSymbols (`supports_workspace_did_change_configuration_dynamic_registration`), and by the `contains` gate, whose derived-and-unpublished direction reports it as MISSING.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter(
+        (s: any) => s.name !== "supports_workspace_did_change_configuration_dynamic_registration",
+      ),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "contains" && x.target === "supports_workspace_did_change_configuration_dynamic_registration"),
+      ),
+    }),
+  },
+  {
+    id: "zig/field-assignment-rhs-read",
+    language: "zig",
+    defectClass: "read-loss",
+    description:
+      "Z29 regression: the LHS test goes back to \"the first named child of type `identifier`\", which is not the LHS when the left side is a field expression \u2014 in `exe.stack_size = stack_size` the first identifier child is the VALUE, so the analyzer declares the read to be a definition and publishes no `uses` for it. One row in 1,200 corpus files (zig/build.zig), a real read of a file-scope constant. Caught by the differential\u0027s bare-read truth, whose own copy of this predicate was fixed twice in the same wave (Z24, Z25) before the third copy \u2014 in the analyzer \u2014 was noticed.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && x.target === "field_assignment_rhs"),
+      ),
+    }),
+  },
+  {
+    id: "zig/function-signature-is-a-method",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z26 regression: a `function_signature` — a function-pointer TYPE, which has no `declarator` field in this grammar — goes back on the declaration path, so the name-picking takes whatever identifier comes first under the node and publishes a METHOD that does not exist: the return type (`contains Sort -> ComparisonResult`) or a qualified segment of a parameter type (`contains Options -> apprt` from `*apprt.ClipboardRequest`). Caught by zig/kinds-and-owners' forbidSymbols (`ComparisonResult`, `Order`, `apprt`) and forbidRelationships on the two `contains` shapes. Measured by the `contains` gate (script/m14/tmp/zigw-contains.ts), which is BIDIRECTIONAL — it also asks whether a justifiable owner is missing, which the ownership verifier cannot.",
+    transform: r => {
+      const fp = ["ComparisonResult", "Order", "apprt"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...fp.map((n, i) => ({ name: n, kind: "method", visibility: "public", range: { startLine: 130 + i, startColumn: 17, endLine: 130 + i, endColumn: 30 }, scope: "Sort", ownerName: "Sort", ownerKind: "struct", metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...fp.map((n) => ({ type: "contains", source: "Sort", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
+    id: "zig/local-container-owns",
+    language: "zig",
+    defectClass: "symbol-ownership-loss",
+    description:
+      "Z22 regression: a CONTAINER declared inside an executable body stops being anonymous, so its declarations are handed to the ENCLOSING container again — `const Local = struct { pub fn helper(v: T) void }` inside a method of `Host` publishes `helper` as a Method owned by `Host` with a `contains Host -> helper` edge. Measured by the ownership verifier (script/m14/tmp/zigw-ownership.ts, whose key IS the owner: the differential cannot see this class because its coverage match ignores the source). Caught by zig/kinds-and-owners' forbidSymbols (`helper`, `limit`) and forbidRelationships on the two `contains` shapes.",
+    transform: r => {
+      const local = ["helper", "limit"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...local.map((n, i) => ({ name: n, kind: n === "helper" ? "method" : "constant", visibility: "public", range: { startLine: 118 + i, startColumn: 17, endLine: 118 + i, endColumn: 23 }, scope: "Host", ownerName: "Host", ownerKind: "struct", metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...local.map((n) => ({ type: "contains", source: "Host", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
     id: "zig/anonymous-container-owns",
     language: "zig",
     defectClass: "symbol-fabrication",
@@ -7628,6 +7687,7 @@ export const MUTANTS: Mutant[] = [
     defectClass: "symbol-loss",
     description: "drops annotation_type_declaration symbols (#419 groovy G7 bug class)",
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter(s => (s.metadata ?? {}).nodeType !== "annotation_type_declaration") }),
+  },
   // ═══ GO38 (round 6) ═══════════════════════════════════════════════════
   {
     id: "go/local-type-declaration-dropped",
@@ -7721,7 +7781,6 @@ export const MUTANTS: Mutant[] = [
         )
       }),
     }),
-  },
   },
   {
     id: "groovy/drop-import-edges",
