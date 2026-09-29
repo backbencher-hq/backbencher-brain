@@ -1647,7 +1647,13 @@ async function drainBackgroundEmbeddings() {
           const embeddings: any = await Instance.provide({
             directory: job.projectPath,
             fn: () => withTimeout(
-              SemanticEngine.embedMany(docs),
+              // The project id matters for the LOCAL model: it selects the
+              // project's vocabulary, so the identifiers inside a snippet
+              // contribute the same words a query naming that symbol will.
+              // Word vectors are position-independent, so both sides sharing a
+              // vocabulary is a pure coverage increase rather than a change of
+              // vector space — see local-embed.ts `wordVector`.
+              SemanticEngine.embedMany(docs, job.projectId),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),

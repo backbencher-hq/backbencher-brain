@@ -119,7 +119,11 @@ export async function semanticVectorSearch(
 
   let queryVector: number[]
   try {
-    queryVector = await SemanticEngine.embed(query)
+    // The project id is passed so the query is embedded in the SAME local
+    // vector space the index used. Without it the query falls back to the
+    // 190-word base vocabulary while the index used the project's, so a symbol
+    // name could not be represented at all — the query vector was all zeros.
+    queryVector = await SemanticEngine.embed(query, projectId as any)
   } catch {
     return await keywordFallback(projectId, query, options, "embedding-error")
   }
