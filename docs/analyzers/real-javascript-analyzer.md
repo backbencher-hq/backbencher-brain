@@ -35,9 +35,41 @@
 | exports | ✅ | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { ... }` (object keys), `exports.x = ...` → module leaf → exported name | 1.0 |
 | overrides | ✅ | derived method matching base-class method name; base resolved via extends + cross-file harness companion (`User.format → BaseService.format`) | 0.95 |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, prototype methods | 1.0 |
-| uses | — | not emitted for `this.x` property access (family contract: no field-access uses, verified against C#/Java ground truth) | — |
-| references | — | covered by imports/exports/calls leaf identities | — |
+| uses | ✅ | **This row was wrong until 2026-09-27 and said "not emitted" while the lane emitted 5,837 per 40-file corpus.** Four emission sites: bare identifier reads at 0.9 (`return config`, `if (flag)`); member-chain segments at 0.85 (`title.length` → `title`); template-substitution reads at 0.85; and the chain ROOT of a call's callee at 0.6 with `metadata.callReceiver` (`title.toUpperCase()` → `title`). The 0.6 tier exists because `calls` names only the leaf, so the receiver is named by nothing else — see X1 in `script/m14/spec/svelte-completeness.json`. `this`/`super` are excluded as keywords, so `this.x.push(y)` correctly publishes no `uses this`. | 0.6 / 0.85 / 0.9 |
+| references | ✅ | Also wrong until 2026-09-27. Carries both ways JavaScript names a type it does not own: decorator metadata (1.0) and `instanceof` (0.95). The oracle derives these in `deriveJavaScriptEdges` in a pre-pass OUTSIDE the decorator-skipping walk, so it audits those nodes rather than stepping around them; before that, neither was reachable from the differential at all. | 0.95 / 1.0 |
 | depends | — | not emitted (covered by imports) | — |
+
+### Ontology audit (2026-09-27)
+
+The analyzer emits **9** relationship types. Measured against the differential's
+own comparison allowlist, **8 are compared and 1 is not**:
+
+| Type | Compared by F5? | Note |
+| --- | --- | --- |
+| calls, uses, contains, exports, references, instantiates, extends, overrides | ✅ | compared; truth and analyzer agreed exactly per label on a 40-file-per-corpus run |
+| `brain_import` | ❌ | the JS oracle derives no import truth, so by the harness's own rule ("a label is comparable exactly when the lane's oracle derives it") the label is out of scope — but the consequence is that **every JavaScript import edge is unverified by the differential** and rests on fixtures and the PIPE seam alone |
+
+`implements` is in the compared set and is never emitted by this analyzer, which
+is correct: JavaScript has no `implements` clause. `imports` in the enum is
+`brain_import` as its wire value, while the allowlist spells the label
+`imports` — so an `imports` allowlist entry matches no analyzer edge on any lane.
+That is a real cross-lane defect, recorded rather than fixed here.
+
+**Regex, re-measured independently.** Stripping comments and string literals and
+then scanning finds **0 regex literals and 0 `RegExp`** in
+`real-javascript-analyzer.ts` and the same in `real-typescript-analyzer.ts`. The
+only string methods used are `split`/`replace` on literal separators (3 in
+JavaScript, 10 in TypeScript). The zero is now measured rather than inherited
+from `regex-census.json`, and the absence of this lane from
+`validation/m49/regex-debt-register.json` is consistent with it rather than the
+evidence for it.
+
+**Symbol kinds.** The analyzer emits 7: `Class`, `Function`, `Method`,
+`Constructor`, `Property`, `Constant`, `Variable`. It emits **no `Module` symbol
+for the file itself** and **no `Object` symbol for object literals** — the latter
+is the known JD3 containment gap (10.9% of real symbols carry no containment
+edge, because `ownerName` is set only for class scopes, orphaning every
+object-literal method and class-expression member).
 
 ## Supported constructs
 
