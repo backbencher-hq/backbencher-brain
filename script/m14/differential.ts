@@ -12332,6 +12332,166 @@ export function deriveZigReferenceEdges(root: any): { label: string; from: strin
   return edges
 }
 
+/**
+ * ZIG WAVE 3 (2026-09-29) — the `contains` truth, the lane's LAST unoracled label.
+ *
+ * `contains` was 16.6% of everything this analyzer emits (5,521 of 33,266
+ * relationships over 400 corpus files) and nothing had ever adjudicated it, for
+ * a structural reason: the analyzer derives containment from `symbol.ownerName`,
+ * a field its OWN walk sets, so the class is self-agreeing — it cannot disagree
+ * with the symbol table because it is built from it. This derivation rebuilds the
+ * owner chain from DECLARATION STRUCTURE instead, which is the only thing that
+ * makes the comparison worth running.
+ *
+ * The rules, one per node shape, all mirrorable from the tree (which is the test
+ * of a mirror: if a rule needs the analyzer's own output, it is not a mirror):
+ *
+ *   • the five container declarations own their `container_field` children —
+ *     which is how fields, ENUM MEMBERS and union members all arrive, because in
+ *     this grammar an enum body is `container_field` children and an error-set body
+ *     is bare `identifier` children (two shapes, one rule each, not one guess);
+ *   • an error set owns its direct `identifier` children;
+ *   • a container owns its `function_declaration` children (methods) and its
+ *     container-scope `variable_declaration` children (nested types, container-level
+ *     consts and vars);
+ *   • Z19: inside an executable body — a function body, a `test`, a `comptime`
+ *     block, any `block` — a declaration is an execution artifact and is owned by
+ *     nothing;
+ *   • Z21: a container in an EXPRESSION position is anonymous and owns nothing;
+ *   • Z22: and so is a container declared inside an executable body — a local type
+ *     has no file-scope identity to own anything with. This is the rule the
+ *     ownership verifier lacked in the derived direction: it only ever asked "is
+ *     every PUBLISHED owner justifiable?", so a container that should own nothing
+ *     and does was visible, and one that should own something and does not was not.
+ *     Both directions are compared now, and the Z22 rule is what makes the missing
+ *     direction reachable.
+ *
+ * KNOWN LIMIT, stated rather than left for a reader to infer from a clean count:
+ * the F5 matcher keys on `label + normTarget(target)`, so this truth is compared
+ * BY MEMBER NAME, not by (owner, member). It therefore convicts a fabricated or
+ * missing edge whose name is wrong, and CANNOT convict one whose owner is wrong —
+ * Z19 and Z21 each moved 335 edges to a different owner while keeping every member
+ * name. The owner-sensitive half of the class is `script/m14/tmp/zigw-ownership.ts`,
+ * which keys on the owner. The two together are the class; neither alone is.
+ */
+export function deriveZigContainment(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const CONTAINERS = new Set([
+    "struct_declaration", "union_declaration", "enum_declaration",
+    "error_set_declaration", "opaque_declaration",
+  ])
+  // Z19: entering any of these means "declarations here are execution artifacts".
+  const EXECUTABLE = new Set([
+    "function_declaration", "function_signature", "test_declaration",
+    "comptime_declaration", "block",
+  ])
+  const firstIdent = (n: any): string | null => {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "field_identifier" || c.type === "type_identifier")) {
+        return String(c.text)
+      }
+    }
+    return null
+  }
+  const push = (owner: string, member: string): void => {
+    if (!owner || !member || member === "_") return
+    const k = `${owner}\u0000${member}`
+    if (seen.has(k)) return
+    seen.add(k)
+    out.push({ label: "contains", from: owner, target: member })
+  }
+  const visit = (n: any, owner: string | null, executable: boolean, anon: boolean): void => {
+    let nextOwner = owner
+    let nextAnon = anon
+    let nextExec = executable
+
+    if (CONTAINERS.has(n.type)) {
+      const p = n.parent
+      const declRhs =
+        !!p && p.type === "variable_declaration" && p.namedChildCount > 0 &&
+        p.namedChild(p.namedChildCount - 1)?.id === n.id
+      if (declRhs) {
+        const nameKid = p && p.namedChildCount > 0 ? p.namedChild(0) : null
+        const name = nameKid && nameKid.type === "identifier" ? String(nameKid.text) : null
+        // Z22: a container inside an executable body is a LOCAL type. It is
+        // declared, so it has a name — but it owns nothing, and the analyzer
+        // publishes none of its members, so deriving any would be a MISSING row
+        // in the direction that does not exist.
+        if (name && !executable) nextOwner = name
+        else nextAnon = true
+      } else {
+        // Z21: an anonymous container in an expression position owns nothing.
+        nextAnon = true
+      }
+    } else if (!executable && !anon) {
+      if (n.type === "container_field") {
+        if (owner) push(owner, firstIdent(n) ?? "")
+      } else if (n.type === "function_declaration") {
+        if (owner) push(owner, firstIdent(n) ?? "")
+        nextExec = true
+      } else if (n.type === "variable_declaration") {
+        // a container-scope declaration is a member (nested type, container const)
+        // — EXCEPT an import alias, which Z9 settled deliberately: it mints an
+        // import fact and a reference edge and no symbol, so there is no
+        // `contains` edge to match. The first version derived those and read 5
+        // MISSING rows (`terminal -> color`, `terminal -> style`, `Inspector ->
+        // cimgui` — all `const x = @import("...")` inside a container).
+        const kids: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) kids.push(c)
+        }
+        // `@import("...")` is a `builtin_function` NODE here, not a
+        // call_expression — the first version of this rule looked for a
+        // call_expression and never fired, which is why it read 5 MISSING
+        // (`terminal -> color`, `terminal -> style`, `Inspector -> cimgui`).
+        const isImportAlias = kids.some(
+          (c) => c.type === "builtin_function" && String(c.text ?? "").replace(/^@/, "").startsWith("import"),
+        )
+        if (owner && !isImportAlias) push(owner, firstIdent(n) ?? "")
+      }
+    }
+    // NOTE ON ERROR-SET MEMBERS: the first version of this truth pushed one row
+    // per direct `identifier` child of an error set (an error set\'s body IS bare
+    // identifiers in this grammar, unlike every other container) and read 13
+    // MISSING rows that were all the TRUTH\'s error: the published contract (Z4) is
+    // that an error-set member is a DECLARATION SITE and an edge target — it
+    // resolves by name in `error.X` expressions — and is deliberately not a symbol,
+    // so it has no `contains` edge to match. Enum members ARE symbols (1,361 of
+    // ERROR-SET MEMBERS are their own rule, and the first version of this file
+    // was wrong about them in the other direction: it read 13 MISSING and I
+    // concluded the analyzer published no error members as symbols. It DOES — as
+    // `enum_member`, owned by the set (`contains Error -> OutOfMemory`), which is
+    // why 1,361 of them are in the owned-kind census and why deleting this branch
+    // turned those 13 MISSING into 224 PHANTOM. An error set's body is bare
+    // `identifier` children where every other container uses `container_field`,
+    // so the shape is a separate rule and not a case of the one above. This is
+    // the calibration the header asks for: a new gate is run against a KNOWN
+    // case before its verdict is believed, and twice the first run was the
+    // INSTRUMENT rather than the analyzer.
+    // `nextAnon`, not the incoming `anon`: `pub const E = error{A} || error{B}`
+    // puts the sets inside a binary expression, so the container rule above
+    // already marked them anonymous (Z21 — an expression-position container owns
+    // nothing), and the member rule has to read THAT state. Reading the incoming
+    // state instead is what produced the `Options -> InvalidValue` MISSING rows.
+    if (n.type === "error_set_declaration" && !nextAnon && !nextExec) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") push(nextOwner ?? "", String(c.text))
+      }
+    }
+    if (EXECUTABLE.has(n.type)) nextExec = true
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) visit(c, nextOwner, nextExec, nextAnon)
+    }
+  }
+  visit(root, null, false, false)
+  return out
+}
+
 export function deriveZigEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seenCalls = new Set<string>()
@@ -16055,6 +16215,14 @@ async function main() {
         for (const e of deriveZigReferenceEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // ZIG WAVE 3: `contains` joins the audited set — the last unoracled label,
+        // 16.6% of the edges this analyzer emits, and the one class that cannot
+        // disagree with itself until an independent derivation exists. Compared
+        // BY MEMBER NAME: the harness matcher is site-agnostic, so the owner
+        // half of the class is adjudicated by the ownership verifier, not here.
+        for (const e of deriveZigContainment(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "csharp") {
         // C923 (#923) + 2026-09-28: `overrides` JOINS the compared set. Both sides carried a
@@ -16460,7 +16628,7 @@ async function main() {
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
           // #910 (c imports) and G7 (groovy uses) notes below record.
-          ...(lang === "zig" ? ["calls", "uses", "references"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" ? ["calls", "uses"] : []),
 
           // hcl joins the USES-audited set only, and `calls` is excluded on
           // measurement rather than assumption. HCL declares no function, class or
