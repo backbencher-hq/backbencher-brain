@@ -2298,6 +2298,38 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
     return id ? id.text : null
   }
 
+  // A `data class`, by MODIFIER and never by the class name: the grammar gives
+  // the modifier its own node, and a class named `DataThing` is not a data class
+  // while `data class Plain` is.
+  const isDataClass = (decl: any): boolean => {
+    // Probed, not guessed: `data` is a `class_modifier` INSIDE the `modifiers`
+    // node, and it is a NAMED child of that node but not of the declaration —
+    // so reading the declaration's own named children finds nothing. A class
+    // named `DataThing` is not a data class and `data class Plain` is; the
+    // modifier is the only statement of it.
+    const mods = namedOf(decl, "modifiers")
+    if (!mods) return false
+    for (let j = 0; j < mods.namedChildCount; j++) {
+      const g = mods.namedChild(j)
+      if (g && g.type === "class_modifier" && g.text.trim() === "data") return true
+    }
+    return false
+  }
+  // componentN is generated per DECLARED PROPERTY — the `val`/`var` primary
+  // constructor parameters. A bare constructor parameter is not a property and
+  // generates no component, which is the same binding_pattern_kind distinction
+  // the member inventory uses.
+  const dataClassPropertyCount = (decl: any): number => {
+    const pc = namedOf(decl, "primary_constructor")
+    if (!pc) return 0
+    let n = 0
+    for (let i = 0; i < pc.namedChildCount; i++) {
+      const cp = pc.namedChild(i)
+      if (cp && (cp.type === "class_parameter" || cp.type === "value_parameter") && namedOf(cp, "binding_pattern_kind")) n++
+    }
+    return n
+  }
+
   // ── the owner/member class ───────────────────────────────────────────────
   {
     const st: any[] = [root]
@@ -2338,6 +2370,29 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
               }
             }
           }
+          // A DATA CLASS generates members that are written NOWHERE:
+          // componentN per declared property, plus copy/equals/hashCode/toString.
+          // They are real members — `Money.component1()` exists and is callable —
+          // and the analyzer publishes them marked `inferred` and demoted to 0.6
+          // (K1, bfad17e9, after the java pass closed the same shape as JD-J13).
+          // So they belong in the TRUTH, derived from the language rule rather
+          // than from the analyzer's phantom-injection routine: a `data class`
+          // with N declared properties has N component functions.
+          //
+          // Leaving them out is not a neutral omission. The comparison matches on
+          // label+target, so every synthesized row the analyzer publishes became
+          // an UNEXPLAINED analyzer edge: 52 of them across 40 files, and every
+          // one of the 52 was this. An oracle that derives only what is written
+          // cannot explain a graph the analyzer correctly augments.
+          if (isDataClass(n)) {
+            const props = dataClassPropertyCount(n)
+            for (let i = 1; i <= props; i++) push(ownerName, `component${i}`)
+            push(ownerName, "copy")
+            push(ownerName, "equals")
+            push(ownerName, "hashCode")
+            push(ownerName, "toString")
+          }
+
           // The analyzer publishes a CONSTRUCTOR symbol named after the class, so
           // a data class contains its own name (`Money contains Money`). Derived
           // here so the row is COMPARED rather than quietly unexplained; whether
@@ -2451,17 +2506,24 @@ export function deriveKotlinContainsTruth(root: any): { label: string; from: str
       }
       return null
     }
+    // Two shapes for one rule, both probed:
+    //   object : Deferred<T> by deferred {}  -> explicit_delegation > user_type
+    //   object : Foo() { val a = 1 }        -> constructor_invocation > user_type
+    // Reading only the constructor form named every `by` delegation
+    // `anonymous_object` instead of `anonymous_Deferred` — measured on
+    // kotlinx-coroutines as the only MISSING rows in a 400-file run, and the
+    // mirror-image UNEXPLAINED row, because the analyzer reads both.
     const delegationSuperType = (obj: any): string | null => {
       const spec = namedOf(obj, "delegation_specifier")
       if (!spec) return null
-      let cur: any = spec
-      for (let i = 0; i < cur.namedChildCount; i++) {
-        const c = cur.namedChild(i)
-        if (c && c.type === "constructor_invocation") cur = c
+      for (let i = 0; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (!c) continue
+        const ut = c.type === "user_type" ? c : namedOf(c, "user_type")
+        const ti = ut ? namedOf(ut, "type_identifier") : null
+        if (ti) return ti.text
       }
-      const ut = cur.type === "user_type" ? cur : namedOf(cur, "user_type")
-      const ti = ut ? namedOf(ut, "type_identifier") : null
-      return ti ? ti.text : null
+      return null
     }
     const st: any[] = [root]
     while (st.length) {
