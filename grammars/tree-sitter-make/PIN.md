@@ -10,8 +10,8 @@ upstream's bytes.
 | Upstream revision | `70613f3d812cbabbd7f38d104d60a409c4008b43` ("chore: regenerate parser and bindings with 0.26.6") |
 | Upstream package | `tree-sitter-make` 1.1.1 (MIT) |
 | Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12`, 165,855 bytes — **a local build of the patched source below** |
-| Pristine build (retained) | `fixtures/make/ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
-| Patches | `fixtures/make/ab/grammar.patch` — 2 patches, both measured (§ "The two patches") |
+| Pristine build (retained) | `ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
+| Patches | `ab/grammar.patch` (in-repo) — 2 patches, both measured (§ "The two patches") |
 | Gate | `bun run script/m14/verify-grammar-pins.ts` (lane `make`) |
 
 ## Why this is a patch and not a swap
@@ -38,7 +38,7 @@ forever.
 
 ## The two patches
 
-Both are in `fixtures/make/ab/grammar.patch`, and each carries its own reasoning
+Both are in `grammars/tree-sitter-make/ab/grammar.patch`, and each carries its own reasoning
 in the grammar's comments.
 
 **P1 — target-scoped export variable.** `variable_assignment` already accepts an
@@ -120,7 +120,7 @@ Re-checked on every run of `verify-grammar-pins.ts`, not asserted here.
 ```sh
 git clone https://github.com/tree-sitter-grammars/tree-sitter-make && cd tree-sitter-make
 git checkout 70613f3d812cbabbd7f38d104d60a409c4008b43
-git apply /path/to/fixtures/make/ab/grammar.patch
+git apply /path/to/grammars/tree-sitter-make/ab/grammar.patch
 node <tree-sitter-cli>/cli.js generate
 node <tree-sitter-cli>/cli.js build --wasm --output tree-sitter-make.wasm
 ```
@@ -131,6 +131,6 @@ same toolchain and is functionally identical to the wired pristine build — sam
 every difference reported above is the patch, not the toolchain.
 
 The generated `src/parser.c` (1,084,442 bytes patched) is vendored so the
-proof is re-checkable offline without a toolchain. `fixtures/make/ab/` retains the
+proof is re-checkable offline without a toolchain. `grammars/tree-sitter-make/ab/` retains the
 pristine source, the pristine build and the patch, which is what makes the
 comparison above re-runnable rather than a claim.
