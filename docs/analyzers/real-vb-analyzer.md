@@ -135,16 +135,22 @@ classification is four-way — declaration, relationship source, known candidate
 silent — because "classified" and "handled" are different words, and the two-way
 split is what hid both.
 
-M14.0.F5, **whole corpora, not a draw**: `P3D-Legacy` **1,880 of 1,880 files**,
-20,283 truth edges, 20,280 covered (**99.99 %**), 3 missing, **0 unexplained**;
-`DISMTools` **483 of 483**, 13,689 truth edges, 13,684 covered (**99.96 %**), 5
-missing, 0 unexplained. On a frozen 60-file draw per corpus it is 100 % edge for
-edge, with `analyzer-edges` equal to `tree-truth` exactly. Audited labels: `calls`, `contains`, `imports`, `extends`,
-`implements`; `references` is deliberately excluded because the oracle does not
-derive it. **That is 4.5 % of the corpus**, drawn by a rotation that prefers
-never-sampled files, and 48 % of the corpus carries a syntax error the
-differential has never been run against — so this is not a whole-corpus claim
-and the full sweep is the outstanding measurement.
+M14.0.F5, **whole corpora, not a draw, all seven labels audited** —
+`P3D-Legacy` **1,880 of 1,880 files**, 23,356 truth edges, 23,353 covered
+(**100 %**), 3 missing, **0 unexplained**; `DISMTools` **483 of 483**, 15,689
+truth edges, 15,685 covered (**100 %**), 4 missing, 0 unexplained. Labels:
+`calls`, `contains`, `imports`, `extends`, `implements`, `overrides` and
+`references` — the last two joined the audit this wave, which grew the audited
+set by 3,073 edges that had previously been published and agreed with by nobody.
+All 7 remaining missing rows across both corpora are dropped constructions; 6 are
+the `Sub New*` grammar defect and 1 (`SoundManager`) is unexplained and recorded
+as such.
+
+**Caveat that is part of the number, not a footnote:** the differential's sampler
+had no avalanche, so consecutive "rotations" drew the same 60 files. Every
+earlier 100 % figure from a draw was one file set measured repeatedly. Fixed with
+mulberry32; three independent rotations now read 99.9 %, 100 %, 100 % with 0
+unexplained. See `docs/vb.md`.
 
 The differential is what found the three defects a corpus-wide count could not,
 because in each case the count stayed healthy while a class of output was missing
