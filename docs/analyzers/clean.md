@@ -6,9 +6,84 @@
 > [`real-clean-analyzer.md`](./real-clean-analyzer.md); the review with evidence is
 > [`reviews/clean/m14-0-clean-completeness.md`](../../reviews/clean/m14-0-clean-completeness.md).
 >
-> **Read parse health first.** 1,524 of 2,179 files (69.9%) parse with no ERROR
-> node; 655 files carry 25,683 ERROR nodes. Every percentage below is a percentage
+> **Read parse health first.** 1,656 of 2,179 files (76.0%) parse with no ERROR
+> node; 523 files carry 24,738 ERROR nodes. Every percentage below is a percentage
 > **of what parsed**, and that ceiling is the pinned grammar's, not the analyzer's.
+> The grammar moved from 1,524 files (69.9%) on 2026-09-29 — see
+> [The 2026-09-29 grammar wave](#the-2026-09-29-grammar-wave).
+
+## The 2026-09-29 grammar wave
+
+The lane's binding constraint is the grammar, so the work went into
+`tree-sitter-clean` (master) with the corpus as the measuring instrument. A new
+instrument, `scripts/parse_health.mjs` in that repo, reports how much of the
+language the grammar reads **at all** — which the existing per-file regression gate
+cannot answer, because a grammar can add no regressions and still fail to read a
+quarter of real Clean.
+
+Two properties of that instrument were found by being wrong first, and both are
+worth more than the fixes they enabled:
+
+- **A failing file is attributed to its TIGHTEST problem node, not its first.** One
+  unreadable construct makes tree-sitter wrap a whole file in a single `ERROR`, and
+  122 of the failing files are like that. Attributing by first node reported "module
+  header" for **442 files whose `implementation module X;` headers parse
+  perfectly** — the `ERROR` merely starts at line 1. The first round of work was
+  aimed at a construct that is not broken.
+- **A zero-width `ERROR` at a declaration boundary is the rift the PREVIOUS
+  declaration left.** `GtkBoxP2GtkWidgetP gtk :== let { (GtkBoxP p) = gtk }` parses
+  perfectly alone; the `let` group is what broke the file.
+
+| Closed | Form | Files |
+|---|---|---|
+| Foreign code import | `import code from "a.o"`, `import code from library "L"` | 30 |
+| Unique type variable in a synonym parameter list | `:: * Input *a = { ... }` | 25 |
+| `let` brace group | `let { (GtkBoxP p) = gtk; }` | 53 |
+
+The second was a **comment that lied**: `type_definition` has carried "Parameters
+may carry uniqueness (`:: * Input *a = ...`)" while `type_variable` was a bare
+`$.identifier`. Clyde's `PmParse.icl:17` has exactly that declaration, and that one
+line wrapped the whole file in an `ERROR` spanning 1,328 lines.
+
+**Result: 1,524 → 1,656 parse-clean files (69.9% → 76.0%), ERROR nodes 25,683 →
+24,738.** 128 grammar tests and the repo's 312-file cache-free regression gate
+back each step.
+
+### The ceiling is real, and it is measured
+
+`tree-sitter-clean` sits close to tree-sitter's 65,535 action-table limit, so a
+change that is obviously correct can still fail to generate:
+
+| Attempt | Actions | Result |
+|---|---|---|
+| `let_group` members separated by two independent optionals | 66,756 | **generate FAILED** |
+| … as one separator choice | generates | +29 files |
+| `let_group` members also separated by a comma | generates | but regressed 2 files |
+| `where { cstate =: ...; }` (brace binding block) | 67,459 | **generate FAILED** |
+| … with a required `;` separator | 65,583 | fails by 48 **and does not parse the form** |
+
+The `where {` block is recorded as an open gap in the grammar's own
+`GRAMMAR-GAPS.md §10` with these numbers, rather than attempted and forgotten. The
+comma is excluded from `let_group` on evidence: no corpus `let_group` uses one, and
+adding it changed LR states far from any `let_group` and regressed
+`eastwood/.../Symbol.icl` (1 → 12 problem nodes, newly wrapped) and
+`PmCleanSystem.icl` (3 → 6).
+
+### What the wave cost, stated plainly
+
+The `;` separator is **29 corpus files better and 2 files worse** overall, and the
+two worse files were already failing. That trade is taken deliberately and recorded
+in the grammar commit rather than discovered later.
+
+The wave also made `Hanoi.icl` parse further, which exposed the one honesty-gate
+violation listed above. Fixing the fabricated `where` symbol it first produced took
+a **reserved-name guard** in the analyzer: tree-sitter's recovery re-lexes a keyword
+as an identifier when its construct has already failed, and the lane published
+`function` symbols named `where`. The guard is the grammar's own 32 alphabetic
+reserved literals minus four that are context-reserved rather than reserved
+(`E`, `apply`, `inline`, `library`), and it removed **169** such symbols
+corpus-wide. The differential was checked for it: `F-unattributed` stayed at 0 on
+Clyde, so no real declaration was declined.
 
 ## What it extracts
 - **Symbols**: modules, ADT types, data constructors, records + record fields,
@@ -96,18 +171,24 @@ honest):
 ## Verification
 - **Corpus**: 2,179 files, 3,107,410 nodes, content-deduplicated
   (`script/m14/clean-wide-manifest.txt`) because iTasks vendors StdEnv.
-- **Honesty gate**: 63,161 symbols, 237,266 relationships, **0 violations**, 0
-  unknown kinds, 0 empty names, 0 members without an owner, 0 crash files.
+- **Honesty gate**: 63,052 symbols, 237,598 relationships, **1 violation** (the
+  single `Hanoi.icl` finding characterised under Known limitations), 0 unknown
+  kinds, 0 empty names, 0 members without an owner, 0 crash files. The count FELL
+  because the grammar wave removed 24,991 → 24,738 ERROR nodes and the reserved-name
+  guard below dropped 169 fabricated function symbols corpus-wide.
 - **M12 differential**: precision 1.000, recall 1.000, 0 FP, 0 FN against a
   134-row hand-audited ground truth extended from 68 rows this round.
   `script/m12/extend-clean-ground-truth.py` fails on line drift.
-- **Fixtures**: 8, all passing. Three were added because 11 handled node types had no
-  fixture behind them.
+- **Fixtures**: 9, all passing. Three were added because 11 handled node types had no
+  fixture behind them; `grammar-wave-2026-09` was added because the completeness
+  gate REFUSED to accept `handled_verified` for the three node types the wave
+  introduced without a fixture behind each one, which is the gate working.
 - **Differential attribution**: 0 unattributed of 484 (Clyde), 0 of 654
   (clean-stdlib), 0 on clean-libraries, **6** on clean-ide — the residual is stated
   in the classifier's own bucket rather than forced into one.
-- **Grammar census**: 137/137 named types classified; 99 `handled_verified` and all
-  99 now exercised by CORPUS code, not only by fixture.
+- **Grammar census**: 141/141 named types classified (137 before the wave, plus
+  `foreign_code_import`, `foreign_code_item`, `let_group`, `record_binding`); 102
+  `handled_verified`, all exercised by CORPUS code and not only by fixture.
 - **Hygiene**: **zero regex literals** by the TypeScript scanner, and all 25
   analyzers pass `verify-analyzer-hygiene.ts`.
 - **M60 R6** (one line base for every line in the payload, 1-based and provably so)
