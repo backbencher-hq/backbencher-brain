@@ -4,7 +4,7 @@
 
 - Analyzer file: `src/ast/real-fsharp-analyzer.ts`
 - Parser: `tree-sitter-fsharp` (patched grammar — see Grammar below; WASM in `wasm/tree-sitter-fsharp.wasm`; the `~/.bb/wasm` mirror is STALE — old 5MB build — refresh it or rely on the repo copy, which the engine loads first)
-- Language detection: extension `.fs` / `.fsi` → `language-detection.ts`
+- Language detection: extension `.fs` / `.fsi` / `.fsx` → `language-detection.ts`. `.fsx` matters: an F# script's top level is the program, with no enclosing namespace or module, so it is where the top-level-binding and object-expression rules are load-bearing (see FS-D10, FS-D7).
 - Wired in: `engine.ts getAnalyzer` → `RealFsharpAnalyzer`
 
 ### Grammar (M12.08)
@@ -35,7 +35,7 @@ over upstream tree-sitter-fsharp:
 
 | Field | Supported? | How extracted (AST node/field) |
 | --- | --- | --- |
-| name | ✅ | `namespace`/`named_module`/`module_defn` → identifier; `type_definition` → `type_name` (generics stripped: `Repository<'T>` → `Repository`); `function_or_value_defn`/`value_declaration` → identifier / `function_declaration_left`; `member_defn` → `method_or_prop_defn` → `property_or_ident` (second identifier: `_.Log` → `Log`, `this.Greeting` → `Greeting`); `member_signature` → identifier; `additional_constr_defn` → normalized to `constructor`; `active_pattern` → full pattern text `(\|Even\|Odd\|)`; `exception_definition` → identifier under `long_identifier` |
+| name | ✅ | **never from a whole left-hand side** — an `identifier_pattern` in this grammar spans the ENTIRE `let` left side, so `let f (a: string) : string = …` used to publish `f (a: string) : string` (60 such symbols per 400 corpus files, none joinable; FS-D6, pinned by `name-surface`). `namespace`/`named_module`/`module_defn` → identifier; `type_definition` → `type_name` (generics stripped: `Repository<'T>` → `Repository`); `function_or_value_defn`/`value_declaration` → identifier / `function_declaration_left`; `member_defn` → `method_or_prop_defn` → `property_or_ident` (second identifier: `_.Log` → `Log`, `this.Greeting` → `Greeting`); `member_signature` → identifier; `additional_constr_defn` → normalized to `constructor`; `active_pattern` → full pattern text `(\|Even\|Odd\|)`; `exception_definition` → identifier under `long_identifier` |
 | kind | ✅ | namespace → Namespace, module → Module, record/class/anon-with-members → Class, anon-type-with-only-member-signatures → Interface, DU / union → Enum (cases → EnumMember), abstract+default member → single Method, computed member without arguments → Property, member with argument list → Method, module-level let with arguments → Function, `new()` → Constructor, exception → Class, active pattern → Function, measure/abbrev/delegate → Type |
 | qualified/container name | ✅ | `id` = owner chain + name; `parent` = enclosing symbol name (namespace → module → type → member) |
 | ownerName / ownerKind | ✅ | enclosing type/module/namespace; top-level types owned by namespace or module |
@@ -44,6 +44,7 @@ over upstream tree-sitter-fsharp:
 | genericParameters | ✅ | `type_definition` raw name `'T` occurrences |
 | documentation/comments | ❌ (not extracted) | non-goal for M12.08 (matching the family fixture contract) |
 | complexity metrics | ✅ | `complexity` = symbol count; `linesOfCode` |
+| visibility | ✅ | `accessibility` tokens → `public`/`internal`/`private`; applied to the export surface (FS-D8) |
 | syntax errors | ✅ | ERROR/MISSING nodes pushed as warning `ParseError` (never silently dropped) |
 | decorators/attributes | ✅ | `attribute` nodes; TypeProvider attributes → Class symbols |
 
@@ -51,14 +52,14 @@ over upstream tree-sitter-fsharp:
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `app_expression`/`application_expression` → leaf callee name (`Map.tryFind` → `tryFind`, `store.Add` → `Add`, `first.Log` → `Log`, pipe `a \|> List.map` → `map`); source = **enclosing function/method/constructor** (never the module); single pass, deduped by identity in the harness | 0.8 |
-| extends | ✅ | `class_inherits_decl` (`inherit Animal()`) → `Animal`; source = the type | 1.0 |
-| implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type | 1.0 |
+| calls | ✅ | `app_expression`/`application_expression` → leaf callee name (`Map.tryFind` → `tryFind`, `store.Add` → `Add`, `first.Log` → `Log`, pipe `a \|> List.map` → `map`); single pass, deduped by identity in the harness. **Source (owner) is the enclosing callable**, and which callables count is the substance of FS-D10/D12/D13: a top-level `let` owns its initialiser's calls *whatever its kind* (a `let` with no arguments is a Variable, and a script top level has no enclosing callable, so keying on kind dropped 2,520 rows per 200 files); a `default` implementation owns its body's calls (it publishes no symbol — the abstract signature is canonical — but the body belongs to it); an explicit `with get, set` property owns its **setter**'s calls. A recursive `calls f -> f` is emitted: a self-CALL is a fact about the program, while a self-`contains` is not, and the refusal is per-label. | 0.8 |
+| extends | ✅ | `class_inherits_decl` (`inherit Animal()`) → `Animal`; source = the type. **R10 spelling:** a qualified target is published under the LEAF, with the qualified form kept in `metadata.qualifiedType` — the name this lane would publish for that type as a symbol, which is what a consumer joins on (FS-D9; 13 dotted `implements` + 3 dotted `extends` per 400 files) | 1.0 |
+| implements | ✅ | `interface_implementation` (`interface ILogger with`) → `ILogger`; source = the type. R10 leaf spelling as for `extends`. | 1.0 |
 | instantiates | ✅ | constructor chaining `new() = Point(0, 0)` → `Point` (enclosing constructor body); source = `constructor` | 0.95 |
 | overrides | ✅ | `override` keyword token (first child of `member_defn`) + `inherit` base → qualified `Owner.method -> Parent.method` (`Dog.Speak -> Animal.Speak`); base from the type's `class_inherits_decl` | 1.0 |
 | uses | ❌ (not emitted) | F# member-access reads are covered at call level; the C# family emits no `uses` edges — the previous `_.X` / `this.X` phantom uses came from member *definition* headers (`property_or_ident`) and were pure noise | — |
-| references | ✅ | `open_statement`/`open_decl` → full module path; source = enclosing namespace/module | 0.9 |
-| contains | ✅ | owner → owned members via `ownerName` (namespace → module/type, module → type/function, type → member) | 1.0 |
+| references | ✅ | Two classes. (a) `open_statement`/`open_decl` → full module path; source = enclosing namespace/module; a module path is legitimately dotted and is **not** subject to the R10 leaf rule. (b) **R9 `declared_type`** — every type WRITTEN in a declaration: `class_field`, `parameter`, `return_type`, `record_field`, `union_case_payload`, `type_abbreviation`, `local_annotation`. Absent from this lane until FS-D4 (the m60 census measured `absent` with the control present). Two positions are **refused**: a type *parameter* and a *predefined* type (`int`, `string`) name no declaration, and a **type query** (`typeof<T>`, `unbox<T>`) is an expression carrying a type argument rather than a written type — `typeof<Foo>.Assembly.Location` depends on a runtime value. The grammar spells a query as a `typed_expression` whose `long_identifier_or_op` child reads `typeof` — a **sibling** of the type, not its parent, which cost two attempts at the discriminator that each measured nothing (FS-D11). A local's written type belongs to the enclosing **callable**, not to the class. | 0.9 (opens) / 1.0 (declared_type) |
+| contains | ✅ | owner → owned members via `ownerName` (namespace → module/type, module → type/function, type → member). **`contains X -> X` is refused at composition**, not by suppressing the label: a DU case named after its own type really is contained by its union (`type P = P of string`), so suppressing the label would lose a real fact — 368 such self-edges per 400 corpus files (FS-D3). A `type X with` extension publishes no symbol at all (FS-D2), and a forward declaration in a signature file merges with its definition rather than shadowing it (FS-D2 regression guard). | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 
 ## Supported constructs
@@ -79,11 +80,15 @@ over upstream tree-sitter-fsharp:
 
 ## Unsupported / explicit-unknown constructs
 
-- **Property getters emit no calls** (C# family contract: `Display => Name.ToUpper()` emits no calls in C# either). F# computed properties are extracted as symbols; their bodies are not call sources.
+- **Property getters emit no calls** (C# family contract: `Display => Name.ToUpper()` emits no calls in C# either). Precisely: an **expression-bodied** property emits no calls. F#'s `with get, set` does have a second body for code to live in, and its **setter does emit calls** (FS-D13). The rule is about the shape, not the kind — stated this narrowly because the wider reading is what the fix had to correct.
 - **`abstract` + `default` dedup**: only the abstract member signature line is kept as the symbol. The default implementation line is walked for relationships but does not produce a second symbol. Documented.
 - **`uses`/`field_access` edges**: not materialized — documented non-goal, consistent with the C# family contract (zero uses in the C# ground truth).
 - **Interface implementation members in the walk**: `member _.Log(...)` under `interface ILogger with` is a Method on the implementing class (correct); the abstract signature on the interface is a separate Method symbol (correct — different owners).
-- **Object expressions** (`{ new IFoo with ... }`): emitted as `new <iface>` Class + Implements; not covered by fixtures (documented).
+- **Object expressions** (`{ new IFoo with ... }`): emitted as `new <iface>` Class + Implements, and their members are owned by it (FS-D7 — they were ownerless, which is only visible in a script, where there is no enclosing scope to fall back on). The published name `new <iface>` is **not a name a consumer can join**; this is pinned as the behaviour it is, not as a success.
+- **`member val`**: ~890 corpus sites produce **no symbol at all**. This is a grammar gap, not an analyzer choice — the grammar does not emit a node the analyzer could read. FS-D5 removed the dead `val_property_defn` branch that was written for it, which tested for a node type the grammar never produces; F1 had been reporting that branch as live coverage of 41 literals while 91 of the analyzer's own comparisons went unaudited.
+- **`isMeasure` is a text test.** `n.text.includes("Measure")` reads source text rather than the tree. Measured 1 true positive in 400 corpus files and 0 false positives across four corpora, so it is not currently *wrong* — but it is a text sniff in an AST analyzer and is listed as debt. It is not a regex and does not affect the regex census.
+- **Alias vs one-case DU is resolution-bound.** A bare alias, a builtin alias and a one-case DU all have the same `union_type_defn` shape, and a leading `|` separates most one-case DUs from aliases but not the inline one-case form. 114 ambiguous shapes per 400 files; 33 RHS types are resolvable in-file, 81 are not separable without name resolution. **No silent heuristic was added** and `union_type_defn → enum` is the M12-pinned mapping: reclassifying it would invalidate the 121 pinned facts in `validation/m12/ground-truth/fsharp.json`.
+- **`not null` / `and`-constraints**: a signature using them can collapse to a whole-file root `ERROR` — 6/400 files, costing 1 namespace and 25 ownerless members. Grammar-bound; see `reviews/m60-fsharp-grammar-0312-refused.md`.
 
 ## Regex inventory
 
@@ -244,6 +249,74 @@ whose bodies are invisible. Quantifying relationship loss per gap is owed.
 - Grammar source: `grammars/tree-sitter-fsharp/` (patched scanner + grammar)
 - Docs: this file
 
+## Status 2026-09-28 — M14 lane round
+
+Eleven defect classes fixed (FS-D2 … FS-D13) and eleven mutants, all caught. Full record,
+with the measurement that found each one, in `reviews/fsharp/closure.md`.
+
+| Gate | Result |
+| --- | --- |
+| F1 dead-literal / unknown-symbol | `PASS refs=62 unknown=0 unknownFields=0` |
+| F3 fixtures | 6/6 PASS |
+| F4 mutants | 14/14 CAUGHT |
+| oracle vs analyzer, fixtures | 106 truth, 0 MISSING, 0 UNEXPLAINED |
+| F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
+| all-label probe, 120 files | MISSING 205 / UNEXPLAINED 200 — the honest current number |
+
+**Two differential numbers exist and they measure DIFFERENT THINGS. Quoting either alone
+would mislead, so both are here.**
+
+The canonical harness (`bun script/m14/differential.ts --lang fsharp`) filters the ANALYZER
+side of a comparison by an allowlist of labels and does **not** filter the TRUTH side, so a
+truth row with no allowance is counted MISSING forever. With this lane's oracle deriving six
+labels and only `contains` allowed, the lane charged itself for the other five and reported
+21–42% covered and 3,270–3,979 MISSING — which reads exactly like a containment defect and
+was almost entirely that asymmetry. After making the three labels this lane's truth can
+adjudicate symmetric (`contains` + `calls` + `references`), the same corpora measured:
+
+| Corpus | tree-truth | covered | MISSING | analyzer edges | UNEXPLAINED |
+|---|---|---|---|---|---|
+| `fsharp` (compiler) | 4,106 | 4,105 (**100%**) | 1 | 2,751 | 3 (0.1%) |
+| `fsharp-data` | 8,810 | 8,810 (**100%**) | 0 | 3,359 | 5 (0.1%) |
+
+**"100% covered" here means 100% of the rows whose label is allowed — three of six.** It is
+not a claim about the other three labels, and it is not a claim about the current state of
+the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained its
+`open`-path and file-scope arms. The all-label number is the lane-owned probe
+(`script/m14/tmp/fs028-residual-shapes.ts`, 120 files of `dotnet/fsharp`, every label):
+
+| | count | dominant classes |
+|---|---|---|
+| MISSING (truth derives, analyzer does not) | 147 | 96 `calls`/source-other, 19 `declared_type(parameter)`, 10 `implements`, 10 `declared_type(local_annotation)` |
+| UNEXPLAINED (analyzer emits, truth does not) | 174 | 58 `declared_type(parameter)`, 27 `declared_type(local_annotation)`, 26 `declared_type(return)`, 18 `overrides`, 14 `instantiates` |
+
+Two of the three biggest numbers in this table were the PROBE's fault, and both were found
+by a second probe disagreeing with the first. `fs028` classified an unexplained `references`
+row as an "open path" without reading the analyzer's `declaredOn` marker, so 127 declared-type
+rows were filed under a class that had already been fixed twice against two files which both
+agreed afterwards. And an `and`-clause bug in the truth oracle named a whole `let rec … and …`
+group after its *second* function, putting 24 rows in a file that was not where the class was
+being fixed. A single-probe residual is a number; it is not yet a finding.
+
+The single largest class on both sides is the **undecided `calls`/`instantiates` boundary** on
+a bare application (§6.1 of the closure review): 116 against 14. The second is the
+`open`-path `references` class, where the two implementations disagree on the SCOPE an
+`import_decl` is attributed to — 123 rows. That one is understood and partly fixed: an `open`
+at file scope belongs to the file's declared module, and `FscMain.fs` now agrees 12/12 after
+the oracle gained a file-scope fallback; the rest of the class is not yet adjudicated.
+
+Two harness-level facts belong here because both produced numbers that were wrong while
+looking right. This lane's allowlist entry was deleted by another lane's edit of the shared
+physical line, and the differential did not fail — it reported **1.9% coverage and 4,696
+MISSING on an analyzer emitting 2,751 edges**, because with the allowlist emptied the harness
+was comparing almost nothing. The entry is now on a line of its own, and the clojure lane's
+RESTORED note documents the same mechanism losing 17 lanes' `calls` at once. A green that
+measures the harness is worse than a red.
+
+Still open, and not things a differential can settle: the `calls`/`instantiates` boundary,
+alias-versus-one-case-DU classification (resolution-bound), the grammar gaps in §5, and the
+`isMeasure` text test.
+
 ## Issue
 
-Closes M12.08 (GitHub issue #147).
+Closes M12.08 (GitHub issue #147). The 2026-09-28 M14 round above does not close it.

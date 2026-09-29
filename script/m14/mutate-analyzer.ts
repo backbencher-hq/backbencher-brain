@@ -19,6 +19,7 @@
 import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
+import { FSHARP_MUTANTS } from "./fsharp-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -754,7 +755,7 @@ function cleanEdgeLinePerSet() {
   }
 }
 
-interface Mutant {
+export interface Mutant {
   /** A retired mutant keeps its record and its transform but is not run. It is
    *  retired only when it can no longer be shown to fail, because a pin that
    *  cannot fail is a false assurance. The reason is recorded in `description`
@@ -1114,6 +1115,12 @@ function dropAnonBodyOverride() {
 // cannot drift apart. Importing this module does NOT run the suite: main() is
 // guarded at the bottom.
 export const MUTANTS: Mutant[] = [
+  // The fsharp lane's mutants live in script/m14/fsharp-mutants.ts, spread in here.
+  // WHY A SEPARATE FILE: this registry is edited concurrently by several lanes, and a
+  // 259-line block written into it was overwritten within the hour by another lane's
+  // edit — silently, with the file left syntactically valid. A two-line import keeps the
+  // lane's work in a file the lane owns.
+  ...FSHARP_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
@@ -2440,6 +2447,104 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (["secret", "hidden", "flagged"].includes(s.name) ? { ...s, visibility: "public" } : s)) }),
   },
   {
+    id: "clojure/core-list-reverted",
+    language: "clojure",
+    defectClass: "edge-fabrication",
+    description: "CLJ-D17 regression (fixture core-gate): the derived clojure.core surface is reverted to a short list — the 286 real core names the hand transcription omitted come back, so `mapcat`/`ex-info`/`transduce`/`dedupe`/`run!`/`with-meta` are emitted as `calls` targets again. This is the defect the F5 differential CANNOT see, because the oracle imports the same list: the fabrication was MIRRORED, which is why it survived three prior waves of this lane",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "suppressed-heads", target: "mapcat", type: "calls", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }, { source: "suppressed-heads", target: "transduce", type: "calls", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true } }] }),
+  },
+  {
+    id: "clojure/core-shadow-guard-dropped",
+    language: "clojure",
+    defectClass: "edge-loss",
+    description: "CLJ-D18 regression (fixture core-gate): the in-file shadow exemption is dropped, so a call to a name the FILE defines is suppressed as a standard-library call again — 555 real call sites in the clojure corpus, and the expansion's own safety net: the fixture's `below-the-def` and `region-bound` edges disappear",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && ["max", "map"].includes(x.target))) }),
+  },
+  {
+    id: "clojure/core-refer-guard-dropped",
+    language: "clojure",
+    defectClass: "edge-loss",
+    description: "CLJ-D18 twin (fixture core-gate): the `:refer` exemption is dropped, so a `:refer` of a core-SHAPED name (`[clj.fixture.util :refer [re-find]]`) is suppressed as a standard-library call and the confirmed dependency is lost",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && x.target === "clj.fixture.util/re-find")) }),
+  },
+  {
+    id: "clojure/proto-member-dropped",
+    language: "clojure",
+    defectClass: "symbol-loss",
+    description: "CLJ-D19 regression (fixtures proto-members + definterface): the core-builtin gate is put BACK on protocol/interface signature declarations, so members named `alength`, `identity`, `key`, `count` vanish again — gvec.clj's `ArrayManager` shipped with 1 of 5 methods for exactly this reason",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !["alength", "identity", "key", "count", "toString"].includes(s.name)) }),
+  },
+  {
+    id: "clojure/use-only-refer-unread",
+    language: "clojure",
+    defectClass: "edge-loss",
+    description: "CLJ-D21 regression (fixture lib-rules): `:only` stops registering refer names (it is `:refer`'s legacy twin) and its LIST-shaped name list is not read, so the calls keep a bare dangling identity — 17 sites in the corpora (`clojure.java.javadoc`'s `(:use [clojure.java.browse :only (browse-url)])` is the shape)",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && ["clj.fixture.legacy/browse-up", "clj.fixture.legacy/format-node"].includes(x.target) ? { ...x, target: x.target.split("/").pop() } : x)) }),
+  },
+  {
+    id: "clojure/libspec-name-list-walked",
+    language: "clojure",
+    defectClass: "edge-fabrication",
+    description: "CLJ-D21b/D22 regression (fixture lib-rules): the libspec guard goes back to looking only at a LIST parent, so a name list nested in a VECTOR spec walks as code and fabricates a top-level call — the `ns -[calls]-> clj.fixture.legacy/browse-up` edge with isTopLevel that D21 itself would otherwise have created",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "clj.fixture.librules", target: "browse-up", type: "calls", confidence: 0.9, metadata: { clojureSpecific: true, isGeneralCall: true, isTopLevel: true } }] }),
+  },
+  {
+    id: "clojure/declare-var-dropped",
+    language: "clojure",
+    defectClass: "symbol-loss",
+    description: "CLJ-D23 regression (fixture lib-rules): `(declare a b)` stops minting a Variable, so 68 forward declarations across the corpora have no symbol, no `contains` member, and the later call has nothing to resolve to",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.kind === "variable" && s.metadata?.isForwardDeclaration)) }),
+  },
+  {
+    id: "clojure/declare-exported",
+    language: "clojure",
+    defectClass: "export-surface-fabrication",
+    description: "CLJ-D23 twin (fixture lib-rules): a forward declaration is published in the namespace's export surface, so the declared name and its real `defn` become two public Variables under one name — a duplicate export",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "collect-rows", kind: "variable", visibility: "public" }, { name: "normalize-rows", kind: "variable", visibility: "public" }] }),
+  },
+  {
+    id: "clojure/two-ns-refer-not-positional",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "CLJ-D24 regression (fixture two-namespaces): the refer table stops being positional, so a call after the second `ns` form is resolved against the FIRST namespace's `:refer` clause — 45 two-namespace files in the corpora, and the reason the table is a segment list rather than a map",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.source === "after-second-ns" && x.target === "format-node" ? { ...x, target: "clj.fixture.legacy/format-node" } : x)) }),
+  },
+  {
+    id: "clojure/rename-key-also-referred",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "CLJ-D25 regression (fixture lib-rules): `:rename {old new}` refers B halves of the pair, so the name Clojure deliberately UNBIND resolves to a lib — the shadowing `:rename` exists to prevent",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.target === "rewrite-text" ? { ...x, target: "clj.fixture.renamed/rewrite-text" } : x)) }),
+  },
+  {
+    id: "clojure/auto-resolved-spec-name",
+    language: "clojure",
+    defectClass: "symbol-identity-corruption",
+    description: "CLJ-D26 regression (fixture two-namespaces): `(s/def ::kw …)` publishes the spec under the literal `::kw` instead of the reader's qualified `:current-ns/kw`, so the spec has an identity no other file can reference",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name.startsWith(":clj.fixture.twons.second/") ? { ...s, name: s.name.replace(":clj.fixture.twons.second/", "::") } : s)) }),
+  },
+  {
+    id: "clojure/type-private-ignored",
+    language: "clojure",
+    defectClass: "export-surface-fabrication",
+    description: "CLJ-D27 regression (fixture proto-members): `^:private` on a defprotocol/defrecord/deftype name stops counting, so a private protocol, record or type is published in the namespace's export surface — the W24-mr3 contract, which the type branches never read",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (["Sealed", "Box", "Widget"].includes(s.name) ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "clojure/qualified-name-text-split",
+    language: "clojure",
+    defectClass: "identity-corruption",
+    description: "CLJ-D28 regression (fixture qualified-names): a qualified callee goes back to being resolved by splitting the symbol TEXT on `/`, so a function whose own name contains a slash is truncated — metabase's `h2x//` became `metabase.util.honey-sql-2/`. The AST already carries `namespace`/`name` as fields, so the split was a second, lossy parse of a classified node; the oracle mirrored only one of the analyzer's two answers, which is why the 4,253-file metabase run saw 2 unexplained of 239,192 truth edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => (x.type === "calls" && x.target === "app.lib//" ? { ...x, target: "app.lib/" } : x)) }),
+  },
+  {
+    id: "clojure/anon-shorthand-greedy",
+    language: "clojure",
+    defectClass: "edge-fabrication",
+    description: "CLJ-D20 regression (fixture anon-shorthand): the shorthand test becomes greedy — it accepts any name STARTING with `%`, so a malformed head like `%1a` is read as a parameter reference and its call edge is lost. The char scan's exactness is the reason the regex could be removed at all",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "calls" && ["%&x", "%1a"].includes(x.target))) }),
+  },
+  {
     id: "clojure/defmethod-docstring-name",
     language: "clojure",
     defectClass: "symbol-identity-corruption",
@@ -3152,6 +3257,144 @@ export const MUTANTS: Mutant[] = [
         ]),
     }),
   },
+  // ── D1–D5 (the C++ deep review, 2026-09-28) ──────────────────────────────
+  // Each mutant re-introduces ONE class of the six the register measured over
+  // 1,722 real C++ files, and each is caught by the fixture written for it in
+  // the same round. The point of a mutant is to prove the fixture can fail: a
+  // fixture that passes with the defect present pins nothing.
+  {
+    id: "cpp/d1-keyword-call-targets",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D1 (#957) regression: restores `calls` edges to C++ KEYWORD targets — the cast family (`static_cast`, `reinterpret_cast`, `const_cast`, `dynamic_cast`, `typeid`, `sizeof`, `alignof`, `noexcept`, `throw`) and the control-flow keywords (`if`, `for`, `switch`) the grammar's ERROR recovery invents call_expression nodes for. This is the pre-fix state: 6,940 keyword-named rows over 1,722 real files, led by static_cast at 5,534. A keyword is not a name in any position, and a control-flow keyword as a callee is a fabrication with no reading at all.",
+    transform: r => {
+      const kw = new Set(["static_cast", "reinterpret_cast", "const_cast", "dynamic_cast", "typeid", "sizeof", "alignof", "noexcept", "throw", "if", "for", "switch", "return", "defined", "__has_include"])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).concat(
+          [...kw].map(t => ({ source: "main", target: t, type: "calls", fromSymbol: "main", toSymbol: t })),
+        ),
+      }
+    },
+  },
+  {
+    id: "cpp/d1-keyword-symbol-names",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D1 (#957) regression, the DECLARED-NAME and ROSTER halves: re-publishes symbols whose names are keywords. The pre-fix corpus carried `variable static_cast`, `variable if`, `method for`, `method switch`, `property friend`, `function noexcept` — a declared name is an identifier, and a keyword declarator is a macro or a damaged region, never a declaration. Separate from d1-keyword-call-targets because it exercises a different gate position (the extraction funnels), and a mutant that only removes one edge kind would leave the other half of the class unpinned.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "static_cast", kind: "variable", range: { startLine: 30, startColumn: 1, endLine: 30, endColumn: 1 }, visibility: "public" },
+        { name: "if", kind: "variable", range: { startLine: 20, startColumn: 1, endLine: 20, endColumn: 1 }, visibility: "public" },
+        { name: "noexcept", kind: "function", range: { startLine: 55, startColumn: 1, endLine: 55, endColumn: 1 }, visibility: "public" },
+        { name: "friend", kind: "property", range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 }, visibility: "public" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d2-self-extends",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D2 (#958) regression: re-adds extends edges whose target equals their source — `char_traits : std::char_traits<T>` cleaned to `char_traits extends char_traits`, and `priority_tag : priority_tag<N-1>` likewise. 49 rows over 1,722 real files. The second is worse than an impossible edge: the inheritance is REAL and the leaf clean discarded the qualifier that said which class was inherited from. Caught by cpp/extends-self-base-958, whose forbid entries name both, while its Circle/Box/Poly controls stay green either way.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat([
+        { source: "priority_tag", target: "priority_tag", type: "extends", confidence: 1 },
+        { source: "char_traits", target: "char_traits", type: "extends", confidence: 1 },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d3-duplicate-contains-and-references",
+    language: "cpp",
+    defectClass: "relationship-duplication",
+    description: "D3 (#959) regression: re-duplicates `contains` and `references`. 841 excess contains rows and 87 excess references rows over 554 real files — 14 constructors normalizing to one name published 14 identical `person contains constructor` rows, and six `#include <vector>` lines published six identical `global -> vector` rows. `calls` is deliberately untouched: two call sites are two facts (distinct M59.A7 line_number), the C/TypeScript/Java lanes emit both, and the first cut of the register that deduped them reported 29,708 and was wrong.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat(
+        (r.relationships ?? []).filter(x => x.type === "contains" || x.type === "references").map(x => ({ ...x })),
+      ),
+    }),
+  },
+  {
+    id: "cpp/d4-type-published-as-name",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D4 (#960) regression: re-publishes the error-displaced declarator under the source's TYPE. A macro access-specifier label (`JSON_PRIVATE_UNLESS_TESTED:`) is legal C++ with no node type, so the grammar reads the label as a `type`, the declarator field lands on `difference_type`, and the real name (`m_it`) is pushed into an adjacent ERROR. The pre-fix analyzer published `property difference_type` — colliding with the real alias of that name in the same class, which is what produced the duplicate contains edge (D3) — while `m_it` was absent from the graph entirely.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "distance_type", kind: "property", range: { startLine: 41, startColumn: 1, endLine: 41, endColumn: 1 }, visibility: "private", ownerName: "Counted", ownerKind: "class" },
+        { name: "difference_type", kind: "property", range: { startLine: 72, startColumn: 1, endLine: 72, endColumn: 1 }, visibility: "private", ownerName: "Wrapped", ownerKind: "class" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d5-nested-function-definitions",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D5 (#961) regression: re-publishes local variables written with direct-initialization parentheses as FUNCTION symbols owned by the enclosing function — `std::string contents(ReadEntireFile(f));` became `function contents owner=compute`. 619 over 554 real files. C++ has no nested function definition, so the shape is provably not one, and the graph's answer to 'what does this function contain' was a set of sibling functions. Also re-adds the block-scoped aliases the C lane's CGD20 refuses ('function-local typedefs are execution artifacts') — 173 sites, half owned by macro-heading functions whose name is the literal heading text.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).concat([
+        { name: "contents", kind: "function", range: { startLine: 46, startColumn: 1, endLine: 46, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "raw_stack", kind: "function", range: { startLine: 47, startColumn: 1, endLine: 47, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "left", kind: "function", range: { startLine: 51, startColumn: 1, endLine: 51, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "local_alias", kind: "type", range: { startLine: 67, startColumn: 1, endLine: 67, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+        { name: "local_typedef", kind: "type", range: { startLine: 68, startColumn: 1, endLine: 68, endColumn: 1 }, visibility: "public", ownerName: "compute", ownerKind: "function" },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d5-constructor-in-value-roster",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D5 (#961) ROSTER regression: re-adds the `uses` edge a constructor's presence in the value roster produced. A constructor is not a callable value — `Handle(int)` defines a name that spells the class, and C++ never lets you call it unqualified — so `Handle parent_handle(7);` published `uses Handle -> Handle` at confidence 1.0, an edge asserting the class reads itself. A separate mutant from d5-nested-function-definitions because it is an EDGE, not a symbol, and exercises the pre-pass roster rather than the walk.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat([
+        { source: "compute", target: "Handle", type: "uses", confidence: 1, line_number: 48, metadata: { relationshipType: "identifier_usage" } },
+      ]),
+    }),
+  },
+  // ── D7 (the C++ loss side, 2026-09-28) ────────────────────────────────────
+  // The first six cpp classes are all FABRICATION-shaped — too much output — so
+  // none of them could see a missing symbol, and the M14 differential cannot
+  // either (it compares the analyzer against an oracle written from the same
+  // reading of the same grammar; a shared blind spot cancels out). D7 is the
+  // first LOSS class, and it was found by asking the complement question.
+  {
+    id: "cpp/d7-specifier-published-as-anonymous",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D7 (#962) regression, ARM A: re-publishes a class/struct whose name the grammar handed over as a `qualified_identifier` under the `anonymous` sentinel. An explicit specialization (`template <> struct fmt::formatter<T> : formatter<U> { … }`) is legal C++ and its leaf IS the name, but `findChild(node, \"type_identifier\")` is a direct-child scan and cannot see it. Measured 26 sites over 1,722 real C++ files; the class published as `anonymous` with its members owned by `anonymous`, beside correctly-named siblings — a row that is not merely wrong but AMBIGUOUS with the analyzer's own no-name marker.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? [])
+        .filter((s: any) => s.name !== "formatter")
+        .concat([
+          { name: "formatter", kind: "class", range: { startLine: 55, startColumn: 1, endLine: 58, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppClass: true } },
+          { name: "anonymous", kind: "class", range: { startLine: 55, startColumn: 1, endLine: 58, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppClass: true } },
+        ]),
+    }),
+  },
+  {
+    id: "cpp/d7-attribute-as-enum-name",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D7 (#962) regression, ARM B: re-publishes a C++23 `enum class [[=fmt::as_identifiers]] color { … }` with the ATTRIBUTE as the enum's name and the real name as a phantom file-scope variable. An enum has no qualified name in C++ (`enum class ns::E` is not valid), so a qualified path in an enum's name slot is the attribute the grammar's recovery displaced — and the real name is the bare identifier it left in the enclosing declaration's `init_declarator`. Measured 22 sites. Three defects in one construct at fmt/test/enum-test.cc:24: the enum as `anonymous`, a phantom `variable \"color\"`, and every enumerator lost.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? [])
+        .filter((s: any) => s.name !== "color" && s.name !== "qualified_attr_enum")
+        .concat([
+          { name: "as_identifiers", kind: "enum", range: { startLine: 74, startColumn: 1, endLine: 74, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppEnum: true } },
+          { name: "color", kind: "variable", range: { startLine: 74, startColumn: 1, endLine: 74, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace" },
+          { name: "outer::as_identifiers", kind: "enum", range: { startLine: 82, startColumn: 1, endLine: 82, endColumn: 1 }, visibility: "public", ownerName: "outer", ownerKind: "namespace", metadata: { isCppEnum: true } },
+        ]),
+    }),
+  },
   {
     id: "rust/drop-scoped-struct-literal-leaf",
     language: "rust",
@@ -3172,6 +3415,108 @@ export const MUTANTS: Mutant[] = [
     defectClass: "relationship-loss",
     description: "re-emits calls edges for parenthesized closure callees ((self.0)(n)): the pre-fix else branch took functionNode.text verbatim and fabricated a (self.0) target",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "run", target: "(self.0)", type: "calls", confidence: 1, metadata: {} }] }),
+  },
+  // ── M60.P1 (the C++ payload the documentation described but never emitted) ──
+  // D1–D6 are all FABRICATION-shaped and D7 is the first LOSS class, but all seven
+  // are SYMBOL/EDGE classes: every one of them is caught by a symbol or relationship
+  // assertion. `parameters`, `returnType` and `decorators` are a different kind of
+  // loss — a symbol can be perfectly named, correctly owned, and still carry a
+  // payload that is absent, and no symbol-count or edge assertion can see it. That
+  // is why the M60 payload-seam matrix recorded all three as DEAD emit cells for cpp
+  // while the doc claimed support, and why the M14 differential could not see it
+  // either: an oracle written from the same reading of the same grammar never asks
+  // for the field, so the blind spot is symmetric and cancels.
+  {
+    id: "cpp/m60-parameter-type-sliced-at-declarator",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM A: reverts the parameter TYPE slice from the parameter's NAME node to its DECLARATOR node. A `reference_declarator`'s text is `& name` and its start index points at the `&`, so slicing at the declarator deletes the pointer/ref operator and publishes `const std::string` for `const std::string& name` and `const char` for `const char* format`. Not cosmetic: those are different C++ types that overload differently, and the same slice is the override-matching KEY (buildParamSig), so `virtual void f(Widget&)` and `virtual void f(Widget)` also hashed alike before the fix.",
+    transform: r => {
+      const stripOps = (t: any) => {
+        if (typeof t !== "string") return t
+        let s = t
+        while (s.length > 0 && (s.endsWith("&") || s.endsWith("*"))) s = s.slice(0, -1)
+        return s
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => ({
+          ...s,
+          ...(Array.isArray(s.parameters)
+            ? { parameters: s.parameters.map((p: any) => ({ ...p, type: stripOps(p.type) })) }
+            : {}),
+        })),
+      }
+    },
+  },
+  {
+    id: "cpp/m60-defaulted-parameter-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM B: drops every DEFAULTED parameter. In this grammar a defaulted parameter is an `optional_parameter_declaration` — a DIFFERENT node type from a required `parameter_declaration` — so a walk that handles only the required one silently loses `double scale = 1.0` while looking correct on every undefaulted signature. The class is corpus-wide and invisible to a name/type pin that happens to sample an all-required signature.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({
+        ...s,
+        ...(Array.isArray(s.parameters)
+          ? { parameters: s.parameters.filter((p: any) => p.isOptional !== true) }
+          : {}),
+      })),
+    }),
+  },
+  {
+    id: "cpp/m60-trailing-return-type-read-as-auto",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM C: publishes a deduced-return function's `auto` instead of the type after the `->`. The pre-fix read took the declaration's `type` field, which for `auto label() const -> std::string` is literally `auto` — a name that resolves to nothing, in the one field whose whole job is to name a type. Trailing return types are not exotic: they are how `decltype(auto)` and every deduced-return function is written.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "label" ? { ...s, returnType: "auto" } : s)),
+    }),
+  },
+  {
+    id: "cpp/m60-field-decorators-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM D: drops `decorators` from every non-callable declaration, keeping it only for functions. `static constexpr int kAxes = 2;` carries exactly as much modifier information as `virtual double area() const = 0;`, so a payload field that answers for one of them and not the other is a field a consumer cannot rely on. A distinct arm from the others because it is a SCOPE restriction, not a wrong value: the function-branch values are all still correct, which is what makes it survive a fixture that only samples methods.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.kind === "function" || s.kind === "method" || s.kind === "constructor") return s
+        const { decorators, ...rest } = s
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "cpp/m60-virtual-specifier-decorator-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM E: removes the one step that looks BELOW the declaration. `override` and `final` are `virtual_specifier` nodes in this grammar, children of the declarator rather than of the declaration, so a scan of the declaration's own tokens finds `virtual` and misses `override` — and `override` is the modifier that answers the question a reader actually has of an override edge. It is also the arm most likely to survive review, because the declaration-level modifiers are all still present.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.decorators)) return s
+        const decorators = s.decorators.filter((d: string) => d !== "override" && d !== "final")
+        if (decorators.length === s.decorators.length) return s
+        return decorators.length > 0 ? { ...s, decorators } : (({ decorators: _drop, ...rest }) => rest)(s)
+      }),
+    }),
+  },
+  {
+    id: "cpp/m60-declarator-modifier-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM F: scans only the DECLARATION for modifiers and not its DECLARATOR. A method's trailing `const` and its `override`/`final` `virtual_specifier`s are children of the `function_declarator`, so this arm drops `const` from every const method and every override — while leaving `static`/`virtual`/`explicit` intact, because those DO sit on the declaration. It is the arm most likely to pass review, since the modifiers a reader checks first are all still there, and `const` is on essentially every getter in a C++ corpus, so the loss is large and the signal is small.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.decorators)) return s
+        const decorators = s.decorators.filter((d: string) => d !== "const" && d !== "volatile")
+        if (decorators.length === s.decorators.length) return s
+        return decorators.length > 0 ? { ...s, decorators } : (({ decorators: _drop, ...rest }) => rest)(s)
+      }),
+    }),
   },
   {
     id: "rust/drop-union-symbols",
@@ -3656,6 +4001,245 @@ export const MUTANTS: Mutant[] = [
         }
         return x
       }),
+    }),
+  },
+  {
+    id: "zig/local-container-owns",
+    language: "zig",
+    defectClass: "symbol-ownership-loss",
+    description:
+      "Z22 regression: a CONTAINER declared inside an executable body stops being anonymous, so its declarations are handed to the ENCLOSING container again — `const Local = struct { pub fn helper(v: T) void }` inside a method of `Host` publishes `helper` as a Method owned by `Host` with a `contains Host -> helper` edge. Measured by the ownership verifier (script/m14/tmp/zigw-ownership.ts, whose key IS the owner: the differential cannot see this class because its coverage match ignores the source). Caught by zig/kinds-and-owners' forbidSymbols (`helper`, `limit`) and forbidRelationships on the two `contains` shapes.",
+    transform: r => {
+      const local = ["helper", "limit"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...local.map((n, i) => ({ name: n, kind: n === "helper" ? "method" : "constant", visibility: "public", range: { startLine: 118 + i, startColumn: 17, endLine: 118 + i, endColumn: 23 }, scope: "Host", ownerName: "Host", ownerKind: "struct", metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...local.map((n) => ({ type: "contains", source: "Host", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
+    id: "zig/field-assignment-rhs-read",
+    language: "zig",
+    defectClass: "read-loss",
+    description:
+      "Z29 regression: the LHS test goes back to \"the first named child of type `identifier`\", which is not the LHS when the left side is a field expression \u2014 in `exe.stack_size = stack_size` the first identifier child is the VALUE, so the analyzer declares the read to be a definition and publishes no `uses` for it. One row in 1,200 corpus files (zig/build.zig), a real read of a file-scope constant. Caught by the differential\u0027s bare-read truth, whose own copy of this predicate was fixed twice in the same wave (Z24, Z25) before the third copy \u2014 in the analyzer \u2014 was noticed.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && x.target === "field_assignment_rhs"),
+      ),
+    }),
+  },
+  {
+    id: "zig/long-field-name-dropped",
+    language: "zig",
+    defectClass: "symbol-loss",
+    description:
+      "Z28 regression: the container-field extraction goes back to requiring a name shorter than 50 characters, so real field declarations vanish from the index again \u2014 14 of 27,004 in 1,200 corpus files (0.05%), including a 74-character LSP capability flag. This is a LOSS class, so a count of published symbols cannot show it: the only instrument that convicts it is one that asks what SHOULD be published. Caught by zig/kinds-and-owners' expectSymbols (`supports_workspace_did_change_configuration_dynamic_registration`), and by the `contains` gate, whose derived-and-unpublished direction reports it as MISSING.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter(
+        (s: any) => s.name !== "supports_workspace_did_change_configuration_dynamic_registration",
+      ),
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "contains" && x.target === "supports_workspace_did_change_configuration_dynamic_registration"),
+      ),
+    }),
+  },
+  {
+    id: "zig/function-signature-is-a-method",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z26 regression: a `function_signature` — a function-pointer TYPE, which has no `declarator` field in this grammar — goes back on the declaration path, so the name-picking takes whatever identifier comes first under the node and publishes a METHOD that does not exist: the return type (`contains Sort -> ComparisonResult`) or a qualified segment of a parameter type (`contains Options -> apprt` from `*apprt.ClipboardRequest`). Caught by zig/kinds-and-owners' forbidSymbols (`ComparisonResult`, `Order`, `apprt`) and forbidRelationships on the two `contains` shapes. Measured by the `contains` gate (script/m14/tmp/zigw-contains.ts), which is BIDIRECTIONAL — it also asks whether a justifiable owner is missing, which the ownership verifier cannot.",
+    transform: r => {
+      const fp = ["ComparisonResult", "Order", "apprt"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...fp.map((n, i) => ({ name: n, kind: "method", visibility: "public", range: { startLine: 130 + i, startColumn: 17, endLine: 130 + i, endColumn: 30 }, scope: "Sort", ownerName: "Sort", ownerKind: "struct", metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...fp.map((n) => ({ type: "contains", source: "Sort", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
+    id: "zig/anonymous-container-owns",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z21 regression: a container declaration reached as an EXPRESSION (an `if`/`switch` branch, a struct literal in a prune, a struct type inside a nullable/array type) stops establishing an anonymous scope, so its declarations are published as members of the enclosing container again — the payload of a union variant becomes a member of the UNION, and two variants declaring the same field produce two symbols under ONE (owner, name) identity. Measured: 422 symbols and 308 fabricated `contains` edges over 800 corpus files, 0 added by the fix. Caught by zig/kinds-and-owners' forbidSymbols (`libc`, `framework`, `helper`, `assert`) and forbidRelationships on the four `contains` shapes.",
+    transform: r => {
+      const anon = ["libc", "framework", "helper", "assert"]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...anon.map((n, i) => ({ name: n, kind: n === "helper" || n === "assert" ? "function" : "property", visibility: "public", range: { startLine: 91 + i, startColumn: 9, endLine: 91 + i, endColumn: 13 }, scope: "Payload", ownerName: "Payload", ownerKind: "union", metadata: { zigField: true } }))],
+        relationships: [...(r.relationships ?? []), { type: "contains", source: "Payload", target: "libc", confidence: 1, metadata: {} }, { type: "contains", source: "Payload", target: "framework", confidence: 1, metadata: {} }],
+      }
+    },
+  },
+  {
+    id: "zig/type-alias-as-constant",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11 regression: reverts the kind dispatch's TYPE side — an alias to a builtin (`const Pos = c_long;`) is published as a `constant` again, which is the pre-fix state (440 measured sites, 160 upper-case). The revert is read off the emitted KIND rather than by re-deriving the rule, so it cannot silently stop matching when the fixture grows. Caught by zig/kinds-and-owners, which expects `Pos`, `Id`, `Buf`, `Opt` and `small` as `type`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: ["Pos", "Id", "Buf", "Opt", "small"].includes(s.name) && s.kind === "type" ? "constant" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/value-rhs-as-type",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11 regression, the other direction: a value expression with an upper-case name is published as a `type` again (`const SHIFT = 1 << 10;` — 838 measured sites for binary_expression alone, plus unary/null_coercion/index/catch). Caught by zig/kinds-and-owners, which expects `SHIFT`, `MASK`, `NEG`, `Tuple`, `TUPLE` and `NAMES` as `constant`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: ["SHIFT", "MASK", "NEG", "Tuple", "TUPLE", "NAMES"].includes(s.name) && s.kind === "constant" ? "type" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/labeled-block-as-type",
+    language: "zig",
+    defectClass: "symbol-mislabel",
+    description:
+      "Z11/Z19 regression: a labeled block (`const Labeled = blk: { … break :blk scratch; }`) is published as a `type` again, and with it the block's own value reads go silent, because a type does not resolve as a bare value. Caught by zig/kinds-and-owners (`Labeled`/`Packed` as `constant`, and the two `uses reader ->` rows).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => ({ ...s, kind: (s.name === "Labeled" || s.name === "Packed") && s.kind === "constant" ? "type" : s.kind })),
+    }),
+  },
+  {
+    id: "zig/opaque-not-a-container",
+    language: "zig",
+    defectClass: "symbol-ownership-loss",
+    description:
+      "Z12 regression: `opaque {}` stops being a container, so every declaration inside an opaque type reverts to the pre-fix state — a free file-scope `function` with no `scope`/`ownerName` and no `contains` edge (123 opaque containers / 352 declarations measured in the pinned corpora). Caught by zig/kinds-and-owners, which expects `create`/`destroy` as `method` owned by `Handle`, `tag` as a `constant` owned by `Handle`, and the three `contains` rows.",
+    transform: r => {
+      const names = new Set(["create", "destroy", "tag"])
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map(s => names.has(s.name) ? { ...s, kind: s.kind === "method" ? "function" : s.kind, scope: undefined, ownerName: undefined, ownerKind: undefined } : s),
+        relationships: (r.relationships ?? []).filter(x => !(x.type === "contains" && x.source === "Handle" && names.has(x.target))),
+      }
+    },
+  },
+  {
+    id: "zig/block-locals-leak",
+    language: "zig",
+    defectClass: "symbol-fabrication",
+    description:
+      "Z19 regression: a labeled block stops being an executable body, so its comptime locals are published as file-scope symbols again (`scratch`, `total`, `step`) with a `contains` edge attributing them to the enclosing container. That is the pre-fix state and the shape the class was found on: `Action contains key_fields` for a local of a `cvalue: { … }` block inside an enum (70 symbols / 27 fabricated containment edges over 400 corpus files). Caught by zig/kinds-and-owners' forbidSymbols and forbidRelationships.",
+    transform: r => {
+      const locals: Array<[string, string]> = [["scratch", "variable"], ["total", "variable"], ["step", "constant"]]
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...locals.map(([n, k], i) => ({ name: n, kind: k, visibility: "private", range: { startLine: 56 + i, startColumn: 5, endLine: 56 + i, endColumn: 12 }, metadata: {} }))],
+        relationships: [...(r.relationships ?? []), ...locals.map(([n]) => ({ type: "contains", source: "Handle", target: n, confidence: 1, metadata: {} }))],
+      }
+    },
+  },
+  {
+    id: "zig/default-value-as-type",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z13 regression: a declaration's DEFAULT VALUE becomes its declared type again — `size: Size = .byte` publishes a reference to the enum member `byte`, `mode: Mode = .a` to `a`, and `var p: Fmt = undefined` to `undefined`. The pre-fix leaf was the last identifier anywhere under the declaration, so the value's identifiers won. Caught by zig/declared-type-leaf, whose forbid rows name all three and whose expect rows name `Size`/`Mode`/`Slice`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const rt = (x.metadata ?? {}).relationshipType
+        if (rt !== "declared_type") return x
+        if (x.target === "Size" && x.line_number === 18) return { ...x, target: "byte" }
+        if (x.target === "Mode" && x.line_number === 19) return { ...x, target: "a" }
+        if (x.target === "Slice" && x.line_number === 21) return { ...x, target: "undefined" }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "zig/unnamed-type-publishes",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z13b regression: a type that NAMES NOTHING publishes a reference anyway — an anonymous struct type in a parameter position publishes its FIELD name (`references -> FLAG`), and an error set publishes a member (`-> NotFound`). Caught by zig/declared-type-leaf's forbid rows.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "references", source: "(declared-type)", target: "FLAG", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+        { type: "references", source: "(declared-type)", target: "NotFound", confidence: 0.9, metadata: { relationshipType: "declared_type" } },
+      ],
+    }),
+  },
+  {
+    id: "zig/local-annotation-dropped",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z16 regression: the LOCAL annotation position goes away — `var o: Only = undefined;` inside a function body publishes no declared-type reference (the family declares four positions: field, parameter, return, local; the collector covered three). Caught by zig/declared-type-leaf, which uses a type named nowhere else in the file so the per-file dedupe cannot hide the position.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "references" && x.target === "Only" && x.source === "(declared-type)")),
+    }),
+  },
+  {
+    id: "zig/quoted-identifier-mangled",
+    language: "zig",
+    defectClass: "payload-corruption",
+    description:
+      "Z18 regression: re-introduces the removed junk-strip on a declared-type leaf. Its receiver can only be an `identifier` node's text, so on a plain identifier it is provably a no-op — and on a QUOTED identifier it corrupts a legitimate name: `@\"weird type\"` is published as `@\"weirdtype\"` (1,348 of the pinned corpora's quoted type-position names carry a character from that class, e.g. the upstream compiler's `@\"fatal error\"` diagnostics field). Caught by zig/declared-type-leaf, whose forbid row names the corrupted spelling and whose expect row names the correct one.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => {
+        const t = String(x.target ?? "")
+        if (t.startsWith('@"') && t.endsWith('"') && /[!*\s[\]{}]/.test(t)) {
+          return { ...x, target: '@"' + t.slice(2, -1).replace(/[!*\s[\]{}]+/g, "") + '"' }
+        }
+        return x
+      }),
+    }),
+  },
+  {
+    id: "zig/compound-write-gate",
+    language: "zig",
+    defectClass: "relationship-loss",
+    description:
+      "Z15 regression: the write gate stops testing the OPERATOR, so a compound assignment's read is swallowed again — `self.n += 1` publishes no `uses`, and neither does the `while (i < n) : (i += 1)` idiom (280 compound field/index/dereference assignments in the pinned corpora). Caught by zig/calls-uses-complexity, which now expects `uses bump -> n` and forbids only the PLAIN write `uses set -> n`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "uses" && x.source === "bump" && x.target === "n")),
+    }),
+  },
+  {
+    id: "zig/container-member-exported",
+    language: "zig",
+    defectClass: "payload-seam",
+    description:
+      "Z20 regression: a `pub const` inside a container is published in the `exports` array again. An export must name an IMPORTABLE unit; a member is reached as `Container.member`, which is the `contains` edge's job, so the pre-fix export invented a binding no importer can use. Caught by the fixture runner's export invariant (the export does not resolve to a top-level symbol), which is what found the class.",
+    transform: r => ({ ...r, exports: [...(r.exports ?? []), { name: "tag", kind: "constant" }] }),
+  },
+  {
+    id: "zig/field-type-list",
+    language: "zig",
+    defectClass: "payload-loss",
+    description:
+      "Z17b regression: a property's declared type goes back to the five-node-type list, so every NAMED type publishes no `returnType` at all (`size: Size`, `fixed: [4]Size`, `view: Slice`). Hover and call-hierarchy signatures read that field. Caught by zig/declared-type-leaf's expectSymbols rows, which pin `returnType` on the named-type and array-type properties.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => (s.name === "size" || s.name === "fixed" || s.name === "view") && s.returnType ? { ...s, returnType: undefined } : s),
+    }),
+  },
+  {
+    id: "zig/param-type-list",
+    language: "zig",
+    defectClass: "payload-loss",
+    description:
+      "Z17c regression: a parameter's type goes back to the five-node-type list, so `fn qualified(w: std2.mem.Allocator)` and `fn usesQuoted(x: @\"weird type\")` publish parameters with no type. Caught by zig/declared-type-leaf's expectParameters rows.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map(s => (s.name === "qualified" || s.name === "usesQuoted") && s.parameters ? { ...s, parameters: s.parameters.map((p: any) => ({ ...p, type: undefined })) } : s),
     }),
   },
   {
@@ -7068,6 +7652,274 @@ export const MUTANTS: Mutant[] = [
         }),
       }
     },
+  },
+  // ═══ GO26 (round 5) ════════════════════════════════════════════════════
+  // The round-5 line-by-line read found ten classes; each has ONE regression
+  // mutant here and a pin (fixture `go/round5-surfaces`, or probe
+  // `F9-PROBE-GO-BARE-CALLABLE-SET` where no valid-Go file can reach the shape).
+  // Both directions were executed: each mutant below was run against the
+  // pre-fix code and is reported as CAUGHT, and the fixture was re-run with the
+  // fixes reverted one class at a time (see reviews/go/sixth-review.md §5).
+  {
+    id: "go/export-ascii-only",
+    language: "go",
+    defectClass: "name-surface",
+    description:
+      "GO26 regression: the export test goes back to an ASCII RANGE (`name[0] >= \"A\" && name[0] <= \"Z\"`). Go's spec defines `exported` as a UNICODE upper-case test, so every legal identifier with a non-ASCII head was published `private` — and `private` fails the export predicate, so the symbol was dropped from the public-API list the product serves entirely. Reconstructed from the output: every `visibility: \"public\"` whose name starts outside A-Z is re-published private. Caught by go/round5-surfaces (expectVisibility + expectExports on `Ünï` / `Ö` / `Ä`).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const n = String(s.name ?? "")
+        if (!n || s.visibility !== "public") return s
+        const c = n[0]
+        return c >= "A" && c <= "Z" ? s : { ...s, visibility: "private" }
+      }),
+    }),
+  },
+  {
+    id: "go/predeclared-comparable-leaks",
+    language: "go",
+    defectClass: "dangling-edge",
+    description:
+      "GO26 regression: `comparable` leaves the PREDECLARED exclusion set. The set was built before generics and never revisited, so `any` was in it and `comparable` was not — and the pinned grammar types a generic type-parameter list as `parameter_declaration` nodes, so `type Pair[K comparable, V any]` published a `declared_type` target `Pair -> comparable`, a name no declaration can define. Reconstructed from the output: the member symbol the type-parameter constraint names. Caught by go/round5-surfaces (forbidReferences `declared_type -> comparable`, forbidSymbols `comparable` owned by `Pair`).",
+    transform: r => {
+      // The pre-fix code EMITTED the edge, so the mutant has to add it, not
+      // relabel an existing one: a generic type's type-parameter constraint
+      // reached the `parameter_declaration` case and named `comparable` as a
+      // declared type. Reconstructed from the symbol payload's own
+      // `hasGenerics` flag, which is the marker the pre-fix code ignored.
+      const genericStructs = (r.symbols ?? []).filter(
+        (s: any) => (s.metadata as any)?.hasGenerics && String(s.kind) === "struct",
+      )
+      if (genericStructs.length === 0) return r
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...genericStructs.map((s: any) => ({
+            source: String(s.name),
+            target: "comparable",
+            type: "references" as any,
+            confidence: 0.95,
+            metadata: { relationshipType: "declared_type", evidenceClass: "reference_qualified" },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "go/unnamed-param-as-return-type",
+    language: "go",
+    defectClass: "label-surface",
+    description:
+      "GO26 regression: parameter-vs-result goes back to the ARITY HEURISTIC (`namedChildCount === 1 ? \"return_type\" : \"declared_type\"`). An unnamed PARAMETER and an unnamed RESULT are both one-named-child `parameter_declaration` nodes, so every unnamed parameter was published as a `return_type` reference — and the tree already says which list it is, in the enclosing declaration's `result` FIELD. Reconstructed from the output: every `return_type` edge on a function whose `result` field is empty. Caught by go/round5-surfaces (`takesUnnamed -> Server` must be `declared_type`; the `return_type` variant is forbidden, and `returnsUnnamed -> Server` pins the control).",
+    transform: r => {
+      // The pre-fix label is a function of the PARAMETER DECLARATION's shape
+      // (`namedChildCount === 1`), and the payload carries that shape directly:
+      // `extractGoParameters` names a parameter with no name node `arg<N>`,
+      // while a named parameter carries its real name. So the pre-fix
+      // mislabelling is exactly the set of `references` edges leaving a
+      // function that has an `arg<N>` parameter and no result — which is what
+      // this relabels back to `return_type`.
+      const unnamedParam = new Set(
+        (r.symbols ?? [])
+          .filter(
+            (s: any) =>
+              (String(s.kind) === "function" || String(s.kind) === "method") &&
+              !s.returnType &&
+              Array.isArray(s.parameters) &&
+              s.parameters.some((p: any) => /^arg\d+$/.test(String(p?.name ?? ""))),
+          )
+          .map((s: any) => String(s.name)),
+      )
+      if (unnamedParam.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const rel = normRel(x)
+          if (rel.type !== "references" || (x.metadata ?? {}).relationshipType !== "declared_type") return x
+          if (!unnamedParam.has(rel.source)) return x
+          return { ...x, metadata: { ...((x.metadata ?? {}) as any), relationshipType: "return_type" } }
+        }),
+      }
+    },
+  },
+  {
+    id: "go/module-range-hardcoded",
+    language: "go",
+    defectClass: "range-incoherence",
+    description:
+      "GO26 regression: the Module symbol's range goes back to a hand-built literal at line 1 / byte 0, sized from the package NAME's length. That is only right when the package clause is the first thing in the file, and a `//go:build` header sits above it in 158 of the two pinned corpora's 3,924 files and 2,462 of kubernetes's 17,848 — so every byte of the range pointed into the build-tag comment. Reconstructed from the output: the Module range is recomputed from the name length at line 1. Caught by go/round5-surfaces (expectSymbolRanges on the `roundfive` module symbol; the fixture's `//go:build` header is what makes the shape reachable).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (String(s.kind) !== "module") return s
+        const n = String(s.name ?? "")
+        return {
+          ...s,
+          range: {
+            startLine: 1,
+            startColumn: 1,
+            endLine: 1,
+            endColumn: n.length + 9,
+            startIndex: 0,
+            endIndex: n.length + 8,
+          },
+        }
+      }),
+    }),
+  },
+  {
+    id: "go/alias-struct-embedding-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GO26 regression: an ALIAS to a struct stops emitting `extends`. `type A = struct{ *Inner }` is legal Go; the pre-round embedding pass read `type_spec` only — as did the F5 oracle, so the two agreed on the omission and no differential could charge it — and the MEMBER symbol was published all the same, leaving the graph claiming `A` contains `Inner` while `A` extended nothing. Reconstructed from the output: an `extends` edge from a source that has a member symbol whose owner is a `type_alias` (metadata.isTypeAlias) and no own struct. Caught by go/round5-surfaces (expects `extends Alias -> Inner`; the oracle change in the same round is what keeps the two sides symmetric).",
+    transform: r => {
+      const aliasStructs = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => (s.metadata as any)?.isTypeAlias && String(s.kind) === "struct")
+          .map((s: any) => String(s.name)),
+      )
+      if (aliasStructs.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const rel = normRel(x)
+          return !(rel.type === "extends" && aliasStructs.has(rel.source))
+        }),
+      }
+    },
+  },
+  {
+    id: "go/struct-kind-class-vacuous",
+    language: "go",
+    defectClass: "dead-logic",
+    description:
+      "GO26 regression: the STRUCT predicate goes back to `SymbolKind.Class`, which the go analyzer has never emitted (Go's struct is `SymbolKind.Struct`). Two product features were therefore unreachable for the analyzer's whole life: `generateGoArchitecturalInsights`'s `struct_design` insight never fired for ANY Go file, and `calculateArchitecturalScore`'s method:struct-ratio bonus could never be granted. Reconstructed from the output: the score is recomputed with the struct list forced empty, which is what the vacuous predicate produced. Caught by go/round5-surfaces (expectMetadata.architecturalScore is pinned at the value that INCLUDES the +3 bonus — the fixture carries methods on `Inner` precisely to bring its ratio inside the [1,5] band the bonus needs, so a vacuous struct list moves the pin by exactly the bonus).",
+    transform: r => {
+      const md: any = (r.metadata ?? {}) as any
+      if (typeof md.architecturalScore !== "number") return r
+      const structs = (r.symbols ?? []).filter(
+        (s: any) => String(s.kind) === "struct" && (s.metadata as any)?.isGoStruct,
+      ).length
+      const methods = (r.symbols ?? []).filter((s: any) => String(s.kind) === "method").length
+      if (structs === 0) return r
+      const ratio = methods / structs
+      const withBonus = md.architecturalScore + (ratio >= 1 && ratio <= 5 ? 3 : 0)
+      return { ...r, metadata: { ...md, architecturalScore: withBonus } }
+    },
+  },
+  {
+    id: "go/framework-vocab-drift",
+    language: "go",
+    defectClass: "dead-logic",
+    description:
+      "GO26 regression: the two framework VOCABULARIES drift apart again. The file-level detector and the per-import detector were independently written and disagreed in both directions, so `gorm` was known to one and could never be pushed into the other — which left `getGoFrameworkPatterns`'s `case \"gorm\"` (with `detectGORMPatterns`, a written-out pattern set) permanently unreachable. Reconstructed from the output: every framework beyond the pre-round seven-name list is dropped from `detectedFrameworks` and `framework`, and the gorm pattern entry goes with it. Caught by go/round5-surfaces (expectFrameworks + expectMetadata.detectedFrameworks + expectMetadata.framework).",
+    transform: r => {
+      const md: any = (r.metadata ?? {}) as any
+      const pre = new Set(["gin", "echo", "fiber", "net_http", "gorilla_mux", "grpc", "testify"])
+      const kept = (md.detectedFrameworks ?? []).filter((n: string) => pre.has(n))
+      const patterns = (md.frameworkPatterns ?? []).filter((p: any) => pre.has(String(p.framework)))
+      return {
+        ...r,
+        metadata: { ...md, detectedFrameworks: kept, frameworkPatterns: patterns, framework: kept[0] ?? md.framework },
+      }
+    },
+  },
+  // ═══ GO38 (round 6) ═══════════════════════════════════════════════════
+  {
+    id: "go/local-type-declaration-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GO38 regression: a type declared INSIDE A FUNCTION BODY stops being published — the symbol, its member symbols and its `contains` edges all go. LocalsAreNotSymbols (C# M12.07 / Swift M12.21) excludes a function-local var/const, and the family's stated exception is nim's own: 'THE ONE EXCEPTION IS AN OBJECT/ENUM/FIELD DECLARATION, WHICH IS A SYMBOL BECAUSE THE OBJECT OWNS IT.' The pre-fix walk `continue`d on every function and method, so it never reached a local type. The silence was not neutral — `extractDeclaredTypeRefs` already walks bodies and already attributed a local type's field types to that type, so the lane published `references Local -> Host` whose SOURCE named no symbol at all. Found by the round-6 `contains` truth, which derives membership from the DECLARATION side and therefore reports an unpublished type as MISSING instead of being invisible on both sides (22 memberships in 200 go-tools files). Reconstructed from the output: a struct symbol whose range falls inside a function symbol's range is a function-local type, so it and its members and its contains edges are removed. Caught by go/local-type-declaration, which also FORBIDS publishing the function-local var/const — the other half of the same contract, without which this mutant's opposite would pass too.",
+    transform: r => {
+      const fnRanges = (r.symbols ?? [])
+        .filter((s: any) => String(s.kind) === "function" && s.range && typeof s.range.startIndex === "number")
+        .map((s: any) => [s.range.startIndex, s.range.endIndex] as [number, number])
+      if (fnRanges.length === 0) return r
+      const inside = (s: any): boolean =>
+        typeof s.range?.startIndex === "number" &&
+        fnRanges.some(([a, b]) => s.range.startIndex >= a && (s.range.endIndex ?? s.range.startIndex) <= b)
+      const localTypes = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => String(s.kind) === "struct" && inside(s))
+          .map((s: any) => String(s.name)),
+      )
+      if (localTypes.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter(
+          (s: any) => !(String(s.kind) === "struct" && localTypes.has(String(s.name)) && !s.ownerName),
+        ),
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          const rel = normRel(x)
+          if (rel.type === "contains") return !localTypes.has(rel.source)
+          // The declared-type pass named the local type, so its references went
+          // with the rest of the subgraph — the pre-fix world had no such source.
+          if (rel.type === "references") return !localTypes.has(rel.source)
+          return true
+        }),
+      }
+    },
+  },
+  // ═══ GO36 (round 6) ═══════════════════════════════════════════════════
+  // The `references` truth went into the harness this round, so the F5 label
+  // count for go now covers 127,061 `references` edges that were previously
+  // outside the comparison. It cannot see THIS class on its own — the harness
+  // matcher compares `label + normTarget(target)` and IGNORES the edge's source
+  // (differential.ts:15634) — so the source attribution is pinned here and by
+  // the fixture, and this mutant is the regression guard.
+  {
+    id: "go/alias-field-type-to-global",
+    language: "go",
+    defectClass: "dangling-edge",
+    description:
+      "GO36 regression: a type ALIAS's field types attribute to the `global` pseudo-source again. `resolveSource` recognised `type_spec` only, so `type Alias = struct{ Q Inner }` found no enclosing declaration and emitted `global -> Inner` — an edge no consumer can navigate back from, since `global` names nothing. This is the second half of GO31a (which taught the embedding pass to accept `type_alias` and left the declared-type resolver behind), found by the round-6 `references` truth: 16 MISSING + 16 UNEXPLAINED rows over go-tools's 1,931 files. Reconstructed from the output: an edge whose source is a type ALIAS struct that owns members is re-sourced to `global`. Caught by go/round5-surfaces, which expects `references Alias -> Holder` and forbids the `global` spelling for BOTH alias-owned targets (the embedded `Inner` and the named `Holder`, the latter added because the lane's per-set convention would otherwise let the embedded field's edge satisfy the pin on its own).",
+    transform: r => {
+      // A type alias is a struct symbol carrying isTypeAlias, and it owns
+      // members — so the pair (alias name, owned member) is derivable from the
+      // output alone, which is what makes this class reconstructible.
+      const aliasStructs = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => (s.metadata as any)?.isTypeAlias && String(s.kind) === "struct")
+          .map((s: any) => String(s.name)),
+      )
+      if (aliasStructs.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const rel = normRel(x)
+          const rt = (x.metadata ?? {}).relationshipType
+          if (rel.type !== "references") return x
+          if (rt !== "declared_type" && rt !== "return_type") return x
+          return aliasStructs.has(rel.source) ? { ...x, source: "global" } : x
+        }),
+      }
+    },
+  },
+  // ═══ GOD9 (round 6) ══════════════════════════════════════════════════
+  // Found by the round-6 `uses` truth, and NOT by the F5 lane before the truth
+  // was written independently: the two corpus rows it cost were being reported
+  // as agreement, because the truth had been written to mirror the drop.
+  {
+    id: "go/closure-channel-read-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GOD9 regression: the channel-op pass gates on `containingFunction &&`, and findContainingGoFunction returns undefined for a FUNC LITERAL, so every channel read inside a package-scope closure is DISCARDED. Reconstructed from the output by dropping the `uses` edges whose source is `global` and whose marker is go_channel_operation — that is exactly the set the pre-fix truthiness gate could not produce, and `global` is only ever a channel-op source through the fallback. This mutant is also the reason the god8/god9 channel rule is worth pinning: the analyzer contradicted ITSELF here, publishing the same physical read through the selector/identifier passes as `global -> c` while the channel pass threw it away. Caught by go/closure-channel-read, whose FORBID rows (`local`, `l`, `ch`, a call-result receive, and a `for range` over a channel) mean the mutant's opposite — a pass that published every operand — would not pass this fixture either.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        const rel = normRel(x)
+        return !(
+          rel.type === "uses" &&
+          rel.source === "global" &&
+          String((x as any)?.metadata?.relationshipType ?? "") === "go_channel_operation"
+        )
+      }),
+    }),
   },
   {
     id: "svelte/script-relative-indices",
@@ -10934,6 +11786,328 @@ export const MUTANTS: Mutant[] = [
       }) }
     },
   },
+  // ==========================================================================
+  // ER3 (erlang wave, 2026-09-28). Every mutant below restores a behaviour the
+  // pre-ER3 analyzer lacked, and each is pinned by the fixture named in its
+  // description. The 16 erlang fixtures and these 28 mutants are the pair: the
+  // fixtures say what is true, the mutants say the fixtures would notice.
+  // ==========================================================================
+  {
+    id: "erlang/record-reads-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D24/ER-G4 regression: drops record member READS (record_field_expr / record_index_expr). patterns-er3 pins the guard read, the index read and the two body reads; record-ops pins the contract's origin",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "record member read") }),
+  },
+  {
+    id: "erlang/record-update-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D24 regression: drops the per-field USES of a record UPDATE. patterns-er3 pins `uses body -> g` at the update's field line",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "record field update") }),
+  },
+  {
+    id: "erlang/generator-pattern-leak",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D28 regression: a comprehension generator's left side stops being a pattern, so `[N || #r{f = N} <- L]` fabricates a construction. patterns-er3 FORBIDS `instantiates gen -> r`; both the analyzer and the independent oracle first shared this wrong assumption, which is why the authored fixture is the only thing that can see it",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "gen", target: "r", confidence: 1, line_number: 14, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/guard-read-silenced",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D28 regression: a `when` guard is treated as pattern position, so `X#r.f > 0` stops being a member read. patterns-er3 pins `uses guard_read -> r` and `-> f` at the guard's line",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "record member read" && x.source === "guard_read")) }),
+  },
+  {
+    id: "erlang/macro-uses-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D9/ER-G1 regression: drops every ?MACRO use reference. macros-er3 pins the function-like use (whose name is an ATOM child), the object-like use and the macro-to-macro dependency",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "macro use") }),
+  },
+  {
+    id: "erlang/macro-body-calls-restored",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D11 regression: a macro BODY's call becomes an edge again. macros-er3 FORBIDS `calls DOUBLE -> helper`: ?DOUBLE(1) expands to helper(1) at the use site, the analyzer does not expand, and naming the template's line invents a call site",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "DOUBLE", target: "helper", confidence: 0.9, line_number: 10, metadata: { erlangSpecific: true, context: "remote function call", callArity: 1 } }] }),
+  },
+  {
+    id: "erlang/fun-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D10/ER-G2 regression: drops fun-VALUE references (fun lists:map/2, fun erlang:is_integer/1). dispatch-er3 pins both the qualified external fun and its callArity",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "fun value reference") }),
+  },
+  {
+    id: "erlang/dynamic-remote-named",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D23 regression: a dynamic remote (`M:dyn(1)`, `erlang:F(2)`) names its bare leaf as a callee. dispatch-er3 FORBIDS `calls run -> dyn` and `-> F`: the leaf alone conflates every module's dyn/1",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "run", target: "dyn", confidence: 0.9, line_number: 10, metadata: { erlangSpecific: true, context: "remote function call", callArity: 1 } }] }),
+  },
+  {
+    id: "erlang/macro-module-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D14/ER-D23 regression: ?MODULE:m() stops expanding, so the idiomatic self-dispatch resolves to nothing. dispatch-er3 pins `calls run -> dispatch_er3:m` with meta.macroModule",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata ?? {}).macroModule) }),
+  },
+  {
+    id: "erlang/type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D10/ER-G5 regression: a -type/-opaque/-nominal body stops naming types. types-er3 pins request->payload, token->binary and the rest of the type graph",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => (x.metadata ?? {}).context !== "type reference") }),
+  },
+  {
+    id: "erlang/callback-type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D27 regression: a -callback signature stops naming types, which hides the whole behaviour interface. types-er3 pins `references handle -> request`; the corpus census measured 65 such edges dropped in 60 files before the fix",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && (x.source === "handle" || x.source === "init"))) }),
+  },
+  {
+    id: "erlang/spec-type-refs-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D27 regression: a -spec stops naming types. types-er3 pins `references run -> request`; ER-D3 still holds (a spec declares no symbol), but the contract's type dependencies are real edges",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && x.source === "run")) }),
+  },
+  {
+    id: "erlang/opaque-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-G5 regression: -opaque is no longer distinguished from -type, so an opaque type's opacity is invisible. types-er3 pins meta.isOpaque on `token`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isOpaque ? { ...s, metadata: { ...s.metadata, isOpaque: false } } : s) }),
+  },
+  {
+    id: "erlang/nominal-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D19 regression: OTP 28's -nominal loses its flag. types-er3 pins meta.isNominal on `ident`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.metadata ?? {}).isNominal ? { ...s, metadata: { ...s.metadata, isNominal: false } } : s) }),
+  },
+  {
+    id: "erlang/type-self-ref-added",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "the declared type's own NAME is no longer skipped, so every type aliases itself. types-er3 FORBIDS `references handle -> handle` and `references request -> request`; the pre-ER3 span filter existed because a fresh-wrapper `child !== skip` comparison never matches, so the self-reference was real",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "request", target: "request", confidence: 0.9, line_number: 13, metadata: { erlangSpecific: true, context: "type reference" } }] }),
+  },
+  {
+    id: "erlang/recursive-type-self-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "the span filter is over-applied and a RECURSIVE type's legal self-reference is dropped. types-er3 pins `references tree -> tree` and `references recursive -> recursive`: removing the declaration's name is not the same as removing a genuine recursive dependency",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && x.target === x.source)) }),
+  },
+  {
+    id: "erlang/qualified-type-leaf",
+    language: "erlang",
+    defectClass: "relationship-target",
+    description: "ER-D31 regression: a qualified type reference keeps only its leaf. edge-cases-er3 pins `references opts -> cowboy_middleware:env`; over the 150-file census draw this defect produced 876 module names masquerading as types",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if ((x.metadata ?? {}).context !== "type reference") return x
+      const t = String(x.target ?? "")
+      const i = t.indexOf(":")
+      return i > 0 ? { ...x, target: t.slice(i + 1) } : x
+    }) }),
+  },
+  {
+    id: "erlang/callback-symbol-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-G3 regression: -callback emits no Method symbol, so a behaviour's contract is invisible. types-er3 pins `handle` and `init` as methods; attrs-er3 pins handle_info/2",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "method") }),
+  },
+  {
+    id: "erlang/callback-kind-order",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D30 regression: when a module both declares and defines a callback, document order decides the kind and the callback wins (it is written first), leaving a Method whose line is the `-callback` line. edge-cases-er3 pins kind=function, meta.definedHere and `contains -> logger` at the DEFINITION's line",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ((s.metadata ?? {}).definedHere ? { ...s, kind: "method" } : s)) }),
+  },
+  {
+    id: "erlang/nif-annotation-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D22 regression: -nifs/-on_load stop annotating the declared function. attrs-er3 pins meta.isNif on native/1 and native2/2 and meta.isOnLoad on boot/0; the pre-ER3 branch could not have fired (attr_name.text is `-nifs`, and the entries are binary_op_expr, not fa)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => {
+      const m = { ...(s.metadata ?? {}) }
+      if (m.isNif) delete m.isNif
+      if (m.isOnLoad) delete m.isOnLoad
+      return { ...s, metadata: m }
+    }) }),
+  },
+  {
+    id: "erlang/nif-duplicate-symbol",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D22 regression: each -nifs entry mints a SECOND Function symbol beside the declaration. attrs-er3 pins expectSymbolCount 1 for native, native2 and boot — a duplicate identity is what the pre-ER3 branch was written to do",
+    transform: r => ({ ...r, symbols: [...(r.symbols ?? []), ...(r.symbols ?? []).filter((s: any) => s.name === "native" || s.name === "boot").map((s: any) => ({ ...s, range: { ...s.range, startLine: 9 } }))] }),
+  },
+  {
+    id: "erlang/export-type-as-function",
+    language: "erlang",
+    defectClass: "relationship-identity",
+    description: "ER-D28 regression: -export_type entries are exported as FUNCTION exports, so a type export and a function export of the same name/arity become indistinguishable. types-er3 pins kind=type on handle/0 and tree/0",
+    transform: r => ({ ...r, exports: (r.exports ?? []).map((e: any) => (e.metadata ?? {}).isTypeExport ? { ...e, kind: "function", metadata: undefined } : e) }),
+  },
+  {
+    id: "erlang/import-external-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D20 regression: no import is classified external, so the file-dependency engine cannot keep an -import of an OTP module and an -include_lib of a code-path header out of internal resolution (M60/#910 is_external contract). attrs-er3 pins isExternal true for both and false for the project's own -include",
+    transform: r => ({ ...r, imports: (r.imports ?? []).map((i: any) => ({ ...i, isExternal: false })) }),
+  },
+  {
+    id: "erlang/compile-options-fabricated",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "-compile becomes a dependency, so `{inline, [helper/1]}` reads as a reference to a module named `inline`. attrs-er3 FORBIDS `references attrs_er3 -> inline` and `-> export_all`",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "attrs_er3", target: "inline", confidence: 1, line_number: 7, metadata: { erlangSpecific: true, isModuleImport: true } }] }),
+  },
+  {
+    id: "erlang/optional-callbacks-fabricated",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D28 regression: -optional_callbacks emits a reference edge. attrs-er3 FORBIDS `references attrs_er3 -> handle_info`; the attribute declares nothing — the names belong on the module symbol, which is the only place they are true",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "references", source: "attrs_er3", target: "handle_info", confidence: 1, line_number: 11, metadata: { erlangSpecific: true, isModuleImport: true } }] }),
+  },
+  {
+    id: "erlang/maybe-arms-flattened",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D19 regression: OTP 28's `maybe … else … end` arms stop counting, which also silently flattens every case/receive/try arm. otp28-er3 pins pick at 3",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "pick" ? { ...s, complexity: 1 } : s)) }),
+  },
+  {
+    id: "erlang/comprehension-complexity-dropped",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D18 regression: a comprehension stops counting as a decision point. otp28-er3 pins walk at 2 and patterns-er3 pins comp at 2",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "walk" ? { ...s, complexity: 1 } : s)) }),
+  },
+  {
+    id: "erlang/short-circuit-branch-dropped",
+    language: "erlang",
+    defectClass: "complexity-undercount",
+    description: "ER-D17 regression: andalso/orelse stop counting as branches. record-ops-er2 pins `guarded` at 4 (base 1 + two if-arms + one andalso)",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "guarded" ? { ...s, complexity: 3 } : s)) }),
+  },
+  {
+    id: "erlang/clause-merge-dropped",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D26 regression: one symbol per fun_decl, which is what the pinned grammar's per-clause fun_decl shape invites. behaviour-otp pins handle_req/2 with clauseCount 2 as ONE symbol; the census measured 18,444 fun_decls for 18,409 clauses, i.e. the grammar gives every clause its own node",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.name !== "handle_req" || (s.metadata ?? {}).clauseCount !== 2) }),
+  },
+  {
+    id: "erlang/macro-head-unresolved",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D25 regression: `?MODULE() -> …` stops resolving to the module's own function, so 79 corpus function definitions disappear. edge-cases-er3 pins the edge_cases_er3/0 symbol, the `-export([?MODULE/0])` entry and `calls edge_cases_er3 -> logger`",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => !(s.metadata ?? {}).isMacroHead) }),
+  },
+  {
+    id: "erlang/record-field-type-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "a record field's TYPE stops naming types, so `-record(r, {f :: token()})` loses `references r -> token`. types-er3 pins `references state -> token`; otp28-er3 pins `references box -> integer`",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !((x.metadata ?? {}).context === "type reference" && (x.source === "state" || x.source === "box"))) }),
+  },
+  {
+    id: "erlang/record-type-ref-becomes-instantiates",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D4/ER-D16 regression: a record named inside a TYPE is read as a construction. types-er3 FORBIDS `instantiates wrapped -> state`; the record's edge there is a type dependency",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "wrapped", target: "state", confidence: 1, line_number: 20, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
+  },
+  {
+    id: "erlang/second-module-wins",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D15 regression: a second -module overwrites the first, so every module-scoped edge follows the wrong owner. Measured in the pre-ER3 code, where the attribute was assigned unconditionally",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module" || s.name !== "patterns_er3") }),
+  },
+  {
+    id: "erlang/foreign-macro-module-self-call",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D35 regression: treats EVERY macro in remote-module position as `?MODULE` and substitutes this file's module, inventing a self-call that is nowhere in the source. Measured on otp/lib/debugger/test/line_number_SUITE.erl and otp/lib/dialyzer/test/r9c_SUITE_data/src/inets/httpd_acceptor.erl, where `?FILE_MODULE:acceptor(A,B,C,D)` was reported as `httpd_acceptor:acceptor`; 922 fabricated edges over the corpus. macro-module-er3 FORBIDS the self-call and the bare leaf, while dispatch-er3 keeps the legitimate `?MODULE` self-dispatch pinned",
+    // The transform must ADD the fabrication, not rewrite an existing edge: on
+    // the clean result there is no `macroModule` edge from those sources to
+    // rewrite, so a rewrite-only mutant silently does nothing and survives. The
+    // pre-fix edge is reconstructed from the OTHER_MODULE macro-use edge, which
+    // shares its source AND its line with the call the pre-fix code fabricated.
+    transform: r => {
+      const rels = r.relationships ?? []
+      const added: any[] = []
+      for (const x of rels) {
+        const src = String(x.from ?? x.source ?? "")
+        if (String(x.target ?? x.to ?? "") !== "OTHER_MODULE") continue
+        if (src === "foreign_dispatch") {
+          added.push({ ...x, type: "calls", relationshipType: "calls", target: "macro_module_er3:start_link", to: "macro_module_er3:start_link", from: src, source: src, metadata: { erlangSpecific: true, context: "remote function call", macroModule: true } })
+        } else if (src === "fun_value") {
+          added.push({ ...x, target: "macro_module_er3:handle_info", to: "macro_module_er3:handle_info", from: src, source: src, metadata: { erlangSpecific: true, context: "fun value reference", macroModule: true } })
+        }
+      }
+      return { ...r, relationships: [...rels, ...added] }
+    },
+  },
+  {
+    id: "erlang/modname-macro-unresolved",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D34 regression: reverts `-module(?MACRO)` to requiring a bare atom under the attribute, so a module that names itself through a macro emits NO module symbol and the file falls back to being owned by its path. Measured on otp/lib/kernel/test/file_SUITE.erl (`-module(?FILE_SUITE).`), the only such file in the 4,326-file corpus; the attribute carries a macro_call_expr, never an atom. modname-macro-er3 REQUIRES the module symbol and its macro reference",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((s: any) => s.kind !== "module" || s.name !== "modname_macro_er3") }),
+  },
+  {
+    id: "erlang/modname-macro-named-after-macro",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D34 regression, the subtle half: mints the module symbol under the MACRO's own name (MODNAME) instead of what it expands to (modname_macro_er3). Every consumer of a module symbol — exports, imports, cross-module calls — would then look for a module no compile can produce. modname-macro-er3 pins the module name AND meta.expandsTo",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.kind === "module" && s.name === "modname_macro_er3" ? { ...s, name: "MODNAME" } : s)) }),
+  },
+  {
+    id: "erlang/owner-line-uses-construct",
+    language: "erlang",
+    defectClass: "line-attribution",
+    description: "ER-D33 regression: `contains` carries the CONSTRUCT's line (range.startLine) instead of the NAME's line. Found by the 400-file corpus draw, missed by the 150-file one: otp/lib/snmp/src/manager/snmpm_net_if.erl defines worker/4 in two -ifdef/-else branches, so the -define( keyword sits on 208 and 219 while the macro names are on 209 and 220. line-owner-er3 FORBIDS the construct lines and REQUIRES the name lines for a macro, a function-like macro, a record and a type",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => {
+      if (String(x.type ?? x.relationshipType) !== "contains") return x
+      const owner = String(x.from ?? x.source ?? "")
+      if (!owner.endsWith("line_owner_er3")) return x
+      const shift: Record<string, number> = { plain_macro: 1, FUNNY: 0, spread: 1, spread_type: 1 }
+      const d = shift[String(x.target ?? x.to ?? "")]
+      return d ? { ...x, line_number: (x.line_number ?? 0) - d } : x
+    }) }),
+  },
+  {
+    id: "erlang/module-less-owner-dropped",
+    language: "erlang",
+    defectClass: "symbol-identity-corruption",
+    description: "ER-D32 regression: reverts the owner fallback for MODULES-scope declarations to the bare pre-pass module name, so in a module-less include fragment (no -module at all - OTP's own merl examples are written that way) macros lose their owner entirely while the function beside them keeps the file-path owner. fragment-er3 REQUIRES the macro's contains edge, which only exists when the macro is owned",
+    // Faithful to the real pre-fix state, not just the field: with no owner,
+    // `emitOwnership`'s `if (!owner) continue` also drops the contains edge, so
+    // the mutant removes BOTH. Dropping only the symbol field would leave every
+    // expectation satisfied and the mutant would survive for the wrong reason.
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.ownerName && String(s.ownerName).endsWith("fragment-er3.erl") && s.kind === "constant"
+          ? { ...s, ownerName: "" }
+          : s),
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        const src = String(x.from ?? x.source ?? "")
+        const tgt = String(x.target ?? x.to ?? "")
+        return !(src.endsWith("fragment-er3.erl") && tgt === "FRAGMENT_MACRO")
+      }),
+    }),
+  },
   {
     id: "elixir/lines-dropped",
     language: "elixir",
@@ -11060,6 +12234,439 @@ export const MUTANTS: Mutant[] = [
     }) }),
   },
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // EX-A8/EX-A9/EX-A10 — the classes the oracle-blind deep audit found and this
+  // lane's gates could not see: F3 pins symbols by name+kind (a range was
+  // unpinnable until the Vue V1 wave added expectSymbolRanges) and F5 compares
+  // EDGES, site-agnostically. Four mutants, one per class, each re-injecting the
+  // pre-fix state the fixture pins contradict.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/merged-head-range-first-clause",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A8 regression: a MERGED multi-clause definition's range is truncated back to its FIRST clause (the pre-fix payload: `heads: 2` with a one-clause extent, measured 2,321 merged groups in 559 elixir@024beb1b files). Re-injected as a range rewrite on every multi-head symbol, which is exactly the shape the fixture's expectSymbolRanges endLine/endColumn/endIndex pins state.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const cr = s.metadata?.clauseRanges
+        if (typeof s.metadata?.heads !== "number" || s.metadata.heads < 2 || !Array.isArray(cr) || cr.length < 2) return s
+        return { ...s, range: { ...s.range, ...cr[0] } }
+      }),
+    }),
+  },
+  {
+    id: "elixir/merged-head-clause-ranges-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A8 regression: metadata.clauseRanges is stripped, so the one range a merged definition can carry (first..last) is the ONLY record of where the other clauses are — and 8.4% of merged groups have other declarations between their first and last clause, so the span alone cannot recover them. Caught by the fixture's meta.clauseRanges pin (array compare), which no relationship-side gate can reach.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("clauseRanges" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.clauseRanges
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/raise-no-instantiates",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A9 regression: `raise Mod` / `reraise Mod, stack` stops constructing the exception struct, so the edge class the lane emits for struct/2 and %Mod{} disappears for the exception path (pre-fix: 401 alias-named raise sites in 200 elixir@024beb1b files with no dependency edge). Re-injected as the dropped rows, which are absent from the pre-fix output by definition.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type ?? x.relationshipType) === "instantiates" && String(x.target).endsWith("Missing"))),
+    }),
+  },
+  {
+    id: "elixir/nested-module-ownerless",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A10 regression: a nested defmodule/defprotocol loses ownerName/ownerKind again, the pre-fix payload that contradicted this lane's own symbol contract ('nested modules owned by the parent') and the M14 ledger ruling that ownerName is the innermost enclosing declaration (#867). Caught by the fixture's ownerName pin on the module symbol — a pin no edge-side gate carries.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if ((s.kind !== "module" && s.kind !== "interface") || !s.ownerName) return s
+        const y: any = { ...s }
+        delete y.ownerName
+        delete y.ownerKind
+        return y
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-A14 — the output-coverage census's last real gap: `@callback` /
+  // `@macrocallback` emitted a pattern flag and nothing else (165 sites in a
+  // 100-file elixir+phoenix+ash sample, 98 in a 171-file ecto+ecto_sql+wallaby
+  // sample, 0 covered). Four mutants: the pre-fix silence, the duplicate-symbol
+  // over-correction, the declaration flag read backwards, and the spec payload
+  // dropped while the symbol stays.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/callback-symbol-dropped",
+    language: "elixir",
+    defectClass: "symbol-loss",
+    description: "EX-A14 regression (the pre-fix state): a `@callback`/`@macrocallback` declaration publishes no symbol at all, so a module that declares a behaviour surface with no `def` (Callback.Probe) has no trace of it in the index. Caught by the callback-declarations fixture's symbol pins.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.metadata?.isCallback !== true),
+      relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === "contains" && String(x.target) === "build")),
+    }),
+  },
+  {
+    id: "elixir/callback-duplicate-symbol",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "EX-A14 over-correction: a `@callback` mints its OWN symbol instead of sharing the function merge key, so `@callback load(t)` + `def load(x)` publish TWO symbols for one function — ids the index (`${fileId}:${name}:${startLine}`) cannot even keep apart. Caught by the fixture's expectSymbolCount pair.",
+    transform: r => ({
+      ...r,
+      symbols: [
+        ...(r.symbols ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => s.metadata?.isCallback && s.ownerName === "Callback.Probe")
+          .map((s: any) => ({ ...s, range: { ...s.range, startLine: s.range.startLine + 4 } })),
+      ],
+    }),
+  },
+  {
+    id: "elixir/every-def-a-declaration",
+    language: "elixir",
+    defectClass: "symbol-metadata-integrity",
+    description: "EX-A14 regression: the bodyless-def detection is read backwards, so EVERY `def` is marked isDeclaration (and every merged symbol keeps the flag). A definition that claims to be a declaration is a false statement the store persists in brain_symbol.is_declaration (#612). Caught by the fixture's forbidSymbols entries on `load`, `twice` and the protocol implementation's `size`.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!["function", "method", "macro"].includes(String(s.kind))) return s
+        return { ...s, isDeclaration: true, metadata: { ...(s.metadata || {}), isBodylessDeclaration: true } }
+      }),
+    }),
+  },
+  {
+    id: "elixir/callback-spec-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A14 regression: the declaration symbols survive but the TYPED SPEC does not — callbackSpec / isCallbackDeclaration / hasCallbackSpec are stripped, so the index knows a callback exists but not its contract. Differential-invisible (no edge moves), so only the fixture can hold it.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.callbackSpec
+        delete m.isCallbackDeclaration
+        delete m.hasCallbackSpec
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-A15 — a parenthesized operator definition (`defmacro (..)`, how Kernel
+  // defines its zero-arity range operator) fell through to the EX-D9
+  // placeholder, and a second one in the same module MERGED into the same
+  // placeholder row. Re-injected as the pre-fix payload: every operator-named
+  // symbol collapses onto the placeholder name, so the fixture's count pin (the
+  // placeholder must be exactly ONE — the genuinely dynamic definition) and its
+  // kind pin fail.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/paren-operator-placeholder",
+    language: "elixir",
+    defectClass: "symbol-identity-corruption",
+    description: "EX-A15 regression: a PARENTHESIZED operator definition publishes the EX-D9 placeholder instead of the operator name, and two of them in one module merge into one row (measured pre-fix: `expected 1 symbol(s) named Unknown; got 2` on fixture paren-operator-forms, because `defmacro (..)` and `def (---)(l, r)` both fell through). Caught by the fixture's operator-name pins, its placeholder count pin, and its placeholder-kind forbid.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (typeof s.name !== "string") return s
+        // a name that is PURELY operator characters is what the pre-fix
+        // signature branches failed to recognise
+        if (s.name.length > 0 && /^[+\-*/<>=!&|^~@.]+$/.test(s.name)) return { ...s, name: "Unknown" }
+        return s
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-A16 — the store seam. The pool worker carries exactly ONE metadata key
+  // to the store phase (`metadata.isDeclaration`); the analyzer published the
+  // declaration flag only as a top-level field, so brain_symbol.is_declaration
+  // came out NULL for every elixir declaration. Measured on a real index through
+  // the production indexer: 0 declaration rows before, 2 after. No fixture could
+  // see it, because fixtures call the analyzer and never pass through the worker
+  // — the re-injection here is the payload half (drop the carried key), and the
+  // SQL round-trip probe is the seam half.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/declaration-metadata-key-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-A16 regression: `metadata.isDeclaration` is stripped, which is the ONE key the pool worker carries to the store phase — the top-level field alone does not survive the worker's symbol reconstruction, so brain_symbol.is_declaration goes NULL for every elixir declaration. Caught by the callback-declarations fixture's meta.isDeclaration pins; the SQL round-trip (script/m14/tmp/elixir-store-roundtrip.ts) is the seam gate.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("isDeclaration" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.isDeclaration
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  // --------------------------------------------------------------------------
+  // EX-PAYLOAD WAVE — the suite's coverage of the elixir PAYLOAD surface, asked
+  // as a measurement rather than assumed. The mutants above all target
+  // relationship shape and symbol IDENTITY; this batch targets the fields a
+  // consumer reads and no edge-side gate can see: visibility, guards, OTP
+  // callback/behavior metadata, the ruled `docstring` channel, the type/struct/
+  // protocol/defimpl markers, the send/spawn markers, and the three
+  // file-level payloads (imports / exports / patterns) plus the `scope` field
+  // the store binds to brain_symbol.scope_kind (#837).
+  //
+  // A SURVIVOR here is a hole in this lane's own suite, not a mutant problem:
+  // the suite would stay green with that field silently gone. Measured: 9 of the
+  // 15 below SURVIVED the first run (2026-09-28) and every one now has a pin.
+  // --------------------------------------------------------------------------
+  {
+    id: "elixir/defp-visibility-public",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: `defp`/`defmacrop`/`defguardp` lose private visibility and read public — the pre-visibility state. Caught only by a visibility pin; this was a SURVIVOR before ex2-scope-identity gained one.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.visibility === "private" ? { ...s, visibility: "public" } : s)) }),
+  },
+  {
+    id: "elixir/guard-list-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.guards is stripped from every symbol — the `when` expression text is differential-invisible, and the guard-skips fixture's own note CLAIMED the text was captured with no pin behind the claim. SURVIVOR before that claim was pinned.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("guards" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.guards
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-metadata-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the OTP behavior markers on the module symbol (isGenServer / isSupervisor / otpBehavior) are stripped — the EX2-U3 root-segment detection's only surviving evidence, since the `use X` edge alone does not say which root segment matched.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isGenServer
+        delete m.isSupervisor
+        delete m.otpBehavior
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-callback-flag-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the per-function OTP callback markers (isGenServerCallback / isSupervisorCallback) are stripped, so a GenServer's init/1 and handle_call/3 stop being identifiable as callbacks.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isGenServerCallback
+        delete m.isSupervisorCallback
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/docstring-channel-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the `docstring` channel is stripped while `comments` survives — the exact mirror of the M60 ruling that carried the elixir half of the doc payload, and the failure mode a future reader would see (docs present in the comments path, absent from the docstring column bb_doc reads). SURVIVOR before doc-forms pinned the channel.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const y = { ...s }; delete y.docstring; return y }) }),
+  },
+  {
+    id: "elixir/type-spec-marker-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.isTypeSpec is stripped from @type/@typep/@opaque symbols, so a Type symbol becomes indistinguishable from any other type the analyzer could emit. SURVIVOR before ex2-generic-types pinned it.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata?.isTypeSpec) return s
+        const m = { ...s.metadata }
+        delete m.isTypeSpec
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/protocol-metadata-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: isProtocol / isProtocolImplementation markers are stripped, so a defprotocol module and a defimpl class stop saying which side of a protocol they are (the Implements edge names the pair, not the roles). SURVIVOR before protocol-forms pinned them.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isProtocol
+        delete m.isProtocolImplementation
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/defimpl-fortype-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the defimpl symbol's `forType` (the type an implementation covers, W23's multi-type shape, EX-A12's resolved value) is stripped, so an implementation no longer records what it implements FOR. SURVIVOR before defimpl-target-forms pinned it — and it also covers the pre-EX-A12 state, which held the placeholder literal \"Unknown\".",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("forType" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.forType
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/struct-field-marker-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the isStruct / isStructField markers are stripped, so a defstruct field is indistinguishable from any other property the analyzer emits (this is also the field a member-read consumer would need).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata) return s
+        const m = { ...s.metadata }
+        delete m.isStruct
+        delete m.isStructField
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/otp-send-spawn-markers-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the isProcessSpawn edge marker is stripped, so the qualified spawn forms (Task.async/Agent.start — the only ones that CAN carry a marker, since Kernel send/spawn are excluded by EX-D2) stop being distinguishable from any other call edge. SURVIVOR until the otp-messaging fixture was written; the message-passing half of the class was DEAD (EX-A13).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = x.metadata
+        if (!md || !("isProcessSpawn" in md)) return x
+        const m = { ...md }
+        delete m.isProcessSpawn
+        return { ...x, metadata: m }
+      }),
+    }),
+  },
+  {
+    id: "elixir/imports-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: result.imports is emptied — the use/import/alias/require dependency RECORDS, a payload the relationship `references` edge does not carry (the edge says the dependency exists; imports says what was named and with what source). SURVIVOR before import-only-forms pinned it.",
+    transform: r => ({ ...r, imports: [] }),
+  },
+  {
+    id: "elixir/exports-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: result.exports is emptied — the public module surface, which no relationship edge carries and which the EX-A10 ownerName change could have demoted without any edge-side consequence.",
+    transform: r => ({ ...r, exports: [] }),
+  },
+  {
+    id: "elixir/patterns-payload-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.patterns is emptied (Pattern Matching / Actor Model (OTP) / Message Passing / Process Spawning / Typespecs / Behaviours / Documentation / Closures / Pipe Operator / Functional Programming), the file-level idiom summary bb_patterns reports.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), patterns: [] } }),
+  },
+  {
+    id: "elixir/symbol-scope-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: the symbol `scope` field is stripped — the value bound to brain_symbol.scope_kind (#837). Every scope-derived behaviour in the store (ownership fallbacks, member resolution) reads it, and it is not derivable from ownerName for a file-level declaration. SURVIVOR before ex2-scope-identity pinned it.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => { const y = { ...s }; delete y.scope; return y }) }),
+  },
+  {
+    id: "elixir/symbol-arity-dropped",
+    language: "elixir",
+    defectClass: "payload-loss",
+    description: "EX-PAYLOAD: metadata.arity is stripped — the same function's two arities (`count/0` and `count/1`) become one indistinguishable symbol in any consumer that does not read the merge key.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!s.metadata || !("arity" in s.metadata)) return s
+        const m = { ...s.metadata }
+        delete m.arity
+        return { ...s, metadata: m }
+      }),
+    }),
+  },
+  {
+    // EX-A17 (Master Review). A module attribute's VALUE is compile-time code:
+    // `@section %Spark.Dsl.Section{build: Spark.Dsl.build(:x)}` builds the
+    // struct while the module compiles. The pre-fix analyzer's blanket
+    // `isInAttribute` gate silenced every call/instantiates edge in that value,
+    // so 21 attributes carrying 21 struct literals in a 250-file sample of ash
+    // named no dependency at all. This mutant is the pre-fix state: those edges
+    // are gone, which is exactly the condition attribute-value-code pins.
+    id: "elixir/attribute-value-silenced",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A17: module-attribute VALUE edges removed (instantiates + calls raised from a compile-time attribute value) — the pre-fix state, 21 attribute sites in 250 files of ash with no dependency edge",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.source === "AttrValueCode" && (x.target === "Spark.Dsl.Section" || x.target === "Spark.Dsl.build" || x.target === "Helper.later" || x.target === "Helper.Error")),
+      ),
+    }),
+  },
+  {
+    // The other half of EX-A17: relaxing the gate must NOT let the attribute's
+    // OWN NAME become a call. `@section` is a call-shaped node
+    // (call[section, arguments[...]]) and the relaxation is what makes the
+    // value analysable, so a name leak is the exact regression that relaxation
+    // invites.
+    id: "elixir/attribute-name-call-fabricated",
+    language: "elixir",
+    defectClass: "relationship-fabrication",
+    description: "EX-A17: the attribute's own name emitted as a call (`@section` -> calls->section) — a lowercase phantom callee naming no function, the regression the attribute-value relaxation invites",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "calls", source: "AttrValueCode", target: "section", confidence: 0.8, metadata: { elixirSpecific: true } }] }),
+  },
+  {
+    // EX-A18. `alias Helper.{make, name}` — the member node is an IDENTIFIER
+    // (a function alias), not an `alias`, and the expander accepted only the
+    // latter, so the alias published no dependency and registered no local
+    // name. Measured 0 in 938 files of the six corpora: a latent hole, fixed
+    // because the rule is the one the uppercase members already follow.
+    id: "elixir/multialias-lowercase-dropped",
+    language: "elixir",
+    defectClass: "relationship-loss",
+    description: "EX-A18: multi-alias members that are lowercase identifiers (function aliases) publish no `references` edge — `alias Helper.{make, name}` named no dependency at all",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.source === "LowerMultiAlias" && (x.target === "Helper.make" || x.target === "Helper.name" || x.target === "Helpers.yet_another")),
+      ),
+    }),
+  },
+  {
+    id: "elixir/lowercase-alias-call-unresolved",
+    language: "elixir",
+    defectClass: "identity-corruption",
+    description: "EX-A18: a bare call through a lowercase function alias keeps the bare name (`calls->make`) instead of the alias target (`calls->Helper.make`) — the edge then names no module and matches no symbol",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "calls" && x.source === "LowerMultiAlias.go/0" && x.target === "Helper.make" ? { ...x, target: "make" } : x,
+      ),
+    }),
+  },
   // M59.A7 (#825): the csharp lane's line round. Four mutants, one per defect
   // class the round's own measurements exposed — the pre-fix state (no line at
   // all), the construct-start line (receiver / `new` / `:` / wrapped head), the
@@ -11250,6 +12857,176 @@ export const MUTANTS: Mutant[] = [
       ...r,
       symbols: (r.symbols ?? []).map((s: any) => (typeof s.name === "string" && s.name.startsWith("operator checked ") ? { ...s, name: `operator ${s.name.slice("operator checked ".length)}` } : s)),
     }),
+  },
+  // The 2026-09-28 deep round: a TYPE EXPRESSION published where the position publishes a
+  // NAME. Four mutants, one per claim, each reverting the fix it names. The rule they exist
+  // to satisfy is the lane's own (reviews/csharp/m49-804-verification-pack.md): a claim whose
+  // revert is not CAUGHT is not a proven claim, and a fixture whose expectations happen to
+  // hold under the pre-fix output proves nothing.
+  {
+    id: "csharp/qualified-generic-arguments-dropped",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "D1 revert: the leaf-only walk of a QUALIFIED name comes back, so a qualified generic's type arguments are never walked and the declared-type graph publishes only the base — the dependency this graph's own header calls \"the real dependency\", lost because the source wrote the path out. tree-sitter-c-sharp spells `System.Collections.Generic.Dictionary<string, Widget>` as `qualified_name [ …, generic_name [ identifier, type_argument_list ] ]`, so the leaf descent reaches the identifier and never the argument list. Simulated from the SOURCE (the result no longer records which declaration was written qualified): every argument of a qualified generic base on the same line as a base edge is dropped. Caught by csharp/generic-name-positions' expectRelationships for QualifiedHolder.Map / Pair / Nested / Tupled and the parameter, return and property positions — the PLAIN twin PlainHolder.Map keeps its argument, so the pair is the pin.",
+    transform: (r: any, source?: string) => {
+      // The lines that write a QUALIFIED generic base in a declared-type position: a
+      // dotted path whose LAST segment is immediately followed by `<`.
+      const qualifiedGenericLines = new Set<number>()
+      for (let i = 0; i < (source ?? "").split("\n").length; i++) {
+        const line = (source ?? "").split("\n")[i]
+        if (/[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+\s*<[^;]*>/.test(line) && /^\s*(public|private|protected|internal)/.test(line)) {
+          qualifiedGenericLines.add(i + 1)
+        }
+      }
+      if (qualifiedGenericLines.size === 0) return r
+      // The base edge on such a line is the one whose target is a known type NAME; the
+      // arguments are the remaining declared_type edges on it. Keep the first, drop the rest
+      // on a qualified line — which is exactly what the leaf-only walk produced.
+      const byLine = new Map<string, any[]>()
+      for (const rel of r.relationships ?? []) {
+        if (!["declared_type", "return_type"].includes(String((rel.metadata ?? {}).relationshipType))) continue
+        if (!qualifiedGenericLines.has(Number(rel.line_number))) continue
+        const k = `${rel.source}|${rel.line_number}`
+        const arr = byLine.get(k) ?? []
+        arr.push(rel)
+        byLine.set(k, arr)
+      }
+      const drop = new Set<any>()
+      for (const arr of byLine.values()) {
+        // keep one base (the longest target is the qualified leaf as written), drop the arguments
+        arr.sort((a, b) => String(b.target).length - String(a.target).length)
+        for (let i = 1; i < arr.length; i++) drop.add(arr[i])
+      }
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => !drop.has(x)) }
+    },
+  },
+  {
+    id: "csharp/generic-attribute-published-as-expression",
+    language: "csharp",
+    defectClass: "name-fabrication",
+    description:
+      "D2 revert, both halves at once because they are one cause: the attribute-name predicate goes back to naming three node types (so a GENERIC attribute's `generic_name` name child matches none and the decorator is DROPPED), and the payload goes back to the raw node text (so the qualified twin that still matches publishes the WHOLE generic spelling, `System.Marker<int>`). Simulated from the result: every decorator carrying a type argument is truncated to the raw spelling, and one decorator per symbol is deleted to reproduce the dropped half. Caught by csharp/generic-name-positions' expectDecorators (the generic shapes must be present at all) AND its forbidDecorators entries for `<` — the negative half is what makes it catchable, because `System.Marker<int>` CONTAINS `System.Marker` and an expect alone can never fail on this revert (CSD16's exact finding).",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any, i: number) => {
+        const decs = s.decorators as string[] | undefined
+        if (!Array.isArray(decs) || decs.length === 0) return s
+        // half 1: publish the raw spelling (type arguments welded on)
+        const raw = decs.map((d: string) => (d.indexOf("<") >= 0 ? `${d}<Widget>` : d))
+        // half 2: drop one decorator entirely, the way an unmatched `generic_name` did
+        return { ...s, decorators: i % 2 === 0 ? raw.slice(0, Math.max(1, raw.length - 1)) : raw }
+      }),
+    }),
+  },
+  {
+    id: "csharp/using-alias-type-expression-module",
+    language: "csharp",
+    defectClass: "name-fabrication",
+    description:
+      "D3 revert: a using ALIAS whose target is a type expression publishes the EXPRESSION as the module and the `references` target again — `Dictionary<string,Widget>`, and with a tuple argument the element NAMES too — and the separate argument edges go away. Simulated off the result: every import module carrying a type argument is restored to the full spelling, and the `using_type_argument` edges are dropped. Caught by csharp/generic-name-positions' forbidRelationships on the three expression spellings and its expectRelationships for the argument edges — the arguments are the half that a strip-only fix would silently lose, so they are pinned positively, not just negatively.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((im: any) =>
+        typeof im.module === "string" && im.module.indexOf("<") >= 0
+          ? { ...im, module: `${im.module}<string,Widget>` }
+          : im),
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (String((x.metadata ?? {}).relationshipType) === "using_type_argument") return null
+        if (x.type !== "references" || !(x.metadata ?? {}).isUsingAlias) return x
+        return { ...x, target: `${x.target}<string,Widget>` }
+      }).filter(Boolean),
+    }),
+  },
+  {
+    id: "csharp/using-type-argument-marked-as-import",
+    language: "csharp",
+    defectClass: "relationship-metadata",
+    description:
+      "D3's second half, and the one a reviewer would call cosmetic until it is read: the `using_type_argument` edge copies the module edge's `isUsingDirective`/`isImport` flags, so classifyEvidenceTier stamps a TYPE reference with the import evidence class. THIS MUTANT SURVIVED ITS FIRST RUN — the fixture pinned `meta.relationshipType` on the argument edges and a test written only on TARGETS cannot see an evidence class at all, so the claim it names was unpinnable. Rather than delete the claim, the fixture now pins `meta.evidenceClass` on all four using rows (the module's `import_based` and the argument's `reference_qualified`), which is the contract `classifyEvidenceTier` actually keys on. Caught by csharp/generic-name-positions' expectRelationships `meta.evidenceClass` rows.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        String((x.metadata ?? {}).relationshipType) === "using_type_argument"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), isUsingDirective: true, isImport: true, evidenceClass: "import_based" } }
+          : x),
+    }),
+  },
+  // The 2026-09-28 `uses`-oracle round: two fabrications the new truth derivation named, and the
+  // two mutants that keep them named. Both were invisible to 55 mutants and 16 fixtures, because
+  // nothing could see a MISSING row — an oracle that agrees with the lane finds nothing.
+  {
+    id: "csharp/read-dropped-by-same-named-call",
+    language: "csharp",
+    defectClass: "relationship-loss",
+    description:
+      "CS-D6 revert: the field-access `uses` pass drops a member READ whenever the enclosing function already has a `calls` edge to the same member NAME — the pre-fix guard `!emittedCalls.has(`${src}->${tgt}`)`, keyed with no site. It duplicates `isCallee`, which already decides this structurally by span, and in C# a static member and a call can share a name, so real reads vanish. Simulated off the RESULT, the way the pre-fix output is derived: for every function that has both a `uses` and a `calls` edge to the same target, the `uses` row is removed. Caught by csharp/read-collides-with-call's expectRelationships for ReadAndCallSameName.Count, ReadAndCallMember.Report, ReadAndCallNegate.Negate and CallOnly.Negate.",
+    transform: r => {
+      const calledBy = new Map<string, Set<string>>()
+      for (const rel of r.relationships ?? []) {
+        if ((rel.type ?? rel.relationshipType) !== "calls") continue
+        let s = calledBy.get(rel.source)
+        if (!s) { s = new Set<string>(); calledBy.set(rel.source, s) }
+        s.add(String(rel.target))
+      }
+      if (calledBy.size === 0) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.type ?? x.relationshipType) !== "uses") return true
+          if (String((x.metadata ?? {}).relationshipType) !== "csharp_field_access") return true
+          return !calledBy.get(x.source)?.has(String(x.target))
+        }),
+      }
+    },
+  },
+  {
+    id: "csharp/declared-type-published-as-member-read",
+    language: "csharp",
+    defectClass: "relationship-fabrication",
+    description:
+      "CS-D7 revert: a declared TYPE is published as a `uses` read of the member that declares it, in two positions. A FIELD's type is not a direct child of `field_declaration` (the grammar nests it under `variable_declaration`), so the old `isCSharpEntityName` first-direct-identifier rule never saw it; and for a PROPERTY the first direct identifier is the TYPE, so the rule took the type and let the property's own NAME through. Both fabrications resolve precisely because the type name collides with a member of the same class, and the shadowing frame cannot help — the shadow and the read are the same identifier. Simulated from the SHAPE the pre-fix analyzer published, which is why it reads off the declared-type edges rather than off existing `uses` rows: a `declared_type` reference whose target is ALSO a member name of the same owner is exactly the collision that made the pre-fix bare-identifier pass resolve, and the pre-fix pass stamped it with the DECLARATION's line. Caught by csharp/read-collides-with-call's forbidRelationships for `Collides -> Widget` (the field) and `Widget -> Widget` (the property's own name) — both already covered as `references` by the declared-type graph, which is why losing them costs no coverage.",
+    transform: r => {
+      const members = new Map<string, Set<string>>()
+      for (const s of r.symbols ?? []) {
+        if (s?.kind !== "property" || !s.ownerName) continue
+        let set = members.get(String(s.ownerName))
+        if (!set) { set = new Set<string>(); members.set(String(s.ownerName), set) }
+        set.add(String(s.name))
+      }
+      if (members.size === 0) return r
+      // Dedupe against OTHER `uses` ROWS ONLY. The first version of this mutant deduped against
+      // every relationship, and the declared-type edge `Collides -> Widget` — which the
+      // pre-fix analyzer ALSO published, alongside the fabrication — silently occupied the key, so
+      // the mutant added nothing and SURVIVED. A surviving mutant is the suite telling the truth
+      // about itself, and the truth here was that the simulation was wrong, not the gate.
+      const existing = new Set(
+        (r.relationships ?? [])
+          .filter((x: any) => (x.type ?? x.relationshipType) === "uses")
+          .map((x: any) => `${x.source}->${x.target}`),
+      )
+      const added: any[] = []
+      for (const rel of r.relationships ?? []) {
+        const md = (rel.metadata ?? {})
+        if ((rel.type ?? rel.relationshipType) !== "references") continue
+        if (md.relationshipType !== "declared_type") continue
+        const owner = String(rel.source)
+        if (!members.get(owner)?.has(String(rel.target))) continue
+        const key = `${owner}->${rel.target}`
+        if (existing.has(key)) continue
+        existing.add(key)
+        added.push({
+          type: "uses",
+          source: owner,
+          target: rel.target,
+          confidence: 1.0,
+          line_number: rel.line_number ?? null,
+          metadata: { relationshipType: "identifier_usage", nodeType: "identifier", evidenceClass: "usage_contextual" },
+        })
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+    },
   },
   // M60 clean `.dcl` ruling (the declaration contract, the operator callable, and
   // the export surface). Seven mutants, each a revert of a measured state.
