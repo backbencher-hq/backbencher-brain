@@ -32,16 +32,16 @@
         "bytes": 7047
       },
       "src/ast/real-bash-analyzer.ts": {
-        "sha256": "63151af55edf583b99bc117b3232ee586392e69bece5de95dae886cd737920e2",
-        "bytes": 54462
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
         "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "2014930a15955fb74fb34776f67d7e2455daa966062eadaf0128b9bfea9c19cf",
-        "bytes": 38104
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
@@ -68,16 +68,16 @@
         "bytes": 83204
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
-        "bytes": 41969
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
-        "bytes": 170963
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
@@ -88,16 +88,16 @@
         "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "efb651b4d2ebd1d5082096fdba31c483c08704f6ae4b6a0c424c2fc313614d9e",
-        "bytes": 70021
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
         "bytes": 14474
       },
       "src/ast/real-html-analyzer.ts": {
-        "sha256": "4083f02708fb8f4e8ca52b5b272b369757cd89c33b5e1deca74dc6b69b1238c8",
-        "bytes": 70162
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
       },
       "src/ast/real-java-analyzer.ts": {
         "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
@@ -112,8 +112,8 @@
         "bytes": 22151
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "ecc2c4c82b994cc7fbacf0d576da1712112933911b042cf3651a0f06439aed71",
-        "bytes": 154594
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
       },
       "src/ast/real-lua-analyzer.ts": {
         "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
-        "bytes": 70460
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -176,8 +176,8 @@
         "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "fe237f95b21987d29b4f8e3a90456c6ea598afdb0265f458218a3a2df923ae83",
-        "bytes": 236821
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
       },
       "src/ast/real-vue-analyzer.ts": {
         "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
@@ -236,107 +236,23 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
       },
       "validation/m12/fixtures/haskell/Negative.hs": {
-        "sha256": "e55b11065bfe4d64ab9ff2e57645aae1d7174081fbb037651f15353fd62af92a",
-        "bytes": 1228
+        "sha256": "4dbd696e9ba4cb99bc0e852dbb4fff6739eb4118aff3c069d067322699914c04",
+        "bytes": 1050
       },
       "validation/m12/fixtures/haskell/Service.hs": {
         "sha256": "bcad66bb991a4bb59b90528adf85f5f568e7f0af78391fb4ab349cf2ddc9bb71",
         "bytes": 1489
       },
       "validation/m12/ground-truth/haskell.json": {
-        "sha256": "dff2ee50e8fbe302960f9580357c01ec41f40c87eebc6bdf6698218dd9da010f",
-        "bytes": 29413
-      },
-      "grammars/tree-sitter-haskell/grammar.js": {
-        "sha256": "a8bd15e99d2e276685ab2f41d58eef2c00e6e47615aad9dc6691065fc75e9873",
-        "bytes": 2615
-      },
-      "grammars/tree-sitter-haskell/grammar/class.js": {
-        "sha256": "296eba1fd07719ec43c6a872a6becd5a4237d461b6e96e00a111075f1fa31a1a",
-        "bytes": 3126
-      },
-      "grammars/tree-sitter-haskell/grammar/conflicts.js": {
-        "sha256": "68e12fb8436ac4db0b1e748b576160a79e3a49e2c5b2aac9288065ab0fef4e0f",
-        "bytes": 3841
-      },
-      "grammars/tree-sitter-haskell/grammar/context.js": {
-        "sha256": "27f94cd1ea6814e703040f405206e827e6224ec5132ff68492bb40a17b0f85c5",
-        "bytes": 1969
-      },
-      "grammars/tree-sitter-haskell/grammar/data.js": {
-        "sha256": "e8f51c84f5f5693e10998bb07a28fbf15bb3b43edd049f292c386dcee68f0e1b",
-        "bytes": 5745
-      },
-      "grammars/tree-sitter-haskell/grammar/decl.js": {
-        "sha256": "ae45ef486c74799fa4e5a308abc3023bddbe879beb88075717250aabd1b75410",
-        "bytes": 4656
-      },
-      "grammars/tree-sitter-haskell/grammar/exp.js": {
-        "sha256": "420b3288e676bdde5ce0290be7baf8133e285bd8e25e6317e15d9123c35fcba8",
-        "bytes": 11764
-      },
-      "grammars/tree-sitter-haskell/grammar/externals.js": {
-        "sha256": "f720226791ef96feea7458e7482e1077bbb539f877625b59db86072a1de94aea",
-        "bytes": 9335
-      },
-      "grammars/tree-sitter-haskell/grammar/general.js": {
-        "sha256": "430fa55cbb3aeeddb00e75ca98f5cb92e3becba9d963060ad531499133940ce9",
-        "bytes": 1230
-      },
-      "grammars/tree-sitter-haskell/grammar/id.js": {
-        "sha256": "647a25d5d009ba966da9f26339112be8d3f16a6b20e1b069226ba6626ebb55db",
-        "bytes": 3648
-      },
-      "grammars/tree-sitter-haskell/grammar/inline.js": {
-        "sha256": "8d2254fb7379f30c11ed10402e4a9ebad4465342cb62542d6c56aff9077dd77b",
-        "bytes": 1978
-      },
-      "grammars/tree-sitter-haskell/grammar/lexeme.js": {
-        "sha256": "251810dc8f2b68f5e2d96e5859bb5d79fceaca160b9045fe9e952703a0afea39",
-        "bytes": 2025
-      },
-      "grammars/tree-sitter-haskell/grammar/literal.js": {
-        "sha256": "759554548a48a151205e61274e9aa27608dcc61d4cc5235740fdc2d04c8250a2",
-        "bytes": 1945
-      },
-      "grammars/tree-sitter-haskell/grammar/module.js": {
-        "sha256": "dbbd7e3852b98cfb26cda062d3b305c9a680bf2a3f4165e8adabed7fc673401d",
-        "bytes": 4097
-      },
-      "grammars/tree-sitter-haskell/grammar/operator.js": {
-        "sha256": "3d06e0ddc82b269c92df748b372a7c44715b32321db646ffa80d1e09870931d8",
-        "bytes": 2113
-      },
-      "grammars/tree-sitter-haskell/grammar/pat.js": {
-        "sha256": "c0bde5178f2db937b13c19da519c81288731659ff8a8a500a3847f58a9ec9351",
-        "bytes": 4935
-      },
-      "grammars/tree-sitter-haskell/grammar/patsyn.js": {
-        "sha256": "a95871be73db39e7bd6fbb3e409de09e86f10eb7c0addf4b82caaf7e83b6e42a",
-        "bytes": 1114
-      },
-      "grammars/tree-sitter-haskell/grammar/precedences.js": {
-        "sha256": "1ee791f68405081f5db6356da91312b569e2cee145dabb831f6bc8eedab52d93",
-        "bytes": 2109
-      },
-      "grammars/tree-sitter-haskell/grammar/th.js": {
-        "sha256": "a367d878adf0034a73b02f0747f82c1abe8dfa6f850490cfb6e09ae8d87acc74",
-        "bytes": 2479
-      },
-      "grammars/tree-sitter-haskell/grammar/type.js": {
-        "sha256": "1786ca725ec1b41c9a27bd3186108fb793c85179fc24a1119cadb070a0a2376b",
-        "bytes": 11989
-      },
-      "grammars/tree-sitter-haskell/grammar/util.js": {
-        "sha256": "8e6eedccd339393bd721d31a26bcda9f1ba133079419075289c90f122f1d3b19",
-        "bytes": 4861
+        "sha256": "308c23b27f780b76659d7e2058f114496fd2be8f42024b3c50e28289417bba16",
+        "bytes": 25485
       }
     },
-    "digest": "278854688aa7b67927142b374c4d33cd76abff0f3598363d5c585e44ad90dd67",
+    "digest": "d836248db597874505e1ccbc4facedec40af85cab0c3daaf959edc491d582336",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-haskell_tree-sitter-haskell.wasm",
       "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
@@ -344,7 +260,7 @@
     }
   },
   "truthSource": "haskell-observed-dump.ts (audited against fixtures + FP-family contract)",
-  "truthReference": "validation/m12/fixtures/haskell/ (Negative.hs, Service.hs) — hand-audited against Haskell semantics: module→module, data/newtype→type + constructor + record-field properties, class→class, instance/deriving→implements, function/method→function (multi-clause and pattern-head binds merged), operators (infix a +.+ b, prefix (<!>), backtick infix_id)→function; relationships: references (module→imported module), implements (instance/deriving target→class, incl. qualified and applied class heads), extends (class→superclass, from the context constraint tree: tuple lists, parens, applied heads), instantiates (body-position constructor application: bare, qualified M.Just, record construction — record UPDATE and all pattern positions excluded), calls (leaf sources; qualified heads taken VERBATIM, M.lookup; unqualified heads ONLY when the name is declared in-file — imported/Prelude names and parameters produce no edge; self-recursion IS emitted), contains (module→top-level symbol, class/interface→method). WHERE/LET-LOCALS (2026-09-25 adjudication of the HSD6/HSD19 wave): a local callable is NOT a symbol, but a call made inside a local's body attributes to the LOCAL itself — never leaked to the enclosing function, which does not make that call — and a local resolves as a call target; Negative.hs's where-clause therefore yields helper→helper.go and helper.go→helper.go. SCOPED LOCAL IDENTITY (2026-09-26, closes the limitation recorded here the day before): a local's edges carry its lexical owner chain — `owner.local`, nested `owner.inner.local` — so a module-level callable of the same name can never merge with it, and target resolution is LEXICAL (a local is a target only from inside its own scope; a shadowing binder wins for its whole RHS). Instrument correction, recorded rather than quietly fixed: the earlier '282 of 2,356 files carry a shadowing binder' count came from script/m14/tmp/haskell-local-calls-collision.ts, whose regex `(where|let)` + whitespace + NAME also matched INSTANCE/CLASS `where` clauses (their first member, e.g. `instance Show Account where showsPrec ...`), not only local binders — inflated. The tree-based re-measurement (script/m14/tmp/hs-local-identity.ts: direct children of local_binds/let/let_in, hledger+cabal full extent 2,356 files) is 16 files / 67 names with a shadowing binder, over 708 files / 11,487 local binder names; 12,309 source and 6,314 target calls endpoints were bare local attributions and are now scoped. The m14 fixture exercises the collision (module-level `go` vs a where-binder `go`, sibling `hop` locals, the out-of-scope negative), and haskell/local-identity-flat + haskell/local-scope-blind guard both halves of the revert.",
+  "truthReference": "validation/m12/fixtures/haskell/*.hs",
   "fixtureDir": "validation/m12/fixtures/haskell",
   "fixtures": [
     "Negative.hs",
@@ -357,32 +273,30 @@
     },
     "Service.hs": {
       "symbols": 25,
-      "relationships": 34
+      "relationships": 33
     }
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": true,
+    "passed": false,
     "metrics": {
-      "expected": 77,
+      "expected": 75,
       "observedResolved": 77,
-      "truePositive": 77,
-      "falsePositive": 0,
+      "truePositive": 75,
+      "falsePositive": 2,
       "falseNegative": 0,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 1,
+      "precision": 0.974025974025974,
       "recall": 1,
-      "falsePositiveRate": 0,
+      "falsePositiveRate": 0.025974025974025976,
       "falseNegativeRate": 0,
       "unknownRate": 0
     },
-    "earliestFailingLayer": null,
+    "earliestFailingLayer": "relationships",
     "truePositiveIds": [
-      "rel:Negative.hs:calls:helper.go:helper.go",
-      "rel:Negative.hs:calls:helper:helper.go",
       "rel:Negative.hs:contains:Negative:compareOp",
       "rel:Negative.hs:contains:Negative:helper",
       "rel:Negative.hs:contains:Negative:isBid",
@@ -459,21 +373,40 @@
       "symbol:Service.hs:52:function:mutualB",
       "symbol:Service.hs:55:function:describe"
     ],
-    "falsePositiveIds": [],
+    "falsePositiveIds": [
+      "rel:Negative.hs:calls:go:go",
+      "rel:Negative.hs:calls:helper:go"
+    ],
     "falseNegativeIds": [],
     "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": null
+    "minimizedFailure": {
+      "expected": [],
+      "observed": [
+        {
+          "id": "rel:Negative.hs:calls:helper:go",
+          "layer": "relationships",
+          "kind": "relationship",
+          "file": "Negative.hs",
+          "sourceId": "helper",
+          "targetId": "go",
+          "attributes": {
+            "type": "calls"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:haskell",
-      "wallTimeMs": 201.788473,
-      "userCpuMs": 259.966,
-      "systemCpuMs": 23.065,
-      "peakRssBytes": 248688640,
-      "rssDeltaBytes": 19652608,
+      "wallTimeMs": 218.065173,
+      "userCpuMs": 132.226,
+      "systemCpuMs": 10.647,
+      "peakRssBytes": 238436352,
+      "rssDeltaBytes": 10510336,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -486,7 +419,7 @@
   "note": "M12 per-analyzer differential for haskell. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.882Z",
-    "contentSha256": "4936071acf6ef36ba82128274afd3bc3f9dd9ab241866aa1e808034ad0df9297"
+    "sealedAt": "2026-09-28T02:54:45.738Z",
+    "contentSha256": "bb9fd5b428a8a5d9e109d4d3f26a8527f4aa1bde4fea046992e93019cf46036e"
   }
 }
