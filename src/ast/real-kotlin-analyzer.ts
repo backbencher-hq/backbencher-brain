@@ -740,7 +740,38 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       switch (n.type) {
         case "function_declaration":
-          this.extractFunction(n, symbols, ctx, pClass)
+          // M60 K4 (kotlin deep review): the same owner rule as the
+          // property_declaration case above (aa6a2beb), one node over. A
+          // function is a MEMBER of a class exactly when it is declared in that
+          // class's body; a function declared inside another function is LOCAL
+          // to that body, and the class does not contain it.
+          //
+          //   fun testInsertWithExpression() {
+          //       val tbl = object : IntIdTable("testInsert") { ... }
+          //       fun expression(value: String) = ...          // LOCAL
+          //       suspend fun verify(value: String) { ... }    // LOCAL
+          //       withTables(tbl) { ... }
+          //   }
+          //
+          // The walk carries `pClass` through every node it does not intercept,
+          // and a function body is not intercepted — so each of these locals was
+          // given ownerName = InsertTests and published
+          // `contains InsertTests -> expression` / `-> verify`. Kotlin scoping
+          // is unambiguous here: a `fun` in a body is visible only in that body.
+          //
+          // Found by K4 adjudication: after the anonymous-object class, six
+          // unexplained contains rows remained and every one was this shape
+          // (a top-level-looking function, a `suspend fun`, and a local
+          // extension `fun Query.sliceIt()` — all three the same defect).
+          //
+          // `pClass` is also what makes the SymbolKind choice below, so the
+          // same rule fixes the published kind: a local function is a Function,
+          // not a Method.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition = pt === "class_body" || pt === "enum_class_body"
+            this.extractFunction(n, symbols, ctx, isMemberPosition ? pClass : undefined)
+          }
           break
         case "class_declaration": {
           const isInterface = someSymbol(n.children, (c) => c?.type === "interface")
