@@ -890,20 +890,68 @@ const handlers: Record<string, ToolHandler> = {
     if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode: symbol|file|module|feature|api|project|coverage", true)
     if (["symbol", "file", "module", "feature"].includes(mode) && !args.target) return textResult(`bb_doc ${mode} mode requires target`, true)
     const request: DocRequest = { mode, target: args.target ? String(args.target) : undefined, format: args.format === "json" ? "json" : "markdown", audience: args.audience, detail: args.detail, includeExamples: args.includeExamples === true, includeDiagrams: args.includeDiagrams === true, includeTests: args.includeTests === true, limit: args.limit == null ? undefined : Number(args.limit), maxTokens: args.maxTokens == null ? undefined : Number(args.maxTokens) }
-    const result = await generateDocumentation(projectId, projectPath, request)
+
+    // M43.A1/A2 parity: bb_doc is a READ tool, so it participates in the inline
+    // bounded auto-refresh like bb_search / bb_ask / bb_analyze do. It did not,
+    // while the registered remediation string it printed told the reader to
+    // "disable with BB_NO_AUTO_REFRESH=1 or refresh=false" — naming two
+    // controls this tool did not have, and leaving AGENTS.md's promise ("reads
+    // refresh stale files within budget") false for this one read path.
+    //
+    // The flow is the shared one: generate, resolve freshness over the files the
+    // doc actually cites, repair exactly those files if they are stale within
+    // budget, then REGENERATE so the answer is not built from the rows the
+    // refresh just replaced. A decline is declared, never silent.
+    const generate = async (): Promise<{ result: any; derived: ReturnType<typeof derivedStaleness>; rows: Array<{ fileId: string | null }>; statuses: Map<string, string> }> => {
+      const result = await generateDocumentation(projectId, projectPath, request)
+      const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+      // Only a file-backed citation can name a file to repair; an index-scoped
+      // citation has no path and contributes to the envelope, not the repair set.
+      const relPaths = (result.citations ?? []).map((c: any) => c.path ?? undefined).filter((p: any): p is string => !!p)
+      const derived = derivedStaleness(rawDb, projectId as any, relPaths)
+      const relToId = new Map<string, string>()
+      if (relPaths.length) {
+        for (const r of rawDb.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${relPaths.map(() => "?").join(",")})`).all(projectId, ...relPaths) as Array<{ id: string; relative_path: string }>) {
+          relToId.set(r.relative_path, r.id)
+        }
+      }
+      const rows = relPaths.map((p) => ({ fileId: relToId.get(p) ?? null }))
+      return { result, derived, rows, statuses: resolveRowsFreshnessDetailed(rawDb, projectId as any, rows).statuses }
+    }
+
+    const first = await generate()
+    const staleFiles = collectStaleFiles(await BrainDatabase.getRawInstance(projectId as any), first.rows, first.statuses)
+    let autoRefreshLineText = ""
+    let final = first
+    if (staleFiles.length > 0) {
+      const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+      autoRefreshLineText = autoRefreshLine(decision)
+      // Regenerate after a repair: answering from the rows the refresh just
+      // replaced would be the one thing a documentation tool must not do.
+      if (decision.action === "refreshed") final = await generate()
+    }
+
     // M35.S2: the doc carries the registered freshness envelope over its cited
     // files; per-citation freshness is already resolved inside the engine and
     // rendered in Sources. JSON gets the exact registered block; text/markdown
-    // get the footer built from the registered remediation constant.
-    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, (result.citations ?? []).map((c) => c.path ?? undefined))
+    // get the footer built from the registered remediation constant. A markdown
+    // document that cites no file has no scope to be stale in, and says nothing
+    // about staleness rather than a clean 0/0/0 that reads as a measurement.
     if (request.format === "json") {
-      const parsed = JSON.parse(formatDocumentation(result, "json"))
-      parsed.freshness = buildStalenessEnvelope(derived.summary, { kind: "dir" })
+      const parsed = JSON.parse(formatDocumentation(final.result, "json"))
+      parsed.freshness = buildStalenessEnvelope(final.derived.summary, { kind: "dir" })
+      if (autoRefreshLineText) parsed.autoRefresh = autoRefreshLineText
       return textResult(JSON.stringify(parsed, null, 2))
     }
-    const base = formatDocumentation(result, request.format)
-    return textResult(derived.footer ? `${base}\n\n---\n${derived.footer}` : base)
+    const base = formatDocumentation(final.result, request.format)
+    const parts = [base]
+    if (autoRefreshLineText) parts.push(autoRefreshLineText)
+    if (final.rows.length === 0) {
+      parts.push("Freshness not applicable: this document cites no file, so there is no source to be stale.")
+    } else if (final.derived.footer) {
+      parts.push(`---\n${final.derived.footer}`)
+    }
+    return textResult(parts.join("\n\n"))
   },
 
   bb_edit: async (args, { projectId, projectPath }) => {
