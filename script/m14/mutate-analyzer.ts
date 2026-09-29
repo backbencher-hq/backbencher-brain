@@ -3121,6 +3121,108 @@ export const MUTANTS: Mutant[] = [
     description: "re-emits calls edges for parenthesized closure callees ((self.0)(n)): the pre-fix else branch took functionNode.text verbatim and fabricated a (self.0) target",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "run", target: "(self.0)", type: "calls", confidence: 1, metadata: {} }] }),
   },
+  // ── M60.P1 (the C++ payload the documentation described but never emitted) ──
+  // D1–D6 are all FABRICATION-shaped and D7 is the first LOSS class, but all seven
+  // are SYMBOL/EDGE classes: every one of them is caught by a symbol or relationship
+  // assertion. `parameters`, `returnType` and `decorators` are a different kind of
+  // loss — a symbol can be perfectly named, correctly owned, and still carry a
+  // payload that is absent, and no symbol-count or edge assertion can see it. That
+  // is why the M60 payload-seam matrix recorded all three as DEAD emit cells for cpp
+  // while the doc claimed support, and why the M14 differential could not see it
+  // either: an oracle written from the same reading of the same grammar never asks
+  // for the field, so the blind spot is symmetric and cancels.
+  {
+    id: "cpp/m60-parameter-type-sliced-at-declarator",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM A: reverts the parameter TYPE slice from the parameter's NAME node to its DECLARATOR node. A `reference_declarator`'s text is `& name` and its start index points at the `&`, so slicing at the declarator deletes the pointer/ref operator and publishes `const std::string` for `const std::string& name` and `const char` for `const char* format`. Not cosmetic: those are different C++ types that overload differently, and the same slice is the override-matching KEY (buildParamSig), so `virtual void f(Widget&)` and `virtual void f(Widget)` also hashed alike before the fix.",
+    transform: r => {
+      const stripOps = (t: any) => {
+        if (typeof t !== "string") return t
+        let s = t
+        while (s.length > 0 && (s.endsWith("&") || s.endsWith("*"))) s = s.slice(0, -1)
+        return s
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => ({
+          ...s,
+          ...(Array.isArray(s.parameters)
+            ? { parameters: s.parameters.map((p: any) => ({ ...p, type: stripOps(p.type) })) }
+            : {}),
+        })),
+      }
+    },
+  },
+  {
+    id: "cpp/m60-defaulted-parameter-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM B: drops every DEFAULTED parameter. In this grammar a defaulted parameter is an `optional_parameter_declaration` — a DIFFERENT node type from a required `parameter_declaration` — so a walk that handles only the required one silently loses `double scale = 1.0` while looking correct on every undefaulted signature. The class is corpus-wide and invisible to a name/type pin that happens to sample an all-required signature.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({
+        ...s,
+        ...(Array.isArray(s.parameters)
+          ? { parameters: s.parameters.filter((p: any) => p.isOptional !== true) }
+          : {}),
+      })),
+    }),
+  },
+  {
+    id: "cpp/m60-trailing-return-type-read-as-auto",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM C: publishes a deduced-return function's `auto` instead of the type after the `->`. The pre-fix read took the declaration's `type` field, which for `auto label() const -> std::string` is literally `auto` — a name that resolves to nothing, in the one field whose whole job is to name a type. Trailing return types are not exotic: they are how `decltype(auto)` and every deduced-return function is written.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => (s.name === "label" ? { ...s, returnType: "auto" } : s)),
+    }),
+  },
+  {
+    id: "cpp/m60-field-decorators-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM D: drops `decorators` from every non-callable declaration, keeping it only for functions. `static constexpr int kAxes = 2;` carries exactly as much modifier information as `virtual double area() const = 0;`, so a payload field that answers for one of them and not the other is a field a consumer cannot rely on. A distinct arm from the others because it is a SCOPE restriction, not a wrong value: the function-branch values are all still correct, which is what makes it survive a fixture that only samples methods.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.kind === "function" || s.kind === "method" || s.kind === "constructor") return s
+        const { decorators, ...rest } = s
+        return rest
+      }),
+    }),
+  },
+  {
+    id: "cpp/m60-virtual-specifier-decorator-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM E: removes the one step that looks BELOW the declaration. `override` and `final` are `virtual_specifier` nodes in this grammar, children of the declarator rather than of the declaration, so a scan of the declaration's own tokens finds `virtual` and misses `override` — and `override` is the modifier that answers the question a reader actually has of an override edge. It is also the arm most likely to survive review, because the declaration-level modifiers are all still present.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.decorators)) return s
+        const decorators = s.decorators.filter((d: string) => d !== "override" && d !== "final")
+        if (decorators.length === s.decorators.length) return s
+        return decorators.length > 0 ? { ...s, decorators } : (({ decorators: _drop, ...rest }) => rest)(s)
+      }),
+    }),
+  },
+  {
+    id: "cpp/m60-declarator-modifier-dropped",
+    language: "cpp",
+    defectClass: "payload-loss",
+    description: "M60.P1 regression, ARM F: scans only the DECLARATION for modifiers and not its DECLARATOR. A method's trailing `const` and its `override`/`final` `virtual_specifier`s are children of the `function_declarator`, so this arm drops `const` from every const method and every override — while leaving `static`/`virtual`/`explicit` intact, because those DO sit on the declaration. It is the arm most likely to pass review, since the modifiers a reader checks first are all still there, and `const` is on essentially every getter in a C++ corpus, so the loss is large and the signal is small.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.decorators)) return s
+        const decorators = s.decorators.filter((d: string) => d !== "const" && d !== "volatile")
+        if (decorators.length === s.decorators.length) return s
+        return decorators.length > 0 ? { ...s, decorators } : (({ decorators: _drop, ...rest }) => rest)(s)
+      }),
+    }),
+  },
   {
     id: "rust/drop-union-symbols",
     language: "rust",
