@@ -1,5 +1,5 @@
 {
- "at": "2026-09-27T20:37:56.361Z",
+ "at": "2026-09-29T03:04:07.520Z",
  "note": "Re-probed emission for validation/m14/fixtures/yaml/*.yaml, from which each .expectation.json is authored. Regenerate with: bun run script/m14/tmp/yaml-fixture-dump.ts",
  "fixtures": {
   "anchor-document-scope-negative.yaml": {
@@ -2438,12 +2438,12 @@
    "imports": [
     {
      "module": "actions/checkout@v4",
-     "importType": "github_action",
+     "importType": "yaml_action_use",
      "isExternal": true
     },
     {
      "module": "./local-action",
-     "importType": "github_action",
+     "importType": "yaml_action_use",
      "isExternal": false
     }
    ],
@@ -7001,6 +7001,326 @@
     "reservedDirectives": [],
     "securityScore": 100,
     "sensitiveValueCount": 0,
+    "documentCount": 1
+   }
+  },
+  "tag-include-inc-spelling.yaml": {
+   "symbols": [
+    {
+     "name": "tag-include-inc-spelling",
+     "kind": "module",
+     "id": "tag-include-inc-spelling",
+     "line": 9,
+     "complexity": 1,
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "document",
+      "documentIndex": 1,
+      "fullPath": "tag-include-inc-spelling"
+     }
+    },
+    {
+     "name": "modern",
+     "kind": "property",
+     "id": "tag-include-inc-spelling.modern",
+     "ownerName": "tag-include-inc-spelling",
+     "line": 9,
+     "complexity": 1,
+     "docstring": "guessed, and this file is the correction pinned.",
+     "qualified_calls": [
+      "inc",
+      "include.d/1.yml"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "tag-include-inc-spelling.modern",
+      "pointerPath": "/modern",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "inc",
+      "tagUri": "inc",
+      "tagLine": 9,
+      "tagIncludePath": "include.d/1.yml",
+      "scalarType": "string",
+      "line": 9
+     }
+    },
+    {
+     "name": "legacy",
+     "kind": "property",
+     "id": "tag-include-inc-spelling.legacy",
+     "ownerName": "tag-include-inc-spelling",
+     "line": 10,
+     "complexity": 1,
+     "qualified_calls": [
+      "include",
+      "include.d/2.yml"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "tag-include-inc-spelling.legacy",
+      "pointerPath": "/legacy",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "include",
+      "tagUri": "include",
+      "tagLine": 10,
+      "tagIncludePath": "include.d/2.yml",
+      "scalarType": "string",
+      "line": 10
+     }
+    },
+    {
+     "name": "list",
+     "kind": "variable",
+     "id": "tag-include-inc-spelling.list",
+     "ownerName": "tag-include-inc-spelling",
+     "line": 11,
+     "complexity": 2,
+     "qualified_calls": [
+      "include.d/1.yml",
+      "include.d/2.yml"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "array",
+      "valueTypeSource": "grammar",
+      "fullPath": "tag-include-inc-spelling.list",
+      "pointerPath": "/list",
+      "isObject": false,
+      "isArray": true,
+      "isMergeKey": false,
+      "isAlias": false,
+      "line": 11,
+      "itemCount": 2
+     }
+    },
+    {
+     "name": "secret",
+     "kind": "property",
+     "id": "tag-include-inc-spelling.secret",
+     "ownerName": "tag-include-inc-spelling",
+     "line": 17,
+     "complexity": 1,
+     "docstring": "over-firing class this lane keeps being bitten by.",
+     "qualified_calls": [
+      "vault",
+      "encrypted-blob"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "tag-include-inc-spelling.secret",
+      "pointerPath": "/secret",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "isSensitive": true,
+      "sensitivityReason": "key-name:secret",
+      "declaredType": "vault",
+      "tagUri": "vault",
+      "tagLine": 17,
+      "scalarType": "string",
+      "line": 17
+     }
+    },
+    {
+     "name": "version",
+     "kind": "property",
+     "id": "tag-include-inc-spelling.version",
+     "ownerName": "tag-include-inc-spelling",
+     "line": 18,
+     "complexity": 1,
+     "qualified_calls": [
+      "unsafe"
+     ],
+     "metadata": {
+      "yamlSpecific": true,
+      "nodeType": "block_mapping_pair",
+      "valueType": "string",
+      "valueTypeSource": "grammar",
+      "fullPath": "tag-include-inc-spelling.version",
+      "pointerPath": "/version",
+      "isObject": false,
+      "isArray": false,
+      "isMergeKey": false,
+      "isAlias": false,
+      "declaredType": "unsafe",
+      "tagUri": "unsafe",
+      "tagLine": 18,
+      "scalarType": "string",
+      "line": 18
+     }
+    }
+   ],
+   "relationships": [
+    {
+     "type": "contains",
+     "source": "tag-include-inc-spelling",
+     "target": "tag-include-inc-spelling.modern",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "tag-include-inc-spelling.modern",
+     "target": "inc",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "inc"
+    },
+    {
+     "type": "imports",
+     "source": "tag-include-inc-spelling.modern",
+     "target": "include.d/1.yml",
+     "confidence": 1,
+     "line_number": 9,
+     "evidenceClass": "import_based",
+     "relationshipType": "yaml_tag_include"
+    },
+    {
+     "type": "contains",
+     "source": "tag-include-inc-spelling",
+     "target": "tag-include-inc-spelling.legacy",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "tag-include-inc-spelling.legacy",
+     "target": "include",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "include"
+    },
+    {
+     "type": "imports",
+     "source": "tag-include-inc-spelling.legacy",
+     "target": "include.d/2.yml",
+     "confidence": 1,
+     "line_number": 10,
+     "evidenceClass": "import_based",
+     "relationshipType": "yaml_tag_include"
+    },
+    {
+     "type": "contains",
+     "source": "tag-include-inc-spelling",
+     "target": "tag-include-inc-spelling.list",
+     "confidence": 1,
+     "line_number": 11,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "imports",
+     "source": "tag-include-inc-spelling.list",
+     "target": "include.d/1.yml",
+     "confidence": 1,
+     "line_number": 11,
+     "evidenceClass": "import_based",
+     "relationshipType": "yaml_tag_include"
+    },
+    {
+     "type": "imports",
+     "source": "tag-include-inc-spelling.list",
+     "target": "include.d/2.yml",
+     "confidence": 1,
+     "line_number": 11,
+     "evidenceClass": "import_based",
+     "relationshipType": "yaml_tag_include"
+    },
+    {
+     "type": "contains",
+     "source": "tag-include-inc-spelling",
+     "target": "tag-include-inc-spelling.secret",
+     "confidence": 1,
+     "line_number": 17,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "tag-include-inc-spelling.secret",
+     "target": "vault",
+     "confidence": 1,
+     "line_number": 17,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "vault"
+    },
+    {
+     "type": "contains",
+     "source": "tag-include-inc-spelling",
+     "target": "tag-include-inc-spelling.version",
+     "confidence": 1,
+     "line_number": 18,
+     "evidenceClass": "structural"
+    },
+    {
+     "type": "references",
+     "source": "tag-include-inc-spelling.version",
+     "target": "unsafe",
+     "confidence": 1,
+     "line_number": 18,
+     "evidenceClass": "reference_qualified",
+     "relationshipType": "declared_type",
+     "tagUri": "unsafe"
+    },
+    {
+     "type": "references",
+     "source": "tag-include-inc-spelling.secret",
+     "target": "encrypted-blob",
+     "confidence": 0.8,
+     "line_number": 17,
+     "evidenceClass": "inferred",
+     "relationshipType": "yaml_resource_ref",
+     "resolved": false,
+     "unresolvedReason": "not-declared-in-file",
+     "confidenceReason": "unresolved-sibling-name"
+    }
+   ],
+   "imports": [
+    {
+     "module": "include.d/1.yml",
+     "importType": "yaml_tag_include",
+     "isExternal": true
+    },
+    {
+     "module": "include.d/2.yml",
+     "importType": "yaml_tag_include",
+     "isExternal": true
+    }
+   ],
+   "metadata": {
+    "detectedFrameworks": [],
+    "framework": null,
+    "frameworkPatterns": [],
+    "patterns": [
+     "Service Dependencies",
+     "Sensitive Values"
+    ],
+    "yamlVersion": null,
+    "reservedDirectives": [],
+    "securityScore": 96,
+    "sensitiveValueCount": 1,
     "documentCount": 1
    }
   },

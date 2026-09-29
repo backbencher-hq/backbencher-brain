@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M14",
   "rule": "analyzer documentation completeness",
-  "generatedAt": "2026-09-28T19:19:33.715Z",
+  "generatedAt": "2026-09-29T03:03:32.642Z",
   "boundary": "A section counts only when it has CONTENT under its heading, not merely the heading: a renamed or empty section is a missing section. Measures the DOCUMENT, not the analyzer: a language can pass all eleven sections here and still have an analyzer defect, and a language can fail here with a correct analyzer. This gate is about a claim being checkable, and it is deliberately weaker than the gates that measure behaviour.",
   "requiredSections": [
     "## Language",
@@ -20,13 +20,13 @@
     "absent": 1,
     "sectionComplete": 18,
     "sectionShort": 24,
-    "ontologyCellGaps": 4,
+    "ontologyCellGaps": 5,
     "fullyComplete": 18
   },
   "baseline": {
     "present": 42,
     "sectionComplete": 18,
-    "ontologyCellGaps": 4,
+    "ontologyCellGaps": 5,
     "note": "measured 2026-09-28 at the gate's first run; a language that LOSES ground fails, a language already short does not"
   },
   "worklist": {
@@ -125,6 +125,12 @@
         "lang": "json",
         "doc": "docs/analyzers/real-json-analyzer.md",
         "missing": [
+          "## Language",
+          "## Symbol contract",
+          "## Supported constructs",
+          "## Regex inventory",
+          "## Complexity envelope",
+          "## Differential ground truth",
           "## Corpus validation"
         ]
       },
@@ -273,6 +279,13 @@
       {
         "lang": "clean",
         "doc": "docs/analyzers/real-clean-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
+        "lang": "json",
+        "doc": "docs/analyzers/real-json-analyzer.md",
         "gaps": [
           "(no relationship-ontology section)"
         ]
@@ -473,9 +486,17 @@
       "present": true,
       "doc": "docs/analyzers/real-json-analyzer.md",
       "missingSections": [
+        "## Language",
+        "## Symbol contract",
+        "## Supported constructs",
+        "## Regex inventory",
+        "## Complexity envelope",
+        "## Differential ground truth",
         "## Corpus validation"
       ],
-      "ontologyGaps": []
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
     },
     {
       "lang": "kotlin",

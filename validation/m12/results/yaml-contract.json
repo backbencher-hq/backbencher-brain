@@ -1,7 +1,7 @@
 {
  "analyzer": "yaml",
  "issue": "#175",
- "at": "2026-09-27T20:55:51.790Z",
+ "at": "2026-09-29T03:03:56.531Z",
  "entry": "ASTEngine.parseFile (the production entry, not analyze() directly)",
  "fixtures": "validation/m14/fixtures/yaml (25 fixtures; this probe reads 9 of them)",
  "checks": [
