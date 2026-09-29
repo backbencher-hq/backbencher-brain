@@ -423,7 +423,26 @@ export async function deriveMarkdownEdges(root: any, content: string): Promise<T
       continue
     }
 
-    if (node.type === "fenced_code_block") {
+    // `indented_code_block` is the 4-SPACE form of the same construct, and it IS a
+    // node in the tree, so truth includes it: a differential that derived fenced blocks
+    // and stopped at indented ones was asserting that a document with an indented block
+    // and one without it have the same truth, which is false. `mdCodeBlockName` needs no
+    // change — an indented block has no `info_string` child, so it already falls through
+    // to the bare `code_block`, which is also what the analyzer publishes for it.
+    //
+    // The population is worth stating, because it is not what a reader assumes. Over
+    // 1,138 pinned corpus files the block grammar finds 217 `indented_code_block`
+    // nodes, and the large majority of them are NOT authored code: they are the wrapped
+    // continuation lines of deeply-nested list items, which CommonMark genuinely reads
+    // as indented code (`* a bullet` / `    * a nested bullet` / `        the wrapped
+    // text`). The grammar is right and the author did not mean a code block. They are
+    // published anyway, because the alternative is the asymmetry MD-G1 names — a
+    // reader unable to tell "this document has no code" from "this document has code
+    // the lane dropped" — and because a consumer that cares can read `nodeType` and the
+    // range. Recorded rather than quietly normalised: a population that is 100x what the
+    // gap's original 2-site estimate assumed is a fact about the ESTIMATE, not about the
+    // construct.
+    if (node.type === "fenced_code_block" || node.type === "indented_code_block") {
       const bare = mdCodeBlockName(node)
       const qualifiedBase = currentSectionId === "document" ? bare : `${currentSectionId}.${bare}`
       const { name } = siteIdentity(qualifiedBase, bare)

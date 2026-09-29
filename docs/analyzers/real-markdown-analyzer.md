@@ -212,6 +212,28 @@ evidence behind it is the thing this repository forbids most loudly.
   and no edges, although in a Jekyll site those keys are the cross-file link
   carriers.
 
+### Indented code blocks (MD-G1, closed)
+
+A four-space indented block is a node the grammar names, and the lane used to
+publish nothing for it while the fenced form beside it published a symbol — so a
+reader could not tell "this document has no code" from "this document has code the
+lane dropped". It now publishes `code_block`, **sharing the fenced path's site
+base**, so a fence with no info string and an indented block under one heading are
+one site and the second is `code_block#2`.
+
+It publishes **no `language` key**: the construct has nowhere to declare one, and the
+fence's `text` default means "a fence that declared none", which is a different fact.
+`nodeType: indented_code_block` carries the distinction.
+
+The population is worth stating, because it is not what the gap assumed. The gap
+recorded "2 sites in 2 of 738 corpus files" from a text heuristic for indented lines;
+measured with the **block grammar** over 1,138 pinned corpus files the figure is
+**217**. Most of those 217 are not authored code at all — they are the wrapped
+continuation lines of deeply-nested list items, which CommonMark genuinely reads as
+indented code. The grammar is right and the author did not mean a code block. They
+are published anyway, because the alternative is the asymmetry above and a consumer
+that cares can read `nodeType` and the range.
+
 ### The worker seam, and why no fixture could have caught it (MD-5)
 
 `pool-worker.ts` carries symbol metadata across the worker boundary through an

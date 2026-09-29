@@ -30,9 +30,10 @@
    "shortcut_link",
    "uri_autolink",
    "email_autolink",
-   "image"
+   "image",
+   "indented_code_block"
   ],
-  "note": "Twenty-nine types, every one pinned. The six `atx_hN_marker` and two `setext_hN_underline` types are how a heading's LEVEL is read — from the marker's own name, never from the marker's text, so a document that indents its heading markers differently still nests correctly. `atx_heading`/`setext_heading` are the two containers and they are handled TOGETHER because their text lives in different places: an ATX heading's text is its `inline` child, a setext heading's is the first line of its paragraph, and the analyzer branches on the container type rather than falling through from one to the other. That branch is not cosmetic — see the MD-D7 entry in the design decisions, where the wrong branch published a heading name containing a newline. `fenced_code_block` + `info_string` + `language` are the code-fence triple: the block is the site, the info string names the language, and the `language` child is preferred over the info string's own text because a fence can carry a title after the language. `pipe_table` + `pipe_table_header` + `pipe_table_cell` are the table triple, and the pair `minus_metadata` / `plus_metadata` is deliberately NOT a triple — see the plus_metadata gap entry. `link_destination` is read in BOTH grammars' shapes (an inline link's own child, and a reference definition's destination) and `link_label` carries the reference in the full form while `link_text` carries it in the collapsed and shortcut forms, so the three reference-link types plus those two are one contract, not five. `image` is read only for its REFERENCE form; an inline-form image's destination is its `link_destination` child and is already handled. `document` is the walk root."
+  "note": "Thirty types, every one pinned. The six `atx_hN_marker` and two `setext_hN_underline` types are how a heading's LEVEL is read — from the marker's own name, never from the marker's text, so a document that indents its heading markers differently still nests correctly. `atx_heading`/`setext_heading` are the two containers and they are handled TOGETHER because their text lives in different places: an ATX heading's text is its `inline` child, a setext heading's is the first line of its paragraph, and the analyzer branches on the container type rather than falling through from one to the other. That branch is not cosmetic — see the MD-D7 entry in the design decisions, where the wrong branch published a heading name containing a newline. `fenced_code_block` + `info_string` + `language` are the code-fence triple: the block is the site, the info string names the language, and the `language` child is preferred over the info string's own text because a fence can carry a title after the language. `pipe_table` + `pipe_table_header` + `pipe_table_cell` are the table triple, and the pair `minus_metadata` / `plus_metadata` is deliberately NOT a triple — see the plus_metadata gap entry. `link_destination` is read in BOTH grammars' shapes (an inline link's own child, and a reference definition's destination) and `link_label` carries the reference in the full form while `link_text` carries it in the collapsed and shortcut forms, so the three reference-link types plus those two are one contract, not five. `image` is read only for its REFERENCE form; an inline-form image's destination is its `link_destination` child and is already handled. `document` is the walk root."
  },
  "internal_silent": {
   "types": [
@@ -83,16 +84,6 @@
  "gap": {
   "gaps": [
    {
-    "id": "MD-G1",
-    "node_type": "indented_code_block",
-    "status": "OPEN",
-    "measured": "2 sites in 2 of 738 corpus files. Small, but it is an ASYMMETRY inside one construct rather than a missing feature: a FENCED code block publishes `code_block.<lang>` as a per-site `function` symbol, and an INDENTED one publishes nothing at all. A reader of the graph cannot tell 'this document has no code' from 'this document has code the lane dropped'.",
-    "why_open": "Left open rather than classified silent on purpose. `internal_silent` means 'correctly emits nothing', and for a code block the correct answer is a symbol — the fenced form proves the lane has one. Classifying it silent would make the count zero and the question closed, which is the 'silent gap' the M14 standing rules call the actual shame.",
-    "fix": "One more branch on the block DFS emitting `code_block` (no language) per site, sharing the fenced path's site identity so an indented and a fenced block under one heading do not collide. Pinned by a fixture and a probe, and the two corpus files are named so the fix can be measured rather than argued.",
-    "severity": "low",
-    "missing": "an INDENTED code block (4-space) publishes nothing, while a FENCED one publishes `code_block.<lang>` as a per-site `function`. 2 sites in 2 of 738 corpus files. The count is small; the ASYMMETRY inside one construct is not, and a reader of the graph cannot distinguish 'this document has no code' from 'this document has code the lane dropped'. Fix is one more branch on the block DFS sharing the fenced path's site identity, pinned by a fixture and a probe with the two corpus files named so the fix is measured rather than argued."
-   },
-   {
     "id": "MD-G2",
     "node_type": "plus_metadata",
     "status": "OPEN",
@@ -100,7 +91,8 @@
     "why_open": "The count is 0, so this lane can neither support nor refute a claim about it, and a fixture for a dialect with no corpus would be a pin with nothing behind it — the same reasoning the css lane records for `.sass`/`.less`. It is filed as a gap rather than a declared boundary because it is the same construct the lane already handles in its other spelling, so the asymmetry is real even where the corpus is silent.",
     "fix": "One more node type on the front-matter branch, with the `+++` form decided by measurement against a real MyST corpus when one is pinned. NOT to be implemented against an invented fixture.",
     "severity": "info",
-    "missing": "Pandoc/MyST `+++` title-block front matter publishes nothing against the lane's `---` reading. 0 sites in 738 corpus files, so this lane can neither support nor refute a claim about it and a fixture for a dialect with no corpus would be a pin with nothing behind it (the css lane's `.sass`/`.less` precedent). Filed because it is the same construct already handled in its other spelling, so the asymmetry is real even where the corpus is silent. NOT to be implemented against an invented fixture; owed a real MyST corpus."
+    "missing": "Pandoc/MyST `+++` title-block front matter publishes nothing against the lane's `---` reading. 0 sites in 738 corpus files, so this lane can neither support nor refute a claim about it and a fixture for a dialect with no corpus would be a pin with nothing behind it (the css lane's `.sass`/`.less` precedent). Filed because it is the same construct already handled in its other spelling, so the asymmetry is real even where the corpus is silent. NOT to be implemented against an invented fixture; owed a real MyST corpus.",
+    "sibling_note": "Its sibling MD-G1 LANDED this round, and the contrast is the point. MD-G1 had a measurable population measured by the grammar (217 nodes), so the fix could be pinned by a fixture whose assertions the corpus supports. This entry has a population of ZERO in every pinned corpus, so a fixture here would be a pin with nothing behind it — which is why this entry's own `fix` field says NOT to implement it against an invented fixture, and that instruction stands. Closing it needs a pinned MyST corpus, not more code. A reviewer comparing the two should read them together: the difference between them is the INSTRUMENT, not the willingness."
    }
   ]
  },
@@ -191,5 +183,17 @@
    "uses": "reference_qualified — the destination is a node's own text, and for a reference link the destination the document's own definition declares",
    "measured": "11,401/11,401 relationships over the pinned corpus carry a 1-based line_number and an evidenceClass from the closed vocabulary. Before this round it was 0/9,132, and because graph-core's read-time derivation does not list `contains` among its structural types the entire heading hierarchy was rendered to readers as `inferred` — 'a guess, treat as a hint, never as fact' — for edges that cannot be anything else."
   }
- }
+ },
+ "closed_gaps": [
+  {
+   "id": "MD-G1",
+   "node_type": "indented_code_block",
+   "closed": "2026-09-28",
+   "measured": "An indented (four-space) code block published NOTHING while the fenced form beside it published a per-site `function`, so a reader could not tell 'this document has no code' from 'this document has code the lane dropped'. CORRECTION TO THE ORIGINAL ESTIMATE, and the correction is the interesting part: the gap recorded '2 sites in 2 of 738 corpus files', measured by a text heuristic for four-space-indented lines — which mostly matches wrapped list-item continuation, not code. Measured with the BLOCK GRAMMAR over 1,138 pinned corpus files (738 scala3 + 400 kubernetes) the figure is 217 nodes, 100x the estimate. All 217 now publish.",
+   "population_note": "Most of the 217 are not authored code. They are the wrapped continuation lines of deeply-nested list items, which CommonMark genuinely reads as indented code: `* a bullet` / `    * a nested bullet` / `        the wrapped text`. The grammar is right and the author did not mean a code block. They are published anyway, because the alternative is the asymmetry this closes, and because a consumer that cares can read `nodeType: indented_code_block` and the range and discount them. A population 100x the original estimate is a fact about the ESTIMATE, not about the construct — and the estimate was made with the wrong instrument, which is the generalisable half of this entry.",
+   "rule": "One more node type on the block DFS, sharing the fenced path's site identity so the two forms cannot collide: a fence with no info string and an indented block under one heading both publish `code_block`, so the second is `code_block#2`. A block with a language keeps it in its NAME (`code_block.scala`) and therefore has its own base, so the ordinal never reaches it. An indented block publishes NO `language` key at all: the construct has nowhere to declare one, and the fence's `text` default means 'a fence that declared none', which is a different fact. The ORACLE derives the node too — a differential that derived fenced blocks and stopped at indented ones would be asserting that a document with an indented block and one without it have the same truth, and leaving it alone turned the fix into 5 unexplained edges on the kubernetes draw.",
+   "pinned_by": "validation/m14/fixtures/markdown/indented-code-block (three properties + a control section where an indented line is a NESTED LIST ITEM and must publish nothing, so the fixture cannot be satisfied by treating any indentation as code) + markdown/indented-code-block-dropped mutant, whose assertion is the symbol COUNT rather than a name for the reason given in its description.",
+   "why_it_was_open": "Left open rather than classified silent on purpose. `internal_silent` means 'correctly emits nothing', and for a code block the correct answer is a symbol — the fenced form proves the lane has one. Classifying it silent would have made the count zero and the question closed, which is the 'silent gap' the M14 standing rules call the actual shame."
+  }
+ ]
 }
