@@ -114,8 +114,8 @@ const causes: Cause[] = [
   },
   {
     id: "J-type-coercion",
-    label: "an application whose target is a TYPE this file declares",
-    verdict: "FIXED IN THE ANALYZER — applying a type name is not a call. The branch now declines it and counts it as `metadata.typeCoercions` (65 corpus sites in 7 files). This bucket should be EMPTY; a non-zero value means the coercion branch regressed.",
+    label: "an application whose target is a TYPE this file declares (a coercion)",
+    verdict: "ACCOUNTING, NOT A DEFECT — applying a type name emitted no edge before and emits none now; the fall-through already declined it. What was wrong was the count: 65 sites the analyzer KNOWS were filed inside `declinedInstantiations`, whose meaning is 'unclassifiable'. They are now `metadata.typeCoercions` (65) against 984 genuinely unclassifiable. This bucket should be EMPTY; non-zero means the bookkeeping regressed.",
     missing: 0, unexplained: 0, samples: [],
   },
   {
