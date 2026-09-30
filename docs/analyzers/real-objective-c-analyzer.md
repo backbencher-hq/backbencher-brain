@@ -77,6 +77,54 @@ relationships use `root`. The dedup key includes the relationship TYPE
 (`type|source→target`) so `calls` and `instantiates` for the same pair (e.g.
 `[[Foo alloc] init]` inside one method) never collapse.
 
+### `extends` carries two facts, and the flag is what separates them
+
+Measured over the router's 329-file universe, the 255 `extends` edges split:
+
+| shape | count | example | metadata |
+|---|---|---|---|
+| class → superclass | 200 | `DetailViewController → UIViewController` | none |
+| protocol → protocol | 55 | `SDImageCache → NSObject` | `isProtocolInheritance: true` |
+
+Both are real inheritance relations, and `@protocol P <Q>` genuinely is one — the
+question a consumer has to answer is whether its source node is a class or a
+protocol. A consumer filtering on `type === "extends"` alone will mix the two
+populations and should read `metadata.isProtocolInheritance` to separate them.
+This is not a defect and it is not unique to this lane: swift, kotlin and csharp
+all emit `Extends` and `Implements` from the same two concepts. It is recorded
+here because it is the one place in this lane's ontology where a type name is not
+sufficient to know what kind of relation it is.
+
+`implements` and `extends` are, by contrast, distinguishable **without** metadata
+— different type names, and the two shapes never share a target on one source
+(`SDImageCacheToken implements SDWebImageOperation` and `SDImageCacheToken extends
+NSObject` in the same interface). Verified by reading both off a real file rather
+than inferred from the table.
+
+### Measured truth and completeness (24,114 edges)
+
+`script/m60/objc-edge-audit.ts`, over all 329 routed files, no sampling:
+
+| property | measurement |
+|---|---|
+| edges with a `line_number` | **24,114 / 24,114 (100%)** |
+| edges with a `metadata.evidenceClass` | **24,114 / 24,114 (100%)** |
+| **fabricated** targets — a name the emitting file does not contain | **0** |
+| import → `references` edges per `#import`/`#include` | 0.998 (918 imports, 916 edges) |
+| `[[Foo alloc] init]`/`[Foo new]` → `instantiates` per `alloc]` | 1.018 (510 → 519) |
+| protocol conformances → `implements` | 1.156 (109 → 126) |
+| `calls` per source-side message send | 1.307 (6,358 → 8,309; `calls` also covers 141 C functions, so it exceeds the send count by design) |
+
+"Fabricated" is scoped honestly: it means the edge's target name occurs nowhere
+in the file that emitted it — not a symbol, not a token, not a path. That catches
+a consumer being handed a name with nothing behind it. It does **not** judge
+whether an edge means what a reader would want it to mean. Three target shapes
+cannot be resolved by a name lookup and are counted as resolved by construction
+rather than treated as failures: selector targets (`alloc`), qualified superclass
+members (`UITableViewCell.initWithStyle:reuseIdentifier:` — absent from the
+subclass file *because* it is an override), and path targets
+(`Foundation/Foundation.h`).
+
 ## Supported constructs
 
 - Protocols: `@protocol Name <Adopted>` → interface symbol + extends edges to
@@ -150,14 +198,67 @@ The analyzer is a single-pass iterative-stack walk (O(N) nodes) with O(1) map
 deduplication for symbols and relationships — no O(n²) or per-symbol O(n)
 scans. Imports are extracted during the same walk; no second pass over source.
 
+## Differential ground truth
+
+**Two differentials exist, and they are not equally strong. That asymmetry is the honest
+content of this section.**
+
+- **M12, `validation/m12/results/objective-c-differential.json`** — ground truth
+  `validation/m12/fixtures/objective-c/*.{h,m}`, authority **`manual_audit`**: an independent
+  hand audit against Objective-C semantics and the M11 contract.
+  **89 expected / 89 resolved, 0 FP, 0 FN, 0 unknown, precision 1.000, recall 1.000.**
+  The caveat is the authority field itself. A truth file authored by the same hand as the
+  analyzer is a **mirror**, not a differential — the shared M14 sweep rejected eleven lanes'
+  hand-authored truth files on exactly that ground — so this number establishes that the
+  analyzer agrees with a careful reading of the language on 89 facts, and does **not** establish
+  that the reading was complete or free of the analyzer's own assumptions. It is a consistency
+  check with high value and a known ceiling.
+- **M14 F5, `deriveObjcEdges`** in `script/m14/differential.ts` — the tree-truth oracle, over
+  `sdwebimage` and `afnetworking`. **Currently unrunnable, for every language in the
+  repository**: the hcl wave added its `LANGS` entry at line 20025, inside a function body,
+  instead of into the `LANGS` map at line 604, so the harness fails to parse. That is the
+  shared lane's defect, not this one's, and it is not worked around here.
+
+  Even once it runs, it **cannot referee a grammar change**, which is the job this round most
+  needed. The oracle derives its edges from the same tree the grammar produced, so a change
+  that removes a phantom and a change that loses an edge are indistinguishable to it. That is
+  why the M60 grammar wave was verified by diffing **the analyzer's own output** edge by edge
+  across two builds over all 329 routed files (`script/m60/objc-wasm-ab.ts`) instead — a
+  different question, asked of a different arbiter.
+
+- **What replaced it for grammar truth:** `script/m60/objc-error-dump.ts` (per-node ERROR
+  shapes), `script/m60/objc-enum-loss.ts` (member recovery against source-side counts),
+  `script/m60/objc-grammar-provenance.ts` (three builds, surface and behaviour), and
+  `script/m60/objc-edge-audit.ts` (edge truth and completeness). Each has a different arbiter,
+  which is the property that makes the set worth more than any one of them.
+
 ## Corpus validation
 
-The lane's corpora are pinned clones, read at **full extent** (no draw):
-`sdwebimage` 247 objc-routed files (104 `.m` + 143 admitted `.h`) and `afnetworking`
-75 (49 + 26) — 322 files / 23,379 relationships. Both run `MISSING=0 unexplained=0`
-with 100% tree-truth coverage. Before the M60 wave the header half did not exist in
-these claims, and that is where the wave's defect lived: **11 headers lost 122 real
-symbols**, `AFHTTPSessionManager.h` analysing to 0 of its 37 declared symbols.
+The lane's corpora are pinned clones, read at **full extent** (no draw), over the universe
+`src/ast/language-detection.ts` actually admits — extensions `m`/`mm` by name, plus `.h`
+content-sniffed for `@interface|@protocol|@implementation`:
+
+| repo | rev | admitted | of tracked | `.h` admitted |
+|---|---|---|---|---|
+| `sdwebimage` | `c3ad5e1a` | 247 | 263 | 143 / 159 |
+| `afnetworking` | `d9f589cc` | 75 | 80 | 26 / 31 |
+| `clyde` | `8fec41dd` | 7 | 7 | 3 / 3 |
+
+**329 files — 5,095 symbols, 24,114 relationships, 918 imports** (all `type: "include"`,
+918/918 with a line), 36 files carrying an ERROR node, 0 crashes, 0 duplicate ids, 0 unknown
+sentinels, and **100% line + `evidenceClass` coverage on every relationship**.
+
+Before the M60 wave the header half did not exist in these claims, and that is where the
+wave's defect lived: **11 headers lost 122 real symbols**, `AFHTTPSessionManager.h` analysing
+to 0 of its 37 declared symbols.
+
+**The corpus claim itself was wrong twice over, and both are recorded rather than quietly
+replaced.** The manifest published Clyde's 7 files — **2.1% of the admitted universe** — as
+the lane's corpus measurement. And the artifact the gate actually read reported
+`errorFiles: 0` while recording `crashFiles: 49`, every file erroring *"Language objc parser
+not yet implemented"*: **the instrument counted a crash as a clean parse**, so the lane has
+been "grammar-clean" on the strength of a run in which nothing parsed at all. That artifact is
+preserved at `validation/m12/results/objective-c-corpus-errors-CRASHED-2026-09-26.json`.
 
 M12 differential: 89 facts, TP 89 / FP 0 / FN 0, precision 1.000 / recall 1.000,
 `unknown 0`, digest `a776415bbaac`. Line contract over the same widened set: 23,379

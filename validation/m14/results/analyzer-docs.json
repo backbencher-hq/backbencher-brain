@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M14",
   "rule": "analyzer documentation completeness",
-  "generatedAt": "2026-09-29T03:03:32.642Z",
+  "generatedAt": "2026-09-30T02:03:51.962Z",
   "boundary": "A section counts only when it has CONTENT under its heading, not merely the heading: a renamed or empty section is a missing section. Measures the DOCUMENT, not the analyzer: a language can pass all eleven sections here and still have an analyzer defect, and a language can fail here with a correct analyzer. This gate is about a claim being checkable, and it is deliberately weaker than the gates that measure behaviour.",
   "requiredSections": [
     "## Language",
@@ -15,18 +15,18 @@
     "## Corpus validation"
   ],
   "counts": {
-    "analyzers": 43,
-    "present": 42,
+    "analyzers": 46,
+    "present": 45,
     "absent": 1,
-    "sectionComplete": 18,
-    "sectionShort": 24,
-    "ontologyCellGaps": 5,
-    "fullyComplete": 18
+    "sectionComplete": 17,
+    "sectionShort": 28,
+    "ontologyCellGaps": 8,
+    "fullyComplete": 17
   },
   "baseline": {
-    "present": 42,
-    "sectionComplete": 18,
-    "ontologyCellGaps": 5,
+    "present": 45,
+    "sectionComplete": 17,
+    "ontologyCellGaps": 8,
     "note": "measured 2026-09-28 at the gate's first run; a language that LOSES ground fails, a language already short does not"
   },
   "worklist": {
@@ -57,6 +57,21 @@
         ]
       },
       {
+        "lang": "clojure",
+        "doc": "docs/analyzers/real-clojure-analyzer.md",
+        "missing": [
+          "## Corpus validation"
+        ]
+      },
+      {
+        "lang": "cpp",
+        "doc": "docs/analyzers/real-cpp-analyzer.md",
+        "missing": [
+          "## Complexity envelope",
+          "## Corpus validation"
+        ]
+      },
+      {
         "lang": "css",
         "doc": "docs/analyzers/real-css-analyzer.md",
         "missing": [
@@ -78,6 +93,7 @@
         "missing": [
           "## Supported constructs",
           "## Regex inventory",
+          "## Complexity envelope",
           "## Differential ground truth"
         ]
       },
@@ -95,6 +111,9 @@
         "lang": "graphql",
         "doc": "docs/analyzers/real-graphql-analyzer.md",
         "missing": [
+          "## Supported constructs",
+          "## Regex inventory",
+          "## Differential ground truth",
           "## Corpus validation"
         ]
       },
@@ -111,6 +130,7 @@
         "lang": "hcl",
         "doc": "docs/analyzers/real-hcl-analyzer.md",
         "missing": [
+          "## Supported constructs",
           "## Corpus validation"
         ]
       },
@@ -154,10 +174,13 @@
         ]
       },
       {
-        "lang": "objective-c",
-        "doc": "docs/analyzers/real-objective-c-analyzer.md",
+        "lang": "nim",
+        "doc": "docs/analyzers/real-nim-analyzer.md",
         "missing": [
-          "## Differential ground truth"
+          "## Supported constructs",
+          "## Complexity envelope",
+          "## Differential ground truth",
+          "## Corpus validation"
         ]
       },
       {
@@ -165,8 +188,6 @@
         "doc": "docs/analyzers/real-perl-analyzer.md",
         "missing": [
           "## Supported constructs",
-          "## Regex inventory",
-          "## Complexity envelope",
           "## Differential ground truth",
           "## Corpus validation"
         ]
@@ -189,6 +210,19 @@
           "## Language",
           "## Symbol contract",
           "## Relationship ontology",
+          "## Differential ground truth",
+          "## Corpus validation"
+        ]
+      },
+      {
+        "lang": "protobuf",
+        "doc": "docs/analyzers/real-protobuf-analyzer.md",
+        "missing": [
+          "## Language",
+          "## Relationship ontology",
+          "## Supported constructs",
+          "## Regex inventory",
+          "## Complexity envelope",
           "## Differential ground truth",
           "## Corpus validation"
         ]
@@ -255,6 +289,18 @@
         ]
       },
       {
+        "lang": "vb",
+        "doc": "docs/analyzers/real-vb-analyzer.md",
+        "missing": [
+          "## Relationship ontology",
+          "## Supported constructs",
+          "## Regex inventory",
+          "## Complexity envelope",
+          "## Differential ground truth",
+          "## Corpus validation"
+        ]
+      },
+      {
         "lang": "zig",
         "doc": "docs/analyzers/real-zig-analyzer.md",
         "missing": [
@@ -293,6 +339,27 @@
       {
         "lang": "powershell",
         "doc": "docs/analyzers/real-powershell-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
+        "lang": "protobuf",
+        "doc": "docs/analyzers/real-protobuf-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
+        "lang": "ruby",
+        "doc": "docs/analyzers/real-ruby-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
+        "lang": "vb",
+        "doc": "docs/analyzers/real-vb-analyzer.md",
         "gaps": [
           "(no relationship-ontology section)"
         ]
@@ -348,14 +415,19 @@
       "lang": "clojure",
       "present": true,
       "doc": "docs/analyzers/real-clojure-analyzer.md",
-      "missingSections": [],
+      "missingSections": [
+        "## Corpus validation"
+      ],
       "ontologyGaps": []
     },
     {
       "lang": "cpp",
       "present": true,
       "doc": "docs/analyzers/real-cpp-analyzer.md",
-      "missingSections": [],
+      "missingSections": [
+        "## Complexity envelope",
+        "## Corpus validation"
+      ],
       "ontologyGaps": []
     },
     {
@@ -399,6 +471,7 @@
       "missingSections": [
         "## Supported constructs",
         "## Regex inventory",
+        "## Complexity envelope",
         "## Differential ground truth"
       ],
       "ontologyGaps": []
@@ -427,6 +500,9 @@
       "present": true,
       "doc": "docs/analyzers/real-graphql-analyzer.md",
       "missingSections": [
+        "## Supported constructs",
+        "## Regex inventory",
+        "## Differential ground truth",
         "## Corpus validation"
       ],
       "ontologyGaps": []
@@ -454,6 +530,7 @@
       "present": true,
       "doc": "docs/analyzers/real-hcl-analyzer.md",
       "missingSections": [
+        "## Supported constructs",
         "## Corpus validation"
       ],
       "ontologyGaps": []
@@ -545,12 +622,22 @@
       "ontologyGaps": []
     },
     {
+      "lang": "nim",
+      "present": true,
+      "doc": "docs/analyzers/real-nim-analyzer.md",
+      "missingSections": [
+        "## Supported constructs",
+        "## Complexity envelope",
+        "## Differential ground truth",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": []
+    },
+    {
       "lang": "objective-c",
       "present": true,
       "doc": "docs/analyzers/real-objective-c-analyzer.md",
-      "missingSections": [
-        "## Differential ground truth"
-      ],
+      "missingSections": [],
       "ontologyGaps": []
     },
     {
@@ -559,8 +646,6 @@
       "doc": "docs/analyzers/real-perl-analyzer.md",
       "missingSections": [
         "## Supported constructs",
-        "## Regex inventory",
-        "## Complexity envelope",
         "## Differential ground truth",
         "## Corpus validation"
       ],
@@ -587,6 +672,23 @@
         "## Language",
         "## Symbol contract",
         "## Relationship ontology",
+        "## Differential ground truth",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
+    },
+    {
+      "lang": "protobuf",
+      "present": true,
+      "doc": "docs/analyzers/real-protobuf-analyzer.md",
+      "missingSections": [
+        "## Language",
+        "## Relationship ontology",
+        "## Supported constructs",
+        "## Regex inventory",
+        "## Complexity envelope",
         "## Differential ground truth",
         "## Corpus validation"
       ],
@@ -630,7 +732,9 @@
         "## Differential ground truth",
         "## Corpus validation"
       ],
-      "ontologyGaps": []
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
     },
     {
       "lang": "rust",
@@ -701,6 +805,22 @@
       "doc": "docs/analyzers/real-typescript-analyzer.md",
       "missingSections": [],
       "ontologyGaps": []
+    },
+    {
+      "lang": "vb",
+      "present": true,
+      "doc": "docs/analyzers/real-vb-analyzer.md",
+      "missingSections": [
+        "## Relationship ontology",
+        "## Supported constructs",
+        "## Regex inventory",
+        "## Complexity envelope",
+        "## Differential ground truth",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
     },
     {
       "lang": "vue",
