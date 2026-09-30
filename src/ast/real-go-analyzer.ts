@@ -3192,12 +3192,44 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
-      if (node.type === "import_declaration") {
+      // GOD10 (round 7): key on the `import_spec`, not on its `import_declaration`
+      // wrapper. When an import block is left unterminated the grammar does not
+      // produce a degraded import_declaration — it produces a BARE `ERROR` node
+      // that directly holds the specs:
+      //
+      //   ERROR "import ("
+      //     import_spec "\"fmt\""
+      //     import_spec "\"os\""
+      //     ERROR "var _ = fmt."
+      //
+      // so keying on the wrapper loses the whole block. The path is not a value
+      // read out of a recovery, which is what the GO15/GO17 error-region ruling
+      // suppresses: it is a declaration the grammar handed back WHOLE, with its
+      // string literal intact, and GO16's precedent is explicit that recovery must
+      // not swallow a declaration the tree can still see. Found by the round-7
+      // `imports` shapes probe (case `import-in-error-region`), whose control half
+      // is what makes it a finding rather than a disagreement: 0 corpus instances
+      // across 6,836 files, so no full-extent read can see it, and the surface
+      // itself had no oracle at all before this round.
+      let claimed = false
+      if (node.type === "import_spec") {
+        this.processGoImportSpec(node, imports)
+        claimed = true
+      } else if (node.type === "import_declaration") {
+        // `extractGoImportStatement` already collects every spec beneath this node,
+        // so the walk must NOT descend as well. It did, and each import in a
+        // NORMAL file was emitted TWICE — a real regression from the GOD10 change
+        // above, invisible to the differential (the harness dedupes the analyzer
+        // side by label|target) and caught only by re-dumping a fixture that had
+        // passed the same check a moment earlier.
         this.extractGoImportStatement(node, imports)
+        claimed = true
       }
-      for (let i = node.namedChildCount - 1; i >= 0; i--) {
-        const child = node.namedChild(i)
-        if (child) stack.push(child)
+      if (!claimed) {
+        for (let i = node.namedChildCount - 1; i >= 0; i--) {
+          const child = node.namedChild(i)
+          if (child) stack.push(child)
+        }
       }
     }
   }
