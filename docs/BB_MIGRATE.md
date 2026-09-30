@@ -91,13 +91,24 @@ A specifier is canonicalized to the bare package name the dictionary is keyed by
 and **both** evidenced sources go through the same function — previously they used
 two different rules, so one package produced two different names.
 
-| Input | Result | Note |
-|---|---|---|
-| `@nestjs/core` | `nestjs` | dictionary is keyed by the framework, i.e. the scope |
-| `node:fs` | *excluded* | a builtin is not an installable dependency |
-| `@types/node` | *excluded* | a type stub is not a runtime dependency |
-| `./relative` | *excluded* | not a package |
-| `drizzle-orm/node-postgres` | `drizzle-orm` | subpath stripped |
+| Input | Language | Result | Note |
+|---|---|---|---|
+| `@nestjs/core` | ts/js | `nestjs` | the dictionary is keyed by framework, i.e. the scope |
+| `node:fs` | ts/js | *excluded* | a builtin is not an installable dependency |
+| `@types/node` | ts/js | *excluded* | a type stub is not a runtime dependency |
+| `./relative` | any | *excluded* | not a package |
+| `drizzle-orm/node-postgres` | ts/js | `drizzle-orm` | npm subpath stripped to the package |
+| `socket.io` | ts/js | `socket.io` | dots are KEPT — it is a real package name |
+| `net/http` | go | `net/http` | in Go the path IS the package |
+| `github.com/x/y/v2` | go | whole path | module paths keep every segment |
+| `package:flutter/material.dart` | dart | `flutter` | the PACKAGE is the first segment; the subpath names a library |
+| `core.async` | clojure | `core.async` | namespaces are dotted paths, not modules |
+| `asgiref` / `cryptography.fernet` | python | `asgiref` / `cryptography` | the first dotted segment is the module |
+
+Canonicalization is **language-aware**, and has to be: the same text means
+different things in different ecosystems. `core.async` is a whole Clojure
+namespace and would be a truncated Python module. A single rule got all of these
+wrong, which is what the audit measured.
 
 ### Known evidence limit — stated, not papered over
 
@@ -283,6 +294,43 @@ touch them, and the display names of those relationships' far endpoints — it d
 not load or reconstruct the project. Measured: a 1-symbol request on a
 1216-symbol / 5228-relationship repository cites a small fraction of the edges,
 and a 12-symbol request stays in the same order of magnitude.
+
+## The dictionary, and what is actually in it
+
+The equivalence knowledge is a hand-written table: **486 rows** across **30
+source languages** and **21 target languages**, covering **126 of the 630
+possible source→target pairs (20%)**. It is audited by
+`script/m20/verify-migration-dictionary.ts`, which fails if:
+
+- any row cannot be reached by an import in its own source language, unless the
+  key is in the declared non-import class below;
+- a declared non-import key no longer exists, or has become reachable;
+- `hasMigrationRoute` disagrees with the row set for any pair (it is what refuses
+  an unroutable target, so a disagreement either refuses data the tool has or
+  plans data it lacks);
+- a triple is claimed twice, a row maps a language to itself, or a row names an
+  empty target.
+
+**56 of 486 rows (11.5%) are in the declared non-import class** — real,
+useful knowledge that an import-specifier lookup can never reach. They are kept
+and named rather than deleted, and each carries its reason:
+
+| Class | Rows | Why unreachable |
+|---|---|---|
+| API/idiom (`pool.query`, `Date.now`, `jest.fn`, …) | 5 | a file *calls* these; it never imports them. Needs call-expression detection. |
+| Framework (`asp.net`) | 1 | a framework, not an import. Needs manifest-level detection. |
+| Flutter widget/type names (`Container`, `Scaffold`, `Text`, …) | 16 | Dart imports `flutter`, not a widget class |
+| Display names with a space (`react context`, `redux toolkit`, …) | 6 | no import specifier contains a space |
+| Dart library paths (`flutter/material`) | 1 | collides with the reachable `flutter` package row |
+| Mis-keyed `dart → typescript` block (`axios`, `prisma`, `zod`, …) | 9 | a Dart file cannot import an npm package; the same mapping is already reachable from the TypeScript side |
+
+Only **2 keys** remain that canonicalization itself makes unreachable:
+`flutter/material` and `shadcn/ui`. Both are the compound-name cases above.
+
+**What the audit cannot do:** verify that a reachable mapping is *correct*.
+`express → fastapi` is a claim, and a wrong claim is perfectly reachable. The
+audit proves the table is internally consistent and that its rows can fire; it
+does not make the advice true.
 
 ## Limits
 
