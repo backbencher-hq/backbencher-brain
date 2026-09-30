@@ -12259,6 +12259,67 @@ export const MUTANTS: Mutant[] = [
       { type: "calls", source: "combine", target: "combine", fromSymbol: "combine", toSymbol: "combine", confidence: 0.9, metadata: { haskellSpecific: true } },
     ] }),
   },
+  // ---------------------------------------------------------------- M60-HK
+  // One mutant per relationship type this wave added. Each kills a SPECIFIC
+  // line in real-haskell-analyzer.ts, so a regression in any of the four is a
+  // red row rather than a silently smaller graph. A mutant that matched nothing
+  // would record `0 -> 0` and read green, which is how one of this lane's
+  // mutants once sat undetected for eleven days.
+  {
+    id: "haskell/relabel-imports-to-references",
+    language: "haskell",
+    defectClass: "relationship-mislabel",
+    description: "M60-HK: a module import published as `references` instead of `imports`. This is the PRE-fix behaviour of this lane: 2,119 of its 2,126 `references` edges were module imports, so the label was 99.7% a mislabel and only 7 edges were genuine references. The fixture expects `imports Data.User -> Data.Map` and `-> Data.Text`.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "imports" ? { ...x, type: "references", metadata: { ...(x.metadata ?? {}), isHaskellImport: true } } : x),
+    }),
+  },
+  {
+    id: "haskell/drop-instance-method-overrides",
+    language: "haskell",
+    defectClass: "relationship-suppression",
+    description: "M60-HK: `instance Mergeable UserId where merge ...` stops publishing `overrides UserId.merge -> Mergeable.merge`. Typeclass instance methods overriding class methods is Haskell's inheritance mechanism, and `overrides` was in the audited label set with ZERO rows from BOTH sides, so the audit was comparing nothing to nothing and reading green.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "overrides"),
+    }),
+  },
+  {
+    id: "haskell/drop-export-list-edges",
+    language: "haskell",
+    defectClass: "relationship-suppression",
+    description: "M60-HK: the module export list stops publishing `exports` edges. The names were already collected into ctx.exports as a flat array, so the graph never learned what a module makes public — and the export list is the only place a re-export (`module M`) or a narrowed export (`module M (foo)`) is stated at all.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => x.type !== "exports"),
+    }),
+  },
+  {
+    id: "haskell/drop-type-synonym-uses",
+    language: "haskell",
+    defectClass: "relationship-suppression",
+    description: "M60-HK: `type Alias = Text` stops publishing `uses Alias -> Text`. A synonym composed from a type is `uses`, not `references` — `references` would claim the synonym refers to Text the way a body refers to a function.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "uses" && x.source === "Alias")),
+    }),
+  },
+  {
+    id: "haskell/export-comment-as-name",
+    language: "haskell",
+    defectClass: "fabrication",
+    description: "M60-HK: a Haddock COMMENT inside the export list is published as an exported name. The export list interleaves comments with exports (`exports -> comment \"-- * Result\", export \"Result\"`), so iterating every named child produced edges like `exports Hasql.Decoders -> \"-- * Result\"` — 39 of them across the corpus. A comment is not a name and no consumer can resolve it. The fixture FORBIDS an `exports` edge whose target starts with `--`.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "exports", source: "Data.User", target: "-- * Result", line_number: 13, confidence: 1, metadata: { evidenceClass: "structural" } },
+      ],
+    }),
+  },
+
   {
     id: "javascript/template-callee-uses",
     language: "javascript",
