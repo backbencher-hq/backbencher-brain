@@ -3219,23 +3219,33 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     }
     return false
   }
-  // The DECLARED NAME of a definition. `name:` first, because a name node's own
-  // type varies with what the name IS: an identifier (`def m`), an
-  // operator_identifier (`def !>`), a type_identifier (`type Alias = Int`). The
-  // old `firstNamedOf(n, ["identifier"])` did not merely miss two of those — for
-  // `def !>(x: Int)` it found NO identifier on the definition and fell through to
-  // the parameter, publishing `K contains x` for a method named `!>`. That was a
-  // FABRICATION in the truth: 13 such names in 5 files on a 400-file cats-effect
-  // draw, 61 in 20 files on scala3 (IO.scala <* *> >> !> &> <&, SyncIO.scala,
-  // CaptureSet.scala, Mode.scala, StdNames.scala, ...).
+  // The DECLARED NAME of a definition, read from its `name:` FIELD and nothing
+  // else. A name node's own type varies with what the name IS — an identifier
+  // (`def m`), an operator_identifier (`def !>`), a type_identifier
+  // (`type Alias = Int`) — so the FIELD is the one place all three agree, and
+  // every definition that has a name carries one (probed over 67 controlled
+  // cases: class / object / trait / enum / given / def / val / type alias /
+  // enum case, concrete and abstract).
+  //
+  // Two bugs lived here, in opposite directions, and both were measured:
+  //
+  // (1) `firstNamedOf(n, ["identifier"])` did not merely miss two of those
+  //     name shapes — for `def !>(x: Int)` it found NO identifier on the
+  //     definition and fell through to the PARAMETER, publishing
+  //     `K contains x` for a method named `!>`. A FABRICATION: 13 such names in
+  //     5 files on a 400-file cats-effect draw, 61 in 20 files on scala3.
+  //
+  // (2) A fallback "first named child of type identifier/type_identifier" is
+  //     equally wrong in the other direction, and it is what a given breaks:
+  //     `given Context = 1` is an ANONYMOUS given OF TYPE Context — `Context`
+  //     arrives as `return_type`, with no `name:` field at all — so the
+  //     fallback invented the name `Context` and derived
+  //     `findDefinitions contains Context` for a def that publishes `given_1`.
+  //     That was 2 fabricated rows on a 60-file scala3 draw (Interactive.scala
+  //     findDefinitions, InteractiveDriver.scala run).
   const declName = (n: any): string => {
     const f = n.childForFieldName?.("name")
-    if (f) return String(f.text)
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i)
-      if (c && (c.type === "identifier" || c.type === "type_identifier")) return String(c.text)
-    }
-    return ""
+    return f ? String(f.text) : ""
   }
 
   const TYPE_DECLS = new Set([
@@ -3337,6 +3347,10 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   //       `pattern` found none of a trait's abstract fields — measured on
   //       `trait T { def abs: Int; val v: Int; var w: Int }`, which publishes
   //       `T->abs`, `T->v` and `T->w`.
+  // The trailing fallback is NOT a name search: it reads the first direct
+  // `identifier` child, and a val_definition's first such child IS its pattern
+  // (a `modifiers` node is a different type), so it can only fire where neither
+  // field is present.
   const valNames = (n: any): string[] => {
     const p = n.childForFieldName?.("pattern") ?? n.childForFieldName?.("name")
     if (!p) {
@@ -3476,7 +3490,26 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
       const nm = declName(n) || `given_${++givenCounter}`
       if (owner) push(owner, nm)
       nextOwner = nm
-      nextInFn = false
+      // `nextInFn` is deliberately NOT cleared here. A `given` OWNS members for
+      // the contains edge, but it is not a SCOPE BOUNDARY for the val rule, and
+      // the two are genuinely different questions. The consequence is an
+      // asymmetry in the analyzer that is measured rather than assumed:
+      //
+      //   object O { given h: Ord[Int] = { val z = 1; ... } }   -> `h contains z`
+      //   def m()  { given h: Ord[Int] = { val z = 1; ... } }   -> nothing
+      //
+      // The same declaration, published in an object and dropped in a method,
+      // because handleVariable's ancestor scan breaks on class/trait/object/enum
+      // and on an anonymous class's template_body but NOT on a given, so in the
+      // second shape it reaches the enclosing method and returns. Read against
+      // the analyzer's own stated intent ("Skip LOCAL variables inside function
+      // bodies ... Class-level and top-level val/var ARE emitted") the METHOD
+      // case is the correct one: a `val` in a given's initializer block is a
+      // local of that initializer whatever encloses the given. So the oracle
+      // mirrors the method case and the object case is recorded as the
+      // approximation — see SDJ-3. Measured: 1 row in 23,082 on a 400-file
+      // scala3 draw (MessageRendering.scala:289, `given Offset = val
+      // maxLineNumber = ...` inside `def messageAndPos`).
     } else if (isAnonymousClassNode(n)) {
       const anon = anonymousName(n)
       if (owner) push(owner, anon)
@@ -20378,6 +20411,12 @@ async function main() {
         // already-gated language -- it can only remove duplicate fabrication.
         .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
 
+      if (process.env.BB_LABEL_DUMP === lang) {
+        const tc: any = ((globalThis as any).__TD ??= {})
+        const ac: any = ((globalThis as any).__AD ??= {})
+        for (const t of truth as any[]) tc[String(t.label)] = (tc[String(t.label)] ?? 0) + 1
+        for (const r of rels as any[]) ac[String(r.label)] = (ac[String(r.label)] ?? 0) + 1
+      }
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
@@ -20515,6 +20554,16 @@ async function main() {
       ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
     }
 
+    if (process.env.BB_LABEL_DUMP === lang) {
+      const tc = (globalThis as any).__TD ?? {}
+      const ac = (globalThis as any).__AD ?? {}
+      console.log(`  [label-dump] ${lang}: truth-vs-comparable per label`)
+      for (const k of [...new Set([...Object.keys(tc), ...Object.keys(ac)])].sort()) {
+        console.log(`  [label-dump]   ${k.padEnd(14)} truth=${String(tc[k] ?? 0).padStart(6)}  comparable=${String(ac[k] ?? 0).padStart(6)}${(tc[k] ?? 0) === 0 ? "   <-- COMPARED WITH NO TRUTH" : ""}`)
+      }
+      ;(globalThis as any).__TD = {}
+      ;(globalThis as any).__AD = {}
+    }
     if (process.env.BB_F5_SHOW_SAMPLES) {
       // UNEXPLAINED first: a confident edge with no truth match is a real
       // disagreement between the two sides, whereas a HEURISTIC row is the
