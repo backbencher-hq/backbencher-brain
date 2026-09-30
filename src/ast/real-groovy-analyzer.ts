@@ -528,13 +528,62 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       const rawName = nameNode.type === "string_literal"
         ? this.stripQuotes(nameNode.text)
         : nameNode.text
-          // G4 (review wave, java C3 parity): ctors keep their DECLARED name
-          // (the class name). The old "constructor" literal collided across
-          // classes (contains:A->constructor vs contains:B->constructor are
-          // indistinguishable; overloads collapsed). Kind still says
-          // Constructor; self-contains (A->A) matches the java/kotlin
-          // reference behavior exactly.
-      const name = rawName
+          // G4 (review wave, java C3 parity): ctors were renamed from the literal
+          // "constructor" to their DECLARED name (the class name). That is reverted.
+          //
+          // The family convention is the literal, and this lane's own hand-audited truth
+          // follows it: java, kotlin and scala all record
+          // `symbol:<file>:<line>:constructor:constructor` with
+          // `attributes.name == "constructor"`, and groovy's
+          // validation/m12/ground-truth/groovy.json does the same. Naming a constructor
+          // after its class instead makes every one of them a guaranteed
+          // false-negative/false-positive PAIR, because the key
+          // (script/m11/differential-harness.ts `factKey`) includes `attributes.name`:
+          //   FN  symbol:Features.groovy:9:constructor:constructor
+          //   FP  symbol:Features.groovy:9:constructor:Color
+          //   FN  symbol:Features.groovy:20:constructor:constructor
+          //   FP  symbol:Features.groovy:20:constructor:Robot
+          // Five of each across the five fixtures — the whole of the constructor gap.
+          //
+          // The original justification was that "the old literal collided across classes
+          // (contains:A->constructor vs contains:B->constructor are indistinguishable;
+          // overloads collapsed)". That is real, but it is answered by the CONTAINER, not
+          // by renaming: the `contains` relationship already carries the owning class as
+          // its source, and `ownerName` is on the symbol, so A's constructor and B's are
+          // distinguishable. What the rename actually cost was every constructor in the
+          // lane, so the collision argument does not survive contact with the truth file.
+      // G4 (review wave, java C3 parity): ctors were renamed from the literal
+      // "constructor" to their DECLARED name (the class name). That is reverted.
+      //
+      // The family convention is the literal, and this lane's own hand-audited truth
+      // follows it: java, kotlin and scala all record
+      // `symbol:<file>:<line>:constructor:constructor` with
+      // `attributes.name == "constructor"`, and groovy's
+      // validation/m12/ground-truth/groovy.json does the same. Naming a constructor after
+      // its class instead makes each one a guaranteed false-negative/false-positive PAIR,
+      // because the comparison key (script/m11/differential-harness.ts `factKey`)
+      // includes `attributes.name`:
+      //   FN  symbol:Features.groovy:9:constructor:constructor
+      //   FP  symbol:Features.groovy:9:constructor:Color
+      //   FN  symbol:Features.groovy:20:constructor:constructor
+      //   FP  symbol:Features.groovy:20:constructor:Robot
+      // Five of each across the five fixtures — the whole of the constructor gap.
+      //
+      // The original justification was that the literal "collided across classes
+      // (contains:A->constructor vs contains:B->constructor are indistinguishable;
+      // overloads collapsed)". That is real, but it is answered by the CONTAINER, not by
+      // renaming: `contains` already carries the owning class as its source, and
+      // `ownerName` is on the symbol, so A's constructor and B's remain distinguishable.
+      // What the rename actually cost was every constructor in the lane, so the collision
+      // argument does not survive contact with the truth file.
+      //
+      // NOTE the keys collide only because the record's relationship key omits the
+      // source symbol's file. That is a separate defect in the differential's identity
+      // contract, not in this analyzer, and it is recorded rather than worked around
+      // here: `contains:Color->constructor` in Features.groovy and the same pair in any
+      // other fixture produce the same factKey, so one of them can never be matched.
+      // Fixing the key contract is a change to script/m12, which every lane shares.
+      const name = "constructor"
       const modifiers = this.extractModifiers(node)
       const visibility = this.extractVisibility(node)
       const annotations = this.extractAnnotations(node)
@@ -547,11 +596,43 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // it does not, this is a def-returning method, not a constructor
           // (emits kind=method on both wasms; the grammar-level fix regressed
           // `def x = …` fields and was reverted — see git history).
-      const enclosingName = scopeStack.length > 0 && scopeStack[scopeStack.length - 1].kind === ASTEngine.SymbolKind.Class
-        ? scopeStack[scopeStack.length - 1].name
+      // The enclosing scope may be a class OR an ENUM. An enum's members live under
+      // `enum_body_declarations`, not `class_body`, and an enum is pushed with
+      // kind=Enum (handleTypeDeclaration, the `type === "enum_declaration"` arm), so a
+      // guard that admits only Class left every enum constructor with
+      // `enclosingName === undefined`, failed the name test below, and demoted it to a
+      // def-returning method.
+      //
+      // Measured on validation/m12/fixtures/groovy/Features.groovy: `enum Color` has
+      // `Color(int h) { hex = h }` at L9, and the sealed record carried the pair
+      //   FN  symbol:Features.groovy:9:constructor:constructor
+      //   FN  rel:Features.groovy:contains:Color:constructor
+      // with, in the same file, the mirror-image FPs `symbol:...:9:constructor:Color` and
+      // `rel:...:contains:Color:Color` -- i.e. a real constructor was emitted as a METHOD
+      // named after the class, which is simultaneously a missed constructor and a spurious
+      // self-contains. Same shape for `Robot(String name)` at L20.
+      //
+      // A TRAIT is included too, and for the same reason: `trait_declaration` is pushed as
+      // Interface, and Groovy traits can declare constructors.
+      const enclosingScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+      const enclosingName = enclosingScope &&
+        (enclosingScope.kind === ASTEngine.SymbolKind.Class ||
+         enclosingScope.kind === ASTEngine.SymbolKind.Enum ||
+         enclosingScope.kind === ASTEngine.SymbolKind.Interface)
+        ? enclosingScope.name
         : undefined
       const isMisnamedCtor = isConstructorRaw && enclosingName !== undefined && rawName !== enclosingName
       const isConstructor = isConstructorRaw && !isMisnamedCtor
+          // The name is the literal ONLY on the constructor branch. Setting it
+          // unconditionally was measured and is wrong: `name` is what every method
+          // in the file is called, so `const name = "constructor"` renamed
+          // `walk`, `greeting`, `describe`, `format`, `save`, `getId`, `add`,
+          // `bump`, `interpolate`, `useClosure`, `useList`, `makeSelf` and
+          // `globalHelper` to "constructor" as well — 11 methods across three
+          // fixtures became phantom constructors, their own names vanished, and
+          // the differential went from 46 FP / 19 FN to 74 / 66. A demoted
+          // misnamed constructor is a METHOD, so it keeps its declared name.
+      const memberName = isConstructor ? "constructor" : rawName
       const parameters: ASTEngine.Parameter[] = []
       const paramList = this.findChild(node, (n) => n.type === "formal_parameters")
       if (paramList) {
@@ -592,7 +673,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       const ownerName = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].name : undefined
       const ownerKind = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1].kind : undefined
-      const fqn = this.buildFqn(s.currentPackage, scopeStack, name)
+      const fqn = this.buildFqn(s.currentPackage, scopeStack, memberName)
 
           // Abstract: no body in an interface/trait, or body-less declaration.
       const hasBody = !!this.findChild(node, (n) => n.type === "block" || n.type === "closure" || n.type === "constructor_body")
@@ -626,7 +707,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       const sym: ASTEngine.UniversalSymbol = {
-        name,
+        name: memberName,
         kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
         comments: (() => { const d = this.extractGroovyDoc(node); return d ? [d] : [] })(),
         complexity: this.calculateGroovyMethodComplexity(node),
@@ -639,7 +720,19 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
             // lower (measured: grails-core Sphere.groovy). The line belongs to
             // the name, never to the construct that contains it (java/scala
             // contract); the contains edge follows the range, so both move.
-        range: this.symbolRange(node, node.childForFieldName("name") ?? nameNode),
+            // The annotation anchor has to survive the name-node shortcut. A METHOD
+            // passes its `name` child explicitly so the line follows the name rather
+            // than the token the grammar absorbed first (the Sphere.groovy field-split
+            // case above), but that bypasses `declarationLineNode` entirely, so an
+            // annotated method stayed on its own line: `@Override` L16 / `format` L17
+            // was reported 17, and truth records 16. The name node is the right anchor
+            // ONLY when the declaration carries no annotation; when it does, the
+            // annotation is the earlier line and the same convention java applies
+            // through `annotationLine` wins.
+        range: this.symbolRange(
+          node,
+          this.declarationHasAnnotation(node) ? null : (node.childForFieldName("name") ?? nameNode),
+        ),
         visibility,
         genericParameters: (() => { const tp = this.extractGroovyTypeParameters(node); return tp.length > 0 ? tp : undefined })(),
         parameters,
@@ -652,12 +745,12 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbolMap.set(fqn, sym)
           // Raw `Owner.method(signature)` key so the override BFS (which walks
           // raw parent names) can match in-file declarations.
-      const rawKey = ownerName ? `${ownerName}.${name}${signature}` : `${name}${signature}`
+      const rawKey = ownerName ? `${ownerName}.${memberName}${signature}` : `${memberName}${signature}`
       symbolMap.set(rawKey, sym)
 
       s.newContext = {
         node,
-        name,
+        name: memberName,
         kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
         fqn,
         symbolRef: sym,
@@ -2639,11 +2732,52 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  // A symbol is anchored at its FIRST ANNOTATION, not at the keyword after it.
+  //
+  // This reverses a skip-modifiers rule that was here and that the lane's own hand-audited
+  // truth contradicts. tree-sitter-groovy puts annotations INSIDE the `modifiers` child
+  // (`class_declaration → [modifiers "@Slf4j", identifier "Counter", class_body]`), so
+  // skipping `modifiers` moved every annotated declaration down to the next line. Truth
+  // records the annotation line, in all five cases in the fixtures:
+  //     @Slf4j  L18 / class Counter        truth 18, was 19
+  //     @Override L16 / String format(…)  truth 16, was 17
+  //     @Override L21 / save(…)           truth 21, was 22
+  //     @Override L36 / String getId()    truth 36, was 37
+  //     @Override L39 / String getName()  truth 39, was 40
+  // and the control confirms the rule is about annotations and nothing else: unannotated
+  // `class UserService` (L10) and `class User` (L27) were already correct, and every
+  // annotated declaration in the fixture set was off by exactly one.
+  //
+  // This is also the family convention: the java analyzer anchors a symbol at its
+  // annotation line via `annotationLine` (real-java-analyzer.ts, and its use for
+  // @Table/@FeignClient), so groovy was the outlier.
+  //
+  // A `modifiers` child that carries NO annotation is still skipped — that keeps
+  // `private String label` and `final int hex` on their own line, which is what the
+  // already-correct property rows require.
+  /** True when this declaration carries at least one annotation (directly or in `modifiers`). */
+  private declarationHasAnnotation(node: Node): boolean {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c) continue
+      if (c.type === "annotation" || c.type === "marker_annotation") return true
+      if (c.type === "modifiers" && this.findChild(c, (n) => n.type === "annotation" || n.type === "marker_annotation")) return true
+    }
+    return false
+  }
+
   private declarationLineNode(node: Node): Node {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
+      if (c.type === "modifiers") {
+        // Anchor at the modifiers node ONLY when it actually carries an annotation;
+        // its start is then the first annotation's line.
+        const hasAnnotation = this.findChild(c, (n) => n.type === "annotation" || n.type === "marker_annotation") !== null
+        if (hasAnnotation) return c
+        continue
+      }
+      if (c.type === "annotation" || c.type === "marker_annotation") return c
       // M59 (#825) / F6: the grammar's own names. `"comment"` was dead here —
       // tree-sitter-groovy emits `line_comment`/`block_comment` only.
       if (c.type === "line_comment" || c.type === "block_comment") continue
@@ -2652,7 +2786,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
     return node
   }
 
-  /** The range of a SYMBOL (not of an import, an error or a raw node): annotations skipped. */
+  /** The range of a SYMBOL (not of an import, an error or a raw node), anchored per `declarationLineNode`. */
   private symbolRange(node: Node, nameNode?: Node | null) {
     const decl = nameNode ?? this.declarationLineNode(node)
     const base = this.nodeToRange(node)
