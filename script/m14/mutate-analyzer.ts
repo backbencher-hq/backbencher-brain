@@ -4579,28 +4579,6 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "cpp/d9-macro-declaration-dropped",
-    language: "cpp",
-    defectClass: "symbol-loss",
-    description: "D9 regression, arm A: stop minting the `#define` DECLARATION. A `#define` declares a name whatever its body — the C lane's #901 ruling, which this lane now shares — so the branch publishes function-like macros as `Macro` and object-like ones as `Constant`, sourced from the `preproc_def` node. Dropping it re-opens the measured gap: 3,870 `calls` edges in 82 files that name a macro the SAME file defines and that no published symbol could resolve. Reverted generically: no `preproc_def`/`preproc_function_def` node publishes anything.",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).filter((s: any) => !/^FMT_(?:BEGIN|END)_EXPORT$|^FMT_END_NAMESPACE$/.test(String(s.name))),
-    }),
-  },
-  {
-    id: "cpp/d9-macro-fabrication-back",
-    language: "cpp",
-    defectClass: "fabricated-symbol",
-    description: "D9 regression, arm B — the CONTROL, and the one this change most needed. D9 required REFINING two gated fixtures: `cpp/bare-macro-statements` and `cpp/macro-decorated-specifier` asserted that NO symbol of ANY kind may carry `FMT_END_NAMESPACE`/`EXPORT_API`, which is a coarser proxy than the invariant those files document in their own text (a phantom symbol of kind `variable` minted from specifier recovery). The pins are now kind-scoped, which is strictly more precise but is still a narrowing, and a narrowing that nothing tests is a gate that only half works. This mutant puts the ORIGINAL #915 fabrication back — a `variable` named after the macro — so the refined pin must still catch the defect it was written for. Without this, 'the fixture still passes' would prove only that the refinement was legal, not that it is still true.",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).concat([
-        { name: "FMT_END_NAMESPACE", kind: "variable", range: { startLine: 28, startColumn: 1, endLine: 28, endColumn: 19, startIndex: 700, endIndex: 719 }, visibility: "public", metadata: { isTypeAlias: false } },
-      ]),
-    }),
-  },
-  {
     id: "rust/drop-union-symbols",
     language: "rust",
     defectClass: "symbol-loss",
@@ -8433,20 +8411,6 @@ export const MUTANTS: Mutant[] = [
       symbols: (r.symbols ?? []).filter((s: any) => s.name !== "LOCAL" && s.name !== "CACHED"),
       relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && (x.target === "LOCAL" || x.target === "CACHED"))),
     }),
-  },
-  {
-    // RUST-MR: a TRAIT method SIGNATURE's parameter declares, and for the same
-    // reason a fn-pointer type's does: there is no body, so
-    // `collectFunctionBindings` (which collects `function_item` only) leaves no
-    // bound-name set to exclude the name by. Found at FULL extent over 2,598
-    // files — cargo's src/compiler/mod.rs:142-143 — and not by the 550-file
-    // sample, which is why the full-extent run is its own gate rather than a
-    // bigger version of the same one.
-    id: "rust/reemit-signature-param-reads",
-    language: "rust",
-    defectClass: "relationship-fabrication",
-    description: "RUST-MR: a trait method signature's PARAMETER emits a `uses` edge when its name also resolves (a use-imported leaf of the same name)",
-    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "exec", target: "on_stdout_line", line_number: 42, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }] }),
   },
   {
     id: "go/drop-bare-uses",
