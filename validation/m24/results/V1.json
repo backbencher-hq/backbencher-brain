@@ -1,31 +1,34 @@
 {
   "issue": "495",
   "code": "V1",
-  "status": "verified",
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "status": "known-gap",
+  "currentCommit": "60eb13ef336ab90173fd7df14e6d387c8f1ccdfd",
   "sourceFingerprint": "e372583859e96094052d798182ab1abd213752fc1211420a59df01024cf6da91",
   "verifierCommand": "npx tsx script/m24/verify-harness.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-20T02:43:42.066Z",
-  "passed": 9,
-  "failed": 0,
-  "failures": [],
+  "generatedAt": "2026-09-29T06:43:26.983Z",
+  "passed": 8,
+  "failed": 2,
+  "failures": [
+    "G3: node-dist leg verified (all harness checks pass)",
+    "G3: node-dist harness reports 0 failures"
+  ],
   "negativeCases": 1,
   "verdict": {
-    "realComponentFailures": 0,
-    "ok": true,
+    "realComponentFailures": 2,
+    "ok": false,
     "note": "`failed` counts real gate failures only; blocked runtime legs are recorded with reason, never silently skipped."
   },
   "runs": [
     {
       "runtime": "node-source",
       "status": "verified",
-      "commit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+      "commit": "60eb13ef336ab90173fd7df14e6d387c8f1ccdfd",
       "machine": {
-        "kernel": "Linux 7.1.1-76070101-generic",
-        "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+        "kernel": "Linux 7.1.5-76070105-generic",
+        "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "ramGb": 16.2,
-        "node": "v20.19.5",
+        "node": "v22.22.1",
         "runtime": "node-source"
       },
       "fixtureStats": {
@@ -36,43 +39,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 11.786257000000205,
+          "p95WarmMs": 26.4463310000001,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 3.7754039999999804,
+          "p95WarmMs": 9.943326000000525,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 3.1488359999998465,
+          "p95WarmMs": 11.644302000000607,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 3.7973579999998037,
+          "p95WarmMs": 11.026423999999679,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 3.0770649999999478,
+          "p95WarmMs": 6.304874999999811,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 4.037026999999853,
+          "p95WarmMs": 8.71217599999909,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 4.881815000000188,
+          "p95WarmMs": 24.096778999999515,
           "samples": 60,
           "passed": true
         }
@@ -80,13 +83,13 @@
     },
     {
       "runtime": "node-dist",
-      "status": "verified",
-      "commit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+      "status": "failed",
+      "commit": "60eb13ef336ab90173fd7df14e6d387c8f1ccdfd",
       "machine": {
-        "kernel": "Linux 7.1.1-76070101-generic",
-        "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+        "kernel": "Linux 7.1.5-76070105-generic",
+        "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "ramGb": 16.2,
-        "node": "v20.19.5",
+        "node": "v22.22.1",
         "runtime": "node-dist"
       },
       "fixtureStats": {
@@ -97,43 +100,43 @@
       "features": [
         {
           "op": "hover",
-          "p95WarmMs": 10.923786000000291,
+          "p95WarmMs": 19.754032999999254,
           "samples": 60,
           "passed": true
         },
         {
           "op": "definition",
-          "p95WarmMs": 2.9212100000004284,
+          "p95WarmMs": 13.207839000000604,
           "samples": 60,
           "passed": true
         },
         {
           "op": "references",
-          "p95WarmMs": 3.1548460000003615,
+          "p95WarmMs": 18.621243999999933,
           "samples": 60,
           "passed": true
         },
         {
           "op": "documentSymbol",
-          "p95WarmMs": 3.893551000000116,
+          "p95WarmMs": 10.917696000000433,
           "samples": 60,
           "passed": true
         },
         {
           "op": "workspaceSymbol",
-          "p95WarmMs": 2.706672999998773,
+          "p95WarmMs": 9.167887999999948,
           "samples": 60,
           "passed": true
         },
         {
           "op": "prepareCallHierarchy",
-          "p95WarmMs": 3.744806000000608,
+          "p95WarmMs": 8.710294000000431,
           "samples": 60,
           "passed": true
         },
         {
           "op": "callHierarchyExpand",
-          "p95WarmMs": 5.020656000000599,
+          "p95WarmMs": 15.035704000001715,
           "samples": 60,
           "passed": true
         }
@@ -141,22 +144,64 @@
     },
     {
       "runtime": "bun-source",
-      "status": "blocked",
-      "reason": "bun runtime not found on PATH",
-      "commit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+      "status": "verified",
+      "commit": "60eb13ef336ab90173fd7df14e6d387c8f1ccdfd",
       "machine": {
-        "kernel": "Linux 7.1.1-76070101-generic",
-        "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+        "kernel": "Linux 7.1.5-76070105-generic",
+        "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
         "ramGb": 16.2,
-        "node": "v20.19.5",
+        "node": "v22.22.1",
         "runtime": "bun-source"
       },
       "fixtureStats": {
-        "files": 0,
-        "symbols": 0,
-        "relationships": 0
+        "files": 1,
+        "symbols": 3,
+        "relationships": 1
       },
-      "features": []
+      "features": [
+        {
+          "op": "hover",
+          "p95WarmMs": 44.777242000000115,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "definition",
+          "p95WarmMs": 11.465681999998196,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "references",
+          "p95WarmMs": 15.057614999997895,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "documentSymbol",
+          "p95WarmMs": 12.6421760000012,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "workspaceSymbol",
+          "p95WarmMs": 9.91098200000124,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "prepareCallHierarchy",
+          "p95WarmMs": 15.65368700000181,
+          "samples": 60,
+          "passed": true
+        },
+        {
+          "op": "callHierarchyExpand",
+          "p95WarmMs": 39.43329999999696,
+          "samples": 60,
+          "passed": true
+        }
+      ]
     }
   ],
   "budgets": {
@@ -176,7 +221,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:43:42.067Z",
-    "contentSha256": "7e0d170af8f60c6d951f9631bb26b3a0e51f0e195bbef0d010b15312f245a17b"
+    "sealedAt": "2026-09-29T06:43:26.984Z",
+    "contentSha256": "46e45c42aa01d3b482487bc12d14e9779e2043856a06b5b5fdcf70df046199ad"
   }
 }
