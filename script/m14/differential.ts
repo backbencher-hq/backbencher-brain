@@ -6326,8 +6326,30 @@ export function deriveCSharpBareUses(
           const bl = (n.namedChildren ?? []).find((c: any) => c.type === "base_list")
           const bs: string[] = []
           for (const b of bl?.namedChildren ?? []) {
-            if (!b || b.type === "argument_list") continue
-            const tn = b.type === "primary_constructor_base_type"
+            if (!b) continue
+            // D10b: excluding the `argument_list` SIBLING is not sufficient. A record's primary-
+            // constructor base is a SINGLE `primary_constructor_base_type` child whose own text
+            // carries the arguments, so a sibling-only rule never sees them:
+            //
+            //     internal sealed record Dachshund(string Name) : Beast(Name);
+            //     base_list > primary_constructor_base_type "Beast(Name)"
+            //         > identifier "Beast"       <- the base
+            //         > argument_list "(Name)"   <- the base CONSTRUCTOR's arguments
+            //
+            // Taking that child's raw text published a base TYPE named `Beast(Name)` — not a type
+            // at all — which F5 reported as `extends Dachshund -> Beast(Name)`. The base is the
+            // `type` field where the grammar supplies one, else the first named child. The
+            // `typeBaseLeaves` pre-pass already unwrapped this (CSD9); the edge-emitting loop and
+            // the bare-uses resolution loop had not, and a class is only as consistent as its last
+            // writer — which is the whole reason this is written down rather than patched quietly.
+            if (b.type === "primary_constructor_base_type") {
+              const t = b.childForFieldName?.("type") ?? (b.namedChildren ?? []).find((c: any) =>
+                c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "nullable_type")
+              if (t) baseTypes.push(leafOf(t.text))
+              continue
+            }
+            if (b.type === "argument_list") continue
+            baseTypes.push(leafOf(b.text))
               ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
               : b
             if (!tn || typeof tn.text !== "string") continue
@@ -7198,7 +7220,29 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         // paren-named "type" in the first place.
         const baseTypes: string[] = []
         for (const b of baseList.namedChildren) {
-          if (!b || b.type === "argument_list") continue
+          if (!b) continue
+          // D10b: excluding the `argument_list` SIBLING is not sufficient. A record's primary-
+          // constructor base is a SINGLE `primary_constructor_base_type` child whose own text
+          // carries the arguments, so a sibling-only rule never sees them:
+          //
+          //     internal sealed record Dachshund(string Name) : Beast(Name);
+          //     base_list > primary_constructor_base_type "Beast(Name)"
+          //         > identifier "Beast"       <- the base
+          //         > argument_list "(Name)"   <- the base CONSTRUCTOR's arguments
+          //
+          // Taking that child's raw text published a base TYPE named `Beast(Name)` — not a type
+          // at all — which F5 reported as `extends Dachshund -> Beast(Name)`. The base is the
+          // `type` field where the grammar supplies one, else the first named child. The
+          // `typeBaseLeaves` pre-pass already unwrapped this (CSD9); the edge-emitting loop and
+          // the bare-uses resolution loop had not, and a class is only as consistent as its last
+          // writer — which is the whole reason this is written down rather than patched quietly.
+          if (b.type === "primary_constructor_base_type") {
+            const t = b.childForFieldName?.("type") ?? (b.namedChildren ?? []).find((c: any) =>
+              c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "nullable_type")
+            if (t) baseTypes.push(leafOf(t.text))
+            continue
+          }
+          if (b.type === "argument_list") continue
           baseTypes.push(leafOf(b.text))
         }
         const isInterfaceDecl = n.type === "interface_declaration"
