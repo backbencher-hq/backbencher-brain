@@ -822,6 +822,21 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     // a parameter / return / class-field / local annotation
     const inArgs = ancestorOfType(w, "paren_pattern", 3) ?? ancestorOfType(w, "argument_patterns", 3) ??
       ancestorOfType(w, "argument_spec", 3) ?? ancestorOfType(w, "arguments_spec", 3) ?? ancestorOfType(w, "curried_spec", 3)
+    // A LAMBDA parameter owns nothing, and its annotation belongs to nothing either.
+    //
+    //     let sb = fun (sb: StringBuilder) (c: char) -> …
+    //
+    // The `simple_type`'s nearest declaration ancestor is the `let sb` that HOLDS the
+    // lambda, so the walk reaches an owner and attributes the parameter's type to it. The
+    // owner is real and published, which is what made this hard to see: the edge resolves,
+    // so nothing downstream can tell it is about the wrong thing. The lane's contract says
+    // lambda params are NOT symbols, and a `fun` is not a declaration.
+    //
+    // The analyzer refuses this position independently (FS-D18, this round) and the
+    // differential is what surfaced it: the oracle derived `Execute -> StringBuilder` for a
+    // lambda parameter inside `Execute`, and the analyzer emitted nothing. Two positions, one
+    // rule — a `fun_expression` between the pattern and the declaration.
+    if (ancestorOfType(parent, "fun_expression", 6)) return null
     const decl = parentIsDecl(parent) ? parent : ancestorOfType(parent, "member_defn", 14) ?? ancestorOfType(parent, "function_or_value_defn", 14) ?? ancestorOfType(parent, "value_declaration", 14)
     if (!decl) return null
     if (decl.type === "member_defn") {

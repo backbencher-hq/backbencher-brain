@@ -256,7 +256,7 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 
 | Gate | Result |
 | --- | --- |
-| F1 dead-literal / unknown-symbol | `PASS refs=62 unknown=0 unknownFields=0` |
+| F1 dead-literal / unknown-symbol | `PASS refs=63 unknown=0 unknownFields=0` |
 | F3 fixtures | 6/6 PASS |
 | F4 mutants | 14/14 CAUGHT — and the registration itself was a defect |
 | oracle vs analyzer, fixtures | 106 truth, 0 MISSING, 0 UNEXPLAINED |
@@ -287,8 +287,17 @@ the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained
 
 | | count | dominant classes |
 |---|---|---|
-| MISSING (truth derives, analyzer does not) | 62 | 19 `declared_type(parameter)`, 14 `calls`/source-other, 10 `implements`, 10 `declared_type(local_annotation)`, 6 `declared_type(return)` |
-| UNEXPLAINED (analyzer emits, truth does not) | 174 | 58 `declared_type(parameter)`, 27 `declared_type(local_annotation)`, 26 `declared_type(return)`, 18 `overrides`, 14 `instantiates` |
+| MISSING (truth derives, analyzer does not) | 34 | 14 `calls`/source-other, 10 `implements`, 6 `declared_type(parameter)`, 2 `declared_type(class_field)`, 1 `overrides` |
+| UNEXPLAINED (analyzer emits, truth does not) | 123 | 37 `declared_type(parameter)`, 18 `overrides`, 14 `declared_type(local_annotation)`, 14 `instantiates`, 10 `implements` |
+
+Two rules account for 65 of the 123 unexplained rows, and neither is about F# — they are both
+about **who is allowed to own an edge**. A depth-bounded ancestor search (`findAncestor(decl,
+isCallable, 8)`) could not distinguish "no callable above this" from "the callable is further
+than 8 levels up", treated both as the first, and fell through to publishing a LOCAL's name —
+which is not a symbol, so the edge had no other end. And a `fun (sb: StringBuilder) -> …`
+lambda parameter was attributed to the `let` that *holds* the lambda, a name that IS
+published, so the edge resolved and nothing downstream could tell it was about the wrong
+thing. Both are recorded in `reviews/fsharp/closure.md` §7f.
 
 The MISSING side fell 205 → 147 → **62** across this round, and 113 of the last 85 came from
 one rule. The property-getter contract — an EXPRESSION-bodied property publishes no calls —
