@@ -399,9 +399,9 @@ async function searchContentBounded(
       const fallbackIds = raw
         .prepare(
           "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' " +
-            `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
+            `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR source_text LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
         )
-        .all(projectId, needle, needle, needle, cap) as Array<{ id: string }>
+        .all(projectId, needle, needle, needle, needle, cap) as Array<{ id: string }>
       if (fallbackIds.length >= cap) truncated = true
       push(fetchByIds(raw, projectId, fallbackIds, idFilterSql, idFilterParams))
     }
@@ -427,6 +427,11 @@ function contentScore(row: CorpusRow, lowerNeedle: string): number {
   else if (lowerName.includes(lowerNeedle)) score += 1
   if ((row.qualifiedName ?? "").toLowerCase().includes(lowerNeedle)) score += 2
   if ((row.docstring ?? "").toLowerCase().includes(lowerNeedle)) score += 1
+  // The body, at the same weight as the docstring. Without this a body-only
+  // match scores 0 and `push` drops it, which is precisely why the classic and
+  // bounded paths disagreed: `matchContentRows` matches the body on the classic
+  // path and this scorer did not know it existed.
+  if (row.sourceText && row.sourceText.toLowerCase().includes(lowerNeedle)) score += 1
   return score
 }
 
@@ -439,7 +444,7 @@ function selectJoined(
 ): CorpusRow[] {
   return raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.symbol_type AS symbolType, " +
+      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -483,7 +488,7 @@ function fetchByIds(
       ...(raw
         .prepare(
           "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-            "s.docstring, s.symbol_type AS symbolType, " +
+            "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
             "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
             "COALESCE(s.complexity, 0) AS complexity, " +
             "f.relative_path AS relativePath, f.path AS filePath, " +
