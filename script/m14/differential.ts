@@ -10449,6 +10449,11 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         let isFn = false
         let isConst = false
         let leaf: string | null = null
+        // M12.PHP-IMPORTS: the FQN is the FIRST name/qualified_name child (a
+        // second one is the alias, exactly as the analyzer reads it). The
+        // analyzer emits `imports global -> <FQN>` for every use clause, so the
+        // truth must carry it or the lane audits an edge it never derived.
+        let fqn: string | null = null
         const leafOf = (x: string): string => {
           const parts = x.split("\\").filter(Boolean)
           return parts.length > 0 ? parts[parts.length - 1] : x
@@ -10458,10 +10463,17 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
           if (!c) continue
           if (!c.isNamed && c.text === "function") isFn = true
           else if (!c.isNamed && c.text === "const") isConst = true
-          if (c.isNamed && (c.type === "name" || c.type === "qualified_name")) leaf = leafOf(c.text)
+          if (c.isNamed && (c.type === "name" || c.type === "qualified_name")) { if (!fqn) fqn = c.text; leaf = leafOf(c.text) }
         }
         if (leaf && isFn) phpFuncValues.add(leaf)
         else if (leaf && isConst) phpConstValues.add(leaf)
+        // A `use function`/`use const` clause is STILL a module dependency — it
+        // brings a symbol from another namespace into this compilation unit —
+        // so it gets `imports` like any other clause. The value-set bookkeeping
+        // above is additional, not a substitute. The analyzer emits the edge for
+        // every clause without inspecting the `function`/`const` keyword, which
+        // is why the truth had to stop skipping it.
+        if (fqn) pushFrom("imports", "global", fqn)
       }
       if (t === "const_declaration" && fileLevel) {
         for (let i = 0; i < n.namedChildCount; i++) {
