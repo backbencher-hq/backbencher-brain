@@ -34,10 +34,32 @@ const SKIP = new Set([".git", "node_modules", "vendor", "target", "dist", "build
 
 export interface CorpusEntry { repo: string; abs: string; via: "pinned-checkout" | "rule-sweep" }
 
+/**
+ * Tracked Makefiles in a checkout.
+ *
+ * The pathspec is DELIBERATELY EMPTY. This used to pass `'*.mk' Makefile
+ * GNUmakefile makefile`, and a bare pathspec like `Makefile` is matched by git
+ * against the path from the ROOT: it matches `./Makefile` and nothing under a
+ * directory. So `tf-aws-components` reported ONE Makefile when it has 53 -- its
+ * root `Makefile` -- and `boundary` one when it has 10. The lane's M12 corpus gate
+ * was therefore measuring 14 of the 100 files the differential measures, and the
+ * 13 "missing repositories" it recorded were mostly repositories that were present
+ * and full. That is what a pathspec looks like when nobody reads the count against
+ * a corpus the same lane pins at 100.
+ *
+ * Listing everything and filtering with the SAME rule the by-RULE sweep uses (an
+ * exact basename, or a `.mk` suffix) keeps ONE definition of "a Makefile" in the
+ * lane instead of two that disagree.
+ */
 function trackedMakefiles(dir: string): string[] {
   try {
-    return execFileSync("git", ["-C", dir, "ls-files", "*.mk", "Makefile", "GNUmakefile", "makefile"], { encoding: "utf8" })
-      .trim().split("\n").filter(Boolean).map((f) => `${dir}/${f}`)
+    return execFileSync("git", ["-C", dir, "ls-files"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
+      .split("\n").filter(Boolean)
+      .filter((f) => {
+        const base = f.slice(f.lastIndexOf("/") + 1)
+        return EXACT.has(base) || base.endsWith(".mk")
+      })
+      .map((f) => `${dir}/${f}`)
   } catch {
     return []
   }

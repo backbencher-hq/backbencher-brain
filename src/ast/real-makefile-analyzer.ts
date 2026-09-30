@@ -518,6 +518,56 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
 
+        // MAKE-G1, closed. `VPATH = src:include` is the ASSIGNMENT spelling of the
+        // search path; the sibling `vpath %.c src` DIRECTIVE has been recorded all
+        // along, so the two spellings of one feature were deliberately asymmetric
+        // pending corpus evidence, and the corpus had none (0 occurrences in the
+        // 100 pinned files).
+        //
+        // What was actually lost is not a "coverage" gap in the abstract: because
+        // `VPATH` was never declared, a reference to it fell to `uses` — the class
+        // this lane reserves for names nothing can declare — even though THIS file
+        // is the thing that declares it. `exports := $(VPATH)` in a file that sets
+        // `VPATH = src` was published as a read of something undeclared.
+        //
+        // So it is declared, as a `constant`: `VPATH` is a GNU Make builtin whose
+        // value a makefile may set, exactly like `CURDIR` or `MAKEFILE_LIST`, and
+        // recording it as an ordinary assignment is what makes the reference to it
+        // a `references` edge. The search directories are kept in metadata as a
+        // list, because the value text is colon-separated and a consumer asking
+        // "where does this makefile look for `foo.o`?" wants the list, not the
+        // string it was written as.
+        case "VPATH_assignment": {
+          const pathsNode = this.firstChildOfType(node, new Set(["paths"]))
+          const dirs: string[] = []
+          if (pathsNode) {
+            for (let i = 0; i < pathsNode.namedChildCount; i++) {
+              const w = pathsNode.namedChild(i)
+              if (w?.type === "word") {
+                const d = w.text.trim()
+                if (d) dirs.push(d)
+              }
+            }
+          }
+          const value = dirs.join(":")
+          if (!declared.has("VPATH")) {
+            declare("VPATH", ASTEngine.SymbolKind.Constant, node, {
+              nodeType: "VPATH_assignment",
+              isMakeVariable: true,
+              isMakeSearchPath: true,
+              operator: this.assignmentOperator(node),
+              value: value || undefined,
+              searchPaths: dirs.length ? dirs : undefined,
+            })
+            patterns.push("Make vpath")
+            addRel(module, ASTEngine.RelationshipType.Contains, "VPATH", node.startPosition.row + 1, {
+              role: "declaration",
+              evidenceClass: "declared_in_file",
+            })
+          }
+          break
+        }
+
         // ---- control flow ------------------------------------------------
         case "conditional":
         case "ifeq_directive":
