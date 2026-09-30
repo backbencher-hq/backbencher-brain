@@ -247,6 +247,47 @@ So the honest position is narrow, and it is all that survives:
   grammar errors** (0.0% — tree-sitter-c-sharp v0.23.5; **0 missing
   tokens**)
 
+## Section A of the completeness gate fails on a CROSS-LANE schema gap, not a csharp defect
+
+`completeness-inventory.ts --lang csharp` reports:
+
+    csharp COMPLETENESS FAIL: 2 node type(s) in NO bucket: ERROR, MISSING
+    FAIL  section-a-structural  241 types, 51 handled, 164 silent, 0 gaps, 14 decisions
+
+The two unclassified types are **`ERROR` and `MISSING`** — tree-sitter's two universal
+parse-failure node types. They are not C# constructs. There is no source construct they
+correspond to, so no handler can be written for them, and putting them in `internal_silent`
+("correctly emitting nothing") would be a lie of a different kind: that bucket means a construct
+was recognised and deliberately produced no edge, whereas these mean the parser never produced a
+construct at all.
+
+**This is not csharp-specific, and that is the finding.** The same two types are unclassified in
+every tree-sitter lane that has run the gate:
+
+| lane | unclassified |
+| --- | --- |
+| csharp | `ERROR`, `MISSING` |
+| zig | `ERROR`, `MISSING` |
+| go | `ERROR`, `MISSING` |
+| rust | `ERROR`, `MISSING` |
+| python | `ERROR`, `MISSING` |
+
+Every tree-sitter grammar emits these two node types and no per-language
+`spec/<lang>-completeness.json` classifies them, because the schema has four buckets
+(`handled_verified`, `internal_silent`, `gap`, `design_decision`) and a node type that means
+"the parse failed" fits none of them. Section A therefore cannot pass for any tree-sitter lane,
+and the FAIL says nothing about how complete any analyzer is.
+
+**The fix is a fifth bucket, and it belongs to the completeness system rather than to any lane.**
+Something like `parser_recovery`: types that are not constructs, require no handler, and are
+counted and surfaced rather than classified. That keeps the gate's own rule — silence is guilt —
+intact, because the types stop being silently absent. It is not applied here because the schema
+and the gate are shared infrastructure that other agents are editing, and a cross-lane schema
+change landed blind from one lane is how two lanes end up disagreeing about what a bucket means.
+
+Until then: csharp's section A failure is a known cross-lane blocker, and csharp's own inventory
+is otherwise complete at 241 types with **0 gaps** — the thing section A exists to detect.
+
 ## Differential coverage — all four C# corpora, 2026-09-29
 
 Under the **widened seven-label compared set** (`calls, contains, references, uses, extends,
