@@ -20572,6 +20572,27 @@ async function main() {
    // implements, instantiates, calls), plus these four, and NOT `overrides` (GO41: the go
    // analyzer emits zero of them, and a compared label with no rows reads like a contract
    // rather than a hole). The base `overrides` disjunct above now excludes go for that reason. The five-label set is why 349,468 rows went unmeasured across five review rounds. `overrides` is deliberately NOT here (GO41: the go analyzer emits none, and a compared label with no rows reads like a contract). Each label is on its OWN physical line: a `//` comment on this expression runs to end of line and has now silently deleted a live entry from it three times.
+   // F#'s `contains` — the last of the four labels this lane adjudicates, and its LARGEST:
+   // 34,838 of the 36,952 symbols in the compiler corpus are reached this way.
+   //
+   // It is a line of its own because this entry has been lost FOUR times: once to another lane
+   // rewriting the shared physical line it sat on, twice more to further rewrites of that same
+   // line, and once to the 493-commit merge. Every loss had the same symptom, and the symptom
+   // is invisible from the outside — the harness does not fail, it reports a SMALLER number.
+   //
+   // That is the expensive part. This harness filters the ANALYZER side by the allowlist and
+   // does NOT filter the truth side, so a label that truth derives and the allowlist omits is
+   // not merely unmeasured, it is measured as a DEFECT. An empty allowlist therefore produces
+   // thousands of MISSING rows against an analyzer emitting thousands of edges correctly — and
+   // the compared set is a LOCAL expression in this file, not exported, so F1, F3, F4, F6 and
+   // SPEC all stayed GREEN while two oracles went unchecked.
+   //
+   // These are the labels script/m14/fsharp-truth-oracle.ts derives independently over the same
+   // grammar — a second implementation reading one tree, not a re-read of the analyzer's walk.
+   // `implements`, `instantiates` and `overrides` are unconditional earlier in the chain. `uses`
+   // is deliberately absent: the lane does not derive it, and admitting it would charge every
+   // real call edge as unexplained.
+...(lang === "fsharp" ? ["contains"] : []),
 ...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
