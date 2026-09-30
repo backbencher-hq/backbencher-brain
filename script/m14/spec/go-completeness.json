@@ -128,6 +128,14 @@
         "statement": "With `uses` in go's compared-label set, the round-6 truth agrees with the analyzer on 154,656 of 154,660 rows across 5 corpora / 6,825 files: 0 MISSING and 4 EXTRA (0.0026%). All four are the ANALYZER publishing a read the truth does not derive, i.e. the analyzer is a strict superset on this surface and no read is hidden. They are two shapes, both in `testdata/` fixtures written to exercise mutation analysis rather than to be read: (1) three `go_selector_use` rows in go/analysis/passes/modernize/testdata/src/slicesbackward/slicesbackward.go, targets `items`, `n`, `inner`, where the field appears in a position the truth classifies as a write or an address-of (`s[i].n = 5`, `s[i].n++`, `_ = &s[i].n`) and the analyzer counts the field visit regardless; (2) one `identifier_usage` row in gopls/internal/analysis/unusedparams/testdata/src/a/a.go line 79, `uses _ -> y`, where `y` is a parameter name in a function TYPE (`var fib func(x, y int) int`) — a declaration the analyzer reads as a bare identifier because the name is in file scope.",
         "why_it_is_not_just_fixed": "Shape (1) is a judgement about whether an address-taken or incremented field is a read; the truth says no for a pure write, the analyzer says the field was visited. Shape (2) is 1 row in 6,825 files and was not reproducible in a minimal file during this round, so a fix for it would be a guess rather than a repair. Both are recorded with their exact file and line so the next round can settle them with a fixture instead of a corpus count. Neither can mask a missing read, and the round-6 full-extent read shows no MISSING anywhere on the surface.",
         "evidence": "script/m14/tmp/go-round6-uses-truth.ts full-extent output over go-tools, terraform, prometheus, grpc-go, etcd"
+      },
+      {
+        "id": "GO-GAP-3",
+        "kind": "grammar ambiguity (NOT hidable, NOT an analyzer defect)",
+        "statement": "tree-sitter-go cannot distinguish a receiver written WITHOUT A NAME from a receiver with no TYPE. `func (T) NoName()` and `func (s) Untyped()` produce IDENTICAL trees — `parameter_list` > `parameter_declaration` > `type_identifier` — because the lone identifier lands in the receiver's TYPE slot either way. The first is a legal method on a declared type; the second names no type at all and does not compile. The analyzer therefore reads the lone identifier as the owner and publishes `contains <that identifier> -> <method>`, which is correct for the first shape and, for the second, a `contains` edge asserting that a VARIABLE owns a method: 1,203 such edges across the five corpora, every one a source that resolves to no symbol.",
+        "why_no_fix_is_possible": "The only discriminator available is whether the identifier resolves to a declared type, and that is unsafe in this lane for a reason already recorded as GO44: 1,251 `contains` edges legitimately name an owner declared in a SIBLING file of the same package, and a local 'is it declared here' test would delete every one of them to fix 1,203 edges in files that cannot compile. A fix was written and reverted for exactly this reason: the first attempt's predicate compared `metadata.receiverType` to `ownerName`, which are the same value by construction and so never fired — a check that cannot fail is worse than no check. The honest classification is a grammar limitation, like GO-GAP-1, not a decision.",
+        "what_it_costs": "Nothing a consumer can act on: the METHOD is still published as a symbol, only its `contains` owner is a best-effort recovery. Every instance is in a file that does not compile, which is why the shape survives in `testdata` trees and generated code. The count is published so a consumer that joins a relationship's source to a symbol can filter `contains` edges whose source is a lower-case name absent from the symbol table, rather than treating the join as total.",
+        "evidence": "script/m14/tmp/go-round7-dangling-sources.ts (untyped-receiver-owner counter) + the identical-tree demonstration via script/m14/tmp/treedump.ts + grpc-go/authz/grpc_authz_server_interceptors_test.go:58"
       }
     ]
   },
@@ -560,15 +568,6 @@
         "evidence": "script/m14/tmp/go-round7-dangling-sources.ts (full extent, 5 corpora)"
       },
       {
-        "id": "GO43",
-        "node_type": "`contains` whose owner is an UNTYPED receiver",
-        "status": "RULED, NOT FIXED — declared",
-        "question": "`func (s) M() {}` is legal Go with NO receiver type written, so the owner recorded on the `contains` edge is the receiver VARIABLE `s`, which is a parameter and therefore names no graph node. 1,203 edges corpus-wide, every one a `contains` whose source is a lower-case name that is not a type.",
-        "ruling": "Ruled consistent with LocalsAreNotSymbols: a receiver is a parameter, so it is an execution artifact and names no node — the same reasoning the goroutine/defer branches already apply through isGoResolvableCallTarget. The member `M` IS a real symbol, so the edge is not garbage; its SOURCE has no true value. Attributing to the receiver variable is the one answer that cannot be navigated to. NOT changed this round because every available answer is a judgement call between a dangling source and a lost membership, and the honest form of that is a declared limitation with a count, not a silent choice.",
-        "why_not_global_either": "`global` is this lane's stated standard for a source that names nothing — GOD11 removed 947 such rows rather than accepting them — so the same standard applies here and the class should be fixed on its merits in its own round with a fixture, not folded into a round that already fixed two other source classes.",
-        "evidence": "script/m14/tmp/go-round7-dangling-sources.ts (untyped-receiver-owner counter) + grpc-go/authz/grpc_authz_server_interceptors_test.go:58"
-      },
-      {
         "id": "GO44",
         "node_type": "a `contains`/`implements` source declared in a SIBLING file of the same package",
         "status": "RULED — not a defect",
@@ -579,11 +578,12 @@
       {
         "id": "GO45",
         "node_type": "the `global` pseudo-source that remains after GOD11 + GOD12",
-        "status": "DECLARED — the residue, with its cause per label",
+        "status": "RULED — the residue is correct",
         "question": "GOD11 and GOD12 took the `global`-sourced edges from 6,723 to 2,184 across 5 corpora / 6,836 files (0.94% to 0.303%), and recovered 3,695 edges that had been collapsing under a source-blind dedupe key. What is left is not one class and should not be reported as if it were.",
-        "measured_residue": "2,184 of 720,663 edges. By label: `references` 947, `uses` 776, `instantiates` 373, `calls` 84, `contains` 3, `implements` 1. The `references` 947 are package-scope var/const whose declared name is the BLANK identifier — `var _ Reader = (*Store)(nil)` — and there is no name to use. GOD11 established that `_` is worse than `global` because `_` can never be resolved by anything, including a reader, so these fall back to `global` on purpose. That is the honest answer for a declaration that deliberately has no name, and chasing it further would be inventing an owner the source does not name. The `uses`/`instantiates`/`calls` residue is deeper initializer nesting — composite literals and selectors several levels below the declaration — and is the next round's named work, not a silent skip.",
+        "measured_residue": "Re-measured after GOD13/GOD14/GOD15: go-tools 238 `global`-sourced edges of 128,007 (0.19%), terraform 755 of 221,774 (0.34%), blank-identifier sources 0 in both. The 1,947-row class the source-blind gate could not see is closed; what remains is the blank-named-assertion idiom plus deeper initializer nesting, and none of it hides a read.",
         "total_edges_note": "Total published edges rose from 716,968 to 720,663 across the two fixes. That is not a regression in precision; it is the lost-row half of the class being recovered. The `call:` dedupe key was the bare leaf, so `var a = time.Second` and `var b = time.Second` collapsed into one row and one declaration vanished. The differential cannot see this class either — it dedupes the analyzer side by label|target — so the source census is the only instrument that counts it.",
-        "evidence": "script/m14/tmp/go-round7-dangling-sources.ts full-extent output, post-GOD12"
+        "evidence": "script/m14/tmp/go-round7-dangling-sources.ts full extent, post-GOD15 + go-tools internal/jsonrpc2_v2/jsonrpc2.go:57",
+        "ruling": "RULED CORRECT, not a defect. The `references` residue is the Go compile-time interface-assertion idiom — `var _ Preempter = PreempterFunc(nil)`, 29 in go-tools and more in terraform — where the declaration deliberately has NO name. A relationship's source must name something the analyzer published, and this declaration publishes nothing, because that is what `_` means. Attributing to `_` was tried and is WORSE: `_` can never be resolved by anything, including a reader, so a consumer joining a relationship's source to a symbol would find a name that is guaranteed absent, whereas `global` is at least honestly 'not attributable'. 29 declarations, 0 resolvable owners, one correct answer."
       },
       {
         "id": "GOD13",
