@@ -34,6 +34,21 @@ export interface VisualizationResult {
   truncation: { truncated: boolean; originalNodes: number; originalLinks: number; maxNodes: number; maxLinks: number; reason: string | null }
 }
 
+/** Escape the LIKE metacharacters so a target is matched as a VALUE.
+ *  Measured: `scope: "file", target: "%"` previously selected every file in the
+ *  corpus, because the target was interpolated into a LIKE pattern raw. The
+ *  sibling tool states the same rule for itself — "a target is a VALUE, never a
+ *  pattern: %, _ and \ are escaped and match themselves" — so the two now agree. */
+function escapeLike(value: string): string {
+  return value.replace(/[%_]/g, (c) => `\\${c}`)
+}
+
+/** A directory prefix matched on a whole SEGMENT boundary: `src/util` matches
+ *  `src/util/x.ts` and never `src/utilities/x.ts`. */
+function segmentPrefix(value: string): string {
+  return `${escapeLike(value)}/%`
+}
+
 function bounded(value: unknown, fallback: number, max: number): number {
   const n = Number(value)
   return Number.isFinite(n) ? Math.max(1, Math.min(max, Math.floor(n))) : fallback
@@ -46,10 +61,10 @@ export async function visualizeProject(projectId: string, request: Visualization
   const maxNodes = bounded(request.maxNodes, 200, 2000)
   const maxLinks = bounded(request.maxLinks, 5000, 20000)
   let symbols: any[]
-  if (scope === "file") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY s.line_start LIMIT ?").all(projectId, target, target, `%${target}`, maxNodes * 2) as any[]
-  else if (scope === "module") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY f.relative_path,s.line_start LIMIT ?").all(projectId, `${target}/%`, `${target}%`, maxNodes * 2) as any[]
+  if (scope === "file") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY s.line_start LIMIT ?").all(projectId, target, target, segmentPrefix(target.replace(/\/$/, "")), maxNodes * 2) as any[]
+  else if (scope === "module") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY f.relative_path,s.line_start LIMIT ?").all(projectId, segmentPrefix(target.replace(/\/$/, "")), segmentPrefix((target.replace(/\/$/, "").split("/").pop() ?? target)), maxNodes * 2) as any[]
   else if (scope === "symbol") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?").all(projectId, target, target, maxNodes * 2) as any[]
-  else if (scope === "feature") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY s.gravity_score DESC,s.line_start LIMIT ?").all(projectId, `%${target.toLowerCase()}%`, `%${target.toLowerCase()}%`, maxNodes * 2) as any[]
+  else if (scope === "feature") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY s.gravity_score DESC,s.line_start LIMIT ?").all(projectId, `%${escapeLike(target.toLowerCase())}%`, `%${escapeLike(target.toLowerCase())}%`, maxNodes * 2) as any[]
   else symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? ORDER BY s.gravity_score DESC,s.line_start LIMIT ?").all(projectId, maxNodes * 2) as any[]
   if (request.languages?.length) symbols = symbols.filter((symbol) => request.languages?.includes(symbol.language))
   const ids = new Set(symbols.map((symbol) => symbol.id))

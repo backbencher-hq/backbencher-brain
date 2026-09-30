@@ -29,7 +29,7 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance } from "../intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import { makeProvenance } from "../intelligence/evidence"
@@ -753,9 +753,49 @@ const handlers: Record<string, ToolHandler> = {
       // dependencies". That is a measurement claim, and it was never taken.
       return textResult("bb_analyze " + mode + ": limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer", true)
     }
+    // The floor is refused because an empty page is indistinguishable from a
+    // real answer; the CEILING is refused for the same reason in the other
+    // direction. `limit` had a floor and no ceiling, so the schema's "maximum
+    // items returned" named no maximum: `limit: 2147483648` was accepted and
+    // answered with the whole corpus, which on a large project is an answer too
+    // big to read rather than one too big to hold.
+    //
+    // It is refused, not clamped. Clamping would return a page that looks like
+    // the caller's request was honoured, which is the failure this whole
+    // parameter exists to prevent.
+    const LIMIT_CEILING: Record<string, number> = {
+      callers: 5_000,
+      callees: 5_000,
+      trace: 5_000,
+      dependencies: 2_000,
+      test_mapping: 2_000,
+      test_gaps: 2_000,
+      test_quality: 2_000,
+    }
+    if (args.limit !== undefined && Number(args.limit) > LIMIT_CEILING[mode]) {
+      return textResult(
+        `bb_analyze ${mode}: limit must be between 1 and ${LIMIT_CEILING[mode]} — refused rather than clamped, so a returned page always means the page asked for. Above this the answer stops being readable (measured on this repository's own src: 20 dependency files of 183 is already 75,911 bytes ~21k tokens, and the per-file edge lists are capped separately).`,
+        true,
+      )
+    }
+    // A target is echoed into the answer's `reason` and `target` fields. A
+    // 4,000-character target therefore produced a 9,409-byte "not found" —
+    // about 2.6k tokens spent on two words of information. The echo is kept,
+    // because it is how a caller tells WHICH name was looked up, and elided
+    // with its length stated so nothing is silently shortened.
+    const MAX_TARGET_ECHO = 200
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
+    // The search term and the ECHO are different things. A 4,000-character
+    // target produced a 9,409-byte "not found" (~2.6k tokens for two words of
+    // information) because it is echoed into `target` and `reason`. Truncating
+    // the SEARCH TERM to fix that would search for a different symbol than the
+    // caller asked for — a wrong answer instead of a long one. So the full
+    // string is resolved and only the echo is bounded, with its full length
+    // stated so nothing is silently shortened.
+    const echo = (t: string): string =>
+      t.length > MAX_TARGET_ECHO ? `${t.slice(0, MAX_TARGET_ECHO)}…(+${t.length - MAX_TARGET_ECHO} more characters)` : t
     const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
     // filePath scopes dependencies plus the three test-intel modes (path
     // prefix); stats stays project-wide and rejects filePath.
@@ -850,12 +890,14 @@ const handlers: Record<string, ToolHandler> = {
         return withFreshness(
           {
             mode,
-            target,
+            target: echo(target),
             found: false,
             notFoundReason: "absent",
-            reason: `bb_analyze ${mode}: symbol '${target}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
+            reason: `bb_analyze ${mode}: symbol '${echo(target)}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
             root: null,
             rootCandidates: 0,
+            // No root, so no step: null, not a guess.
+            rootMatch: null,
             callers: [],
             callees: [],
             nodes: {},
@@ -974,7 +1016,15 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "dependencies") {
-      const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
+      // The scope is normalized ONCE, here, and the NORMALIZED value goes to
+      // both the engine and the denominator. Previously the engine stripped
+      // trailing slashes and this count did not, so `filePath: "src/wide/"`
+      // returned 20 of 68 files with `totalFiles: 0` and `truncated: false` —
+      // a false statement of completeness, 48 files hidden. There is no second
+      // copy of the rule to disagree with.
+      const rawScope = args.filePath ? String(args.filePath) : target || undefined
+      const scopePath = rawScope ? normalizeScopePath(rawScope) : null
+      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
         // Neither list ships a file id any more — a file id is
@@ -989,18 +1039,11 @@ const handlers: Record<string, ToolHandler> = {
       // one returned 20 files of 90 with no summary at all. The total is
       // counted over the SCOPE — filePath is a path PREFIX, so the honest
       // denominator is the files under that prefix, not the whole project.
-      const scopePath = args.filePath ? String(args.filePath) : null
-      const totalFiles = scopePath
-        ? Number(
-            (
-              raw
-                .prepare(
-                  "SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')",
-                )
-                .get(projectId, scopePath, scopePath.replace(/[\\%_]/g, (c) => "\\" + c) + "/%") as { c: number }
-            )?.c ?? 0,
-          )
-        : Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c)
+      // The denominator comes from the engine, which computed the rows with the
+      // same normalization and the same segment boundary. A count written here
+      // is a second opinion about the same question, and it is how the scope
+      // came to disagree with itself.
+      const totalFiles = await scopeFileCount(projectId as any, scopePath)
       return withFreshness(
         {
           dependencies: deps,
@@ -1718,6 +1761,12 @@ const handlers: Record<string, ToolHandler> = {
         // is > 1 the graph below is about ONE of them, so `root` is the thing
         // to confirm before reading the edges.
         candidates: result.rootCandidates ?? 1,
+        // WHICH step resolved the name. `containment` means the answer is about
+        // a symbol whose name CONTAINS the one asked for — measured on the
+        // atlas corpus, `target: "ub"` answers about `hub` and `target: "_"`
+        // about `build_registry`, with nothing else in the payload saying the
+        // name was not itself a symbol.
+        match: result.rootMatch ?? null,
       },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),

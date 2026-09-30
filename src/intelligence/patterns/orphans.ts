@@ -278,25 +278,53 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       "WHERE s.project_id = ? AND s.symbol_type IN (" + reportedTypes.map(() => "?").join(",") + ")",
   ).all(projectId, ...reportedTypes) as SymRow[]
 
-  // ---- incoming usage evidence --------------------------------------------
-  // TWO channels, because "this name appears in the project" and "this symbol
-  // was consumed by another symbol" are different kinds of claim and the index
-  // distinguishes them, in a way that varies enormously by project:
+  // ---- the relationship table, reduced in SQL -----------------------------
   //
-  //   ID evidence  an ANCHORED edge (source_symbol_id present) from a different
-  //                symbol to this one, structurally published. Decisive: it
-  //                clears the candidate outright.
+  // This used to be THREE statements over the same rows — the gate's input, the
+  // coverage-gap indicator's two inputs — which on a 56,738-symbol index cost
+  // 27.4s of a 27.5s scan. It was then ONE statement that shipped every usage
+  // row into JS, which on `move` (223,880 symbols, 898,806 relationships) shipped
+  // 710,671 rows and took 187s.
   //
-  //   NAME evidence a name match — the leaf of `target_external`, or the name of
-  //                the target of an UNANCHORED clean row. Clearing on this
-  //                requires the name to be unambiguous in the reporting scope.
+  // The breakdown of that 187s, from probe-l4 on the same database:
   //
-  //   NOTHING       a row that fails the quality gate contributes nothing, not
-  //                even its name. A guess is not a sighting.
+  //   COUNT(*) over the same filter, index-only        636ms
+  //   SQLite reading all three non-indexed columns     17,320ms
+  //   the same rows as JS objects                      65,969ms
+  //   the same rows via .iterate(), no array at all    35,552ms
   //
-  // The split is not a stylistic choice. The share of edges that are unanchored
-  // is a property of the project, not of the relationship type, so no per-type
-  // rule can capture it:
+  // Four passes over one query took 73s / 52s / 51s / 55s, so this is not a cold
+  // cache. About 17s is SQLite and about 49s is better-sqlite3 materializing
+  // rows that the caller immediately collapses into sets.
+  //
+  // The observation that makes it cheap: EVERY quantity below is
+  // DISTINCT-reducible, and every bound is the SYMBOL count, not the
+  // RELATIONSHIP count.
+  //
+  //   usedIds                 distinct target ids, clean AND anchored   <= symbols
+  //   symbolsWithAnyIncoming  distinct target ids, non-self-loop        <= symbols
+  //   nameEvidence            distinct target_externals, plus names    <= names
+  //   fileIncomingUsage       per file: one COUNT(*), one COUNT(DISTINCT)  <= files
+  //   rejectedFor             distinct (target id, reason) pairs
+  //   the refusal counters    GROUP BY relationship_type, reason      <= 8 x 3
+  //   referencedFiles         distinct target files, clean cross-file  <= files
+  //
+  // On `move` that is about 5,700 files and 223,880 symbols of output instead of
+  // 710,671 rows, and none of it needs the wide `metadata` column, because the
+  // evidenceClass test becomes a CASE expression in SQL.
+  //
+  // The gate's three conditions, their ORDER, and the coverage rule are unchanged
+  // and are stated once, in GATE_SQL below, so that all six statements below
+  // cannot drift apart from each other. That is the whole risk of this shape: six
+  // copies of one rule is six chances to spell it differently. A rewrite here is
+  // only acceptable if behaviour is provably identical, which is checked by
+  // probe-fp-fingerprint — a hash over every finding's file, symbol, line, rule,
+  // confidence, evidence text, limitations and remediation, plus every summary
+  // counter, across nine real repositories.
+  //
+  // TWO CHANNELS, because "this name appears in the project" and "this symbol
+  // was consumed by another symbol" are different claims, and the share of edges
+  // that name no consumer is a property of the PROJECT, not of the type:
   //
   //   repo      calls  uses  imports  references   (share with a NULL source)
   //   rake        2%    0%      5%        97%
@@ -308,113 +336,189 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   //
   // Treating lodash's 3,775 unanchored `calls` edges as proof that a specific
   // symbol was consumed is the error the old code made: 95.1% of that corpus's
-  // reported orphans were then provably used. Treated as NAME evidence and
-  // gated on uniqueness, the same edges can only clear a candidate whose name
-  // nobody else claims — which is the claim they actually support.
+  // reported orphans were then provably used. Treated as NAME evidence and gated
+  // on uniqueness, the same edges can only clear a candidate whose name nobody
+  // else claims — which is the claim they actually support.
   //
-  // The three quality criteria apply to both channels, from the row's own
-  // published evidence (see the gate's table above): a self-loop asserts that a
-  // symbol consumes itself, `evidenceClass: "inferred"` is the heuristic tier the
-  // analyzer documentation discloses has no oracle, and confidence below
-  // MIN_EDGE_CONFIDENCE is the guess tier. On lodash 5,639 rows fail that test;
-  // on rebar3 1,507 rows are self-loops; on clojure 6,442 fail. Every rejected
-  // row is counted in summary.unverifiedUsageEdges rather than dropped silently.
-  type EdgeRow = { rt: string; id: string | null; ext: string | null; src: string | null; srcFile: string | null }
-  const edgeRows: EdgeRow[] = []
-  const edgeRejects = { [SELF_LOOP_EXCLUDED]: 0, [INFERRED_EXCLUDED]: 0, [LOW_CONFIDENCE_EXCLUDED]: 0, unanchored: 0 }
-  const edgeRejectsByType: Record<string, Record<string, number>> = {}
-  const nameEvidence = new Set<string>()
-  // symbolId -> why a row about it was refused, so the finding can disclose it.
-  const rejectedFor = new Map<string, string[]>()
-  // Declared BEFORE the load loop that fills it. `usedIds` sat below the loop in
-  // the first draft of this two-channel version, so every call that reached the
-  // loop body threw "Cannot access 'usedIds' before initialization". It was
-  // invisible for a while because a probe pointed at a wrong BB_DATA_DIR, the
-  // database was empty, the loop never ran, and the tool reported a clean
-  // project. A crash and a clean result are indistinguishable if the corpus is
-  // not asserted to be real first.
-  const usedIds = new Set<string>()
-  {
-    // json_extract keeps the metadata read in SQLite. A JS JSON.parse per edge
-    // would be 18k-30k parses per scan on a large index; the first version of
-    // this loop did that and then prepared a statement inside it, which is two
-    // mistakes in the same loop.
-    const rows = raw.prepare(
-      "SELECT r.relationship_type AS rt, r.target_symbol_id AS id, r.target_external AS ext, " +
-        "r.source_symbol_id AS src, r.confidence AS conf, " +
-        "json_extract(r.metadata, '$.evidenceClass') AS ev, " +
-        "json_extract(r.metadata, '$.bareRead') AS bareRead, " +
-        "CASE WHEN s.file_id IS NULL THEN NULL ELSE s.file_id END AS srcFile, " +
-        "t.name AS tgtName " +
-        "FROM brain_relationship r " +
-        "LEFT JOIN brain_symbol s ON s.id = r.source_symbol_id " +
-        "LEFT JOIN brain_symbol t ON t.id = r.target_symbol_id " +
-        "WHERE r.project_id = ? AND r.relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
-    ).all(projectId, ...USAGE_TYPES) as Array<{
-      rt: string; id: string | null; ext: string | null; src: string | null
-      conf: number | null; ev: string | null; bareRead: number | null; srcFile: string | null; tgtName: string | null
-    }>
+  // THE GATE, ONCE. Order matters and is load-bearing: a self-loop is counted as
+  // a self-loop even when the same row is also `inferred` and below the
+  // confidence floor, so the counters and the per-finding disclosure name the
+  // first applicable reason and no other. `json_extract` returning NULL for a
+  // row with no evidenceClass compares unequal to 'inferred' in SQL exactly as
+  // `null === "inferred"` is false in JS.
+  //
+  //   selfLoop       source_symbol_id = target_symbol_id. The symbol consumes
+  //                  itself. Rake publishes these for Ruby `override` keywords
+  //                  and they were the reason rake reported no candidates at all.
+  //   inferred       the heuristic tier, which the analyzer documentation
+  //                  discloses has no oracle.
+  //   lowConfidence  the guess tier, below MIN_EDGE_CONFIDENCE.
+  const typeList = USAGE_TYPES.map(() => "?").join(",")
+  const usageFilter = `r.project_id = ? AND r.relationship_type IN (${typeList})`
+  // A row the gate rejects. `CLEAN_SQL` is its exact complement.
+  const GATE_SQL =
+    `(CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL ` +
+    `AND r.source_symbol_id = r.target_symbol_id THEN '${SELF_LOOP_EXCLUDED}' ` +
+    `WHEN json_extract(r.metadata, '$.evidenceClass') = 'inferred' THEN '${INFERRED_EXCLUDED}' ` +
+    `WHEN r.confidence < ? THEN '${LOW_CONFIDENCE_EXCLUDED}' ELSE NULL END)`
+  const CLEAN_SQL = `${GATE_SQL} IS NULL`
+  // Coverage counts every non-bookkeeping row, gated or not, because it answers
+  // "did the analyzer REACH this file?", which is not the question the gate
+  // answers. `contains` and `exports` are excluded for the same reason they are
+  // excluded from usage everywhere else: they are the indexer's own bookkeeping,
+  // and counting `exports` made Rake::TestTask look referenced because its own
+  // module offers it — the definition of a declaration nobody called.
+  const NOT_SELF_LOOP_SQL =
+    `(r.target_symbol_id IS NOT NULL AND (r.source_symbol_id IS NULL OR r.source_symbol_id <> r.target_symbol_id))`
 
+  // Declared before the statements that fill them. `usedIds` sat below the loop
+  // that filled it in the first draft of the two-channel version, so every call
+  // that reached the loop body threw a TDZ ReferenceError. It was invisible for
+  // a while because a probe pointed at a wrong BB_DATA_DIR, better-sqlite3
+  // CREATED an empty database there, the loop never ran, and the tool reported a
+  // clean project. A crash and a clean result are indistinguishable if the corpus
+  // is not asserted real first.
+  const usedIds = new Set<string>()
+  const usedNames = new Set<string>()
+  const fileIncomingUsage = new Map<string, { edges: number; sources: number }>()
+  const symbolsWithAnyIncoming = new Set<string>()
+  // symbolId -> the reasons a row about it was refused, so the finding can say so.
+  const rejectedFor = new Map<string, string[]>()
+  const edgeRejects = { [SELF_LOOP_EXCLUDED]: 0, [INFERRED_EXCLUDED]: 0, [LOW_CONFIDENCE_EXCLUDED]: 0 }
+  const edgeRejectsByType: Record<string, Record<string, number>> = {}
+
+  // (1) The refusal counters, and which symbols a guess was keeping out of the
+  //     report. This is worth recording even though it clears nothing: the
+  //     concrete case that motivates it is `listen` in
+  //     lib/Mojo/IOLoop/Server.pm, which has NO incoming call edge at all — the
+  //     index never recorded its callers — and the only thing standing between
+  //     it and a report was an `overrides` row that is simultaneously a
+  //     self-loop, `inferred`, and published at 0.5. Calling it dead is the
+  //     honest reading of the index; not telling the reader that a rejected
+  //     guess pointed here is not.
+  {
+    const rows = raw.prepare(
+      `SELECT r.relationship_type AS rt, ${GATE_SQL} AS reason, r.target_symbol_id AS id, COUNT(*) AS n ` +
+        `FROM brain_relationship r WHERE ${usageFilter} AND ${GATE_SQL} IS NOT NULL ` +
+        `GROUP BY r.relationship_type, reason, r.target_symbol_id`,
+    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE) as Array<{
+      rt: string; reason: string; id: string | null; n: number
+    }>
+    for (const row of rows) {
+      edgeRejects[row.reason as keyof typeof edgeRejects] += row.n
+      const bucket = (edgeRejectsByType[row.rt] ??= {})
+      bucket[row.reason] = (bucket[row.reason] ?? 0) + row.n
+      if (row.id) {
+        const list = rejectedFor.get(row.id)
+        if (list) {
+          // A symbol can be refused for more than one reason, once per distinct
+          // relationship type. The reason list is a disclosure, not a tally, so
+          // duplicates are collapsed and the order is the gate's own order, which
+          // keeps the text stable between runs.
+          if (!list.includes(row.reason)) list.push(row.reason)
+        } else {
+          rejectedFor.set(row.id, [row.reason])
+        }
+      }
+    }
+  }
+
+  // (2) The ID channel: an ANCHORED clean edge says another identified symbol
+  //     consumed this one. Decisive — it clears the candidate outright.
+  {
+    const rows = raw.prepare(
+      `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
+        `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.source_symbol_id IS NOT NULL ` +
+        `AND r.target_symbol_id IS NOT NULL`,
+    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ id: string }>
+    for (const row of rows) usedIds.add(row.id)
+  }
+
+  // (3) The name channel, in two parts. An UNANCHORED clean row is ABOUT this
+  //     target but names no consumer, so it is a name match and only clears an
+  //     unambiguous name. The leaf of `target_external` is the name the edge is
+  //     about on either kind of row, so a qualified reference
+  //     ("com.example.Service", "Mod.fn") can still match a stored bare name.
+  {
     /** The tail of a reference: after the last colon, then after the last dot. */
     const leafName = (value: string): string => {
       const afterColon = value.includes(":") ? value.slice(value.lastIndexOf(":") + 1) : value
       const dot = afterColon.lastIndexOf(".")
       return dot > 0 ? afterColon.slice(dot + 1) : afterColon
     }
+    // A row the index publishes as a guess establishes NOTHING — not even that a
+    // name was used. The first version of the JS loop forwarded the rejected
+    // row's name into the name channel "so the identifier was not lost", and the
+    // effect was ZERO candidates on every corpus: once every rejected identifier
+    // became name evidence, `usedNames` covered nearly every symbol in the
+    // project and the ambiguity rule cleared them all. A guess is not a sighting.
+    const externals = raw.prepare(
+      `SELECT DISTINCT r.target_external AS ext FROM brain_relationship r ` +
+        `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.target_external IS NOT NULL`,
+    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ ext: string }>
+    for (const row of externals) usedNames.add(leafName(row.ext))
 
-    for (const row of rows) {
-      const reason =
-        row.src !== null && row.id !== null && row.src === row.id ? SELF_LOOP_EXCLUDED
-        : row.ev === "inferred" ? INFERRED_EXCLUDED
-        : typeof row.conf === "number" && row.conf < MIN_EDGE_CONFIDENCE ? LOW_CONFIDENCE_EXCLUDED
-        : null
-      if (reason) {
-        // A row the index publishes as a guess establishes NOTHING — not even
-        // that a name was used. The first version of this loop forwarded the
-        // rejected row's name into the name channel "so the identifier was not
-        // lost", and the effect was that bb_patterns returned ZERO candidates
-        // for rake: `references` is 97% unanchored there, and once every
-        // rejected row's identifier became name evidence, `usedNames` covered
-        // nearly every symbol in the project and the ambiguity rule cleared
-        // them all. A guess is not a sighting.
-        edgeRejects[reason]++
-        const bucket = (edgeRejectsByType[row.rt] ??= {})
-        bucket[reason] = (bucket[reason] ?? 0) + 1
-        // It IS worth recording WHICH symbols a guess was keeping out of the
-        // report, so that a finding can say so. The concrete case that motivates
-        // this: `listen` in lib/Mojo/IOLoop/Server.pm has NO incoming call edge
-        // at all — the index never recorded its callers — and the only thing
-        // standing between it and a report was an `overrides` row that is
-        // simultaneously a self-loop, `inferred`, and published at 0.5. Calling
-        // it dead is the honest reading of the index; NOT telling the reader
-        // that a rejected guess pointed here is not.
-        if (row.id) {
-          const list = rejectedFor.get(row.id)
-          if (list) list.push(reason)
-          else rejectedFor.set(row.id, [reason])
-        }
-        continue
-      }
-      // Clean row. Two claims, at different strengths:
-      //   anchored   this symbol was consumed by another identified symbol.
-      //              Decisive: clears the candidate outright.
-      //   unanchored the row is ABOUT this target but names no consumer, so it
-      //              is a name match and only clears an unambiguous name.
-      if (row.src !== null) {
-        if (row.id) usedIds.add(row.id)
-      } else if (row.tgtName) {
-        nameEvidence.add(row.tgtName)
-      }
-      // The leaf of `target_external` is the name the edge is about, on either
-      // kind of row. Taken after the last colon and then after the last dot,
-      // matching the indexer's own extractLeaf, so a qualified reference
-      // ("com.example.Service", "Mod.fn") can still match a stored bare name.
-      if (row.ext) nameEvidence.add(leafName(row.ext))
-      edgeRows.push({ rt: row.rt, id: row.id, ext: row.ext, src: row.src, srcFile: row.srcFile })
+    const names = raw.prepare(
+      `SELECT DISTINCT t.name AS name FROM brain_relationship r ` +
+        `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
+        `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.source_symbol_id IS NULL`,
+    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ name: string }>
+    for (const row of names) usedNames.add(row.name)
+  }
+
+  // (4) Per-file coverage for the coverage-gap indicator: two aggregates per
+  //     file rather than one row per (file, source) pair, which was 319,201
+  //     rows on `move` before this was measured.
+  {
+    const edges = raw.prepare(
+      `SELECT t.file_id AS f, COUNT(*) AS n FROM brain_relationship r ` +
+        `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
+        `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
+    ).all(projectId, ...USAGE_TYPES) as Array<{ f: string; n: number }>
+    for (const row of edges) {
+      const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
+      entry.edges = row.n
+      fileIncomingUsage.set(row.f, entry)
+    }
+    const sources = raw.prepare(
+      `SELECT t.file_id AS f, COUNT(DISTINCT COALESCE(r.source_symbol_id, '?')) AS n ` +
+        `FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
+        `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
+    ).all(projectId, ...USAGE_TYPES) as Array<{ f: string; n: number }>
+    for (const row of sources) {
+      const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
+      entry.sources = row.n
+      fileIncomingUsage.set(row.f, entry)
     }
   }
 
-  const usedNames = nameEvidence
+  // (5) Per-symbol coverage: did the analyzer produce ANY row about this symbol?
+  //     A symbol with no incoming row at all, in a file that has some, is the
+  //     signature of an analyzer that reached the file and not the symbol.
+  {
+    const rows = raw.prepare(
+      `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
+        `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL}`,
+    ).all(projectId, ...USAGE_TYPES) as Array<{ id: string }>
+    for (const row of rows) symbolsWithAnyIncoming.add(row.id)
+  }
+
+  // (6) Cross-file referenced files, for the symbol-level channel. Built from ALL
+  //     symbol types, with both endpoints resolvable to files, from the SAME
+  //     gated edge set the ID channel used. This replaces a map keyed on six
+  //     types that made a module-level `const`, a class field, or a type alias
+  //     invisible as evidence.
+  const referencedFiles = new Set<string>()
+  {
+    const rows = raw.prepare(
+      `SELECT DISTINCT t.file_id AS f FROM brain_relationship r ` +
+        `JOIN brain_symbol s ON s.id = r.source_symbol_id ` +
+        `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
+        `WHERE ${usageFilter} AND ${CLEAN_SQL} AND s.file_id IS NOT NULL ` +
+        `AND t.file_id IS NOT NULL AND s.file_id <> t.file_id`,
+    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ f: string }>
+    for (const row of rows) referencedFiles.add(row.f)
+  }
 
   // Ambiguity is computed over the REPORTING scope — the six types, in
   // non-test, non-noise files — not over every row in brain_symbol. The
@@ -431,18 +535,11 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     for (const row of dupRows) ambiguousNames.add(row.name)
   }
 
-  // ---- cross-file referenced files -----------------------------------------
-  // Built from ALL symbol types, with both endpoints resolvable to files, from
-  // the SAME gated edge set the symbol channel used. This replaces a map keyed
-  // on six types that made a module-level `const`, a class field, or a type
-  // alias invisible as evidence.
-  const referencedFiles = new Set<string>()
-  for (const row of edgeRows) {
-    if (!row.id || !row.src) continue
-    const srcFile = fileOfSymbolId.get(row.src)
-    const tgtFile = fileOfSymbolId.get(row.id)
-    if (tgtFile && srcFile && srcFile !== tgtFile) referencedFiles.add(tgtFile)
-  }
+  // referencedFiles is built by statement (6) above, in SQL. The previous
+  // version walked the in-memory edge list and consulted `fileOfSymbolId`, which
+  // meant the edge list had to hold every clean row rather than a set of
+  // distinct files. `fileOfSymbolId` is still used for symbol-level attribution,
+  // where no aggregate can replace it.
 
   // ---- import resolution ----------------------------------------------------
   // An `imports` row now carries its SOURCE, so the specifier can be resolved
@@ -568,71 +665,49 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return uniqueFileStems.has(stem) && importUnattributedStems.has(stem)
   }
 
-  // ---- per-file incoming usage, for the coverage-gap disclosure -----------
-  // The refused-evidence disclosure above covers a symbol that HAD rows and had
-  // all of them refused. It does not cover the case the rake corpus forced:
-  // Rake::TestTask, Rake::FileCreationTask and Rake::EarlyTime have no
-  // incoming relationship of any kind, refused or otherwise, so nothing fires.
-  // They are used — lib/rake.rb:51 and :57 `require_relative` their files, and
-  // dsl_definition.rb:83 calls `Rake::FileCreationTask.define_task` — and the
-  // index records none of it. The signature is available and is precise:
+  // ---- the coverage-gap indicator, computed above -------------------------
   //
-  //   lib/rake/testtask.rb            21 incoming usage edges from 11 sources,
-  //                                    and TestTask itself has 0
-  //   lib/rake/file_creation_task.rb   2 incoming usage edges from 2 sources,
-  //                                    and FileCreationTask itself has 0
-  //   lib/rake/early_time.rb           0 from 0, and EarlyTime is genuinely
-  //                                    self-contained, so it is correctly
-  //                                    reported without any disclaimer
+  // Both of its inputs are filled in the single relationship pass, and the
+  // reasoning for the indicator lives here so it is not lost with the code that
+  // used to fetch them.
   //
-  // The analyzer reached the file and recorded its other members. It did not
-  // record this one. That is a coverage gap in the index, and the finding has to
-  // say so, because "no incoming edge" and "the index did not look here enough"
-  // are indistinguishable from inside the engine and very different to a reader.
+  // It covers a case the refused-evidence disclosure does not. That disclosure
+  // fires for a symbol that HAD rows and had all of them refused. It does not
+  // cover a symbol with no rows at all, refused or otherwise — which is exactly
+  // the case the rake corpus forced: Rake::TestTask,
+  // Rake::FileCreationTask and Rake::EarlyTime have no incoming relationship of
+  // any kind. They are used — lib/rake.rb:51 and :57 `require_relative` their
+  // files, and dsl_definition.rb:83 calls `Rake::FileCreationTask.define_task` —
+  // and the index records none of it.
   //
-  // Counted over ALL non-bookkeeping incoming rows, anchored or not, and with
-  // `contains`/`exports` excluded. This measures whether the analyzer PRODUCED
-  // ANY ROW about a symbol in this file, which is a coverage question and not
-  // the evidence-quality question the gate above answers. Restricting it to
-  // anchored clean rows made FileCreationTask invisible to the disclosure even
-  // though its file has two incoming rows; restricting it to nothing at all would
-  // make the disclaimer fire on files the analyzer never mentioned, which is the
-  // failure mode the EarlyTime check in the corpus probe guards against.
-  const fileIncomingUsage = new Map<string, { edges: number; sources: Set<string> }>()
-  {
-    const reach = raw.prepare(
-      "SELECT t.file_id AS fid, COALESCE(r.source_symbol_id, '?') AS src, COUNT(*) AS n " +
-        "FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id " +
-        "WHERE r.project_id = ? " +
-        "AND r.relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ") " +
-        "AND (r.source_symbol_id IS NULL OR r.source_symbol_id <> r.target_symbol_id) " +
-        "GROUP BY t.file_id, COALESCE(r.source_symbol_id, '?')",
-    ).all(projectId, ...USAGE_TYPES) as Array<{ fid: string | null; src: string; n: number }>
-    for (const row of reach) {
-      if (!row.fid) continue
-      const entry = fileIncomingUsage.get(row.fid) ?? { edges: 0, sources: new Set<string>() }
-      entry.edges += row.n
-      entry.sources.add(row.src)
-      fileIncomingUsage.set(row.fid, entry)
-    }
-  }
+  // The signature is available and is precise:
+  //
+  //   lib/rake/testtask.rb             21 incoming rows, TestTask itself has 0
+  //   lib/rake/file_creation_task.rb     2 incoming rows, both `overrides`
+  //                                     SELF-LOOPS on needed?/timestamp;
+  //                                     FileCreationTask itself has 0
+  //   lib/rake/early_time.rb            0 from 0, and EarlyTime is genuinely
+  //                                     self-contained, so it is correctly
+  //                                     reported with NO disclaimer
+  //
+  // The analyzer reached the file, recorded its other members, and did not
+  // record this one. That is a coverage gap, and "no incoming edge" and "the
+  // index did not look here enough" are indistinguishable from inside the engine
+  // and very different to a reader. A finding in that state says so, and the
+  // probe in fixtures asserts the disclosure does NOT fire where there is no
+  // asymmetry to report — a caveat that fires everywhere is read nowhere.
+  //
+  // `contains` and `exports` are excluded from both inputs, for the same reason
+  // they are excluded from usage everywhere else: they are the indexer's own
+  // bookkeeping. Counting `exports` made Rake::TestTask look referenced,
+  // because its own module offers it — which is the definition of a declaration
+  // nobody called.
+  //
+  // fileIncomingUsage counts unanchored rows too. This measures whether the
+  // analyzer PRODUCED ANY ROW about a symbol in the file, which is a coverage
+  // question; restricting it to anchored clean rows made FileCreationTask
+  // invisible to the disclosure even though its file has two incoming rows.
 
-  // Symbols that DO have an incoming USAGE row are not coverage-gap candidates.
-  // `contains` and `exports` are excluded here for the same reason they are
-  // excluded from usage everywhere else: they are the indexer's own
-  // bookkeeping. Including them made Rake::TestTask look referenced, because
-  // its own module offers it via `exports` — which is the definition of a
-  // declaration nobody called.
-  const symbolsWithAnyIncoming = new Set<string>()
-  {
-    const rows = raw.prepare(
-      "SELECT DISTINCT target_symbol_id AS id FROM brain_relationship " +
-        "WHERE project_id = ? AND target_symbol_id IS NOT NULL " +
-        "AND source_symbol_id <> target_symbol_id " +
-        "AND relationship_type IN (" + USAGE_TYPES.map(() => "?").join(",") + ")",
-    ).all(projectId, ...USAGE_TYPES) as Array<{ id: string }>
-    for (const row of rows) symbolsWithAnyIncoming.add(row.id)
-  }
 
   // ---- suppression accounting ---------------------------------------------
   // Every skip below is counted. The previous revision silently dropped
@@ -665,10 +740,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return v
   }
 
-  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[]; fileUsage?: { edges: number; sources: Set<string> } }
+  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[]; fileUsage?: { edges: number; sources: number } }
   const candidates: OrphanCandidate[] = []
 
-  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[], fileUsage: { edges: number; sources: Set<string> } | undefined): PatternFinding => {
+  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[], fileUsage: { edges: number; sources: number } | undefined): PatternFinding => {
     const classLike = CLASS_LIKE_TYPES.has(sym.symbolType)
     const rule = classLike ? "orphaned_class" : "orphaned_function"
     return {
@@ -692,7 +767,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
           : []),
         ...(fileUsage ? [{
             kind: "heuristic" as const,
-            description: `COVERAGE GAP INDICATOR: this symbol has no incoming usage edge at all, but its file receives ${fileUsage.edges} incoming usage edge(s) from ${fileUsage.sources.size} distinct source(s). The analyzer reached this file and recorded its other members; it did not record this one. That asymmetry is the signature of a missing reference rather than of an unused declaration, and it is why this finding should be checked against the source before anything is removed.`,
+            description: `COVERAGE GAP INDICATOR: this symbol has no incoming usage edge at all, but its file receives ${fileUsage.edges} incoming usage edge(s) from ${fileUsage.sources} distinct source(s). The analyzer reached this file and recorded its other members; it did not record this one. That asymmetry is the signature of a missing reference rather than of an unused declaration, and it is why this finding should be checked against the source before anything is removed.`,
           }]
           : []),
       ],
@@ -702,7 +777,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
           ? [`${rejectedReasons.length} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
           : []),
         ...(fileUsage
-          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources.size} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
+          ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
           : []),
         ...(nameAmbiguous ? [`The name '${sym.name}' is declared more than once; unresolved name-only references are treated as uncertain and do not suppress this candidate.`] : []),
         "Framework entry points not matched by the built-in name/suffix rules may be false positives.",
