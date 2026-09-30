@@ -9,7 +9,7 @@ upstream's bytes.
 | Upstream | `tree-sitter-grammars/tree-sitter-make` |
 | Upstream revision | `70613f3d812cbabbd7f38d104d60a409c4008b43` ("chore: regenerate parser and bindings with 0.26.6") |
 | Upstream package | `tree-sitter-make` 1.1.1 (MIT) |
-| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `b39139af9cac6f7cfc97f81e72c8d93c92617a091090ab7fafdfe463fd03ea16`, 181,617 bytes — **a local build of the patched source below** |
+| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `8b70b4e9d83d6f9009074e283cedb378329b01249dba74266e82a81df4af12cc`, 167,375 bytes — **a local build of the patched source below** |
 | Pristine build (retained) | `ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
 | Patches | `ab/grammar.patch` (in-repo) — 3 patches, all measured (§ "The patches") |
 | External scanner | `src/scanner.c` — required by patch P3; **not** carried by `ab/grammar.patch`, which cannot express a new source file |
@@ -46,17 +46,21 @@ patch cannot express because it is a new file rather than an edit.
 **P3 — `.RECIPEPREFIX`, with an external scanner.** Upstream hardcoded the recipe
 prefix to a tab and left `// TODO external parser for .RECIPEPREFIX` where the value
 belonged, so a Makefile that set it lost every recipe line — a correctness defect, and
-0 of the 100 corpus files set it. The scanner learns the prefix from the assignment's
-value and declines everything it cannot vouch for, so only a single literal character
-changes behaviour; its state is serialized so an incremental reparse cannot resume with
-a default tab. Two properties matter and took three builds to get right: the tab stays
-an **internal** token (the scanner declines the external one whenever the tracked
-prefix is the default, so the two can never both match one character), and a declared
-prefix may lead a **rule** as a separate grammar alternative rather than an `optional`
-head, because a nullable head changes the reduce decision after a recipe's newline and
-loses the tab following an ordinary comment. The first two builds each regressed three
-real corpus files by 36 error nodes; `grammars/tree-sitter-make/recipeprefix/README.md`
-records both failures and is worth reading before changing any of this.
+0 of the 100 corpus files set it. The prefix applies to **RECIPE lines only**:
+GNU Make 4.3 rejects a prefixed RULE outright (`recipe commences before first
+target`), so `_ordinary_rule` is byte-for-byte upstream's and P3 can only ever *add* a
+recipe prefix. The scanner learns the prefix from the assignment's value, declines
+everything it cannot vouch for, serializes its state so an incremental reparse cannot
+resume with a default tab, and skips **line** whitespace before comparing — tree-sitter
+calls an external scanner before `extras` are skipped, so after a comment the prefix
+sits behind an unconsumed newline. Two of those are easy to get wrong and both were:
+reusing the value-arm whitespace test (which excludes newlines by design) compiled,
+ran, and skipped nothing; and letting the prefix lead a rule made a comment between
+two prefixed lines ambiguous, so the greedy recipe `repeat` swallowed the next rule.
+
+`grammars/tree-sitter-make/recipeprefix/README.md` records the three rejected
+versions. Note that `ab/grammar.patch` cannot express P3 alone: a new source file is
+not an edit, so `src/scanner.c` ships beside the patch.
 
 `tree-sitter.json` is vendored and **load-bearing**: without it the CLI falls back to
 ABI 14 and silently emits a parser that differs from the wired one.
@@ -124,7 +128,7 @@ be a sign the patch was wrong.
 
 `src/node-types.json` at the patched revision declares **44 named node types and
 24 fields**. The wired wasm's own enumerable surface, read through
-web-tree-sitter's `Language` API, is **189 ids / 44 named / 131 anonymous / 24
+web-tree-sitter's `Language` API, is **191 ids / 44 named / 132 anonymous / 24
 fields** — the identical named set and field set, **in both directions, zero
 missing and zero extra**.
 

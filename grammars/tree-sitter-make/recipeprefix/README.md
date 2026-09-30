@@ -66,10 +66,10 @@ Node surface **44 named / 24 fields, nothing added and nothing removed** — the
 property the source↔wasm proof depends on. Corpus A/B over all 100 files: **0
 error nodes, 0 files regressed**, verdict ADOPT.
 
-## What was wrong with the first two versions
+## What was wrong with the first three versions, and with the premise
 
-**Version 1** moved the tab out of the internal token set and made the external
-token the only prefix. The corpus A/B rejected it with 36 error nodes across
+**Version 1** moved the tab out of the internal token set and made the external token
+the only prefix. The corpus A/B rejected it with 36 error nodes across
 `boundary/Makefile`, `nomad/GNUmakefile` and `tf-aws-components/Makefile`, on the
 four-line shape
 
@@ -80,90 +80,72 @@ a:
 	echo bye
 ```
 
-A comment between two recipe lines ends the `repeat` that continues a recipe, and
-with the tab gone from the internal set the line after the comment had nowhere to
-go.
+A comment between two recipe lines ends the `repeat` that continues a recipe, and with
+the tab gone from the internal set the line after the comment had nowhere to go.
 
 **Version 2** put the tab back as an internal token and added the external one as an
 alternative — which fixed that, and then let a declared prefix lead a rule through
-`optional($._recipeprefix)`. That introduced a second reading of one character: in
-make a leading tab is a RECIPE, not insignificant whitespace, so the parser took the
-tab as a rule with an empty prefix and the recipe was lost. Same 36 errors.
+`optional($._recipeprefix)`. That gave one character two readings, and introduced the
+`[$.concatenation, $._line_text]` conflict. Same 36 errors.
 
-**Version 3, the one that ships**, has two properties neither earlier one had:
+**Version 3** kept the two token paths apart (the tab internal; the scanner declines the
+external token whenever the tracked prefix is the default) and still let the prefix lead
+a rule. It passed the corpus, and it was wrong about the LANGUAGE.
 
-- the tab remains an internal token and the scanner **declines the external token
-  whenever the tracked prefix is the default**, so the two can never both match one
-  character; and
-- a declared prefix may lead a rule as a **separate alternative**, never as an
-  `optional` head — a nullable head changes the reduce decision after a recipe's
-  newline, which is what lost the tab after an ordinary comment.
+### The premise was wrong, and only `make` could say so
 
-Neither earlier defect is visible in the corpus: 0 of the 100 pinned files put a
-comment between two recipe lines, and none sets `.RECIPEPREFIX`. Both were found by
-synthetic repros. That is worth stating plainly, because it is the same lesson the
-concatenated-name defect taught — a clean differential is completeness *on the files
-you have*.
+Versions 2 and 3 assumed a declared prefix leads a **rule** as well as a recipe. GNU
+Make 4.3, asked directly:
 
-The earlier framing of this file, kept because it explains the shape of the problem:
-
-Make strips the prefix from a rule line too, so a real file looks like:
-
-```make
->build: deps
->	echo hi
+```console
+$ printf '.RECIPEPREFIX = >\n>build:\n>\techo hi\n' | make -f -
+recipe commences before first target.  Stop.
 ```
 
-That needs the prefix token to be valid **at the start of a rule**, not only inside
-a recipe. Adding `optional(choice($._recipeprefix_tab, $._recipeprefix))` to
-`_ordinary_rule` fixes it — and immediately breaks the other case:
+With `>` as the recipe prefix, `>build:` **is** a recipe line, and a recipe may not come
+before the first target. The correct spelling leaves the rule unprefixed:
 
 ```make
+.RECIPEPREFIX = >
 build:
-	echo hi
-            # an ordinary comment
-	echo bye
+>	@echo hi
 ```
 
-A comment between two recipe lines ends the `repeat` that continues a recipe, and
-with the prefix token now reachable at statement start the parser takes the wrong
-branch: the tab line after the comment no longer resumes the recipe. The corpus A/B
-rejects it — **3 real Makefiles, 36 new error nodes**:
+So the rule-prefixed branch was a **fabricated construct** — the grammar accepted input
+make rejects. Deleting it fixed that, and fixed the one ambiguity it caused as well:
+with the prefix legal both as a recipe continuation and as a rule, a comment between two
+prefixed lines was ambiguous, the greedy recipe `repeat` won, and the following rule was
+swallowed into the previous recipe.
 
-```
-boundary/Makefile                0 -> 12
-nomad/GNUmakefile                0 -> 17
-tf-aws-components/Makefile       0 -> 10
-```
+### Two scanner traps, both of which failed silently
 
-A four-line repro, no corpus file needed:
+**Leading whitespace.** tree-sitter calls an external scanner *before* `extras` are
+skipped. A comment is a real token, so after one the scanner sits on a newline with the
+prefix one byte further along, and a naive `lookahead == prefix` declines. Every
+prefixed rule after any comment anywhere in the file became an ERROR.
 
-```make
-a:
-	echo hi
-# note
-	echo bye
-```
+**The wrong whitespace predicate.** The fix is to skip whitespace first — but reusing the
+value-arm test `is_space`, which **deliberately excludes `
+` and ``** because a
+newline terminates an assignment value, means the loop skips nothing at all. It compiled,
+it ran, and it changed no behaviour. The predicate had to be split into `is_space` (value
+terminator) and `is_line_space` (line boundary).
 
-The two requirements pull in opposite directions: the prefix must be lexable where
-a rule begins, and it must not be lexable where a recipe resumes. That is a
-tree-sitter lex-state problem, not a scanner-logic problem, and it is the whole
-reason this is filed rather than shipped.
+Neither defect is visible in the corpus: 0 of the 100 files set `.RECIPEPREFIX`, and none
+puts a comment between two recipe lines. Both were found by synthetic repros — which is
+the concatenated-name lesson for the third time on this lane.
 
-## The two residuals, and they are narrower than the feature was
+## What is shipped, and what is still open
 
-Both are already errors before the patch, so neither is a regression, and both are
-recorded in the spec rather than left to be discovered:
+Shipped: the prefix on recipe lines, with `_ordinary_rule` byte-for-byte upstream's.
+`ab/grammar.patch` cannot express P3 alone — a new source file is not an edit — so
+`src/scanner.c` ships beside it, and `.gitignore` excludes `grammars/tree-sitter-*/src/*`,
+so the scanner is force-added.
 
-1. a comment between two **prefixed** rules still yields an ERROR on the second
-   rule's prefix — the same lex-state shape version 2 could not fix, now confined to
-   prefixed files;
-2. an **attached** recipe on a prefixed rule line (`>a: ;cmd`) is not recognised.
-
-Neither appears in the corpus, so closing them needs a synthetic fixture and a
-scanner that answers differently depending on whether the parser expects a rule or a
-recipe continuation — `valid_symbols` may already distinguish the two, and the
-grammar does not currently ask it to.
+Open: **MAKE-G5**, a recipe line at EOF with no trailing newline is an ERROR and is lost.
+Pre-existing upstream behaviour, invisible to the corpus, and not fixed here because
+`optional(NL)` fails generation outright ("Specify a left or right associativity in
+`_prefixed_recipe_line`") and deserves its own measured change. See the spec entry.
 
 ## Reproducing
 

@@ -53,6 +53,17 @@ enum TokenType {
 
 static inline bool is_space(int32_t c) { return c == ' ' || c == '\t' || c == '\f' || c == '\v'; }
 
+// Whitespace for the purpose of FINDING THE START OF A LINE, which is a different
+// question from "whitespace inside an assignment value" and needs a different
+// answer. `is_space` deliberately excludes `\n` and `\r` because a newline TERMINATES
+// an assignment value; reusing it to skip towards a recipe prefix therefore skips
+// nothing at all, because the very thing that has to be crossed is the newline the
+// previous line ended with. That cost one build: the whitespace-skip loop compiled,
+// ran, and silently did nothing.
+static inline bool is_line_space(int32_t c) {
+  return c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\n' || c == '\r';
+}
+
 // GNU Make's default recipe prefix, and the value used whenever `.RECIPEPREFIX`
 // is absent or unresolvable.
 #define DEFAULT_RECIPE_PREFIX '\t'
@@ -176,12 +187,40 @@ bool tree_sitter_make_external_scanner_scan(void *payload, TSLexer *lexer, const
   // case the internal token exists to serve.
   if (scanner->recipe_prefix == DEFAULT_RECIPE_PREFIX) return false;
 
-  if (valid_symbols[RECIPE_PREFIX] && lexer->lookahead == scanner->recipe_prefix) {
-    lexer->advance(lexer, false);
-    lexer->mark_end(lexer);
-    lexer->result_symbol = RECIPE_PREFIX;
-    return true;
-  }
+if (valid_symbols[RECIPE_PREFIX]) {
+      // Skip the whitespace BEFORE comparing, and this is not optional.
+      //
+      // tree-sitter calls the external scanner at the position where the PREVIOUS
+      // token ended, before `extras` are skipped. A comment is a real token, so
+      // after one the scanner is sitting on a newline with the prefix character one
+      // byte further along. Comparing `lookahead` against the prefix without
+      // skipping first therefore declined, the internal lexer then consumed the
+      // newline as a `/\s/` extra, and the prefix was lexed as a stray anonymous
+      // token -- an ERROR -- for EVERY prefixed rule that followed a comment
+      // anywhere earlier in the file:
+      //
+      //     .RECIPEPREFIX = >
+      //     # a comment
+      //     >build:
+      //     >	gcc -o build
+      //
+      // Why this hid for so long: the assignment token already consumes its own
+      // trailing newline, so a prefixed rule directly after the assignment is
+      // scanned with the prefix already under `lookahead` and matched. It failed
+      // only once a COMMENT had intervened -- which is the common shape, and which
+      // no corpus file contains.
+      //
+      // `advance(lexer, true)` marks the whitespace as skipped, so it stays out of
+      // the token's span exactly as `extras` would have done.
+      while (is_line_space(lexer->lookahead)) lexer->advance(lexer, true);
+
+      if (lexer->lookahead == scanner->recipe_prefix) {
+        lexer->advance(lexer, false);
+        lexer->mark_end(lexer);
+        lexer->result_symbol = RECIPE_PREFIX;
+        return true;
+      }
+    }
 
   return false;
 }

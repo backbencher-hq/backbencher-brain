@@ -25,6 +25,26 @@ import * as path from "path"
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
+
+// M60 Make wave: the ERROR-node census behind `expectNoParseErrors`.
+//
+// The analyzer's own `result.errors` cannot answer this question -- a tree-sitter
+// ERROR node is not a parse FAILURE, it is a successful parse of a damaged region,
+// and it is precisely the case recovery hides. So this asks the grammar directly,
+// through the harness's existing `getParser`.
+async function countParseErrorNodes(lang: string, content: string): Promise<{ line: number; missing: boolean }[]> {
+  const parser = await getParser(lang)
+  const root = parser.parse(content).rootNode
+  const found: { line: number; missing: boolean }[] = []
+  const walk = (n: any): void => {
+    if (n.type === "ERROR" || n.isMissing) found.push({ line: n.startPosition.row + 1, missing: !!n.isMissing })
+    for (const c of n.children) walk(c)
+  }
+  walk(root)
+  return found
+}
+
+
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
   // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
@@ -262,7 +282,7 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
         // compares exactly as before.
         if (mv !== undefined && mv !== null) return false
       } else if (mv !== v) return false
-    } else if (actual[k] !== v) {
+    } else if (actual[k] !== v && (actual.range?.[k] ?? actual[k]) !== v) {
       // relationship field aliases
       const aliases: Record<string, string[]> = {
         from: ["from", "source", "fromSymbol"],
@@ -277,8 +297,21 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
   return true
 }
 
-function normRel(r: Entry): Entry {
-  return {
+/**
+ * Does a parse/lint error row satisfy an `expectErrors` / `forbidErrors`
+ * constraint?
+ *
+ * Analyzers place parse errors at `result.errors` (older contract) or in
+ * `metadata.errors` (rust/others) — search BOTH (unified 2026-09-05 by the rust
+ * RSD2 error-file-payload fixture). The per-field comparison is `range[k] ?? k`,
+ * so a constraint may name `startLine` / `startColumn` / `severity` directly.
+ */
+function errorsMatch(result: any, want: Entry): boolean {
+  const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+  return errList.some((e: any) => matchConstraints(e, want))
+}
+
+function normRel(r: Entry): Entry {  return {
     ...r,
     from: r.from ?? r.source ?? r.fromSymbol,
     target: r.target ?? r.to ?? r.toSymbol,
@@ -407,6 +440,38 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
     const problems: string[] = []
+
+      // M60 Make wave. `expectNoParseErrors` is the negative assertion that the
+      // symbol/relationship assertions structurally CANNOT make, and its absence is
+      // how a broken fixture came to pass.
+      //
+      // Tree-sitter error recovery is good: given `>clean:` it emits `(ERROR
+      // (UNEXPECTED '>'))` and then still produces a `rule` with the right targets
+      // at the right line. Every other key in this schema is therefore satisfied —
+      // the symbol is there, the line is right — and the fixture goes GREEN while
+      // the grammar is visibly broken. That is exactly what happened to
+      // make/recipeprefix: it asserted `clean` at line 27, the analyzer recovered to
+      // give it line 27, and the harness never looked at the tree. The fixture was
+      // cited as pinning the very case the grammar got wrong.
+      //
+      // It is OPT-IN per fixture so that turning it on does not silently change any
+      // other lane's gate mid-flight: an expectation that does not ask for it is not
+      // checked, and one that does gets the ERROR-node census.
+      if ((exp as any).expectNoParseErrors) {
+        try {
+          const errNodes = await countParseErrorNodes(runLangLang, content)
+          if (errNodes.length) {
+            problems.push(
+              `expectNoParseErrors: the tree has ${errNodes.length} ERROR/MISSING node(s) — ` +
+              `${errNodes.slice(0, 6).map(e => `line ${e.line}${e.missing ? " (missing)" : ""}`).join(", ")}` +
+              `${errNodes.length > 6 ? ", ..." : ""}. Error RECOVERY still produced the expected ` +
+              `symbols, so every other assertion in this file passes on a broken grammar.`,
+            )
+          }
+        } catch (e: any) {
+          problems.push(`expectNoParseErrors could not be checked: ${String(e?.message ?? e)}`)
+        }
+      }
 
     // M60 fsharp wave: an unrecognised key in a CONSTRAINT row is a silently dead
     // assertion. See CONSTRAINT_KEY_ALLOWLIST's header — five of the fsharp lane's
@@ -910,14 +975,17 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       if (actual.includes(want)) problems.push(`forbidden framework detected: "${want}"; got: ${JSON.stringify(actual)}`)
     }
     for (const want of exp.expectErrors ?? []) {
-      // analyzers place parse errors at result.errors (older contract) or in
-      // metadata.errors (rust/others) — search BOTH (unified 2026-09-05 by
-      // the rust RSD2 error-file-payload fixture).
-      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
-      const hit = errList.find((e: any) =>
-        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
-      )
-      if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+      // M60 php F3 (2026-09-30): these two went through `Object.entries(want).every(...)`
+      // rather than the shared `matchConstraints`, so they were the ONLY expectation
+      // keys where a `comment` on a row was read as a MATCH CONSTRAINT — and a
+      // documented row could therefore never match, which is the "a documentation
+      // field read as data" class the project keeps meeting in other instruments.
+      // One matcher now, with the `range` field fallback the error rows always had,
+      // so `startLine`/`startColumn` work here exactly as they did before.
+      if (!errorsMatch(result, want)) {
+        const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+        problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+      }
     }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
@@ -926,12 +994,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidErrors ?? []) {
       // TS T1 wave: absence assertions for parse/lint errors (a plain
       // module must produce zero hook warnings). Matches expectErrors
-      // field-for-field over range ?? top level.
-      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
-      const hit = errList.find((e: any) =>
-        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
-      )
-      if (hit) problems.push(`forbidden error present: ${JSON.stringify(want)} (found ${JSON.stringify(hit.message ?? hit).slice(0, 120)})`)
+      // field-for-field over range ?? top level — and, since the php F3 round,
+      // through the SAME matcher, so `comment`/`note` are documentation here too.
+      if (errorsMatch(result, want)) {
+        const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+        problems.push(`forbidden error present: ${JSON.stringify(want)} (found ${JSON.stringify(errList.find((e: any) => matchConstraints(e, want))?.message ?? "").slice(0, 120)})`)
+      }
     }
     for (const want of exp.expectSymbolCount ?? []) {
       // { name, equals } — pins DEDUPE: overload groups must yield exactly
