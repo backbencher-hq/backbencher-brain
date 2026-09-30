@@ -45,6 +45,10 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
       "type": "boolean",
       "description": "include edges the indexer marked cross-language (default true). Set false for a single-language view."
     },
+    "maxEdges": {
+      "type": "number",
+      "description": "hard cap on the number of edges in the WHOLE answer, across both directions and all depths (default 1000, max 5000). `edgeLimit` bounds one query and this bounds the answer; their product is what a caller receives. Reaching it is declared as `total-edge-limit` with the value in `summary.maxEdges`. Raise it for a hub symbol, lower it for a quick shape check"
+    },
     "edgeLimit": {
       "type": "number",
       "description": "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`summary.calleesIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer."
@@ -66,6 +70,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 - Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence
 - Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0
 - `summary.edgesByType`: the composition of the RETURNED edges by stored relationship kind, counted from the emitted edges. The default filter covers every stored kind, so an answer is usually not all call edges — measured: lodash `baseConvert` 99 of 230, cobra `getCompletions` 36 of 65, rake `standard_rake_options` 72 of 76. This is how you learn the ratio without walking the edges
+- `summary.maxEdges` / `totalEdgeLimitReached`: the bound on the WHOLE answer, across both directions and every depth, and whether it bit. `edgeLimit` bounds one query; this bounds the answer, and their product is what a caller receives
 - `summary.edgeKindPriority`: the order in which kinds survive the per-symbol site limit — dependency kinds first, then lexical, then module-level, then membership. Only observable under `truncated`, published always
 - `summary.relationshipTypesUsed`: the relationship kinds this run actually searched, resolved. `summary.scope.relationshipTypes` echoes it, so the filter that produced the answer is never a restatement of a default that may have moved
 - `summary.exactCallers` / `cascadedCallers` / `exactCallees` / `cascadedCallees`: DEPTH 0 only — how much of the answer is about the symbol that was asked for and how much the owner cascade folded in from its members. `deeperCallers` / `deeperCallees` hold the edges about symbols the traversal discovered, so exact + cascaded + deeper is the number of edges returned
@@ -92,6 +97,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 - Missing symbol
 - maxDepth outside the declared 1-10 range
 - edgeLimit below 1
+- maxEdges below 1
 - direction outside callers|callees|both
 - relationshipTypes given as an empty list (a narrowed traversal that can match nothing is refused rather than silently returning an empty graph)
 - Symbol not found in the index
@@ -113,7 +119,7 @@ Per-symbol dependency graph over the canonical graph engine: callers, callees, p
 
 ## Performance
 
-maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph. A broad traversal is bounded three ways and each bound is declared in the summary: the per-symbol site limit (`edgeLimit`), the fan-out budget (50 symbols per direction, `callerBudget`/`calleeBudget`), and the depth. `direction` halves the work when only one side is wanted. `direction` halves the work when only one side is wanted — measured on cobra, a caller-only question about a symbol with 36 callees returned 1 edge instead of 37. The per-direction fan-out budget (50 symbols) is internal and is not exposed: truncation is declared in the summary when it bites.
+maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph. The answer is bounded at three levels and every level is declared: the per-query site limit (`edgeLimit`, default 200, max 5000), the fan-out budget (50 symbols per direction, `callerBudget`/`calleeBudget`) and the size of the WHOLE answer (`maxEdges`, default 1000, max 5000). The third exists because the product of the first two is not a number a reader can use: measured, ripgrep's `unwrap` returns 206 edges at depth 1, 454 at depth 3 and 702 at depth 5 - 228 KiB, 504 KiB and 770 KiB rendered. Reaching `maxEdges` is declared as `total-edge-limit` with the value in `summary.maxEdges`. The depth bound (`maxDepth`, paired with the `maxDepthReached` that says how far the walk actually got) is the fourth `direction` halves the work when only one side is wanted. `direction` halves the work when only one side is wanted — measured on cobra, a caller-only question about a symbol with 36 callees returned 1 edge instead of 37. The per-direction fan-out budget (50 symbols) is internal and is not exposed: truncation is declared in the summary when it bites.
 
 ## Safety
 
