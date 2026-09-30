@@ -1964,9 +1964,35 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (IMPURE_BUILTINS[formName] || formName.endsWith("!") || formName.startsWith(".") || formName.endsWith(".")) {
             activeFunction.metadata.isPure = false
           }
+          // CLJ-D42: `recur` IS NOT A CALL, AND A `calls` EDGE FROM A SYMBOL TO
+          // ITSELF IS NOT A CALL AT ALL.
+          //
+          // This used to push `calls: activeFunction -> activeFunction` with
+          // `isRecursion: true`, which manufactured 18 edges in clojure/core.clj
+          // alone - every one of them `lambda_83_6 -> lambda_83_6` on a line whose
+          // head is `(recur …)`. Three separate reasons make it wrong:
+          //
+          //   1. `recur` is a SPECIAL FORM. It transfers control to the enclosing
+          //      `fn`/`loop`; it names no var and invokes nothing. This is the same
+          //      ruling as CLJ-D41, and the analyzer already half-believed it -
+          //      `recur` is in the derived core list at :97, so the suppression gate
+          //      has the information to stay silent and this line overrode it.
+          //   2. THE TARGET IS NOT NAVIGABLE. `lambda_83_6` is a GENERATED name for
+          //      an anonymous function, an internal artifact of the walk rather
+          //      than anything a reader of the graph can reach. A relationship whose
+          //      target is an implementation detail is a claim the graph cannot
+          //      honour.
+          //   3. IT IS NOT A CALL. The fact being recorded - "this function
+          //      recurses" - is real, and `metadata.isRecursive` on the enclosing
+          //      symbol already records it, which is the right home for it. An
+          //      edge from a symbol to itself duplicated that fact in the one
+          //      relationship type every consumer reads as invocation, which is how
+          //      18 fabrications reached a differential gate that was measuring 0
+          //      defects at the time.
+          //
+          // Nothing reads `isRecursive` today. That is a separate finding - a dead
+          // capability claim - and it is left visible rather than papered over here.
           if (formName === "recur") {
-            const recurHead = executionHead(node)
-            pushRel(activeFunction.name, activeFunction.name, ASTEngine.RelationshipType.Calls, 1.0, { clojureSpecific: true, isRecursion: true }, recurHead ? recurHead.startPosition.row + 1 : undefined, callArityOf(node))
             activeFunction.metadata.isRecursive = true
           } else if (formName === activeFunction.name) {
             activeFunction.metadata.isRecursive = true
