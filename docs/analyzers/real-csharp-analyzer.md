@@ -277,21 +277,63 @@ number that overwrote the canonical artifact on every measurement would stop bei
 the table above is the only place these figures live, and the canonical artifact is still older
 than this round for that reason rather than by oversight.
 
-**The 3 unexplained powershell edges are NOT adjudicated.** They are confident analyzer edges with
-no truth row, which is the direction the aggregate hides: MISSING=0 reads as clean and the other
-number does not. 3 is small enough to be one rule and large enough to matter, and no per-label
-breakdown exists to say which. Adjudicating them needs the harness to report `unexplained` per
-label rather than as one lane total, because a single count cannot distinguish one rule firing
-three times from three rules firing once — and those need opposite responses.
+**The unexplained powershell edges ARE adjudicated — CS-D11, and it is the ORACLE that is wrong.**
 
-An attempt to get that breakdown from outside the harness failed, and the reason is recorded in
-`script/m14/tmp/cs-deep-62-unexplained-by-label.ts` rather than left as a mystery: `CSHARP_INTERFACES`
-is built inside the harness and is not exported, so a probe calling `deriveCSharpEdges(root,
-undefined)` derives LESS truth than the gate does and reports ~935 phantom fabrications against
-the harness's 3. The probe is kept precisely because that failure is instructive — it is the third
-time this round that a private reimplementation of harness internals produced confident numbers
-that were wrong (see also the private-matcher near-miss in `cs-deep-60`). Reading the matcher and
-the surrounding context first is cheaper than debugging a number that was never the gate's.
+A per-label breakdown of `unexplained` (added to `differential.ts` this round, report-only and
+appended only when the total is non-zero, so a clean lane's line is byte-identical to before) put
+every one of them on `uses` and nothing else. `BB_F5_SHOW_SAMPLES=1` then named them:
+
+    uses Date                    -> DateAndUFormatParameterSet              GetDateCommand.cs:28
+    uses Date                    -> DateAndUFormatParameterSet              GetDateCommand.cs:57
+    uses UnixTimeSeconds         -> UnixTimeSecondsAndUFormatParameterSet  GetDateCommand.cs:58
+    uses UnixTimeSeconds         -> MinimumUnixTimeSecond                   GetDateCommand.cs:58
+    uses UnixTimeSeconds         -> MaximumUnixTimeSecond                   GetDateCommand.cs:58
+    uses LiteralName             -> LiteralNameParameterSet                 Navigation.cs:1508
+    uses GetComputerInfoCommand  -> localMachineName                        GetComputerInfoCommand.cs:86
+
+Every target is a **real `const` declared in the same file** — `private const string
+DateAndUFormatParameterSet` and friends at GetDateCommand.cs:572, `private const string
+localMachineName = null` at GetComputerInfoCommand.cs:82. The edges resolve and are
+semantically correct reads. The analyzer is right; the TRUTH is incomplete.
+
+Minimal reproduction, and it took four attempts because the first three were too easy:
+
+| case | analyzer | oracle |
+| --- | --- | --- |
+| attribute on a **method**, const declared before | `Early`, `Low2` | `Early`, `Low2` |
+| attribute on a **method**, const declared after | `Late`, `Low` | `Late`, `Low` |
+| attribute on a **property**, `Name = value` | `Later` | *(nothing)* |
+| attribute on a **property**, positional argument | `Low` | *(nothing)* |
+
+Declaration order is irrelevant. **The discriminator is method versus property**: the oracle
+derives attribute-argument uses under a method declaration and not under a property declaration,
+so the property's attributes are evidently resolved in a scope where the class's own consts are
+not visible. The walk itself is not skipping the subtree — it has five branches and none of them
+skip children — so the failure is the push condition's scope, not the traversal. Fixing it means
+resolving an attribute's argument list in the enclosing type scope rather than the one the
+property opens.
+
+Two things are deliberately NOT claimed here. The scope mechanism is inferred from the symptom,
+not read out of the code, so the fix is named rather than written. And a `uses`-labelled edge for
+a const read is a modelling judgement, not a proof — but it is the judgement the analyzer already
+makes everywhere else, and the oracle agrees with it in the method case, so the asymmetry is the
+defect rather than either answer.
+
+This is the third oracle-side defect this round, after CS-D9 and CS-D10, and the pattern is worth
+stating once: **every time this lane's `unexplained` number has been chased down, the truth
+turned out to be the defective party.** Three for three. A count nobody attributes is a count
+nobody should trust in either direction.
+
+
+**How the breakdown was obtained, since two attempts to get it from outside the harness failed.**
+`CSHARP_INTERFACES` is built inside the harness and is not exported, so a probe calling
+`deriveCSharpEdges(root, undefined)` derives strictly LESS truth than the gate does and reported
+~935 phantom fabrications against the real 3. The probe is kept with a banner saying so, because
+that failure is instructive rather than a mystery: it is the third time this round that a private
+reimplementation of harness internals produced confident numbers that were wrong (see also the
+private-matcher near-miss in `cs-deep-60`). The information exists only where `truth` and `rels`
+are both in scope, which is inside the per-file loop. Reading the matcher and the surrounding
+context first is cheaper than debugging a number that was never the gate's.
 
 ## Evidence pointers
 
