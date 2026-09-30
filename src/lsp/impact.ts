@@ -1046,6 +1046,18 @@ export async function computeImpact(
     truncated = true
     truncationReason = truncationReason ?? "impact-set-shorter-than-unbounded-walk"
   }
+  // M63.T2: a time bound on EITHER side makes the answer unreproducible, and the
+  // reason has to say so. The engine's walk-time clause is handled where the
+  // engine's reasons are read; this is the counting walk's own breaker, and it
+  // fires LATER than that, so it could not be folded in there. Caught by the
+  // suite's law: `cargo/project` came back `reproducible: false` with the reason
+  // `impact-node-budget-exhausted`, which names a bound of the INDEX and so reads
+  // as reproducible when it is not.
+  if (verify && counts.timedOut === true) {
+    truncated = true
+    const clause = "count: time-budget-exhausted — this answer is not reproducible"
+    truncationReason = truncationReason === null ? clause : `${truncationReason} (${clause})`
+  }
   const summary = result.summary
   // A member whose owner the index refused is not evidence that it is a member,
   // so the breakdown is then UNESTABLISHED: `null` says so where a count would
