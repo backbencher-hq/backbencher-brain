@@ -864,6 +864,27 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the oracle while the analyzer (name-aware) suppressed them. The first
     // post-change F5 run read 26 MISSING / 11 UNEXPLAINED for exactly that.
     const shadowRanges: Array<{ name: string; start: number; end: number }> = []
+    // PERF (2026-09-30). `isShadowedAt` is called at EVERY call site, so the
+    // shadow table's shape is the analyzer's hot loop. It was a linear scan over
+    // EVERY range for EVERY site, which makes a file O(sites × ranges) — quadratic
+    // in the file, and invisible in a corpus total because the mean is dominated
+    // by the big files. The cost-by-size census caught it in the one view that
+    // shows super-linearity: `test_clojure/data_structures.clj` cost 23 ms/KB
+    // against a 5.6 ms/KB corpus norm, at only 60 KB — a TEST file, where every
+    // `deftest` adds a range and every assertion adds a site, which is precisely
+    // the worst case for that scan.
+    //
+    // The ranges were ALREADY keyed by name (CLJ-D18 made them `(name, span)`), so
+    // the fix is to index them and look up ONE key: O(1) plus the two or three
+    // ranges for that name, which is almost always zero. No semantic change — the
+    // same predicate, asked of less data. The array is kept because the range
+    // COUNT is part of what the census reports.
+    const shadowIndex = new Map<string, Array<{ start: number; end: number }>>()
+    const indexShadowRange = (name: string, start: number, end: number): void => {
+      const list = shadowIndex.get(name)
+      if (list) list.push({ start, end })
+      else shadowIndex.set(name, [{ start, end }])
+    }
     const DEF_NAME_HEADS: Record<string, boolean> = Object.create(null)
     // CLJ-D18: `defmethod` and `deftest` bind a var of the multimethod's / test's
     // name (the defmethod case is the lane's declared 3-symbol multi-site
@@ -965,7 +986,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The gate is one null-prototype Set lookup, so the hot path is unchanged.
       if (candidate.type === "sym_lit" && CLOJURE_CORE_BUILTINS[symName(candidate)]) {
         const range = shadowRangeOf(candidate)
-        if (range) shadowRanges.push(range)
+        if (range) { shadowRanges.push(range); indexShadowRange(range.name, range.start, range.end) }
       }
       for (let i = 0; i < candidate.namedChildCount; i++) {
         const child = candidate.namedChild(i)
@@ -973,7 +994,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const isShadowedAt = (name: string, pos: number): boolean => {
-      for (const r of shadowRanges) if (r.name === name && pos >= r.start && pos < r.end) return true
+      const list = shadowIndex.get(name)
+      if (list === undefined) return false
+      for (let i = 0; i < list.length; i++) { const r = list[i]!; if (pos >= r.start && pos < r.end) return true }
       return false
     }
     // ── The one suppression gate (CLJ-D17/CLJ-D18/D2) ───────────────────────────────
