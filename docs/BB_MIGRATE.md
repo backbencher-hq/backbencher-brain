@@ -351,6 +351,63 @@ the project layout, not of a query plan — but it is alphabetical, which is why
 the rule selected rather than quietly applying a heuristic that happens to look
 smarter.
 
+## "No route" meant 80% of all requests, and it was the wrong word
+
+A target language with no dictionary rows **for that pair** used to be refused
+outright as `unsupported-target`. The detail read:
+
+> no library-equivalence data is registered for typescript → rust; this tool has no
+> migration route between them
+
+The first clause is true. The second is not. They were one statement, and the
+false half is the one that decides the behaviour.
+
+### How much it was refusing
+
+Measured from the running module — `migrationDictionaryRows()` and
+`hasMigrationRoute`, not a regex over the source, because the dictionary literal
+contains duplicate source keys and a regex sees both:
+
+| | |
+|---|---|
+| rows / sources / targets | 486 / 30 / 21 |
+| pairs with a route | **126 of 630 (20.0%)** |
+| pairs with no route | **504 of 630 (80.0%)** |
+| of those, same-language (still correctly refused, as `same-language`) | 20 |
+
+**Four out of five language pairs produced nothing at all** — no dependency order,
+no effort model, no scope accounting, no waves. `typescript → rust` has no rows;
+`kotlin → rust`, `swift → rust` and `zig → rust` do. A Node-to-Rust port was
+refused because of which rows someone happened to write.
+
+### What happens now
+
+- A target language the tool **does not know** is still refused: `brainfuck`,
+  `cobol` and `malbolge` all come back `unsupported-target`, naming the target.
+- A **known** target with no rows for the pair is **planned**, and the gap is stated
+  twice so it cannot be skimmed past:
+  - `dependencyProvenance.note` — *"This tool registers no library-equivalence data
+    for typescript → haskell, so no mapping can be offered for any library. That is
+    **MISSING DATA, not an absence of libraries**."*
+  - a **risk factor** — *"no library-equivalence data is registered for
+    typescript → haskell, so this plan carries NO library mappings: every library
+    will need its target-language equivalent chosen by a human"*.
+- `dependencies` stays **empty** for an unrouted pair. That is the guarantee round
+  1 bought by refusing, and it is kept: no mapping is ever invented, and
+  `inferredDependencies` remains excluded from effort and risk.
+
+A **routed** pair carries neither statement, so the warning still means something
+the day it fires.
+
+### How it stayed hidden for six rounds
+
+`script/verify-visualize-migrate.ts` had been RED since round 1, for exactly this
+reason — round 1 correctly stopped fabricating library mappings, and the refusal it
+replaced was the only thing making that gate's `plans.length >= 1` assertion pass.
+I had treated the reddened gate as collateral from removing the fabrication and
+moved on. It was not collateral: it was the fabrication's last disguise, and
+pointing at a refusal that was throwing away 80% of all requests.
+
 ## Scope: how much of the work this request actually covers
 
 An integration point is **in scope** when its other endpoint is one of the

@@ -1255,15 +1255,26 @@ export namespace CrossLanguageMigrationAssistant {
     if (sourceLanguage === normalizedTargetLanguage) {
       return { ok: false, refusal: { reason: "same-language", detail: `source and target are both ${sourceLanguage}` } }
     }
-    if (!hasMigrationRoute(sourceLanguage, normalizedTargetLanguage)) {
-      return {
-        ok: false,
-        refusal: {
-          reason: "unsupported-target",
-          detail: `no library-equivalence data is registered for ${sourceLanguage} → ${normalizedTargetLanguage}; this tool has no migration route between them`,
-        },
-      }
-    }
+    // A KNOWN target with no dictionary rows for this PAIR is not a refusal.
+    //
+    // This used to return `unsupported-target`, and it conflated two different
+    // things: "this tool holds no library-equivalence data for typescript → rust"
+    // and "there is no such migration". Only the first is true. The dictionary
+    // carries kotlin → rust, swift → rust and zig → rust but no typescript → rust,
+    // so an entirely ordinary Node-to-Rust port was refused outright — and with it
+    // the dependency order, the effort model, the scope accounting and the waves,
+    // all of which are language-agnostic and all of which the tool can compute
+    // without a single library row.
+    //
+    // The gate `script/verify-visualize-migrate.ts` had been RED since round 1 for
+    // exactly this reason: round 1 correctly stopped fabricating mappings, the
+    // refusal it replaced had been the only thing making that assertion pass, and
+    // the assertion it was hiding went unfollowed-up.
+    //
+    // An unrecognized target language is still refused above, and no mapping is
+    // ever invented: the plan says mappings are unavailable for the pair, which is
+    // the same UNKNOWN-not-empty discipline `dependencyProvenance` already uses
+    // for import evidence.
 
     // 2. Relationship evidence, scoped to this symbol's ids. Every field is one
     //    the indexer actually stored; nothing is synthesised. The previous path
@@ -1425,6 +1436,16 @@ export namespace CrossLanguageMigrationAssistant {
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
 
+    const hasRoute = hasMigrationRoute(sourceLanguage, normalizedTargetLanguage)
+    if (!hasRoute) {
+      // Said in the risk factors, not only in a note, because a risk factor is the
+      // one field a reader cannot miss — and "this port has no library mapping data"
+      // is a genuine risk in a plan, not a footnote.
+      riskFactors.push(
+        `no library-equivalence data is registered for ${sourceLanguage} → ${normalizedTargetLanguage}, so this plan carries NO library mappings: every library will need its target-language equivalent chosen by a human`,
+      )
+    }
+
     log.debug(`buildPlan: produced plan for '${symbol.name}' -> ${normalizedTargetLanguage}`)
 
     return {
@@ -1441,9 +1462,18 @@ export namespace CrossLanguageMigrationAssistant {
           indexedImports: evidenced.length,
           nameHeuristics: inferred.length,
           importEvidence: evidenceAvailable ? "available" : "unavailable",
-          note: evidenceAvailable
-            ? "`dependencies` is derived from indexed imports. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk."
-            : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          // Both reasons, or neither: the pair may have no mapping data AND the
+          // index may hold no import evidence. Reporting one while implying the
+          // other is covered is how "empty" comes to mean "none".
+          note: [
+            evidenceAvailable
+              ? "`dependencies` is derived from indexed imports."
+              : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN.",
+            hasRoute
+              ? `Library mappings for ${sourceLanguage} → ${normalizedTargetLanguage} come from the registered dictionary.`
+              : `This tool registers no library-equivalence data for ${sourceLanguage} → ${normalizedTargetLanguage}, so no mapping can be offered for any library. That is MISSING DATA, not an absence of libraries.`,
+            "`inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          ].join(" "),
         },
         relationshipEvidence,
         evidenceBreakdown: breakdown,
