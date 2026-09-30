@@ -914,9 +914,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child && child.type === "string") {
             const exportName = this.unquote(child)
             if (exportName) {
-              ctx.exports.push({ name: exportName, type: "list_item" })
+              // `form` records WHICH `__all__` spelling declared this name, alongside the
+              // same fact on the relationship edge. `list` and `tuple` are one declaration
+              // to `from mod import *`, so this is provenance rather than meaning — and it
+              // is what lets PY-14's revert be expressed as a shape instead of as a list
+              // of fixture strings.
+              ctx.exports.push({ name: exportName, type: "list_item", form: right.type })
               this.pushRel(ctx, ctx.moduleName, exportName, ASTEngine.RelationshipType.Exports, 1.0, {
                 pythonSpecific: true,
+                // WHICH SPELLING declared the export. `list` and `tuple` are the same
+                // declaration to `from mod import *`, so the edge is the same either way —
+                // but a reader triaging a surface wants to know that a module declares it
+                // twice in two forms, and it gives the mutant harness a way to express
+                // PY-14's revert generically instead of by naming fixture strings.
+                dunderAllForm: right.type,
               }, this.nodeLine(child))
             }
           }

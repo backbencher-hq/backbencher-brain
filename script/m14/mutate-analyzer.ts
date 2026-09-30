@@ -12029,16 +12029,31 @@ export const MUTANTS: Mutant[] = [
       "already used the module stem. Caught by python/module-all-exports, whose expected `from` is the " +
       "module name — a lane spelling the scope `global` cannot match it.",
     transform: r => {
-      const stem = String((r as any).filePath ?? "").split("/").pop()?.replace(/\.py$/, "") ?? ""
-      // The analyzer publishes the NORMALISED stem (PY-13), so the pre-fix spelling is
-      // reached by mapping the normalised form back. Comparing against the raw stem
-      // matches nothing, which is how the first version of this mutant became a no-op
-      // that reported 0 -> 0 failures and looked like a survivor rather than a mistake.
-      const normalised = stem.replace(/[^A-Za-z0-9_]/g, "_")
-      const rename = (s: unknown): unknown => (s === normalised ? "global" : s)
+      // The synthetic module scope is identified the way a consumer would identify it:
+      // it is the relationship source that NO SYMBOL DECLARES. Deriving it from the
+      // filename instead — which the first two versions of this mutant did — cannot work,
+      // because `ParseResult` carries no `filePath`, so `stem` was always "" and the
+      // rename matched nothing. A mutant that reports 0 -> 0 is indistinguishable from a
+      // survivor at a glance, and this one looked like a survivor twice before the cause
+      // was that it was a no-op.
+      const declared = new Set(((r.symbols ?? []) as any[]).map((s) => String(s.name)))
+      // A relationship publishes an endpoint under SEVERAL field names at once — the
+      // python lane sets `source` AND `fromSymbol` — and the fixture matcher accepts a
+      // row when ANY alias equals the wanted value. Renaming one of the two leaves the
+      // other carrying the correct name, so the revert is INVISIBLE: this mutant
+      // reported itself a survivor while modelling nothing at all. A faithful revert
+      // moves every name the endpoint is published under, which is what the analyzer
+      // does when it gets the scope wrong.
+      const rename = (v: unknown): unknown => (declared.has(String(v)) ? v : "global")
       return {
         ...r,
-        relationships: ((r.relationships ?? []) as any[]).map((x) => ({ ...x, source: rename(x.source) })),
+        relationships: ((r.relationships ?? []) as any[]).map((x) => {
+          const y: any = { ...x }
+          for (const k of ["source", "from", "fromSymbol", "target", "to", "toSymbol"]) {
+            if (typeof y[k] === "string") y[k] = rename(y[k])
+          }
+          return y
+        }),
       }
     },
   },
@@ -12054,18 +12069,23 @@ export const MUTANTS: Mutant[] = [
       "whose file is `module-all-exports.py` and whose every export edge must be sourced from " +
       "`module_all_exports` — the unnormalised spelling matches nothing.",
     transform: r => {
-      const stem = String((r as any).filePath ?? "").split("/").pop()?.replace(/\.py$/, "") ?? ""
-      // Same correction as the sibling: the analyzer emits the NORMALISED stem, so the
-      // pre-fix observable is that normalisation mapped back to the raw one.
-      const normalised = stem.replace(/[^A-Za-z0-9_]/g, "_")
-      const mangle = (s: unknown): unknown => (s === normalised ? stem : s)
+      // Same correction as the sibling, and for the same reason: no `filePath` on the
+      // result. The pre-fix observable is reproduced directly instead — a module scope
+      // that is NOT A VALID IDENTIFIER — by turning the synthetic scope's underscores into
+      // hyphens. For `module-all-exports.py` that yields exactly the pre-fix spelling
+      // `module-all-exports`, and generically it yields the same class of defect.
+      const declared = new Set(((r.symbols ?? []) as any[]).map((s) => String(s.name)))
+      const mangle = (v: unknown): unknown =>
+        declared.has(String(v)) ? v : String(v).replace(/_/g, "-")
       return {
         ...r,
-        relationships: ((r.relationships ?? []) as any[]).map((x) => ({
-          ...x,
-          source: mangle(x.source),
-          target: mangle(x.target),
-        })),
+        relationships: ((r.relationships ?? []) as any[]).map((x) => {
+          const y: any = { ...x }
+          for (const k of ["source", "from", "fromSymbol", "target", "to", "toSymbol"]) {
+            if (typeof y[k] === "string") y[k] = mangle(y[k])
+          }
+          return y
+        }),
       }
     },
   },
