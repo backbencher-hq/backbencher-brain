@@ -73,6 +73,41 @@ function calleeLeaf(text: string): string {
 }
 
 /**
+ * The callee's name, read from the AST rather than from the callee expression's TEXT.
+ *
+ * `calleeLeaf` above cuts the text at the FIRST `(`, which is right for `a.b(x)` and
+ * WRONG for a call on the result of a call. For `url.lower().startswith("https")` the
+ * outer call's function expression is `url.lower().startswith`, so cutting at the first
+ * parenthesis yields the head `url.lower` and the leaf `lower` — the INNER call's name.
+ * The oracle therefore derived `cert_verify -> lower` and never derived
+ * `cert_verify -> startswith`, while the analyzer emits both, because a chained call really
+ * is two calls. That one wrong cut was 2,274 unexplained edges across the corpus, the
+ * single largest disagreement in the whole differential.
+ *
+ * The AST does not have this ambiguity: the `function` field of a call is an `attribute`
+ * whose own `attribute` field IS the name being called, whether the object is a name, a
+ * call, or another attribute. `url.lower().startswith` -> `startswith`;
+ * `os.path.join` -> `join`; `self.helper` -> `helper`; `f` -> `f`.
+ *
+ * Text is kept as the fallback for a callee expression with no `attribute`/`identifier`
+ * shape, so an unusual form still yields a name rather than silently vanishing.
+ */
+function calleeName(fn: any): string {
+  if (!fn) return ""
+  if (fn.type === "identifier") return fn.text
+  if (fn.type === "attribute") {
+    const attr = fn.childForFieldName("attribute")
+    return attr ? attr.text : ""
+  }
+  if (fn.type === "call") {
+    // `f()()` — the callee is another call's result; recurse to its function.
+    return calleeName(fn.childForFieldName("function"))
+  }
+  if (fn.type === "subscript") return calleeLeaf(fn.text)
+  return calleeLeaf(fn.text)
+}
+
+/**
  * Derive the structural spine for one parsed module.
  *
  * `rootNode` is the BLOCK-grammar tree. Python needs no companion grammar — a single
@@ -241,7 +276,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
       if (fn && scope) {
-        const leaf = calleeLeaf(fn.text)
+        const leaf = calleeName(fn)
         if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
           // PYTHON'S CONSTRUCTOR CONVENTION, stated rather than assumed: a call whose
           // callee is Capitalised and is declared as a class in THIS file is a
@@ -327,18 +362,46 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     for (let i = 0; i < n.namedChildCount; i++) walkClassBody(n.namedChild(i), cls)
   }
 
-  const walkScopes = (n: any, scope: string | null, ownerClass: string | null): void => {
+  /**
+   * `fnOwner` is the nearest enclosing FUNCTION, tracked SEPARATELY from `scope` because
+   * a class also sets `scope` and the two mean different things.
+   *
+   * The rule being expressed is one sentence: a `def` opens a scope unless a function
+   * already encloses it. Module level has no enclosing function, so a top-level `def`
+   * opens one. A class body has no enclosing function either, so a `def` there is a METHOD
+   * and opens one. But a `def` nested inside a function or a method is not a symbol and
+   * does not open one — its calls belong to the function that encloses it.
+   *
+   * Deriving that from `scope` alone is what broke the first attempt at this fix: a class
+   * sets `scope` to its own name, so `scope ?? nm` made every method inherit its class as
+   * its scope and emitted `C -> top` where the analyzer correctly says `meth -> top`.
+   */
+  const walkScopes = (n: any, scope: string | null, ownerClass: string | null, fnOwner: string | null = null): void => {
     if (n.type === "decorator") return
     if (n.type === "function_definition") {
       const nameNode = n.childForFieldName("name")
       const nm = nameNode ? nameNode.text : ""
-      // The body of THIS function is walked with this function as the scope and the
-      // enclosing class as the attribute owner; deeper definitions start their own scope.
+      // A NESTED `def` is NOT a scope. This is the analyzer's declared contract —
+      // "nested functions are never symbols" — and a call inside one belongs to the
+      // nearest enclosing FUNCTION, not to the def that lexically encloses it.
+      //
+      // The first version of this oracle got it backwards, and the comment here said so
+      // out loud ("deeper definitions start their own scope"), which is the worst kind of
+      // wrong: a stated rule that happens to disagree with the lane under test. It
+      // produced `requests/auth.py: md5_utf8 -> md5` as a MISSING edge while the analyzer
+      // emitted the same call under the enclosing function — the same edge counted on both
+      // sides of the comparison, inflating `missing calls` and `unexplained calls` at once.
+      //
+      // Measured over the full corpus, that one disagreement was the largest single
+      // cluster in the differential. The fix is to keep the scope we already have: a
+      // function opens a scope only when nothing has opened one, which is exactly what
+      // "nearest enclosing function" means.
+      const inner = fnOwner ?? nm
       const body = n.childForFieldName("body")
-      if (body) walkBody(body, nm, ownerClass)
+      if (body) walkBody(body, inner, ownerClass)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c !== body) walkScopes(c, nm, ownerClass)
+        if (c !== body) walkScopes(c, inner, ownerClass, inner)
       }
       return
     }
@@ -349,7 +412,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (body) walkClassBody(body, nm)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c !== body) walkScopes(c, nm, nm)
+        if (c !== body) walkScopes(c, nm, nm, null)
       }
       return
     }
@@ -357,15 +420,15 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
       if (fn && scope === null) {
-        const leaf = calleeLeaf(fn.text)
+        const leaf = calleeName(fn)
         if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
           add("calls", moduleName ?? "", leaf, n.startPosition.row + 1)
         }
       }
     }
-    for (let i = 0; i < n.namedChildCount; i++) walkScopes(n.namedChild(i), scope, ownerClass)
+    for (let i = 0; i < n.namedChildCount; i++) walkScopes(n.namedChild(i), scope, ownerClass, fnOwner)
   }
-  walkScopes(rootNode, null, null)
+  walkScopes(rootNode, null, null, null)
 
   return edges
 }
