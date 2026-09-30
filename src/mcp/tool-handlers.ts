@@ -1989,6 +1989,12 @@ const handlers: Record<string, ToolHandler> = {
     // ENFORCED author class as though the two carried equal weight. It is also
     // unbounded, so it is an unbounded row. A declared bound, not a truncation.
     if ([...toolIdentity].length > 200) return textResult(`bb_annotate: toolIdentity exceeds the declared limit of 200 chars (got ${[...toolIdentity].length}) — declared refusal`, true)
+    // A tool identity is a NAME, not a document. Refusing line breaks and other
+    // control characters keeps "recorded verbatim" honest (verbatim never meant "may
+    // contain a newline") and keeps the stored label safe for every reader of it —
+    // the editor hover, the graph badge, and bb_annotations. Measured: a newline in
+    // this field rendered as a second provenance line that claimed to be a human note.
+    if (/[\u0000-\u001F\u007F]/.test(toolIdentity)) return textResult("bb_annotate: toolIdentity must not contain control characters or line breaks — it is a name, not a document (declared refusal)", true)
     const now = Date.now()
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     // The path is resolved to the ONE spelling the index stores, so `./x` and
