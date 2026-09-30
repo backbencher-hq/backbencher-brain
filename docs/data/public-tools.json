@@ -411,6 +411,7 @@
       "limitations": [
         "A finding is not a deletion instruction. The tool reports what the index does and does not record; where the index is silent, the finding says so on its face rather than presenting absence of evidence as evidence of absence.",
         "Confidence is derived from measured evidence classes, not assigned per rule. It spans 0.30-0.70 for orphans (the published cap) and 0.60-0.90 for anti-patterns. Name-unique symbols measured a 0.0% false-positive rate against a source-text oracle; ambiguous names measured 14.4%.",
+        "A symbol with no ANCHORED incoming row, in a file that has one, gets the coverage-gap disclosure. The per-symbol test counts anchored rows only while the per-file test counts any row, and that asymmetry is deliberate: an unanchored row is a name match, and 97% of rake's `references` edges name no consumer, so counting them per symbol would suppress the disclosure across the whole corpus.",
         "A relationship only counts as usage evidence if it is not a self-loop, its published evidenceClass is not \"inferred\", and its confidence is at least 0.7. Refused rows are counted in `summary.unverifiedUsageEdges` and itemised on the findings they would have cleared.",
         "A finding whose symbol had no recorded incoming reference while its file did carries a COVERAGE GAP INDICATOR. That is the signature of an analyzer that reached the file and not the symbol, and such a finding may be a coverage gap rather than dead code.",
         "Dynamic dispatch, reflection, and string-keyed lookups are invisible. The engine never fabricates a resolved edge for them, so a symbol reached only that way is reported.",
@@ -418,13 +419,13 @@
         "Test files are excluded from candidates but not from evidence: a production symbol called only from a test is not reported, and a production file imported only by a test is not reported. `includeTests: true` means \"also report test symbols\", not \"ignore tests when looking for users\".",
         "Framework and anti-pattern detection is heuristic and confidence-qualified."
       ],
-      "performance": "The scan is index-bound and single-pass; the anti-pattern rules use a correlated COUNT over the member index, so cost grows with symbol count and not with the square of it. A default `bb_patterns {}` measured 6.7s on a 45,018-symbol repository, down from 330s before the query was fixed. `limit` bounds the displayed page; the census in the header is the full candidate count, and `raise \\`limit\\`` is named when the page is short.",
+      "performance": "Cost is index-bound and grows with the SYMBOL count, not the relationship count: every set the scan builds is reduced in SQL, so a 223,880-symbol / 898,806-relationship repository is scanned in 32s and a 56,738-symbol one in 3.9s. Three measurements on real corpora, each with byte-identical output: the anti-pattern rules once took 330s because of a correlated COUNT and now take 0.4s; the relationship pass once shipped 710,671 rows into JS to build sets bounded by symbol count and now ships ~5,700 rows of aggregates; and the whole scan was three statements over the same rows before the coverage indicator re-read what the evidence gate had already read. `limit` bounds the displayed page; the census in the header is the full candidate count, and `raise \\`limit\\`` is named when the page is short.",
       "safety": "Source is read-only. recordRun writes only analysis-history records in the brain database, and persists the whole census rather than the displayed page so the auto-resolve pass cannot mark live findings as gone.",
       "evidence": "Every finding is confidence-qualified, carries an evidence array naming what was checked, and carries a limitations array. Two channels are kept distinct: an anchored edge from an identified symbol is decisive, while a name match clears a candidate only when the name is unambiguous in the reporting scope. `summary.suppressedByReason` accounts for every candidate the scan discarded, and `summary.importResolution` states how far the import channel could be carried."
     },
     {
       "name": "bb_security",
-      "description": "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
+      "description": "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injection, path traversal, insecure deserialization, SSRF, open redirect and code execution. Flows whose endpoints both resolve to indexed symbols are findings; one-sided flows are reported separately as unvalidated observations, never as confirmed exploits. Findings whose underlying file changed after indexing carry a staleness marker.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -456,7 +457,7 @@
       "deprecated": false,
       "documentation": {
         "category": "analysis",
-        "summary": "Cross-language findings with optional persisted run history.",
+        "summary": "Taint-flow findings over the index, with optional persisted run history. A flow is a finding only when both endpoints resolve to indexed symbols; one-sided flows are reported as unvalidated observations. Every response states the census so a capped scan is never mistaken for a complete one. Not detected: hardcoded secrets; genuine cross-language taint; standalone weak crypto.",
         "defaults": {
           "history": false,
           "recordRun": false,
@@ -497,7 +498,7 @@
     },
     {
       "name": "bb_visualize",
-      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and self-contained HTML. Every node and link carries a stale flag (file changed since index); links inherit worst-of-endpoints; a freshness envelope rides the JSON output. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.",
+      "description": "Scoped dependency and architecture visualization over the canonical graph engine, with explicit filters, provenance, truncation, machine-readable JSON, and genuinely self-contained HTML (no network, no fonts, no build step — it renders offline, in an air-gapped editor, anywhere). The answer is an AUDITABLE projection of the index, not a picture: every link carries the stored relationship row it traces to (rowId) and its stored confidence, and every node carries its line, lineEnd and qualifiedName, so the graph is navigable and every edge can be checked against the row that justifies it. Distinct relationship types between the same pair are SEPARATE links, so a pair that is both contains and exports renders as both. Node size follows the index’s own gravity score. In the HTML, edge opacity encodes stored confidence, relationship type sets colour and a structural/behavioural dash, and a stale endpoint (file changed since index) is drawn as a hollow ring; links inherit worst-of-endpoints. Every answer declares its bounds as three DISTINCT numbers — totalNodesAvailable (what the scope and filters actually match), truncation.originalNodes (what reached the projection) and nodes (what was returned) — so a short page can never be mistaken for a whole set. Whatever the noise filter removes is counted onto excluded with the patterns responsible, and an empty answer is declaredAbsent with a reason rather than an empty result that looks like a real project. Same owner-cascade semantics as bb_graph: member-level relationships are attributed to the owner class.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -537,6 +538,17 @@
               "type": "string"
             },
             "description": "language filter"
+          },
+          "excludePatterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "path SEGMENTS treated as build noise and excluded. Matched on whole segments, never as substrings — a substring rule removed `src/util/edit_distance.rs` because `dist` is inside `edit_distance`, and `src/compiler/layout.rs` because `out` is inside `layout`. Omit to use the defaults (node_modules, .git, .next, .turbo, .cache, coverage, dist, build, out, target, vendor, __pycache__)"
+          },
+          "includeTests": {
+            "type": "boolean",
+            "description": "include test/spec sources. Default true: they are ordinary source. When false, test/spec/testdata directories and *_test.* / *spec.* files are excluded and counted"
           },
           "format": {
             "type": "string",
@@ -584,9 +596,13 @@
       },
       "referencePath": "docs/tools/bb_visualize.md",
       "returns": [
-        "Canonical nodes and links",
-        "Text, JSON, or self-contained HTML projection",
-        "Provenance and explicit truncation metadata"
+        "Canonical nodes and links, with EVERY stored relationship type between a pair kept as a separate link",
+        "An auditable projection rather than a picture: each link carries `rowId` (the stored relationship it traces to), its stored `confidence` and its line; each node carries `line`, `lineEnd` and `qualifiedName`, so the graph is navigable and every edge can be checked against the row that justifies it",
+        "Three DISTINCT declared counts — `totalNodesAvailable` (what the scope and filters match), `truncation.originalNodes` (what reached the projection) and `nodes` (what was returned) — so a short page is never mistaken for a whole set",
+        "`excluded` — what the noise filter removed, how many, and the patterns responsible — so a partial map is never mistaken for a complete one",
+        "`declaredAbsent` with an `absenceNote` when the answer is empty, distinguishing what matched nothing from what matched but did not survive the projection",
+        "Text, JSON, or genuinely SELF-CONTAINED HTML: one file with no network, no fonts and no build step, carrying its own force-directed layout and canvas renderer, so it renders offline and in an air-gapped editor",
+        "In the HTML the evidence is ENCODED rather than decorated: edge opacity is stored confidence, relationship type sets colour and a structural/behavioural dash, a stale endpoint is a hollow ring, node size is the index's own gravity, and any node or edge can be selected to read its stored facts"
       ],
       "errors": [
         "Missing target for a scoped graph",
@@ -595,6 +611,9 @@
       ],
       "limitations": [
         "The graph reflects static indexed relationships",
+        "NOISE FILTER (declared, and the caller's to change). Build output and VCS metadata are excluded by default, matched on whole path SEGMENTS. This was previously a bare-substring rule that removed real source: measured on cargo, `dist` removed `src/util/edit_distance.rs`, `out` removed `src/compiler/layout.rs` and `src/compiler/output_depinfo.rs`, and `build` removed `crates/cargo-test-support/build.rs`, leaving 225 of 1,787 symbol-bearing files with no exclusion declared anywhere. Test and spec sources are ordinary source and are INCLUDED by default; `excludePatterns` and `includeTests` change all of it, and whatever is removed is counted onto `excluded`",
+        "SCOPE TARGETS ARE VALUES, not patterns. `%` and `_` match themselves and a directory prefix matches on a segment boundary, so `src/util` never reaches `src/utilities`. This matches bb_analyze, whose contract states the same rule; the two tools previously disagreed, and this one was the permissive one (measured: a target of `%` selected every file in the corpus)",
+        "`feature` scope matches a symbol NAME or a docstring. The docstring half is thin in practice and the answer does not pretend otherwise: measured on cargo, 70 of 40,595 symbols (0.17%) carry one, so a feature query is usually a name match",
         "Nodes and links beyond configured budgets are omitted and reported",
         "Owner-cascade attribution: member-level relationships are attributed to the owner class, same as bb_graph"
       ],
@@ -809,13 +828,14 @@
         "A walk also runs under a wall-clock budget (`summary.timeBudgetMs` / `timeBudgetExhausted`, default 2,000 ms). A node is not a unit of work: the per-node caller query is priced by the reproducible ORDER BY, which SQLite applies before the LIMIT, so `edgeLimit` cannot bound it. Measured on this repository's own src: 2,436 matching rows for one symbol cost 85.8 ms of the 87.8 ms, and the walk was unbounded until this budget existed",
         "`dependencies` resolves an internal specifier against the importing file's own directory and LABELS each edge `resolved` / `suffix-match` / `unresolved`. It is not a guess from a basename: on this repository's own src only 74 of 906 `imports` relationships carry both endpoints and `brain_import.resolved_symbol_id` is empty, so specifier resolution is the primary path, not a fallback",
         "A file's `dependents` and `dependencies` lists are capped per row; `dependentsTotal` / `dependenciesTotal` are the real sizes and the Truncated flags say the list was cut",
+        "Neither list carries `fileId` — a file id is `<40-hex project id>:<relative path>`, so it repeated the path printed beside it (56,540 of 121,340 bytes on a default page of this repository's src). The path is the locator, `resolution` says how it was reached, and the row above carries the id for the file the row is about",
         "`metrics.couplingEdges` counts only the relationship types listed in `couplingRelationshipTypes`; `exports` and `contains` are index bookkeeping. `stats.relationships` is every row and is a different number",
         "`metrics.maintainability` is unavailable when the formula's domain does not cover the scope (it is negative above roughly 3·10⁴ non-blank lines) rather than clamped to 0",
         "Locations are project-relative. `nodes[].filePath` (absolute) is not emitted, so the same question returns the same bytes on any machine",
         "A mapping entry carries at most 20 links (`linksTruncated` says when more exist); the ranking and every summary count use the complete set",
         "`provenance` on a `dependencies` page is on the REPORT, not repeated per row"
       ],
-      "performance": "Every mode is paged and says so. `limit` bounds the answer — 25 edges per direction for callers/callees/trace (default), 20 files for dependencies, 50 entries for the test modes — and a default answer is under 35 KB (~9.7k tokens) on the corpus these bounds were measured against. The graph walk is additionally bounded by depth, per-node site limit, fan-out budget, and a wall-clock budget; whichever fires is named in `truncationReason`.",
+      "performance": "Every mode is paged and says so. `limit` bounds the answer — 25 edges per direction for callers/callees/trace (default), 20 files for dependencies, 50 entries for the test modes. On this repository's src (183 files, 8,565 symbols, 52,597 relationships) a default answer is 1.5-26 KB for eight of the eleven modes; `dependencies` is 75.9 KB (~21k tokens) because 20 of those files really do have 506 internal edges between them, so a caller who wants less should pass `limit`. The graph walk is additionally bounded by depth, per-node site limit, fan-out budget, and a wall-clock budget; whichever fires is named in `truncationReason`. All nine graph cases in fixtures/analyze/latency-gate.sh answer in under 2.4 s on that corpus, against a measured 613 s and several that never returned.",
       "safety": "Read-only. Analysis never creates tests or edits source.",
       "evidence": "Findings derive from brain_* symbols, files, relationships, complexity, and test-file classifications. `provenance.evidenceClass` classifies what kind of claim the answer is; `unknowns` names every absence the answer rests on."
     },
@@ -1423,7 +1443,7 @@
         "One fact per stored cross-language row about the name. `facts` holds the rows on the copies themselves; `memberFacts` holds the rows on their MEMBERS, each marked `match: \"owner-cascade\"` with `matchedMember` and `matchedMemberId` naming the member. Every fact names both ends — `self` (symbol, file, language, line) and `other` — plus the stored `rowId`, direction, bridge, evidence tier and confidence",
         "`copies`: every indexed symbol carrying the name, with file, language, line and cross-row count, plus `ambiguous` and `ambiguityNote`",
         "`ownFactCount` and `memberFactCount` separately, so a reader can tell a symbol that is itself connected from one that is connected only through its members — and `silentItselfButNotItsMembers` when that is the case",
-        "Declared absence only when NEITHER the copies nor their members hold a stored row, with `absenceNote` saying so",
+        "Declared absence only when NEITHER the copies nor their members hold a stored row, with `absenceNote` saying so — and saying so SCOPED TO THE PROJECT, because that is all the three queries behind it searched. It reads \"anywhere in THIS PROJECT's index\", because it used to read \"anywhere in the index\" while searching one project, which was false whenever the same name existed in another project holding rows for it (M63.CL4)",
         "Declared truncation: `truncated`, `truncationReason` and `totalCountIfKnown` when the `limit` bounded the answer. `unpairableRowCount` and `collapsedRowCount` are GUARDS, not activity: each is 0 on all 1,662 names across two measured corpora, because the store as written cannot produce either state (see the limitations). They are verified by seeding the state each one guards, and both can be broken, so they are known to work rather than assumed to"
       ],
       "errors": [
@@ -1432,6 +1452,7 @@
         "limit outside the declared 1..1000 range (refused, never clamped silently)"
       ],
       "limitations": [
+        "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts. Absence means \"no stored rows FOR THIS PROJECT\", never \"this symbol is unconnected\": the same name in another project may hold rows for it, which is why the absence note names the scope",
         "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts",
         "Coverage depends on the analyzers that produced cross-language rows — this tool reports what was stored, nothing more",
         "A name is many symbols: the answer is the UNION over every copy, never a silent choice among them. Narrow with the `copies` list — every fact names the copy it came from",
@@ -1443,7 +1464,7 @@
       ],
       "performance": "Three indexed queries — the stored rows for the name, the rows on its members, and every symbol carrying the name — with no graph traversal; every declared count is derived from the rows those three already returned, so there is no fourth query for it. Measured on a 230-file JVM corpus: the mean answer is 7 facts and 7.5KB, p90 is 12 facts, and the response is bounded by `limit`. For scale, `bb_graph` returns 3-8x more bytes for the same symbols, and on owner-heavy symbols it took 29-79s where this tool takes 14-53ms.",
       "safety": "Read-only. It does not modify source files or index data.",
-      "evidence": "Only brain_relationship rows with is_cross_language=1, filtered by the ROW's own project_id — in both this tool and the editor cross-language hover section, which previously joined the opposite symbol with `ss.project_id = r.project_id` and so returned another project's rows; both directions of that fix are proved load-bearing by mutants that each remove one of them. Classified by the single evidence-tier rule in src/lsp/evidence_tier.ts, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over two real polyglot indexes — a 230-file JVM corpus (3 language pairs) and a 692-file Elixir/Erlang corpus (16 pairs, 1,168 cross-language rows) — and thirteen planted defects are all caught on both, including three specific to the member section (cascade laundered, the pre-CL2 absence rule, and a cascade reported with no member to check it against) and two that break one direction of the hover door's project scope: script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json. A corpus-free check that every mutant still has a live anchor runs in `verify:fast` as script/m63/verify-cl1-wiring.ts."
+      "evidence": "Only brain_relationship rows with is_cross_language=1, filtered by the ROW's own project_id — in both this tool and the editor cross-language hover section, which previously joined the opposite symbol with `ss.project_id = r.project_id` and so returned another project's rows; both directions of that fix are proved load-bearing by mutants that each remove one of them. Classified by the single evidence-tier rule in src/lsp/evidence_tier.ts, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over two real polyglot indexes — a 230-file JVM corpus (3 language pairs) and a 692-file Elixir/Erlang corpus (16 pairs, 1,168 cross-language rows) — and thirteen planted defects are all caught on both, including three specific to the member section (cascade laundered, the pre-CL2 absence rule, and a cascade reported with no member to check it against) and two that break one direction of the hover door's project scope. Four further surfaces are covered that no corpus reaches — a project with no cross-language rows at all, a truncation driven by the member section, the own-first precedence rule at limit 1, and the absence note's project scope, the last of which found a real defect — bringing the total to fourteen planted defects: script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json. A corpus-free check that every mutant still has a live anchor runs in `verify:fast` as script/m63/verify-cl1-wiring.ts."
     },
     {
       "name": "bb_annotate",
@@ -1501,7 +1522,8 @@
         "Missing or blank symbol",
         "Empty body (a refusal, not a silent no-op)",
         "Body exceeds the declared 2000-char limit, counted in characters (an astral glyph is one character, not two UTF-16 units)",
-        "toolIdentity exceeds the declared 200-char limit — refused, never truncated"
+        "toolIdentity exceeds the declared 200-char limit — refused, never truncated",
+        "toolIdentity containing a control character or line break — a label is a name, not a document. Refused, because a newline in that field rendered (measured, through the real renderer) as a SECOND provenance line that could claim to be a human note"
       ],
       "limitations": [
         "Annotations are opinions layered on index evidence, never index truth",
@@ -1510,6 +1532,7 @@
         "The note is keyed on the name as given. A name that matches several indexed symbols (a name is one symbol per file/line — `force` in 8 files of a real corpus) is one note shown wherever that name appears, unless `path` scopes it to a file",
         "`path` is resolved to the index's own spelling (`brain_file.relative_path`), so `src/a.ts`, `./src/a.ts` and the absolute path are the SAME note. A path matching no indexed file is stored verbatim and declared",
         "`toolIdentity` is the caller's own label. It is recorded verbatim and never verified — `author_class` is the enforced field",
+        "The editor renderer escapes EVERY interpolated field, not only the body: `author_class`, `tool_identity` and `body` all go through the escaper, and a line break in any of them is flattened to a space. Markup escaping alone is not enough — a newline is what turns one annotation into two in a markdown list, which is how a caller's own label once forged a line reading 'human note by the-review-team'. So a row that already carries such a value — written before the guard, or by any other writer — still renders as exactly one line",
         "One note is kept per location, so a second agent annotating the same symbol+path REPLACES the first note. The replacement is reported in `replaced` with the previous body, but the previous note does not survive in the store. Annotating a DIFFERENT path (or no path) keeps a separate note per location"
       ],
       "performance": "Constant-time store write bounded by the 2000-char body limit. `surfacing` adds two indexed lookups (name, qualified name) plus one file-row lookup for the path.",
