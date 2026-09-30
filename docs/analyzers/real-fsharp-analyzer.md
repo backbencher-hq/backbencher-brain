@@ -258,7 +258,7 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 | --- | --- |
 | F1 dead-literal / unknown-symbol | `PASS refs=62 unknown=0 unknownFields=0` |
 | F3 fixtures | 6/6 PASS |
-| F4 mutants | 14/14 CAUGHT |
+| F4 mutants | 14/14 CAUGHT — and the registration itself was a defect |
 | oracle vs analyzer, fixtures | 106 truth, 0 MISSING, 0 UNEXPLAINED |
 | F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
 | all-label probe, 120 files | MISSING 205 / UNEXPLAINED 200 — the honest current number |
@@ -287,8 +287,20 @@ the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained
 
 | | count | dominant classes |
 |---|---|---|
-| MISSING (truth derives, analyzer does not) | 147 | 96 `calls`/source-other, 19 `declared_type(parameter)`, 10 `implements`, 10 `declared_type(local_annotation)` |
+| MISSING (truth derives, analyzer does not) | 62 | 19 `declared_type(parameter)`, 14 `calls`/source-other, 10 `implements`, 10 `declared_type(local_annotation)`, 6 `declared_type(return)` |
 | UNEXPLAINED (analyzer emits, truth does not) | 174 | 58 `declared_type(parameter)`, 27 `declared_type(local_annotation)`, 26 `declared_type(return)`, 18 `overrides`, 14 `instantiates` |
+
+The MISSING side fell 205 → 147 → **62** across this round, and 113 of the last 85 came from
+one rule. The property-getter contract — an EXPRESSION-bodied property publishes no calls —
+was implemented in the truth oracle by leaving `owner` unset on the property and moving on.
+That also left `inBody` false for everything inside, and `inBody` is what tells a walk it is
+inside a body. So the contract did not suppress the calls: it made them real *and*
+mis-sourced. `let xmlsig = …` inside `member _.XmlDocSig = checkIsResolved()` looked
+top-level, was promoted to a call source, and its body attributed to itself. The tell was a
+source name — `xmlsig`, `m`, `ty`, `res` — that is a LOCAL in the source and an owner in the
+truth. A suppressed body is still a body: `inBody` now travels, and the suppression travels
+with it. MISSING `calls` rows went 130 → 19, of which 17 are the undecided
+`calls`/`instantiates` boundary and 2 are a single name.
 
 Two of the three biggest numbers in this table were the PROBE's fault, and both were found
 by a second probe disagreeing with the first. `fs028` classified an unexplained `references`

@@ -319,12 +319,46 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
   // popped when the frame closes. The analyzer propagates a copied array down an
   // explicit work stack instead — a different mechanism for the same fact, which is the
   // point: a bug in one does not have to be a bug in the other.
-  interface Frame { node: any; scope: string[]; callOwner: string | undefined; inBody: boolean }
-  const stack: Frame[] = [{ node: root, scope: [], callOwner: undefined, inBody: false }]
+  interface Frame {
+    node: any
+    scope: string[]
+    callOwner: string | undefined
+    inBody: boolean
+    /**
+     * The PROPERTY-GETTER CONTRACT, carried down the walk rather than applied once at the
+     * top of a body.
+     *
+     * An EXPRESSION-bodied property (`member _.XmlDocSig = checkIsResolved()`) publishes no
+     * calls of its own — that is the C# family contract, and the analyzer implements it by
+     * publishing nothing from that body. This oracle applied the rule the same shallow way:
+     * it left `owner` unset on the property and moved on. But leaving `owner` unset ALSO left
+     * `inBody` false for everything inside, and `inBody` is what tells the walk it is inside a
+     * body. So the property contract did not merely fail to suppress — it made the calls real
+     * AND mis-sourced them: `let xmlsig = …` inside `member _.XmlDocSig` looked top-level, was
+     * promoted to a call source, and its body attributed to itself.
+     *
+     * Measured: 113 residual rows per 120 corpus files, the largest single class in the lane,
+     * and every one of them inside a computed property or a method — the two bodies where the
+     * contract applies. The tell was a source name (`xmlsig`, `m`, `ty`, `res`) that is a
+     * LOCAL in the source and an owner in the truth.
+     *
+     * The fix is that a suppressed body is still a BODY: `inBody` travels, and the suppression
+     * travels with it to every depth.
+     */
+    suppressCalls: boolean
+  }
+  const stack: Frame[] = [
+    { node: root, scope: [], callOwner: undefined, inBody: false, suppressCalls: false },
+  ]
 
   while (stack.length) {
-    const { node, scope, callOwner, inBody } = stack.pop()!
+    const { node, scope, callOwner, inBody, suppressCalls } = stack.pop()!
     const t = node.type
+    // Hoisted to the top of the loop because the child-push at the foot of it needs to carry
+    // the property contract downward, and a predicate declared inside the binding branch is
+    // out of scope there. Declaring it in both places is how it stayed wrong the first time.
+    const isExpressionProperty =
+      t === "member_defn" && isExpressionBodiedProperty(node) && !hasExplicitSetter(node)
     //
     // FS-D16, truth side. A parse-recovery region is the PARSER's reconstruction, not the
     // program, and both implementations now refuse to read one: the analyzer stops its
@@ -485,6 +519,12 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
         // which is the only way it can be found.
         const isExpressionProperty =
           t === "member_defn" && isExpressionBodiedProperty(node) && !hasExplicitSetter(node)
+        if (isExpressionProperty) {
+          // A body we do not CALL FROM, but ARE inside. Setting `body` is the whole point:
+          // without it the walk believes it is at top level and promotes every nested
+          // binding to a call source. See Frame.suppressCalls.
+          body = true
+        }
         if (name && !isExpressionProperty) {
           owner = name
           body = true
@@ -546,7 +586,10 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
             // contract, not that one of them has a bug. Deciding it needs a decision about
             // what `calls` and `instantiates` mean to the family, not another predicate —
             // and it is filed as the lane's largest open item in reviews/fsharp/closure.md.
-            emit("calls", owner, leaf, node)
+            // The property contract, enforced where the edge would be created. `owner` is
+            // still the inherited one, so a suppressed call cannot leak to the enclosing
+            // member either — it simply does not exist, which is what the analyzer does.
+            if (!suppressCalls) emit("calls", owner, leaf, node)
           }
         }
       }
@@ -598,7 +641,7 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
 
     for (let i = node.namedChildCount - 1; i >= 0; i--) {
       const c = node.namedChild(i)
-      if (c) stack.push({ node: c, scope: cur, callOwner: owner, inBody: body })
+      if (c) stack.push({ node: c, scope: cur, callOwner: owner, inBody: body, suppressCalls: suppressCalls || isExpressionProperty })
     }
   }
   return edges
