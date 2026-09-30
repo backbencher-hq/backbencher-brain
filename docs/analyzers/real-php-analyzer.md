@@ -198,6 +198,49 @@ a deliberate language boundary. PHPD33 additionally rules OUT an `exports` kind
 for php: make and python emit it syntactically (`export`, `__all__`), PHP has no
 export syntax, and a semantic version would be unverifiable from one file.
 
+### Master review — what 100% coverage could not see
+
+A differential proves the analyzer agrees with the oracle. It cannot prove either
+is *right*: a construct both sides miss reads as a perfect agreement on an
+absence. So the review hunted correlated error, and found one.
+
+**`use C\{D, E as F};` emitted nothing.** A `use` declaration has two AST
+shapes — the plain form puts a `namespace_use_clause` directly under the
+declaration, while the grouped form nests them in a `namespace_use_group` with the
+prefix in a sibling `namespace_name`. Only the first was handled, so grouped use
+produced no import, no `imports` edge and no framework detection. Fixed in
+M12.PHP-GROUPED-USE (`script/m12/php-symbol-audit.ts`'s sibling work), with
+members recorded *qualified* (`App\Models\Post`, not a bare `Post`, which would
+collide across groups) and pinned by the `php/grouped-use` fixture.
+
+The instructive part is why nothing caught it: `use X\{...};` occurs **zero
+times in phpunit and zero times in phpmyadmin**. The corpora cannot detect a
+construct they do not contain, and `derivePhpEdges` shared the blind spot, so the
+full-corpus run reported 100% coverage over 4,139 files and 95,231 edges while
+missing the construct entirely. **100% coverage is a statement about the corpus,
+not about the language.**
+
+**Construct census.** 24 modern PHP constructs were counted across both corpora
+to find which are untested by any corpus run. Present: first-class callables,
+named arguments, readonly, `match`, attributes, constructor promotion, arrow
+functions, heredoc, nullsafe, union and intersection types, enums (including 27
+backed), abstract methods, `yield`, `never`, readonly classes. Absent from both:
+grouped `use` (now fixed), `insteadof` trait-conflict resolution, PHP 8.4
+asymmetric visibility, and `Fiber`. The latter three were probed directly:
+asymmetric visibility (`public private(set) string $name`) loses **no symbol** —
+all four properties are emitted — and `insteadof` keeps both trait `use` edges,
+consistent with the model where a trait's methods belong to the trait and are not
+re-declared on the composing class.
+
+**Phantom symbols.** `bun script/m12/php-symbol-audit.ts` →
+`validation/m12/results/php-symbol-audit.json`. A phantom is invisible to
+precision/recall when the oracle is wrong the same way, so it needs its own
+check; this one rejects names that are empty, dollar-prefixed, digit-prefixed,
+contain quotes or an accessor fragment, or are degenerate placeholders. Over
+**9,906 symbols in 1,200 files from both corpora: 0 suspicious.** The lane has had
+phantoms removed before (Laravel Eloquent `getAttribute`/`setAttribute`,
+WordPress `wp_add_*` hooks), so this is a standing check rather than a one-off.
+
 ### Performance
 
 - Phase profile: `bun script/m12/php-perf-profile.ts` →
