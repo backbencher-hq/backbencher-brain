@@ -400,9 +400,13 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const templateBody = this.findChild(node, "template_body")
         if (templateBody) {
           const typeNode = node.namedChild(0)
-          // M60 (#924, scala E): a SYNTHETIC name must be canonical — never source text.
-          let superName = typeNode ? this.scalaTypeHeadName(typeNode) : ""
-          superName = this.stripTypeArgs(superName)
+          // M60 (#924, scala E): a SYNTHETIC name must be canonical — never source
+          // text. M60/S3: the STRUCTURAL walk is the whole enforcement — the earlier
+          // `stripTypeArgs(typeNode.text)` fallback published `anonymous_(IO ~> F)`
+          // for a natural-transformation supertype and a multi-line
+          // `anonymous_:\n  private var cur = ...` for a body with no supertype at
+          // all. An unnameable supertype now takes the canonical fallback.
+          const superName = this.stripTypeArgs(this.scalaAnonymousSupertypeName(typeNode))
           const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
           const anonSym: ASTEngine.UniversalSymbol = {
             name: anonName,
@@ -1646,6 +1650,91 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return this.stripTypeArgs(typeNode.text)
   }
 
+  /**
+   * M60/S3: the SUPER TYPE NAME for an ANONYMOUS class — structurally walked, and
+   * "" when no type name is reachable.
+   *
+   * This exists beside scalaTypeHeadName rather than replacing it because the two
+   * answer different questions. scalaTypeHeadName names an INSTANTIATION target,
+   * where the node's own text is the honest type (`new (IO ~> F) {}` really does
+   * instantiate the natural-transformation type `(IO ~> F)`), and that label is
+   * audited. An ANONYMOUS CLASS's name is SYNTHETIC — the analyzer's own rule,
+   * stated at its emission site, is "a SYNTHETIC name must be canonical - never
+   * source text" (#924) — and scalaTypeHeadName's text fallback violates it: for
+   * a type shape the walk does not recognise it returns `stripTypeArgs(text)`.
+   *
+   * Measured on both corpora (script/m14/tmp/scala-garbage-names.ts, 400 files
+   * each) — `anonymous_<source text>` symbols, whose name is no declared name in
+   * their own file:
+   *
+   *   cats-effect 20 of 291, of which 18 are a natural-transformation supertype
+   *     `new (IO ~> F) { ... }` -> `anonymous_(IO ~> F)` (LiftIO.scala:36,
+   *     Async.scala:199, Resource.scala:244/580/997/1123, pure.scala x5, ...)
+   *   scala3 15 of 191, of which 2 are a MULTI-LINE body published as a NAME:
+   *     `anonymous_:\n      private var cur = Env.this\n      def hasNext = ...`
+   *     (CheckCaptures.scala:77, CapturedVars.scala:114)
+   *
+   * The shapes that must still resolve, probed before this was written rather
+   * than guessed (script/m14/tmp/scala-snip.ts /tmp/anon.txt):
+   *
+   *   new Runnable {}                     -> instance_expression > type_identifier
+   *   new java.util.Comparator[String] {} -> generic_type > stable_type_identifier
+   *                                          > stable_identifier(id,id) + type_identifier
+   *   new Console.MapKConsole[Int] {}      -> generic_type > stable_type_identifier
+   *                                          > identifier + type_identifier
+   *   new ScalaRandom[F](a) with Sec[F] {} -> compound_type > base >
+   *                                          applied_constructor_type > generic_type
+   *
+   * A qualified name is its leading identifiers joined by "." plus the final
+   * type_identifier — which is what the text happened to be, now for a reason.
+   */
+  private scalaAnonymousSupertypeName(typeNode: Node | null): string {
+    if (!typeNode) return ""
+    const walk = (n: Node | null, guard: number): string => {
+      if (!n || guard > 8) return ""
+      switch (n.type) {
+        case "type_identifier":
+          return n.text
+        case "compound_type": {
+          const base = n.childForFieldName("base")
+          return walk(base ?? n.namedChild(0), guard + 1)
+        }
+        case "applied_constructor_type":
+        case "generic_type":
+          return walk(n.namedChild(0), guard + 1)
+        case "stable_type_identifier": {
+          // `java.util.concurrent.Callable` arrives RIGHT-NESTED:
+          //   stable_identifier( stable_identifier(java, util), concurrent )
+          // so the segments must be collected RECURSIVELY — a flat scan of the
+          // direct children drops `concurrent` and publishes
+          // `anonymous_concurrent.Callable` (measured on
+          // `new java.util.concurrent.Callable[String] { ... }`).
+          const segs: string[] = []
+          const collectStable = (t: Node, guard: number): void => {
+            if (guard > 8) return
+            for (let i = 0; i < t.namedChildCount; i++) {
+              const c = t.namedChild(i)
+              if (!c || c.type === "type_identifier") continue
+              if (c.type === "stable_identifier") collectStable(c, guard + 1)
+              else if (c.type === "identifier") segs.push(c.text)
+            }
+          }
+          collectStable(n, 0)
+          let last = ""
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "type_identifier") last = c.text
+          }
+          if (!last) return ""
+          return segs.length > 0 ? `${segs.join(".")}.${last}` : last
+        }
+        default:
+          return ""
+      }
+    }
+    return walk(typeNode, 0)
+  }
+
   private stripTypeArgs(s: string): string {
     // Original order preserved: bracket groups strip first, then angle
     // groups (replace-chain semantics), then trim.
@@ -2143,7 +2232,33 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     patternsObj["Given/Using (Scala 3)"] = true
     patternsObj["Contextual Abstractions"] = true
 
-    const explicitName = this.findChildIdentifier(node)
+    // M60/S6: the given's name is its `name:` FIELD and nothing else.
+    //
+    // The old read was `findChildIdentifier(node)` — the first DIRECT named
+    // child of type `identifier` — which is wrong for a given in a way that is
+    // invisible in a snippet and loud in a corpus: an ANONYMOUS given has no
+    // `name:` field, and its BODY is often a bare identifier, so the body was
+    // published as the given's name.
+    //
+    //   given Show[String] = ShowAny   -> published as `ShowAny`
+    //   given given Context = this      -> published as `this`
+    //   given ArgsSummary = state0      -> published as `state0`
+    //
+    // Two failures in one: the declared name (there is none) is invented, and
+    // every such given in one owner then publishes the SAME name — in
+    // Formatting.scala, 24 `given Show[X] = ShowAny` lines collapse onto the
+    // single name `ShowAny`, which is ALSO a real `object ShowAny` in the file.
+    // Measured on 400 files (script/m14/tmp/scala-given-body-census.ts):
+    // scala3 has 85 anonymous givens, 40 of which carry a bare-identifier child,
+    // and 28 of the 40 publish a name another symbol under the same owner
+    // already holds. cats-effect has no given at all, so the corpus split is
+    // 40/0.
+    //
+    // A named given still carries the name in the same field, and the field's
+    // node type varies with the name (`given myOrd: ...` is an `identifier`,
+    // `given + : Ord[Int] with ...` an `operator_identifier`) — which is why the
+    // field is read rather than a node type matched.
+    const explicitName = node.childForFieldName("name")?.text ?? null
     // S1.21 (M49 #715): anonymous given names were derived from the SOURCE
     // ROW (`given_${node.startPosition.row + 1}`), so any edit ABOVE the given
     // silently renamed the symbol and broke every stored reference. A stable
@@ -2732,6 +2847,15 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
+  /**
+   * The declared name of a node that carries it as a bare `identifier` child —
+   * an enum case (`case Red`, `case B(val x: Int) extends E`). Its `name:` field
+   * would serve too, but the grammar's enum-case shape is the one place a
+   * first-identifier scan and the field agree, and this helper is NOT safe for a
+   * `given`: an anonymous given has no `name:` field and its BODY can be a bare
+   * identifier, so the scan returns the given's VALUE. handleGiven reads the
+   * field for that reason (M60/S6).
+   */
   private findChildIdentifier(node: Node): string | null {
     for (let i = 0; i < node.childCount; i++) {
       const c = node.child(i)
