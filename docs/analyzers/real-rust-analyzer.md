@@ -40,7 +40,7 @@
 | uses | ✅ | non-call field access only (`self.counter`, `u.id` — `field_identifier` only; tuple indices `tuple.0` are not symbols and emit nothing); call-target field expressions skip the uses walk (the `calls` edge is the fact) — one edge per pair | 0.9 |
 | instantiates | ✅ | struct literals (`User { id, name }` → `instantiates User`) and Rust constructor calls (`::new()` → `instantiates new`, paired with `calls` — documented, same as C's malloc pair) | 0.75–0.8 |
 | implements | ✅ | trait impls: `impl super::Repository<User> for MemoryStorage` → `implements MemoryStorage -> Repository` (leaf trait name via `extractTraitName` — the full generic text was dropped by the production noise filter) | 1.0 |
-| extends | ✅ | trait bounds: `trait Foo: Bar` → `extends Foo -> Bar` (leaf name) | 1.0 |
+| extends | ✅ | trait bounds: `trait Foo: Bar` → `extends Foo -> Bar` (leaf name). A **higher-ranked** bound is a bound (RUST-D15): `trait DeserializeOwned: for<'de> Deserialize<'de>` publishes `extends DeserializeOwned -> Deserialize` on the bound's own line, and the `for<…>` binder is not a name (the F5 oracle used to fabricate `extends -> "for"` from it) | 1.0 |
 | imports | ✅ | `use` declarations (incl. `pub use`, `use super::`, scoped lists) → imports array — **no references edge** (Java-family contract; unlike C/C++ where `#include` targets header files) | 1.0 |
 | exports | ✅ | public free functions/structs/traits; axum route attributes → Exports edge | — |
 | overrides | — | n/a (Rust trait impls are captured as implements) | — |
@@ -59,6 +59,19 @@
 - Struct literals: `User { id, name: name.to_string() }` → `instantiates` (construction)
 - Constructors: `MemoryStorage::new()`, `Vec::new()`, `User::new(...)` → `calls` + `instantiates` pair (Rust constructor convention)
 - Macros: `println!(...)`, `format!(...)` → calls edge to the macro name
+  - **A macro invocation's NAME is a callee, not a read (RUST-D13).** The `calls`
+    edge above is the whole story: a use-imported macro used to publish
+    `uses -> bail` *beside* `calls -> bail` for one name at one line (269 sites
+    over a 550-file slice). The invocation's **arguments** are reads and still
+    publish. An imported *function* called by name never had the problem, which
+    is what made this read as a macro quirk instead of a missing guard.
+- **Declaration positions never read (RUST-D13).** Besides a macro name: a
+  **trait method declaration** (a `function_signature_item`, which carries no
+  body — its own name used to publish `uses -> current_dir -> current_dir`, a
+  self-edge, when it also resolved) and a **fn-pointer type's parameter**
+  (`type Store = extern "C" fn(schema: *const SecretSchema)` — a type alias, so
+  no bound-name set excluded the name). A real function's parameters and a real
+  method definition were already excluded; these two shapes had no such set.
 - Closures: `values.iter().map(|v| v * 2)` — closure parameters are execution artifacts (no symbols); field access inside closures still resolves (`u.id == id` → `uses find -> id`)
 - Negative fixture: function-local `let` bindings → NO symbols; primitive types (`i32`, `String`, `&[T]`), generic params (`T`), lifetimes (`'a`) → NO type-reference edges; tuple indices (`tuple.0`) → NO uses edge; closure params → NO symbols
 
