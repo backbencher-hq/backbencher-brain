@@ -1527,6 +1527,13 @@ const handlers: Record<string, ToolHandler> = {
       return textResult("bb_graph relationshipTypes must name at least one relationship kind", true)
     }
     const crossLangArg = args.includeCrossLanguage === undefined ? undefined : args.includeCrossLanguage !== false
+    // The one bound that is a function of the clock. It is exposed precisely
+    // because it is the one that can be turned off: `0` is how a caller says
+    // "I accept the runtime and I need a reproducible answer".
+    const timeBudgetArg = args.timeBudgetMs === undefined ? undefined : Number(args.timeBudgetMs)
+    if (timeBudgetArg !== undefined && (!Number.isFinite(timeBudgetArg) || timeBudgetArg < 0)) {
+      return textResult("bb_graph timeBudgetMs must be a non-negative number (0 disables the bound)", true)
+    }
     const maxEdgesArg = args.maxEdges === undefined ? undefined : Number(args.maxEdges)
     if (maxEdgesArg !== undefined && (!Number.isFinite(maxEdgesArg) || maxEdgesArg < 1)) {
       return textResult("bb_graph maxEdges must be a positive number", true)
@@ -1537,6 +1544,7 @@ const handlers: Record<string, ToolHandler> = {
         maxDepth,
         edgeLimit: edgeLimitArg,
         maxEdges: maxEdgesArg,
+        timeBudgetMs: timeBudgetArg,
         direction: directionArg as any,
         relationshipTypes: relTypesArg,
         includeCrossLanguage: crossLangArg,
@@ -1640,6 +1648,12 @@ const handlers: Record<string, ToolHandler> = {
         // ceiling of an answer (per-query limit x fan-out budget x 2) but not
         // that the ceiling was 20,000 edges.
         maxEdges: result.summary?.maxEdges ?? null,
+        // The walk-time bound, and whether it fired. Published because this is
+        // the only bound whose firing depends on the clock rather than the
+        // data: two identical calls can legitimately differ, and this is what
+        // tells a reader that the difference was the machine and not the graph.
+        timeBudgetMs: result.summary?.timeBudgetMs ?? null,
+        timeBudgetExhausted: result.summary?.timeBudgetExhausted === true,
         totalEdgeLimitReached: result.summary?.totalEdgeLimitReached === true,
         cappedQueries: result.summary?.cappedQueries ?? 0,
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,

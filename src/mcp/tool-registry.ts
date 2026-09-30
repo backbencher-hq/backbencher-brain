@@ -229,6 +229,11 @@ const descriptors = [
           type: "boolean",
           description: "include edges the indexer marked cross-language (default true). Set false for a single-language view.",
         },
+        timeBudgetMs: {
+          type: "number",
+          description:
+            "wall-clock budget for the whole walk in milliseconds (default 2000; 0 disables it). This is the one bound that is a function of the CLOCK rather than of the data, so a run that hits it can return fewer edges than an otherwise identical run moments later — `summary.timeBudgetExhausted` says when. Raise it, or set 0 to accept the runtime, when you need the whole set or a reproducible answer",
+        },
         maxEdges: {
           type: "number",
           description:
