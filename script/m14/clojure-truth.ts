@@ -1257,6 +1257,30 @@ const NON_CALL_FORMS = new Set([
   "reify", "proxy", "extend-type", "extend-protocol", "let-me", "clojure.core/fn",
 ])
 
+/**
+ * THE SPECIAL FORMS — a closed set, and a special form is NOT A CALL.
+ *
+ * This has to be consulted BEFORE the shadow check, which is the whole point of
+ * it. clojure/core.clj:4748 is `(defmacro fn …)`: the file redefines `fn` as a
+ * bootstrap macro, so the CLJ-D39 shadow rule says every `(fn …)` below that line
+ * is a call to the file's own var, and it published 212 such edges. They are all
+ * wrong. `fn` is a special form; a definition of it in one file does not turn it
+ * into a var, and the compiler still treats the head as a form. The analyzer
+ * knows this and stayed silent.
+ *
+ * `NON_CALL_FORMS` cannot do this job — it is a list of MACROS and binding forms
+ * that happens to contain most of the special forms by coincidence, and it is
+ * consulted by the `uses`/`contains` derivations, where a special form is still
+ * worth walking. It also lists `clojure.core/fn`, a namespaced spelling no
+ * head is ever written as.
+ */
+const SPECIAL_FORM_HEADS = new Set([
+  "def", "do", "fn", "fn*", "if", "if*", "let", "let*", "letfn", "letfn*", "loop", "loop*",
+  "quote", "quote*", "var", "var*", "recur", "recur*", "throw", "throw*", "try", "try*",
+  "catch", "catch*", "finally", "new", "new*", "set!", "monitor-enter", "monitor-exit",
+  "case", "case*", ".", "&",
+])
+
 /** The member of a static-interop head, or null — both dot positions (CLJ-D32). */
 function staticInteropMemberOf(head: string): string | null {
   const slash = head.lastIndexOf("/")
@@ -1617,6 +1641,7 @@ export function deriveClojureCallsTruth(
     //
     // The minimal reproduction that found it is four lines: `(defn first [x] x)`
     // then `(first x)`. The analyzer publishes it; this did not.
+    if (SPECIAL_FORM_HEADS.has(form)) return
     const shadowed = isShadowedAt(form, pos)
     if (shadowed) { push(owner, form); return }
     const ref = referAt(referSegs, form, pos)
