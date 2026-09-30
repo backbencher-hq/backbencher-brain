@@ -702,7 +702,7 @@ verification, not any oracle at all:
 | `imports` | yes | 6 facts | none |
 | `references` | yes | 8 facts | none |
 | `exports` | yes | via `c-completeness` | none |
-| `instantiates` | **no** | 1 fact, unmet | n/a |
+| `instantiates` | yes (#962) | 1 fact, `unmetUnder: C-D2` | n/a |
 
 ### `contains` against clang, and two real defects it found
 
@@ -889,7 +889,36 @@ decision that has not been made. The controls pin what must not move — file-sc
 structs, typedef'd anonymous structs, function-local **variables** (C-D1 is right about
 those), and file-scope members read from inside a block that also declares a local type.
 
-### Two open questions, both needing an owner's ruling
+### The three open questions, all now ruled
+
+**#960 — is a write to a field a `uses`? YES.** SCD1/CGD1 said no ("a WRITE, never a
+read") and the exclusion is withdrawn, on two grounds. The analyzer was **already
+inconsistent with itself**: `p->f++` published a `uses` while the semantically identical
+`p->f += 1` did not, because the grammar folds compound-assign into `assignment_expression`
+and `++` is an `update_expression`. And the pinned M12 truth demands the edge
+(`uses:buffer_create:capacity` for `buf->capacity = clamp(...)`). All **five** facts the
+truth reported as not produced were assignment targets; both branches fixed, the truth is
+now **0 not produced**. Corpus `uses` 74,129 → 86,982.
+
+The edge is not relabelled a read — the ontology has no `writes` kind, so before, the fact
+was an *absence*; now it is represented once.
+
+**#961 — is a function-local type an execution artifact? NO.** It emits no code; the local
+*variable* is the artifact. 20 types / 65 members were unpublished. Published, qualified by
+the enclosing function (`lpRandomEntries.pick`) because 3 of 20 collide with file-scope
+names. CGD20's real concern — member leakage — was fixed at the cause: the members are now
+owned by real symbols instead of the `anonymous_enum` placeholder. Result: `contains`
+against clang is **852/852 = 100.00%**.
+
+**#962 — does `instantiates` target `malloc`? NO, it targets the TYPE.** All 25 M12 truths
+that pin an `instantiates` edge target a **type** (`Point`, `User`, `List`,
+`MemoryStorage`); C's `-> malloc` was the only non-type target in the family and could never
+resolve. The type is read from the cast and from `sizeof`, which disagree about which
+carries it. An untyped `void *` allocation publishes nothing — there is no type to
+instantiate. The truth row is retargeted `-> Buffer` and recorded `unmetUnder: C-D2`
+(`Buffer` is in Module.H).
+
+### The two measurements that remain limited
 
 1. **Is a write to a field a `uses`?** The truth says yes, the analyzer says no,
    4,951 measured instances in 400 files. Either the analyzer grows the rule or
@@ -1022,10 +1051,10 @@ The containment check exists because of that, not because of the two rows it fix
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **31/31 pass** (18 pre-existing + 11 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **32/32 pass** (18 pre-existing + 12 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 4 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 38/38 live mutants caught, 5 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
