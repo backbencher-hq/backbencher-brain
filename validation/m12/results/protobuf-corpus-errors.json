@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "kind": "protobuf_corpus_errors",
+  "analyzer": "protobuf",
+  "corpus": "pb-reference",
+  "corpusRepo": "protobuf-reference",
+  "corpusUrl": "https://github.com/protocolbuffers/protobuf",
+  "corpusPath": "$HOME/fixtures/protobuf/repos/pb-reference",
+  "revision": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
+  "currentCommit": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
+  "extensions": [
+    "*.proto"
+  ],
+  "mode": "full-corpus",
+  "measuredFiles": 108,
+  "symbols": 7744,
+  "relationships": 9073,
+  "errorFiles": 1,
+  "cleanFiles": 107,
+  "errorEntries": 13,
+  "errorNodes": 9,
+  "errorNodeCounting": "ERROR + MISSING nodes from the production parse; `errorEntries` is the pipeline's own reported-error list, and the two differ because recovery reports one span more than once (13 entries vs 9 nodes on the ruled file)",
+  "grammarErrorFiles": 1,
+  "crashFiles": 0,
+  "errorLineSignatures": {
+    "option (.proto2_unittest.complex_opt1).foo = 42;": 1
+  },
+  "errorFileList": [
+    {
+      "file": "src/google/protobuf/unittest_custom_options.proto",
+      "errorEntries": 13,
+      "errorNodes": 9,
+      "firstRow": 338,
+      "firstLine": "option (.proto2_unittest.complex_opt1).foo = 42;",
+      "severities": {
+        "warning": 13
+      }
+    }
+  ],
+  "namedGrammarLimits": [
+    {
+      "file": "src/google/protobuf/unittest_custom_options.proto",
+      "count": 9,
+      "grammarLimit": "the proto2 MessageSet form `any { … }`, which the specification deprecates. RULED, not missed: 9 ERROR nodes, all inside this one file of the corpus. Every other construct in the same file parses correctly in isolation, so the errors tree-sitter reports on nearby lines are recovery misattributing damage from the `any { }` further down rather than independent defects. Recorded as a limit because the fix would be a permanent grammar cost for a construct real schemas do not contain; recorded rather than smoothed because the gate rejects a bare number."
+    }
+  ],
+  "crashes": [],
+  "passed": false,
+  "policy": "Every .proto file in the primary corpus is audited through the PRODUCTION `ASTEngine.parseFile` pipeline — the same path the engine uses — rather than by calling the analyzer directly, so this measures the shipped route and not just the extractor. Damage comes from the pipeline's own error signal. The one error file carries a `namedGrammarLimits` entry with its reason, because a limit stated as a bare number is indistinguishable from a number that was baselined deeper instead of closed. `passed` is false here and is expected to stay false: the ruled MessageSet construct is a decision, not a defect, and a corpus audit that reported 0 because the one known limit was hidden would be the worse artifact.",
+  "note": "Written by probe/m12-corpus-errors.mts. It is the artifact the m60 `corpus` cell compares the manifest's `measured.grammarErrorFiles` against; without it that cell is a vacuous comparison rather than a pass."
+}

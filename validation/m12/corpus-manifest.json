@@ -1020,8 +1020,8 @@
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 3251,
-        "corpusRelationships": 6042,
-        "grammarErrorFiles": 1,
+        "corpusRelationships": 6423,
+        "grammarErrorFiles": 0,
         "grammarErrorNodes": 2,
         "strictAcceptanceFiles": 1,
         "trackedFiles": 2,
@@ -1033,7 +1033,32 @@
         "symbolsPerSecond": 2626.8734060586075,
         "relationshipsPerSecond": 4882.057557491882,
         "measuredAt": "2026-08-20T16:44:43.000Z",
-        "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file."
+        "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file.",
+        "claimCorrection": "grammarErrorFiles was 1 and corpusRelationships was 6,042, and both were wrong. The m12 corpus-errors artifact measures errorFiles=0, and the lane review's doc-truth probe re-derives '0 error files, 0 crashes' from that same artifact, so the manifest was contradicting two records that agreed with each other. The m60 `corpus` cell was correctly reporting this as a failure — a claim with no artifact behind it. Corrected to the measured value rather than the artifact being edited to match the claim, which is the direction that hides evidence. The artifact is now regenerated at the manifest's own pinned revision 9c245018 and measures 3251 symbols and 6423 relationships through the production pipeline; the manifest now carries those figures, so H5 is satisfied by an artifact rather than by an unbacked number. The lane review's 6,418 came from the m12 corpus-complexity instrument and is 5 short of the pipeline's 6423 — two instruments counting the same corpus, and the manifest follows the one the gate compares it against."
+      }
+    },
+    {
+      "analyzer": "protobuf",
+      "corpusTarget": "protobuf_reference",
+      "status": "measured",
+      "candidates": [
+        "protobuf-reference@1eafbdec(clean)"
+      ],
+      "measured": {
+        "revision": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
+        "sample": "108 tracked *.proto files from protocolbuffers/protobuf — the language's OWN reference implementation, which is the strongest correctness corpus available because descriptor.proto is the file every protobuf tool reads",
+        "fixtures": 2,
+        "fixtureFacts": 105,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 7744,
+        "corpusRelationships": 9073,
+        "grammarErrorFiles": 1,
+        "grammarErrorNodes": 9,
+        "errorNodesDetail": "13 pipeline error ENTRIES over 9 ERROR/MISSING NODES; recovery reports one span more than once, so both numbers are carried rather than one being picked",
+        "grammar": "tree-sitter-proto @ e9f6b43f, 8 patches, vendored at grammars/tree-sitter-proto, pinned in validation/m14/grammar-pins.json",
+        "ruled": "the proto2 MessageSet form `any { … }` — deprecated by the specification, 9 ERROR nodes in 1 file of 108. RULED rather than fixed: recorded as a namedGrammarLimits entry with its reason so it cannot be smoothed into a bare number.",
+        "note": "The candidate is a SYMLINK into fixtures/protobuf/repos/, so the corpus is staged once and the gate can still resolve it by name. Duplicating it would cost ~100 MB, and disk pressure is why fixtures/graphql was removed earlier."
       }
     },
     {
