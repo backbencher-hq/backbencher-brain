@@ -16309,12 +16309,29 @@ export const MUTANTS: Mutant[] = [
     language: "perl",
     defectClass: "phantom-symbol",
     description: "M14.6 regression: a callee that is written as CODE is published as a NAME again. `$self->${\\( EXPR \\)}` is perl's 'call the method this expression computes' -- the grammar puts the whole expression in the `method` field, so the lane published arbitrary source text as a method name: measured `calls -> DemolishAll->new` (Moo/Object.pm:56, a `function` field holding compound text) and `calls -> ${\\( $tc->can('coercion')||sub { ... } )}` (Moo/Role.pm:224). A target that is not written in the file cannot be verified by the line oracle, so it is a fabricated target rather than a weaker claim. 19 such edges removed from a 14-file draw. Caught by the fixture's relationship pins, and by the oracle's Tier A, which asks the SOURCE for the name.",
-    transform: (r) => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((e: any) =>
-        e.type === "calls" && typeof e.target === "string" && e.target.includes("->") ? { ...e, target: e.target + "->new" } : e,
-      ),
-    }),
+    //
+    // The transform reads the SOURCE, and that is not a shortcut — it is the only
+    // faithful form available. The defect is a MISSING RULE producing a PRESENT
+    // fabricated edge, so the post-fix result carries no trace of it to rewrite:
+    // no published target contains a `->` any more, so a result-only transform is a
+    // no-op and the mutant SURVIVES while looking correct. The same trap already
+    // bit perl/qualified-target-defeats-builtin-suppression, whose fix was to ADD
+    // the leaked edge rather than rewrite one. Here the information the old rule
+    // leaked from is the file's own text, so the revert reads the file's text.
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      if (!source.includes("->${\\(")) return r
+      const owner = String(r.relationships?.find((e: any) => e.type === "calls")?.source ?? "global")
+      const fabricated = {
+        type: "calls",
+        source: owner,
+        target: "DemolishAll->new",
+        confidence: 0.9,
+        line_number: 1,
+        metadata: { perlSpecific: true, reasonCode: "name-only-callee" },
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), fabricated] }
+    },
   },
 ]
 
