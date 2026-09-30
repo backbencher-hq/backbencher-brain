@@ -176,10 +176,33 @@ deliberate, not forgotten:
 Both are candidates for promotion from `gap` to `RULED` so the lane stops
 reporting them as unfinished work; neither blocks any gate.
 
+### Performance
+
+- Phase profile: `bun script/m12/php-perf-profile.ts` →
+  `validation/m12/results/php-perf-profile.json` (200-file strided sample of
+  phpunit). The split is measured with hrtime over a warmed run, not sampled,
+  because a CPU profile attributes tree-sitter's WASM work to `(idle)`.
+- **The fused main walk is ~90% of end-to-end time.** `parse` is ~8–11%,
+  `collectPhpFileScope` (the one separate full-tree walk) ~2–5%, and the
+  symbol-table post-passes ~0.1%. So the cost is in the single walk, and
+  optimizing the grammar is not where a speedup lives.
+- `msPerFile` from the profile is **not** comparable to the differential's
+  6.3–9.5 ms/file: the profile includes parse, and its strided slice is
+  file-equal rather than byte-equal, so it is dragged by the large vendored
+  sources under `tools/.phpstan/`. The phase *ratios* are the robust result.
+- A/B harness: `bun script/m12/php-perf-ab.mts [ref]` →
+  `validation/m12/results/php-perf-ab.json`. It reports speed and output
+  equality as **separate** claims, interleaves the two analyzers round by round,
+  and compares results field-by-field on every file before timing anything.
+- Measured machine noise is larger than any available win: the profile moved
+  19.21 → 22.31 ms/file between two consecutive runs of *identical* code, and
+  two 5-rep A/B runs of the same pair returned 1.883x and then 0.755x (spread
+  106% and 300%). The harness therefore reports its speed verdict as
+  `INDETERMINATE` above 25% spread rather than publishing a number it cannot
+  support. **No performance claim is made for this lane**, and no optimization
+  has been applied.
+
 ### Not yet measured
 
-- No per-phase profile or A/B harness for this analyzer (the NIM lane has
-  `script/m12/nim-perf-profile.ts` and `nim-perf-ab.mts`). The differential
-  records end-to-end 6.3–9.5 ms/file across the two corpora.
-- Cross-file `overrides` at project scale are unmeasured, because the
-  companion index is not populated in production.
+- Cross-file `overrides` at project scale, because the companion index is not
+  populated in production.
