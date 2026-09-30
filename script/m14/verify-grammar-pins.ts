@@ -90,6 +90,15 @@ export interface LaneDecision {
   source:
     | { state: "vendored"; dir: string; note: string; srcSubdir?: string }
     | { state: "not-obtainable-offline"; note: string }
+    /**
+     * One minimal source per CLAIMED patch, each of which must parse CLEAN under the
+     * wired bytes. This is the only check here that can see a patch which changes no
+     * node type -- a parser alternative -- because sha, byte length and the surface
+     * digest are all unchanged by such a patch even when the bytes predate it entirely.
+     * Declared per lane rather than hard-coded so any patched lane can use it; see
+     * `measurePatchLiveness` for why the structural checks cannot.
+     */
+    patchProbes?: Array<{ patch: string; claim: string; source: string }>
   decision: string
   alternatives: Array<{ option: string; measured: string; artifact: string }>
   evidence: string[]
@@ -1442,6 +1451,8 @@ export const LANES: Record<string, LaneDecision> = {
       patches: [
         "use_statement / forward_statement: Sass's module system has optional clauses these rules never allowed — `as <namespace>`, `as *`, `with (<config>)`, and `show`/`hide <members>` on @forward. As written each rule was `seq('@use', $._value, ';')`, so every `as` clause was an ERROR: `@use 'sass:map';` parsed and `@use 'sass:map' as map;` — the form Sass documents — did not. Measured over 244 .scss files this was the single largest residual class, the bare token `as` at 277 error spans. Two sub-fixes were needed and the first attempt at each was wrong in an instructive way. (a) `with (<config>)` was first written to allow only `$._value`, so `with ($a: 1)` matched the `$a` and then reported `(UNEXPECTED '1')` — which reads like a value problem and is actually a missing `:` separator, because Sass's clause is a list of `$name: value` PAIRS. (b) the `as` clause was first written with `$._value`, which admits `binary_expression` and collided with the dashed-prefix form. The `as` target is therefore `choice($.identifier, $.variable, $._concatenated_identifier)`, and the whole clause is modelled in the grammar's OWN loose style (the `$._value, repeat(seq(optional(','), $._value))` pattern already at lines 86-87) rather than with a strict grammar for Sass config objects: a strict model is a second research project, and the analyzer reads these clauses by SLICING node.text, never by naming a node type, because slicing text cannot fall behind a grammar change (M60 R10). Repro: @use 'sass:map' as map;",
         "declaration + parameter: Sass's `!default` / `!global` flag. The declaration rule allowed `optional($.important)` and nothing else, so `$a: 1 !default;` — the most common line in a Sass variable file, and the entire point of a configurable default — was an ERROR, at 210 occurrences across the corpus. Applied at BOTH sites: a variable declaration and a mixin/function parameter default, which is where Sass puts it most often (`@mixin button($bg: $grey !default)`). Repro: $x: 1 !default;",
+        "list_value + parenthesized_value (LOCAL PATCH 4): MAP LITERALS. `map.merge((...), $default)` did not parse in ANY form -- measured over 12 hand-built cases, every map form failed (single pair, several pairs, trailing comma, `$var` key, `$var` value, bare-identifier key, multi-line, nested) while lists passed, so the rule was the whole of the gap. Patched by EXTENDING TWO EXISTING RULES rather than adding a third, which is the entire content of the patch: `list_value` also accepts a keyed entry `KEY ':' VALUE`, and the inherited CSS `parenthesized_value` is widened from `'(' $._value ')'` to also accept `'(' $._value ':' $._value ')'`. The single-pair form is why it looked arbitrary -- it lost to `parenthesized_value` while two-or-more pairs parsed, because a comma settles the conflict before precedence is consulted, and `prec.dynamic` cannot help because the conflict is resolved when the parser is GENERATED. Three EARLIER attempts at this same gap added a new `map_value` rule and were measured and REVERTED (SCSS-L8): in `_value` at prec 1 it fixed 5 files and regressed none while driving ERROR nodes 3,900 -> 8,056; scoped to call arguments it fixed 4 and REGRESSED 9; with `prec.dynamic` it was worse. A new rule competes in every declaration, selector and interpolation in the language, and where it loses tree-sitter recovers with an error node -- which is why the file-level A/B reported '0 regressed' on a change that made the lane's worst files much worse. Adding no new rule is what makes this one clean: +7 files, 0 regressed, ERROR 3,900 -> 3,340. Measured: 10 of the 12 cases now parse, including the `map.merge` shape the corpus actually uses.",
+        "_include_arguments (LOCAL PATCH 5): the `@include` CLOSING delimiter no longer demands immediacy. The rule used `token.immediate` on BOTH parens, and `token.immediate` means zero intervening whitespace, so an `@include` whose argument list was not written with the parens hard against the argument did not parse at all -- `@include f( 1px );` fails on a single SPACE on one line, and the multi-line form (a design-system stylesheet's house style) fails too. A plain call with the same layout always parsed, which localises the fault to this rule's delimiters rather than to Sass or the lexer. It is the FIRST error in 15 of the 63 element-plus files that still failed, across `set-css-var-value` (10) and `css-var-from-global` (5). Only the closing delimiter is relaxed; `token.immediate('(')` stays because Sass genuinely forbids whitespace between a mixin name and its argument list. Measured: +8 files, 0 regressed, ERROR 3,340 -> 3,089.",
         "DECLARED, NOT PATCHED: `@forward 'x' as prefix-*;`, the PREFIX form of the `as` clause. It requires `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression` (a `$._value` can itself be `a - b`). It occurs ZERO times in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. The A/B carries it as `forward-as-dashed-prefix` with verdict `unchanged-broken` rather than omitting it, so the unsupported form is named in the evidence instead of absent from it. A grammar conflict taken on for a construct with no evidence is a risk incurred on somebody else's behalf.",
       ],
       patchEvidence:
@@ -1564,6 +1575,14 @@ export interface Surface {
 }
 
 export interface MeasuredLane {
+    /**
+     * One entry per CLAIMED patch, measured BEHAVIOURALLY against the wired bytes.
+     * `live: false` means the record claims a patch the bytes do not contain, which no
+     * structural check here can detect for a patch that adds no node type. Absent (as
+     * opposed to empty) when a lane declares no `patchProbes`, so "not checked" and
+     * "checked, all live" stay distinguishable.
+     */
+    patchLiveness?: Array<{ patch: string; claim: string; live: boolean; hasError: boolean; missing: string[] }>
   wired: { file: string; sha256: string; bytes: number }
   surface: Surface
   copies: Array<{ label: string; path: string; sha256: string | null; byteIdentical: boolean; absent?: boolean }>
@@ -1632,6 +1651,60 @@ export async function measureSurface(absWasm: string): Promise<{ surface: Surfac
   }
   g.delete?.()
   return { surface, namedUnique: [...new Set(named)].sort(), uniqueNames: [...new Set([...named, ...anon])].sort() }
+
+  /**
+   * Is each patch a lane's record CLAIMS actually live in the bytes it measures with?
+   *
+   * WHY THIS EXISTS, because every other check in this file is structurally blind to
+   * the failure it was written for. This gate compares the wired bytes to a RECORD:
+   * sha256, byte length, and the node-type surface. All three PASS when someone adds a
+   * patch to `grammar.js`, updates the record to claim it, and never rebuilds — the sha
+   * matches the record because the record was updated alongside the source, so the
+   * record and the source agree with each other and both disagree with the bytes.
+   *
+   * A patch that adds a NODE TYPE is caught by `typeSetDigest`. A patch that adds a
+   * PARSER ALTERNATIVE adds none, and is therefore invisible to every structural check
+   * here. That is not hypothetical: `tree-sitter-powershell` claimed G10 (a parser
+   * alternative on `command_parameter`) while its wired bytes were a build from before
+   * G10 existed, and this gate printed the lane as a clean line in the same run where
+   * objective-c failed ten drift checks.
+   *
+   * So a lane may declare `patchProbes`: one minimal source per patch, each of which
+   * must PARSE CLEAN under the wired bytes. That is a behavioural claim rather than a
+   * structural one, and it is the only kind of check that can see a patch that changes
+   * no vocabulary. A probe is deliberately narrow — the smallest construct the patch
+   * alone is responsible for — and a probe that fails FAILS the gate, so a lane cannot
+   * record a patch it does not actually have.
+   *
+   * The C lane's rejected sha-only pin named this failure exactly: "sha-only would
+   * leave `macro_prefixed_objc_declaration`'s live-ness a matter of memory, which is
+   * the exact failure the C record describes for its own lane." objective-c, c and
+   * fsharp each closed it with a three-build A/B. This is the cheap, re-runnable half
+   * of that, and it needs no build.
+   */
+  export async function measurePatchLiveness(
+    absWasm: string,
+    probes: ReadonlyArray<{ patch: string; claim: string; source: string }>,
+  ): Promise<Array<{ patch: string; claim: string; live: boolean; hasError: boolean; missing: string[] }>> {
+    const { Parser, Language } = await wts()
+    const parser = new Parser()
+    parser.setLanguage(await Language.load(fs.readFileSync(absWasm)))
+    const missingOf = (node: any): string[] => {
+      const out: string[] = []
+      const walk = (n: any) => {
+        if (n.isMissing) out.push(n.type)
+        for (let i = 0; i < n.childCount; i++) walk(n.child(i))
+      }
+      walk(node)
+      return out
+    }
+    return probes.map((p) => {
+      const tree = parser.parse(p.source)
+      const missing = missingOf(tree.rootNode)
+      const hasError = tree.rootNode.toString().includes("ERROR")
+      return { patch: p.patch, claim: p.claim, hasError, missing, live: !hasError && missing.length === 0 }
+    })
+  }
 }
 
 export async function measureLane(file: string): Promise<MeasuredLane> {
@@ -1757,6 +1830,32 @@ export function verifyPins(record: PinRecord, actual: Record<string, MeasuredLan
         }
       }
     }
+      // Behavioural patch liveness, measured in the async phase and compared here so
+      // this function stays synchronous. Every check above compares the bytes to the
+      // RECORD, and every one of them passes when a patch was added to the source,
+      // claimed in the record, and never built — because the record moved with the
+      // source, so the two agree with each other and both disagree with the bytes. A
+      // patch that adds a node type is separately caught by the surface digest; a
+      // PARSER ALTERNATIVE adds none and slips through all of them. This is the only
+      // check that can see it, so the record cannot claim a patch the bytes lack.
+      for (const r of now.patchLiveness ?? []) {
+        if (!r.live) {
+          failures.push({
+            lane: lang,
+            check: `claimed patch ${r.patch} is NOT live in the wired bytes`,
+            recorded: r.claim,
+            actual: `ERROR=${r.hasError} MISSING=[${r.missing.join(",")}]`,
+          })
+        }
+      }
+      if ((rec.patchProbes?.length ?? 0) > (now.patchLiveness?.length ?? 0)) {
+        failures.push({
+          lane: lang,
+          check: "the record claims behavioural patch probes that were not measured",
+          recorded: rec.patchProbes?.length,
+          actual: now.patchLiveness?.length ?? 0,
+        })
+      }
     if (rec.sourceVsWasm?.missingInWasm?.length) {
       failures.push({ lane: lang, check: "the record was written with the source↔wasm check already failing", recorded: rec.sourceVsWasm.missingInWasm, actual: null })
     }
