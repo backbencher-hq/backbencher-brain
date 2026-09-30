@@ -1,5 +1,11 @@
 # CL2 — `bb_cross_language`: the analyzer work created a new class of false absence
 
+> **Superseded in part** — `docs/m63/CL3.md` closes the four items this document
+> left open (a second non-JVM corpus, the two never-fired branches, the hover
+> door's project leak, and the gate's wiring). Everything in §3 and §7 below
+> remains in force and is re-measured there on an index and a corpus neither had
+> seen.
+
 **Status** — CL1 VERIFIED (285/285, 9/9 mutants) · CL1-T1 VERIFIED (19/19) ·
 M26 W3 (the hover door) VERIFIED 21/21, 5/5 mutants
 **Supersedes** — `docs/m63/CL1.md` for the member section; CL1's four defects
