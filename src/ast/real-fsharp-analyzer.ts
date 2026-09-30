@@ -1198,6 +1198,45 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scan per type node, i.e. O(n²) over a file. Bounded hops keep the walk linear (the
    * lane's own hot-path rule: no per-symbol O(n) scans).
    */
+  /**
+   * The OUTERMOST callable above `n` — the member a local belongs to — or undefined if
+   * there is none, which means `n` is itself top-level and is its own owner.
+   *
+   * This replaces `findAncestor(decl, isCallable, 8)`, and the bound was the defect. A
+   * depth-limited search cannot distinguish "there is no callable above this" from "the
+   * callable is further than 8 levels up", and the code treated both as the first. It then
+   * fell through to publishing the LOCAL's own name, and a local is not a symbol — the lane's
+   * contract, pinned by the `Negative.fs` fixture, says so — so the edge it published had no
+   * other end:
+   *
+   *     references insert -> ConsoleKeyInfo      // `let insert(key: ConsoleKeyInfo) =` in console.fs
+   *     references select -> Type                // `let select (methInfo:MethodInfo) =` in the same file
+   *
+   * Neither `insert` nor `select` is a symbol; the truth oracle independently derived both
+   * facts against `ReadLine`, the method that contains them, and the differential reported
+   * 125 such rows. `insert` sits inside nested `for`/`do` bindings in a method body, which is
+   * more than 8 levels up.
+   *
+   * Walking to the root and keeping the LAST callable found is both unbounded and simpler to
+   * state: a local inside a local inside a member is owned by the member, because a namespace
+   * and a module are not callables and so never become the answer. A decl with no callable
+   * anywhere above it really is top-level, and its own name is then correct — which is the
+   * `annotated : Bar` case in the fixture, and the reason the fallback is kept rather than
+   * removed.
+   *
+   * Cost is O(depth) per annotation and the walk terminates at the root, so the bound that
+   * caused this cannot come back.
+   */
+  private outermostCallableAbove(n: Node, predicate: (x: Node) => boolean): Node | undefined {
+    let found: Node | undefined
+    let cur: Node | null = n.parent
+    while (cur) {
+      if (predicate(cur)) found = cur
+      cur = cur.parent
+    }
+    return found
+  }
+
   private findAncestor(node: Node, predicate: (n: Node) => boolean, maxDepth: number = 12): Node | undefined {
     let cur: Node | null = node.parent
     for (let i = 0; cur && i < maxDepth; i++) {
@@ -1585,6 +1624,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "function_or_value_defn" ||
         n.type === "value_declaration" ||
         n.type === "additional_constr_defn"
+      // A LAMBDA parameter is not a declaration and owns nothing.
+      //
+      //     let sb = fun (sb: StringBuilder) (c: char) -> …
+      //
+      // The `simple_type`'s nearest declaration ancestor is the `let sb` that HOLDS the
+      // lambda, so the walk attributed `StringBuilder` to `sb` — a symbol that exists, so
+      // nothing downstream could tell the edge was wrong, and the truth oracle (which
+      // refuses lambda parameters independently) derived no such row. The lane's contract
+      // says it outright and pins it in the negative fixture: lambda params are NOT
+      // symbols. So an annotation on one is a fact about a value that the graph does not
+      // publish, and publishing it under the holder's name is worse than publishing
+      // nothing: it is a true-shaped edge about the wrong thing.
+      //
+      // The discriminator is the `fun_expression` between the pattern and the declaration,
+      // which is the only thing that makes this a lambda parameter rather than a member's.
+      const inLambda = this.findAncestor(
+        parent,
+        (n) => n.type === "fun_expression",
+        6,
+      )
+      if (inLambda) return null
       const decl = isDecl(parent) ? parent : this.findAncestor(parent, isDecl, 14)
       if (!decl) return null
       const pos = callablePosition(t, decl)
@@ -1610,7 +1670,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const isCallable = (n: Node) =>
         n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
       const inTypeBody = this.findAncestor(decl, (n) => n.type === "type_extension_elements", 3) !== undefined
-      const enclosingCallable = this.findAncestor(decl, isCallable, 8)
+      const enclosingCallable = this.outermostCallableAbove(decl, isCallable)
       if (inTypeBody && enclosingCallable === undefined) {
         // a field of the class: the type owns it
         const td = this.findAncestor(decl, (n) => n.type === "type_definition", 6)
