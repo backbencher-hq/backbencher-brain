@@ -850,6 +850,60 @@ try {
       "a scope note defaulted onto a section that does not render is struck from the explaining set; a freshness note aimed at a section the mode does render is kept — so the rule discriminates rather than disabling caveats wholesale")
   }
 
+  // ── T30: a rendered signature never claims an empty argument list ────────
+  // `bb_doc` rendered `name()` whenever the index's `parameters` column was
+  // empty, which is a claim that the symbol takes no arguments. Reading the
+  // declaration off disk for every sampled symbol with an empty column, across
+  // six languages: **1 218 of 1 218 have a real parameter list** (excluding
+  // declarations whose list is genuinely empty or C's explicit `(void)`).
+  // `Malloc(size_t size)` rendered as `Malloc()`, `application(app)` as
+  // `application()`. 14 267 `function` and 2 702 `method` symbols across the
+  // eight corpora were affected.
+  {
+    /** An empty pair of brackets with no caveat is a claim the symbol takes nothing. */
+    const claimsNoArguments = (statement: string): boolean =>
+      statement.includes("()") && !statement.includes("no parameter list")
+
+    // One callable WITH a parameter list, one callable WITHOUT, one property
+    // that legitimately has none. All three matter: the second is the defect and
+    // the third is the over-correction.
+    for (const [symId, name, kind, params] of [
+      ["gate-sig-args", "withArgs", "function", "a: number, b: string"],
+      ["gate-sig-noargs", "withoutArgs", "function", null],
+      ["gate-sig-prop", "aProperty", "property", null],
+    ] as const) {
+      raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+        (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+        .run(symId, projectId, localPaths.has("src/lib/math.ts") ? String(raw.prepare("SELECT id FROM brain_file WHERE project_id=? AND relative_path=?").get(projectId, "src/lib/math.ts").id) : "", name, name, kind, 5, 5, "void", params, null, "export", Date.now(), Date.now())
+    }
+    // One document each: symbol mode takes a single target, so asking it for all
+    // three at once would only ever document one of them and the other two
+    // assertions would pass vacuously on an empty list.
+    const factsFor = async (target: string): Promise<string[]> => {
+      const one = await doc({ mode: "symbol", target, detail: "deep", limit: 20 })
+      return one.sections.flatMap((section) => section.facts).map((item) => item.statement)
+    }
+    const withArgs = (await factsFor("withArgs")).filter((statement) => statement.includes("withArgs"))
+    const withoutArgs = (await factsFor("withoutArgs")).filter((statement) => statement.includes("withoutArgs"))
+    const property = (await factsFor("aProperty")).filter((statement) => statement.includes("aProperty"))
+    check("T30: a signature with no indexed parameter list never claims an empty one",
+      withArgs.some((statement) => statement.includes("(a: number, b: string)"))
+        && withoutArgs.length > 0 && withoutArgs.every((statement) => !claimsNoArguments(statement))
+        && withoutArgs.some((statement) => statement.includes("no parameter list"))
+        && property.length > 0 && property.every((statement) => !statement.includes("no parameter list")),
+      `with-args rendered: ${withArgs[0]?.slice(0, 90) ?? "(absent)"}; ` +
+      `without-args rendered: ${withoutArgs[0]?.slice(0, 130) ?? "(absent)"}; ` +
+      `property rendered: ${property[0]?.slice(0, 90) ?? "(absent)"} — the property takes no arguments, so a caveat on it would be nonsense`)
+    negative("T30 the false-signature predicate convicts both defect shapes",
+      claimsNoArguments("function Malloc() is defined in a/b.h at lines 1-9.") === true
+        && claimsNoArguments("method application() is defined in a.rb at lines 8-10.") === true
+        && claimsNoArguments("function Malloc is defined in a/b.h at lines 1-9; the index records no parameter list for it, so its arguments are not described here.") === false
+        && claimsNoArguments("property p is defined in a/b.h at line 3.") === false,
+      "an empty bracket pair is a false claim whether the symbol is a function or a method; the same rendering with the caveat, and a property that never took arguments, are both accepted")
+    for (const symId of ["gate-sig-args", "gate-sig-noargs", "gate-sig-prop"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+  }
+
   // ── T26: the announced evidence bounds ARE the applied bounds ─────────────
   // `bb_doc` announced a per-section evidence cap in a sentence and assembled the
   // section from the UNCAPPED draft, so the sentence was the only description of
