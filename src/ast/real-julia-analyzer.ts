@@ -53,6 +53,31 @@ const TYPE_DECLARATIONS: ReadonlySet<string> = new Set(["abstract_definition", "
 // `ARGS`/`ENV` globals are the interpreter's own bindings, and a bare `true`/`false` is a literal
 // (the grammar's `boolean_literal` already covers that, so this set is about the names that
 // appear as plain identifiers).
+/**
+ * Relationship source for code that is not inside any declaration.
+ *
+ * MEASURED, and it was the single largest source of missing edges in this analyzer. Julia files
+ * do not have to open a `module`: measured over 295 corpus files, **71.9% have no module block
+ * at all**. Julia scripts, REPL transcripts, `include`d fragments and whole stdlib test files all
+ * run at file scope, and top-level code there is ordinary executable code — `const C = f(x)`,
+ * bare `f(x)`, calls between statements.
+ *
+ * Because the call edge required a non-empty scope, all of it vanished: 46 module-less files
+ * emitted ZERO call edges despite holding 8,478 `call_expression`s between them. Worse than
+ * incomplete — a script that calls a dozen functions indexed as a file containing nothing.
+ *
+ * The name and the rule are this repo's own, not an invention: `real-c-analyzer.ts:892`
+ * documents `getRelationshipSource()` as "the enclosing FUNCTION name … or `global`" for
+ * file-scope relationships, precisely because an invented scope name like `core_init.block_211`
+ * is a dangling identity that resolves to no symbol.
+ *
+ * `contains` deliberately KEEPS its `if (scope)` guard, for the reason recorded next to the same
+ * C rule: `global contains core_init` is a dangling edge to a container that does not exist, and
+ * ownership is a claim about a real container. Top-level declarations get `ownerName: undefined`
+ * instead, which says "this is not owned by anything" rather than inventing an owner.
+ */
+const GLOBAL_SCOPE = "global"
+
 const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
   "nothing", "missing", "undef", "ARGS", "ENV", "C_NULL", "stdout", "stderr", "stdin",
 ])
@@ -281,9 +306,9 @@ export class RealJuliaAnalyzer {
           const callee = this.calleeName(node)
           if (!callee || IMPLICIT_OR_CONSTANT.has(callee)) break
           const isCtor = declaredTypes.has(callee) || TYPE_DECLARATIONS.has(callee)
-          if (scope) {
+          {
             relationships.push(this.rel(
-              scope,
+              scope || GLOBAL_SCOPE,
               isCtor ? "instantiates" : "calls",
               callee,
               node,
@@ -299,7 +324,7 @@ export class RealJuliaAnalyzer {
           const nameNode = this.firstNamedChildOfType(node, "macro_identifier")
           const name = nameNode ? nameNode.text.trim().replace(/^@/, "") : ""
           if (!name) break
-          if (scope) relationships.push(this.rel(scope, "calls", name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
           break
         }
 
@@ -340,11 +365,33 @@ export class RealJuliaAnalyzer {
         case "field_expression": {
           // One of the SEVEN node types in this grammar that actually has a field, so
           // `childForFieldName` is correct here and positional access would be wrong.
+          //
+          // But `field_expression` is ALSO this grammar's dotted path — `Core.Intrinsics.bitcast`
+          // is `field_expression(field_expression(Core, Intrinsics), bitcast)` — and Julia spells
+          // namespace access and field access identically, so the node alone cannot say which.
+          //
+          // The rule used here is syntactic and stated rather than guessed: a NESTED
+          // `field_expression` is a qualified reference, so only the OUTERMOST link of the chain
+          // emits, and it emits the WHOLE path. Emitting a bare `uses -> bitcast` for the member
+          // of `Core.Intrinsics.bitcast` would rebuild by the back door the exact ambiguity
+          // `fieldPath` was written to remove — and it would sit there beside the correct
+          // `calls -> Core.Intrinsics.bitcast`, looking like an independent read of a variable
+          // named `bitcast` that does not exist. A single-level `obj.field` still emits
+          // `uses -> field`, which is the ordinary case and the one that is right.
+          if (node.parent?.type === "field_expression") break
           const value = node.childForFieldName("value")
           if (!value) break
+          if (value.type === "field_expression") {
+            const path = this.fieldPath(node)
+            if (path) {
+              relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", path, node, 0.95,
+                { juliaSpecific: true, isQualifiedReference: true }))
+            }
+            break
+          }
           const prop = this.firstNamedChildOfType(node, "identifier")
           if (!prop) break
-          if (scope) relationships.push(this.rel(scope, "uses", prop.text.trim(), node, 0.9, { juliaSpecific: true, isFieldRead: true }))
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", prop.text.trim(), node, 0.9, { juliaSpecific: true, isFieldRead: true }))
           break
         }
 
@@ -614,19 +661,73 @@ export class RealJuliaAnalyzer {
     return ""
   }
 
-  /** The callee of a call: the identifier or scoped identifier, never a receiver or an argument. */
+  /**
+   * The dotted path of a `field_expression` chain — this grammar's qualified access.
+   *
+   * MEASURED, and the measurement contradicted the code. There is NO `scoped_identifier` node in
+   * this grammar: scanning 400 corpus files for `scoped_identifier` under a `call_expression`
+   * callee found **0**, while `field_expression` accounted for every qualified callee. `Core
+   * .Intrinsics.bitcast` is `field_expression(field_expression(Core, Intrinsics), bitcast)` —
+   * left-nested, so the path is built by recursion, not by listing segments.
+   *
+   * The `scoped_identifier` branch this replaced was dead code written from a different grammar,
+   * and because it never matched, `calleeName` returned null and the analyzer emitted **nothing at
+   * all** for a file of qualified calls: zero symbols, zero relationships, no error. A silent empty
+   * graph is the worst failure shape there is — it reads as "nothing to see here" rather than
+   * "this analyzer is blind".
+   *
+   * The dotted path is kept WHOLE on purpose. Collapsing it to the last segment was measured to
+   * invent merges: over 400 files, 1,352 bare segments appear behind a qualified path and **72 of
+   * them are reachable by more than one distinct path**. `parse` alone is `Meta.parse`,
+   * `Base.parse`, `TOML.parse` and `Dates.parse` — four unrelated functions. `bitcast` is
+   * `Base.bitcast`, `Core.bitcast` and `Intrinsics.bitcast`. `isreadable` is
+   * `Filesystem.isreadable`, `Base.isreadable` and `Sys.isreadable`. One node per bare name would
+   * silently fuse them, and a merged node makes every edge into and out of it a statement about
+   * the wrong function. In Julia the qualified path IS the identity of the binding.
+   *
+   * `Base.:(==)` puts the operator in a `quote_expression`, so the last segment can be either.
+   */
+  private fieldPath(node: Node): string {
+    if (node.type === "identifier") return node.text.trim()
+    if (node.type === "quote_expression") return node.text.trim()
+    if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
+    if (node.type === "operator") return node.text.trim()
+    if (node.type === "where_expression" || node.type === "parenthesized_expression") {
+      const inner = this.pos(node, 0)
+      return inner ? this.fieldPath(inner) : ""
+    }
+    if (node.type === "field_expression") {
+      const kids = this.namedChildren(node)
+      const receiver = kids[0]
+      const member = kids[kids.length - 1]
+      if (!receiver || !member) return node.text.trim()
+      const head = this.fieldPath(receiver)
+      const tail = this.fieldPath(member)
+      return head && tail ? `${head}.${tail}` : head || tail || node.text.trim()
+    }
+    return ""
+  }
+
+  /** The callee of a call: a bare name, or the WHOLE dotted path when it is qualified. */
   private calleeName(call: Node): string | null {
     if (call.type === "where_expression") {
       const callable = this.unwrapWhere(call)
       if (callable !== call) return this.calleeName(callable)
     }
+    // Positional: the callee is pos(0), never an argument. A `field_expression` here is a
+    // qualified callee and its whole path is the name.
+    const calleeNode = this.pos(call, 0)
+    if (calleeNode && calleeNode.type === "field_expression") {
+      const path = this.fieldPath(calleeNode)
+      if (path) return path
+    }
     for (const c of this.namedChildren(call)) {
       if (c.type === "identifier") return c.text.trim()
-      if (c.type === "scoped_identifier") {
-        // `Base.show` — the last segment names the thing being called.
-        const segs = this.namedChildren(c).filter((x) => x.type === "identifier")
-        if (segs.length) return segs[segs.length - 1]!.text.trim()
-        return c.text.trim()
+      if (c.type === "field_expression") {
+        // `Base.show` — the WHOLE path names the thing being called, because the last segment
+        // alone is ambiguous (see fieldPath: 72 measured collisions).
+        const path = this.fieldPath(c)
+        if (path) return path
       }
       if (c.type === "where_expression" || c.type === "parenthesized_expression") {
         const inner = this.calleeName(c)
