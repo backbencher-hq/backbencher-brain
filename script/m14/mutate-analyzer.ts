@@ -8348,6 +8348,24 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    // RUST-MR: the guard that skips declarations inside a function body covered
+    // let_declaration, const_item AND static_item, while its own comment claims
+    // only `let` is an execution artifact. A function-local const/static names a
+    // value with a type, an initializer and a line, and is published everywhere
+    // else — 43 + 22 corpus sites at 0% coverage, against 200/200 module-level
+    // const and 15/15 associated ones, which is what made the spec's
+    // `handled_verified` claim for both node types false at the site level.
+    id: "rust/drop-function-local-consts",
+    language: "rust",
+    defectClass: "symbol-loss",
+    description: "RUST-MR: a function-local `const`/`static` publishes no symbol and no `contains` edge — the declaration guard over-applies the `let` rule",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.name !== "LOCAL" && s.name !== "CACHED"),
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && (x.target === "LOCAL" || x.target === "CACHED"))),
+    }),
+  },
+  {
     id: "go/drop-bare-uses",
     language: "go",
     defectClass: "relationship-loss",
