@@ -22,6 +22,8 @@
 //   M3 unbounded impact         (budget lifted)
 //   M4 differential break       (containment rule dropped from total count)
 //   M12 via erased              (a cascaded row claims to be an exact one)
+//   M14 evidence re-read off    (one row's evidence at another row's depth)
+//   M15 depth correction off    (the first trace published as the shortest path)
 //   M13 composition undeclared  (the cascade breakdown stops being published)
 //   M5 truncation state lost    (truncated flag always false)
 //
@@ -160,6 +162,65 @@ async function makeFixture(): Promise<{
   rel.run("w5-rel-8", projectId, "sym:other", "sym:hub2:mid", "calls", 0.9)
   rel.run("w5-rel-9", projectId, "sym:hub2", "sym:hub2:mid", "calls", 0.9)
   rel.run("w5-rel-10", projectId, "sym:other", "sym:klass:mem", "calls", 0.9)
+
+  // M63.T2 — the shape that makes the ENGINE's depth and the ANSWER's depth
+  // disagree, which is what the evidence re-read exists for. The engine's caller
+  // walk recurses depth-first and stamps a node with the depth of the FIRST trace
+  // that reached it, so when a node is reachable both directly and through an
+  // intermediate, which trace finds it first is decided by the walk, not by the
+  // graph. The corpus lane measured 340 of 4 258 rows (7.98%) published with the
+  // engine's row and the answer's depth on two different paths, and a
+  // cross-language flag was the field that showed it.
+  //
+  // `deep` is reachable directly AND through `viabridge`. Whichever trace the
+  // engine takes, the answer's depth is the shortest (1), so the evidence it
+  // quotes must be the DIRECT row — and the direct row carries
+  // `is_cross_language = 0` while the indirect one carries 1. A tool that quotes
+  // the engine's row regardless reports a cross-language dependent whose own
+  // direct row says it is not one.
+  sym.run("sym:deep", projectId, "file-1", "deepFn", "function", 14, 14, 52, 56, 7)
+  sym.run("sym:via", projectId, "file-1", "viaFn", "function", 15, 15, 57, 61, 6)
+  rel.run("w5-rel-11", projectId, "sym:deep", "sym:hub2", "calls", 0.55)
+  rel.run("w5-rel-12", projectId, "sym:via", "sym:deep", "calls", 0.55)
+  // The same pair, flagged, the way a stored cross-language row looks.
+  raw.prepare(
+    `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism)
+     VALUES (?,?,?,?,?,?,?,?)`,
+  ).run("w5-rel-13", projectId, "sym:via", "sym:deep", "calls", 0.55, 1, "name-resolution")
+
+  // ...and the shape that makes the two paths DISAGREE, which the small fixture
+  // above cannot produce on its own. The engine's per-query site limit is 200
+  // rows and its order is `kindRank, fileRel, lineNumber, rowId`, so a symbol
+  // whose direct row sorts last is cut from the root's query while the same
+  // symbol reached through another caller survives — and the engine then stamps
+  // it at the depth of the trace that got there first, which is not the shortest.
+  //
+  // `twice` is that symbol: 200 direct callers of `wide` sort ahead of its own
+  // direct row, so the root's query never sees it, and it is found at depth 1
+  // through `gate`. Its DIRECT row is not cross-language; the row through
+  // `gate` is. So the depth and the evidence genuinely belong to two different
+  // stored rows, and the answer can only be right by re-reading the evidence at
+  // the depth it reports.
+  sym.run("sym:wide", projectId, "file-1", "wideFn", "function", 20, 20, 62, 66, 9)
+  // `gate` sorts ahead of the two hundred (line 21), so it IS seen at depth 0,
+  // and `twice` is then found through it at depth 1.
+  sym.run("sym:gate", projectId, "file-1", "gateFn", "function", 21, 21, 67, 71, 8)
+  for (let i = 0; i < 200; i++) {
+    sym.run(`sym:widec${i}`, projectId, "file-1", `wide${i}`, "function", 200 + i, 200 + i, 1_000 + i, 1_004 + i, 1)
+    rel.run(`w5-wide-${i}`, projectId, `sym:widec${i}`, "sym:wide", "calls", 0.5)
+  }
+  // `twice` is inserted AFTER the two hundred and carries the highest line
+  // number, so the engine's order — `kindRank, fileRel, lineNumber, rowId` — puts
+  // its direct row LAST and the 200-row site limit cuts it. That is the whole
+  // shape: a row that exists, is a real dependency, and the walk never sees.
+  sym.run("sym:twice", projectId, "file-1", "twiceFn", "function", 9_999, 9_999, 9_000, 9_004, 7)
+  rel.run("w5-twice-direct", projectId, "sym:twice", "sym:wide", "calls", 0.5)
+  rel.run("w5-gate", projectId, "sym:gate", "sym:wide", "calls", 0.5)
+  rel.run("w5-twice-via", projectId, "sym:twice", "sym:gate", "calls", 0.5)
+  raw.prepare(
+    `INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism)
+     VALUES (?,?,?,?,?,?,?,?)`,
+  ).run("w5-twice-via-cross", projectId, "sym:twice", "sym:gate", "calls", 0.5, 1, "name-resolution")
   return {
     projectId,
     raw,
@@ -189,6 +250,32 @@ async function main(): Promise<void> {
 
   const fx = await makeFixture()
   try {
+    // M63.T2: the two-path shape, and what the answer says about it. Printed
+    // unconditionally first, because a check that passes vacuously on a fixture
+    // that does not produce the shape is worse than no check at all.
+    const deepResult = await impact.computeImpact(fx.raw, fx.projectId, "hub2")
+    console.log(
+      `  [fixture] hub2 impact: ${deepResult.impact
+        .map((d: any) => `${d.name}@${d.depth}/ev@${d.evidenceAtDepth}/cross=${d.isCrossLanguage}`)
+        .join(" ")}`,
+    )
+    const wideResult = await impact.computeImpact(fx.raw, fx.projectId, "wideFn")
+    const twice = wideResult.impact.find((d: any) => d.id === "sym:twice")
+    const twiceShape = twice ? `${twice.name}@${twice.depth}/ev@${twice.evidenceAtDepth}/cross=${twice.isCrossLanguage}` : "ABSENT"
+    check(
+      wideResult.totalCountIfKnown === 202 && wideResult.truncated === true && wideResult.truncationReason === "impact-node-budget-exhausted",
+      "R5: a root whose site limit cut a real dependent declares a prefix and the true size",
+      "fixture/wideFn",
+      `shown=${wideResult.shownCount} total=${wideResult.totalCountIfKnown} reason=${wideResult.truncationReason}`,
+    )
+    // The shape the corpus lane measured at 7.98% of rows: the engine reached
+    // `twice` through `gate` because its direct row was cut by the site limit, so
+    // the engine's depth (1) and the shortest path (0) disagree — and the two
+    // rows disagree about the cross-language flag as well.
+    check(twice !== undefined && twice.depth === 0, "R5: the dependent is reported at its SHORTEST path, not the engine's first trace", "fixture/wideFn", twiceShape)
+    check(twice !== undefined && twice.isCrossLanguage === false, "R5: the evidence is the row at the reported depth, so a longer path's flag is not quoted", "fixture/wideFn", twiceShape)
+    check(twice !== undefined && twice.evidenceAtDepth === twice.depth, "R5: the answer says which path the quoted evidence is on", "fixture/wideFn", twiceShape)
+
     // --- R1: real engine + differential vs L3 --------------------------------
     const result = await impact.computeImpact(fx.raw, fx.projectId, "rootFn")
     const names = result.impact.map((d: any) => d.name).sort()
@@ -425,6 +512,36 @@ async function main(): Promise<void> {
         },
       },
       {
+        name: "M14 evidence re-read disabled (one row's evidence published at another row's depth)",
+        home: "component",
+        from: "if (entry.evidenceAtDepth === entry.depth) continue",
+        to: "if (true) continue",
+        // `twiceFn` is reachable directly (a row the engine's 200-row site limit
+        // cut) and through `gateFn` (a row the engine did see, and which IS
+        // cross-language). Skip the re-read and the answer quotes the longer
+        // path's flag at the shorter path's depth — measured on nine real
+        // repositories at 340 of 4 258 rows, and caught on vue-core by the
+        // corpus suite's cross-language law.
+        probe: async (m) => {
+          const r = await m.computeImpact(fx.raw, fx.projectId, "wideFn")
+          const twice = r.impact.find((d: any) => d.id === "sym:twice")
+          return twice === undefined || twice.isCrossLanguage !== false
+        },
+      },
+      {
+        name: "M15 the depth correction removed (the engine's first trace is published as the shortest path)",
+        home: "component",
+        from: "if (measured !== undefined && measured !== entry.depth) entry.depth = measured",
+        to: "if (false && measured !== undefined && measured !== entry.depth) entry.depth = measured",
+        // Same shape: with the correction gone, `twiceFn` is reported at depth 1
+        // because that is the trace the engine's depth-first walk took first.
+        probe: async (m) => {
+          const r = await m.computeImpact(fx.raw, fx.projectId, "wideFn")
+          const twice = r.impact.find((d: any) => d.id === "sym:twice")
+          return twice === undefined || twice.depth !== 0
+        },
+      },
+      {
         name: "M12 how-each-dependent-is-a-dependent erased (every row claims to be exact)",
         home: "component",
         from: 'via: edge.targetMatch === "owner-cascade" ? "member" : "exact",',
@@ -498,7 +615,7 @@ async function main(): Promise<void> {
     // equality still holds, and the summary reads BETTER than before while
     // testing less. (Measured: the M7 anchor was invalidated by a field added
     // to a return literal, the suite reported 10/10, and nothing failed.)
-    const EXPECTED_MUTANTS = 13
+    const EXPECTED_MUTANTS = 15
     let caught = 0
     let mutantsTotal = 0
     let skipped = 0
