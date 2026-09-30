@@ -92,9 +92,36 @@ over upstream tree-sitter-fsharp:
 
 ## Regex inventory
 
-The analyzer is **fully regex-free** — the regex census (`validation/m12/results/regex-census.json`) reports **0 usages** for `real-fsharp-analyzer.ts`. Kind classification (record → class, DU → enum, anon member-signatures → interface), override detection (`firstTokenIs(node, "override")` reads the tree-sitter token), property-vs-method (argument-list presence in `method_or_prop_defn`), and generic-parameter extraction are all pure AST decisions:
+The analyzer is **fully regex-free**, and it now is because it was measured and corrected —
+it was not for most of this lane's life. The doc previously asserted zero here, citing the
+census, and the census at the time said six:
+
+| line | literal | what it decided | now |
+| --- | --- | --- | --- |
+| `publishedName` | `/^['^]/` ×2 | is this a type binder, or a named type? | a leading `'` TOKEN in the tree |
+| `publishedName` | `/^[A-Za-z_][A-Za-z0-9_']*$/` | does this string look like a name? | is the node an `identifier`, or a `long_identifier` ending at that leaf? |
+| `declaredBindingName` | `/[()<]/`, `/\s:/`, `/^[A-Za-z_][A-Za-z0-9_']*$/` | is a pattern's text nothing but a name? | does the pattern have exactly one name child and no argument list? |
+
+Every one of those is a decision about a STRING that the grammar already makes about a NODE. A
+type binder is an apostrophe token plus an identifier; a name is an `identifier` node; a bare
+binding pattern has no `argument_patterns` child. Each replacement asks the tree, which is a
+stronger question than asking whether the text looks right — and the pattern-name replacement
+in particular now reads the name OFF the single child that is the name, instead of validating
+a string and then returning it.
+
+**Why the census did not catch it, which is the part worth keeping.** The claim here cited
+`validation/m12/results/regex-census.json` as its evidence, and a reader reasonably treats a
+cited artifact as checked. The file existed, the claim was in the canonical doc, and neither
+was wrong about anything except the number — the doc was asserting a property that the artifact
+it cited would have contradicted, and nobody ran the two against each other. Running the
+census is not the same as reading its output for THIS analyzer: the per-file section has one
+entry among forty-six, and nothing in the doc pointed at it.
+
+The census also has a `justification` field, empty on all six, which is the shape a finding
+takes when the scan is right and nobody has adjudicated the row yet.
+
 - **Generic type names**: `type_name → long_identifier → identifier` gives the clean name; declared type parameters come from sibling `type_arguments → type_argument_defn → type_argument` nodes (e.g. `Repository<'T>` → name `Repository`, params `['T']`; `Pair<'a, 'b>` → `['a', 'b']`). No source-text regex needed.
-- The only string operations are exact-set membership (`Set.has`) and `split(".")` for leaf names.
+- The remaining string operations are exact-set membership (`Set.has`), `split(".")` to take a leaf, and equality against a node's own `text` where that node IS a name. None of them decides a KIND from arbitrary subtree text; the last such test — `n.text.includes("Measure")` — was removed in FS-D27, and it was a real defect rather than a style one, because `[<MeasureAnnotatedAbbreviation>]` contains the substring "Measure" and is a different attribute. See `validation/m14/fixtures/fsharp/measure-attribute.fs`.
 
 ## Complexity envelope
 
