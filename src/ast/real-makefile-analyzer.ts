@@ -80,7 +80,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
     const edgeCount: Record<string, number> = { references: 0, uses: 0, calls: 0, contains: 0, exports: 0, imports: 0 }
     let conditionals = 0
 
-    const declare = (
+    const declareSymbol = (
       name: string,
       kind: ASTEngine.SymbolKind,
       node: Node,
@@ -140,7 +140,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
     // every target, and it is the SOURCE of every include edge, so two
     // makefiles that include the same file are distinguishable in the graph
     // instead of collapsing onto one hardcoded "makefile" node.
-    const moduleSymbol = declare(moduleName, ASTEngine.SymbolKind.Module, rootNode, {
+    const moduleSymbol = declareSymbol(moduleName, ASTEngine.SymbolKind.Module, rootNode, {
       nodeType: "makefile",
       isMakeModule: true,
       filePath,
@@ -272,7 +272,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
             const valueNode = this.firstChildOfType(node, new Set(["text", "shell_command"]))
             const value = valueNode?.text?.trim() ?? ""
             if (!valuesByName.has(name)) valuesByName.set(name, value)
-            declare(name, ASTEngine.SymbolKind.Constant, node, {
+            declareSymbol(name, ASTEngine.SymbolKind.Constant, node, {
               nodeType: type,
               isMakeVariable: true,
               operator: this.assignmentOperator(node),
@@ -292,7 +292,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (name) {
             const body = this.firstChildOfType(node, new Set(["raw_text"]))
             if (!valuesByName.has(name)) valuesByName.set(name, body?.text ?? "")
-            declare(name, ASTEngine.SymbolKind.Function, node, {
+            declareSymbol(name, ASTEngine.SymbolKind.Function, node, {
               nodeType: type,
               isMakeMacro: true,
               operator: "define",
@@ -321,7 +321,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
                 if (raw.startsWith(".")) continue
                 literalTargets.push(raw)
                 declaredTargets.add(raw)
-                declare(raw, ASTEngine.SymbolKind.Function, node, {
+                declareSymbol(raw, ASTEngine.SymbolKind.Function, node, {
                   nodeType: "rule",
                   isMakeTarget: true,
                   targetName: raw,
@@ -471,7 +471,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
               const name = trimOperator(w.text.trim())
               if (!name || KEYWORDS.has(name)) continue
               if (!declared.has(name)) {
-                declare(name, ASTEngine.SymbolKind.Constant, w, { nodeType: "export_directive", isMakeVariable: true, declaredBy: "export" })
+                declareSymbol(name, ASTEngine.SymbolKind.Constant, w, { nodeType: "export_directive", isMakeVariable: true, declaredBy: "export" })
                 patterns.push("Make variables")
                 addRel(module, ASTEngine.RelationshipType.Contains, name, w.startPosition.row + 1, { role: "declaration", evidenceClass: "declared_in_file" })
               }
