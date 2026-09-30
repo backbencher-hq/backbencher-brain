@@ -7162,7 +7162,26 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         }
       }
       if (nm && baseList) {
-        const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
+        // CS-D10 (2026-09-29): the base list was built from EVERY named child of `base_list`,
+        // and `base_list` also carries the CONSTRUCTOR ARGUMENT LIST. For
+        //
+        //     public sealed class LambdaParameterParsingTests(ITestOutputHelper output)
+        //         : ParsingTests(output)
+        //
+        // the children are `[identifier "ParsingTests", argument_list "(output)"]`, so the raw
+        // text of the second child was pushed as a base TYPE named `(output)` — and F5 reported 2
+        // MISSING rows for a class that implements nothing of the sort. The sibling row
+        // `implements CSharp13_CSharp14_Preview -> Preview)` is the same defect on a record, whose
+        // base list carries the primary-constructor argument list.
+        //
+        // An `argument_list` is an argument list wherever it appears, so it is excluded by NODE
+        // TYPE rather than by pattern: matching on the text is the rule that produced the
+        // paren-named "type" in the first place.
+        const baseTypes: string[] = []
+        for (const b of baseList.namedChildren) {
+          if (!b || b.type === "argument_list") continue
+          baseTypes.push(leafOf(b.text))
+        }
         const isInterfaceDecl = n.type === "interface_declaration"
         for (let i = 0; i < baseTypes.length; i++) {
           const target = baseTypes[i]
@@ -7182,13 +7201,58 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           // (first=extends, later-unknown=implements).
           const dot = target.lastIndexOf(".")
           const leaf = dot > 0 ? target.slice(dot + 1) : target
-          const knownIface =
-            declKinds.get(target) === "interface" || corpusInterfaces?.has(target) ||
-            declKinds.get(leaf) === "interface" || corpusInterfaces?.has(leaf)
-          const knownClass =
-            declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
-            declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
-          const declaredKind = knownIface ? "interface" : knownClass ? "class" : undefined
+            // CS-D9 (2026-09-29, found by the bare-`uses` round's F5 MISSING rows): the
+            // precedence was INVERTED relative to the analyzer this claims to mirror. The
+            // analyzer resolves, in this order:
+            //
+            //     typeKinds.get(b) || crossFileKinds?.get(b) || typeKinds.get(leaf) || crossFileKinds?.get(leaf)
+            //
+            // — the IN-FILE declaration map first, the cross-file companion second, so a file
+            // that declares a name is never overruled by the corpus. The oracle tested the
+            // corpus set first, and that set is a regex over `interface NAME` across every
+            // sampled file, so a name that is an interface ANYWHERE outranks what THIS file says.
+            //
+            // Measured on roslyn .../PerfTests/CSPerfTest.cs, where all three sites are CLASS
+            // inheritance and `interface c1` is declared in two OTHER corpus files
+            // (SyntaxNormalizerTests.cs, SymbolErrorTests.cs):
+            //
+            //     62    public class c1 : c0                    // c1 is a CLASS here
+            //     460   public class c2<T> : c1                 // extends c1
+            //     903   public class c4 : c2<string>            // extends c2
+            //     1096      public class c5 : c3<string, c1>   // extends c3
+            //
+            // So when either file was sampled, `c1` entered the set, the oracle labelled all
+            // three class-inheritance edges `implements`, and F5 reported 3 MISSING — the oracle
+            // contradicting the analyzer on edges the analyzer had RIGHT. A derived label that is
+            // wrong in the direction of `the analyzer missed something` is the most expensive
+            // kind of oracle bug, because it manufactures a defect to explain.
+            //
+            // This is CS-D4's family (a name-keyed kind companion) in a form D4's fix did not
+            // cover: D4 excluded AMBIGUOUS names from the companion, but the precedence that
+            // lets the companion OVERRULE a local declaration is a separate rule and was never
+            // checked. With the order corrected an ambiguous corpus name can no longer flip a
+            // local edge; it only decides edges where the file itself is silent, which is the
+            // only place corpus knowledge is needed at all.
+            const inFileIface = declKinds.get(target) === "interface" || declKinds.get(leaf) === "interface"
+            const inFileClass =
+              declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
+              declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
+            // An in-file CLASS wins even against a corpus INTERFACE: that is the analyzer's
+            // order, and the only reading under which a file can describe its own types.
+            const declaredKind = inFileIface ? "interface" : inFileClass ? "class" : undefined
+            // The FIRST version of this fix corrected `declaredKind` but left `knownIface`
+            // ORing the corpus set in unconditionally — so the label still came out `implements`
+            // and the probe caught it (cs-deep-47). A local CLASS declaration must VETO the
+            // corpus set, which is what "in-file first, companion second" means: the companion
+            // is consulted only when the file is silent about the name. Verified with the
+            // comparator F5 itself uses (label + target, not source) because the two sides name
+            // the source differently — the analyzer qualifies it (`ns1.c1`), the oracle does not
+            // (`c1`) — and that difference is invisible to the gate and must not be mistaken for
+            // the label bug.
+            const knownIface =
+              !inFileClass &&
+              (declaredKind === "interface" ||
+                corpusInterfaces?.has(target) === true || corpusInterfaces?.has(leaf) === true)
           // CSD12 mirror: struct bases are ALWAYS interfaces; an unknown
           // external index-0 I-prefixed PascalCase name is conventionally an
           // interface (matches the analyzer's looksLikeInterface exactly).
