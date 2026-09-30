@@ -154,7 +154,7 @@
     {
       "name": "a waited refresh racing a detached one still completes",
       "pass": true,
-      "detail": "refresh: completed force=false wait=true durationMs=11265 derived=skipped-unchanged (unchanged — derived data still consistent)"
+      "detail": "refresh: completed force=false wait=true durationMs=9837 derived=skipped-unchanged (unchanged — derived data still consistent)"
     },
     {
       "name": "and the index is whole afterwards",
@@ -175,12 +175,12 @@
     {
       "name": "selection is not the bottleneck at 264k files",
       "pass": true,
-      "detail": "224ms to rank 264,000 ids (the first implementation of this same selection took 2,448ms here — it sorted the whole set; the warm-bb_health budget is 2,000ms)"
+      "detail": "168ms to rank 264,000 ids (the first implementation of this same selection took 2,448ms here — it sorted the whole set; the warm-bb_health budget is 2,000ms)"
     },
     {
       "name": "cost per file does not grow with corpus size (no superlinear blow-up)",
       "pass": true,
-      "detail": "ns/file: 6000.0, 520.0, 860.0, 848.5"
+      "detail": "ns/file: 8000.0, 1160.0, 780.0, 636.4"
     },
     {
       "name": "the fast path selects EXACTLY the same files a stable sort would",
@@ -195,7 +195,7 @@
     {
       "name": "requesting every file is O(n) sort only, not a hash rank",
       "pass": true,
-      "detail": "27ms for 50,000 files returned whole (a path sort, not a hash rank)"
+      "detail": "32ms for 50,000 files returned whole (a path sort, not a hash rank)"
     },
     {
       "name": "MCP: a healthy index is not an error result",
@@ -251,12 +251,47 @@
       "name": "and the warning is still visible in the text",
       "pass": true,
       "detail": "warning: [SYNTAX_ERRORS] 20 indexed files have syntax errors"
+    },
+    {
+      "name": "the history mode also carries `healthy`",
+      "pass": true,
+      "detail": "healthy=false on an INCOMPLETE index — round 2 returned a bare textResult here, so the one mode that answers in JSON had no channel"
+    },
+    {
+      "name": "and it is still not an error result",
+      "pass": true,
+      "detail": "isError=undefined"
+    },
+    {
+      "name": "the history payload is the documented JSON shape",
+      "pass": true,
+      "detail": "{\\n  \"health\": {\\n    \"projectId\": \"8f212f"
+    },
+    {
+      "name": "and a healthy index in history mode reports healthy=true",
+      "pass": true,
+      "detail": "healthy=true"
+    },
+    {
+      "name": "both output shapes flip on the SAME state change",
+      "pass": true,
+      "detail": "text=false history=false on one broken index"
+    },
+    {
+      "name": "the shape change is declared in the schema description",
+      "pass": true,
+      "detail": "return persisted analysis history (default false). CHANGES THE OUTPUT SHAPE: this mode answers with a JSON object { heal"
+    },
+    {
+      "name": "and the same `healthy` contract is declared there too",
+      "pass": true,
+      "detail": ""
     }
   ],
   "negativeCases": 6,
   "summary": {
-    "total": 47,
-    "passed": 47,
+    "total": 54,
+    "passed": 54,
     "failed": 0
   },
   "decisions": {
@@ -269,10 +304,10 @@
     "The multi-model case is proven by direct table manipulation, not by running a second embedding provider — the fixture cannot produce a second model without one.",
     "The concurrency checks are single-process. Cross-process serialization is the index lock's job (script/m43/verify-p1-index-lock.ts), not this gate's."
   ],
-  "generatedAt": "2026-09-30T07:43:59.119Z",
+  "generatedAt": "2026-09-30T08:13:18.180Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T07:46:56.696Z",
-    "contentSha256": "5a6a96352b45e44bfa4e3562d77c27e7ea5fd7c737f11ec45404de463cd7da11"
+    "sealedAt": "2026-09-30T09:19:40.936Z",
+    "contentSha256": "163b997ed3050542f549670ffe06eaa8daf18d6264873cf5bf5b9b236ef604fc"
   }
 }

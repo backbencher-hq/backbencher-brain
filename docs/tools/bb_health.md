@@ -23,7 +23,7 @@ Unified index health: file/symbol/relationship/imports counts, embedding model +
     },
     "history": {
       "type": "boolean",
-      "description": "return persisted analysis history (default false)"
+      "description": "return persisted analysis history (default false). CHANGES THE OUTPUT SHAPE: this mode answers with a JSON object { health, history } instead of the text report, so a caller must not parse the text form when asking for it. Every other option still applies, and the result carries the same top-level `healthy` boolean as the text form (false when the report contains an error-severity finding)"
     },
     "limit": {
       "type": "number",
