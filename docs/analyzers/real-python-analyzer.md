@@ -155,17 +155,31 @@ pinned corpus files:
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
-| `contains` | 4,213 | 1 | 1 |
-| `extends` | 540 | 1 | 0 |
-| `overrides` | 220 | 0 | 0 |
-| `calls` | 11,383 | 8 | 8 |
-| `instantiates` | 119 | 3 | 8 |
+| `contains` | 28,153 | 313 | 20 |
+| `extends` | 3,505 | 155 | 0 |
+| `overrides` | 1,881 | 221 | 32 |
+| `calls` | 55,825 | 1,710 | **3,386** |
+| `instantiates` | 1,461 | 27 | 184 |
+| **total** | **90,825** | **2,426** | **3,622** |
 
-**4,973 of 4,975 structural edges agreed**, and most of the 21 residual are the *oracle's* bugs
-— seven were found and documented during the run, which is the state a differential should
-reach before it is trusted to say anything. The comparator separates a **confirmed guess** from
-a **refuted** one, which is how the 1,163 refuted `overrides` guesses above are reported rather
-than folded into the agreed count.
+**Read the disagreement columns as oracle incompleteness, not analyzer error.** Both directions
+concentrate on one shape the oracle does not model — a **member-call leaf**. Confirmed against
+the source: `requests/adapters.py:321` is `if url.lower().startswith("https")`, so the
+analyzer's `calls request_url -> lower` is correct and the oracle never derived it. The other
+cluster is identically-named bases (`class ArgumentParser(ArgumentParser)`), where the analyzer
+declines a self-referential `extends` and the oracle does not.
+
+So the honest statement is narrower than an agreement rate: the oracle agrees on 90,825 edges
+and **cannot currently falsify the analyzer for `calls`**. Nine defects were found by the parts
+of it that are complete.
+
+**A harness bug worth recording, because it flattered the analyzer.** The first full-corpus run
+printed `8` as the disagreement count for all five types, which is a clamp: `sample()` capped the
+stored examples at `SHOW = 8` and the summary table printed that array's `.length` as the count.
+The per-type lists said `(8+)` honestly; the table did not. An earlier version of this document
+reported "4,973 of 4,975 agreed, 21 residual" on the strength of it — roughly 290× optimistic.
+Counts are now tracked exactly and only examples are capped, and every list header prints
+`N total, showing M`.
 
 **A retracted finding, recorded because it is the more useful half of the story.** This review
 previously claimed that 37.8% of `overrides` edges resolved ambiguously, on the strength of a

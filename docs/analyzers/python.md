@@ -17,6 +17,7 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Completeness | 130 node types, 60 handled, 65 silent, **0 unclassified**, 7 explicit decisions |
 | Regex | **0** — no `RegExp`, no `/…/` literal |
 | Corpus | 3,271 `.py` files, 23,911 symbols, 99,743 relationships, 0 parse errors |
+| Independent oracle | 90,825 edges agreed; **6,048 disagreements, which are the oracle's incompleteness, not the analyzer's error rate** (PY-20) |
 
 ## What a consumer may rely on
 

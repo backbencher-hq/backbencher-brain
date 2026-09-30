@@ -77,6 +77,25 @@ const missing = new Map<string, string[]>()
 const unexplained = new Map<string, string[]>()
 const guessBadEx = new Map<string, string[]>()
 const count = (m: Map<string, number>, t: string, d: number): void => m.set(t, (m.get(t) ?? 0) + d)
+
+/**
+ * COUNT AND SAMPLE ARE SEPARATE, and conflating them is how this harness first
+ * misreported itself.
+ *
+ * `sample` used to do double duty: it capped the stored examples at `SHOW` **and** the
+ * summary table printed `missing.get(t)?.length` as the disagreement count. So every
+ * disagreement total was silently clamped to 8, and the full-corpus run printed a bare
+ * `8` in five of five columns where the honest answer was "8 or more, possibly thousands".
+ * A capped number in an uncapped-looking column is the worst of both: the per-type lists
+ * said "(8+)", which is honest, and the table said `8`, which is not.
+ *
+ * The counts are therefore tracked exactly and only the EXAMPLES are capped. A run whose
+ * real disagreement count equals `SHOW` is now visible as a coincidence instead of being
+ * indistinguishable from a clamp.
+ */
+const missingN = new Map<string, number>()
+const unexplainedN = new Map<string, number>()
+const guessBadN = new Map<string, number>()
 const sample = (m: Map<string, string[]>, t: string, s: string): void => {
   const l = m.get(t) ?? []
   if (l.length < SHOW) { l.push(s); m.set(t, l) }
@@ -109,16 +128,16 @@ for (const f of files) {
     const [t, from, to, line] = k.split("\u0000")
     const label = `${path.basename(f)} ${from} -> ${to}${line ? ` @L${line}` : ""}`
     if (analyzerKeys.has(k) || guessKeys.has(k)) count(agreed, t, 1)
-    else sample(missing, t, label)
+    else { count(missingN, t, 1); sample(missing, t, label) }
   }
   for (const k of guessKeys) {
     if (truthKeys.has(k)) guessOk++
-    else { guessBad++; sample(guessBadEx, String(k).split("\u0000")[0], `${path.basename(f)} ${k.split("\u0000").slice(1).join(" -> ")}`) }
+    else { guessBad++; count(guessBadN, String(k).split("\u0000")[0], 1); sample(guessBadEx, String(k).split("\u0000")[0], `${path.basename(f)} ${k.split("\u0000").slice(1).join(" -> ")}`) }
   }
   for (const k of analyzerKeys) {
     if (truthKeys.has(k)) continue
     const [t, from, to] = k.split("\u0000")
-    sample(unexplained, t, `${path.basename(f)} ${from} -> ${to}`)
+    { count(unexplainedN, t, 1); sample(unexplained, t, `${path.basename(f)} ${from} -> ${to}`) }
   }
 }
 
@@ -126,15 +145,15 @@ const pad = (s: unknown, k: number): string => String(s).padEnd(k)
 console.log(`files=${n}  types compared: ${TYPES.join(", ")}\n`)
 console.log(pad("TYPE", 13) + pad("agreed", 9) + pad("missing", 9) + pad("unexplained", 13))
 for (const t of TYPES) {
-  console.log(pad(t, 13) + pad(agreed.get(t) ?? 0, 9) + pad(missing.get(t)?.length ?? 0, 9) + pad(unexplained.get(t)?.length ?? 0, 13))
+  console.log(pad(t, 13) + pad(agreed.get(t) ?? 0, 9) + pad(missingN.get(t) ?? 0, 9) + pad(unexplainedN.get(t) ?? 0, 13))
 }
 if (guessOk + guessBad > 0) {
   console.log(`\ndeclared guesses (analyzer labelled them uncertain): ${guessOk + guessBad}  confirmed by tree=${guessOk}  refuted=${guessBad}`)
 }
 for (const t of TYPES) {
   const m = missing.get(t)
-  if (m?.length) { console.log(`\nMISSING ${t} (${m.length}+): the tree says these exist and the analyzer did not emit them:`); for (const s of m) console.log(`   ${s}`) }
+  if (m?.length) { console.log(`\nMISSING ${t} (${missingN.get(t) ?? m.length} total, showing ${m.length}): the tree says these exist and the analyzer did not emit them:`); for (const s of m) console.log(`   ${s}`) }
   const u = unexplained.get(t)
-  if (u?.length) { console.log(`\nUNEXPLAINED ${t} (${u.length}+): the analyzer emitted these and the tree does not support them:`); for (const s of u) console.log(`   ${s}`) }
+  if (u?.length) { console.log(`\nUNEXPLAINED ${t} (${unexplainedN.get(t) ?? u.length} total, showing ${u.length}): the analyzer emitted these and the tree does not support them:`); for (const s of u) console.log(`   ${s}`) }
 }
-for (const [t, l] of guessBadEx) { console.log(`\nREFUTED GUESSES ${t} (${l.length}+):`); for (const s of l) console.log(`   ${s}`) }
+for (const [t, l] of guessBadEx) { console.log(`\nREFUTED GUESSES ${t} (${guessBadN.get(t) ?? l.length} total, showing ${l.length}):`); for (const s of l) console.log(`   ${s}`) }
