@@ -30,8 +30,23 @@ export interface UnifiedHealthReport {
    * two different reasons — "recorded as null" and "never recorded". Only the
    * first is a measurement. `indexedFiles` is `number | null`, not `number`,
    * so a consumer cannot read a missing record as a count of zero.
+   *
+   * M64.P1: `isIncomplete` / `indexShortfall` / `totalFilesDiscovered` expose
+   * the one signal that survives the process that wrote the index dying: the
+   * walk found more files than the run wrote.
    */
-  indexStatus: { lastFullIndex: number | null; lastIncrementalIndex: number | null; indexedFiles: number | null; indexingVersion: string | null; status: string | null; errors: unknown[]; recordPresent: boolean }
+  indexStatus: {
+    lastFullIndex: number | null
+    lastIncrementalIndex: number | null
+    indexedFiles: number | null
+    totalFilesDiscovered: number | null
+    indexShortfall: number
+    isIncomplete: boolean
+    indexingVersion: string | null
+    status: string | null
+    errors: unknown[]
+    recordPresent: boolean
+  }
   /** M21.I3: versioned performance stats from the durable index status. */
   performanceStats: { schemaVersion: number | null; runs: any[]; latestRun: any | null }
   /**
@@ -445,6 +460,36 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       severity: "error",
     })
   }
+  // M64.P1: the half-built index. EMPTY_INDEX and the detached-refresh record
+  // both only see an index that reached ZERO files, or a failure that happened
+  // in this process. Neither can see the state that actually happens when a
+  // rebuild is interrupted partway: a process killed between the wipe and the
+  // end of the walk leaves 800 of 1,654 files, no in-memory record to consult,
+  // and every other check reads as a merely-stale index that a refresh will
+  // fix. Nothing in the report could say "this index is INCOMPLETE".
+  //
+  // The signal is already stored: brain_index_status records both total_files
+  // (what the walk found) and indexed_files (what it wrote). A run that ended
+  // having written fewer files than it found is a run that did not finish —
+  // independent of any in-process memory, which is what makes this the one
+  // check that survives the process dying.
+  //
+  // `status` of "complete" alongside the shortfall is the specific contradiction
+  // worth naming: the record claims the run finished and the counts say it did
+  // not.
+  const recordedTotal = typeof status?.total_files === "number" ? status.total_files : null
+  const recordedIndexed = typeof status?.indexed_files === "number" ? status.indexed_files : null
+  const indexShortfall = recordedTotal !== null && recordedIndexed !== null && recordedIndexed < recordedTotal
+    ? { missing: recordedTotal - recordedIndexed, total: recordedTotal, indexed: recordedIndexed }
+    : null
+  if (indexShortfall) {
+    const contradicted = status?.status === "complete"
+    warnings.push({
+      code: "INCOMPLETE_INDEX",
+      message: `the last index run recorded ${indexShortfall.indexed} of ${indexShortfall.total} files as indexed — ${indexShortfall.missing} file(s) were found by the walk but never written, so the index is INCOMPLETE${contradicted ? " even though the status field says \"complete\"" : ""}. counts below describe a partial index and any answer derived from it covers only what was indexed. Run refresh=true, force=true to rebuild from scratch.`,
+      severity: "error",
+    })
+  }
   if (!statusRecordPresent) {
     warnings.push({
       code: "NO_INDEX_STATUS",
@@ -468,6 +513,11 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       lastFullIndex: status?.last_full_index ?? null,
       lastIncrementalIndex: status?.last_incremental_index ?? null,
       indexedFiles: status?.indexed_files ?? null,
+      // M64.P1: the walk-vs-write shortfall, exposed as data. A consumer can
+      // branch on this without parsing a warning message.
+      totalFilesDiscovered: recordedTotal,
+      indexShortfall: indexShortfall ? indexShortfall.missing : 0,
+      isIncomplete: indexShortfall !== null,
       indexingVersion: status?.indexing_version ?? null,
       status: status?.status ?? null,
       errors: indexingErrors,
@@ -562,7 +612,9 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // M64.R4: `indexedFiles=0 errors=0` for a project with no status record is
     // two zeros that are not measurements. Absence now prints as absence, so
     // the line cannot be read as a healthy zero next to files=1654.
-    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
+    // M64.P1: a recorded shortfall prints as INCOMPLETE, so a half-built index
+    // cannot be skimmed as a normal one.
+    `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written` : ""} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
     `perf: schemaVersion=${report.performanceStats.schemaVersion ?? "none"} runs=${report.performanceStats.runs.length} latestWallMs=${report.performanceStats.latestRun?.phases?.totalWallMs ?? "n/a"}`,
     `runtime: ${report.runtime.runtime} ${report.runtime.version} / ${report.runtime.database}`,
   ]
