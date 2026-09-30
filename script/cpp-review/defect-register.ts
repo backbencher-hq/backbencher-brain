@@ -74,6 +74,87 @@ const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-d
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
 const SAMPLE = 12
 
+/** D8's first identifier down the declarator chain — the macro's bare name. */
+const d8BareName = (decl: any): string | null => {
+  let cur = decl
+  for (let i = 0; i < 8 && cur; i++) {
+    if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+    const next = cur.childForFieldName?.("declarator") ?? null
+    if (!next) {
+      for (let k = 0; k < cur.namedChildCount; k++) {
+        const c = cur.namedChild(k)
+        if (c && (c.type === "identifier" || c.type === "field_identifier")) return c.text
+      }
+      return null
+    }
+    cur = next
+  }
+  return null
+}
+
+/**
+ * D8's discriminator, restated independently of the analyzer's copy: does this
+ * macro invocation CONTINUE the declaration in front of it?
+ *
+ * Three versions of this rule were measured and two were wrong, so the reasoning is
+ * recorded rather than just the result:
+ *
+ *   * "the body's being empty" — false. The annotation node CARRIES the real
+ *     function's body, so it is never empty.
+ *   * "the previous named sibling is a `declaration`" — false, twice over.
+ *     `prevNamedSibling` is `null` throughout this grammar, and finding the
+ *     predecessor by index flags a real `TEST(Suite, Name)` that happens to follow
+ *     a function declaration. `TEST` is spelled in all caps, so the macro-name test
+ *     cannot separate the two families.
+ *   * "skip comments while scanning backwards" — false, and subtly so: the scan
+ *     meets the comment's TEXT before its `//`, so a comment ending in a letter
+ *     reads as a continuation and every `TEST` preceded by a comment is deleted.
+ *     That deleted 20 real headings in one gmock file before it was caught.
+ *
+ * What holds: the character before the macro, ignoring whitespace, is the end of a
+ * parameter list or a declarator suffix (`)` `&` `>` `*`), or the tail of a
+ * trailing keyword (`const`, `noexcept`, …) — and NO comment intervenes.
+ */
+const d8ContinuesDeclaration = (startIndex: number, content: string): boolean => {
+  let j = startIndex - 1
+  while (j >= 0) {
+    const c = content[j]
+    if (c === " " || c === "\t" || c === "\r" || c === "\n") { j--; continue }
+    break
+  }
+  if (j < 0) return false
+  const tail = content.slice(Math.max(0, j - 40), startIndex)
+  if (tail.indexOf("//") !== -1 || tail.indexOf("/*") !== -1) return false
+  const c = content[j]
+  if (c === ")" || c === "&" || c === ">" || c === "*") return true
+  const upTo = content.slice(Math.max(0, j - 12), j + 1).toLowerCase()
+  let letters = ""
+  for (let k = 0; k < upTo.length; k++) {
+    const ch = upTo[k]
+    if (ch >= "a" && ch <= "z") letters += ch
+  }
+  for (const kw of ["const", "noexcept", "override", "final", "mutable", "volatile"]) {
+    if (letters.endsWith(kw)) return true
+  }
+  return false
+}
+
+/** D8, all four conditions. See the D8 contract above for why each is needed. */
+const d8IsTrailingAnnotation = (n: any, content: string): boolean => {
+  if (n.type !== "function_definition") return false
+  if (n.childForFieldName?.("type")) return false                 // C++ has no body-less return type here
+  if (!n.childForFieldName?.("body")) return false
+  let decl: any = null
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c && c.type === "function_declarator") { decl = c; break }
+  }
+  if (!decl || !decl.childForFieldName?.("parameters")) return false
+  const bare = d8BareName(decl)
+  if (!bare || !/^[A-Z][A-Z0-9_]*$/.test(bare)) return false
+  return d8ContinuesDeclaration(n.startIndex, content)
+}
+
 const walk = (d: string, out: string[] = [], depth = 0): string[] => {
   if (depth > 10) return out
   let es: string[]
@@ -122,6 +203,15 @@ const D6 = cls("D6", "the analyzer's own source uses a regex",
   "The regex census is the honesty artifact; the doc's claim of zero must be true, not asserted.")
 const D7 = cls("D7", "a specifier's name arrives as a qualified_identifier, so the class publishes as `anonymous`",
   "A class/struct may have a qualified name (an explicit specialization) and its LEAF is the name; an enum has NO qualified name in C++, so one in that slot is a C++23 [[=attr]] the recovery displaced, and the declared name is the identifier beside it. Publishing `anonymous` also collides with the analyzer's own no-name sentinel.")
+
+// D8's contract is stated HERE for the same reason D7's is: a gate that imports the
+// code under test cannot be run against the code it is gating. The analyzer
+// implements this in `isTrailingAnnotationMacro`; the five lines below are a second,
+// independent statement of the same contract, and one of the two has to be able to
+// run when the other is broken.
+const D8 = cls("D8", "a trailing ANNOTATION macro is published as a function or method symbol",
+  "A thread-safety annotation written after a parameter list decorates the declaration before it and declares nothing. The grammar ends that declaration at the `)` and recovers a SECOND function_definition whose declarator is the macro and whose BODY is the real function's, so publishing it invents a symbol AND misattributes the body's reads to a macro. A test-macro HEADING (`TEST(Suite, Name) { body }`) is the opposite case and is NOT this defect: it genuinely defines the function it is named after, and it has no `declaration` sibling to continue.")
+
 const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before the source's own brace balance",
   "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
   false)
@@ -234,6 +324,23 @@ for (const repo of REPOS) {
           add(R1, n.type, { repo, file: rel, line: n.startPosition.row + 1, name: nm?.text, grammarEndsAt: n.endPosition.row + 1, sourceEndsAt: se + 1, linesOutside: se - n.endIndex })
         }
       }
+      // D8 — a symbol published for a trailing annotation. Asserted on the OUTPUT
+      // (a published symbol whose range IS such a node), not on the shape alone:
+      // the node exists in every macro-heavy file either way, and only the
+      // publication is the defect.
+      if (d8IsTrailingAnnotation(n, content)) {
+        const inside = symRanges.find((sy) =>
+          sy.start !== undefined && sy.end !== undefined &&
+          sy.start === n.startIndex && sy.end === n.endIndex)
+        if (inside) {
+          add(D8, `published-annotation:${inside.name}`, {
+            repo, file: rel, line: n.startPosition.row + 1,
+            name: inside.name, kind: inside.kind,
+            annotation: n.text.replace(/\s+/g, " ").slice(0, 90),
+            continuesSource: content.slice(Math.max(0, n.startIndex - 46), n.startIndex).replace(/\s+/g, " "),
+          })
+        }
+      }
       for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) visit(c) }
     }
     visit(tree.rootNode)
@@ -270,7 +377,7 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} R1=${R1.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} R1=${R1.n}\n`)
 }
 
 // D6 — the analyzer's own source, by the same shape the repo's census records.
