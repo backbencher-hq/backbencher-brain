@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "67b29e2cd87eaac052ca148cdeb90f4cda80f63966d5d2fbfed3f51dac774026",
-        "bytes": 137670
+        "sha256": "f673784b72c2c95a4b33054c9cbc4f5dcf46349d38af2f837a4f1f3b83544530",
+        "bytes": 144470
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -108,7 +108,7 @@
         "bytes": 76871
       }
     },
-    "digest": "f1aa2e3738116d4a9d2444a4909b21306002c45454c733c39930b92188f92b09",
+    "digest": "50eaebc8d4d3bcf310691152b021ff56e8902107812f7345fdddcf6af97b46b7",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm",
       "sha256": "151eeee54d50e3f07e080c10c0ea798d7ad0323a6d147b50b082a2a6b46e72b9",
@@ -168,8 +168,8 @@
         "bytes": 78748
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "e948ce4837a253dff39fa1f50cb6e65524030564f230b9367ab4574dcab126e7",
-        "bytes": 84806
+        "sha256": "5938d224adefca647ab487e250a7a5c276be8aea576ff1e5b31d19fd0f3b8024",
+        "bytes": 85473
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "1394f4fa5b091691e69c558d135de69b563750b15cefda7281873623f80e9079",
@@ -220,8 +220,8 @@
         "bytes": 89056
       },
       "src/ast/real-php-analyzer.ts": {
-        "sha256": "a899cc80f31145e1486b0ccc4b4ebba256a0849920d4e7f5e7f259ed6896241e",
-        "bytes": 116401
+        "sha256": "5439feacb0c4caaffaf1f0c02975bef3d8a59477cbc9cd6609a681c2651d98e0",
+        "bytes": 118704
       },
       "src/ast/real-powershell-analyzer.ts": {
         "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
@@ -284,8 +284,8 @@
         "bytes": 58931
       },
       "src/ast/real-xml-analyzer.ts": {
-        "sha256": "0ff2b347175aeac6edfa2f6d057faa029ea7a656b52c81834f899307a3c4582b",
-        "bytes": 95835
+        "sha256": "dd9b0eac9cac040b5f8ec73a35c9833d541bf6bd84fb376a4ba0168aacdc0069",
+        "bytes": 97425
       },
       "src/ast/real-yaml-analyzer.ts": {
         "sha256": "188c8ea1150d32f32538ab918e049ea13f0ba9dc3ff5f3a8cda9fcf9e0e7fcde",
@@ -310,23 +310,23 @@
   "perFile": {
     "BaseService.groovy": {
       "symbols": 11,
-      "relationships": 23
+      "relationships": 12
     },
     "Features.groovy": {
       "symbols": 16,
-      "relationships": 21
+      "relationships": 19
     },
     "Negative.groovy": {
       "symbols": 10,
-      "relationships": 19
+      "relationships": 17
     },
     "Repository.groovy": {
       "symbols": 3,
-      "relationships": 9
+      "relationships": 4
     },
     "UserService.groovy": {
       "symbols": 11,
-      "relationships": 40
+      "relationships": 30
     }
   },
   "passing": {
@@ -334,19 +334,19 @@
     "passed": false,
     "metrics": {
       "expected": 130,
-      "observedResolved": 152,
-      "truePositive": 122,
-      "falsePositive": 30,
-      "falseNegative": 8,
-      "unknown": 4,
+      "observedResolved": 133,
+      "truePositive": 130,
+      "falsePositive": 3,
+      "falseNegative": 0,
+      "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 0.8026315789473685,
-      "recall": 0.9384615384615385,
-      "falsePositiveRate": 0.19736842105263158,
-      "falseNegativeRate": 0.06153846153846154,
-      "unknownRate": 0.03076923076923077
+      "precision": 0.9774436090225563,
+      "recall": 1,
+      "falsePositiveRate": 0.022556390977443608,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
     },
     "earliestFailingLayer": "relationships",
     "truePositiveIds": [
@@ -378,6 +378,7 @@
       "rel:Features.groovy:extends:MathSpec:Specification",
       "rel:Features.groovy:implements:Robot:Walkable",
       "rel:Features.groovy:references:Color:java.util.List",
+      "rel:Features.groovy:uses:Robot:name",
       "rel:Negative.groovy:calls:bump:info",
       "rel:Negative.groovy:calls:useClosure:square",
       "rel:Negative.groovy:calls:useList:each",
@@ -393,6 +394,7 @@
       "rel:Negative.groovy:contains:Counter:useList",
       "rel:Negative.groovy:instantiates:makeSelf:Counter",
       "rel:Negative.groovy:references:Counter:java.util.List",
+      "rel:Negative.groovy:uses:Counter:count",
       "rel:Repository.groovy:contains:Repository:find",
       "rel:Repository.groovy:contains:Repository:save",
       "rel:Repository.groovy:references:Repository:java.util.List",
@@ -415,12 +417,18 @@
       "rel:UserService.groovy:implements:User:Entity",
       "rel:UserService.groovy:implements:UserService:Repository",
       "rel:UserService.groovy:instantiates:UserService:HashMap",
+      "rel:UserService.groovy:overrides:User.getId:Entity.getId",
+      "rel:UserService.groovy:overrides:User.getName:Entity.getName",
+      "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
+      "rel:UserService.groovy:overrides:UserService.save:Repository.save",
       "rel:UserService.groovy:references:UserService:com.example.base.BaseService",
       "rel:UserService.groovy:references:UserService:com.example.base.Entity",
       "rel:UserService.groovy:references:UserService:com.example.repo.Repository",
       "rel:UserService.groovy:references:UserService:java.util.HashMap",
       "rel:UserService.groovy:references:UserService:java.util.Map",
       "rel:UserService.groovy:references:UserService:java.util.concurrent.CompletableFuture",
+      "rel:UserService.groovy:uses:User:id",
+      "rel:UserService.groovy:uses:User:name",
       "symbol:BaseService.groovy:11:interface:Entity",
       "symbol:BaseService.groovy:12:method:getId",
       "symbol:BaseService.groovy:13:method:getName",
@@ -474,83 +482,25 @@
       "symbol:UserService.groovy:39:method:getName"
     ],
     "falsePositiveIds": [
-      "rel:BaseService.groovy:references:Audited:Date",
-      "rel:BaseService.groovy:references:BaseService:String",
-      "rel:BaseService.groovy:references:findAll:List",
-      "rel:BaseService.groovy:references:findAll:T",
-      "rel:BaseService.groovy:references:findByFilter:List",
-      "rel:BaseService.groovy:references:findByFilter:String",
-      "rel:BaseService.groovy:references:findByFilter:T",
-      "rel:BaseService.groovy:references:format:String",
-      "rel:BaseService.groovy:references:getId:String",
-      "rel:BaseService.groovy:references:getName:String",
-      "rel:Features.groovy:references:Robot:String",
-      "rel:Features.groovy:references:describe:String",
-      "rel:Features.groovy:references:greeting:String",
+      "rel:Features.groovy:overrides:Robot.walk:Walkable.walk",
       "rel:Features.groovy:uses:describe:name",
-      "rel:Negative.groovy:references:Counter:String",
-      "rel:Negative.groovy:references:interpolate:String",
-      "rel:Negative.groovy:uses:bump:count",
-      "rel:Repository.groovy:references:find:Optional",
-      "rel:Repository.groovy:references:find:String",
-      "rel:Repository.groovy:references:find:T",
-      "rel:Repository.groovy:references:save:T",
-      "rel:UserService.groovy:references:User:String",
-      "rel:UserService.groovy:references:UserService:Map",
-      "rel:UserService.groovy:references:UserService:String",
-      "rel:UserService.groovy:references:UserService:User",
-      "rel:UserService.groovy:references:format:String",
-      "rel:UserService.groovy:references:getId:String",
-      "rel:UserService.groovy:references:getName:String",
-      "rel:UserService.groovy:references:save:CompletableFuture",
-      "rel:UserService.groovy:references:save:User"
+      "rel:Negative.groovy:uses:bump:count"
     ],
-    "falseNegativeIds": [
-      "rel:Features.groovy:uses:Robot:name",
-      "rel:Negative.groovy:uses:Counter:count",
-      "rel:UserService.groovy:overrides:User.getId:Entity.getId",
-      "rel:UserService.groovy:overrides:User.getName:Entity.getName",
-      "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
-      "rel:UserService.groovy:overrides:UserService.save:Repository.save",
-      "rel:UserService.groovy:uses:User:id",
-      "rel:UserService.groovy:uses:User:name"
-    ],
-    "unknownIds": [
-      "rel:UserService.groovy:overrides:User.getId:Entity.constructor",
-      "rel:UserService.groovy:overrides:User.getName:Entity.constructor",
-      "rel:UserService.groovy:overrides:UserService.format:BaseService.constructor",
-      "rel:UserService.groovy:overrides:UserService.save:BaseService.constructor"
-    ],
+    "falseNegativeIds": [],
+    "unknownIds": [],
     "unsupportedIds": [],
     "minimizedFailure": {
-      "expected": [
-        {
-          "id": "rel:UserService.groovy:overrides:UserService.format:BaseService.format",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "UserService.groovy",
-          "sourceId": "UserService.format",
-          "targetId": "BaseService.format",
-          "attributes": {
-            "type": "overrides"
-          },
-          "expectedState": "resolved",
-          "evidence": {
-            "authority": "manual_audit",
-            "reference": "@Override format — declaring ancestor is BaseService (declared in BaseService.groovy)"
-          }
-        }
-      ],
+      "expected": [],
       "observed": [
         {
-          "id": "rel:BaseService.groovy:references:Audited:Date",
+          "id": "rel:Features.groovy:overrides:Robot.walk:Walkable.walk",
           "layer": "relationships",
           "kind": "relationship",
-          "file": "BaseService.groovy",
-          "sourceId": "Audited",
-          "targetId": "Date",
+          "file": "Features.groovy",
+          "sourceId": "Robot.walk",
+          "targetId": "Walkable.walk",
           "attributes": {
-            "type": "references"
+            "type": "overrides"
           },
           "state": "resolved"
         }
@@ -561,11 +511,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:groovy",
-      "wallTimeMs": 375.238516,
-      "userCpuMs": 205.379,
-      "systemCpuMs": 11.738,
-      "peakRssBytes": 303079424,
-      "rssDeltaBytes": 3014656,
+      "wallTimeMs": 218.249429,
+      "userCpuMs": 199.496,
+      "systemCpuMs": 6.804,
+      "peakRssBytes": 296759296,
+      "rssDeltaBytes": 2490368,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
