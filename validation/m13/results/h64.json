@@ -14,42 +14,42 @@
     {
       "name": "integrity: Hash Drift is reproducible across 5 identical calls",
       "pass": true,
-      "detail": "drift counts 40,40,40,40,40 statuses warn,warn,warn,warn,warn (pre-fix: ORDER BY RANDOM() gave 21,17,22,19,16 for a true 40 of 400, flipping warn<->error)"
+      "detail": "drift counts 50,50,50,50,50 statuses error,error,error,error,error (pre-fix: ORDER BY RANDOM() gave 21,17,22,19,16 for a true 40 of 400, flipping warn<->error)"
     },
     {
       "name": "the deep integrity check EXACTLY matches main freshness (same population, same method)",
       "pass": true,
-      "detail": "integrity 40/400 vs freshness 40/400 — the pre-fix pair used different populations (integrity excluded language='unknown') and disagreed by design"
+      "detail": "integrity 50/250 vs freshness 50/250 — the pre-fix pair used different populations (integrity excluded language='unknown') and disagreed by design"
     },
     {
       "name": "and their statuses agree, because both are measurements",
       "pass": true,
-      "detail": "integrity=warn trueRate=10.0%"
+      "detail": "integrity=error trueRate=20.0%"
     },
     {
       "name": "the deep check declares itself exact, not an estimate",
       "pass": true,
-      "detail": "40 of 400 indexed files have changed on disk since indexing. EXACT: every indexed file was content-h"
+      "detail": "50 of 250 indexed files have changed on disk since indexing. EXACT: every indexed file was content-h"
     },
     {
       "name": "the sampled mode (the indexer's hot path) declares itself an ESTIMATE",
       "pass": true,
-      "detail": "18 of 200 sampled files have changed on disk since indexing (estimated 36 total). ESTIMATE"
+      "detail": "41 of 200 sampled files have changed on disk since indexing (estimated 51 total). ESTIMATE"
     },
     {
       "name": "and is still reproducible",
       "pass": true,
-      "detail": "18 both times"
+      "detail": "41 both times"
     },
     {
       "name": "the sampled mode is still unbiased (within 2% of the true rate)",
       "pass": true,
-      "detail": "sampled 9.0% vs true 10.0% (a deterministic STRIDE reported 20.0% against a true 10.0% here — it aliased with the 1-in-10 pattern)"
+      "detail": "sampled 20.5% vs true 20.0%"
     },
     {
       "name": "Files Missing from Disk describes its own method honestly",
       "pass": true,
-      "detail": "0 of 400 indexed files no longer exist on disk. EXACT: every indexed file was checked. Tools will fail when tr"
+      "detail": "0 of 250 indexed files no longer exist on disk. EXACT: every indexed file was checked. Tools will fail when tr"
     },
     {
       "name": "the integrity report exposes a DERIVED count",
@@ -170,12 +170,12 @@
     {
       "name": "an absent status record prints 'unrecorded', not 0",
       "pass": true,
-      "detail": "index: version=unrecorded indexedFiles=unrecorded status=unrecorded errors=unrecorded (no brain_index_status row for thi"
+      "detail": "index: version=unrecorded indexedFiles=unrecorded/unrecorded status=unrecorded errors=unrecorded (no brain_index_status "
     },
     {
       "name": "errors= is also unrecorded rather than a reassuring 0",
       "pass": true,
-      "detail": "index: version=unrecorded indexedFiles=unrecorded status=unrecorded errors=unrecorded (no brain_index_status row for thi"
+      "detail": "index: version=unrecorded indexedFiles=unrecorded/unrecorded status=unrecorded errors=unrecorded (no brain_index_status "
     },
     {
       "name": "and the absence raises a warning naming what is unrecorded",
@@ -195,12 +195,12 @@
     {
       "name": "a present status record still reports real values",
       "pass": true,
-      "detail": "index: version=v1.0.0 indexedFiles=0 status=complete errors=0"
+      "detail": "index: version=v1.0.0 indexedFiles=0/6 — INCOMPLETE, 6 file(s) found by the walk were never written status=complete erro"
     },
     {
       "name": "and the warning is gone once the record is back",
       "pass": true,
-      "detail": "warnings=[]"
+      "detail": "warnings=[\"INCOMPLETE_INDEX\"]"
     },
     {
       "name": "the coverage line names both operands, not a bare percentage",
@@ -239,6 +239,11 @@
       "detail": "embedded=1 unembedded=1"
     },
     {
+      "name": "the integrity check and the main report count the SAME thing",
+      "pass": true,
+      "detail": "integrity=30 report=30 (pre-fix: integrity used COUNT(*) and reported rows as symbols)"
+    },
+    {
       "name": "the entity-type census sums to the entity count it is a census of",
       "pass": true,
       "detail": "30 vs 30"
@@ -246,12 +251,12 @@
     {
       "name": "the stale list is capped",
       "pass": true,
-      "detail": "line length 408 chars (pre-fix 3,911 for 300 entries)"
+      "detail": "line length 407 chars for 40 stale files (pre-fix this was one unbounded line: 3,911 chars for 300 entries)"
     },
     {
       "name": "the stale list states the TOTAL, not just the page",
       "pass": true,
-      "detail": "stale files: 300 total, first 20: src/f0000.ts, src/f0001.ts, src/f0002.ts, src/f0003.ts, "
+      "detail": "stale files: 40 total, first 20: src/f0000.ts, src/f0001.ts, src/f0002.ts, src/f0003.ts, s"
     },
     {
       "name": "the omission is pointed at, not silent",
@@ -261,12 +266,12 @@
     {
       "name": "the total matches the report's own stale count",
       "pass": true,
-      "detail": "freshness: 0 fresh / 300 of 300 stale / 0 missing (300/300 checked, complete)"
+      "detail": "freshness: 0 fresh / 40 of 40 stale / 0 missing (40/40 checked, complete)"
     },
     {
       "name": "the cap keeps every path reachable in the data",
       "pass": true,
-      "detail": "staleFiles array is complete in the report"
+      "detail": "staleFiles holds all 40 paths"
     },
     {
       "name": "the runtime TYPE no longer declares a parser field [negative]",
@@ -305,8 +310,8 @@
   ],
   "negativeCases": 6,
   "summary": {
-    "total": 57,
-    "passed": 57,
+    "total": 58,
+    "passed": 58,
     "failed": 0
   },
   "decisions": {
@@ -319,10 +324,10 @@
   "limitations": [
     "Real-index measurements were taken against this repo's own index; a re-measurement of the complete-scan wall time was blocked by concurrent machine load, so the controlled synthetic comparison is the perf evidence."
   ],
-  "generatedAt": "2026-09-30T04:34:17.004Z",
+  "generatedAt": "2026-09-30T07:46:16.804Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T04:35:50.015Z",
-    "contentSha256": "0a1d7a0c24ed960ffc22fea239797f16a16c4b5978f317d395c2887ae155314e"
+    "sealedAt": "2026-09-30T07:46:56.691Z",
+    "contentSha256": "be93f475a1887354793c17e4fe5eec8ba0b5e2ab9cb3ab34f732622fa88b0706"
   }
 }

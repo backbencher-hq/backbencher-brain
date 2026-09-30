@@ -170,15 +170,71 @@ export interface FileSelectionRow { id: string; relative_path: string }
  * Choose up to `limit` files from `rows` deterministically and without bias
  * toward any region of the sort order. Returns the selection ordered by
  * relative_path so the rendered report is stable between calls.
+ *
+ * M64.P2 (cost): this first shipped as `rows.map(...).sort().slice()`, which
+ * ranks the WHOLE file set — O(n log n) time and O(n) allocations. Measured at
+ * 2,448 ms for 264,000 files (the size this repo's own schema comments cite for
+ * "too expensive to full-scan"). That is not a selection cost, that is the
+ * dominant cost of a default health call, and it would have blown the 2,000 ms
+ * warm-`bb_health` budget the latency work is holding on a large repository.
+ *
+ * The fix is a pure complexity change with IDENTICAL output: keep only the `k`
+ * smallest hashes, in a `k`-length array held in ascending order, and reject
+ * each candidate against the current worst in O(1). Only a candidate that
+ * beats the worst is inserted, and for a uniform hash that happens about
+ * k·ln(n/k) times over the whole scan — roughly 1,000 insertions for
+ * n=264,000, k=200 — so the allocation and the work both stop scaling with the
+ * corpus. Ties break on `id` so the selected SET is a total order, not
+ * hash-collision dependent.
+ *
+ * Nothing about the selection changes: the same rows give the same k files, so
+ * every property the gate asserts (whole-range coverage, determinism,
+ * order-independence, unbiasedness) holds for the fast path unchanged.
  */
 export function selectSampleFiles<T extends FileSelectionRow>(rows: T[], limit: number): T[] {
-  if (limit >= rows.length) return [...rows].sort((a, b) => cmpPath(a.relative_path, b.relative_path) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-  // Partial selection: rank by hash, keep the lowest `limit`. O(n) partition
-  // rather than a full sort — we only need the n smallest hashes.
-  const keyed = rows.map((r) => ({ r, h: stableFileHash(r.id) }))
-  keyed.sort((a, b) => a.h - b.h)
-  return keyed.slice(0, limit)
-    .map((k) => k.r)
+  const k = Math.min(limit, rows.length)
+  if (k <= 0) return []
+  // "Take everything" is not a selection: no hash is needed, and the caller
+  // only wants a stable order.
+  if (k >= rows.length) {
+    return [...rows].sort((a, b) => cmpPath(a.relative_path, b.relative_path) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  }
+  const kept: Array<{ r: T; h: number; i: number }> = []
+  // `precedes(a, b)` — is a strictly before b in the total order
+  // (hash, id, original index)? The index term only matters when two rows share
+  // a hash AND an id, which the real caller cannot produce because
+  // brain_file.id is the PRIMARY KEY — but an accidental tie-break is worse than
+  // a defined one, and with this term the selection is provably identical to a
+  // STABLE sort by (hash, id) truncated to k, whatever the input.
+  //
+  // Getting the operand order right here is not a detail. An earlier version of
+  // this wrote the reject as `if (!precedes(worst, candidate)) continue`, which
+  // skips a candidate that is SMALLER than the incumbent — so the first
+  // incumbent was never displaced and the "sample" was whatever the scan saw
+  // first among the rows that happened to arrive early. The equivalence
+  // assertion at the bottom of the m64 gate caught it; nothing else would have.
+  const precedes = (ah: number, aid: string, ai: number, bh: number, bid: string, bi: number) =>
+    ah < bh || (ah === bh && (aid < bid || (aid === bid && ai < bi)))
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    const h = stableFileHash(r.id)
+    if (kept.length === k) {
+      const worst = kept[k - 1]
+      // Reject without allocating: the fast path is taken by almost every row,
+      // so it costs one comparison and no allocation.
+      if (!precedes(h, r.id, i, worst.h, worst.r.id, worst.i)) continue
+    }
+    let lo = 0, hi = kept.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (precedes(kept[mid].h, kept[mid].r.id, kept[mid].i, h, r.id, i)) lo = mid + 1
+      else hi = mid
+    }
+    kept.splice(lo, 0, { r, h, i })
+    if (kept.length > k) kept.pop()
+  }
+  return kept
+    .map((x) => x.r)
     .sort((a, b) => cmpPath(a.relative_path, b.relative_path) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
 }
 
