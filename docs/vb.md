@@ -195,6 +195,9 @@ priority.
 - `\b` on the `ci()` helper is the textbook fix and is **illegal** — a tree-sitter
   token may not hold a zero-width assertion (`Unexpected rule
   ExpandRegex(Assertion)`), and the generator then rejects the whole grammar.
+  *There is a trap here for whoever tests this:* an **unused** rule containing
+  `\b` is accepted silently, because the generator never processes it. Only a rule
+  it actually walks is validated. "The generator took my `\b`" is not evidence.
 - **Keyword extraction** — the mechanism that exists precisely for this, where the
   lexer matches the `word` token and promotes it on an *exact* text match — does
   not rescue these tokens, because `ci()` returns an inline `new RegExp(...)` and
@@ -203,10 +206,38 @@ priority.
   decided for the grammar's token set as a whole, and the other 285 `ci()` call
   sites keep it off.
 
-**What the repair therefore requires:** replacing `ci()`'s inline case-insensitive
-RegExps with named token rules the extractor can index, across **287 call sites**,
-and re-pinning the digest. That is a grammar project for whoever owns
-`grammar.js`, not a change a lane should make to a digest-verified artefact.
+**The token that actually does the damage** is more specific than the above, and
+was missing from the first account:
+
+```js
+_sub_new: ($) => token(prec(100, seq(ci("Sub"), /\s+/, ci("New")))),
+```
+
+That is a **compound** token matching the two-word prefix `Sub New` at
+**precedence 100**, so the lexer does not merely prefer the keyword — it consumes
+`Sub New` as one token and leaves `Form_Load` as the identifier. `ci("New")` is a
+second, independent cause at seven further sites; that is measured rather than
+assumed, because setting `_sub_new`'s precedence to `-1` does **not** fix the
+parse, which can only be true if something else is still splitting the identifier.
+
+**The blast radius, measured over both corpora (2,363 files):** **14** such
+declarations, in **7** files, dropping **7** of **39,045** F5 truth edges
+(**0.018 %**). Every other `Sub New` in the box is a real constructor — 1,961
+`Sub New(` against 1,975 `Sub New*` in total.
+
+**Why the extraction route is rejected on measurement, not on effort.** Extraction
+needs plain-string keywords and compares text case-sensitively, so it would drop
+the case-insensitivity `ci()` exists to provide. Measured over both corpora there
+are about **1,853 non-PascalCase keyword sites** (`if` 844, `new` 513, `class`
+193, `end` 107, and so on) against roughly 172,000 PascalCase ones. VB.NET
+keywords are case-insensitive by specification, so taking that route would trade a
+0.018 % recall hole for a language-conformance regression, while rewriting **282**
+call sites in a digest-pinned vendored grammar and re-pinning the wasm.
+
+**The decision, stated plainly:** the defect stays, disclosed, and scoped. It is
+not "someone else's problem" — it is a 7-edge hole with a measured cause, a
+measured cost of fixing it, and 7 named files in the review, so a grammar owner
+can decide against real numbers instead of a guess.
 
 Every experiment was reverted; `grammars/` and the wasm are byte-identical to HEAD
 and the pin gate is green.

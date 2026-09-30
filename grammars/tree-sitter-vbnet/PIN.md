@@ -242,3 +242,85 @@ measurement rather than from another guess at the precedence.
 
 Until then the grammar is byte-identical to its committed state and the pin gate
 is green.
+
+
+## Correction, and the blast radius — the diagnosis above was incomplete
+
+The account above is right about the *lexer rule* and wrong about the *dominant
+token*, and it had no numbers attached. Both are fixed here.
+
+### The token that actually does the damage
+
+`_sub_new` is a COMPOUND token, and it was never mentioned above:
+
+```js
+_sub_new: ($) => token(prec(100, seq(ci("Sub"), /\s+/, ci("New")))),
+```
+
+It matches the two-word prefix `Sub New` at **precedence 100**, so on
+`Public Sub NewForm_Load()` the lexer does not stop at `New` — it consumes
+`Sub New` as one token and leaves `Form_Load` to be the identifier. That is the
+whole of the observed damage, and it is more specific than "a keyword outranks an
+identifier".
+
+`ci("New")` is a *second*, independent cause at seven further sites (624, 700,
+715, 983, 1434, …). That is measured, not assumed: setting `_sub_new`'s
+precedence to `-1` does **not** fix the parse, which can only be true if
+something else is still splitting the identifier. With `_sub_new` out of the way
+the surviving splitter is the standalone `ci("New")` at precedence 0.
+
+### `` is illegal — and there is a false-positive trap for testing it
+
+An unused rule containing `` is ACCEPTED by the generator, silently. Only a rule
+the generator actually processes is validated:
+
+```
+_btest: ($) => token(/New\b/),          <- accepted, because nothing references it
+_sub_new: ($) => token(prec(100, seq(ci("Sub"), /\s+/, /[Nn][Ee][Ww]\b/)))),
+    Error processing rule _sub_new: Grammar error: Unexpected rule ExpandRegex(Assertion)
+```
+
+So "I added a `\b` token and the generator took it" is not evidence. The claim
+stands, and now has the exact error to match.
+
+### Blast radius, measured over both corpora (2,363 files)
+
+| quantity | value |
+|---|---|
+| `Sub New<more chars>` declarations | **14** |
+| files containing one | **7** |
+| distinct method bodies whose calls are dropped | **7** |
+| F5 truth edges lost, whole corpora | **7 of 39,045 (0.018 %)** |
+
+The 14 are `NewUnattendWiz_*` (3), `NewTestingEnv_*` (2), `NewProj*` (2),
+`NewsFeed*` (3), `NewTexture`, and two more. Every other `Sub New` in the box is
+a real constructor: 1,961 `Sub New(` against 1,975 `Sub New*` in total.
+
+### Why the extraction route is rejected on measurement, not on effort
+
+The repair is keyword extraction, and the cost of taking it is now quantified
+rather than asserted. Extraction needs the keyword to be a plain string, and the
+match is a case-sensitive text comparison, so it would drop the case-insensitivity
+`ci()` exists to provide. Measured over both corpora:
+
+| keyword | PascalCase | lowercase | UPPER |
+|---|---|---|---|
+| `Sub` | 15,969 | 8 | 0 |
+| `New` | 33,234 | 513 | 3 |
+| `If` | 40,474 | 844 | 3 |
+| `Class` | 4,906 | 193 | 0 |
+| `End` | 41,168 | 107 | 6 |
+| `Property` | 3,991 | 97 | 0 |
+| `Function` | 3,672 | 76 | 0 |
+| `Public` | 11,896 | 3 | 0 |
+| `Dim` | 13,138 | 1 | 0 |
+
+About 1,853 non-PascalCase keyword sites. VB.NET keywords are case-insensitive by
+specification, so a grammar that only accepts `Sub` and not `sub` would trade a
+0.018 % recall hole for a language-conformance regression — and it would mean
+rewriting 282 call sites in a digest-pinned vendored grammar, then rebuilding and
+re-pinning the wasm.
+
+**That is the decision, and it is a measured one:** the defect is left in place,
+disclosed, and scoped. The 7 affected files are named in the review so a
+grammar owner can decide against a real number rather than a guess.
