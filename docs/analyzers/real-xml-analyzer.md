@@ -368,6 +368,9 @@ run names files that are expected to fail and fails the run if they succeed.
 - Declared-name line contract: `script/m12/xml-declared-name-lines.mts` — 8,889
   files, 52,651 declaration anchors, **0 mis-anchored**; 43 offenders and exit 1
   with the fix reverted
+- Entity-reference accounting: `script/m12/xml-entity-accounting.mts` — 11,940
+  `EntityRef` sites, 908 collapsed edges, **11,919 accounted**; the 21-site
+  residual is declared by file and size and the gate exits 1 if any of it changes
 - Encoding recovery: `script/m12/xml-encoding-recovery.mts` — 22 files, 1,537
   symbols, 229 relationships, **with the predicate written into the script**
 - Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
@@ -375,6 +378,63 @@ run names files that are expected to fail and fails the run if they succeed.
 - Evidence scripts: `script/m12/xml-corpus-errors.ts`,
   `xml-corpus-measure.ts`, `xml-node-types-compare.ts`,
   `xml-contract-probe.ts`, and `regex-census.ts`
+
+## Entity references: what is a use, and of what
+
+`&name;` is a **use** of a declared entity, and the graph says so — one
+`references` edge per (owner, name), collapsed, carrying `occurrences` and `lines`.
+Two things about that are decided rather than incidental, and both were measured
+first:
+
+**Whose use it is.** A reference in element content belongs to that element. A
+reference inside an entity's own **replacement text** belongs to *that entity*:
+
+```xml
+<!ENTITY shout "&greeting; THERE">   →   shout references greeting
+```
+
+`shout` cannot be expanded without `greeting`, so the dependency is real and it is
+the entity's. Such a reference has no element above it, which is why the first
+implementation dropped all of them — **611 of a 651-site shortfall**, and
+`libxml2/test/recurse/lol_ig_content.xml` at 147 sites and 1 edge is the extreme.
+
+**Whether it can be satisfied.** Three answers, and only three:
+
+| `resolvable` | meaning | example |
+| --- | --- | --- |
+| `in-document` | the document's own DTD declares it | `&greeting;` where `<!ENTITY greeting …>` exists |
+| `builtin` | the XML specification declares it in every document | `&lt; &gt; &amp; &apos; &quot;` |
+| `unresolved` | neither — a real claim the document gets wrong | `&undefinedEntity;`, or `&nbsp;` in an XML document that never declares it |
+
+`builtin` is exactly the five predefined entities (XML 1.0 §4.6) and nothing
+else. Before that answer existed all five took `unresolved` and were stamped
+`danglingEntityReference: true` — **4,575 sites across 180 files** where the
+analyzer asserted that a well-formed document references an entity nothing
+defines. The same argument X8 settled for the `xml` and `xmlns` prefixes, and the
+same shape of knowledge as `BUILTIN_NAMESPACE_URIS`, which this analyzer already
+carried for namespaces.
+
+`&nbsp;` and `&d;` are **not** predefined, and that is the half that keeps the
+rule honest: an XML document using an undeclared HTML entity really does reference
+something undefined, and widening the builtin set until the five passed would be
+the wrong fix with nothing to catch it.
+
+There is **no length cap** on an entity name. The name is a substring of a file
+already in memory, so a cap cannot bound what the file size has not already
+bounded — and the 256 that used to be here disagreed with the uncapped
+declaration path, leaving `bigentname.xml`'s 3,965-character entity in the graph
+as a symbol with none of its uses.
+
+Gated by `script/m12/xml-entity-accounting.mts`, which asserts the accounting
+identity `sum(occurrences) == EntityRef nodes` and declares its 21-site residual
+by file and size. Pinned by fixture `xml/xsd-entity-replacement-builtin` and
+mutants `xml/predefined-entities-unresolvable` and
+`xml/entity-replacement-text-ownership-dropped`.
+
+`%pe;` is a different construct and is deliberately absent: a `PEReference`
+inside an internal subset is a `DeclSep` separator, and outside one it is a
+parameter-entity use. That distinction is recorded as owed rather than decided —
+**24 `PEReference` sites** in the corpus, and a ruling is owed.
 
 ## Where a declaration's line comes from
 
