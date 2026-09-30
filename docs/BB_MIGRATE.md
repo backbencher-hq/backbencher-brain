@@ -10,6 +10,8 @@ tool.
 ## Output
 
 - one plan per supported symbol, each carrying its `symbolId` and `sourceFile`
+- `cohort`, a rollup of what the request resolved to — by file, by wave, by source
+  language, and by refusal reason — plus `cohort.work`, what the call actually read
 - `dependencyOrder`, a deterministic topological order with dependency nodes first
 - `waves` — that order grouped into parallel-workable layers; `waves[0]` is what
   a team can start today
@@ -211,6 +213,140 @@ edge is structural would understate the work, and that is the worse error.
 evidence: 14 production + 147 test integration points, 1 structural, 1 unresolvable
 ```
 
+## Asking about a module: `paths`, and the identity problem
+
+Until round 6 the only way to ask about a module was to hand-type its symbol
+names, and the result was indistinguishable from a deliberately chosen cohort.
+"Plan the migration of `src/api`" is the question a team actually asks.
+
+| option | meaning |
+|---|---|
+| `symbolNames` | component names; ambiguous names are refused, with the candidate ids |
+| `symbolIds` | indexed symbol ids — the only unambiguous way to name a component |
+| `paths` | project-relative **file or directory** paths; every indexed symbol in them joins the request |
+
+`paths` and `symbolIds` **union** with `symbolNames` rather than replacing them:
+naming a symbol *and* the file that contains it plans it once.
+
+A path matches a file when it *is* that file or when it is a directory prefix of
+it, compared on the project-relative path. `.`, `./` and an absolute path inside
+the project all resolve to the same cohort; a path outside the project is refused
+by name, because the boundary lives in the resolver rather than in the spelling.
+The prefix is `LIKE`-escaped, so `%` and `_` in a path are literal.
+
+### A name is not an identity
+
+This was the deepest defect round 6 found, and it was found by running the
+feature rather than by reasoning about it. Planning was **name-keyed**, so:
+
+- a `paths` cohort could not plan two components sharing a name in different
+  files — they collapsed to one entry, and the caller was never told. Measured on
+  a one-file cobra cohort: **100 distinct names resolved to 209 symbols**, so a
+  cohort could never plan more than 100 of what it covered, and 109 of them were
+  unreachable with no report;
+- the ambiguity refusal said *"re-run against one file's symbol id"* — a
+  capability that **did not exist**. The advice named nothing the caller could do.
+
+Both are fixed by making the request a list of **entries** — each either a name or
+a symbol id — and by adding `symbolIds`:
+
+- a `paths` entry is a symbol id, unambiguous by construction, and planned through
+  `planMigrationById` with no resolution rule at all;
+- an explicit name still goes through the planner's single ambiguity rule (same-file
+  case variants resolve; cross-file collisions refuse and name their candidates),
+  and that refusal now points at `symbolIds`, which exist.
+
+An id no indexed symbol carries is a **refusal**, not an absence: it previously
+vanished, and a typo'd id produced a clean, empty, successful-looking result.
+
+### An empty plan set is never a clean success
+
+Scoping a repository root on cobra plans **nothing**: the first 100 components by
+file path are all `.github/workflows/*.yml`, and YAML is not migratable program
+logic. The tool used to print `total effort: 0h` and leave the reader to work that
+out. It now reports the refusal in the summary next to the totals:
+
+```
+cohort: NO PLANS: all 100 resolved component(s) were refused — 100 unsupported-source
+  (e.g. "dependabot"). The cohort's language mix is 170 yaml, 253 markdown, 11 make,
+  829 go; the 100 component(s) the cap let through were 100 yaml, so scope paths to
+  the code you mean.
+refused: 100 of 100 requested component(s) produced no plan — 100 unsupported-source;
+  the reasons are listed under "unsupported" below  NO PLANS WERE PRODUCED
+cohort languages: 829 go; 253 markdown; 170 yaml [100 processed: 0 planned, 100 refused]; 11 make
+```
+
+`cohort.byLanguage` covers the **whole resolved cohort**, not the capped slice.
+My first version counted only what the cap let through and cheerfully reported
+`100 yaml` for a repository that is 829 Go — true of the slice and false of the
+cohort, which is worse than not reporting it.
+
+## Cohort rollup
+
+`cohort` rolls the request up by file and by wave, which is the shape a programme
+is actually planned in:
+
+```
+cohort: 213 indexed symbol(s) under 1 path(s), covering 1 file(s) in the plans
+  returned (113 of 213 resolved components were dropped by the 100-component cap)
+per file: command.go (88 sym, 2108h)
+per wave: wave 1 = 61 sym, 670h; wave 2 = 1 sym, 26h; wave 3 = 26 sym, 1412h
+```
+
+`perPlanSumHours` per group is the sum of that group's **per-plan** effort, so a
+relationship cited by two symbols in the same group is counted in both. It is
+labelled the same way at the batch level, and the deduplicated figure is
+`effort.totalHours`; the two are reconciled in `effort.reconciliation`.
+
+Wave 3 above is **cycle members**. `computeDependencyOrder` cannot emit a symbol
+that sits in a cycle — Kahn's algorithm never reaches indegree 0 for it — so 26 of
+88 planned symbols were simply **absent from the wave plan**. A cycle is a group
+that cannot be split, so its members are collected into one trailing wave. The
+wave plan now accounts for every planned symbol.
+
+### The cap bounds the work, and the work is observable
+
+`cohort.work` reports what the call actually read next to what the project holds:
+
+```
+work: {symbolsLoaded: 100, relationshipsLoaded: 234, projectSymbols: 1263, projectRelationships: 5321}
+```
+
+This exists because my first bound was a **60-second wall-clock limit**, and it
+*survived the exact mutant it was written for* — loading 1263 symbols'
+relationships instead of 100's still finished inside it. A timing threshold is a
+property of the load, not of the code; a relationship count is a property of the
+code. That is why the number is reported.
+
+Resolution is two-phase for the same reason: `resolveMigrationSymbols` resolves
+names, ids and paths to symbols **without reading a relationship**, the cap is
+applied, and only then does `loadMigrationContextForSymbols` read the edges of the
+already-capped set. One pass instead would have read every relationship of every
+component in the cohort to plan 100 of them.
+
+### Truncation, measured per source
+
+| field | meaning |
+|---|---|
+| `requested` | distinct **components** the request resolved to, before the cap |
+| `returned` | entries actually processed |
+| `deduplicated` | explicit **names** merged — never negative |
+| `capped` | resolved components dropped by the 100-component cap |
+| `pathSymbols` | how many processed components came from `paths` |
+| `selection` | the deterministic order the cap applied |
+
+The per-source split was not cosmetic. The original arithmetic measured
+deduplication against the *resolved* set, so the first cohort request printed
+`-212 duplicate` and `returned/requested = 100/0`. `deduplicated` is now measured
+against the names it reduces and `capped` against the components it drops.
+
+`selection` is `"first N resolved symbols by project-relative file path, then
+symbol name"`. It is deterministic on purpose — the dropped set is a property of
+the project layout, not of a query plan — but it is alphabetical, which is why
+`.github/workflows/*.yml` comes first. The tool states the rule and reports what
+the rule selected rather than quietly applying a heuristic that happens to look
+smarter.
+
 ## Scope: how much of the work this request actually covers
 
 An integration point is **in scope** when its other endpoint is one of the
@@ -393,7 +529,19 @@ Only **2 keys** remain that canonicalization itself makes unreachable:
 audit proves the table is internally consistent and that its rows can fire; it
 does not make the advice true.
 
-## Limits
+## Known limits
+
+- **Planning is bounded to 100 components per request.** `paths` does not lift the
+  cap; it makes hitting it likely. `truncation` names what was dropped and
+  `selection` states the rule.
+- **The cap's rule is alphabetical.** A repository-root cohort on cobra plans
+  nothing, because the first 100 components by file path are YAML. Reported, not
+  worked around — a heuristic that quietly prefers "migratable" sources would hide
+  the fact that a third of the repository is not code.
+- **Two components sharing a name are planned separately only when reached by
+  `paths` or `symbolIds`.** A bare `symbolNames` entry for such a name is refused,
+  with the candidate ids, because a name genuinely does not identify a component.
+
 
 - Plans are estimates. The tool does not generate, replace, or compile
   target-language source.

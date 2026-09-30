@@ -1471,10 +1471,44 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(vizOut + vizFooter)
   },
 
-  bb_migrate: async (args, { projectId }) => {
+  bb_migrate: async (args, { projectId, projectPath }) => {
     const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
-    if (!symbolNames.length || !args.targetLanguage) return textResult("bb_migrate requires symbolNames (or symbolName) and targetLanguage", true)
-    const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
+    // A file or directory path joins the request, so a whole module can be
+    // planned in one call. Union with symbolNames, not a replacement: naming a
+    // symbol AND a path that contains it plans it once.
+    // A path inside the project is accepted however the caller spells it. An
+    // agent holding an absolute path is not wrong, and rejecting it taught
+    // nothing except that the tool wants a different string than the one that
+    // works everywhere else. A path OUTSIDE the project is still refused by the
+    // resolver, which is where the project boundary actually lives.
+    const projectRoot = path.resolve(String(projectPath ?? "."))
+    const normalizeCohortPath = (raw: string): string => {
+      const value = String(raw ?? "").trim().replace(/\\/g, "/")
+      if (!value) return value
+      const absolute = path.isAbsolute(value) ? path.resolve(value) : path.resolve(projectRoot, value)
+      const relative = path.relative(projectRoot, absolute).replace(/\\/g, "/")
+      return relative === "" ? "." : relative.startsWith("..") ? value : relative
+    }
+    const paths = Array.isArray(args.paths) ? args.paths.map(normalizeCohortPath) : []
+    // An indexed symbol id is the only unambiguous way to name a component, and
+    // it is what the ambiguity refusal points at. Accepting it is what makes
+    // that advice true instead of aspirational.
+    const symbolIds = Array.isArray(args.symbolIds) ? args.symbolIds.map(String).map((id) => id.trim()).filter(Boolean) : []
+    if (!symbolNames.length && !paths.length && !symbolIds.length) return textResult("bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage", true)
+    if (!args.targetLanguage) return textResult("bb_migrate requires targetLanguage", true)
+    const result = await generateMigrationPlans(projectId, { symbolNames, symbolIds, paths, targetLanguage: String(args.targetLanguage) })
+    // A path that matched no indexed file is reported by name. Without this a
+    // typo'd path is indistinguishable from a directory with no symbols in it,
+    // and both look like a clean empty answer.
+    const unmatchedIds = (result.unsupported ?? []).filter((u: any) => u.unsupportedReason === "missing-symbol").map((u: any) => u.symbolName)
+    // ANY unmatched id refuses, matching how an unmatched path behaves: a
+    // partially-resolved request reads like a complete answer otherwise.
+    if (symbolIds.length && unmatchedIds.length > 0) {
+      return textResult(`bb_migrate: no indexed symbol carries the id(s) ${unmatchedIds.map((id: string) => `"${id}"`).join(", ")}. Ids come from an earlier result's plans or from an ambiguity refusal's candidates.`, true)
+    }
+    if (paths.length && result.cohort?.pathsUnmatched?.length) {
+      return textResult(`bb_migrate: no indexed file matches ${result.cohort.pathsUnmatched.map((p: string) => `"${p}"`).join(", ")}. Paths are project-relative; check the spelling against the project root.`, true)
+    }
     // M35.S3: a migration plan is a claim about CURRENT code. Resolve each
     // plan's source file and flag plans whose file changed since the index —
     // a stale plan says so up front instead of silently planning against
