@@ -1089,14 +1089,30 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // about the BASE (a guess, kept honest at confidence 0.5 / `inferred`),
         // while the method being overridden is not in doubt and is written here.
         addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95, undefined, nameLineOf(symbol))
-      } else if (!context?.overrideCompanion) {
-        // Pass 3 (family parity with java/groovy resolveOverrides): the base
-        // is not declared in this file and no companion index was supplied
-        // (production callers never populate one — see M37.10). Emit the
-        // deterministic first-parent guess BELOW the patterns.ts threshold
-        // (0.7): visible in raw output, counted as heuristic (honest
-        // suspicion) by the differential. Pre-M37.10 this edge was silently
-        // dropped for every externally-declared base package.
+      } else if (!context?.overrideCompanion?.has(base) && !context?.overrideCompanion?.has(baseLeaf)) {
+        // PERL-MR14. The guard used to be `!context?.overrideCompanion` — it asked
+        // whether a companion OBJECT was supplied, not whether it had an OPINION
+        // about THIS base. So passing any companion at all silenced the guess for
+        // every base the companion did not cover, and the edge was DELETED rather
+        // than kept as a guess. Measured on a 120-file draw per corpus: 2,235
+        // guessed override edges, of which 2,215 named a base the companion did
+        // NOT contain — and 1,928 of them vanished. A companion is a partial view
+        // by construction (a sample, a subset, an incremental index), and "I have
+        // never heard of this base" is not "this base does not declare the method".
+        //
+        // The python lane already reads this correctly (`else if
+        // (!overrideCompanion?.has(base))`), which is where the correct form came
+        // from. The cost of the wrong form is invisible in the common case: it
+        // only fires when someone supplies a companion at all, and until this
+        // round nobody did (M37.10) — which is exactly how a defect that deletes
+        // the majority of a relationship label survives to be found by building
+        // the instrument that was missing.
+        //
+        // Otherwise: the base is not declared in this file and the companion has
+        // no opinion. Emit the deterministic first-parent guess BELOW the
+        // patterns.ts threshold (0.7): visible in raw output, counted as heuristic
+        // (honest suspicion) by the differential. Pre-M37.10 this edge was
+        // silently dropped for every externally-declared base package.
         addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5, undefined, nameLineOf(symbol))
       }
     }
