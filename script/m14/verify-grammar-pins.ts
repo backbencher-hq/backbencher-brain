@@ -205,6 +205,46 @@ export const LANES: Record<string, LaneDecision> = {
     ],
   },
 
+  // M60 — the Solidity lane, the last analyzer. See the decision text for why its
+  // provenance is the strongest in this file, and why that is also the only kind immune
+  // to the failure this gate could not see on the PowerShell lane.
+  solidity: {
+    wired: "wasm/tree-sitter-solidity.wasm",
+    provenance: { kind: "byte-identical-to-npm-tarball", package: "tree-sitter-solidity", version: "1.2.13" },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-solidity",
+      note:
+        "grammar.js + the generated src/grammar.json and src/node-types.json + queries/ + package.json + tree-sitter.json + LICENSE, byte-for-byte from the npm tarball tree-sitter-solidity@1.2.13. The generated src/parser.c (tens of MB) is deliberately NOT vendored: `tree-sitter generate` rebuilds it from grammar.js and the source<->wasm check runs on the generated JSONs. The generated PAIR is vendored, which most lanes here do not do, and the reason is that check 6 cannot run without it. PowerShell's generated src/ is gitignored, its record says the source is vendored, and the check that would have compared source to bytes therefore never ran -- which is how a record came to claim 8 patches against bytes containing 7.",
+    },
+    decision:
+      "Pin as-is, and the reason is that this lane never had the choice the older ones did: tree-sitter-solidity@1.2.13 PUBLISHES a prebuilt wasm, so the wired bytes are the maintainer's own artifact rather than a local rebuild of it. That is the strongest provenance available and also the only kind structurally immune to the failure found on the PowerShell lane -- a local rebuild can drift from its source with nothing objecting, whereas a byte-identical copy of a published artifact is compared against a file somebody else shipped.\n\nNo build is required, which is not a convenience on this machine: the PowerShell lane spent its entire tail waiting for a ~19-minute emscripten build while memory PSI was already stalling at full/avg10 ~14-18 with 1-2 GB available. Re-derivation here is `npm pack tree-sitter-solidity@1.2.13` plus a sha256sum of the extracted wasm.\n\nMeasured on the wire: sha256 07420813d7668445152a, 508,582 B, ABI 15, 531 node types, 35 fields, and 124 named types declared by the vendored node-types.json. A durable copy of the tarball's own wasm is mirrored at ~/.bb/wasm/tree-sitter-solidity.npm-1.2.13.wasm and the `copies` check below compares against it, so the identity claim survives the network copy disappearing.\n\nFirst corpus measurement, and the reason no grammar work is queued: solidity@32b5b8c4 (OpenZeppelin/openzeppelin-contracts, 389 production .sol files) draws 60 production files by an unbiased hash of repo/relative-path and returns 0 damaged, 0 ERROR nodes, 0 MISSING nodes, 0 damage classes. The PowerShell lane opened at 16% damaged and every grammar patch in its history is downstream of that number. Draw digest 9c519e0d.",
+    alternatives: [
+      {
+        option: "patch the grammar locally, as the PowerShell lane does",
+        measured:
+          "not attempted, and not currently indicated: the corpus is undamaged, so there is no class to fix. A patch is not free-standing work here. On PowerShell a patch that added no node type was invisible to the sha, length and surface checks this gate runs, which is how G10 went missing for an entire lane.",
+        artifact: "validation/m60/results/solidity-corpus-health.json",
+      },
+      {
+        option: "rebuild the wasm from the vendored source with the tree-sitter CLI",
+        measured:
+          "rejected without running it, and the reasoning is the point: a rebuild's sha256 is not a function of its source across toolchain versions, so it would REPLACE a byte-identical copy of the maintainer's published artifact with a local build that is merely close to it, at ~19 minutes of emscripten on a memory-stalled machine. A strictly weaker claim for a strictly higher cost, in exactly the sha-only shape that let PowerShell's record go dishonest.",
+        artifact: "validation/m14/results/M14.0.F11.powershell.json",
+      },
+    ],
+    evidence: [
+      "validation/m60/results/solidity-corpus-health.json",
+      "grammars/tree-sitter-solidity/src/node-types.json",
+      "grammars/tree-sitter-solidity/src/grammar.json",
+    ],
+    copies: [{ label: "npm tree-sitter-solidity@1.2.13", path: path.join(MIRROR, "tree-sitter-solidity.npm-1.2.13.wasm") }],
+    notVendored: [
+      { path: "src/parser.c", why: "generated from grammar.js; tens of MB of build output, and `tree-sitter generate` rebuilds it deterministically" },
+      { path: "bindings/, binding.gyp, prebuilds/", why: "native node bindings for the maintainer's own toolchain; the engine loads the wasm, not these" },
+      { path: "tree-sitter-solidity.wasm", why: "the wired bytes; they live at wasm/ (gitignored) and are pinned by sha here, with a durable mirror under ~/.bb/wasm/" },
+    ],
+  },
   haskell: {
     wired: "wasm/tree-sitter-haskell.wasm",
     provenance: { kind: "byte-identical-to-npm-tarball", package: "tree-sitter-haskell", version: "0.23.1" },
