@@ -3086,19 +3086,44 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   walk(root)
 
   // ── the extension-receiver class ─────────────────────────────────────────
-  // `extension (x: T) { def name = ... }` and the implicit-class form
-  // `(x: T) { def name = ... }` both declare that `name` USES the receiver type
-  // `T`. Only a non-method declaration: for a `def` the receiver is part of the
-  // method's own signature, which the declared-type graph owns.
+  // `extension (x: T) { def name = ... }` and the implicit-class form both
+  // declare that `name` USES the receiver type `T`. Only a non-method
+  // declaration: for a `def` the receiver belongs to the method's own
+  // signature, which the declared-type graph owns.
+  //
+  // Two things my first version got wrong, both found by adjudicating eight
+  // analyzer-only rows on scala3's repl/ and project/:
+  //
+  //  1. The receiver lives on an `extension_definition` ANCESTOR, not on the
+  //     function. I looked for a field named `extension` on the
+  //     function_definition and found nothing.
+  //  2. The published name is the receiver node's WHOLE TEXT, not a type name
+  //     extracted from it. `extension (x: List[T])` publishes `List[T]`; taking
+  //     the first type identifier would publish `List` and miss every generic
+  //     receiver. And a trailing `?` is stripped — exactly one, for Scala 3's
+  //     nullable-extension form `String.?(...)`.
   {
+    const isReceiverTypeNode = (t: string): boolean => t.endsWith("_type") || t.includes("type_identifier")
     const walk2 = (n: any): void => {
       if (n.type === "function_definition" || n.type === "function_declaration") {
         const isMethod = /^\s*def\s/.test(n.text ?? "")
         if (!isMethod) {
-          const recvNode = field(n, "extension") ?? firstNamedOf(n, ["extension", "receiver_type"])
-          const recvType = recvNode ? collectTypeNames(recvNode) : []
-          const nm = field(n, "identifier") ?? firstNamedOf(n, ["identifier"])
-          if (nm && recvType.length > 0) push(nm.text, recvType[0])
+          let anc: any = n.parent
+          while (anc && anc.type !== "extension_definition") anc = anc.parent
+          if (anc) {
+            const pc = namedChildOf(anc, "parameters")
+            const p0 = pc && pc.namedChild(0) ? pc.namedChild(0) : null
+            if (p0) {
+              for (let j = 0; j < p0.namedChildCount; j++) {
+                const tc = p0.namedChild(j)
+                if (tc && isReceiverTypeNode(tc.type)) {
+                  const t = tc.text
+                  push(namedChildOf(n, "identifier")?.text ?? "", t.endsWith("?") ? t.slice(0, -1) : t)
+                  break
+                }
+              }
+            }
+          }
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
@@ -3110,22 +3135,6 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   }
 
   return edges
-}
-
-/** Every `type_identifier` under a node, first-occurrence order. Scala's
- *  extension receiver is a type position, so the published name is the TYPE. */
-function collectTypeNames(n: any): string[] {
-  const out: string[] = []
-  const w = (x: any): void => {
-    if (x.type === "type_identifier") {
-      const t = stripNameQuoting(x.text)
-      if (!out.includes(t)) out.push(t)
-      return
-    }
-    for (let i = 0; i < x.namedChildCount; i++) { const c = x.namedChild(i); if (c) w(c) }
-  }
-  if (n) w(n)
-  return out
 }
 
 export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
