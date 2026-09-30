@@ -69,11 +69,38 @@ mkdirSync(path.join(root, "src"), { recursive: true })
 writeFileSync(path.join(root, "src", "selfloop.ts"), "export class SelfLoopTarget { run(): number { return 1 } }\n")
 writeFileSync(path.join(root, "src", "inferred.ts"), "export class InferredTarget { run(): number { return 2 } }\n")
 writeFileSync(path.join(root, "src", "lowconf.ts"), "export class LowConfTarget { run(): number { return 3 } }\n")
-writeFileSync(path.join(root, "src", "clean.ts"), "export class CleanTarget { run(): number { return 4 } }\n")
+writeFileSync(path.join(root, "src", "clean.ts"), "export class CleanTarget { onlyRun(): number { return 4 } }\n")
 writeFileSync(path.join(root, "src", "lonely.ts"), "export class LonelyTarget { run(): number { return 5 } }\n")
+// The unanchored-row fixture needs an AMBIGUOUS name, not a unique one.
+//
+// A unique name plus a clean unanchored row is cleared by the NAME channel, and
+// that is correct: the row is a name match, the name identifies exactly one
+// declaration, so a name reference would have been decisive. The first draft of
+// this fixture used a unique name and the gate correctly reported the candidate
+// as absent — the test was asserting that the name channel fails.
+//
+// The case that matters is an unanchored row about a name that TWO files claim.
+// The name channel cannot attribute it, so the declaration is reported — and then
+// the question is whether the analyzer recorded a consumer for THIS declaration.
+// In unanchored.ts the answer is no, and the file's other member has a real
+// anchored consumer, so the coverage gap is real and must be disclosed.
+writeFileSync(path.join(root, "src", "unanchored.ts"),
+  "export class UnanchoredOnlyTarget { onlyRunHere(): number { return 6 } }\n" +
+  "export class AnchorInSameFile { anchorRun(): number { return 7 } }\n")
+// The same CLASS name again, in a file the analyzer never reached, so the pair is
+// ambiguous and this second declaration has no coverage to disclose.
+//
+// The METHOD names differ on purpose. The first draft of this fixture gave both
+// classes a `run`, and the analyzer resolved `new AnchorInSameFile().run()` to
+// the `run` in ambiguous.ts — giving that file a genuine anchored incoming row and
+// making it reached after all. That is an analyzer defect worth knowing about
+// (a same-named method resolved into the wrong file) but it is not what G12 tests,
+// and a fixture that accidentally exercises someone else's bug tests neither.
+writeFileSync(path.join(root, "src", "ambiguous.ts"), "export class UnanchoredOnlyTarget { otherRun(): number { return 8 } }\n")
 writeFileSync(path.join(root, "src", "caller.ts"),
   "import { CleanTarget } from \"./clean\"\n" +
-  "export function callerOne(): number { return new CleanTarget().run() }\n")
+  "import { AnchorInSameFile } from \"./unanchored\"\n" +
+  "export function callerOne(): number { return new CleanTarget().onlyRun() + new AnchorInSameFile().anchorRun() }\n")
 
 const projectId = getProjectId(root)
 const USAGE = "calls"
@@ -87,6 +114,22 @@ try {
       .prepare("SELECT s.id FROM brain_symbol s WHERE s.project_id = ? AND s.name = ?")
       .get(projectId, name) as { id: string } | undefined
     if (!row) throw new Error(`fixture symbol ${name} was not indexed`)
+    return row.id
+  }
+  // Resolve by file AND name. `idOf` alone is ambiguous the moment a fixture
+  // deliberately declares the same name twice, which G12 does on purpose: with
+  // two rows and no ORDER BY, SQLite returns whichever it likes, so the
+  // unanchored row landed on one declaration and the assertions were about a
+  // symbol other than the one they named. The first draft of G12e failed for
+  // exactly that reason and the cause was the fixture, not the engine.
+  const idIn = (relativePath: string, name: string): string => {
+    const row = raw
+      .prepare(
+        "SELECT s.id FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
+          "WHERE s.project_id = ? AND s.name = ? AND f.relative_path = ?",
+      )
+      .get(projectId, name, relativePath) as { id: string } | undefined
+    if (!row) throw new Error(`fixture symbol ${name} in ${relativePath} was not indexed`)
     return row.id
   }
   const fileOf = (name: string): string => {
@@ -105,6 +148,9 @@ try {
   const caller = idOf("callerOne")
   const callerFile = fileOf("callerOne")
   const cleanFile = fileOf("CleanTarget")
+  const unanchoredOnly = idIn("src/unanchored.ts", "UnanchoredOnlyTarget")
+  const unanchoredOnlyElsewhere = idIn("src/ambiguous.ts", "UnanchoredOnlyTarget")
+  const anchorSibling = idOf("AnchorInSameFile")
 
   // The three rows the gate must reject, each with exactly ONE defect, so a
   // failure names its cause. `target_external` is the bare name, which is what
@@ -133,6 +179,16 @@ try {
   // G4: clean control — the one row that must clear its candidate.
   insert.run(mkId("clean"), projectId, caller, clean, "callerOne", "CleanTarget", USAGE, 0.9, 0,
     JSON.stringify({ evidenceClass: "structural" }), now)
+  // G12: an ANCHORED clean row to unanchored.ts's other member, so unanchored.ts
+  // is a file the analyzer demonstrably reached.
+  insert.run(mkId("anchorSibling"), projectId, caller, anchorSibling, "callerOne", "AnchorInSameFile", USAGE, 0.9, 0,
+    JSON.stringify({ evidenceClass: "structural" }), now)
+  // G12b: the row that must NOT count as a recorded consumer for
+  // UnanchoredOnlyTarget — a clean, high-confidence, NON-self-loop row with a
+  // NULL source. It is a name match: the analyzer named this symbol but recorded
+  // no consumer, and the name is claimed by two files so it cannot be attributed.
+  insert.run(mkId("unanchoredOnly"), projectId, null, unanchoredOnly, null, "UnanchoredOnlyTarget", USAGE, 0.9, 0,
+    JSON.stringify({ evidenceClass: "structural" }), now)
 
   const report = await detectOrphans(projectId, { minConfidence: 0, maxResults: 1000 })
   const names = new Set(report.findings.filter((f) => f.rule !== "orphaned_file").map((f) => f.location.symbol))
@@ -148,6 +204,103 @@ try {
   check("G4 a clean anchored row DOES clear the candidate", !names.has("CleanTarget"),
     `CleanTarget was still reported despite a clean cross-file call edge`)
   check("a symbol with no relationship at all is still reported (control)", names.has("LonelyTarget"))
+
+  // --- G5c: confidence is DERIVED, not assigned ----------------------------
+  //
+  // Added because the mutation self-test caught a hole it had been reporting as
+  // covered. M2 replaces the evidence-derived confidence with a constant, and the
+  // gate went GREEN: G5 asserts the page is ordered by confidence descending, and
+  // a constant is trivially ordered; G5b asserts the page is not alphabetical by
+  // path, and with a constant the sort is STABLE, so the page keeps whatever order
+  // the scan produced — which is no longer alphabetical, because the fixture grew
+  // since G5b was written. Two weak assertions that between them could not see the
+  // defect they existed for.
+  //
+  // The direct statement of the property is that confidence VARIES with the
+  // evidence. The fixture deliberately contains all three cases — a unique name in
+  // an unreached file, an ambiguous name in a reached file, and a symbol with
+  // neither — so a derived confidence must produce at least two distinct values.
+  {
+    const values = new Set(report.findings.filter((f) => f.rule !== "orphaned_file").map((f) => f.confidence))
+    check("G5c confidence varies with the evidence rather than being a per-rule constant",
+      values.size >= 2, `${values.size} distinct value(s): ${[...values].join(", ")}`)
+    check("G5d the fixture really does contain the cases that make it vary",
+      report.findings.some((f) => f.location.symbol === "UnanchoredOnlyTarget") &&
+        report.findings.some((f) => f.location.symbol === "LonelyTarget"),
+      "the ambiguous-name and the no-evidence candidate are both required for this to mean anything")
+  }
+
+  // --- G12: an UNANCHORED row is not a recorded consumer ------------------
+  //
+  // Added after a SQL-side rewrite of the relationship pass made the per-symbol
+  // coverage test count unanchored rows. It silenced 258 COVERAGE GAP INDICATOR
+  // disclosures across nine real repositories, with the finding COUNTS unchanged
+  // — so nothing in the output said anything was wrong. `references` is 97%
+  // unanchored on rake and 61% on lodash, which is why counting them here
+  // suppresses the indicator exactly where it is most wanted.
+  //
+  // The two coverage tests are deliberately different and this is the check that
+  // says so: per FILE, any row counts (did the analyzer produce anything about
+  // this file?); per SYMBOL, only an anchored row counts (did it record a
+  // consumer?). The previous version wrote `source_symbol_id <> target_symbol_id`,
+  // which in SQL is NULL — not true — for an unanchored row, and so excluded
+  // them. That reads like an oversight and behaves correctly.
+  {
+    // The declaration in unanchored.ts, identified by its file rather than its
+    // name — the name is deliberately declared twice, which is the whole point.
+    const target = report.findings.find(
+      (f) => f.location.symbol === "UnanchoredOnlyTarget" && f.location.file === "src/unanchored.ts",
+    )
+    check("G12 the unanchored-only declaration IS still a candidate", !!target,
+      "an unanchored clean row was treated as a consumer and cleared it")
+    check("G12b the coverage-gap indicator fires for it: an unanchored name match is not a recorded consumer",
+      !!target?.evidence.some((e) => e.description.includes("COVERAGE GAP INDICATOR")),
+      JSON.stringify(target?.evidence.map((e) => e.description.slice(0, 60))))
+    check("G12c the indicator states its own file's numbers",
+      !!target?.evidence.some((e) => /its file receives \d+ incoming usage edge\(s\) from \d+ distinct source\(s\)/.test(e.description)),
+      JSON.stringify(target?.evidence.map((e) => e.description.slice(0, 130))))
+    check("G12d the sibling with the ANCHORED row is cleared, so the file really is reached",
+      !find("AnchorInSameFile"),
+      `AnchorInSameFile was still reported: ${JSON.stringify(find("AnchorInSameFile")?.description)}`)
+    const elsewhere = report.findings.find(
+      (f) => f.location.symbol === "UnanchoredOnlyTarget" && f.location.file === "src/ambiguous.ts",
+    )
+    // Name the rows that gave the file its coverage, rather than asserting it is
+    // unreached. If this fixture cannot construct an unreached file, the
+    // assertion is wrong and saying so is more useful than a red line.
+    const covering = raw.prepare(
+      "SELECT r.relationship_type AS rt, r.source_symbol_id AS src, r.target_external AS ext " +
+        "FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id " +
+        "JOIN brain_file f ON f.id = t.file_id WHERE f.relative_path = ?",
+    ).all("src/ambiguous.ts")
+    check("G12e the same-name declaration in the UNREACHED file gets no coverage claim",
+      !elsewhere?.evidence.some((e) => e.description.includes("COVERAGE GAP INDICATOR")),
+      `a coverage claim was made; rows targeting src/ambiguous.ts: ${JSON.stringify(covering)}`)
+  }
+
+  // --- G13: a row count is not a reason count ------------------------------
+  //
+  // The disclosure says "N row(s) about this symbol were excluded as unverified
+  // (reasons)". Those are two numbers. A dedup that made the reason list readable
+  // also made the count say 1 where 3 rows were refused, which understates the
+  // index — the opposite of what a disclosure is for.
+  {
+    // SelfLoopTarget already has one refused self-loop row from G1. Add two more
+    // of the same kind, as three distinct relationship types so they are three
+    // separate rows rather than one row counted thrice.
+    for (const [tag, rt] of [["selfloop2", "overrides"], ["selfloop3", "implements"]] as const) {
+      insert.run(mkId(tag), projectId, selfLoop, selfLoop, "SelfLoopTarget", "TaskLib.SelfLoopTarget", rt, 0.99, 0,
+        JSON.stringify({ isOverride: true, reasonCode: "first-parent-guess", evidenceClass: "inferred" }), now)
+    }
+    const after = await detectOrphans(projectId, { minConfidence: 0, maxResults: 1000 })
+    const target = after.findings.find((f) => f.location.symbol === "SelfLoopTarget")
+    const disclosure = target?.evidence.find((e) => e.description.includes("REFUSED EVIDENCE"))?.description ?? ""
+    check("G13 the disclosure counts every refused ROW, not the deduplicated reasons",
+      /REFUSED EVIDENCE: 3 row\(s\)/.test(disclosure), disclosure.slice(0, 90))
+    check("G13b the disclosure itemises each reason once",
+      /excluded as unverified \(selfLoop\)/.test(disclosure) && !/selfLoop, selfLoop/.test(disclosure),
+      disclosure.slice(0, 140))
+  }
 
   // --- G5: the page is ranked, not alphabetical --------------------------
   {
