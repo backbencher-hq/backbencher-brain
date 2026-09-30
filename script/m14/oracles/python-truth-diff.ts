@@ -116,6 +116,12 @@ const count = (m: Map<string, number>, t: string, d: number): void => m.set(t, (
  * indistinguishable from a clamp.
  */
 const missingN = new Map<string, number>()
+const truthCount = new Map<string, number>()
+const analyzerCount = new Map<string, number>()
+const bump = (m: Map<string, number>, k: string): void => m.set(k, (m.get(k) ?? 0) + 1)
+const multiN = new Map<string, number>()
+const multiEx = new Map<string, string[]>()
+let currentFile = "?"
 const unexplainedN = new Map<string, number>()
 const guessBadN = new Map<string, number>()
 const sample = (m: Map<string, string[]>, t: string, s: string): void => {
@@ -124,6 +130,7 @@ const sample = (m: Map<string, string[]>, t: string, s: string): void => {
 }
 
 for (const f of files) {
+  currentFile = f
   const raw = fs.readFileSync(f, "utf8")
 
   // MIRROR THE ENGINE'S PREPROCESSING, or the two sides are not reading the same bytes.
@@ -176,7 +183,11 @@ for (const f of files) {
     if (!TYPES.includes(t as any)) continue
     const k = key(t, String(r.source), String(r.target), t === "contains" ? r.line_number : undefined)
     if ((r.metadata as any)?.reasonCode === "first-parent-guess") guessKeys.add(k)
-    else analyzerKeys.add(k)
+    else { analyzerKeys.add(k); bump(analyzerCount, k) }
+  }
+  for (const e of truth) {
+    if (!TYPES.includes(e.type as any)) continue
+    bump(truthCount, key(e.type, e.from, e.to, e.type === "contains" ? e.line : undefined))
   }
 
   for (const k of truthKeys) {
@@ -190,6 +201,39 @@ for (const f of files) {
     if (truthKeys.has(k)) guessOk++
     else { guessBad++; count(guessBadN, String(k).split("\u0000")[0], 1); sample(guessBadEx, String(k).split("\u0000")[0], `${path.basename(f)} ${k.split("\u0000").slice(1).join(" -> ")}`) }
   }
+  // MULTIPLICITY: a key BOTH sides carry, in different numbers.
+  //
+  // The comparison above is set-based, so a key present twice on one side and once on the other
+  // compares EQUAL. That is not a harmless simplification: a duplicated edge is the defect
+  // class PY-6 belongs to — a dedup key coarser than the store's, which lost a `contains` edge
+  // for a getter/setter pair — and a set comparison cannot see that whole class. It is not
+  // hypothetical here either: a file with two same-named classes each overriding the same base
+  // method makes the analyzer emit `overrides C.m -> Base.m` twice, at two different lines, and
+  // the set collapsed both to one and reported agreement.
+  //
+  // So each side also accumulates a COUNT per key, and a key whose counts differ is reported
+  // even when both sides have the key. A lane that emits the same edge twice for two genuinely
+  // different sites is correct; one that emits it twice for one site is not, and only a count
+  // distinguishes those.
+  for (const [k, tc] of truthCount) {
+    const ac = analyzerCount.get(k) ?? 0
+    if (ac === tc) continue
+    // A key present on ONE side only is already reported as missing/unexplained. Counting it
+    // here as well double-reports every one of them, and the first run of this pass did
+    // exactly that: 60,254 "multiplicity" disagreements, of which the loudest were the
+    // self-referential `extends` the analyzer declines — 13 edges already sitting in the
+    // missing column. A second axis that re-reports the first is worse than no second axis,
+    // because it makes the real population unreadable.
+    if (ac === 0 || tc === 0) continue
+    const parts = k.split("\u0000")
+    const t = parts[0]
+    const from = parts[1]
+    const to = parts[2]
+    const line = parts[3]
+    count(multiN, t, 1)
+    sample(multiEx, t, `${path.basename(currentFile)} ${from} -> ${to}${line ? " @L" + line : ""}  truth=${tc} analyzer=${ac}`)
+  }
+
   for (const k of analyzerKeys) {
     if (truthKeys.has(k)) continue
     const [t, from, to] = k.split("\u0000")
@@ -214,6 +258,15 @@ for (const t of TYPES) {
   if (u?.length) { console.log(`\nUNEXPLAINED ${t} (${unexplainedN.get(t) ?? u.length} total, showing ${u.length}): the analyzer emitted these and the tree does not support them:`); for (const s of u) console.log(`   ${s}`) }
 }
 for (const [t, l] of guessBadEx) { console.log(`\nREFUTED GUESSES ${t} (${guessBadN.get(t) ?? l.length} total, showing ${l.length}):`); for (const s of l) console.log(`   ${s}`) }
+
+const multiTotal = [...multiN.values()].reduce((a, b) => a + b, 0)
+if (multiTotal > 0) {
+  console.log(`\nMULTIPLICITY DISAGREEMENT (${multiTotal}): both sides carry the edge, in different numbers:`)
+  for (const [t, l] of multiEx) console.log(`\n  ${t} (${multiN.get(t)} total, showing ${l.length}):`)
+  for (const [t, l] of multiEx) for (const x of l) console.log(`   ${x}`)
+} else {
+  console.log("\nMULTIPLICITY: every edge agrees in COUNT as well as in membership")
+}
 
 if (nTruncated > 0) {
   console.log(`\nTRUNCATED INPUT (engine limit 1 MiB) — these files were compared only over the bytes the analyzer actually read:`)
