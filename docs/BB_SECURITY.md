@@ -168,6 +168,26 @@ from the typed API, not from the agent-facing tool.
 - This tool reports **project-code** findings. Hardening of the MCP server
   itself is a separate concern and is not mixed into these results.
 
+## Evidence sealing
+
+Every verifier in the bb_security suite writes its record through
+`writeSealed` (`script/lib/evidence.ts`), which is the repository's one declared
+write path; the one trusted read (`readEvidence`) refuses a record with no
+`bbSeal` envelope as `unsealed`.
+
+This lane was not covered by the M61.V1 sealed-write adoption, so until
+2026-09-30 all five security verifiers wrote with a bare
+`writeFileSync(JSON.stringify(...))` — producing precisely the legacy record the
+trusted reader is required to reject. Two consequences, both silent:
+
+- a **successful** run destroyed the committed seal;
+- a **failing** run destroyed the seal *and* left `verified: false` in its
+  place, which the old X5 leg did when its hardcoded corpus path was absent.
+
+The suite now also asserts the property structurally: a regression check reads
+each writer's source and fails if a bare `writeFileSync(JSON.stringify(...))`
+evidence write reappears.
+
 ## What the tool does NOT detect
 
 Stated explicitly, because the previous tool description claimed otherwise:
@@ -203,20 +223,43 @@ Stated explicitly, because the previous tool description claimed otherwise:
 
 ## Verification
 
-`script/verify-security.ts` covers same-language SQLi, deduplication, resolved
-path nodes, confidence calibration, and — via deterministic row insertion —
-mitigated state, cross-language flags, `includeMitigated` filtering, hotspots,
-and alias normalization. `script/m20/verify-security-flow-boundary.ts` additionally
-proves that endpoint resolution takes precedence over a mitigation flag: partial
-flows remain `source_only`/`unresolved` observations and are excluded when
-`includeUnresolved=false`. `script/m20/verify-security-adversarial.ts` runs a
-deterministic policy matrix (exact state/severity/confidence per injected row),
-real concatenation-vs-clean behavior, a mutation proof, and a tautology audit
-that rejects any security verifier containing unconditional assertions
-(`check(..., true)`, `>= 0`, `|| true`). `script/m20/verify-security-history.ts`
-proves the history contract: live `source_only`/`unresolved` observations are
-surfaced as unvalidated sources but excluded from persisted history; persisted
-rows never carry `rule="unresolved"` or `severity="unknown"`; repeat runs keep
-finding counts stable; CLI and direct handler record the same set. These are
-fixture-level evidence; they do not prove complete real-repository taint recall
-(owned by M20.X2).
+## Verification
+
+All five verifiers run under one shared harness (`script/m15/security-harness.ts`).
+
+`script/m15/verify-security-regressions.ts` — one section per defect found in
+the 2026-09-30 review (severity accounting, truncation and the `recordRun`
+census, the fabricated file path, evidence-free history, the inverted
+observation text, determinism). Every assertion names the defect it would fail
+on. It also audits every security verifier for structurally unfalsifiable
+assertions and for the sealed-write law.
+
+`script/m15/verify-security-deep.ts` — X1 classification from a real indexer
+run, X2 the classification-construct census, X3 cross-file deterministic
+classification, X4 measured complexity on fixtures that actually contain taint
+flows, X5 an **optional** real-repository scan (absent corpus records `skipped`,
+never a failure), X6 the handler output contract plus registry/doc honesty, X7
+non-TypeScript language coverage, X8 entry-point parity and determinism.
+
+`script/verify-security.ts` — the engine end to end: dedup reduction, the
+calibration (0.7 / 0.4 / 0.3) on findings asserted to exist, a pinned four-state
+matrix whose counts must sum to total, hotspot content, and determinism.
+
+`script/m20/verify-security-flow-boundary.ts` — endpoint resolution takes
+precedence over the mitigation flag: a partial flow is never `confirmed` or
+`mitigated`, and a mutation flip on a *resolved* flow changes
+`confirmed` → `mitigated`.
+
+`script/m20/verify-security-adversarial.ts` — the full policy matrix, a real
+concatenation-vs-clean fixture, a mutation proof with its preconditions
+asserted, and the auto-pass audit over all eleven security verifiers.
+
+`script/m20/verify-security-history.ts` — the history contract: observations are
+surfaced live and marked not-persisted, persisted rows carry evidence,
+confidence and limitations, a repeat run resolves nothing, a severity re-grade
+is a repeat rather than a new finding, and the CLI door records the same set as
+the handler door.
+
+All are fixture-level. They do not prove real-repository taint recall (owned by
+M20.X2) and none of them has been executed on a machine without the corpus
+and the corpus-independent legs run hermetically by design.
