@@ -1884,6 +1884,22 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       const params = p.parent
       const holder = params?.parent
       if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) return
+      // RUST-MR: a TRAIT method SIGNATURE's parameter declares too, and it is the
+      // same absence of a body: `collectFunctionBindings` collects
+      // `function_item` only, so a bodiless `function_signature_item` has NO
+      // bound-name set and its parameter names fell through to the read sweep.
+      // Found at FULL extent, not by the 550-file sample — cargo's
+      // `src/compiler/mod.rs:142-143` (`fn exec(&self, …, on_stdout_line: &mut
+      // dyn FnMut(&str) -> CargoResult<()>, …) -> CargoResult<()>;` inside a
+      // trait) published `uses -> on_stdout_line` and `uses -> on_stderr_line`.
+      // RUST-D13's fn-pointer guard was one level too shallow: a fn-pointer TYPE
+      // is a type alias and a trait SIGNATURE is a declaration, and both have
+      // no body to bind a name.
+      if (params?.type === "parameters") {
+        let owner: Node | null = params.parent
+        while (owner && owner.type !== "function_item" && owner.type !== "function_signature_item" && owner.type !== "closure_expression") owner = owner.parent
+        if (owner && owner.type === "function_signature_item") return
+      }
     }
     // Where-bounds belong to the dedicated where branch (R8).
     if (this.hasAncestor(node, "where_predicate", null)) return
