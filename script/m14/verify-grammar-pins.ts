@@ -98,6 +98,54 @@ export interface LaneDecision {
 }
 
 export const LANES: Record<string, LaneDecision> = {
+  julia: {
+    wired: "wasm/tree-sitter-julia.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "tree-sitter/tree-sitter-julia", version: "0.23.1" },
+      patches: [
+        "P2 (grammar.js): `∞` is a real Julia UNARY operator — `∞(x)` and `x + ∞` both parse — and it was absent from `OPERATORS.unary`, so every use became an ERROR node. 7 of the 185 defect files.",
+        "P3 (grammar.js): `const global x = 1` is valid Julia and is how Base declares a global constant (`const global maxprobeshift = 6` in base/dict.jl). The rule read `const` then an assignment, so `global` had nowhere to go; the fix is `optional('global')`, which needs a declared conflict against the existing `global_statement` because both forms are valid. 10 of the 185 defect files.",
+        "P4 (grammar.js): an abstract type may carry a BODY and may put it on one line — `abstract type Inserter; end` in Compiler/src/ssair/ir.jl. The rule went from `type_head` straight to `end`; the fix mirrors `struct_definition`, which sits three rules below already doing the right thing, so the correct shape was available in the file and this rule simply omitted it. 5 of the 185 defect files.",
+        "P5 (grammar.js): a function can be NAMED by an operator, and the language's own libraries do it — `function ⊑ end` in Compiler/src/abstractlattice.jl declares the abstract-lattice ordering relation, and `function ⊇ end` appears in base/abstractset.jl. `signature` offered an identifier, a call, an argument list, a typed expression and a where-expression, none of which can BE `⊑`; the fix reuses the existing public `operator` rule rather than adding a second spelling. 46 of the 185 defect files — the second-largest class.",
+        "P1 IS DELIBERATELY NOT LANDED: `+%` and `-%` are Julia's wrapping add and subtract (52 of the 185 defect files) and Julia lexes an operator as a maximal run of operator characters, so `+%` is ONE operator name. Three variants were MEASURED and all three are recorded in PIN.md. `-%` collides with `-=` and `+%` with `+`, both two characters, so precedence decides — and tree-sitter's lexer stops at the first accepting state, so a wrapping token that outranks `+` is never read. Over the corpus: the `times` variant fixed 24 and broke 3; `prec(-1)` fixed 9 and broke 1; the third fixed 0 and broke 0. A real fix needs a lexer-level change (an external scanner emitting the operator run, which is what Julia's own lexer does), which belongs upstream rather than in a vendored copy.",
+      ],
+      patchEvidence:
+        "Behavioural A/B against an INDEPENDENT oracle — Julia 1.11.3's own parser via `Meta.parseall`, which shares no code, no grammar and no data model with tree-sitter — over 949 corpus files, re-runnable via `bun run script/m12/julia-differential.ts [--wasm=<alt>]` (artifact: validation/m12/results/julia-differential.json). Baseline: pristine 0.23.1 rejects 185 files Julia accepts, with 0 in the other direction. PATCHED vs PRISTINE: fixes 9, breaks 1, 177 error files remaining. The single break is base/Enums.jl (0 -> 6 ERROR nodes) at a one-line `primitive type $(esc(typename)) <: Enum{...} end` inside a `Base.@__doc__(...)` macro call — NOT reproducible by any of five minimal probes of that shape, so it is a file-scale parse shift, and it is recorded rather than hidden. WIRED vs a REBUILD of this committed patched source: 0 fixed, 0 broken, 949 unchanged — the bytes differ by 3 (5,892,544 vs 5,892,547) as wasm builds must, so identity is claimed on behaviour. The oracle uses `parseall` and NOT `parse` because Julia's `parse` resolves operators in a single-expression scope and REJECTS `a +% b`, which `parseall` accepts: an oracle on `parse` would report the language's own wrapping-add operator as invalid. The harness also refuses to report a verdict without counting the oracle's own coverage, because the first version 'agreed' on 949 files while the oracle had returned nothing at all.",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-julia",
+      note:
+        "grammar.js — the PATCHED upstream 0.23.1 grammar carrying this repository's M60 edits and their measured rationale in comments, with the rejected P1 recorded at its absence — plus package.json, tree-sitter.json, LICENSE, README.md, queries/ and PIN.md byte-identical to npm tree-sitter-julia@0.23.1, and src/grammar.json + src/node-types.json REGENERATED from the patched grammar.js by `tree-sitter generate` (CLI 0.26.9) so the source<->wasm check can run. src/scanner.c and src/tree_sitter/*.h ARE vendored, byte-identical: Julia's grammar has an EXTERNAL SCANNER, so the pin covers a component a grammar-only pin would miss, and script/m60/julia-census.ts reads the scanner's token names out of the vendored scanner.c and compares them against what the tree actually produces. src/parser.c is deliberately NOT vendored — `tree-sitter generate` rebuilds it from grammar.js and it is tens of megabytes; the hcl lane does vendor it so it can rebuild the wasm from the directory alone, and the difference is recorded because the two lanes' central claims differ (this lane's is the ORACLE'S VERDICT, hcl's is the offline rebuild).",
+    },
+    decision:
+      "Pin as a LOCAL REBUILD OF THE PATCHED VENDORED SOURCE, and the reason is a change of kind that had to be recorded rather than assumed. This lane began byte-identical to the npm tarball — the strongest provenance in the registry — and the corpus differential ended that: 185 files of valid Julia that the grammar could not read, five named constructs, four patched. The kind follows the bytes, so it is now a rebuild, and the pin has to say so or the record is false. The question the C lane's own record had to answer first is the same one here: are the WIRED bytes a build of the PATCHED source? Measured answer: yes, behaviourally identical on all 949 routed files (0 fixed, 0 broken, 949 unchanged), with the 3-byte difference that two correct builds of one wasm source must show. The consequence is the useful one: the incumbent is a verified build, so no Julia measurement needs re-baselining, and had the wired bytes matched pristine the four patches would not have been live. This lane also retires a hazard this repo has paid for twice before. Every existing lane was written first and measured afterwards, and the measurement is what found the defects: Objective-C was CLOSED over an instrument reading 7 of 329 files, whose `grammarErrorFiles: 0` was 49 crashes counted as 49 clean parses. Julia is the lane where the order was reversed — the grammar census and the Julia-1.11.3 differential were built BEFORE any analyzer existed, precisely so that the analyzer would be written against a measured grammar instead of inheriting its 185 defects and then debugging itself for a day.",
+    alternatives: [
+      {
+        option: "Adopt npm tree-sitter-julia@0.23.1's own published wasm as the wired bytes",
+        measured:
+          "REJECTED, and this is the load-bearing measurement of the lane: it DELETES capability. Over 949 corpus files pristine rejects 185 that Julia accepts — 19.5% of the corpus — and the four patches remove 8 of those net. Concretely it loses the wrapping-add and subtract operators `+%`/`-%` (52 files), operator-named function definitions such as `function ⊑ end` and `function ⊇ end` (46 files), `const global` (10), the `∞` unary operator (7) and one-line `abstract type X; end` (5).",
+        artifact: "validation/m12/results/julia-differential.json (aB, defectClass)",
+      },
+      {
+        option: "Land P1 (`+%`/`-%`) with a lexical precedence and take the regression",
+        measured:
+          "REJECTED, and the reason is a lexer fact rather than a judgement about value. Three variants were built and measured over the whole corpus: placing the wrapping operators in the `times` class fixed 24 files and BROKE 3 (`base/special/pow.jl` and `base/twiceprecision.jl` lose `xu -%= (UInt64(52) << 52)`, base/Enums.jl loses 6 nodes); `token(prec(-1, ...))` fixed 9 and broke 1; `prec(1)` with the assignment operators raised to `prec(2)` fixed 0 and broke 0. The mechanism is that `-%` collides with `-=` and `+%` with `+`, both two characters, so precedence decides — and tree-sitter's lexer STOPS AT THE FIRST ACCEPTING STATE, so any wrapping token that outranks `+` is never read at all. A patch that fixes 24 and breaks 3 is not a patch to land; a real fix is lexical.",
+        artifact: "grammars/tree-sitter-julia/PIN.md (the measured table), validation/m12/results/julia-differential.json",
+      },
+    ],
+    evidence: [
+      "validation/m12/results/julia-differential.json — the Julia-1.11.3 oracle sweep and the patch A/B; the load-bearing artifact for this lane",
+      "validation/m60/results/julia-census.json — grammar health over 966 files, the declared non-Julia exclusion, the node-type surface and the external scanner's tokens",
+      "validation/m60/results/julia-error-minimal.json — the SMALLEST failing span per defect file; the FIRST error points at line 1 in 121 of 185 files and clusters on the licence header",
+      "grammars/tree-sitter-julia/PIN.md — the authored provenance, patch and decision record, including the rejected P1 and the one regression",
+    ],
+    copies: [],
+    notVendored: [
+      { path: "grammars/tree-sitter-julia/src/parser.c", why: "tens of megabytes and `tree-sitter generate` rebuilds it deterministically from the vendored grammar.js; the source<->wasm check runs on the generated src/grammar.json and src/node-types.json instead. The hcl lane DOES vendor parser.c so it can rebuild the wasm from the directory alone — that lane's central claim is the offline rebuild, this lane's is the oracle's verdict, and they need different evidence." },
+    ],
+  },
   "objective-c": {
     wired: "wasm/tree-sitter-objc.wasm",
     provenance: {
@@ -1587,6 +1635,114 @@ export const LANES: Record<string, LaneDecision> = {
       { path: "tree-sitter-yaml.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
     ],
   },
+
+  // PY-2. The lane with the largest measured consequence of being UNPINNED, because two
+  // builds of this grammar are on this machine and they do not agree about the language.
+  //
+  //   repo wasm/   457,883 B  sha 16108b50…  267 types, 128 named, 145 anonymous
+  //   ~/.bb/wasm/  476,105 B  sha 9056d0fb…  268 types, 129 named, 144 anonymous
+  //
+  // Only the registry build has the named type `N:except_group_clause` (PEP 678
+  // `except*`); only the repo build has `A:\` and `A:except_clause_repeat1`. 137 of the
+  // 267 shared types — 51% — sit at DIFFERENT ids. And the difference is not cosmetic:
+  // the same source under each grammar gives
+  //
+  //     repo wasm/   try_statement=1  except_clause=3        0 ERROR nodes
+  //   ~/.bb/wasm/    try_statement=1  except_group_clause=2  1 ERROR node
+  //
+  // — the registry build FAILS to parse `except*`, loses the `except OSError` handler from
+  // the tree, and invents a parse error on valid python 3.11. The analyzer has an
+  // `except_clause` branch and no `except_group_clause` branch, so the two grammars also
+  // drive it down different code paths.
+  //
+  // Which one LOADS is decided by a path list rather than a hash: `bbWasmCandidates` tries
+  // repo `wasm/`, then `dist/../wasm/`, then the data dir, then `cwd/wasm/`. Today the repo
+  // copy wins by accident of directory order, so a source run and a compiled run both get
+  // the good grammar. A deployment that populates the data dir gets the other one,
+  // silently. This is the M49 W16 incident rather than a near-miss of it: there a grammar
+  // was rebuilt, the analyzer's behaviour changed, every hashed input stayed
+  // byte-identical, and the journal reported a clean pass for a parser that no longer
+  // existed. The corpus manifest also records that this grammar was ALREADY upgraded once
+  // (npm tree-sitter-python 0.25.0 over a stale pin) and that the upgrade changed
+  // behaviour. The lane has survived one silent swap; this row is what catches the next.
+  python: {
+    wired: "wasm/tree-sitter-python.wasm",
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
+        "NOT provenanced to a published version, and the entry says so rather than guessing. " +
+        "`tree-sitter-python` does not appear in package.json at all, so nothing in the dependency " +
+        "record names the build, and `grammars/` has no `tree-sitter-python`, so there is no vendored " +
+        "grammar.js, no src/node-types.json and no scanner to diff the bytes against. The corpus manifest " +
+        "records an upgrade to npm `tree-sitter-python` 0.25.0 from a stale pre-0.25.0 pin, which is " +
+        "evidence that a published artifact was used at some point — and no copy of it is reachable offline " +
+        "to hash-match, so the version is UNKNOWN rather than unrecorded.\n\n" +
+        "WHAT WAS ESTABLISHED, and it is the part that decides whether the lane is safe:\n" +
+        "  1. The registry copy is DIVERGENT, recorded below as a copy row and not as identical. It is " +
+        "476,105 B against the wired 457,883 B, and it parses `except*` incorrectly.\n" +
+        "  2. The analyzer makes ZERO numeric-id comparisons — it matches on node-type NAMES only — so the " +
+        "51% id shift cannot change what it emits. That is the reassuring half and it was worth proving rather " +
+        "than assuming, because 137 types moving sounds fatal.\n" +
+        "  3. The id-order and type-set digests are recorded anyway, because they are the only things that " +
+        "separate two builds of one source, and `except_group_clause` has just proved two builds of " +
+        "\"python\" are in circulation on this machine.\n" +
+        "  4. ONE corpus file exercises the divergence: `cython/tests/run/test_except_star.py`, 66 `except*` " +
+        "sites, and `cython` is one of this lane's OWN named corpora. Under the wired grammar the analyzer " +
+        "processes it with 0 errors; under the registry grammar it would gain an ERROR node and lose handlers.",
+    },
+    source: {
+      state: "not-obtainable-offline",
+      note:
+        "grammars/ has no tree-sitter-python directory, so there is no vendored grammar.js, no " +
+        "node-types.json and no scanner to diff against the wired bytes. The source<->wasm proof cannot run " +
+        "for this lane in either direction, and the pin therefore rests on byte identity, the fully " +
+        "enumerable surface, and the name-not-id property of the analyzer.",
+    },
+    decision:
+      "Pin the wired bytes by sha256 + the full enumerable surface, record the registry copy as DIVERGENT " +
+      "with the `except*` finding attached, and let the copy row fail the gate if the divergence is ever " +
+      "resolved silently in either direction. The pin's purpose here is not to describe one artifact but to " +
+      "make the DISAGREEMENT between two artifacts a loud, attributed fact.",
+    alternatives: [
+      {
+        option: "record the registry copy as authoritative, on the grounds that it is newer and larger",
+        measured:
+          "REFUSED, and the measurement is the whole argument: it FAILS to parse PEP 678 exception groups, " +
+          "produces an ERROR node on valid python 3.11, and loses a handler from the tree. Larger and newer " +
+          "is not better when the parse is wrong.",
+        artifact: "the same `except*` source parsed by each build: repo 0 ERROR nodes / 3 except_clause; registry 1 ERROR node / 2 except_group_clause",
+      },
+      {
+        option: "record the repo copy as authoritative and not mention the registry copy at all",
+        measured:
+          "REFUSED. That is the json-lane decoration: a pin that describes one artifact and is silent about " +
+          "the other is a pin that cannot notice the other being deployed. The divergence is recorded as a " +
+          "copy row precisely so that resolving it — in either direction — has to be a decision.",
+        artifact: "the `copies` row below, with the divergence reason attached",
+      },
+      {
+        option: "vendor the grammar source so the source<->wasm proof can run, as twelve other lanes do",
+        measured:
+          "NOT TAKEN, and named as owed. The build came from an npm release rather than a vendored tree, so " +
+          "there is no source to copy; obtaining grammar.js and regenerating would be a build-identity question " +
+          "this round did not answer.",
+        artifact: "grammars/ (no tree-sitter-python); package.json (no tree-sitter-python entry)",
+      },
+    ],
+    evidence: [
+      "sha256 + size of the wired bytes, and of the divergent registry copy, in this record",
+      "the enumerable surface (ids/named/anon + three digests) for the wired build, in this record",
+      "the two-build `except*` parse comparison quoted in the provenance chain, measured in this round",
+      "validation/m12/corpus-manifest.json — the python row recording the 0.25.0 upgrade and its behavioural effect",
+    ],
+    copies: [
+      { label: "wasm registry copy of the python grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-python.wasm") },
+    ],
+    notVendored: [
+      { path: "grammar.js / src/grammar.json / src/node-types.json", why: "not vendored, and not in package.json either; the build identity is unrecorded in the tree" },
+      { path: "tree-sitter-python.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -1613,7 +1769,7 @@ export interface MeasuredLane {
     | { state: "vendored"; dir: string; files: Record<string, { sha256: string; bytes: number }>; digest: string; fileCount: number }
     | { state: "not-obtainable-offline" }
   sourceVsWasm:
-    | { nodeTypesJson: string; declaredNamedTypes: number; declaredSupertypes: number; wasmNamedUnique: number; wasmUniqueNames: number; missingInWasm: string[]; allowedWasmExtras: string[]; namedOnlyInWasm: string[] }
+    | { nodeTypesJson: string; declaredNamedTypes: number; declaredSupertypes: number; supertypesWithoutSymbol?: string[]; wasmNamedUnique: number; wasmUniqueNames: number; missingInWasm: string[]; allowedWasmExtras: string[]; namedOnlyInWasm: string[] }
     | { nodeTypesJson: null; note: string }
 }
 
@@ -1737,12 +1893,27 @@ export function sourceVsWasmFor(root: string, lane: LaneDecision, namedUnique: s
   const supertypes: string[] = (JSON.parse(fs.readFileSync(gj, "utf8")).supertypes ?? []) as string[]
   const wasmAll = new Set(uniqueNames)
   const wasmNamed = new Set(namedUnique)
-  const missingInWasm = [...declaredNamed].filter((t) => !wasmAll.has(t))
+  // A declared SUPERTYPE is not required to have a symbol in the wasm, and tree-sitter routinely
+  // gives none: julia's `_definition` and `_statement` are supertypes in grammar.json and appear
+  // in NO id space, in pristine 0.23.1 and in a rebuild of the patched source alike. The gate
+  // subtracted nothing for supertypes, so a correct lane read as "the wired bytes are not a build
+  // of this source" — a false FAILURE, and a false failure is worse than no check because it
+  // teaches the reader that the pin is unreliable.
+  //
+  // The measurement that distinguishes the two cases, since "subtract the supertypes" sounds like
+  // weakening the check: julia's WIRED and PRISTINE wasms have an IDENTICAL 245-symbol space
+  // (my four patches added no node type at all), so the two missing names are a property of the
+  // grammar's supertype set, not of the build. A genuine build drift still shows, because a
+  // non-supertype name missing from the id space is still reported.
+  const supertypeSet = new Set(supertypes)
+  const missingInWasm = [...declaredNamed].filter((t) => !wasmAll.has(t) && !supertypeSet.has(t))
+  const supertypesWithoutSymbol = [...declaredNamed].filter((t) => !wasmAll.has(t) && supertypeSet.has(t))
   const namedOnlyInWasm = namedUnique.filter((t) => !declaredNamed.has(t))
   return {
     nodeTypesJson: path.relative(root, nt).split(path.sep).join("/"),
     declaredNamedTypes: declaredNamed.size,
     declaredSupertypes: supertypes.length,
+    supertypesWithoutSymbol,
     wasmNamedUnique: wasmNamed.size,
     wasmUniqueNames: wasmAll.size,
     missingInWasm,
@@ -1957,7 +2128,7 @@ async function main() {
     const svNote = sv.nodeTypesJson
       ? sv.missingInWasm.length || sv.namedOnlyInWasm.length
         ? `source↔wasm: ${sv.missingInWasm.length} MISSING, ${sv.namedOnlyInWasm.length} undeclared (the wired bytes are NOT this source)`
-        : `source↔wasm: all ${sv.declaredNamedTypes} declared names present (${sv.declaredSupertypes} supertypes hidden by design), ${sv.wasmNamedUnique} wasm-named types all declared, ${sv.allowedWasmExtras.length} built-in extra(s)`
+        : `source↔wasm: all ${sv.declaredNamedTypes} declared names present (${sv.declaredSupertypes} supertypes hidden by design, ${(sv.supertypesWithoutSymbol ?? []).length} of them carrying no wasm symbol), ${sv.wasmNamedUnique} wasm-named types all declared, ${sv.allowedWasmExtras.length} built-in extra(s)`
       : "source↔wasm: not applicable"
     console.log(
       `${lang.padEnd(8)} ${m.wired.sha256.slice(0, 12)} ${String(m.wired.bytes).padStart(9)} B  ids=${String(m.surface.ids).padStart(4)} named=${String(m.surface.namedUnique).padStart(3)} anon=${String(m.surface.anonUnique).padStart(4)} fields=${String(m.surface.fieldCount).padStart(3)}  copies:${m.copies.map((c) => (c.absent ? `${c.label}=absent` : c.byteIdentical ? `${c.label}=IDENTICAL` : `${c.label}=differs`)).join(" ")}  vendored:${m.vendored.state === "vendored" ? `${m.vendored.fileCount} files` : "none"}\n         ${svNote}`,
