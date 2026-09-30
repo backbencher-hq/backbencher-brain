@@ -146,3 +146,79 @@ export const isReservedTarget = (type: string, target: string, metadata?: Record
   }
   return false
 }
+
+/**
+ * SOL-7b — the engine functions the GRAMMAR CANNOT MARK.
+ *
+ * RESERVED_TOKENS alone is NOT sufficient against a fabricated call, and the
+ * reason is the finding this module exists to hold:
+ *
+ *   `keccak256` IS one of the grammar's 262 alphabetic tokens, and in CALL
+ *   position the lexer still produces a plain `identifier`. A token only appears
+ *   where the grammar expects that literal, and `NAME()` is not such a place.
+ *
+ * So "it is a keyword, the token set covers it" reads as obviously true and is
+ * wrong for 15 of Solidity's 17 builtin functions. `require(x)` and
+ * `function require() internal {}` produce IDENTICAL trees, which means no
+ * `hasError`-keyed gate in this repo can see a fabricated `calls -> require` —
+ * exactly the PowerShell PS5 failure, where 6 fabricated edges naming the
+ * language's own block keywords were found by a census rather than by a gate.
+ *
+ * DERIVED, not remembered: `bun run script/m60/solidity-reserved-words.ts` parses
+ * `contract T { function t() public { NAME(); } }` for each candidate against the
+ * wired wasm and reports the callee node type. Measured buckets:
+ *   bare `identifier`, 15 — these need the entry below
+ *   no `call_expression` at all, 2 — `type` (meta_type_expression) and `revert`
+ *     (revert_statement) each have a dedicated node type, so they are
+ *     structurally impossible as call targets and need no entry.
+ */
+export const ENGINE_FUNCTION_NAMES: ReadonlySet<string> = new Set([
+  "require", "assert", "gasleft", "sha256", "ripemd160", "ecrecover", "suicide",
+  "keccak256", "sha3", "gas", "blockhash", "blobhash", "selfdestruct",
+  "addmod", "mulmod",
+])
+
+/**
+ * The STORE refuses these symbol names, so this lane must not DECLARE them.
+ *
+ * MEASURED, and the measurement is the whole point. pool-worker.ts filters every
+ * analyzer's symbols through a `UNIVERSAL` denylist whose comment says these are
+ * "never legitimate declarations in any language". For Solidity that is false for
+ * two of them, and both occur in the pinned corpus at this rev:
+ *
+ *   · `self`  — `Link storage self = _links[chain];` in
+ *               contracts/crosschain/CrosschainLinked.sol:59
+ *   · `root`  — `bytes32 public root;` in
+ *               contracts/mocks/MerkleTreeMock.sol:15
+ *
+ * So the store drops both symbols while the analyzer's `contains` edge naming them
+ * survives, and the surface measure caught the result as 2 unknown `contains`
+ * targets. That is not a Solidity bug in the grammar sense; it is a shared-store
+ * over-reach, and it is the SAME class the file two blocks above its own list
+ * already documents having fixed once:
+ *
+ *     // JS-global names are only noise for JS-family languages. A method
+ *     // named `process` (Scala/Python/Java), `window` or `module` is a
+ *     // legitimate declaration elsewhere — applying the JS global list
+ *     // cross-language silently dropped real symbols.
+ *
+ * The JS list was made language-scoped; the `UNIVERSAL` list reintroduced the same
+ * defect one block later. The narrowest fix INSIDE this lane is to refuse the
+ * declaration, so no `contains` edge can point at a symbol the store will drop —
+ * the same discipline as refusing a non-positive `line_number` at the single emit
+ * helper. The correct fix is in pool-worker.ts, which this lane does not own, so
+ * the drift between the two lists is made LOUD instead: the check below is
+ * re-derived from pool-worker's own source by
+ * `script/m60/solidity-reserved-words.ts`, which fails if the two disagree.
+ *
+ * `constructor` is deliberately NOT here, for the same reason pool-worker's comment
+ * gives for excluding it: it is a first-class declaration in TS/JS, and it is
+ * Solidity's own constructor keyword (SOL-4).
+ */
+export const STORE_REFUSED_SYMBOL_NAMES: ReadonlySet<string> = new Set([
+  "this", "super", "self", "Self", "me", "My",
+  "destructor",
+  "root", "program", "source_file", "module_declaration",
+  "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
+  "unknown",
+])

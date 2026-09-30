@@ -52,7 +52,9 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as WTS from "web-tree-sitter"
-import { RESERVED_TOKENS, isPrimitiveTypeToken, isReservedTarget } from "../../src/ast/solidity-reserved-tokens"
+import {
+  RESERVED_TOKENS, isPrimitiveTypeToken, isReservedTarget, STORE_REFUSED_SYMBOL_NAMES,
+} from "../../src/ast/solidity-reserved-tokens"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "..", "..")
 const GRAMMAR_JSON = path.join(ROOT, "grammars/tree-sitter-solidity/src/grammar.json")
@@ -127,6 +129,55 @@ function firstCallee(src: string): { type: string; text: string } | null {
   return null
 }
 
+/**
+ * The STORE's own denylist, recovered from pool-worker.ts's source so the two
+ * copies cannot drift apart silently.
+ *
+ * pool-worker.ts owns that list and this lane does not, so the honest arrangement
+ * is not "trust the mirror" but "CHECK the mirror": the `UNIVERSAL` set literal is
+ * read out of pool-worker's source here and compared against
+ * `STORE_REFUSED_SYMBOL_NAMES`. If someone adds a name to the store's list and not
+ * to this one, the analyzer starts declaring a symbol the store drops — which is
+ * exactly the defect this exists to prevent, and which reads as a Solidity bug.
+ *
+ * The read is character-level and has to cope with a template literal containing a
+ * regex, so it is hand-scanned to the closing brace of the set rather than matched
+ * with a pattern.
+ */
+function deriveStoreUniversalDenylist(): { names: string[]; found: boolean } {
+  const src = fs.readFileSync(path.join(ROOT, "src/ast/pool-worker.ts"), "utf8")
+  const at = src.indexOf("const UNIVERSAL = new Set([")
+  if (at < 0) return { names: [], found: false }
+  const open = src.indexOf("[", at)
+  const close = src.indexOf("])", open)
+  if (close < 0) return { names: [], found: false }
+  // Line comments are stripped FIRST, and that is not a nicety. The set literal
+  // carries this comment inside it:
+  //     // "constructor" is a first-class declaration in TS/JS —
+  //     // do NOT filter it here. Only truly synthetic/noise names below.
+  // so a naive quote scan reports `constructor` as REFUSED, which is the exact
+  // opposite of what pool-worker does and would have produced a false drift
+  // failure. Caught by this gate's own mirror control — an instrument that
+  // manufactures findings is worse than no instrument (M60 §5.4), and the
+  // failure direction here was "report a defect that does not exist".
+  const body = src.slice(open + 1, close).split("\n").map((line) => {
+    const c = line.indexOf("//")
+    return c < 0 ? line : line.slice(0, c)
+  }).join("\n")
+  const names: string[] = []
+  let i = 0
+  while (i < body.length) {
+    const q = body.indexOf("\"", i)
+    if (q < 0) break
+    const q2 = body.indexOf("\"", q + 1)
+    if (q2 < 0) break
+    const raw = body.slice(q + 1, q2)
+    if (raw.length > 0) names.push(raw)
+    i = q2 + 1
+  }
+  return { names, found: true }
+}
+
 const derived = deriveReservedTokens()
 
 const moduleOnly = [...derived].filter((t) => !RESERVED_TOKENS.has(t)).sort()
@@ -161,6 +212,13 @@ console.log(`  lexes as a bare identifier        : ${bareIdentifiers.length}  [$
 console.log(`  lexes as a grammar token          : ${tokenSpelled.length}  [${tokenSpelled.join(", ")}]`)
 console.log(`  no call_expression at all         : ${unparsed.length}${unparsed.length ? `  [${unparsed.join(", ")}]` : ""}`)
 console.log(`  required declared entries missing : ${missingDeclared.length}${missingDeclared.length ? ` -> ${missingDeclared.join(", ")}` : ""}`)
+
+const store = deriveStoreUniversalDenylist()
+const storeMirrorOnly = store.names.filter((n) => !STORE_REFUSED_SYMBOL_NAMES.has(n)).sort()
+const moduleOnlyStore = [...STORE_REFUSED_SYMBOL_NAMES].filter((n) => !store.names.includes(n)).sort()
+console.log(`  store UNIVERSAL denylist found     : ${store.found} (${store.names.length} names, read from src/ast/pool-worker.ts)`)
+console.log(`  mirror-only (store has, module lacks): ${storeMirrorOnly.length}${storeMirrorOnly.length ? ` -> ${storeMirrorOnly.join(", ")}` : ""}`)
+console.log(`  module-only (module has, store lacks): ${moduleOnlyStore.length}${moduleOnlyStore.length ? ` -> ${moduleOnlyStore.join(", ")}` : ""}`)
 
 if (argv.includes("--print")) {
   console.log("")
@@ -211,6 +269,20 @@ ctrl("type/revert produce no call_expression (dedicated node types instead)",
   unparsed.includes("type") && unparsed.includes("revert"))
 ctrl("0 candidates lex as a token in call position",
   tokenSpelled.length === 0)
+ctrl("pool-worker's UNIVERSAL denylist was found and read",
+  store.found && store.names.length > 5)
+ctrl("the store denylist mirror is in sync (no drift either way)",
+  storeMirrorOnly.length === 0 && moduleOnlyStore.length === 0,
+  `+${storeMirrorOnly.length} / -${moduleOnlyStore.length}`)
+// The two names that make this mirror exist rather than be decoration. If the
+// store ever stops refusing them, the analyzer would be dropping real Solidity
+// declarations for no reason, and the mirror must be noticed rather than assumed.
+ctrl("the store DOES refuse 'self' (CrosschainLinked.sol:59 declares it)",
+  store.names.includes("self") && STORE_REFUSED_SYMBOL_NAMES.has("self"))
+ctrl("the store DOES refuse 'root' (MerkleTreeMock.sol:15 declares it)",
+  store.names.includes("root") && STORE_REFUSED_SYMBOL_NAMES.has("root"))
+ctrl("'constructor' is NOT refused (pool-worker excludes it deliberately; Solidity uses it)",
+  !store.names.includes("constructor") && !STORE_REFUSED_SYMBOL_NAMES.has("constructor"))
 ctrl("every candidate resolved to one of the three buckets",
   bareIdentifiers.length + tokenSpelled.length + unparsed.length === ENGINE_FUNCTION_CANDIDATES.length)
 
@@ -221,7 +293,8 @@ const failedControls = controls.filter((c) => !c.ok)
 
 parser.delete()
 
-const failed = moduleOnly.length > 0 || derivedOnly.length > 0 || missingDeclared.length > 0 || failedControls.length > 0
+const failed = moduleOnly.length > 0 || derivedOnly.length > 0 || missingDeclared.length > 0 ||
+  storeMirrorOnly.length > 0 || moduleOnlyStore.length > 0 || !store.found || failedControls.length > 0
 console.log("")
 if (failed) {
   console.log("  FAIL — see above. Either the module has drifted from the grammar it")
@@ -232,5 +305,6 @@ if (failed) {
 }
 console.log(`  PASS — ${RESERVED_TOKENS.size} reserved tokens, module byte-equal to the derivation;`)
 console.log(`  ${bareIdentifiers.length} engine builtins need a declared entry, ${tokenSpelled.length} are covered by a token;`)
+console.log(`  ${store.names.length}-name store denylist mirrored in sync;`)
 console.log(`  ${controls.length}/${controls.length} negative controls hold.`)
 process.exit(0)
