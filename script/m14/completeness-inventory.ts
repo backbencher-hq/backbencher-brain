@@ -766,9 +766,14 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   docs: ["docs/analyzers/real-scss-analyzer.md"],
   differentialCheck: "differential-scss",
   perfKey: "element-plus:scss",
+  // 2026-09-29: 58/4 -> 56/3, re-pinned with grammar patches 4 and 5 (map literals
+  // and `@include` argument whitespace), which took the 244-file corpus from 149 to
+  // 164 clean files with 15 fixed and 0 regressed. Worth recording that a large PARSE
+  // improvement is not automatically a GRAPH improvement: the floor moved by 2, not 15,
+  // and only measuring the two separately makes that visible.
   floorResidual: {
-    missing: 58,
-    unexplained: 4,
+    missing: 56,
+    unexplained: 3,
     ruling: "SCSS-D1",
   },
   requiredKinds: ["uses", "references", "contains", "imports"],

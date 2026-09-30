@@ -20,6 +20,8 @@ import * as fs from "fs"
 import * as path from "path"
 import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
+import { CSS_MUTANTS } from "../m60/css-mutants"
+import { SCSS_MUTANTS } from "../m60/scss-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2367,6 +2369,25 @@ export const MUTANTS: Mutant[] = [
   // mutant, which is the shape the M14 contract's F4 rule exists to prevent. Keeping the
   // definitions in a lane-owned file means the next removal costs two lines, not 296.
   ...FSHARP_MUTANTS,
+  // ---------------------------------------------------------------- css / scss waves
+  // 2026-09-29. THE SAME FAILURE AS FSHARP, AND IT IS WORTH NAMING AS A CLASS RATHER THAN
+  // AS AN INCIDENT. A registry refactor made `MUTANTS` an inline array and dropped the two
+  // spreads that brought in the lane-owned css and scss mutant files. Thirty-one mutants
+  // stopped being RUN: they did not fail and did not report, so the F4 gate could not fail
+  // for either lane while reading as a suite with no css or scss reds — indistinguishable,
+  // to a reader of the results, from a lane that genuinely has no defect class worth a
+  // mutant. The fsharp comment above records the identical loss and the identical fix, and
+  // it did not prevent a recurrence five lanes later.
+  //
+  // The generalisable statement: a mutant that is not REGISTERED is not a passing mutant,
+  // it is an absent one, and no aggregate count distinguishes the two. `BB_MUTANT_ONLY`
+  // exits 3 on a filter that matches nothing precisely so this is loud when scoped — but a
+  // full run has no such check, because a full run cannot tell a short registry from a
+  // complete one. The cheap guard is a per-lane floor, and until that exists the standing
+  // instruction is: after touching this array, run `BB_MUTANT_ONLY="<lane>/"` for every
+  // lane whose mutants live in a separate file, and confirm the count is non-zero.
+  ...CSS_MUTANTS,
+  ...SCSS_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
