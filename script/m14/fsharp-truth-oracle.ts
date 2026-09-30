@@ -837,6 +837,17 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     // lambda parameter inside `Execute`, and the analyzer emitted nothing. Two positions, one
     // rule — a `fun_expression` between the pattern and the declaration.
     if (ancestorOfType(parent, "fun_expression", 6)) return null
+    // A SECONDARY CONSTRUCTOR owns its parameters' written types, and the lookup below could
+    // not reach one. `parentIsDecl` knows `additional_constr_defn`, but the ANCESTOR fallback
+    // chain did not — and a constructor's parameter is not its direct child, so the chain is
+    // what runs, and it walked straight past. Measured in Symbols.fs: 12 rows
+    // (`constructor -> CcuThunk`, `-> SymbolEnv`, `-> range`, `-> ArgReprInfo` and the rest)
+    // that the analyzer published and this oracle could not account for.
+    //
+    // The source is the same `constructor` name both sides use, which is why the rows joined
+    // on nothing: a missing row and a wrong name look identical in a key comparison.
+    const ctor = parent.type === "additional_constr_defn" ? parent : ancestorOfType(parent, "additional_constr_defn", 14)
+    if (ctor) return { source: "constructor", declaredOn: "parameter" }
     const decl = parentIsDecl(parent) ? parent : ancestorOfType(parent, "member_defn", 14) ?? ancestorOfType(parent, "function_or_value_defn", 14) ?? ancestorOfType(parent, "value_declaration", 14)
     if (!decl) return null
     if (decl.type === "member_defn") {
