@@ -1,7 +1,8 @@
 /**
  * Brain Index Health — Integrity Validation System
  *
- * Runs 12 validation queries against the brain database to detect:
+ * Runs a fixed battery of validation queries against the brain database to
+ * detect:
   * - Null byte/line bounds that break canonical bb_edit mutations
  * - Orphan relationships (dangling source or target symbol IDs)
  * - Stale files (hash mismatch or missing from disk)
@@ -10,11 +11,24 @@
  * - WAL size monitoring
  * - File/symbol/relationship count consistency
  *
+ * M64.I2: the count is DERIVED, not asserted. The tool description and the
+ * generated docs both said "the 12-point index health check" while the array
+ * held 13 entries (checkOrphanOwners returns two). A number kept in prose that
+ * the code can drift away from is a number that will be wrong again, so the
+ * count now comes from `checks.length` and nothing asserts it.
+ *
+ * M64.I3: `overallHealth` scores SCORED checks only. "Synthetic Container
+ * References" is informational by construction — it reports a by-design
+ * synthetic-id population whose status is hardcoded "ok" — and counting it
+ * added a constant +7.7 points to every project, so a project with a real
+ * integrity failure still could not report below 93%.
+ *
  * All queries are SELECT-only — no schema changes needed.
  */
 
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "./database"
+import { selectSampleFiles } from "./freshness"
 // M40.A4: static imports instead of bare require() — the latter throws
 // "require is not defined" under Node ESM (tsx), breaking the integrity
 // phase on every index. Dual-runtime rule: M21.D2.
@@ -35,24 +49,65 @@ export interface HealthCheck {
   description: string
   remediation?: string
   sample?: string[] // First few affected items for diagnosis
+  /**
+   * M64.I3: "informational" checks report a population for context and are
+   * excluded from `overallHealth`. A check that can only ever be "ok" (its
+   * status is not a function of the data) would otherwise contribute a
+   * constant number of points to every project and raise the floor of the
+   * score. Defaults to "scored" so an existing caller is unaffected.
+   */
+  kind?: "scored" | "informational"
 }
 
 export interface IndexHealthReport {
   projectId: ProjectID
   timestamp: number
-  overallHealth: number // 0-100
+  /** M64.I3: ok / scoredChecks, 0-100. Informational checks do not count. */
+  overallHealth: number
   checks: HealthCheck[]
   summary: {
     ok: number
     warn: number
     error: number
+    /** M64.I2/I3: derived, so no prose has to assert it. */
+    total: number
+    scored: number
+    informational: number
   }
 }
 
 // ─── Core Validation ───────────────────────────────────────────────────────
 
-export async function runIndexHealthCheck(projectId: ProjectID): Promise<IndexHealthReport> {
+export interface IndexHealthOptions {
+  /**
+   * M64.N1: how the two disk-touching checks (Hash Drift, Files Missing) choose
+   * which files to look at.
+   *
+   *   "sample"   a deterministic, order-independent, unbiased sample of ~200 /
+   *              ~100 files. Cheap; the resulting rate carries sampling error.
+   *   "complete" every indexed file. Exact.
+   *
+   * The split exists because the two callers want different things. The INDEXER
+   * calls this on the hot path of every index run, where a full content hash of
+   * the corpus is not affordable, and it only logs a summary line. bb_health's
+   * `integrity: true` is the opt-in DEEP check, and a deep check that reports a
+   * sampled rate cannot answer the question it exists to answer: a verdict that
+   * depends on a threshold with a margin is a verdict that can disagree with
+   * itself. Measured: on a corpus with a true 10.0% drift rate, the sampled
+   * check reported 11.0% and graded "error" where a complete scan graded the
+   * same index "warn".
+   *
+   * So the default is "sample" (the indexer's cost profile is unchanged) and
+   * the deep check opts into "complete", which makes it agree EXACTLY with
+   * bb_health's own `freshness: "complete"` — same population, same method,
+   * no estimate between them.
+   */
+  diskScan?: "sample" | "complete"
+}
+
+export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHealthOptions = {}): Promise<IndexHealthReport> {
   const rawDb = await BrainDatabase.getRawInstance(projectId)
+  const diskScan = options.diskScan ?? "sample"
   const checks: HealthCheck[] = []
 
   // 1. Byte bounds coverage
@@ -72,10 +127,10 @@ export async function runIndexHealthCheck(projectId: ProjectID): Promise<IndexHe
   checks.push(...(await checkOrphanOwners(rawDb, projectId)))
 
   // 6. Stale file hashes (file_hash vs actual file content)
-  checks.push(await checkHashDrift(rawDb, projectId))
+  checks.push(await checkHashDrift(rawDb, projectId, diskScan))
 
   // 7. Files missing from disk
-  checks.push(await checkMissingFiles(rawDb, projectId))
+  checks.push(await checkMissingFiles(rawDb, projectId, diskScan))
 
   // 8. Embedding coverage
   checks.push(await checkEmbeddingCoverage(rawDb, projectId))
@@ -92,17 +147,20 @@ export async function runIndexHealthCheck(projectId: ProjectID): Promise<IndexHe
   // 12. Relationship count vs symbol count ratio (sanity)
   checks.push(await checkRelationshipRatio(rawDb, projectId))
 
-  const ok = checks.filter((c) => c.status === "ok").length
-  const warn = checks.filter((c) => c.status === "warn").length
-  const error = checks.filter((c) => c.status === "error").length
-  const overallHealth = Math.round((ok / Math.max(checks.length, 1)) * 100)
+  // M64.I3: the score is over scored checks only. See HealthCheck.kind.
+  const scored = checks.filter((c) => c.kind !== "informational")
+  const informational = checks.filter((c) => c.kind === "informational")
+  const ok = scored.filter((c) => c.status === "ok").length
+  const warn = scored.filter((c) => c.status === "warn").length
+  const error = scored.filter((c) => c.status === "error").length
+  const overallHealth = Math.round((ok / Math.max(scored.length, 1)) * 100)
 
   return {
     projectId,
     timestamp: Date.now(),
     overallHealth,
     checks,
-    summary: { ok, warn, error },
+    summary: { ok, warn, error, total: checks.length, scored: scored.length, informational: informational.length },
   }
 }
 
@@ -281,9 +339,14 @@ async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<Heal
     {
       name: "Synthetic Container References",
       status: "ok",
+      // M64.I3: informational. This population is by-design and its status does
+      // not depend on the data, so scoring it added a constant +7.7 points to
+      // every project's overallHealth and put a floor under the score that no
+      // number of real failures could cross.
+      kind: "informational",
       value: syntheticCount,
       threshold: { warn: 10000000, error: 10000000 },
-      description: `${syntheticCount} symbols carry owner ids of the form <file>:<name>:0 — module/synthetic containers the pre-M51 indexer wrote as an owner fallback. By design they never resolve (no stored row has line 0) and every consumer JOINs on owner_symbol_id, so they are invisible to reads. Informational, not a defect.`,
+      description: `${syntheticCount} symbols carry owner ids of the form <file>:<name>:0 — module/synthetic containers the pre-M51 indexer wrote as an owner fallback. By design they never resolve (no stored row has line 0) and every consumer JOINs on owner_symbol_id, so they are invisible to reads. Informational, not a defect, and excluded from overallHealth.`,
       remediation: syntheticCount > 0
         ? "Optional: re-run `bb index` — rows written by pre-M51 indexers are rewritten with a resolvable owner (or NULL) and this count drops to 0."
         : undefined,
@@ -292,20 +355,34 @@ async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<Heal
   ]
 }
 
-async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
-  // Sample 200 files and compare recorded file_hash against current disk hash.
-  // Full scan is too expensive at scale (264K files).
+async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete"): Promise<HealthCheck> {
+  // M64.N1: this sampled with `ORDER BY RANDOM()`, which made the check's own
+  // verdict non-reproducible. Proven on a 400-file fixture with exactly 40
+  // files (10.0%) staled on disk, five consecutive integrity runs on the SAME
+  // unchanging index reported drift counts of 21, 17, 22, 19 and 16 out of 200
+  // — five different answers, extrapolated to 42/34/44/38/32 "total" against a
+  // truth of 40. The status thresholds are pct>10 => error and pct>3 => warn,
+  // so at a true 10% drift rate the reported rate swung across the warn/error
+  // boundary and the same index was graded differently from one second to the
+  // next. A health check that cannot decide which state it is in is not a
+  // health check.
+  //
+  // The replacement shares `selectSampleFiles` with the main freshness check —
+  // the same deterministic, order-independent, unbiased selection over the same
+  // population (all indexed files; the old SQL also excluded
+  // language='unknown', so the two numbers could not be compared at all). One
+  // selection, one method: these two checks now measure the same thing and
+  // cannot disagree by construction. See M64 in src/brain/freshness.ts for why
+  // a stride was tried and rejected.
   const totalRow = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?
   `).get(projectId) as any
   const total = totalRow?.count ?? 0
 
-  const files = rawDb.prepare(`
-    SELECT id, path, relative_path, file_hash FROM brain_file
-    WHERE project_id = ? AND language IS NOT NULL AND language != 'unknown'
-    ORDER BY RANDOM()
-    LIMIT 200
+  const allFiles = rawDb.prepare(`
+    SELECT id, path, relative_path, file_hash FROM brain_file WHERE project_id = ?
   `).all(projectId) as any[]
+  const files = (diskScan === "complete" ? selectSampleFiles(allFiles, Number.MAX_SAFE_INTEGER) : selectSampleFiles(allFiles, 200)) as any[]
 
   let driftCount = 0
   const driftSamples: string[] = []
@@ -324,7 +401,8 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthC
 
   const sampleSize = files.length
   const pct = sampleSize > 0 ? (driftCount / sampleSize) * 100 : 0
-  const estimatedTotal = total > 0 ? Math.round((driftCount / Math.max(sampleSize, 1)) * total) : 0
+  const isCompleteScan = sampleSize >= total
+  const estimatedTotal = isCompleteScan ? driftCount : total > 0 ? Math.round((driftCount / Math.max(sampleSize, 1)) * total) : 0
 
   return {
     name: "Hash Drift (Stale Files)",
@@ -333,23 +411,31 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID): Promise<HealthC
     total: sampleSize,
     percentage: Math.round((100 - pct) * 10) / 10,
     threshold: { warn: 3, error: 10 },
-    description: `${driftCount} of ${sampleSize} sampled files have changed on disk since indexing (estimated ${estimatedTotal} total). Tools may operate on stale data.`,
-      remediation: driftCount > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
+    description: isCompleteScan
+      ? `${driftCount} of ${sampleSize} indexed files have changed on disk since indexing. EXACT: every indexed file was content-hashed, so this is the project's drift count and this status is a measurement, not an estimate.`
+      : `${driftCount} of ${sampleSize} sampled files have changed on disk since indexing (estimated ${estimatedTotal} total). ESTIMATE: a deterministic unbiased sample of every indexed file — reproducible and independent of file ordering, but the rate and therefore this status carry sampling error. bb_health integrity=true runs this as a complete scan.`,
+    remediation: driftCount > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
     sample: driftSamples.length > 0 ? driftSamples : undefined,
   }
 }
 
-async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<HealthCheck> {
-  // Lightweight: check first 100 files to estimate. Full check is expensive.
+async function checkMissingFiles(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete"): Promise<HealthCheck> {
+  // M64.I1: the comment here said "test 100 random files" and the SQL was an
+  // unordered `LIMIT 100` — a prefix, not a random draw — and the verdict was
+  // then extrapolated over the whole project (x16.5 on this repo's index). Same
+  // defect the main freshness path had, inside the integrity report, with a
+  // comment that misdescribed the method. Now the same deterministic,
+  // order-independent selection as every other sampled check here, and the
+  // description names the method so a reader can tell an estimate from a count.
   const totalRow = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?
   `).get(projectId) as any
   const total = totalRow?.count ?? 0
 
-  // Sample check: test 100 random files
-  const files = rawDb.prepare(`
-    SELECT path FROM brain_file WHERE project_id = ? LIMIT 100
+  const allFiles = rawDb.prepare(`
+    SELECT id, path, relative_path FROM brain_file WHERE project_id = ?
   `).all(projectId) as any[]
+  const files = (diskScan === "complete" ? selectSampleFiles(allFiles, Number.MAX_SAFE_INTEGER) : selectSampleFiles(allFiles, 100)) as any[]
 
   let missing = 0
   const missingSamples: string[] = []
@@ -360,7 +446,8 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<Heal
     }
   }
 
-  const estimatedMissing = total > 0 ? Math.round((missing / Math.min(files.length, total)) * total) : 0
+  const isCompleteScan = files.length >= total
+  const estimatedMissing = isCompleteScan ? missing : total > 0 ? Math.round((missing / Math.min(files.length, total)) * total) : 0
 
   return {
     name: "Files Missing from Disk",
@@ -369,7 +456,9 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID): Promise<Heal
     total: files.length,
     percentage: files.length > 0 ? Math.round((1 - missing / files.length) * 1000) / 10 : 100,
     threshold: { warn: 2, error: 10 },
-    description: `${missing} of ${files.length} sampled files no longer exist on disk. Estimated ${estimatedMissing} total missing. Tools will fail when trying to read these.`,
+    description: isCompleteScan
+      ? `${missing} of ${files.length} indexed files no longer exist on disk. EXACT: every indexed file was checked. Tools will fail when trying to read these.`
+      : `${missing} of ${files.length} sampled files no longer exist on disk. Estimated ${estimatedMissing} total missing. ESTIMATE: a deterministic unbiased sample of every indexed file (reproducible; independent of file ordering). bb_health integrity=true runs this as a complete scan.`,
       remediation: missing > 0 ? "Run bb_health with refresh=true to remove deleted files from the index." : undefined,
     sample: missingSamples.length > 0 ? missingSamples : undefined,
   }
@@ -390,7 +479,12 @@ export async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): 
       percentage: 0,
       threshold: { warn: 50, error: 20 },
       description: "Semantic embedding table does not exist. Semantic search is keyword-only.",
-      remediation: "Run bb2 brain --post to generate embeddings.",
+      // M64.I4: this said `bb2 brain --post`. There is no `bb2` binary and no
+      // `brain` subcommand — the CLI registers tool/index/setup/show/doctor/
+      // stats/status/projects/search/health/onboard/mcp/version, so the advice
+      // sent a user to a command that cannot be typed. The real interface is
+      // the bb_index tool's post mode, which re-runs the derived phases.
+      remediation: "Generate embeddings with the bb_index tool: { path: \"<project path>\", mode: \"post\" } (CLI: bb index \"<project path>\").",
     }
   }
 
@@ -422,7 +516,7 @@ export async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): 
     percentage: Math.round(pct * 10) / 10,
     threshold: { warn: 50, error: 20 },
     description: `${embedCount} of ${total} symbols have semantic embeddings (${modelDesc || "none"}). Semantic search quality depends on this coverage.`,
-    remediation: pct < 50 ? "Run bb2 brain --post to generate more embeddings." : undefined,
+    remediation: pct < 50 ? "Generate embeddings with the bb_index tool: { path: \"<project path>\", mode: \"post\" } (CLI: bb index \"<project path>\"). Note this only embeds the kinds the embedder supports — see bb_health verbose `unembedded kinds` for what it will never cover." : undefined,
   }
 }
 

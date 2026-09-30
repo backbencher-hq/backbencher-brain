@@ -111,7 +111,26 @@ const SEARCH_OPTIONS_BY_MODE: Record<string, readonly string[]> = {
   file: ["mode", "filePath"],
 }
 
+/**
+ * Page-size parameters that are also "how much work do I do" parameters must
+ * not accept 0.
+ *
+ * M64.H2: `bb_health sampleSize` accepted 0 (the generic rule only rejects
+ * negatives), and the provider then ran `Math.max(1, sampleSize)` — so
+ * `bb_health({sampleSize: 0})` answered `freshness: 1 fresh / 0 stale / 0
+ * missing (1/8, sampled)`. The caller asked to check no files and was told one
+ * file was checked and clean. This is the rule bb_analyze's `limit: 0` already
+ * follows for the same reason — "an empty page is indistinguishable from a real
+ * answer" — and a 0 that silently becomes a 1 is the same confusion wearing a
+ * different hat. Refused with the rule named, not clamped.
+ */
 function validateModeSpecificArguments(tool: string, args: Record<string, unknown>): void {
+  if (tool === "bb_health" && args.sampleSize !== undefined) {
+    const n = Number(args.sampleSize)
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error("bb_health sampleSize must be a whole number >= 1 — 0 would mean checking no files, which this tool reports as a clean result; use freshness=\"complete\" to check every indexed file")
+    }
+  }
   if (tool === "bb_search") {
     const mode = String(args.mode ?? "symbols")
     const accepted = SEARCH_OPTIONS_BY_MODE[mode]
