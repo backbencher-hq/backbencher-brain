@@ -36,14 +36,14 @@
 | calls | ✅ | `selector` + `argument_part` → leaf callee (selector chains reduce to the last identifier: `obj.method()` → `method`; `Future.delayed(...)` → `delayed`); source = enclosing function/method/constructor leaf name (derived from the signature that precedes the `function_body` sibling); cascade calls (`..increment()`) → cascade selector leaf; global builtins filtered (`print`, `assert`, `identical`); Object-leaf methods filtered (`toString`, `hashCode`, `runtimeType`, `noSuchMethod`) | 0.9 |
 | extends | ✅ | `superclass` → first `type_identifier` | 1.0 |
 | implements | ✅ | `interfaces` → each `type_identifier` | 1.0 |
-| uses (mixin) | ✅ | `mixins` child of `superclass` or the class (`with` clause) → each `type_identifier` | 1.0 |
+| uses | ✅ | **Four distinct surfaces, not one.** (1) MIXIN — `mixins` child → each `type_identifier`, 1.0. (2) FIELD / MEMBER READ — a `selector` WITHOUT its own `argument_part` (`obj.method` tear-off, `this.count`, `C.total`, `a?.value`), 0.9; a CALLED member is a `calls` edge, not a field read. A `qualified` name under a `constant_pattern` (`case WalletOperationType.recipientLookup:`) is the SAME read parsed the other way round and is read too, 0.9, `isConstantPattern` — the string `qualified` was absent from this analyzer until that fix, so a switch case naming a declared enum member published nothing at all. (3) BARE IDENTIFIER — a plain `return count;` on a declared member of the enclosing type, gated on resolution AND on the name not being locally bound, 0.6, `isBareRead`. (4) TEMPLATE INTERPOLATION — each identifier in `${…}`, 0.9, `isLocalRead`; a name bound by a local DECLARATOR suppresses it, a PARAMETER does not (the TypeScript `interp-uses` parity, `989ba4c7`) | 0.6–1.0 by surface |
+| contains | ✅ | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 1.0 |
+| references | — | **not emitted at all.** Dart's `uses` surfaces above carry every mention; there is no `references` relationship in the Dart ontology and the live census confirms it (9 classes, none named `references`) | — |
 | instantiates | ✅ | capitalized identifier + `argument_part` selector (Dart has no `new`: `Counter(1)` → instantiates Counter — types are capitalized); `constructor_invocation` (`List<int>.filled(...)`) → the constructed `type_identifier`; redirecting factory (`factory X.y() = X.z;`) → the redirect target type | 0.95 |
 | imports | ✅ | `import_specification` / `part_directive` → module leaf → `${uri}:*` | 1.0 |
 | exports | ✅ | `library_export` → module leaf → exported uri | 1.0 |
 | overrides | ✅ | derived method matching base-class method name; base resolved via extends + cross-file harness companion (`Counter.format → BaseService.format`) | 0.95 |
-| contains | ✅ | computed from `ownerName` on symbols (single pass) — class/mixin/extension/enum members | 1.0 |
-| uses (field access) | — | not emitted for `this.x`/`obj.x` field access (family contract: no field-access uses, verified against C#/Java ground truth) | — |
-| references | — | covered by imports/calls leaf identities | — |
+
 
 ## Supported constructs
 
@@ -68,12 +68,29 @@
   upstream grammar ambiguity; no instantiates edge is emitted for it
   (documented, not worked around with source-text scanning). `Map<String,
   int>.from(...)` parses correctly as `constructor_invocation`.
-- Dart 3 records/patterns (`(a, b)`, `switch` patterns) are supported by the
-  upgraded grammar (0 corpus errors) but not yet extracted as distinct
-  symbol kinds — the family contract keeps them unsupported rather than
-  synthetic.
-- `this.x`/`obj.x` property access produces no `uses` relationship (family
-  contract).
+- Dart 3 **record types** are extracted into the type payload. All three type
+  extractors (parameter, return, field) accepted a fixed five-node allowlist —
+  `type_identifier`, `function_type`, `nullable_type`, `void_type`, `void_type` —
+  and a `record_type` fell through every one, so `void f((int, String) p)` typed
+  its parameter `dynamic` and `({int a, String b}) f()` published no return type
+  at all. Fixed; the type text is taken verbatim so field names inside a record
+  survive. Measured over the live corpus: **27 return types and 1 parameter**
+  regained their declared record type, 0 relationships changed.
+- Dart 3 **patterns** are parsed and their constants are now READ (see the `uses`
+  row), which recovered **2,405 edges** over the live corpus, 516 of them naming a
+  symbol declared in the same file.
+- What remains a declared gap, re-scoped by measured volume in
+  `script/m14/spec/dart-completeness.json`: `variable_pattern` (353 occurrences
+  across 110 files) is a DECISION rather than missing code — a pattern binding
+  behaves exactly as a parameter does, `uses` published and no symbol behind it,
+  and whether a binding should be a symbol is a cross-language question; record
+  TYPES as containers and record LITERALS are unresolved; `library_name` is low
+  value. The old framing ("records and patterns are parsed but not yet emitted")
+  overstated the work and could not be prioritised — see `989ba4c7`.
+- `this.x`/`obj.x` **does** now produce a `uses` edge (the DT-F+ bare/member-read
+  surfaces above). An earlier revision of this file stated the opposite, which was
+  true before those waves landed and is the kind of statement that outlives its
+  evidence unless someone re-derives it.
 - Constructors all carry the family name `constructor` (named segment in
   metadata); the family contract does not use `Class.named` as the symbol
   name.
@@ -113,11 +130,70 @@ by a depth guard. No O(n²) or per-symbol O(n) scans.
 ## Differential ground truth
 
 - Ground truth: `validation/m12/ground-truth/dart.json`
-  (authority: `manual_audit` — every fact verified against fixture source and
-  the C#/F#/TS/JS family contract; 119 facts)
+  (authority: `manual_audit`; **156 facts**, amended 2026-09-24)
 - Result: `validation/m12/results/dart-differential.json`
-- Precision 1.000 / recall 1.000 / FP 0 / FN 0 / unknown 0, `passed: true`,
+- Precision 1.000 / recall 1.000 / FP 0 / FN 0 / **unknown 5**,
   `earliestFailingLayer: none`, `parseErrors: 0`
+
+**Read those numbers for what they are.** They are 1.000 over **five
+hand-written fixture files**, and the truth document says in its own words that it
+"predated three waves that landed on the analyzer" — the `uses` surfaces, overrides
+through an implemented interface, and instantiates for a const constructor. It was
+re-audited against fixture source and all 32 apparent false positives were found
+to be correct edges, so the truth was stale rather than the analyzer. The 5
+`unknown` are the analyzer's deliberate sub-threshold refusals (bare member reads
+at confidence 0.6), pinned `expectedState=unknown` so that a wave which stops
+emitting them fails rather than passing quietly.
+
+### Oracle coverage — 73.6% of the graph is checked by a non-Dart rule
+
+| classes | oracle | Dart-derived? |
+| --- | --- | --- |
+| `calls`, `instantiates`, `extends`, `implements`, `uses` | `deriveDartEdges` (`script/m14/differential.ts:8656`), `deriveDartBareUses` (:9149) | **yes** |
+| `contains`, `overrides`, `imports`, `exports` | the generic family walkers | **no** |
+
+Measured: the Dart-specific oracle region contains **zero** mentions of
+`contains`, `overrides`, `imports` or `exports`. That is 497,858 of 675,964
+relationships on the live corpus. A Dart-specific risk is already visible —
+`class_definition`, `mixin_declaration`, `extension_declaration`,
+`enum_declaration` and `extension_type_declaration` are five container shapes with
+different member rules, and the generic walker does not read Dart's grammar. This
+is the lane's largest known evidence gap and it is a Dart-owned oracle, not a
+Dart-analyzer bug.
+
+## Live corpus measurement
+
+`$HOME/ProxiCall` — **1,294 `lib/` files, 0 parse errors**, 265,148
+symbols and 675,964 relationships.
+
+| relationship | count | | symbol kind | count |
+| --- | --- | --- | --- | --- |
+| contains | 260,102 | | property | 222,924 |
+| overrides | 229,416 | | method | 32,261 |
+| uses | 122,819 | | constructor | 3,877 |
+| calls | 35,334 | | class | 3,721 |
+| instantiates | 17,731 | | enum_member | 1,581 |
+| imports | 7,155 | | enum | 294 |
+| extends | 2,917 | | function | 261 |
+| implements | 305 | | constant / extension / type / mixin | 145 / 50 / 19 / 14 |
+| exports | 185 | | variable | 1 |
+
+Two of those counts look impossible and are not, both audited rather than
+believed:
+
+- **`property` 222,924 (172/file)** — 48.0% is 20 generated localization files at
+  **5,353 real getters each**, across 30+ locales.
+- **`overrides` 229,416 (177/file) against 32,261 methods** — duplication factor
+  **1.0x**, **zero** rows where source === target, and the pairs are genuine
+  Flutter overrides (`_EmptyState.build -> StatelessWidget.build`,
+  `lerp -> ThemeExtension.lerp`). 926 of 1,294 files carry at least one.
+
+The 2,581 duplicated symbol NAMES in 668 files were broken down and are **all
+legitimate**: 1,401 are a different owner (a file declaring both an interface and
+its implementation), 1 is an accessor pair under DARTD12's `owner:name:kind` key,
+and **all 75** same-kind same-owner cases are `constructor` — the required
+consequence of DARTD3, since Dart constructors have no distinct name. Same-kind
+same-owner duplicates, which DARTD20 forbids: **zero**.
 
 ## Corpus validation
 
@@ -133,6 +209,19 @@ by a depth guard. No O(n²) or per-symbol O(n) scans.
 - Grammar note: the corpus scan is what exposed the pre-Dart-3 grammar gap
   (75.5% error rate); the upgraded grammar was built from upstream master
   and the fixtures were re-verified against it before commit.
+- **The manifest numbers above are stale, and the drift is repo-wide rather than
+  Dart's.** They sit in `corpus-claims-gate.json` `unbackedClaims` — as do
+  **74 entries covering every one of the 36 languages**, with only 5 of 42
+  languages (css, scss, objective-c, lua, yaml) carrying a real backing artifact.
+  Dart's own corpus IDENTITY is `pass` (`dart-http@92b20d12(clean)`). The pinned
+  candidate `proxicall@383e603e(dirty)` reads `resolves-historical`, but that exact
+  revision is a candidate for **typescript, dart, python and bash** — one repo
+  serving four lanes. Dart is simply the most-stale of the cheap comparisons
+  (7.7× against live; the typescript lane's own manifest is 1.8×).
+- **No perf figure exists for the live corpus.** 281.9 s is the 400-file sample
+  against a 600 s ceiling; the live `ProxiCall/lib` has grown to 1,294 files
+  (~3×) since the budget was set, so the budget is met on the sample and unknown
+  on the corpus.
 
 ## Evidence pointers
 
@@ -143,8 +232,35 @@ by a depth guard. No O(n²) or per-symbol O(n) scans.
 - Corpus sample: `validation/m12/results/dart-corpus-sample.txt`
 - Grammar wasm: `wasm/tree-sitter-dart.wasm` (rebuilt from
   `UserNobody14/tree-sitter-dart` `be07cf7`)
-- Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer)
-- Docs: this file
+- Regex census: `validation/m12/results/regex-census.json` (0 for this analyzer;
+  re-verified 2026-09-30 — 0 occurrences of `new RegExp`, `.match(`, `.replace(`,
+  `.test(` or a regex split)
+- Analyzer hygiene: `script/m14/verify-analyzer-hygiene.ts` — **Dart clean** (the
+  gate's one finding is another lane's elixir node-identity comparison)
+- Spec: `script/m14/spec/dart-completeness.json` — 95 handled / 106 internal-silent
+  / 6 re-scoped gaps / 33 ruled decisions
+- Reviews: `reviews/dart/` — five documents; `master-review-4.md` is the
+  whole-surface pass measured against the live corpus
+- Fixtures (current): `validation/m14/fixtures/dart/` — 12, all green
+
+## Known limits of the evidence
+
+1. **40 Dart mutants exist and NONE can execute.** They live in
+   `script/m14/mutate-analyzer.ts`, which does not parse (the
+   `xml/implicit-xml-prefix-unbound` transform has been malformed since
+   `f5f002c6`). Until that shared file is repaired, "40 mutants" is a claim, not a
+   measurement, and it is the single largest gap in this lane's assurance.
+2. **73.6% of the graph has no Dart-derived truth** — see the oracle table above.
+3. **The differential's 1.000 is five fixture files** against an audit that says it
+   predates three analyzer waves.
+4. **No corpus-scale perf figure**, and the corpus is ~3× the sampled size.
+5. Two recorded suspicions were measured out of existence and are kept as such: a
+   pattern binding shadowing a field (the metadata proves a 0.9 local read, not a
+   0.6 member read; 0 collisions across 1,294 files) and the assumption that the
+   78 missed `Enum.member` pattern constants were the whole story (2,405 edges
+   were recovered, 516 resolvable).
+
+## Docs: this file
 
 ## Issue
 
