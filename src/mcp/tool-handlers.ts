@@ -677,6 +677,7 @@ const handlers: Record<string, ToolHandler> = {
       if (r.dimension > 0) bits.push(`dimension=${r.dimension}`)
       bits.push(`embeddingCoverage=${Math.round(r.embeddingCoverage.ratio * 100)}% (${r.embeddingCoverage.embedded}/${r.embeddingCoverage.symbols} symbols embedded)`)
       if (r.fallbackReason) bits.push(`reason=${r.fallbackReason}`)
+      if (r.discriminative === false) bits.push(`ranking=non-discriminative (${r.nonDiscriminativeCompetitors ?? 0} within the margin of the best)`)
       parts.push(`[retrieval: ${bits.join(", ")}]`)
     }
 
