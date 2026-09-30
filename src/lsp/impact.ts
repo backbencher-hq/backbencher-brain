@@ -802,10 +802,12 @@ export async function computeImpact(
   // prevent. Measured by the gate the moment this condition was first written
   // without the hint: `constructor` hinted at `main.ts` answered about
   // `registry.ts`. So all three must hold.
-  const nameCandidates = listNameCandidates(db, projectId, symbolName)
+  const { candidates: nameCandidates, total: nameTotal } = listNameCandidates(db, projectId, symbolName)
   const hintMatchesRoot =
     memberFile !== undefined && typeof result.root?.file === "string" && memberFileMatches(memberFile, result.root.file)
-  const nameIsUnambiguous = nameCandidates.length === 1 || (nameCandidates.length > 1 && hintMatchesRoot)
+  // Ambiguity is judged on the TRUE count, never on the bounded list: a name with
+  // 36 stored symbols is ambiguous even when the message shows eight of them.
+  const nameIsUnambiguous = nameTotal === 1 || ((nameTotal === null || nameTotal > 1) && hintMatchesRoot)
   // The exemption is scoped to the two kinds the D5 ledger MEASURED as
   // unanswerable, and both are value-like: an enum VARIANT and a module-level
   // `constant` are things a refactoring question is asked ABOUT, and their own
@@ -833,11 +835,12 @@ export async function computeImpact(
       // they are what turns "you cannot ask about this" into "ask again with one
       // of these".
       const candidates =
-        nameCandidates.length > 1
-          ? ` — ${nameCandidates.length} stored symbols carry that name: ${nameCandidates
+        (nameTotal ?? 0) > 1
+          ? ` — ${nameTotal} stored symbols carry that name: ${nameCandidates
               .slice(0, 8)
               .map((c) => `${c.file || "?"}:${c.line}`)
-              .join(", ")}${nameCandidates.length > 8 ? `, +${nameCandidates.length - 8} more` : ""}; re-ask with a file`
+              .slice(0, 8)
+              .join(", ")}${nameTotal !== null && nameTotal > 8 ? `, +${nameTotal - 8} more` : ""}; re-ask with a file`
           : ""
       throw new Error(
         `bb/impact: symbol '${symbolName}' is not a traversable root (${rootType}) — no impact set exists` +
@@ -1194,7 +1197,7 @@ export async function computeImpact(
             : "fuzzy-containment",
       // From the SAME rows the declared error lists, so the count a reader sees
       // in the payload and the list they see in a refusal are one measurement.
-      nameMatches: nameCandidates.length > 0 ? nameCandidates.length : countExactNameMatches(db, projectId, symbolName),
+      nameMatches: nameTotal !== null ? nameTotal : countExactNameMatches(db, projectId, symbolName),
     },
     rule: {
       relationshipTypes: [...relationshipTypes],
@@ -1347,34 +1350,43 @@ function boundaryHasDependents(
   return row !== undefined
 }
 
-/** Every stored symbol carrying exactly this name, with the file and line a
- *  reader needs to disambiguate with. One indexed equality on
- *  `brain_sym_proj_name_idx`, and the rows are already read for
- *  `rootMatch.nameMatches` — so the count in the payload and the candidate list
- *  in a declared error cannot disagree.
+/** The stored symbols carrying exactly this name, with the file and line a
+ *  reader needs to disambiguate with, and the UNTRUNCATED count of them.
  *
- *  `countExactNameMatches` and this MUST agree: that one declares 1 when the
- *  index cannot answer, and this one returns what it read. A null return means
- *  "could not ask", which is treated as unambiguous rather than as a reason to
- *  refuse: a refusal must rest on a measurement. */
+ *  The count and the list are separate because they are separate claims. A
+ *  bounded list is right — an error message listing 400 rows helps nobody — but
+ *  `rootMatch.nameMatches` is a MEASUREMENT and a capped one is a different
+ *  number wearing a measurement's name. The corpus suite's H10 caught that
+ *  exactly: ripgrep `Error` has 36 stored symbols and the payload said 32,
+ *  because the candidate query carried the limit and the count was read off the
+ *  rows it returned. So the count is its own `COUNT(*)`, and the list is
+ *  bounded at 32 rows for the message.
+ *
+ *  One indexed equality on `brain_sym_proj_name_idx` for each — the same index
+ *  `countExactNameMatches` uses, and a refusal must rest on the same
+ *  measurement the payload publishes. */
 function listNameCandidates(
   db: ImpactDb,
   projectId: string,
   symbolName: string,
-): Array<{ file: string; line: number }> {
+): { candidates: Array<{ file: string; line: number }>; total: number | null } {
   try {
+    const total = db
+      .prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ? AND name = ?")
+      .get(projectId, symbolName) as { c: number } | undefined
     // A NULL `line_start` is the indexer's own state for a symbol it could not
     // place, so it is shown as 0 rather than dropped: a candidate without a line
     // is still a candidate, and dropping it would make the list incomplete.
-    return (
+    const candidates = (
       db
         .prepare(
           "SELECT COALESCE(f.relative_path, f.path, '') AS file, s.line_start AS line FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ? ORDER BY COALESCE(f.relative_path, f.path, ''), s.line_start LIMIT 32",
         )
         .all(projectId, symbolName) as Array<{ file: string; line: number | null }>
     ).map((row) => ({ file: row.file, line: typeof row.line === "number" ? row.line : 0 }))
+    return { candidates, total: typeof total?.c === "number" ? total.c : null }
   } catch {
-    return []
+    return { candidates: [], total: null }
   }
 }
 
