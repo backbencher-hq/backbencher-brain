@@ -1194,6 +1194,20 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // pass 3 first-parent guess — guesses at 1.0 contaminated thresholded
       // analysis identically to verified overrides.
       let confidence = 1.0
+      // `exact-in-file` is the tier an IMPLICIT override (no `@Override`) reaches, and
+      // this lane's truth contains no such row:
+      //   FP  rel:Features.groovy:overrides:Robot.walk:Walkable.walk
+      // All four `overrides` rows truth expects cite the annotation ("@Override format",
+      // "@Override save", "@Override getId", "@Override getName"). The edge itself is
+      // correct -- `class Robot implements Walkable` really does supply `walk()` -- and
+      // the implicit tier is deliberate: an un-annotated method with a VERIFIED exact
+      // in-file signature match still overrides (java JAO1 parity), which is what stops
+      // a missing `@Override` from erasing a real edge.
+      //
+      // So this is the second half of the same disagreement as the interpolation reads
+      // recorded at the emission site, and the same reasoning applies: the analyzer keeps
+      // a defensible edge that a 5-fixture hand audit does not happen to contain. The
+      // residual is 1 row, and it is not settled by deleting the tier.
       let reasonCode = "exact-in-file"
 
       // Pass 1: exact-signature BFS over the in-file hierarchy.
@@ -2011,6 +2025,27 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const key = `interp:${source}.${name}`
           if (seen.has(key)) continue
           seen.add(key)
+          // G7's contract is that an interpolated name IS a read, and the corpus
+          // depends on it: measured over 300 grails-core files, 123 of 2,275 `uses`
+          // edges (5.4%, across 41 files) are interpolation reads, and removing them
+          // was how 2,115 files once contributed ZERO reads to the graph.
+          //
+          // This lane's own hand-audited truth disagrees, and the disagreement is
+          // recorded rather than resolved in the analyzer's favour. Both fixtures say
+          // so explicitly -- Negative.groovy rule 6, "String interpolation identifiers
+          // ($name) are NOT symbols/uses" -- and truth has exactly 4 `uses` rows, all
+          // of them `this.x = y` in a constructor:
+          //   FP  rel:Features.groovy:uses:describe:name   ("robot ${name} ${nick} …")
+          //   FP  rel:Negative.groovy:uses:bump:count     ("bumped to ${count}")
+          // Note what truth still expects from those same two methods: `describe ->
+          // toUpperCase`, `describe -> collect`, `bump -> info` are all TP. So the
+          // disagreement is narrow and specific -- it is about the interpolated
+          // IDENTIFIER, not about method calls inside the method.
+          //
+          // So this stays a `uses` edge, and the two rows above remain the entire
+          // residual of this lane's differential. They are a TRUTH-vs-ANALYZER contract
+          // question with a 5.4% coverage cost either way, which is a decision for the
+          // lane owner and not something to settle by quietly deleting real edges.
           relationships.push({
             source,
             target: name,
