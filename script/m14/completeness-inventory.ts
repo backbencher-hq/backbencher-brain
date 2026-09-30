@@ -1082,9 +1082,6 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
     verifySectionF(cfg),
     verifySectionG(cfg),
     verifySectionH(),
-"manual_audit",
-"markdown",
-"scss",
   ]
   const sectionFails = checks.filter((c) => c.status !== "pass")
   if (sectionFails.length > 0) {
