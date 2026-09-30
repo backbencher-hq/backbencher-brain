@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (41/44 languages pass)",
+      "description": "per-literal shrink-only register with reasons (42/45 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "committedAt": "2026-09-29T01:27:42-04:00",
+  "commit": "306062605f402e67f27c1c332503c4079ba5a318",
+  "committedAt": "2026-09-29T22:02:01-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -38,7 +38,7 @@
           {
             "from": 0,
             "lang": "zig",
-            "to": 1
+            "to": 2
           }
         ],
         "ok": false,
@@ -93,6 +93,11 @@
             "kind": "type",
             "lang": "sql",
             "literal": "revoke"
+          },
+          {
+            "kind": "type",
+            "lang": "sql",
+            "literal": "grant_statement"
           },
           {
             "kind": "type",
@@ -180,15 +185,22 @@
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
             "kind": "field",
             "lang": "sql",
-            "line": 1907,
+            "line": 1931,
             "literal": "object"
           },
           {
             "context": "real-zig-analyzer.ts:comparison",
             "kind": "type",
             "lang": "zig",
-            "line": 623,
+            "line": 648,
             "literal": "field_identifier"
+          },
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "zig",
+            "line": 1213,
+            "literal": "struct_literal"
           }
         ]
       },
@@ -940,6 +952,25 @@
           14
         ]
       },
+      "protobuf": {
+        "analyzer": "src/ast/real-protobuf-analyzer.ts",
+        "fieldless": false,
+        "oracleFieldCount": 3,
+        "oracleGrammars": 1,
+        "oracleNodeTypeCount": 119,
+        "referencedFieldLiterals": 3,
+        "referencedTypeLiterals": 14,
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [],
+        "wasm": [
+          "tree-sitter-protobuf.wasm"
+        ],
+        "wasmFieldCounts": [
+          3
+        ]
+      },
       "python": {
         "analyzer": "src/ast/real-python-analyzer.ts",
         "fieldless": false,
@@ -1057,34 +1088,29 @@
       "sql": {
         "analyzer": "src/ast/real-sql-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 53,
+        "oracleFieldCount": 62,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 727,
+        "oracleNodeTypeCount": 823,
         "referencedFieldLiterals": 6,
         "referencedTypeLiterals": 43,
         "status": "fail",
         "unknownFields": [
           {
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
-            "line": 1907,
+            "line": 1931,
             "literal": "object"
           }
         ],
         "unknownNodeTypes": [
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 406,
+            "line": 423,
             "literal": "table"
           },
           {
             "context": "real-sql-analyzer.ts:comparison",
-            "line": 1928,
+            "line": 1952,
             "literal": "table"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 1147,
-            "literal": "grant_statement"
           }
         ],
         "waivedFindings": [],
@@ -1092,7 +1118,7 @@
           "tree-sitter-sql.wasm"
         ],
         "wasmFieldCounts": [
-          53
+          62
         ]
       },
       "svelte": {
@@ -1353,14 +1379,19 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 46,
+        "referencedTypeLiterals": 52,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
           {
             "context": "real-zig-analyzer.ts:comparison",
-            "line": 623,
+            "line": 648,
             "literal": "field_identifier"
+          },
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "line": 1213,
+            "literal": "struct_literal"
           }
         ],
         "waivedFindings": [],
@@ -1374,8 +1405,8 @@
     },
     "summary": {
       "fail": 3,
-      "languagesAudited": 44,
-      "pass": 41,
+      "languagesAudited": 45,
+      "pass": 42,
       "totalUnknownReferences": 10
     }
   },
@@ -1404,9 +1435,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T05:36:53.645Z",
-  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-09-30T02:06:59.339Z",
+  "regeneratedAtCommit": "306062605f402e67f27c1c332503c4079ba5a318",
+  "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }
