@@ -477,7 +477,24 @@ export const LANG_REPOS: Record<string, string> = {
   // DIFFERENT shape -- a Windows Forms authoring tool rather than a game, so its
   // designer-generated files, its `My Project` assembly files and its
   // Forms-Designer `Handles` wiring are shapes P3D does not contain.
-  vb: "P3D-Legacy",
+  // M60-HK wave (2026-09-29). `cabal` and `hledger` are GONE from this box —
+  // neither is among the 45 checkouts under CORPUS_ROOT — so the haskell lane
+  // could not run its differential at all and every coverage claim it had ever
+  // made was unfalsifiable. postgrest is the ONLY checkout on this machine with
+  // Haskell sources (207 tracked .hs files: the hasql library plus postgrest's
+  // own src), and several of this lane's own rulings were derived FROM it — the
+  // HSD12 standalone-deriving probe cites postgrest Routine.hs:65, the Main
+  // module rule cites postgrest Setup.hs, and the infix-method and
+  // applied-head rules cite postgrest's Encoders/All.hs and JwtCache.hs.
+  //
+  // This is a DISCLOSED SUBSTITUTE, not a replacement. It is smaller (207 vs the
+  // 637 cabal files the lane originally measured), and its .hs surface is a
+  // vendored database library rather than a general-purpose Haskell codebase, so
+  // it exercises less dialect than cabal did. It is registered because an
+  // unverifiable lane cannot be right OR wrong about its measurements, and 207
+  // real files that reproduce beat 637 that do not exist. Restoring `cabal`
+  // remains the better outcome and is the M12/M60 owner's call, not a lane's.
+  haskell: "postgrest",
   // M14 (master review, 2026-09-29): this entry went missing in the 229-commit
   // m48-recovery merge, and with it the lane's baseline row, its section-E floor
   // and its section-F budget. Nothing warned: `repoFor("xml")` simply reported "no
@@ -634,7 +651,22 @@ export const SECOND_CORPUS: Record<string, string> = {
   php: "phpmyadmin",
   ruby: "rack",
   python: "requests",
-  haskell: "hledger",
+  // M60-HK wave (2026-09-29): the haskell SECOND CORPUS is DECLARED ABSENT, not
+  // silently kept. `hledger` has no checkout on this machine — the sweep throws
+  // `corpus repo missing` on a declared-but-absent repo, which is the correct
+  // behaviour and the reason this is a removal rather than a retarget.
+  //
+  // There is no replacement to invent: postgrest is the only checkout on this box
+  // with any Haskell at all, and pointing both entries at it would be one corpus
+  // counted twice — exactly the "which number is the claim" ambiguity a declared
+  // second corpus exists to prevent. So haskell runs SINGLE-CORPUS, which is the
+  // same position the fsharp lane records for itself.
+  //
+  // What this costs, stated plainly: a defect with zero occurrences in postgrest
+  // cannot be exercised by a second codebase's dialect, so the property a
+  // two-corpus lane provides is NOT provided for haskell today. Restoring
+  // `hledger` (or `cabal`, which is also gone) restores it.
+  // haskell: "hledger",
   elixir: "phoenix",
   // ER wave (M14 #275 obligation 2): OTP is the second Erlang corpus — the
   // elixir repo's 45 .erl files (compiler front-end only) were ruled
@@ -13118,6 +13150,13 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       }
       if (depth <= 2) {
         for (const c of x.namedChildren) {
+          // A GADT constructor may carry a CONTEXT, and it comes first:
+          //   data Cache m k v = (Hashable k, MonadIO m) => Cache (ListNode k v False) ...
+          // Descending into it found `Hashable` and published
+          // `contains Cache -> Hashable` — a superclass, not a member. The
+          // analyzer publishes no such edge, correctly, and the differential
+          // reported it as a MISSING truth row.
+          if (c.type === "context") continue
           const hit = deepName(c, depth + 1)
           if (hit) return hit
         }
@@ -13219,7 +13258,18 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         }
       }
       if (n.type === "instance") {
+        // A QUALIFIED class head (`instance Csv.ToField ImportQualified`) puts
+        // the class in a `qualified` node, not a `name`. Requiring a `name` child
+        // made `cls` empty and `if (!cls) continue` then skipped the instance
+        // ENTIRELY — losing both its method ownership and its overrides. 14 such
+        // instances exist in this corpus alone, and the analyzer emits for every
+        // one of them.
         let cls = n.namedChildren.find((c: any) => c.type === "name")?.text ?? ""
+        if (!cls) {
+          const q = n.namedChildren.find((c: any) => c.type === "qualified")
+          const inner = q?.namedChildren?.find((c: any) => c.type === "name")
+          if (q) cls = inner?.text ?? q.text.replace(/^[^A-Za-z0-9_]+/, "")
+        }
         const tp = n.namedChildren.find((c: any) => c.type === "type_patterns")
         let target = ""
         if (tp) {
