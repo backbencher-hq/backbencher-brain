@@ -29,6 +29,14 @@ import { execSync, spawnSync } from "child_process"
 // than a second copy of the rule that this lane would then have to keep editing
 // here in parallel.
 import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
+// M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
+// its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
+// typescript meanwhile published `references` and `uses` edges that the allowlist
+// dropped, so the lane compared neither. Both are the "full mirror" the M49.G7
+// groovy note demands: truth AND allowance in the same commit, or the label is
+// compared by nothing.
+import { deriveTypeScriptReferencesTruth } from "./oracles/typescript-references"
+import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -19405,6 +19413,9 @@ export function deriveHtmlEdges(root: any, moduleName: string): { label: string;
 }
 
 async function main() {
+  // G20: labels that are COMPARED and have analyzer edges but ZERO truth. A
+  // lane cannot publish a coverage figure for a label nothing backs.
+  const labelTruthGaps: { lang: string; langRepo: string; detail: string }[] = []
   const wts: any = await import("web-tree-sitter")
   const ParserClass = wts.Parser ?? wts.default ?? wts
   const Language = wts.Language ?? wts.default?.Language
@@ -20017,6 +20028,16 @@ async function main() {
         // them from a scope-pop imbalance that had been there the whole time.
         // The rule and every mirror it makes are documented in the module.
         for (const e of deriveTypeScriptContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // M60 label-coverage sweep: the references and uses oracles existed and
+        // were never registered here. Pushes are paired with the allowlist
+        // entries below; pushing truth alone is the #910 shape, where a new
+        // oracle's rows read as MISSING because the analyzer side is filtered.
+        for (const e of deriveTypeScriptReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveTypeScriptUsesTruth(root)) {
           ;(truth as any[]).push(e)
         }
         // M37.21 #611: dedicated typescript calls/instantiates oracle (web
@@ -20745,7 +20766,7 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
@@ -20911,7 +20932,12 @@ async function main() {
         // already-gated language -- it can only remove duplicate fabrication.
         .filter((r: any, i: number, arr: any[]) => { const k = r.label + "|" + r.target; return i === arr.findIndex((x: any) => (x.label + "|" + x.target) === k) })
 
-      if (process.env.BB_LABEL_DUMP === lang) {
+      // UNCONDITIONAL. A label that is COMPARED and has edges on the analyzer side
+      // but ZERO truth rows is being compared against nothing, and every one of its
+      // edges lands in `unexplained` or `heuristic` — which is how java (81 edges),
+      // kotlin (54), php (163) and javascript all carried a label no oracle backed
+      // while publishing 0% unexplained. The per-edge cost is one map increment.
+      {
         const tc: any = ((globalThis as any).__TD ??= {})
         const ac: any = ((globalThis as any).__AD ??= {})
         for (const t of truth as any[]) tc[String(t.label)] = (tc[String(t.label)] ?? 0) + 1
@@ -21054,15 +21080,29 @@ async function main() {
       ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
     }
 
-    if (process.env.BB_LABEL_DUMP === lang) {
+    {
       const tc = (globalThis as any).__TD ?? {}
       const ac = (globalThis as any).__AD ?? {}
-      console.log(`  [label-dump] ${lang}: truth-vs-comparable per label`)
-      for (const k of [...new Set([...Object.keys(tc), ...Object.keys(ac)])].sort()) {
-        console.log(`  [label-dump]   ${k.padEnd(14)} truth=${String(tc[k] ?? 0).padStart(6)}  comparable=${String(ac[k] ?? 0).padStart(6)}${(tc[k] ?? 0) === 0 ? "   <-- COMPARED WITH NO TRUTH" : ""}`)
-      }
+      // comparable > 0 is the NON-VACUITY condition, and it is load-bearing: a
+      // label nobody emits must not fail the lane, or the check would fire on every
+      // dormant label and be switched off. Only a label with real analyzer edges
+      // and no truth at all is a hole.
+      const untruthed = Object.keys(ac)
+        .filter((k) => (ac[k] ?? 0) > 0 && (tc[k] ?? 0) === 0)
+        .sort()
       ;(globalThis as any).__TD = {}
       ;(globalThis as any).__AD = {}
+      if (process.env.BB_LABEL_DUMP === lang) {
+        console.log(`  [label-dump] ${lang}: truth-vs-comparable per label`)
+        for (const k of [...new Set([...Object.keys(tc), ...Object.keys(ac)])].sort()) {
+          console.log(`  [label-dump]   ${k.padEnd(14)} truth=${String(tc[k] ?? 0).padStart(6)}  comparable=${String(ac[k] ?? 0).padStart(6)}${(tc[k] ?? 0) === 0 && (ac[k] ?? 0) > 0 ? "   <-- COMPARED WITH NO TRUTH" : ""}`)
+        }
+      }
+      if (untruthed.length > 0) {
+        const detail = untruthed.map((k) => `${k} (${ac[k]} comparable, 0 truth)`).join(", ")
+        console.log(`  [${langRepo}] ${lang}: COMPARED WITH NO TRUTH: ${detail}`)
+        labelTruthGaps.push({ lang, langRepo, detail })
+      }
     }
     if (process.env.BB_F5_SHOW_SAMPLES) {
       // UNEXPLAINED first: a confident edge with no truth match is a real
@@ -21399,6 +21439,29 @@ async function main() {
       )
       console.log(`wrote validation/m14/results/M14.0.F5.${scope}.json (lane-scoped; canonical M14.0.F5.json untouched)`)
     }
+    // G20: A LABEL COMPARED WITH NO TRUTH FAILS THE RUN.
+    //
+    // This is the durable form of a dump that found four lanes carrying a label no
+    // oracle backed: java (81 comparable edges), kotlin (54), php (163) and
+    // javascript. All four reported 0% unexplained while comparing those edges
+    // against nothing, because the edges sit below 0.7 and land in `heuristic` —
+    // and a bucket full of declared suspicion reads as caution rather than as a
+    // hole. JavaScript is now fixed for two of its three gaps (imports, extends);
+    // `overrides` remains open there and in the other three, and this makes every
+    // one of them VISIBLE instead of silent.
+    //
+    // The non-vacuity condition is `comparable > 0`, checked above: a label nobody
+    // emits must not fail the lane, or the check fires on every dormant label and
+    // gets switched off within a week. Only a label with real analyzer edges and no
+    // truth is a hole, and that is language-agnostic — the same rule for every lane.
+    if (labelTruthGaps.length > 0) {
+      console.log(`\n  ${labelTruthGaps.length} lane(s) COMPARED A LABEL WITH NO TRUTH — the published coverage for those labels is not coverage:`)
+      for (const g of labelTruthGaps) console.log(`    ${g.langRepo}:${g.lang}  ${g.detail}`)
+      console.log(`  Each of those labels is in the comparison set with no oracle behind it, so every one of its edges`)
+      console.log(`  lands in unexplained (a confident fabrication) or heuristic (declared suspicion). Neither is coverage.`)
+      process.exitCode = 6
+    }
+
     // M14 (#888): a probe run that reports a count and no evidence is the state
     // this harness's own header calls a fabrication risk — a lane at 12%
     // coverage looks identical to a lane at 100% until somebody reads WHY. The
