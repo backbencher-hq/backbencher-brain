@@ -3,11 +3,11 @@
   "code": "CL1",
   "milestone": "M63",
   "status": "verified",
-  "checks": 303,
-  "passed": 303,
+  "checks": 324,
+  "passed": 324,
   "failed": 0,
-  "mutantsCaught": 13,
-  "mutantsTotal": 13,
+  "mutantsCaught": 14,
+  "mutantsTotal": 14,
   "mutantRecords": [
     {
       "id": "M1",
@@ -44,6 +44,12 @@
       "name": "unpairable rule removed (a row with no language gets a fabricated pair)",
       "caught": true,
       "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
+      "id": "M15",
+      "name": "the absence note claims the whole index instead of the searched project",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
     },
     {
       "id": "M14",
@@ -89,7 +95,7 @@
     }
   ],
   "failures": [],
-  "currentCommit": "ac79a36def95f26dc87cb0cd8b1b8a6b44448f99",
+  "currentCommit": "2d9c5fb96f604f7989bd4ee4f1ebdad58e8c4737",
   "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
   "evidenceFile": "CL1.json",
   "corpus": {
@@ -225,7 +231,7 @@
       "pairableRows": 0
     }
   ],
-  "generatedAt": "2026-09-30T01:39:52.958Z",
+  "generatedAt": "2026-09-30T03:17:37.055Z",
   "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
   "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
   "limitations": [
@@ -235,7 +241,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T01:39:52.962Z",
-    "contentSha256": "72359dbd395bf1784fa664531d5731624904261d22e3eb8ae8e587eee95c00e6"
+    "sealedAt": "2026-09-30T03:17:37.058Z",
+    "contentSha256": "f16acda35980c903ee657e0d1251e7702a49a0ea6d6f3f7400a4293c8b573d99"
   }
 }
