@@ -56,6 +56,16 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         return_type TEXT,
         parameters TEXT,
         docstring TEXT,
+        -- The symbol's own source text, bounded. This is what makes a word
+        -- that appears ONLY inside a function reachable by a text query.
+        -- Measured on real corpora before it existed: content search selected
+        -- name/qualified_name/docstring and there was no body column at all, so
+        -- a body-only word was unreachable by BOTH retrieval paths — 27% of
+        -- body-only words on rake, 38% on ripgrep. The body WAS indexed, but
+        -- only as a 50-dimensional hash, which cannot be queried by word.
+        -- Bounded because a symbol can be very large (a 25 599-character body
+        -- was measured on rake) and this table is scanned by content search.
+        source_text TEXT,
         visibility TEXT,
         is_async INTEGER,
         is_static INTEGER,
@@ -448,6 +458,43 @@ export function ensureSymbolDeclarationColumn(raw: any): void {
 }
 
 /**
+ * `brain_symbol.source_text` — the symbol's own body, bounded.
+ *
+ * Added because a word that appears ONLY inside a function was unreachable by
+ * every retrieval path. `searchContent` selects name/qualified_name/docstring,
+ * and there was no body column at all, so on real corpora:
+ *
+ *     rake       121 body-only words   88 found   33 UNREACHABLE (27%)
+ *     ripgrep    118 body-only words   73 found   45 UNREACHABLE (38%)
+ *
+ * The body was indexed, but only as a 50-dimensional hash, which cannot be
+ * queried by a specific word. The text was in the database and absent from
+ * retrieval at the same time.
+ *
+ * Legacy rows are NULL and stay NULL until a re-index writes the body. That is
+ * deliberate: content search treats a NULL body as "this row has no body to
+ * search", which is true of an un-migrated database, and the tool reports
+ * `bodyCoverage` rather than implying the corpus is complete.
+ *
+ * This MUST run on the pre-existing-database open path, not only on fresh
+ * schema creation. Wiring it into the fresh-DB branch alone is the documented
+ * way migrations go missing in this codebase (see the M22.W2 comment in
+ * database.ts), and the first run of this change failed exactly that way:
+ * the indexer's own INSERT hit "table brain_symbol has no column named
+ * source_text" on a database that already had its tables.
+ *
+ * Idempotent, and a no-op on a fresh DB where the DDL already created it.
+ */
+export function ensureSymbolSourceTextColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return
+    if (cols.includes("source_text")) return
+    raw.exec("ALTER TABLE brain_symbol ADD COLUMN source_text TEXT")
+  } catch {}
+}
+
+/**
  * M14 #277 follow-on: `brain_file.metadata`.
  *
  * Found from the bash lane, but it is not a bash problem: EVERY analyzer returns
@@ -633,6 +680,9 @@ export function ensureSchema(raw: any): void {
   // #612: additive symbol column (idempotent; the DDL above carries it for
   // fresh DBs, this covers DBs created by an older DDL).
   ensureSymbolDeclarationColumn(raw)
+  // The symbol body, so content search can reach a word that appears only
+  // inside a function. Idempotent; the DDL above carries it for fresh DBs.
+  ensureSymbolSourceTextColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
