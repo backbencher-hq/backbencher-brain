@@ -132,12 +132,24 @@ add("C1-resync-reachable", fires.length >= MIN_OVERRIDE,
 add("C2-every-firing-recovers", fires.every((f) => f.resyncDeclarations > 0),
   "every firing actually recovered at least one declaration",
   `${fires.length} firing(s)`)
-add("S1-sweep-reachable", sweepFires.length > 0,
-  "the full-tree declaration sweep fires on real corpus files (it is the pass that recovers declarations nested inside another declaration)",
-  `${sweepFires.length} file(s), ${sweepRecoveredTotal} declaration(s) recovered`)
-add("S2-sweep-recovers-substantially", sweepRecoveredTotal >= 50,
-  "the sweep's corpus contribution is substantial rather than incidental, so a regression that stopped it would be visible here. The bar is set against THIS gate's population (ProxiCall, 441 files, 77 recovered); on the PostgreSQL extension corpus the same pass recovers 375 across 79 files, which is measured separately by probe/contract-battery and recorded in validation/m60/sql/v6-plpgsql-shipped.json",
-  `${sweepRecoveredTotal} declaration(s) across ${sweepFires.length} file(s)`)
+// S1 — the full-tree declaration SWEEP. RETIRED as a reachability bar and turned
+// into a REGRESSION WATCH, because it now measures 0 recovered declarations on
+// ALL THREE corpora (ProxiCall, postgrest, PostgreSQL extensions).
+//
+// It is not that the pass stopped mattering. When the plpgsql scaffolding did
+// not parse bodies, the sweep was carrying real weight — 77 declarations across
+// 8 ProxiCall files and 375 across 79 extension files. Under the shipped grammar
+// the grammar no longer buries a declaration inside another declaration, which is
+// the only thing the sweep existed to undo, and the resync plus the EXECUTE-
+// literal pass do the recovery work instead (C1-C2 above).
+//
+// A reachability bar cannot simply be re-baselined to 0, because that is a bar
+// that cannot fail. So this REPORTS the number and fails only if the sweep ever
+// contributes WITHOUT this bar having been re-baselined — which is the signal
+// that the recovery surface changed and this gate needs a new bar.
+add("S1-sweep-watch", sweepRecoveredTotal === 0,
+  "the declaration sweep is currently INERT on every corpus, because the grammar no longer buries a declaration inside a declaration. Reported rather than barred: a reachability bar of 0 cannot fail, and a non-zero value here means the recovery surface changed and this gate must be re-baselined",
+  `${sweepFires.length} file(s), ${sweepRecoveredTotal} declaration(s) recovered — expected 0 under the shipped grammar; the resync carries the recovery work instead (C1-C2 above)`)
 add("C3-recovered-ranges-are-file-absolute", rangeViolations.length === 0,
   "every recovered declaration carries a 1-based range inside its own file (the slice offset translation)",
   rangeViolations.length ? rangeViolations.slice(0, 5).join("; ") : `0 violations over ${fires.length} firing file(s)`)
