@@ -116,8 +116,8 @@
         "bytes": 158335
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "4bbbbaece3242939e3f22844ebf2ca94d7f8bdb720384ed0bfedbed641a06fe9",
-        "bytes": 140727
+        "sha256": "7826c24f6c87012c89087a7797dc4ef41ede1469505ca4d30ac3c678af5fab8d",
+        "bytes": 142260
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "1eace941aedfd45ab8d9128aaec336100fe2303acb15df0b8b880483d750b37e",
@@ -144,8 +144,8 @@
         "bytes": 88509
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "02754989ebc83251bad4044020c3663adbe0dd4b08ddda2bdecf77a10a061568",
-        "bytes": 106196
+        "sha256": "2aeb7f972fb2ba2a046f052aa4e68959a00cdf6e7551cadb71f5061af33b3eee",
+        "bytes": 112862
       },
       "src/ast/real-go-analyzer.ts": {
         "sha256": "fc9a18f52faad8159aa95240e7850f045ffd79db269b8b9736c484e5812fdab4",
@@ -439,11 +439,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 160.303768,
-      "userCpuMs": 179.533,
-      "systemCpuMs": 9.889,
-      "peakRssBytes": 253378560,
-      "rssDeltaBytes": 1572864,
+      "wallTimeMs": 200.766523,
+      "userCpuMs": 161.215,
+      "systemCpuMs": 10.727,
+      "peakRssBytes": 263172096,
+      "rssDeltaBytes": 1310720,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
