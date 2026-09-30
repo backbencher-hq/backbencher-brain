@@ -14776,6 +14776,45 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "make/drop-concatenated-variable-name",
+    language: "make",
+    defectClass: "lost-edge",
+    description:
+      "Drops the read whose NAME is a concatenation. A `variable_reference` with no `word` of its own -- `$(PAPEROPT_$(PAPER))` parses as variable_reference -> concatenation -> word + variable_reference -- was read by looking for a `word` child, found none, and emitted nothing. The name is built at expand time so no file can declare it, but the READ is real: phpmyadmin/docs/Makefile declares PAPEROPT_a4 and PAPEROPT_letter and then reads `$(PAPEROPT_$(PAPER))`, so this edge is the only thing in the graph connecting those two declarations to the read that selects between them. Found when the corpus grew to 100 files and the differential reported 2 of these MISSING, with the oracle deriving them independently.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !/^FLAVOUR_\$\(/.test(String(x.target ?? ""))),
+    }),
+  },
+  {
+    id: "make/label-concatenated-name-as-references",
+    language: "make",
+    defectClass: "wrong-edge-label",
+    description:
+      "Relabels the computed-name read from `uses` to `references`. The lane's one rule is `references` iff THIS file declares the name, and no file can declare a name assembled at expand time, so `references` would publish a declaration that does not exist -- the same category error the lane already avoids for automatic variables, builtins and external prerequisites. The edge is kept, so only the label is wrong, which is exactly the shape a label-only gate cannot see.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.target === "FLAVOUR_$(FLAV)" && x.type === "uses"
+          ? { ...x, type: "references" }
+          : x),
+    }),
+  },
+  {
+    id: "make/publish-only-the-concatenation-prefix",
+    language: "make",
+    defectClass: "wrong-edge-target",
+    description:
+      "Records the `word` half of a concatenated name instead of the whole computed name -- `FLAVOUR_` rather than `FLAVOUR_$(FLAV)`. The prefix appears nowhere in the file as a name, so the edge names a variable no declaration matches and the read that selects between FLAVOUR_a and FLAVOUR_b is lost. Same shape as the pre-existing `keep-dollar-wrapper-in-prerequisite` mutant, on the other half of the same expression.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.target === "FLAVOUR_$(FLAV)"
+          ? { ...x, target: "FLAVOUR_" }
+          : x),
+    }),
+  },
+  {
     id: "make/ignore-brace-expansion-form",
     language: "make",
     defectClass: "wrong-edge-target",
@@ -16183,6 +16222,99 @@ export const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
+  },
+  // ───────────────────────────────────────────────────────────────────────
+  // PERL-MR12 — the M59.A7 line contract, plus the symbolic-deref callee rule.
+  // One mutant per way the fix can rot, and each was a real failure of an
+  // earlier attempt rather than a hypothetical:
+  //   contains/overrides line absent ......... the pre-MR12 state, 30,351 edges
+  //   contains line at the declaration start .. the c/cpp #921 trap
+  //   extends line at the `use` keyword ........ Moose's Class::MOP::Class.pm
+  //   role line at the `with` keyword ......... Moo's `with qw/ ... /` files
+  //   symbolic-deref callee published ........ Moo/Object.pm, Moo/Role.pm
+  // The last one reverts from the SOURCE: its defect is a missing rule producing
+  // a PRESENT fabricated edge, so the post-fix result has no trace to rewrite and
+  // a result-only transform is a no-op that survives while looking correct.
+  //
+  // RE-APPLIED: a commit rebuilt this file from a base older than the perl wave
+  // and dropped all six, and nothing noticed, because a mutation gate that does
+  // not CONTAIN a mutant is not a gate on that mutant. The head gate now derives
+  // its expected count from this file rather than writing it down.
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: "perl/contains-line-is-absent",
+    language: "perl",
+    defectClass: "missing-field",
+    description: "M14.6 regression: a `contains` edge loses its line again — the pre-MR12 shape for all 22,266 of them, and the one the doc called a 'declared exception'. It was not sanctioned: M60's lane audit classes an edge as a finding when its target name IS written in the file, and the child's name is (`sum` is on the line that reads `method sum ($self) {`). c, cpp and objc all moved their `contains` edges onto the child's own name for exactly this reason (#921). Caught by perl/core-oo-class-role's expectRelationships {contains, Point -> sum, line_number 6} and perl/inheritance's {contains, UsesParent -> run}.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        if (e.type !== "contains") return e
+        const { line_number, ...rest } = e
+        return rest
+      }),
+    }),
+  },
+
+  {
+    id: "perl/contains-line-at-declaration-start",
+    language: "perl",
+    defectClass: "wrong-line",
+    description: "M14.6 regression: a `contains` edge takes the DECLARATION's start line instead of the line its NAME is written on — the exact c/cpp trap, and the reason `meta.nameLine` exists (#921, `cpp/contains-line-at-declaration-start`, `objc/contains-line-at-container`). The measured size in these corpora is ZERO: no symbol's name line differs from its declaration start, so a fixture is the only thing that can hold this rule. The c/cpp draw found 166 such rows in 120 files, and the shape is one token away in any language. Caught by the same line-6 pin, because there the method's declaration and its name are the same line and any off-by-one still misses it.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => (e.type === "contains" && typeof e.line_number === "number" ? { ...e, line_number: e.line_number + 1 } : e)),
+    }),
+  },
+
+  {
+    id: "perl/overrides-line-is-absent",
+    language: "perl",
+    defectClass: "missing-field",
+    description: "M14.6 regression: an `overrides` edge loses its line again — the pre-MR12 shape for all 8,085. The justification for the exemption was that the edge is INFERRED, and that is a claim about the BASE: the first-parent chain is a guess, which is why the edge stays at confidence 0.5 and evidenceClass `inferred`. The method being overridden is not in doubt and is written in this file, so it has a naming node. Caught by perl/inheritance's expectRelationships {overrides, UsesParent.run -> Base.run, line_number 3} and {IsaArray.run -> Alpha.run, line_number 15}.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => {
+        if (e.type !== "overrides") return e
+        const { line_number, ...rest } = e
+        return rest
+      }),
+    }),
+  },
+
+  {
+    id: "perl/extends-line-at-the-use-keyword",
+    language: "perl",
+    defectClass: "wrong-line",
+    description: "M14.6 regression: an `extends` edge claims the line of the KEYWORD that introduces the list instead of the line the base's name is written on. Found by the oracle on Moose's Class/MOP/Class.pm, where `use parent 'Class::MOP::Module',\n 'Class::MOP::HasAttributes',\n ...` puts three of the four bases on lines the `use` never touches — 3 UNEXPLAINED rows with the claimed line plainly reading `use parent 'Class::MOP::Module',`. Every corpus `extends` edge took this line before MR12, because addBase was handed the `parent` keyword as a single shared nameNode, which is right for a one-argument list and wrong for every longer one. Caught by perl/inheritance's {extends, UsesParent -> Base} line pin, and by the oracle over the corpora.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => (e.type === "extends" && typeof e.line_number === "number" ? { ...e, line_number: Math.max(1, e.line_number - 1) } : e)),
+    }),
+  },
+
+  {
+    id: "perl/role-composition-line-at-the-with-keyword",
+    language: "perl",
+    defectClass: "wrong-line",
+    description: "M14.6 regression: an `implements` edge claims the line of the `with`/`use role` statement instead of the line the ROLE's name is written on. `use role 'R'` was stamped from the `role` KEYWORD's node, so a role named on a later line claimed the wrong one; and `with qw/\n MooseRoleOne\n MooseRoleTwo\n /` — a multi-line list, which is what Moo's own xt/ files use — is ONE quoted_word_list node starting on the `with` line, so the role names are lines BELOW the edge. Measured: 4 unexplained rows across a 14-file draw, all of them `with qw/`. Caught by perl/inheritance's role pins and by the oracle over the corpora.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) => (e.type === "implements" && typeof e.line_number === "number" ? { ...e, line_number: Math.max(1, e.line_number - 1) } : e)),
+    }),
+  },
+
+  {
+    id: "perl/symbolic-deref-callee-published-as-a-name",
+    language: "perl",
+    defectClass: "phantom-symbol",
+    description: "M14.6 regression: a callee that is written as CODE is published as a NAME again. `$self->${\\( EXPR \\)}` is perl's 'call the method this expression computes' -- the grammar puts the whole expression in the `method` field, so the lane published arbitrary source text as a method name: measured `calls -> DemolishAll->new` (Moo/Object.pm:56, a `function` field holding compound text) and `calls -> ${\\( $tc->can('coercion')||sub { ... } )}` (Moo/Role.pm:224). A target that is not written in the file cannot be verified by the line oracle, so it is a fabricated target rather than a weaker claim. 19 such edges removed from a 14-file draw. Caught by the fixture's relationship pins, and by the oracle's Tier A, which asks the SOURCE for the name.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        e.type === "calls" && typeof e.target === "string" && e.target.includes("->") ? { ...e, target: e.target + "->new" } : e,
+      ),
+    }),
   },
 ]
 

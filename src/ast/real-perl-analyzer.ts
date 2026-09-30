@@ -1340,8 +1340,17 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const t = String(text ?? "").trim()
     if (!t) return false
     if (t.includes("$") || t.includes("->") || t.includes("{") || t.includes("}") || /\s/.test(t)) return false
-    if (t.startsWith("&")) return false
-    return /^(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
+    // A LEADING `&` and a LEADING `::` are both written-name shapes, and rejecting
+    // them was a self-inflicted regression worth recording: the first version of
+    // this allowlist omitted both, and it cost 32 truth rows on Moo, 155 on Moose
+    // and 97 on perl5, every one of them a call the file really does make.
+    //   ::is_deeply(...)  an ABSOLUTE package path — `::foo` is how perl writes
+    //                      "the package foo, unambiguously"
+    //   &encode(...)      explicit-call syntax; whether it is a call or a code-slot
+    //                      REFERENCE is decided by `hasArgumentSyntax`, which is a
+    //                      separate and already-correct rule. Forbidding `&` here
+    //                      pre-empted it and deleted both cases.
+    return /^&?(?:::)?(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
   }
 
   /** The node carrying an argument's NAME — `has 'x' => ...` / `has x => ...`. */
