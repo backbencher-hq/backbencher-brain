@@ -22,6 +22,10 @@ import * as fs from "fs"
 import * as os from "os"
 import * as path from "path"
 import { createHash } from "crypto"
+// J9: ONE declaration of the platform prototype chains, imported by the oracle here AND by
+// src/ast/real-javascript-analyzer.ts. Two copies could drift apart without anything
+// noticing, which is the shared-premise shape this investigation kept meeting.
+import { isJsBuiltin, jsBuiltinHasMember } from "../../src/ast/js-builtin-prototypes"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
 import { execSync, spawnSync } from "child_process"
 // The typescript CONTAINMENT oracle is lane-owned, like the JSON one: it lives in
@@ -4542,74 +4546,6 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
  * so the oracle declines to call it a member, which is how a bracket-name that is not
  * a well-known symbol gets separated from one that is.
  */
-const JS_BUILTIN_CHAINS: Record<string, string[]> = {
-  // ECMAScript builtins. Chains are listed outermost-first, and a member of any
-  // ancestor counts: overriding works through inheritance, so a flat per-type list
-  // would be wrong for every derived type.
-  Map: ["Map", "Object"],
-  Set: ["Set", "Object"],
-  WeakMap: ["WeakMap", "Object"],
-  WeakSet: ["WeakSet", "Object"],
-  Promise: ["Promise", "Object"],
-  Array: ["Array", "Object"],
-  String: ["String", "Object"],
-  Number: ["Number", "Object"],
-  Boolean: ["Boolean", "Object"],
-  Error: ["Error", "Object"],
-  TypeError: ["TypeError", "Error", "Object"],
-  RangeError: ["RangeError", "Error", "Object"],
-  Date: ["Date", "Object"],
-  RegExp: ["RegExp", "Object"],
-  JSON: ["JSON", "Object"],
-  Reflect: ["Reflect", "Object"],
-  URL: ["URL", "Object"],
-  URLSearchParams: ["URLSearchParams", "Object"],
-  Object: ["Object"],
-  // DOM. `HTMLElement` is five prototypes deep, which is the whole reason the flat
-  // reading was wrong: `addEventListener` is three hops away and still a member.
-  HTMLElement: ["HTMLElement", "Element", "Node", "EventTarget", "Object"],
-  Element: ["Element", "Node", "EventTarget", "Object"],
-  Node: ["Node", "EventTarget", "Object"],
-  EventTarget: ["EventTarget", "Object"],
-}
-
-const JS_BUILTIN_MEMBERS: Record<string, Set<string>> = {
-  Map: new Set(["clear", "delete", "entries", "forEach", "get", "has", "keys", "set", "values", "size", "[Symbol.iterator]"]),
-  Set: new Set(["add", "clear", "delete", "entries", "forEach", "has", "keys", "size", "values", "[Symbol.iterator]"]),
-  WeakMap: new Set(["delete", "get", "has", "set"]),
-  WeakSet: new Set(["add", "delete", "has"]),
-  Promise: new Set(["all", "allSettled", "any", "catch", "finally", "race", "reject", "resolve", "then"]),
-  Array: new Set(["at", "concat", "copyWithin", "entries", "every", "fill", "filter", "find", "findIndex", "flat", "flatMap", "forEach", "includes", "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push", "reduce", "reduceRight", "reverse", "shift", "slice", "some", "sort", "splice", "unshift", "values", "at", "length", "[Symbol.iterator]"]),
-  String: new Set(["at", "charAt", "charCodeAt", "codePointAt", "concat", "endsWith", "includes", "indexOf", "lastIndexOf", "localeCompare", "match", "normalize", "padEnd", "padStart", "repeat", "replace", "replaceAll", "search", "slice", "split", "startsWith", "substring", "toLowerCase", "toUpperCase", "trim", "trimEnd", "trimStart", "length"]),
-  Number: new Set(["toExponential", "toFixed", "toPrecision", "toString", "valueOf"]),
-  Boolean: new Set(["toString", "valueOf"]),
-  Error: new Set(["message", "name", "stack", "cause", "toString"]),
-  TypeError: new Set(["message", "name", "stack", "cause", "toString"]),
-  RangeError: new Set(["message", "name", "stack", "cause", "toString"]),
-  Date: new Set(["getDate", "getDay", "getFullYear", "getHours", "getMilliseconds", "getMinutes", "getMonth", "getSeconds", "getTime", "getTimezoneOffset", "getUTCDate", "getUTCDay", "getUTCFullYear", "getUTCHours", "setDate", "setFullYear", "setHours", "setMinutes", "setMonth", "setSeconds", "setTime", "toISOString", "toJSON", "toLocaleDateString", "toLocaleString", "toLocaleTimeString", "toString", "toUTCString", "valueOf"]),
-  RegExp: new Set(["exec", "test", "source", "flags", "global", "lastIndex", "toString"]),
-  JSON: new Set(["parse", "stringify"]),
-  Reflect: new Set(["apply", "construct", "defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "getPrototypeOf", "has", "isExtensible", "ownKeys", "preventExtensions", "set", "setPrototypeOf"]),
-  URL: new Set(["toJSON", "toString", "href", "origin", "protocol", "host", "hostname", "port", "pathname", "search", "searchParams", "hash", "username", "password"]),
-  URLSearchParams: new Set(["append", "delete", "entries", "forEach", "get", "getAll", "has", "keys", "set", "size", "sort", "toString", "values", "[Symbol.iterator]"]),
-  Object: new Set(["assign", "create", "defineProperty", "entries", "freeze", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyNames", "getPrototypeOf", "hasOwn", "hasOwnProperty", "is", "isFrozen", "isSealed", "keys", "preventExtensions", "propertyIsEnumerable", "seal", "setPrototypeOf", "toString", "valueOf"]),
-  HTMLElement: new Set(["attachShadow", "blur", "click", "closest", "focus", "getAttribute", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "hidden", "id", "innerHTML", "innerText", "matches", "remove", "removeAttribute", "scrollIntoView", "setAttribute", "shadowRoot", "style", "tagName", "textContent", "title"]),
-  Element: new Set(["closest", "getAttribute", "getAttributeNames", "hasAttribute", "matches", "removeAttribute", "setAttribute", "tagName"]),
-  Node: new Set(["appendChild", "cloneNode", "contains", "insertBefore", "removeChild", "replaceChild", "textContent", "nodeName", "nodeType", "parentNode", "childNodes"]),
-  EventTarget: new Set(["addEventListener", "removeEventListener", "dispatchEvent"]),
-}
-
-/** Is `member` a member of `base` ANYWHERE on its prototype chain? */
-function jsBuiltinHasMember(base: string, member: string): boolean {
-  const chain = JS_BUILTIN_CHAINS[base]
-  if (!chain) return false
-  for (const link of chain) {
-    const m = JS_BUILTIN_MEMBERS[link]
-    if (m && m.has(member)) return true
-  }
-  return false
-}
-
 /**
  * M60/J9 (2026-09-30): the JAVASCRIPT `overrides` ORACLE.
  *
@@ -4650,7 +4586,7 @@ export function deriveJavaScriptOverrides(root: any): { label: string; from: str
             return ""
           })()
         : ""
-      if (base && JS_BUILTIN_CHAINS[base]) {
+      if (base && isJsBuiltin(base)) {
         const owner = n.childForFieldName("name")?.text ?? "(expr)"
         // The members live under `class_body`, NOT directly on the class node — the
         // tree is `class_declaration > class_body > method_definition`. A first cut
@@ -4677,6 +4613,17 @@ export function deriveJavaScriptOverrides(root: any): { label: string; from: str
             // `static` is an UNNAMED token child, which is why it is found among
             // `children` and not among `namedChildren`.
             if ((c.children ?? []).some((k: any) => k.type === "static")) continue
+            // An ACCESSOR (`get x()` / `set x(v)`) is classified `property` by this
+            // analyzer's declared contract, and the override pass considers only
+            // Methods and Constructors — so accessors never produce an override.
+            // The oracle mirrors that here, and that mirroring is LOCKSTEP ON A KNOWN
+            // OMISSION rather than a shared conviction: in JavaScript a subclass
+            // accessor DOES override a base accessor of the same name, so the lane
+            // does not model a real relationship. It is recorded as J10 rather than
+            // absorbed, because lockstep on a rule believed right is exactly how X1
+            // happened; lockstep on a rule KNOWN to be incomplete is a different
+            // thing, provided the incompleteness is written down.
+            if ((c.children ?? []).some((k: any) => k.type === "get" || k.type === "set")) continue
             member = c.childForFieldName("name")?.text ?? ""
           }
           else if (c.type === "field_definition") {
