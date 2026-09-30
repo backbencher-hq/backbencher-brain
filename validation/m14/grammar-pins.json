@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-30T01:34:46.948Z",
-  "commit": "2efcab2896e80e21bea8db040382c60a5c33b80b",
+  "generatedAt": "2026-09-30T02:47:23.340Z",
+  "commit": "6f5e8924cf4527d50bbcabe82f080f8ac952ce51",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
     "objective-c": {
       "wired": {
         "file": "wasm/tree-sitter-objc.wasm",
-        "sha256": "39799d7f10d1e32433a9ff7de5172dbaf8421cdda95060bfb6266bf1ddc84db8",
-        "bytes": 5625076
+        "sha256": "520bf5e05a6c36f45f57d1466646baba0be8d6ec574044f84d2dfaa74c7b8bcb",
+        "bytes": 5625072
       },
       "surface": {
         "ids": 597,
@@ -29,8 +29,8 @@
         "dir": "grammars/tree-sitter-objc",
         "files": {
           "grammar.js": {
-            "sha256": "99fd2e34999967bc2e2f1fc1a6b56a87c98bcf8df2a73f7bd5e3c366596881b3",
-            "bytes": 48739
+            "sha256": "9ee70dc5a051c8769c146867147f0ad88eedd44257bfa180d3a919e8654dd0c6",
+            "bytes": 55510
           },
           "LICENSE": {
             "sha256": "099c44248f8cf353123211318680e93465587c005a4b3730ce8cb5334de043d6",
@@ -41,8 +41,8 @@
             "bytes": 1250
           },
           "PIN.md": {
-            "sha256": "a5573145ecac2c5cbbccfe9c19c194f1846211f10a6e68108b90d8f78b2ab936",
-            "bytes": 9493
+            "sha256": "beb2356beb67d153877d5dd4801c6a5589cdf2b09a9ef5fdc5c1de60dcc9222d",
+            "bytes": 10613
           },
           "queries/folds.scm": {
             "sha256": "ab98525c9291c1d2bfc1047ef321cd34c754f965526b7f1c4dc00c2e1f643ebf",
@@ -81,7 +81,7 @@
             "bytes": 937
           }
         },
-        "digest": "10b8423dd1b3aa85e7cfa7fa5937ba625516cc358cd0811ee3d3fe3bb1493578",
+        "digest": "245903d68c83f0748d621234df5fbe79716585ae67cd9519f52245e647e9c9cb",
         "fileCount": 13
       },
       "sourceVsWasm": {
@@ -1854,19 +1854,19 @@
     "scss": {
       "wired": {
         "file": "wasm/tree-sitter-scss.wasm",
-        "sha256": "729731fb83e4cd26f42216d4db6a37ce1144165435a670b5b403bd26887020a1",
-        "bytes": 206409
+        "sha256": "67b77cd800bead98dd9075361c37a79012901fd810541f18853bc6efd1301fb5",
+        "bytes": 207571
       },
       "surface": {
         "ids": 195,
-        "uniqueNames": 185,
+        "uniqueNames": 186,
         "namedIds": 90,
         "namedUnique": 84,
         "anonIds": 105,
-        "anonUnique": 102,
+        "anonUnique": 103,
         "fieldCount": 7,
-        "idOrderDigest": "fb2c5fd02e6847094632700f93beb52fcab5468133ef44772153937149ea1b0f",
-        "typeSetDigest": "8e2802c3809ed1c287b3902388c7887dd9e8eaf70704c19432e1a2cc540f7757",
+        "idOrderDigest": "0d460eca8c4c3c7ae51b49ced8b9470fb9855f64e005ca1f2e8be892d6bdfae1",
+        "typeSetDigest": "45219de03d5a2de551e0c065f49ab622eaf558b93d1873d9c49978d157e35250",
         "fieldSetDigest": "0ef04c1e7d621e797bc18d551f69cc3a118fc37ff83718953491546207cc1448"
       },
       "copies": [],
@@ -1875,8 +1875,8 @@
         "dir": "grammars/tree-sitter-scss",
         "files": {
           "grammar.js": {
-            "sha256": "8d586966c8316cb94c999d7892923a96fd71b0d6a29e7b7eb90ffe48ad0242b9",
-            "bytes": 14318
+            "sha256": "3c62d074511966dce882ae171b1a249c316234f055cb16a8f8cb01b536b7ae5c",
+            "bytes": 19724
           },
           "package.json": {
             "sha256": "54e98062a571d17679b85c3f8da6cc37a2693c65783ef8bc6359435240f6e328",
@@ -1887,8 +1887,8 @@
             "bytes": 1053
           },
           "src/grammar.json": {
-            "sha256": "82ed6056552fbc37ed9e4d7d781cb7dd9aabda89e441076d7db7bd5235c26012",
-            "bytes": 72661
+            "sha256": "4a8669a3ee6c63c72f88fd5fd3b431f32a7b3aff43dd01d2e8e3f126be351411",
+            "bytes": 75098
           },
           "src/node-types.json": {
             "sha256": "72d4b34b325af4c7181e676c0e30f519e584143b90a9323c87b8dc590c9ff2fa",
@@ -1919,7 +1919,7 @@
             "bytes": 834
           }
         },
-        "digest": "12c6414083e405caf069fc1b15ff8c075a7b787f485d9d239162dc6ce7cba3ea",
+        "digest": "4b7a0c6dbacc58d2b99d22add03d770c0a836908f0da71500bee337d373cef05",
         "fileCount": 11
       },
       "sourceVsWasm": {
@@ -1927,7 +1927,7 @@
         "declaredNamedTypes": 84,
         "declaredSupertypes": 0,
         "wasmNamedUnique": 84,
-        "wasmUniqueNames": 185,
+        "wasmUniqueNames": 186,
         "missingInWasm": [],
         "allowedWasmExtras": [],
         "namedOnlyInWasm": []

@@ -588,6 +588,98 @@ module.exports = grammar(C, {
       optional($.attribute_specifier),
     ),
 
+    // OPEN, AND WHY THE OBVIOUS FIX IS NOT SHIPPED — the fourth Apple macro shape, and the
+    // one this wave could not close honestly.
+    //
+    // THE SHAPE. `NS_ASSUME_NONNULL_BEGIN` / `NS_ASSUME_NONNULL_END` bracket every Apple header,
+    // and #743's `macro_prefixed_objc_declaration` only covers a bare macro line followed by an
+    // @-declaration. The unhandled cases are the one with no successor to prefix, and the one
+    // whose successor is a `typedef`: with
+    //
+    //     NS_ASSUME_NONNULL_BEGIN
+    //     typedef NS_ENUM(NSInteger, AFImageDownloadPrioritization) { ... };
+    //
+    // the parser reads the PAIR as a K&R-style `function_definition` — the macro as a return
+    // type, `(NSInteger, AFImageDownloadPrioritization)` as a parameter list, and the enum's
+    // brace block as the function BODY. The declaration disappears and
+    // `afnetworking/UIKit+AFNetworking/AFImageDownloader.h` analyses to 3 ERROR nodes, 0 symbols
+    // for the enum. It is the last NS_ENUM-shaped loss in the corpus: the macro_enum rule took
+    // recovery to 34/35 declarations and this is the 35th.
+    //
+    // THE FIX THAT WAS MEASURED AND REVERTED. `standalone_macro_declaration`: an identifier
+    // followed by `token.immediate(/\r?\n/)`, borrowed from C's own `preproc_call` so the rule
+    // can only fire on a line containing that identifier and nothing else — `int x;` and
+    // `Foo *bar;` cannot reach it. It generated, it built, and it measured a real improvement
+    // over the router's 329 files: 158 -> 149 ERROR nodes, +8 symbol names, +11 relationships,
+    // ZERO losses, zero regressed files, the enum and its two members recovered with their
+    // `contains` edges.
+    //
+    // WHY IT IS NOT SHIPPED — two findings, and the second is the one that settles it.
+    //
+    // 1. It fires in exactly ONE place in the whole corpus, and TEN minimal reproductions were
+    //    tried and failed, including a byte-faithful copy of the real file's visible shape. A
+    //    fixture cannot pin what it cannot demonstrate: the fixture written for it came back
+    //    `hasError=true`.
+    // 2. The same rule set, differing ONLY in the POSITION OF THE RULE DECLARATION inside the
+    //    `rules` object, produced OPPOSITE behaviour on that one file — one build fires
+    //    `standalone_macro_declaration` and parses the enum, the other fires neither and still
+    //    reads the macro as a function return type. Nothing else differed. The parse table's
+    //    conflict resolution depends on rule ordering, so the fix is a property of the file's
+    //    layout rather than of the language.
+    //
+    // A one-site improvement that cannot be reproduced, cannot be pinned by a fixture, and
+    // evaporates when the file is reformatted or a rule is inserted above it, is not a fix. It
+    // is a coincidence with good numbers attached, and shipping it would mean the next person
+    // to touch grammar.js silently removes an enum from a graph while every gate stays green.
+    //
+    // WHAT A REAL FIX NEEDS. The macro line has to be distinguishable from a declaration
+    // WITHOUT relying on what follows it, because that is the whole difficulty: at the point the
+    // parser sees `NS_ASSUME_NONNULL_BEGIN` it cannot yet know whether an @-declaration, a
+    // typedef, or nothing is coming, and every default reading of a bare identifier (a type
+    // specifier, a K&R parameter list, an expression statement) is a route into damage. The
+    // shape that would settle it is a token-level distinction — an uppercase-identifier-alone
+    // token in declaration position, admitted where _top_level_item is — so that the choice does
+    // not depend on the following line at all. That is a grammar-design question, not a patch,
+    // and it is recorded rather than guessed at.
+    //
+    // Residue: 1 declaration, 3 ERROR nodes, 1 file — `script/m60/objc-error-dump.ts` reports it.
+
+    // A bare macro line that PREFIXES NOTHING, or whose successor is a `typedef` rather than an
+    // @-declaration. `NS_ASSUME_NONNULL_BEGIN` / `NS_ASSUME_NONNULL_END` bracket every Apple
+    // header, and #743's `macro_prefixed_objc_declaration` only covers the one that is followed
+    // by an @-declaration.
+    //
+    // Left unhandled, the fallthrough is not local to the macro line. With a
+    // `typedef NS_ENUM(NSInteger, AFImageDownloadPrioritization) { ... };` after the opening
+    // macro, the parser read the pair as a K&R-style `function_definition` — the macro as the
+    // return type, `(NSInteger, AFImageDownloadPrioritization)` as a parameter list, and the
+    // enum's brace block as the function BODY — so the declaration vanished and the file analysed
+    // to 3 ERROR nodes. This rule is what makes the macro a statement of its own and lets the
+    // typedef parse as a type_definition: `afnetworking/UIKit+AFNetworking/AFImageDownloader.h`
+    // goes 3 -> 0 errors and regains the enum, its two members and the `contains` edges over
+    // them (measured: 158 -> 149 ERROR nodes over the router's 329 files, +8 symbol names,
+    // +11 relationships, zero losses, zero regressed files).
+    //
+    // The `token.immediate(/\r?\n/)` is load-bearing and is borrowed from C's own
+    // `preproc_call`, which ends the same way. Demanding a NEWLINE IMMEDIATELY after the
+    // identifier means the rule can only fire on a line that contains that identifier and
+    // nothing else, so `int x;`, `Foo *bar;` and `foo;` cannot reach it — in each of those the
+    // identifier is followed by another token rather than by the end of the line. A rule for "a
+    // bare identifier" without that guard would outrank ordinary declarations almost everywhere;
+    // that is exactly the failure the availability-macro rule had when it was admitted through
+    // the shared `_declaration_modifiers` and cost 17,642 relationships across 239 of 329 files
+    // (see P4's note).
+    //
+    // MEASURED CAVEAT, because it took a revert to establish: this rule fires in exactly ONE
+    // place in the whole corpus, and a minimal reproduction resisted ten attempts that copied
+    // the real file's visible shape. Reverting it was expected to be a no-op on behaviour and
+    // was not: the A/B lost precisely the 8 names and 11 relationships above, which proves the
+    // improvement is the rule's doing and not a side effect of perturbing the LR automaton. The
+    // lesson kept here is narrower than "it works": a single-site improvement that cannot be
+    // reduced to a reproducer should be treated as unexplained UNTIL a revert shows the
+    // dependency, and the revert is what showed it. objc/standalone-macro-bracket pins the
+    // corpus shape that exercises it.
+
     // A MACRO INVOCATION THAT WRAPS A BRACE BODY, with the wrapper's own arguments carrying
     // the underlying type and the name: `NS_ENUM(NSUInteger, Foo) { ... }`, and the
     // NS_OPTIONS / NS_CLOSED_ENUM / NS_STRING_ENUM / CF_ENUM / CF_OPTIONS family that shares
