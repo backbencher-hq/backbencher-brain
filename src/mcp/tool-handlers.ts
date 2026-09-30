@@ -1099,7 +1099,17 @@ const handlers: Record<string, ToolHandler> = {
     const report = await getUnifiedHealth(projectId, projectPath, { refresh: refreshRequested, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true, verbose: args.verbose === true, logger: { log: (..._a: any[]) => {}, write: (_s: string) => {} } })
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, undefined, Number(args.limit ?? 20))
-      return textResult(JSON.stringify({ health: report, history }, null, 2))
+      // M64.P3: this branch returned a bare textResult, so it carried no
+      // `healthy` — the ONE mode that answers in raw JSON, where a consumer is
+      // most likely to branch programmatically, was the one mode without the
+      // machine-readable channel. Round 2 added the field for exactly the
+      // purpose of not having to parse prose, and then left it off the branch
+      // that needs it least prose. Both branches now derive it from the same
+      // predicate; a caller does not have to remember which shape it asked for.
+      return {
+        ...textResult(JSON.stringify({ health: report, history }, null, 2)),
+        healthy: !report.warnings.some((w) => w.severity === "error"),
+      }
     }
     const rendered = formatUnifiedHealth(report)
     // M64.P2: this tool now reports conditions that are genuinely ERRORS —

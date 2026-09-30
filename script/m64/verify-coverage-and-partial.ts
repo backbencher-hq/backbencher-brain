@@ -21,6 +21,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { runIndexHealthCheck, checkEmbeddingCoverage } from "../../src/brain/brain-index-health"
 import { getUnifiedHealth, formatUnifiedHealth } from "../../src/intelligence/health/health-provider"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
+import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { selectSampleFiles, stableFileHash } from "../../src/brain/freshness"
 
 const harness = new Harness({
@@ -322,6 +323,38 @@ const drop = (root: string, pid: string) => {
     harness.check("a WARNING-severity finding leaves `healthy` true", (warnOnly as any).healthy === true, `healthy=${(warnOnly as any).healthy} with SYNTAX_ERRORS present — a stale or unparseable file is not an unhealthy INDEX`)
     harness.check("and it is still not an error result", !warnOnly.isError, "")
     harness.check("and the warning is still visible in the text", /^warning: \[SYNTAX_ERRORS\]/m.test(text(warnOnly)), text(warnOnly).split("\n").find((l) => l.startsWith("warning:"))?.slice(0, 80) ?? "absent")
+
+    // M64.P3: `history: true` answers in raw JSON and is the mode a consumer is
+    // MOST likely to branch on — so it is the one that must not be the one
+    // missing the machine-readable field. Round 2 added `healthy` and left it
+    // off this branch.
+    //
+    // The index is COMPLETE and warning-free right now (the check above left it
+    // that way), so it has to be re-broken before "is it healthy" means
+    // anything here. A first version of this block asserted healthy===false
+    // against a healthy fixture and passed for the wrong reason on the way to
+    // failing for the right one.
+    raw.prepare("UPDATE brain_index_status SET total_files=?, indexed_files=?, status=? WHERE project_id=?").run(50, 20, "complete", pid)
+    const brokenHistory = await h({ history: true } as any, { projectId: pid, projectPath: root } as any)
+    harness.check("the history mode also carries `healthy`", (brokenHistory as any).healthy === false, `healthy=${(brokenHistory as any).healthy} on an INCOMPLETE index — round 2 returned a bare textResult here, so the one mode that answers in JSON had no channel`)
+    harness.check("and it is still not an error result", !brokenHistory.isError, `isError=${brokenHistory.isError}`)
+    harness.check("the history payload is the documented JSON shape", /^\{\s*"health"/.test(text(brokenHistory)), text(brokenHistory).slice(0, 40).replace(/\n/g, "\\n"))
+    // The field must be derived, not hardcoded: a healthy index in history mode
+    // has to say so.
+    raw.prepare("UPDATE brain_index_status SET total_files=?, indexed_files=?, status=? WHERE project_id=?").run(20, 20, "complete", pid)
+    const okHistory = await h({ history: true } as any, { projectId: pid, projectPath: root } as any)
+    harness.check("and a healthy index in history mode reports healthy=true", (okHistory as any).healthy === true, `healthy=${(okHistory as any).healthy}`)
+    // The same predicate on both branches, proved by one state change flipping
+    // both. This is the property round 2 got half of.
+    raw.prepare("UPDATE brain_index_status SET total_files=?, indexed_files=? WHERE project_id=?").run(50, 20, pid)
+    const textAfter = (await h({}, { projectId: pid, projectPath: root } as any) as any).healthy
+    const histAfter = (await h({ history: true } as any, { projectId: pid, projectPath: root } as any) as any).healthy
+    harness.check("both output shapes flip on the SAME state change", textAfter === histAfter && textAfter === false, `text=${textAfter} history=${histAfter} on one broken index`)
+
+    // And the shape difference is documented where a caller will read it.
+    const historyDesc = (PUBLIC_TOOL_DESCRIPTORS.find((d) => d.name === "bb_health")!.inputSchema.properties as any).history.description as string
+    harness.check("the shape change is declared in the schema description", /CHANGES THE OUTPUT SHAPE/.test(historyDesc) && /\{ health, history \}/.test(historyDesc), historyDesc.slice(0, 120))
+    harness.check("and the same `healthy` contract is declared there too", /same top-level `healthy` boolean/.test(historyDesc), "")
   } finally { drop(root, pid) }
 }
 
