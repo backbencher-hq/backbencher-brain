@@ -479,6 +479,15 @@ const handlers: Record<string, ToolHandler> = {
             freshCount: results.freshCount ?? 0,
             truncated: results.truncated ?? false,
             ...(results.truncationReason ? { truncationReason: results.truncationReason } : {}),
+            // Which route matched, and how much of the corpus has a searchable
+            // body. Without these a caller cannot tell a phrase hit (the text
+            // says this verbatim) from a keyword coincidence (it discusses the
+            // same words), nor "nothing matched" from "nothing could match" on a
+            // database indexed before bodies were stored. Declared in
+            // SearchResults and populated by searchContent; carried here because a
+            // disclosure that stops at the search layer is not a disclosure.
+            ...(results.matchMode ? { matchMode: results.matchMode } : {}),
+            ...(results.bodyCoverage ? { bodyCoverage: results.bodyCoverage } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
           },
