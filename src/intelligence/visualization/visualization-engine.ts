@@ -142,6 +142,6 @@ export async function visualizeProject(projectId: string, request: Visualization
 
 export function formatVisualization(result: VisualizationResult): string {
   if (result.format === "json") return JSON.stringify(result, null, 2)
-  if (result.format === "html") return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links })
+  if (result.format === "html") return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded })
   return `graph: ${result.nodes.length} nodes, ${result.links.length} links\nscope: ${result.scope}${result.target ? ` (${result.target})` : ""}\ntruncated: ${result.truncation.truncated} original=${result.truncation.originalNodes}/${result.truncation.originalLinks} limits=${result.truncation.maxNodes}/${result.truncation.maxLinks}\nprovenance: ${result.provenance.source} dangling-links-omitted=${result.provenance.omittedDanglingLinks}`
 }
