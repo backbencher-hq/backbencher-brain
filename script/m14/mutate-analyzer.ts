@@ -5332,6 +5332,51 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "xml/predefined-entities-unresolvable",
+    language: "xml",
+    defectClass: "wrong-edge",
+    description:
+      "M18 regression: the five predefined entities go back to being UNRESOLVED. `&lt; &gt; &amp; &apos; &quot;` are declared by the XML specification itself, in every document, whether or not a DTD mentions them (XML 1.0 §4.6) — the same argument X8 settled for the `xml` and `xmlns` prefixes. The grammar reports each as an `EntityRef` and the resolver had exactly two answers, so all of them took the second: 4,575 sites across 180 files were stamped `resolvable: \"unresolved\"` with `danglingEntityReference: true`, which is the analyzer asserting that a well-formed document references an entity nothing defines. Reverted by removing `builtin` from the three-way label. `&nbsp;` is NOT in the set and must stay unresolved — an XML document using an undeclared HTML entity really does reference something undefined, so a fix that widened the set to make the other five pass would be the wrong fix.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata as any)?.role !== "entity_reference") return x
+        if ((x.metadata as any)?.resolvable !== "builtin") return x
+        return { ...x, metadata: { ...x.metadata, resolvable: "unresolved", danglingEntityReference: true } }
+      }),
+    }),
+  },
+  {
+    id: "xml/entity-replacement-text-ownership-dropped",
+    language: "xml",
+    defectClass: "wrong-edge",
+    description:
+      "M18 regression: an entity reference inside ANOTHER ENTITY'S REPLACEMENT TEXT goes back to being unowned. `<!ENTITY shout \"&greeting; THERE\">` is a real dependency — shout cannot be expanded without greeting — and it was dropped, because an `EntityRef` was only collected under an OWNING ELEMENT and replacement text has no element above it. 611 of the then-651-site shortfall sat in this shape over 16 files; libxml2's `test/recurse/lol_ig_content.xml` was the extreme at 147 sites and 1 edge. Reverted by re-anchoring each such edge to the DTD that holds the declaring entity, which is the owner that existed before the fix and the wrong one.",
+    transform: (r) => {
+      // The DTD that holds a declaration is recoverable from the owning
+      // `contains` edge's source, so the pre-fix owner can be reconstructed
+      // rather than guessed.
+      const dtdOf = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if (x.type === "contains" && (x.metadata as any)?.role === "dtd_entity_declaration") {
+          dtdOf.set(String(x.target), String(x.source))
+        }
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if ((x.metadata as any)?.role !== "entity_reference") return x
+          const src = String(x.source)
+          // only the entity-owned edges move; element-owned ones have no dtdOf entry
+          if (!dtdOf.has(src)) return x
+          const dtd = dtdOf.get(src)!
+          if (dtd === src) return x
+          return { ...x, source: dtd, metadata: { ...x.metadata, entityOwnerIsDtd: true } }
+        }),
+      }
+    },
+  },
+  {
     id: "xml/declared-name-anchored-to-the-tag",
     language: "xml",
     defectClass: "line-attribution",
@@ -14953,6 +14998,48 @@ export const MUTANTS: Mutant[] = [
           line_number: vpath.range?.start?.line, line: vpath.range?.start?.line,
           metadata: { role: "declaration", evidenceClass: "declared_in_file" },
         }))],
+      }
+    },
+  },
+  {
+    id: "make/keep-the-recipe-prefix-in-the-target-name",
+    language: "make",
+    defectClass: "wrong-symbol-name",
+    description:
+      "Simulates the failure mode of a `.RECIPEPREFIX` patch that does not consume the prefix as its own token: the target is named `>build` instead of `build`. The prefix is a LINE prefix, never part of the name, so every reference and prerequisite keyed on the target silently stops matching.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => x.name === "build" ? { ...x, name: ">build" } : x),
+    }),
+  },
+  {
+    id: "make/swallow-the-rule-after-a-comment",
+    language: "make",
+    defectClass: "lost-rule",
+    description:
+      "Drops the second rule of the `.RECIPEPREFIX` fixture, which is the shape two rejected versions of the grammar patch actually produced: a comment between two rules ended the recipe `repeat` and the following rule was absorbed into the previous one, so `clean:` was published as a `recipe_line` inside `build`. A rule silently becoming part of the previous rule's recipe is the failure the fixture exists to catch, and the CORPUS COULD NOT SEE IT -- 0 of the 100 pinned files put a comment between two recipe lines. A four-line synthetic repro did.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((x: any) => x.name !== "clean"),
+      relationships: (r.relationships ?? []).filter((x: any) => x.target !== "clean" && x.source !== "clean"),
+    }),
+  },
+  {
+    id: "make/declare-recipeprefix-as-a-symbol",
+    language: "make",
+    defectClass: "fabricated-symbol",
+    description:
+      "Declares a symbol for the `.RECIPEPREFIX` setting. The directive configures HOW recipe lines begin; it declares no buildable object and no variable any rule can depend on, so a symbol for it would appear in a completeness census as a declaration the language does not have.",
+    transform: r => {
+      const owner = (r.symbols ?? []).find((x: any) => x.kind === "module")
+      if (!owner) return r
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), {
+          id: "sym-RECIPEPREFIX", name: "RECIPEPREFIX", kind: "constant",
+          range: { start: { line: 15, character: 0 }, end: { line: 15, character: 2 } },
+          metadata: { nodeType: "RECIPEPREFIX_assignment", fabricated: true },
+        }],
       }
     },
   },
