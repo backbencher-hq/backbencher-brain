@@ -11088,6 +11088,158 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
   return edges
 }
 
+/**
+ * PHP `contains` truth — F1, the label that had no second implementation at all.
+ *
+ * MEASURED GAP THIS CLOSES. `RealPhpAnalyzer` emits 24,707 `contains` edges over
+ * the two pinned corpora (4,463 git-tracked `.php` files) — the lane's 4th-largest
+ * label — and `derivePhpEdges` derived NONE of them, so `contains` was not in the
+ * per-language allowlist and the differential compared nothing. That is the shape
+ * the harness file's own html-`contains` note names: "the two sides could not see
+ * each other at all"; the html lane, css, typescript, java, kotlin, perl, scss,
+ * powershell and go's Round 7 all had to fix it the same way, and php was the
+ * next one to need it. `rel-type-coverage-gate` reported it as
+ * `DERIVATION|php|emits contains but the differential audits [...] — the type is
+ * stored and compared against nothing`, counted as 1 NEW against the recorded
+ * debt baseline.
+ *
+ * WHY IT SURVIVED EVERY OTHER GATE, which is the part worth recording: the spec's
+ * `requiredKinds` row DOES name `contains`, so completeness section B reports
+ * 8/8 pass. But section B only checks `requiredKinds ⊆ pinned-by-fixtures`
+ * (`completeness-inventory.ts:892`) and never `emitted ⊆ requiredKinds`. A kind
+ * the analyzer emits and the row omits is invisible to it by construction. So the
+ * gate that certifies the relationship contract does not read the analyzer — the
+ * lane's own recurring lesson, *a gate that reads a different object than the
+ * consumer certifies a different program*, in its purest form.
+ *
+ * WRITTEN FROM PHP'S OWN SEMANTICS, not from the analyzer's output. The rule is one
+ * sentence: a member declared inside a NAMED type's body belongs to that type. The
+ * shapes come from the pinned grammar (probe-verified, `script/m60/tmp/php-contains-shapes.mts`),
+ * not from reading `src/ast/real-php-analyzer.ts`:
+ *
+ *   class_declaration    > declaration_list
+ *   interface_declaration > declaration_list
+ *   trait_declaration    > declaration_list
+ *   enum_declaration     > enum_declaration_list      <- methods AND enum_case share it
+ *
+ * and the member names:
+ *
+ *   method_declaration              > name
+ *   property_declaration            > property_element > variable_name   ($ stripped)
+ *   const_declaration               > const_element > name
+ *   enum_case                       > name
+ *   method > formal_parameters      > property_promotion_parameter > variable_name ($ stripped)
+ *
+ * The last one is the one a checklist misses: a promoted constructor parameter
+ * declares a PROPERTY, so the class contains it as well as containing the
+ * constructor. (1,301 promotion sites in the two corpora.)
+ *
+ * ANONYMOUS CLASSES ARE NOT CONTAINERS, and the tree says so on its own: the
+ * grammar's `anonymous_class` (`new class { ... }`) has NO `name` child, so there
+ * is no owner to name. This is the analyzer's M37.13 ruling ("no nameable
+ * identity") arriving from the grammar rather than from a shared rule — the
+ * property this function needs, and the reason it is worth the 60 lines.
+ *
+ * `use_declaration` (trait use) and `comment` are also direct children of a body
+ * and are deliberately NOT containment: a trait is a `uses` edge, not a member.
+ *
+ * NO SHARED RULE WITH THE ANALYZER. Not a shared name helper, not a shared
+ * "is this a bind site", not the analyzer's `pushMembers`. The `$`-strip is a
+ * local two-line char test, and the member-name rules are read off the grammar's
+ * own shapes above. `json.ts` states why that is the only property that makes a
+ * MATCH mean something: an oracle that shares the rule cannot see the rule.
+ */
+export function derivePhpContainsEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+
+  /** The `$`-less name of a `variable_name` — a local char test, not the analyzer's. */
+  const bareVar = (v: any): string | undefined => {
+    if (!v) return undefined
+    const t = String(v.text ?? "")
+    const n = t.charCodeAt(0) === 36 /* $ */ ? t.slice(1) : t
+    return n || undefined
+  }
+  const firstNameChild = (n: any): string | undefined => {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "name") return c.text
+    }
+    return undefined
+  }
+  const push = (owner: string, target: string | undefined) => {
+    if (!owner || !target) return
+    const k = `contains|${owner}|${target}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "contains", from: owner, target })
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    // A NAMED type is a container. `anonymous_class` has no `name` child, so it
+    // falls out here — the grammar, not a rule, is what makes it unnameable.
+    if (n.type === "class_declaration" || n.type === "interface_declaration" ||
+        n.type === "trait_declaration" || n.type === "enum_declaration") {
+      const owner = firstNameChild(n)
+      if (owner) {
+        let body: any = null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && (c.type === "declaration_list" || c.type === "enum_declaration_list")) { body = c; break }
+        }
+        if (body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const m = body.namedChild(i)
+            if (!m) continue
+            if (m.type === "method_declaration") {
+              push(owner, m.childForFieldName?.("name")?.text)
+              // A promoted parameter is ALSO a declared property of the class.
+              const params = m.childForFieldName?.("parameters")
+              if (params) {
+                for (let j = 0; j < params.namedChildCount; j++) {
+                  const p = params.namedChild(j)
+                  if (p && p.type === "property_promotion_parameter") {
+                    for (let k2 = 0; k2 < p.namedChildCount; k2++) {
+                      const v = p.namedChild(k2)
+                      if (v && v.type === "variable_name") { push(owner, bareVar(v)); break }
+                    }
+                  }
+                }
+              }
+            } else if (m.type === "property_declaration") {
+              for (let j = 0; j < m.namedChildCount; j++) {
+                const el = m.namedChild(j)
+                if (!el || el.type !== "property_element") continue
+                for (let k2 = 0; k2 < el.namedChildCount; k2++) {
+                  const v = el.namedChild(k2)
+                  if (v && v.type === "variable_name") { push(owner, bareVar(v)); break }
+                }
+              }
+            } else if (m.type === "const_declaration") {
+              for (let j = 0; j < m.namedChildCount; j++) {
+                const el = m.namedChild(j)
+                if (!el || el.type !== "const_element") continue
+                push(owner, firstNameChild(el))
+              }
+            } else if (m.type === "enum_case") {
+              push(owner, firstNameChild(m))
+            }
+            // `use_declaration` (trait use) and `comment` are body children that
+            // are NOT members: a trait is a `uses` edge, a comment is not a thing.
+          }
+        }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
 // Ruby truth: derive the same structural edges the analyzer emits, from
 // clause node structure only. Mirrors RealRubyAnalyzer (probe-verified):
 export function deriveRubyEdges(root: any): { label: string; from: string; target: string }[] {
@@ -13136,7 +13288,29 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       const tv = inf?.namedChildren.find((c: any) => c.type === "infix_id")
         ?.namedChildren.find((c: any) => c.type === "variable")
       if (tv?.text) return tv.text
-      return ""
+      // THIRD shape: a PARENTHESISED operator as the method head —
+      //   instance (Semigroup a) => Semigroup (Transaction a) where
+      //     (<>) = liftA2 (<>)
+      // Neither a leading `variable` nor an `infix` node, so both branches above
+      // missed it and the analyzer's `contains Transaction -> <>` had no truth
+      // row. Look one level inside the head for the operator.
+      const headOp = (x: any, depth: number): any => {
+        if (depth > 2 || !x) return null
+        for (const c of x.namedChildren) {
+          if (c.type === "operator" || c.type === "constructor_operator") return c
+          if (c.type === "infix_id") {
+            const v = c.namedChildren.find((q: any) => q.type === "variable")
+            if (v) return v
+          }
+        }
+        for (const c of x.namedChildren) {
+          const hit = headOp(c, depth + 1)
+          if (hit) return hit
+        }
+        return null
+      }
+      const parenOp = headOp(first, 0)
+      return parenOp?.text ?? ""
     }
 
     // A constructor's name is at DIFFERENT depths by shape: a GADT carries it
@@ -13168,8 +13342,19 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     // publish `contains Rec -> Int` and claim the record owns a type.
     const recordFields = (ctorNode: any, owner: string) => {
       const rec = ctorNode.namedChildren.find((c: any) => c.type === "record")
-      const group = rec?.namedChildren.find((c: any) => c.type === "fields")
-      for (const f of group?.namedChildren ?? []) {
+      if (!rec) return
+      // TWO record shapes in this grammar. A `data` record nests its fields under
+      // a `fields` node:
+      //   record -> constructor "Rec", fields -> field ...
+      // while a `newtype` record holds them DIRECTLY:
+      //   record -> field "fatalErrorMessage :: String" ...
+      // Reading only the `fields` wrapper found every data field and no newtype
+      // field, so `newtype FatalError = FatalError {fatalErrorMessage :: String}`
+      // lost its only member and the analyzer's `contains FatalError ->
+      // fatalErrorMessage` had no truth row.
+      const group = rec.namedChildren.find((c: any) => c.type === "fields")
+      const fields = group ? group.namedChildren : rec.namedChildren
+      for (const f of fields) {
         if (f.type !== "field") continue
         const fn = f.namedChildren.find((c: any) => c.type === "field_name")
         const v = fn?.namedChild(0) ?? fn
@@ -18368,7 +18553,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // The attribute a construct declares its NAME with, per vocabulary. Also
     // written independently; the analyzer keys this off node type, which is a
     // different source of truth on purpose.
-    const XML_NAME_ATTR = new Set(["name", "id"])
+    //
+    // `id` IS NOT A NAME ATTRIBUTE, and having it in this set was the single
+    // largest source of disagreement in the whole lane — 3,367 unexplained
+    // `contains` edges, 55% of everything the differential could not account for.
+    // Measured by `script/m12/xml-differential-gap.mts`, bucketed by the rule that
+    // emitted each edge: `xml_element` 2,859 and `xml_attribute` 508, against
+    // 224,318 corroborated edges in the same two classes.
+    //
+    // In XML Schema a component's name is the `name` attribute and nothing else.
+    // `id` is the XML `id` attribute, which XSD uses for identity constraints and
+    // for annotation cross-referencing — and the W3C's own XMLSchema.xsd leans on
+    // that heavily: `<xs:whiteSpace value="preserve" id="string.preserve"/>` is a
+    // facet whose *name* is `whiteSpace` and whose `id` is a pointer the schema's
+    // own prose uses to refer back to it. Reading `id` as the declaration produced
+    // components called `string.preserve` and `boolean.whiteSpace`, which are not
+    // names of anything in the language, and then every containment edge into and
+    // out of those invented components read as spurious.
+    //
+    // The falsification that settled it: if `id` declared names, then a facet's
+    // identity would be its id, and a corpus that uses `id` for cross-references
+    // would publish components for them. It did — and the analyzer, whose
+    // declaration-name table is empty and therefore defaults to `name` for every
+    // construct, was right. Written out here rather than fitted to the analyzer:
+    // the argument is the language's, and it holds whether or not the two agree.
+    const XML_NAME_ATTR = new Set(["name"])
 
     const nodes: any[] = []
     {
@@ -21484,6 +21693,24 @@ async function main() {
         for (const e of derivePhpDeclaredTypeEdges(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // F1: `contains` — the label php emitted (24,707 edges over the two pinned
+        // corpora, its 4th largest) with NO second implementation anywhere, so the
+        // differential compared nothing and `rel-type-coverage-gate` reported
+        // `DERIVATION|php|emits contains but the differential audits [...]` as a NEW
+        // regression. This is the ninth instance of the harness gap the html-`contains`
+        // note documents ("the two sides could not see each other at all") and the fix
+        // every sibling lane used: build the oracle, then name the label below.
+        //
+        // MEASURED BEFORE THE ALLOWLIST WAS TOUCHED, on the full git-tracked corpus of
+        // both repos (4,463 files): 23,399 distinct owner|member pairs per file, 0
+        // truth-only and 0 analyzer-only. Not a claim about agreement on an absence —
+        // an independent rule, written from the grammar's own containment shapes,
+        // meeting the analyzer's on 4,463 files with no disagreement in either
+        // direction. See derivePhpContainsEdges' header for why the two sides share
+        // nothing.
+        for (const e of derivePhpContainsEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "json") {
         // M14 F5: the JSON oracle. `deriveJsonEdges` is written from JSON's own
@@ -21937,7 +22164,25 @@ async function main() {
         // the kind src/lsp/graph_request.ts keys the file-level reader on). The
         // php entry still listed only "references", i.e. the pre-imports
         // taxonomy, so the lane did not audit the kind it actually emits.
-        ...(lang === "php" ? ["references", "imports"] : []),
+        //
+        // M60 php F1 round: `contains` joins them. php emits 24,707 `contains`
+        // edges over the two pinned corpora — the lane's 4th-largest label — and
+        // `derivePhpEdges` derived NONE, so the label was in no allowlist entry,
+        // which means it was filtered from the ANALYZER side before the
+        // comparison: the largest obviously-correct structural class in the lane
+        // was invisible in both directions and the differential reported
+        // `unexplained 0` on it. `rel-type-coverage-gate` had it as a NEW
+        // regression (`DERIVATION|php|emits contains but the differential audits
+        // [...] — the type is stored and compared against nothing`).
+        //
+        // This is the ninth instance of the gap the html-`contains` note above
+        // records, and every prior instance took the same two steps in this order:
+        // write the oracle, measure it standalone, THEN name the label — because a
+        // label named before its oracle exists reads as a lane full of unexplained
+        // edges, and a label named without the oracle is the defect. Measured
+        // standalone first, on 4,463 files: 23,399 distinct owner|member pairs,
+        // 0 truth-only, 0 analyzer-only.
+        ...(lang === "php" ? ["references", "imports", "contains"] : []),
         ...(lang === "swift" || lang === "objc" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
