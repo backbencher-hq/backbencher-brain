@@ -184,6 +184,9 @@ export namespace ASTEngine {
     swift: "tree-sitter-swift",
     dart: "tree-sitter-dart",
 
+    // === SCIENTIFIC / DYNAMIC ===
+    julia: "tree-sitter-julia",
+
     // === MICROSOFT ECOSYSTEM ===
     csharp: "tree-sitter-c-sharp",
 
@@ -775,6 +778,15 @@ export namespace ASTEngine {
           } catch {
             languageWasmPath = resolveWasm("@tree-sitter-grammars/tree-sitter-haskell/tree-sitter-haskell.wasm")
           }
+          break
+        }
+        case "julia": {
+          // The wasm is a REBUILT tree-sitter-julia 0.23.1: the prebuilt artifact fails to parse
+          // real Julia, so `wasm/tree-sitter-julia.wasm` is compiled from the vendored grammar in
+          // `grammars/tree-sitter-julia` with four measured construct patches applied. The pin is
+          // verified by `script/m60/julia-error-minimal.ts` and the source↔wasm parity check in
+          // `script/m11/verify-grammar-pins.ts`, so a stock wasm cannot silently return here.
+          languageWasmPath = resolveWasm("tree-sitter-julia/tree-sitter-julia.wasm")
           break
         }
         case "clean": {
@@ -1795,6 +1807,8 @@ export namespace ASTEngine {
         return new (await import("./real-clojure-analyzer")).RealClojureAnalyzer()
       case "swift":
         return new (await import("./real-swift-analyzer")).RealSwiftAnalyzer()
+      case "julia":
+        return new (await import("./real-julia-analyzer")).RealJuliaAnalyzer()
       case "dart":
         return new (await import("./real-dart-analyzer")).RealDartAnalyzer()
       case "csharp":

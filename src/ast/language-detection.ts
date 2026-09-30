@@ -4,6 +4,11 @@ export type DetectedLanguage =
   | "java" | "kotlin" | "scala" | "groovy"
   | "python" | "ruby" | "php" | "lua" | "perl" | "elixir" | "erlang"
   | "haskell" | "clean" | "clojure" | "swift" | "dart"
+  // Julia is a DYNAMIC, MULTIPLE-DISPATCH language: dispatch is on argument types at every call
+  // site, there is no inheritance, and one name may have many live methods with no override
+  // relation between them. That is why the analyzer declines `overrides`/`implements` rather than
+  // reusing the managed-OO ontology, and why `<:` is published as `extends` only.
+  | "julia"
   | "csharp" | "vb" | "fsharp" | "r" | "sql"
   | "bash" | "powershell" | "hcl" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
@@ -21,6 +26,12 @@ export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   json: "json", jsonc: "json", yml: "yaml", yaml: "yaml", graphql: "graphql", gql: "graphql",
   c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
   rs: "rust", go: "go", zig: "zig",
+  // `.jl` measured, not assumed: 941 tracked files in the Julia corpus, all of which the pinned
+  // grammar parses (772 clean, 177 carrying tree-sitter ERROR nodes the patch inventory records).
+  // `.jul` exists in the wild and is NOT claimed here — declaring a format the corpus cannot
+  // support is the claim-without-coverage class the M60 rules forbid, so it stays undeclared until
+  // a corpus measures it.
+  jl: "julia",
   // M60 honesty rule applied on measurement, not on the grammar's file-types
   // list. The pinned grammar declares `nimble` and `nims` alongside `nim`, but
   // declaring a format is not evidence the analyzer models it, and routing on
