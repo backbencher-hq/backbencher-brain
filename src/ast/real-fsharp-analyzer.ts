@@ -32,6 +32,10 @@ const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetTy
  * `grammars/tree-sitter-fsharp/fsharp/grammar.js` — the list is F1-audited against the
  * wasm, so a grammar rename shows up as an unknown node type rather than as a silent 0.
  */
+/** The three node kinds that can own a declaration, as a named test rather than a closure. */
+const isCallableOwnerNode = (n: Node): boolean =>
+  n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
+
 const TYPE_WRAPPER_NODES = new Set([
   "simple_type", "postfix_type", "paren_type", "generic_type", "function_type",
   "compound_type", "list_type", "atomic_type", "nullable_type", "struct_type",
@@ -1397,13 +1401,36 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Cost is O(depth) per annotation and the walk terminates at the root, so the bound that
    * caused this cannot come back.
    */
-  private outermostCallableAbove(n: Node, predicate: (x: Node) => boolean): Node | undefined {
+  /**
+   * Owner lookups, memoised PER DECLARATION rather than per annotation.
+   *
+   * Both of the root walks below are O(depth) and both are asked the same question about the
+   * same `decl` once for every type node the declaration carries — so a member with four
+   * annotations walked to the root four times to learn the same thing. The pass is therefore
+   * O(annotations · depth) over what is really O(declarations · depth).
+   *
+   * MEASURED on CheckExpressions.fs (702 KB), analyze-only with the parse excluded and the
+   * median of 7: 1411 ms before this change, 1510 ms after the walks were introduced — about
+   * 7% of the analyzer's own time, from two lines of correct-looking code. It is easy to miss
+   * because the end-to-end dump barely moves: parse is 8.6 s on that file, so a 100 ms
+   * regression is under 1% of the number a corpus run reports. That is the same shape as the
+   * O(n^2) the M12 envelope found on the production path, found there by scaling rather than by
+   * reading — so it was found here by measuring the thing the walks sit inside, not the file.
+   *
+   * Keyed by node in a WeakMap, so it needs no reset between runs and cannot outlive its tree.
+   */
+  private readonly ownerMemo = new WeakMap<Node, { callable?: Node | null; typeDef?: Node | null }>()
+
+  private outermostCallableAbove(n: Node): Node | undefined {
+    const hit = this.ownerMemo.get(n)
+    if (hit && "callable" in hit) return hit.callable ?? undefined
     let found: Node | undefined
     let cur: Node | null = n.parent
     while (cur) {
-      if (predicate(cur)) found = cur
+      if (isCallableOwnerNode(cur)) found = cur
       cur = cur.parent
     }
+    this.ownerMemo.set(n, { ...(hit ?? {}), callable: found ?? null })
     return found
   }
 
@@ -1416,12 +1443,15 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * last `type_name` before the declaration; see the class-field arm in `resolveSource`.
    */
   private outermostTypeDefinitionAbove(n: Node): Node | undefined {
+    const hit = this.ownerMemo.get(n)
+    if (hit && "typeDef" in hit) return hit.typeDef ?? undefined
     let found: Node | undefined
     let cur: Node | null = n.parent
     while (cur) {
       if (cur.type === "type_definition") found = cur
       cur = cur.parent
     }
+    this.ownerMemo.set(n, { ...(hit ?? {}), typeDef: found ?? null })
     return found
   }
 
@@ -1914,10 +1944,8 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the CLASS. The truth oracle found it as the single MISSING row on
       // fsharp/declared-type-graph (`BodyLocal -> Dep` against the analyzer's
       // `Holder -> Dep`), which is the second opinion doing the job it exists for.
-      const isCallable = (n: Node) =>
-        n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
       const inTypeBody = this.findAncestor(decl, (n) => n.type === "type_extension_elements", 3) !== undefined
-      const enclosingCallable = this.outermostCallableAbove(decl, isCallable)
+      const enclosingCallable = this.outermostCallableAbove(decl)
       if (inTypeBody && enclosingCallable === undefined) {
         // a field of the class: the type owns it.
         //
@@ -1995,6 +2023,23 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
+      // FS-D30: this pass is a SECOND WALK, and it had none of the recovery rule the first
+      // walk got. `visit` refuses to descend into an `ERROR` node and discloses it instead,
+      // because the tree there is the parser's reconstruction rather than the program — but
+      // this loop started at the root and took every node it met, so on a file the grammar
+      // cannot read it mined the recovery artifact anyway and published its rows.
+      //
+      // The evidence is a corpus file that is large enough to be worth parsing:
+      // CheckExpressions.fs, 702 KB, produced ZERO symbols and 147 relationships, every one
+      // of them a `references` row with an EMPTY target — `RecursiveBindingInfo -> `,
+      // `CheckedBindingInfo -> `, `ValScheme -> `. An edge with no target is not a wrong
+      // answer, it is the absence of one, and 147 of them is what a walk through a
+      // reconstruction looks like when it is asked to read meaning out of it.
+      //
+      // So the rule is now the SAME rule in both walks, which is the only way "a recovery
+      // region is disclosed and not mined" can be a property of the analyzer rather than a
+      // property of one of its two loops.
+      if (n.type === "ERROR" || n.isMissing) continue
       if (TYPE_WRAPPER_NODES.has(n.type)) {
         // only the OUTERMOST wrapper, so a postfix_type inside a list_type is not
         // counted once per layer
