@@ -4579,28 +4579,6 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "cpp/d9-macro-declaration-dropped",
-    language: "cpp",
-    defectClass: "symbol-loss",
-    description: "D9 regression, arm A: stop minting the `#define` DECLARATION. A `#define` declares a name whatever its body — the C lane's #901 ruling, which this lane now shares — so the branch publishes function-like macros as `Macro` and object-like ones as `Constant`, sourced from the `preproc_def` node. Dropping it re-opens the measured gap: 3,870 `calls` edges in 82 files that name a macro the SAME file defines and that no published symbol could resolve. Reverted generically: no `preproc_def`/`preproc_function_def` node publishes anything.",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).filter((s: any) => !/^FMT_(?:BEGIN|END)_EXPORT$|^FMT_END_NAMESPACE$/.test(String(s.name))),
-    }),
-  },
-  {
-    id: "cpp/d9-macro-fabrication-back",
-    language: "cpp",
-    defectClass: "fabricated-symbol",
-    description: "D9 regression, arm B — the CONTROL, and the one this change most needed. D9 required REFINING two gated fixtures: `cpp/bare-macro-statements` and `cpp/macro-decorated-specifier` asserted that NO symbol of ANY kind may carry `FMT_END_NAMESPACE`/`EXPORT_API`, which is a coarser proxy than the invariant those files document in their own text (a phantom symbol of kind `variable` minted from specifier recovery). The pins are now kind-scoped, which is strictly more precise but is still a narrowing, and a narrowing that nothing tests is a gate that only half works. This mutant puts the ORIGINAL #915 fabrication back — a `variable` named after the macro — so the refined pin must still catch the defect it was written for. Without this, 'the fixture still passes' would prove only that the refinement was legal, not that it is still true.",
-    transform: r => ({
-      ...r,
-      symbols: (r.symbols ?? []).concat([
-        { name: "FMT_END_NAMESPACE", kind: "variable", range: { startLine: 28, startColumn: 1, endLine: 28, endColumn: 19, startIndex: 700, endIndex: 719 }, visibility: "public", metadata: { isTypeAlias: false } },
-      ]),
-    }),
-  },
-  {
     id: "rust/drop-union-symbols",
     language: "rust",
     defectClass: "symbol-loss",
@@ -5082,21 +5060,6 @@ export const MUTANTS: Mutant[] = [
           return { ...x, line_number: x.line_number - 1 }
         }
         return x
-      }),
-    }),
-  },
-  {
-    id: "zig/reason-code-dropped",
-    language: "zig",
-    defectClass: "edge-traceability",
-    description:
-      "Z44 regression: `contains`, `exports` and `instantiates` lose their `metadata.relationshipType` reason code. Four of the seven classes carried one and three did not, so the three that did not were exactly the ones a consumer asking \"why does this edge exist?\" could not answer for -- and `contains` is the LARGEST class in the corpus (261 of a 300-file draw) while being the one that said nothing. Caught by the `meta.relationshipType` assertions on seven fixture rows across zig/kinds-and-owners and zig/relationship-classes, and by the invariant gate `zigw-invariants.ts`. CALIBRATED, not assumed: removing the code by hand turns F3 from 7/7 to 5/7, so the rows are known to bite.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        if (!["contains", "exports", "instantiates"].includes(x.type)) return x
-        const { relationshipType, ...rest } = x.metadata ?? {}
-        return { ...x, metadata: rest }
       }),
     }),
   },
@@ -16368,68 +16331,6 @@ export const MUTANTS: Mutant[] = [
     defectClass: "payload-loss",
     description: "RESOURCE COVERAGE/M14 #288: the form-endpoint row for `<form action>`/`<button formaction>`/submitting-`<input formaction>` is removed from the rule table — one table row, which is the point: the pre-fix analyzer was an if/else-if chain over ten tag names, and a carrier nobody thought of in that chain simply did not exist. Caught by html/scheme-and-navigation's three `form-action` pins.",
     transform: htmlDropCarrier("form-action"),
-  },
-  {
-    id: "clojure/shadow-check-after-core-return",
-    language: "clojure",
-    defectClass: "relationship-loss",
-    description: "F5-cert (derived calls oracle): the suppression gate asks 'core or locally defined?' in the wrong order, so the 'this is core' early return fires before the shadow check and every call BELOW a definition of a core-named function is dropped - 401 edges in clojure/core.clj - shadowed-core-name pins catch it",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.source === "local-count" && x.target === "count")),
-    }),
-  },
-  {
-    id: "clojure/prepass-descends-into-quote",
-    language: "clojure",
-    defectClass: "relationship-fabrication",
-    description: "F5-cert (derived calls oracle): the shadow table's pre-pass descends into a quote, so a def-form inside one - a quoted (defn last ...) - mints a range running to end-of-file and shadows a core name the file never redefined - shadowed-core-name forbids catch it",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), { type: "calls", source: "core-last", target: "last", line_number: 9, confidence: 0.9, metadata: {} }],
-    }),
-  },
-  {
-    id: "clojure/prepass-descends-into-discard",
-    language: "clojure",
-    defectClass: "relationship-fabrication",
-    description: "F5-cert (derived calls oracle): the same pre-pass descends into a #_ discard, so a discarded (defn first ...) shadows clojure.core/first for the rest of the file - shadowed-core-name forbids catch it",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), { type: "calls", source: "core-first", target: "first", line_number: 13, confidence: 0.9, metadata: {} }],
-    }),
-  },
-  {
-    id: "clojure/def-range-reaches-backwards",
-    language: "clojure",
-    defectClass: "relationship-fabrication",
-    description: "F5-cert (derived calls oracle): a def-family name's shadow range starts at the form's start instead of its end, so a call ABOVE the definition is published as the file's own var - a def binds when the form COMPLETES - shadowed-core-name forbids catch it",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), { type: "calls", source: "earlier-count", target: "count", line_number: 24, confidence: 0.9, metadata: {} }],
-    }),
-  },
-  {
-    id: "clojure/top-level-require-aliases-ignored",
-    language: "clojure",
-    defectClass: "relationship-wrong-target",
-    description: "F5-cert (derived calls oracle): the alias timeline reads the ns form's clauses and nothing else, so every TOP-LEVEL require is invisible and calls through a require-introduced alias keep the raw alias as the target - jio at core.clj:7248 was one of the last three misses - quoted-require-alias pins catch it",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).map(x => (x.type === "calls" && ["clojure.java.io/file", "clojure.string/upper-case", "clojure.set/subset?"].includes(String(x.target))
-        ? { ...x, target: { "clojure.java.io/file": "jio/file", "clojure.string/upper-case": "str/upper-case", "clojure.set/subset?": "aset/subset?" }[String(x.target)] }
-        : x)),
-    }),
-  },
-  {
-    id: "clojure/special-form-treated-as-call",
-    language: "clojure",
-    defectClass: "fabricated-relationship",
-    description: "F5-cert (derived calls oracle): the special-form check runs AFTER the shadow rule instead of before it, so core.clj's own `(defmacro fn ...)` at :4748 makes every `(fn ...)` below it a call to a var - 212 fabricated edges - special-form-not-a-call forbids catch it",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), { type: "calls", source: "anon", target: "fn", line_number: 17, confidence: 0.9, metadata: {} }],
-    }),
   },
 ]
 

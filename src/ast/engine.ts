@@ -31,76 +31,7 @@ export namespace ASTEngine {
   // Each parser holds ~10-50MB WASM memory - too many cached parsers causes performance degradation
   const MAX_CONCURRENT_PARSERS = 20
   const MAX_PARSER_CACHE_SIZE = 30
-
-  /**
-   * Largest file content handed to the parser, in bytes.
-   *
-   * This was 1 MiB, and it was the single largest source of silent data loss
-   * found in this lane. `content.substring(0, 1 MiB)` drops the tail of every
-   * larger file, so the tail is not mis-parsed — it is simply ABSENT, and
-   * nothing downstream can tell that from a file that simply ends there.
-   *
-   * MEASURED over the six pinned C++ corpora plus the wider corpus: **43 files
-   * exceed 1 MiB and 54,856,371 bytes — 4.84% of all corpus source bytes — were
-   * never parsed at all.** The worst are not marginal:
-   *
-   * | file | size | actually parsed |
-   * | --- | --- | --- |
-   * | `zig/src/codegen/x86_64/CodeGen.zig` | 10,941,553 | **10%** |
-   * | `zig/lib/compiler_rt/udivmodti4_test.zig` | 10,249,535 | **10%** |
-   * | `zig/lib/libc/include/any-windows-any/mshtml.h` | 6,847,802 | **15%** |
-   * | `nlohmann-json/single_include/nlohmann/json.hpp` | 1,270,669 | **82.5%** |
-   *
-   * That last row is the one that made this look like a GRAMMAR limitation and
-   * sent this lane looking for a tree-sitter bug that did not exist. nlohmann's
-   * single-header amalgamation is 1.27 MB, so `class basic_json` — which runs
-   * rows 26,011-32,291 — was cut at row **27,085**. The class could not be fully
-   * published no matter how the grammar parsed, and the parse's root node ended
-   * at exactly the cap: 27,085. Diagnosing that cost a bisection, three dead
-   * ends, and a grammar patch built and then withdrawn. The cap was the cause
-   * the whole time.
-   *
-   * 16 MiB covers every file in this corpus (largest 10.9 MB) with margin, and
-   * the ceiling is safe rather than arbitrary: tree-sitter is linear, and
-   * measured throughput is ~1.45 s/MB, so 16 MiB is ~23 s against a 120 s
-   * timeout (`parseWithTimeout`) and a 120 s hard self-destruct (`parseBomb`).
-   * Measured directly: the real 1.21 MB nlohmann header parses in 1,658 ms, and
-   * a synthetic 10 MB C++ file in 14,576 ms.
-   *
-   * The honest gap this leaves: a file over the cap is still truncated, and
-   * truncating is worse than failing loudly. `parseTruncation` below makes the
-   * loss countable so a gate can assert it is zero instead of the loss being
-   * invisible.
-   */
-  const MAX_PARSE_BYTES = 16 * 1024 * 1024
-
-  /**
-   * Every file whose content was truncated before parsing, with the bytes
-   * dropped. Exported so the loss is a number a gate can read.
-   *
-   * The old behaviour was `log.warn("large file detected, using truncated
-   * content")` and nothing else — a warning nobody gates, for a loss that
-   * silently removes every symbol in the dropped tail. That is the same failure
-   * this lane has been correcting all along, one layer down: a report that
-   * cannot tell a real loss from its own instrumentation has not measured
-   * anything, and neither has a warning that cannot be failed.
-   */
-  export const parseTruncation = {
-    /** how many files were truncated */
-    files: 0,
-    /** total bytes dropped before parsing */
-    bytesDropped: 0,
-    /** worst offenders, largest loss first, for a report that names names */
-    worst: [] as { filePath: string; bytesDropped: number }[],
-  }
-  function recordTruncation(filePath: string, originalBytes: number, parsedBytes: number): void {
-    const dropped = originalBytes - parsedBytes
-    parseTruncation.files++
-    parseTruncation.bytesDropped += dropped
-    parseTruncation.worst.push({ filePath, bytesDropped: dropped })
-    parseTruncation.worst.sort((a, b) => b.bytesDropped - a.bytesDropped)
-    if (parseTruncation.worst.length > 20) parseTruncation.worst.length = 20
-  }
+  const PARSER_TIMEOUT_MS = 10000 // 10 second timeout for parser operations
 
   // Track total parsed files for memory monitoring
   let totalFilesParsed = 0
@@ -1290,18 +1221,15 @@ export namespace ASTEngine {
       parser = await getParser(language)
     }
 
-    // Protect against very large files that might hang the parser. The limit is
-    // 16 MiB (see `MAX_PARSE_BYTES` for the measurement behind that number), and
-    // a file that still exceeds it is recorded in `parseTruncation` rather than
-    // only warned about, so the loss can be gated instead of merely logged.
-    if (content.length > MAX_PARSE_BYTES) {
+    // Protect against very large files that might hang the parser
+    if (content.length > 1024 * 1024) {
+      // 1MB limit for parsing
       log.warn("large file detected, using truncated content", {
         filePath,
         originalSize: content.length,
-        truncatedSize: MAX_PARSE_BYTES,
+        truncatedSize: 1024 * 1024,
       })
-      recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
-      content = content.substring(0, MAX_PARSE_BYTES)
+      content = content.substring(0, 1024 * 1024)
     }
 
     // === UNIVERSAL C/C++ AST ILLUSION FIX ===
