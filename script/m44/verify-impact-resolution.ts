@@ -375,7 +375,11 @@ async function main(): Promise<void> {
     // error for the hint-less ambiguous name.
     await withComponent(
       "post-traverse re-root gate dropped (gravity pick rides silently)",
-      "if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {",
+      // M63.T2: the gate's condition grew — it now exempts an exact,
+      // unambiguous, value-like root and gates the OWNER re-root on the rest. The
+      // anchor moved with it, which the roster check reported rather than
+      // quietly skipping the mutant.
+      "if (kindOutsideWhitelist && exemptKind === null) {",
       "if (false) { // gate dropped: gravity pick allowed over the whitelist",
       async (m) => {
         // Defect signature: with the gate gone, the engine's M48.C1 direct
