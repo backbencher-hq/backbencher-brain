@@ -368,13 +368,33 @@ Two pieces interact:
   (relative line 117 of the function). Inside it, the enclosing class's own consts stop resolving,
   so an attribute's value fails the membership test before the designator rule is consulted at all.
 
-That makes the fix narrower than "resolve attributes in the type scope": a `property_declaration`
-should not open a scope for the purpose of resolving an **attribute's** arguments — those resolve
-in the enclosing type — while still opening one for the property's own initialiser and accessors.
-The accessors genuinely do need the property's scope, so that distinction is the whole content of
-the change. Written up as located, not as fixed: the lines are named and the change is described,
-but it has not been made, and nothing here claims the residual is closed. It is 7 edges in 14,000
-on one lane.
+**The mechanism is `isTypePosition`, not scope — and that makes the class BROADER than the repro.**
+The `uses` push is gated by `!isTypePosition(n)`, and `isTypePosition` returns TRUE for the entire
+subtree of a `property_declaration`, because a property's declared type really is a type position.
+An attribute hanging off that property is not: `[Parameter(ParameterSetName = X)]` reads a const,
+and that read is a value. So the attribute's arguments are gated out along with the type.
+
+A one-line narrowing was tried and reverted. Making `attribute_list`/`attribute` return FALSE from
+`isTypePosition` fixed the synthetic case exactly as predicted — `uses Later` appeared on both sides
+— but the corpus residual did not move: a fresh powershell sample still reported 8 unexplained, all
+`uses`, and the new samples were the SAME SHAPE on OTHER DECLARATIONS, including one whose source is
+a `constructor` (`uses constructor -> DefaultBufferSize`, AsyncByteStreamTransfer.cs:37). So the
+class is attributes-on-declarations generally, not attributes-on-properties.
+
+That is why the change was reverted rather than landed. It is correct in the narrow case, it is in
+shared code that three other agents are editing, it changes the truth count for a live lane, and it
+could not be shown to reduce the real residual — the cold-pool rotates between samples, so the
+before/after numbers are not comparable. A partial fix to shared code, unverified at corpus scale
+and late in a long session, is worse than a precise diagnosis: it looks like the problem is closed
+without being closed. The narrowed repro is kept in `cs-deep-63` so the next attempt starts from a
+case that is known to work rather than rediscovering which shape is real.
+
+**The fix, properly stated:** `isTypePosition` must not classify an attribute's argument list as a
+type position, on ANY declaration — property, constructor, parameter or field. The declared type
+itself must keep its existing classification. The open question left for whoever writes it is
+whether the narrowest correct guard is "stop at `attribute_list` while climbing" or "consult the
+node's own position", and the second is very likely the better answer because the first has to be
+remembered at every declaration type added later.
 
 Two things are deliberately NOT claimed here. The scope mechanism is inferred from the symptom,
 not read out of the code, so the fix is named rather than written. And a `uses`-labelled edge for
