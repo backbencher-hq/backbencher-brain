@@ -326,6 +326,16 @@ export interface GraphTraversalOptions {
    *  5000). Reaching it is DECLARED as truncation, with the root's true site
    *  count reported when computable — it is never a silent cap. */
   edgeLimit?: number
+  /** Bound on the SIZE OF THE ANSWER, not of one query (default 1000, max
+   *  5000). Reaching it is declared as `total-edge-limit`. */
+  maxEdges?: number
+  /** Wall-clock budget for the whole walk, in milliseconds (default 2,000;
+   *  0 disables it). A node is not a unit of work: the per-node caller query
+   *  is priced by the reproducible ORDER BY, which SQLite applies BEFORE the
+   *  LIMIT, so `edgeLimit` does not bound it. When this fires the walk stops
+   *  and `summary.truncated` is true with reason
+   *  "walk-time-budget-exhausted". */
+  timeBudgetMs?: number
 }
 
 export interface GraphTraversalResult {
@@ -351,11 +361,25 @@ export interface GraphTraversalResult {
      *  `maxDepthReached` it is what a UI renders, and `truncated: true` with a
      *  depth reason is what tells a reader the answer is a prefix. */
     maxDepth: number
+    /** The wall-clock budget this walk ran under, and whether it stopped on
+     *  it. A node is not a unit of work: the per-node caller query is priced by
+     *  the reproducible ORDER BY, which sorts before the LIMIT, so a symbol
+     *  with thousands of call sites can cost seconds per node. The time bound
+     *  is what bounds it, and `truncated` is true when it fires. */
+    timeBudgetMs: number
+    timeBudgetExhausted: boolean
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
     /** M59.A12 (#888): the declared per-query site limit that was in force. */
     edgeLimit: number
+    /** The bound on the WHOLE answer. `edgeLimit` and the fan-out budgets bound
+     *  a query and a fan-out; their product was otherwise unbounded, and a hub
+     *  symbol at the default depth returned 454 edges and half a megabyte
+     *  (ripgrep's `unwrap`). Declared so the size of an answer is something a
+     *  caller can predict, and raise if it is too large. */
+    maxEdges: number
+    totalEdgeLimitReached: boolean
     /** How many edge queries hit that limit (any depth). */
     /** How many edge queries hit the per-symbol SITE limit specifically. Not a
      *  count of all bounds: `truncationReason` can name the fan-out budget and
