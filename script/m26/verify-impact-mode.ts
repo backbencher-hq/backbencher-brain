@@ -24,6 +24,8 @@
 //   M12 via erased              (a cascaded row claims to be an exact one)
 //   M14 evidence re-read off    (one row's evidence at another row's depth)
 //   M15 depth correction off    (the first trace published as the shortest path)
+//   M16 range-folded unmarked   (a folded dependent rendered like a member)
+//   M17 unattributed unmarked   (a refusal rendered as a measurement)
 //   M13 composition undeclared  (the cascade breakdown stops being published)
 //   M5 truncation state lost    (truncated flag always false)
 //
@@ -588,6 +590,65 @@ async function main(): Promise<void> {
         },
       },
       {
+        name: "M16 a range-folded dependent rendered like a real member",
+        home: "core",
+        from: 'if (dep.via === "range-folded") {',
+        to: "if (false) {",
+        // A dependent that is here only because the cascade RANGE widened is not
+        // a member of the symbol the user clicked. Measured on the corpus lane:
+        // 7 of ripgrep `RegexMatcher`'s 21 dependents, and none of them a real
+        // member. On a screen there is no field to check, so the marker is the
+        // whole of the declaration.
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact(
+            {
+              ...result,
+              impact: [
+                { id: "a", name: "realMember", file: "f.ts", depth: 0, relationshipType: "calls", confidence: 0.9, via: "exact", evidenceAtDepth: 0 },
+                { id: "b", name: "siblingFold", file: "f.ts", depth: 0, relationshipType: "calls", confidence: 0.9, via: "range-folded", evidenceAtDepth: 0 },
+              ],
+            },
+            d as never,
+          )
+          // The defect is the row rendered with NEITHER the per-row marker NOR
+          // the panel note. A probe that returns "the marker is there" would
+          // pass on the mutant, because `data-via` is set outside the branch —
+          // the same inversion that let M17 survive on its first form.
+          const nodes = d.el.findAll("bb-impact-node")
+          if (nodes.length !== 2 || !nodes.some((n) => n.attrs["data-via"] === "range-folded")) return true
+          return d.el.find("bb-impact-cascade-note") === null
+        },
+      },
+      {
+        name: "M17 an unattributed evidence block rendered as if it were quoted",
+        home: "core",
+        from: "if (dep.evidenceAtDepth === null) {",
+        to: "if (false) {",
+        // `evidenceAtDepth === null` means no stored row could be read at the
+        // depth this panel reports, so no tier, position or cross-language flag
+        // is being shown for that row. Rendering it as an ordinary dependent
+        // would present a refusal as a measurement.
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact(
+            {
+              ...result,
+              impact: [{ id: "a", name: "noEvidence", file: "f.ts", depth: 2, relationshipType: "calls", confidence: 0.9, via: "exact", evidenceAtDepth: null }],
+            },
+            d as never,
+          )
+          // Same shape, and the reason the first form survived: the probe asked
+          // "is the declaration there" and got the right answer from a build in
+          // which the declaration had been removed. A mutant probe must return
+          // TRUE when the DEFECT is observable.
+          const nodes = d.el.findAll("bb-impact-node")
+          if (nodes.length !== 1) return true
+          if (nodes[0]!.attrs["data-evidence"] !== "unattributed") return true
+          return d.el.find("bb-impact-evidence-note") === null
+        },
+      },
+      {
         name: "M5 truncation state lost",
         home: "component",
         from: "truncated = true\n      truncationReason = \"impact-node-budget-exhausted\"",
@@ -615,7 +676,7 @@ async function main(): Promise<void> {
     // equality still holds, and the summary reads BETTER than before while
     // testing less. (Measured: the M7 anchor was invalidated by a field added
     // to a return literal, the suite reported 10/10, and nothing failed.)
-    const EXPECTED_MUTANTS = 15
+    const EXPECTED_MUTANTS = 17
     let caught = 0
     let mutantsTotal = 0
     let skipped = 0
