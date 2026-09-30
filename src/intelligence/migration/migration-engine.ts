@@ -1,5 +1,5 @@
-import { CrossLanguageIntelligence } from "../../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../../ast/cross-language-migration-assistant"
+import { loadMigrationContext } from "./migration-source"
 
 export interface MigrationRequest {
   symbolNames: string[]
@@ -35,11 +35,19 @@ export type MigrationBatchUnsupportedReason =
   | "unsupported-target"
   | "unsupported-source"
   | "ambiguous-symbol"
-  | "unplannable"
 
 export interface MigrationPlanResult {
   targetLanguage: string
   plans: any[]
+  /** Aggregated evidence split across every plan in the request. */
+  evidenceTotals: {
+    production: number
+    test: number
+    unresolvable: number
+    crossLanguage: number
+    withLine: number
+    withConfidence: number
+  }
   dependencyOrder: string[]
   dependencyGraph: MigrationDependencyGraph
   unsupported: Array<{
@@ -83,13 +91,19 @@ export interface MigrationPlanResult {
  * components.
  */
 export function calculateMigrationMethodology(plans: Array<{
-  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string }>
+  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean }>
   dependencies?: Array<{ confidence?: number }>
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
   let missingMappingCount = 0
   for (const plan of plans) {
     for (const relationship of plan.relationshipEvidence ?? []) {
+      // Only edges with a locatable endpoint are migration work. An edge whose
+      // endpoint is not an indexed symbol cannot be scoped, planned or done, so
+      // charging 2 hours for it inflates the total with work nobody can act on.
+      // `endpointsResolved` is absent on legacy callers, which are treated as
+      // resolved so this stays a pure narrowing.
+      if (relationship.endpointsResolved === false) continue
       const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
       relationshipIds.add(identity)
     }
@@ -189,7 +203,18 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const uniqueNames = [...new Set(requestedNames.map((name) => name.toLowerCase()))]
   const names = uniqueNames.slice(0, 100)
   const normalizedTargetLanguage = String(request.targetLanguage ?? "").trim().toLowerCase()
-  const analysis = await CrossLanguageIntelligence.analyzePolyglotProjectFromDB(projectId as any)
+  // Bounded load: the requested symbols and the relationships that touch them.
+  // The previous call loaded and reconstructed every symbol, relationship and
+  // taint flow in the project on every invocation — measured 2342 ms for ONE
+  // symbol on a 1216-symbol repository, flat in the request size — and supplied
+  // only four of the fourteen relationship columns the index stores.
+  const context = await loadMigrationContext(projectId, names)
+  const analysis: CrossLanguageMigrationAssistant.MigrationSource = {
+    symbols: context.requestedSymbols,
+    relationships: context.relationships,
+    nameById: context.nameById,
+    fileById: context.fileById,
+  }
   const plans: any[] = []
   const unsupported: MigrationPlanResult["unsupported"] = []
   // Refusals come from the planner itself now. The previous code called the
@@ -211,15 +236,11 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     unsupported.push(entry)
   }
   const planNames = plans.map((plan) => plan.componentName)
-  const idsByName = new Map<string, Set<string>>()
-  for (const symbol of analysis.crossLanguageSymbols) {
-    if (!planNames.includes(symbol.name)) continue
-    const ids = idsByName.get(symbol.name) ?? new Set<string>()
-    ids.add(symbol.id)
-    idsByName.set(symbol.name, ids)
-  }
-  const nameById = new Map<string, string>()
-  for (const [name, ids] of idsByName) for (const id of ids) nameById.set(id, name)
+  // `nameById` is the loader's map, which already covers the requested symbols
+  // AND the far endpoints of their relationships. Round 1 rebuilt this with a
+  // linear `crossLanguageSymbols.find(...)` inside the edge loop — O(RxS), which
+  // is 5228 x 1216 comparisons on cobra.
+  const nameById = context.nameById
 
   // Every indexed relationship touching a planned symbol. A planned symbol that
   // is called by a symbol the caller did NOT request is a real, named
@@ -235,32 +256,33 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     }
   }
   const graphRelationships: MigrationDependencyEdge[] = []
-  for (const relationship of analysis.crossLanguageRelationships) {
-    const sourceId = relationship.source?.symbolId
-    const targetId = relationship.target?.symbolId
-    if (!sourceId || !targetId) continue
-    if (!plannedIds.has(sourceId) && !plannedIds.has(targetId)) continue
-    const dependent = nameById.get(sourceId)
-    const dependency = nameById.get(targetId)
+  const externalName = (external: string | null | undefined, symbolId: string | null): string | null => {
+    if (symbolId) return nameById.get(symbolId) ?? null
+    const named = String(external ?? "").trim()
+    return named ? named : null
+  }
+  for (const relationship of context.relationships) {
+    const sourceId = relationship.sourceSymbolId
+    const targetId = relationship.targetSymbolId
+    if (!plannedIds.has(sourceId ?? "") && !plannedIds.has(targetId ?? "")) continue
+    const dependent = externalName(relationship.sourceExternal, sourceId)
+    const dependency = externalName(relationship.targetExternal, targetId)
     // A relationship between two planned symbols is an orderable edge. A
     // relationship from a planned symbol to something not requested is
     // unresolved: naming the endpoint is honest; dropping it is a silent gap.
-    if (dependent && dependency && dependent !== dependency) {
-      graphRelationships.push({ dependent, dependency, relationshipType: String(relationship.type) })
-    } else if (dependent && !dependency) {
-      const endpoint = analysis.crossLanguageSymbols.find((symbol: any) => symbol.id === sourceId) as any
-      graphRelationships.push({
-        dependent,
-        dependency: String(endpoint?.name ?? targetId),
-        relationshipType: String(relationship.type),
-      })
+    if (dependent && dependency) {
+      if (dependent !== dependency) graphRelationships.push({ dependent, dependency, relationshipType: relationship.type })
+      continue
+    }
+    // One endpoint is outside the requested set. Naming it is honest; the
+    // previous code named it with the raw symbol id, which tells a reader
+    // nothing they can look up.
+    if (dependent && !dependency) {
+      const endpoint = String(relationship.targetExternal ?? targetId ?? "").trim()
+      if (endpoint) graphRelationships.push({ dependent, dependency: endpoint, relationshipType: relationship.type })
     } else if (dependency && !dependent) {
-      const endpoint = analysis.crossLanguageSymbols.find((symbol: any) => symbol.id === targetId) as any
-      graphRelationships.push({
-        dependent: String(endpoint?.name ?? sourceId),
-        dependency,
-        relationshipType: String(relationship.type),
-      })
+      const endpoint = String(relationship.sourceExternal ?? sourceId ?? "").trim()
+      if (endpoint) graphRelationships.push({ dependent: endpoint, dependency, relationshipType: relationship.type })
     }
   }
   const { order: dependencyOrder, graph: dependencyGraph } = computeDependencyOrder(planNames, graphRelationships)
@@ -275,9 +297,28 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const deduplicated = requestedNames.length - uniqueNames.length
   const capped = uniqueNames.length - names.length
 
+  // The per-edge evidence split, aggregated. A flat per-edge cost makes a plan
+  // look enormous when most of its edges are test callers: measured 55.3% on
+  // cobra. Reporting the split is what makes the number interpretable.
+  const evidenceTotals = plans.reduce(
+    (acc, plan) => {
+      const b = plan.evidenceBreakdown
+      if (!b) return acc
+      acc.production += b.production ?? 0
+      acc.test += b.test ?? 0
+      acc.unresolvable += b.unresolvable ?? 0
+      acc.crossLanguage += b.crossLanguage ?? 0
+      acc.withLine += b.withLine ?? 0
+      acc.withConfidence += b.withConfidence ?? 0
+      return acc
+    },
+    { production: 0, test: 0, unresolvable: 0, crossLanguage: 0, withLine: 0, withConfidence: 0 },
+  )
+
   return {
     targetLanguage: normalizedTargetLanguage,
     plans,
+    evidenceTotals,
     dependencyOrder,
     dependencyGraph,
     unsupported,
@@ -314,24 +355,48 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     `total effort: ${result.effort.totalHours}h (${result.effort.reconciliation})`,
     `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested}; ${result.truncation.deduplicated} duplicate, ${result.truncation.capped} over the 100-symbol cap)`,
   ]
+  const totals = result.evidenceTotals
+  if (totals && (totals.production || totals.test || totals.unresolvable || totals.crossLanguage)) {
+    // The split is what makes a flat per-edge cost interpretable: on cobra, 55.3%
+    // of a plan's edges are test callers, and an undifferentiated number reads
+    // as "this function is enormous" when it is "this function is well tested".
+    lines.push(
+      `evidence: ${totals.production} production edge(s), ${totals.test} test edge(s), ${totals.crossLanguage} crossing a language boundary, ${totals.unresolvable} with an unresolvable endpoint (not charged)` +
+        (totals.withLine ? `; ${totals.withLine} carry a line` : "; no edge carries a line"),
+    )
+  }
   if (result.dependencyGraph.unresolvedDependencies.length) lines.push(`unresolved dependencies: ${result.dependencyGraph.unresolvedDependencies.map((edge) => `${edge.dependent} -> ${edge.dependency}`).join(", ")}`)
   if (result.dependencyGraph.cycles.length) lines.push(`dependency cycles: ${result.dependencyGraph.cycles.map((cycle) => cycle.join(" -> ")).join("; ")}`)
+
   for (const plan of result.plans) {
     lines.push(
-      `\n${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}`,
+      `\n${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}  [${plan.sourceFile}]`,
       `effort=${plan.effortEstimateHours}h complexity=${plan.complexityScore}/10 risk=${plan.riskAssessment?.level}`,
     )
+    // F21: the text output used to print `risk=High` and never the reason, so a
+    // reader of the DEFAULT format could not act on the band. The factors are
+    // the explanation and they belong next to the band.
+    for (const factor of plan.riskAssessment?.factors ?? []) lines.push(`  why: ${factor}`)
     for (const dependency of plan.dependencies ?? []) {
       lines.push(`  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%, indexed import)`)
     }
-    // A guess is shown as a guess: never listed as a mapping, never in a number.
     for (const guess of plan.inferredDependencies ?? []) {
       lines.push(`  ${guess.source} -> (${guess.target ?? "no registered equivalence"}) — name-based guess, not an observed import; excluded from effort and risk`)
     }
     if (!(plan.dependencies ?? []).length && !(plan.inferredDependencies ?? []).length) {
-      lines.push("  no library evidence: the index carries no imports for this component")
+      lines.push(
+        plan.dependencyProvenance?.importEvidence === "unavailable"
+          ? "  library dependencies UNKNOWN: the index records no imports for this component (not the same as 'none')"
+          : "  no library evidence: the index carries no imports for this component",
+      )
+    }
+    const b = plan.evidenceBreakdown
+    if (b) {
+      const cross = b.crossLanguage > 0 ? `, ${b.crossLanguage} cross-language` : ""
+      lines.push(`  evidence: ${b.production} production + ${b.test} test${cross}${b.unresolvable ? `, ${b.unresolvable} unresolvable` : ""}`)
     }
   }
+
   if (result.unsupported.length) {
     lines.push("\nunsupported:")
     for (const item of result.unsupported) {
