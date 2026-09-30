@@ -370,6 +370,18 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // attributing them to `_Multipart` is how a class ends up owning a member that is
     // one level deeper than the reader is.
     if (n.type === "class_definition") return
+    // A DECORATOR IS METADATA, NEVER A CALL — the lane's declared contract, and the reason
+    // `@pytest.fixture` produces no edge while `self.fx()` does.
+    //
+    // This walk skipped decorators for free until it started deriving calls: a decorator is
+    // a sibling of the `def` in the class body, so nothing descended into it. Deriving
+    // class-scope calls changed that by accident and immediately produced 738 `complete`,
+    // 61 `parametrize`, 37 `fixture` and 32 `patch` edges — every decorated test method in
+    // the corpus, reported as relationships the analyzer had missed. The contract is right
+    // and worth stating rather than leaving implicit: a decorator is applied TO a
+    // declaration, it is not a call the code makes, and an edge from a class to
+    // `parametrize` says the class calls pytest, which is not what the source says.
+    if (n.type === "decorator") return
     if (n.type === "assignment" || n.type === "expression_statement") {
       const left = n.childForFieldName("left")
       // An ANNOTATED declaration (`name: bytes`) is a member too, and in a TypedDict it
@@ -388,6 +400,29 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         // `contains` edge resolve by name AND line. Deduplicating by name is right for an
         // INSTANCE attribute (`self.x` in three methods is one attribute) and wrong here.
         add("contains", cls, nameNode.text, n.startPosition.row + 1)
+      }
+    }
+    // A CALL AT CLASS SCOPE is a call made by the class, and the lane scopes it to the
+    // CLASS name: `limit = ValueError("x")` in a class body is `calls K -> ValueError`, not
+    // a call by whatever method happens to enclose it and certainly not by the module.
+    //
+    // This walk derived `contains` and nothing else, so every class-level initialiser —
+    // a sentinel exception, a factory call, a default built from another member — was an
+    // edge the analyzer emitted and the oracle could not account for. That is the
+    // `SLESHostname -> ValueError` / `CollectionSearch -> FieldAttribute` cluster, and it
+    // is the Cython `cdef` attribute defaults in `PyrexTypes.py`.
+    //
+    // The same two conditions `walkBody` applies are applied here, for the same reasons: a
+    // builtin is not a graph node, a dunder is filtered, and a Capitalised callee this file
+    // declares as a class is an `instantiates` rather than a `calls`.
+    if (n.type === "call") {
+      const fn = n.childForFieldName("function")
+      const leaf = calleeName(fn)
+      if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
+        if (leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase() && classNames.has(leaf))
+          add("instantiates", cls, leaf, n.startPosition.row + 1)
+        else
+          add("calls", cls, leaf, n.startPosition.row + 1)
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) walkClassBody(n.namedChild(i), cls)
