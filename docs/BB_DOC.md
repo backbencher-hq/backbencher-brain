@@ -103,8 +103,9 @@ included claim must still cite concrete symbols, files, or relationships.
 `api` does not infer undocumented HTTP behavior from a function name alone.
 
 **What `api` mode reads, measured.** It selects a symbol when the index records
-an `api_contract_path`, or gives it a route/endpoint/controller type, or places
-it in a file whose `framework_type` is an HTTP framework. The first two were
+an `api_contract_path`, or gives it a route/endpoint/controller type, or it is a
+**callable** in a file whose `framework_type` is an HTTP framework. The first two
+were
 measured empty on all eight indexed corpora — `api_contract_path` was null in
 every one and no corpus held a single route-ish symbol type — so before the
 framework route existed the mode had **no input at all**: all four of its
@@ -116,7 +117,21 @@ document.
 
 The `net_http` attribution is the index's own vocabulary, not a guess at what
 frameworks exist; a framework absent from the set contributes no endpoint, and
-the document says how many files the index attributed.
+the document says how many files the index attributed. It is present in **1 of
+the 8 measured corpora** (go_tools, 25 files), so this is a real input on a real
+repository rather than a general one, and the section says which counts it found.
+
+Broadening the selection that way introduced a defect a fixture could not see,
+and only go_tools exposed it: selecting *every* exported symbol of an
+HTTP-attributed file made the mode report `module blog()` and `struct Config()`
+as endpoints. Measured on go_tools, those 25 files hold 281 exported symbols, of
+which **121 are property accessors, 25 module declarations, 19 structs, 18
+variables and 3 interfaces** — 186 of 281 are not callable at all. So a symbol
+reaches Endpoints only on an authoritative route signal (a contract path, or a
+route/endpoint/controller type) or as a callable in an HTTP-attributed file, and
+every entry states what the index does and does not record: framework attribution
+is a property of the FILE, so it places a symbol on an HTTP surface without
+saying which request that symbol answers, and no method or path is recorded.
 
 `api` also cannot report two of its four sections, and now says so by name:
 
@@ -159,6 +174,14 @@ nothing. Two rules make the explanation real:
   qualify. Neither says why that section has no facts, and neither may stand in
   for saying so: an `api` document with an empty Endpoints section once showed
   only a freshness note and never said that no endpoint was indexed.
+- **An explanation must be AIMED, not defaulted.** A concern whose section does
+  not exist in the current mode lands on the document's lead, and it was then
+  accepted as that section's explanation. On the 5 382-file typescript index the
+  scope note — "5 282 file(s) were not examined" — was the *only* note the
+  Endpoints section carried, which is not a reason it has no endpoints. The same
+  note in `file` mode, which does render the section `scope` prefers, is aimed and
+  does explain it. So the rule is per resolution, not per concern: a defaulted
+  note never excuses a section, an aimed one may.
 
 `file` mode accepts a repository-relative path. An exact path, an absolute path,
 a directory prefix, and a bare file name (with or without its extension) all

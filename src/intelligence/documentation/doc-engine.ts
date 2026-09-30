@@ -636,7 +636,7 @@ async function targetSymbols(raw: any, projectId: string, request: DocRequest, f
          WHERE s.project_id=?
            AND (s.api_contract_path IS NOT NULL
                 OR lower(s.symbol_type) IN ('route','endpoint','controller')
-                OR f.framework_type IN (${placeholders}))
+                OR (f.framework_type IN (${placeholders}) AND lower(s.symbol_type) IN ('function','method')))
            AND s.visibility IN ('export','public')
            AND (?='' OR s.api_contract_path=? OR f.relative_path=? OR f.relative_path LIKE ?) ORDER BY f.relative_path, s.line_start LIMIT ?`,
         projectId, ...HTTP_FRAMEWORK_TYPES, target, target, target, `${normalizeTarget(target)}/%`, limit,
@@ -856,6 +856,54 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
     }
   }
   return { api, behavior, tests, limitations }
+}
+
+/**
+ * One honest statement per endpoint.
+ *
+ * Selecting every exported symbol of an HTTP-attributed file was wrong in a way
+ * only a real repository showed: measured on go_tools, the 25 `net_http` files
+ * hold 281 exported symbols, of which 121 are property accessors, 25 are module
+ * declarations, 19 are structs, 18 are variables and 3 are interfaces. A section
+ * called Endpoints reported `module blog()` and `struct Config()` as endpoints,
+ * which is the name-against-content defect this review exists to remove.
+ *
+ * So a symbol reaches this section only if the index gives it an authoritative
+ * route signal (a contract path, or a route/endpoint/controller type) or it is
+ * callable in a file the index attributes to an HTTP framework. And every
+ * statement says what the index does and does not record about the route: the
+ * framework attribution is a property of the FILE, so it establishes that the
+ * file is on an HTTP surface, not that any particular symbol answers a request.
+ */
+function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver): DocFact[] {
+  const facts: DocFact[] = []
+  for (const symbol of symbols) {
+    const rel = String(symbol.relative_path ?? "")
+    const start = Number(symbol.line_start ?? 0)
+    const end = Number(symbol.line_end ?? start)
+    const parameters = formatParameters(symbol.parameters)
+    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const framework = String(symbol.framework_type ?? "")
+    const id = addCitation(citations, {
+      kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
+      lineStart: start || undefined, lineEnd: end || undefined,
+      evidence: `${symbol.symbol_type} ${symbol.name} in ${rel}${framework ? ` (index framework: ${framework})` : ""}`,
+      fileId: String(symbol.source_file_id ?? ""),
+    }, resolver)
+    if (symbol.api_contract_path) {
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end} and is bound to the API contract ${symbol.api_contract_path}.`, [id], citations))
+      continue
+    }
+    if (framework) {
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.`, [id], citations))
+      continue
+    }
+    // The selection admits `controller` as well as `route` and `endpoint`, so
+    // this must not claim the symbol IS a route: it says the index typed it as
+    // route-bearing and that the request it answers is not recorded.
+    facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end} and the index types it ${String(symbol.symbol_type)}, one of the types it records for a route-bearing symbol. No method or path is recorded for it.`, [id], citations))
+  }
+  return facts
 }
 
 function addPublicSymbolFacts(raw: any, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[]): DocFact[] {
@@ -1290,11 +1338,23 @@ function unsupportedFacts(symbols: Row[], files: Row[], reader: SourceReader, ci
  */
 const HTTP_FRAMEWORK_TYPES = ["net_http"] as const
 
-function apiSurfaceIndex(raw: any, projectId: string): { files: number; placeholders: string[] } {
-  const rows = queryRows(raw, `SELECT DISTINCT framework_type FROM brain_file WHERE project_id=? AND framework_type IS NOT NULL`, projectId)
-  const placeholders = HTTP_FRAMEWORK_TYPES.map(String)
-  const files = rows.filter((row) => placeholders.includes(String(row.framework_type))).length
-  return { files, placeholders }
+function apiSurfaceIndex(raw: any, projectId: string): { files: number; placeholders: string[]; contracts: number; routes: number; callables: number } {
+  const placeholders = HTTP_FRAMEWORK_TYPES.map(() => "?").join(",")
+  const counts = (sql: string, ...params: any[]): number => {
+    try { return Number((raw.prepare(sql).get(projectId, ...params) as any)?.c ?? 0) } catch { return 0 }
+  }
+  return {
+    placeholders: HTTP_FRAMEWORK_TYPES.map(String),
+    files: counts("SELECT count(*) c FROM brain_file WHERE project_id=? AND framework_type IN (" + placeholders + ")", ...HTTP_FRAMEWORK_TYPES),
+    contracts: counts("SELECT count(*) c FROM brain_symbol WHERE project_id=? AND api_contract_path IS NOT NULL"),
+    routes: counts("SELECT count(*) c FROM brain_symbol WHERE project_id=? AND lower(symbol_type) IN ('route','endpoint','controller')"),
+    callables: counts(
+      `SELECT count(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+       WHERE s.project_id=? AND f.framework_type IN (${placeholders}) AND s.visibility IN ('export','public')
+         AND s.line_start>0 AND lower(s.symbol_type) IN ('function','method')`,
+      ...HTTP_FRAMEWORK_TYPES,
+    ),
+  }
 }
 
 function buildProse(draft: SectionDraft, citationCount: number): string {
@@ -1401,8 +1461,10 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "components", heading: "Components", required: true, audience: "all", facts: [...fileFacts, ...symbolParts.behavior], emptyExplanation: "No indexed file and no described behaviour was resolved for this feature, so no component is listed." })
     push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names a candidate of this feature and no indexed relationship reaches one from a test, so its test coverage is not established." })
   } else if (mode === "api") {
-    const surface = apiSurface ?? { files: 0, placeholders: [] as string[] }
-    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: symbolParts.api, lead: symbols.length === 0 ? `No HTTP surface is indexed for this project: no API contract path, no route, endpoint or controller symbol, and ${surface.files} file(s) attributed to an HTTP framework. This tool will not infer an endpoint from a function name.` : undefined, emptyExplanation: `No endpoint is indexed: the index records no API contract path, no route, endpoint or controller symbol, and ${surface.files} file(s) are attributed to an HTTP framework whose exported symbols carry no method or path.` })
+    const surface = apiSurface ?? { files: 0, placeholders: [] as string[], contracts: 0, routes: 0, callables: 0 }
+    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver), lead: symbols.length === 0
+        ? `No HTTP surface is indexed for this project: ${surface.contracts} API contract path(s), ${surface.routes} route/endpoint/controller symbol(s), and ${surface.files} file(s) attributed to an HTTP framework holding ${surface.callables} callable exported symbol(s). This tool will not infer an endpoint from a function's name.`
+        : `The index attributes ${surface.files} file(s) to an HTTP framework and holds ${surface.callables} callable exported symbol(s) in them. Framework attribution is a property of the FILE, so it places a symbol on an HTTP surface; it does not say which request the symbol answers, and no method or path is recorded.`, emptyExplanation: `No endpoint is indexed. This tool looked for an API contract path, a route, endpoint or controller symbol, and a callable symbol in a file the index attributes to an HTTP framework; the index holds ${surface.contracts} contract path(s), ${surface.routes} route-ish symbol type(s), and ${surface.files} HTTP-attributed file(s) with ${surface.callables} callable exported symbol(s). It will not infer an endpoint from a function's name.` })
     push({ id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: symbolParts.behavior, emptyExplanation: "No endpoint is indexed, so there is no signature whose parameters or return type could be reported." })
     push({ id: "errors", heading: "Errors", required: true, audience: ["developer", "maintainer", "website"], facts: [], lead: "No error surface is asserted: an endpoint's failures are not inferable from its signature, and the index does not record them.", emptyExplanation: "The index has no table, column or symbol type that records a thrown, raised or returned error, so no error surface can be reported for any endpoint. This is a limit of what is indexed, not a finding that the code cannot fail." })
     push({ id: "examples", heading: "Examples", required: true, audience: "all", facts: [], emptyExplanation: "No endpoint carries a docstring containing a call to itself and no indexed test names one, so no usage example can be quoted from cited source." })
@@ -1959,7 +2021,7 @@ function concern(about: UnknownConcern): string {
  * A concern with no candidate in this mode falls to the document's lead section,
  * which every mode renders and which is where "this document is partial" belongs.
  */
-function resolveUnknownSections(sections: DocSection[], unknowns: DocUnknown[]): Map<string, Set<UnknownConcern | "declared">> {
+export function resolveUnknownSections(sections: DocSection[], unknowns: DocUnknown[]): Map<string, Set<UnknownConcern | "declared">> {
   const rendered = sections.map((section) => section.id)
   const bySection = new Map<string, Set<UnknownConcern | "declared">>()
   const note = (id: string, about: UnknownConcern | "declared") => {
@@ -1967,6 +2029,14 @@ function resolveUnknownSections(sections: DocSection[], unknowns: DocUnknown[]):
     set.add(about)
     bySection.set(id, set)
   }
+  // Whether a resolution was CHOSEN or DEFAULTED. A concern whose preferred
+  // section does not exist in this mode falls to the document's lead, and a note
+  // that landed there by fallback was never about that section: the scope note
+  // says how much of the project was not examined, which is not a reason the
+  // Endpoints section has no endpoints. It was enough to explain one anyway,
+  // because a 5 282-file typescript index truncated its scope and the Endpoints
+  // section then showed only that and never said no endpoint was indexed.
+  const aimed = new Map<string, boolean>()
   const lead = rendered[0]
   if (lead === undefined) return bySection
   for (const unknown of unknowns) {
@@ -1981,8 +2051,19 @@ function resolveUnknownSections(sections: DocSection[], unknowns: DocUnknown[]):
     if (preference === undefined) {
       throw new Error(`bb_doc: unknown concerns cannot be resolved: ${about}`)
     }
-    unknown.affectedSection = preference.find((id) => rendered.includes(id)) ?? lead
+    const chosen = preference.find((id) => rendered.includes(id))
+    unknown.affectedSection = chosen ?? lead
+    // A note that names the section outright is aimed at it by construction.
+    aimed.set(`${unknown.affectedSection}|${about}`, chosen !== undefined)
     note(unknown.affectedSection, about)
+  }
+  // Only an AIMED absence-explaining note can excuse an empty section.
+  for (const [id, set] of bySection) {
+    for (const about of set) {
+      if (about === "declared") continue
+      if (!EMPTINESS_EXPLAINING.has(about)) continue
+      if (aimed.get(`${id}|${about}`) !== true) set.delete(about)
+    }
   }
   return bySection
 }
