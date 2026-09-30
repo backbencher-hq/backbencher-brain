@@ -949,57 +949,47 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       if (type === "namespace_use_declaration") {
+        // M12.PHP-GROUPED-USE. A `use` declaration has TWO shapes, and only the
+        // first was handled:
+        //
+        //   use App\Models\User;          -> namespace_use_clause           (direct child)
+        //   use App\Models\{User, Post};  -> namespace_name + namespace_use_group
+        //                                        ^prefix        ^the clauses live in here
+        //
+        // The loop below only ever looked at DIRECT children for a
+        // namespace_use_clause, so the grouped form matched nothing and emitted
+        // NO import and NO `imports` edge at all. Grouped use is the idiomatic
+        // modern form, and it is absent from BOTH php corpora (phpunit and
+        // phpmyadmin contain zero occurrences), which is why a full-corpus run
+        // reported 100% coverage while missing it: the corpora cannot detect a
+        // construct they do not contain, and the differential's oracle had the
+        // same blind spot, so the two agreed on an absence. Only a hand-authored
+        // construct matrix finds this class of gap.
+        //
+        // The prefix is the declaration's own namespace_name child; each grouped
+        // member is prefix + "\\" + member, which is the FQN PHP actually binds.
+        let groupPrefix = ""
         for (let i = 0; i < node.namedChildCount; i++) {
-          const child = node.namedChild(i)
-          // Pinned grammar: use-declaration clauses are namespace_use_clause
-          // ("use App\Models\User;", "use X as Y;", "use function f;") —
-          // probe-verified 2026-08-30. 'use_clause' was a dead literal.
-          if (!child || child.type !== "namespace_use_clause") continue
-          let fqn = ""
-          let alias: string | undefined
-          for (let j = 0; j < child.namedChildCount; j++) {
-            const part = child.namedChild(j)
-            if (!part) continue
-            if (part.type === "name" || part.type === "qualified_name") {
-              if (!fqn) fqn = part.text
-              else alias = part.text
+          const pn = node.namedChild(i)
+          if (pn && pn.type === "namespace_name") groupPrefix = pn.text
+        }
+        for (let i = 0; i < node.namedChildCount; i++) {
+          let child = node.namedChild(i)
+          let prefix = ""
+          // Descend one level into namespace_use_group, qualifying each member.
+          if (child && child.type === "namespace_use_group") {
+            if (!groupPrefix) continue
+            for (let k = 0; k < child.namedChildCount; k++) {
+              const member = child.namedChild(k)
+              if (member && member.type === "namespace_use_clause") this.emitUseClause(member, relationships, imports, detectedFrameworks, groupPrefix)
             }
+            continue
           }
-          if (!fqn) continue
-          const leaf = this.leafName(fqn)
-          imports.push({
-            module: fqn,
-            items: [alias || leaf],
-            isDefaultImport: true,
-            range: this.nodeToRange(child),
-            metadata: { phpSpecific: true, aliased: !!alias },
-          })
-          // M12.PHP-IMPORTS: a `use` clause is a MODULE DEPENDENCY, and the
-          // file-level reader keys on it —
-          // src/lsp/graph_request.ts:256 is `relationship_type IN
-          // ('imports','exports')`. This analyzer previously recorded the
-          // clause only as ImportInfo and emitted no relationship at all, so
-          // every PHP module dependency was invisible to that reader. `use`
-          // is per-compilation-unit in PHP, so the owner is file scope — the
-          // same owner emitInclude already used for the include path.
-          relationships.push({
-            source: "global",
-            target: fqn,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1,
-            line_number: this.nodeLine(child),
-            metadata: {
-              phpSpecific: true,
-              isImport: true,
-              fileLevel: true,
-              aliased: !!alias,
-              relationshipType: "use_clause",
-            },
-          })
-          this.detectFramework(fqn, detectedFrameworks)
+          if (child && child.type === "namespace_use_clause") this.emitUseClause(child, relationships, imports, detectedFrameworks, "")
         }
         continue
       }
+
 
       if (type === "require_once_expression" || type === "include_once_expression" ||
           type === "require_expression" || type === "include_expression") {
@@ -1817,6 +1807,67 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     return mods
+  }
+
+  /**
+   * One `use` clause -> one ImportInfo + one `imports` edge.
+   *
+   * Shared by the plain form (`use App\Models\User;`) and the grouped form
+   * (`use App\Models\{User, Post};`), which differ only in that a grouped
+   * member is qualified by the declaration's own prefix — that prefix is what
+   * `prefix` carries, so `Post` is recorded as `App\Models\Post`, the FQN PHP
+   * actually binds, not as a bare `Post` that would collide with every other
+   * group's members.
+   */
+  private emitUseClause(
+    child: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    imports: ASTEngine.ImportInfo[],
+    detectedFrameworks: Set<string>,
+    prefix: string,
+  ): void {
+    let fqn = ""
+    let alias: string | undefined
+    for (let j = 0; j < child.namedChildCount; j++) {
+      const part = child.namedChild(j)
+      if (!part) continue
+      if (part.type === "name" || part.type === "qualified_name") {
+        if (!fqn) fqn = part.text
+        else alias = part.text
+      }
+    }
+    if (!fqn) return
+    if (prefix) fqn = `${prefix}\\${fqn}`
+    const leaf = this.leafName(fqn)
+    imports.push({
+      module: fqn,
+      items: [alias || leaf],
+      isDefaultImport: true,
+      range: this.nodeToRange(child),
+      metadata: { phpSpecific: true, aliased: !!alias, grouped: !!prefix },
+    })
+    // M12.PHP-IMPORTS: a `use` clause is a MODULE DEPENDENCY, and the file-level
+    // reader keys on it — src/lsp/graph_request.ts:256 is `relationship_type IN
+    // ('imports','exports')`. Before this the clause was recorded only as
+    // ImportInfo with no relationship, so every PHP module dependency was
+    // invisible to that reader. `use` is per-compilation-unit in PHP, so the
+    // owner is file scope — the same owner emitInclude uses for the include path.
+    relationships.push({
+      source: "global",
+      target: fqn,
+      type: ASTEngine.RelationshipType.Imports,
+      confidence: 1,
+      line_number: this.nodeLine(child),
+      metadata: {
+        phpSpecific: true,
+        isImport: true,
+        fileLevel: true,
+        aliased: !!alias,
+        grouped: !!prefix,
+        relationshipType: "use_clause",
+      },
+    })
+    this.detectFramework(fqn, detectedFrameworks)
   }
 
   private emitInclude(

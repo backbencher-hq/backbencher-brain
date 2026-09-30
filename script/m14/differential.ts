@@ -392,8 +392,20 @@ export const LANG_REPOS: Record<string, string> = {
   // large: 7,114 tracked .groovy files. `corpusPath` honours an absolute pin so a lane can
   // say where its corpus IS rather than being measured against nothing.
   //
-  // `geb` (SECOND_CORPUS) is named but absent from the machine entirely, so it is NOT
-  // claimed: naming a corpus that is not there is the failure being fixed.
+  // `geb` was named as groovy's SECOND_CORPUS and is absent from this machine entirely --
+  // there is no checkout of it anywhere under fixtures. Naming a corpus that is not there is
+  // the same defect as the primary pin above, and it was worse than inert: the scoped-run
+  // guard resolves every in-scope repo BEFORE any lane measures, so `--lang groovy` aborted
+  // with `corpus repo missing: .../geb` and the Groovy differential could not be run at all.
+  // The pin is removed rather than left to abort the sweep.
+  //
+  // WHAT THIS COSTS, stated rather than glossed: the groovy lane now measures ONE corpus, so
+  // its two-corpus gate is not running. Every other lane in this table has a second corpus
+  // precisely because a single corpus hides dialect-specific movement -- the powershell
+  // comment below records the G1 `using`+`param` fix moving the second corpus from
+  // 98 ERROR / 23 MISSING to 35 / 2 while the primary barely moved. A Groovy grammar or
+  // analyzer change that helps only on a second dialect would be invisible here, and
+  // groovy-differential.json must not be read as if the gate were covered.
   groovy: "$HOME/fixtures/xml/repos/grails-core",
   kotlin: "Exposed",
   scala: "scala3",
@@ -592,7 +604,10 @@ export const SECOND_CORPUS: Record<string, string> = {
   // corpus barely moved, so a single-corpus lane would have reported the fix as
   // doing nothing.
   powershell: "ansible",
-  groovy: "geb",
+  // M14.6 groovy: was "geb", which has no checkout anywhere on this machine. It aborted
+  // every groovy-scoped differential before a single lane measured. The cost of dropping it
+  // -- the lane is single-corpus and its two-corpus gate is not running -- is stated on the
+  // LANG_REPOS entry rather than left to be discovered.
   kotlin: "kotlinx-coroutines",
   scala: "cats-effect",
   typescript: "element-plus",
@@ -10499,6 +10514,27 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
           else if (!c.isNamed && c.text === "const") isConst = true
           if (c.isNamed && (c.type === "name" || c.type === "qualified_name")) { if (!fqn) fqn = c.text; leaf = leafOf(c.text) }
         }
+        // M12.PHP-GROUPED-USE: a member of a grouped clause
+        // (`use C\{D, E as F};`) is bound by PHP as `C\D`, not as a bare `D`.
+        // The group sits inside a namespace_use_group, whose PARENT declaration
+        // carries the prefix in its own namespace_name child. Without this the
+        // truth published bare members that would collide with every other
+        // group's, and the analyzer's correctly-qualified edge would read as an
+        // unexplained fabrication.
+        let groupPrefix = ""
+        {
+          const grp = n.parent
+          if (grp && grp.type === "namespace_use_group") {
+            const decl = grp.parent
+            if (decl) {
+              for (let i = 0; i < decl.namedChildCount; i++) {
+                const d2 = decl.namedChild(i)
+                if (d2 && d2.type === "namespace_name") groupPrefix = d2.text
+              }
+            }
+          }
+        }
+        if (fqn && groupPrefix) fqn = `${groupPrefix}\\${fqn}`
         if (leaf && isFn) phpFuncValues.add(leaf)
         else if (leaf && isConst) phpConstValues.add(leaf)
         // A `use function`/`use const` clause is STILL a module dependency — it
@@ -12890,6 +12926,285 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     }
   }
   for (const op of declaredOps) if (!declared.has(op)) declared.add(op)
+
+  // ------------------------------------------------------------------
+  // M60-HK wave (2026-09-29). Six labels below were UNAUDITED for this lane:
+  // the analyzer emitted them (or, for overrides, should) and no second
+  // implementation derived them, so nothing could disagree with anything.
+  // Measured over 208 corpus files before this wave, haskell emitted 0 rows for
+  // four of the product's ten relationship types, and `overrides` — which WAS
+  // already in the audited label set — had no oracle derivation AND no analyzer
+  // emission, so the audit compared nothing to nothing and read green. That is
+  // the exact failure the allowlist comment records for perl, live here at the
+  // same time.
+  //
+  // Written from the tree, sharing no helper, name table or classification set
+  // with real-haskell-analyzer.ts. Agreement is the evidence; a shared helper
+  // would make it a tautology.
+  //
+  // The module file's real shape, which the first attempt at this got wrong and
+  // which cost it every row:
+  //
+  //   haskell
+  //     header   -> module -> module_id "M"        (the name is module_id, NOT name)
+  //              -> exports -> export*
+  //     imports  -> import -> module "Data.Map", module "M"   <- BOTH are `module`
+  //     declarations -> data_type | class | function | type_synomym | foreign_import
+  //
+  // The alias in `import qualified Data.Map as M` is itself a `module` node, so
+  // "the first `module` child" is the import target and every later one is an
+  // alias. Reading the LAST one, or collecting them all, publishes the alias as
+  // if it were a dependency.
+  // ------------------------------------------------------------------
+  {
+    const header = (root as any).namedChildren?.find((c: any) => c.type === "header")
+    const modNode = header?.namedChildren?.find((c: any) => c.type === "module")
+    // The name is the `module` node's OWN TEXT. Its `module_id` child holds only
+    // the FIRST segment: `module Hasql.TestingKit.Statements.GenerateSeries`
+    // gives module_id "Hasql" and nothing else, so reading the child published
+    // every edge of a qualified module under a truncated name. In a corpus of
+    // short module names (Service.hs) the two agree, which is exactly why the
+    // bug survived the fixture and only showed on real code.
+    const modName = modNode?.text ?? ""
+
+    // exports — the module's declared API surface
+    const expList = header?.namedChildren?.find((c: any) => c.type === "exports")
+    for (const e of expList?.namedChildren ?? []) {
+      if (e.type !== "export") continue
+      let nm = e.text.trim()
+      if (nm.startsWith("module ")) nm = nm.slice("module ".length).trim()
+      else {
+        const paren = nm.indexOf("(")
+        if (paren >= 0) nm = nm.slice(0, paren).trim()
+      }
+      if (nm && nm !== ",") push("exports", modName, nm)
+    }
+
+    // imports — one edge per imported module, alias never counted
+    const impList = (root as any).namedChildren?.find((c: any) => c.type === "imports")
+    for (const im of impList?.namedChildren ?? []) {
+      if (im.type !== "import") continue
+      const mods = im.namedChildren.filter((c: any) => c.type === "module")
+      const target = mods[0]?.text
+      if (target) push("imports", modName, target)
+    }
+
+    // contains — module -> each top-level declaration
+    const decls = (root as any).namedChildren?.find((c: any) => c.type === "declarations")
+    const declName = (d: any): string => {
+      if (d.type === "foreign_import") {
+        const sig = d.namedChildren.find((c: any) => c.type === "signature")
+        return sig?.namedChildren.find((c: any) => c.type === "variable")?.text ?? ""
+      }
+      // A superclass context comes FIRST: `class (Contravariant f) => Encoder a`.
+      // Taking namedChild(0) on a miss therefore returns "Contravariant" — a
+      // class the module does not declare — and published `contains Module ->
+      // Contravariant`. Only accept a `variable` head, and prefer a `name`
+      // found at any depth.
+      // A function/bind is NAMED by its head variable. Its signature also
+      // contains `name` nodes for the TYPES it mentions (`main :: IO ()` ->
+      // name "IO"), so a depth search for `name` here returned "IO" and
+      // published `contains Module -> IO` for a type the module never declares.
+      // Only the named-type declarations may use that search.
+      if (d.type === "function" || d.type === "bind") {
+        const head = d.namedChild(0)
+        return head?.type === "variable" ? head.text : ""
+      }
+      const deep = (x: any, depth: number): any => {
+        for (const c of x.namedChildren) {
+          if (c.type === "name") return c
+        }
+        if (depth <= 1) {
+          for (const c of x.namedChildren) {
+            // `context` is the SUPERCLASS list and comes first, so searching
+            // into it returned the superclass's name as the declaration's own.
+            if (c.type === "signature" || c.type === "function" || c.type === "context") continue
+            const hit = deep(c, depth + 1)
+            if (hit) return hit
+          }
+        }
+        return null
+      }
+      const nm = d.namedChildren.find((c: any) => c.type === "name") ?? deep(d, 0)
+      if (nm) return nm.text
+      return ""
+    }
+    for (const d of decls?.namedChildren ?? []) {
+      // `deriving instance Eq Color` is an IMPLEMENTS fact — Eq is a class this
+      // module does not declare, and its first named child is the class name, so
+      // counting it as a declaration published `contains Module -> Eq`.
+      if (d.type === "comment" || d.type === "deriving_instance") continue
+      const nm = declName(d)
+      if (nm) push("contains", modName, nm)
+    }
+
+    // Nested ownership. `contains` is not only module -> declaration: a data
+    // type owns its constructors, a record type owns its fields, a class owns
+    // its methods, and an instance owns the methods it supplies. Deriving only
+    // the first level left 2,144 analyzer edges with no truth row, which reads
+    // as pure fabrication — the same class of error as auditing a label whose
+    // oracle derives nothing, in the opposite direction.
+    // A constructor's name is at DIFFERENT depths by shape: a GADT carries it
+    // directly (gadt_constructor -> constructor "NonNullable"), an ordinary one
+    // nests it (data_constructor -> prefix -> constructor "Red"). A direct-child
+    // lookup finds every GADT constructor and no ordinary one.
+    const deepName = (x: any, depth: number): any => {
+      for (const c of x.namedChildren) {
+        if (c.type === "constructor" || c.type === "name" || c.type === "variable") return c
+      }
+      if (depth <= 2) {
+        for (const c of x.namedChildren) {
+          const hit = deepName(c, depth + 1)
+          if (hit) return hit
+        }
+      }
+      return null
+    }
+    // record -> fields -> field -> field_name. The field's own `name` child is
+    // its TYPE (`field "recA :: Int"` -> name "Int"), so reading that would
+    // publish `contains Rec -> Int` and claim the record owns a type.
+    const recordFields = (ctorNode: any, owner: string) => {
+      const rec = ctorNode.namedChildren.find((c: any) => c.type === "record")
+      const group = rec?.namedChildren.find((c: any) => c.type === "fields")
+      for (const f of group?.namedChildren ?? []) {
+        if (f.type !== "field") continue
+        const fn = f.namedChildren.find((c: any) => c.type === "field_name")
+        const v = fn?.namedChild(0) ?? fn
+        if (v?.text) push("contains", owner, v.text)
+      }
+    }
+    const ownMembers = (owner: string, n: any) => {
+      for (const g of n.namedChildren) {
+        // a GROUP of constructors, not a constructor: descend
+        if (g.type === "data_constructors" || g.type === "gadt_constructors") {
+          for (const c of g.namedChildren) {
+            if (c.type !== "data_constructor" && c.type !== "gadt_constructor") continue
+            const v = deepName(c, 0)
+            if (v?.text) push("contains", owner, v.text)
+            recordFields(c, owner)
+          }
+          continue
+        }
+        if (g.type === "newtype_constructor" || g.type === "data_constructor" || g.type === "gadt_constructor") {
+          const v = deepName(g, 0)
+          if (v?.text) push("contains", owner, v.text)
+          recordFields(g, owner)
+        }
+      }
+    }
+    for (const d of decls?.namedChildren ?? []) {
+      if (d.type === "data_type" || d.type === "newtype") {
+        const nm = declName(d)
+        if (nm) ownMembers(nm, d)
+      } else if (d.type === "class") {
+        const nm = d.namedChildren.find((c: any) => c.type === "name")?.text ?? ""
+        if (nm) {
+          const g = d.namedChildren.find((c: any) => c.type === "class_declarations")
+          for (const m of g?.namedChildren ?? []) {
+            const v = m.namedChildren.find((c: any) => c.type === "variable") ?? m.namedChild(0)
+            if (v?.text) push("contains", nm, v.text)
+          }
+        }
+      }
+    }
+
+    // uses — a type synonym stands in for the types on its right-hand side.
+    // `name`/`constructor` leaves only: a `variable` in type position is a type
+    // PARAMETER, and publishing `f a` as a use of a type named `a` is the
+    // fabrication the declared-type contract forbids.
+    const typeLeaves = (n: any, skip: any, out: string[]): string[] => {
+      for (const c of n.namedChildren) {
+        if (!c || c === skip) continue
+        if (c.type === "name" || c.type === "constructor") {
+          if (c.text && !out.includes(c.text)) out.push(c.text)
+          continue
+        }
+        typeLeaves(c, null, out)
+      }
+      return out
+    }
+
+    // overrides + implements, and the class-method table they are matched
+    // against. Collected in ONE sweep so an instance is comparable to a class
+    // declared later in the file.
+    const clsMethods = new Map<string, Set<string>>()
+    const insts: { cls: string; target: string; decls: any[] }[] = []
+    const sweep: any[] = [root]
+    while (sweep.length) {
+      const n = sweep.pop()
+      if (n.type === "class") {
+        const nm = n.namedChildren.find((c: any) => c.type === "name")?.text ?? ""
+        if (nm) {
+          let set = clsMethods.get(nm)
+          if (!set) { set = new Set<string>(); clsMethods.set(nm, set) }
+          const group = n.namedChildren.find((c: any) => c.type === "class_declarations")
+          for (const d of group?.namedChildren ?? []) {
+            if (d.type === "signature") {
+              const v = d.namedChildren.find((c: any) => c.type === "variable")
+              if (v) set.add(v.text)
+            } else if (d.type === "function" || d.type === "bind") {
+              const v = d.namedChild(0)
+              if (v?.type === "variable") set.add(v.text)
+            }
+          }
+        }
+      }
+      if (n.type === "instance") {
+        let cls = n.namedChildren.find((c: any) => c.type === "name")?.text ?? ""
+        const tp = n.namedChildren.find((c: any) => c.type === "type_patterns")
+        let target = ""
+        if (tp) {
+          const direct = tp.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
+          if (direct) target = direct.text
+          else if (tp.namedChildren.some((c: any) => c.type === "list")) target = "[]"
+          else {
+            const par = tp.namedChildren.find((c: any) => c.type === "parens")
+            const ap = par?.namedChildren.find((c: any) => c.type === "apply")
+            const first = ap?.namedChild(0)
+            if (first) target = first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+          }
+        }
+        if (!cls || !target) {
+          const named = n.namedChildren.filter((c: any) => c.type === "name" || c.type === "constructor")
+          if (!cls && named[0]) cls = named[0].text
+          if (!target && named[1]) target = named[1].text
+        }
+        const group = n.namedChildren.find((c: any) => c.type === "instance_declarations")
+        insts.push({
+          cls, target,
+          decls: (group?.namedChildren ?? []).filter((d: any) => d.type === "function" || d.type === "bind"),
+        })
+      }
+      if (n.type === "type_synomym") {
+        const nm = n.namedChildren.find((c: any) => c.type === "name")
+        if (nm) {
+          push("contains", modName, nm.text)
+          for (const ty of typeLeaves(n, nm, [])) if (ty !== nm.text) push("uses", nm.text, ty)
+        }
+      }
+      if (n.type === "foreign_import") {
+        const ent = n.namedChildren.find((c: any) => c.type === "entity")?.text ?? ""
+        const sig = n.namedChildren.find((c: any) => c.type === "signature")
+        const v = sig?.namedChildren.find((c: any) => c.type === "variable")?.text ?? ""
+        if (ent && v) push("references", v, ent)
+      }
+      for (const c of n.namedChildren) sweep.push(c)
+    }
+
+    for (const { cls, target, decls: dls } of insts) {
+      // An instance OWNS the methods it supplies: `instance Shape Rec where
+      // area ...` makes `Rec` the owner of `area`. Without this the analyzer's
+      // `contains Rec -> area` had no truth row and read as fabrication.
+      for (const d of dls) {
+        const v = d.namedChild(0)
+        if (v?.type !== "variable" || !v.text) continue
+        push("contains", target, v.text)
+        const set = clsMethods.get(cls)
+        if (set && set.has(v.text)) push("overrides", `${target}.${v.text}`, `${cls}.${v.text}`)
+      }
+    }
+  }
+
   return edges
 }
 
@@ -21257,6 +21572,15 @@ async function main() {
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
       }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),
+          // M60-HK wave (2026-09-29): haskell joins the audited set for the
+          // labels deriveHaskellEdges now derives independently. `overrides` was
+          // ALREADY in this list above (via the universal clause) and was
+          // reading green on ZERO rows from both sides -- the analyzer emitted
+          // none and the oracle derived none, so the audit compared nothing to
+          // nothing. That is the exact failure the allowlist comment two lines
+          // below describes for perl, and it was live here at the same time.
+          // contains/references were 4,510 edges with no second implementation.
+          ...(lang === "haskell" ? ["contains", "imports", "exports", "uses", "references"] : []),
           // M14.6 perl, re-applied after the m48-recovery merge dropped it. The allowlist
           // filters the ANALYZER side, so a lane whose oracle derives a label the list
           // omits has every truth row counted MISSING while `unexplained` reads 0 -- the
