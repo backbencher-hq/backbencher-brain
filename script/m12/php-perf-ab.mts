@@ -89,6 +89,13 @@ const runOnce = async (an: any): Promise<number> => {
   return Number(process.hrtime.bigint() - t0) / 1e6 / trees.length
 }
 for (let i = 0; i < 2; i++) { await runOnce(live); await runOnce(base) }   // warm both
+// MINIMUM, not median, is the primary estimator. Under contention every run is
+// inflated by whatever else the box is doing, and that inflation is one-sided —
+// a run can only be slower than the uncontended truth, never faster. So the
+// minimum is the best available lower bound on true cost, while a median
+// inherits the contention and a mean is worse still. Both are reported, because
+// the gap between them IS the machine's noise and hiding it would be the same
+// mistake as publishing the median alone.
 const ratios: number[] = [], liveMs: number[] = [], baseMs: number[] = []
 for (let r = 0; r < REPS; r++) {
   const l = await runOnce(live)
@@ -112,10 +119,16 @@ const art = {
   outputIdentical: diffs.length === 0,
   outputDiffFiles: diffs,
   speed: {
-    liveMsPerFile: +median(liveMs).toFixed(3),
-    baselineMsPerFile: +median(baseMs).toFixed(3),
-    speedup: +median(ratios).toFixed(3),
-    spreadPct: +(((Math.max(...liveMs) - Math.min(...liveMs)) / median(liveMs)) * 100).toFixed(1),
+    estimator: "min-of-reps (primary); median reported for contrast",
+    liveMsPerFile: +Math.min(...liveMs).toFixed(3),
+    baselineMsPerFile: +Math.min(...baseMs).toFixed(3),
+    liveMsPerFileMedian: +median(liveMs).toFixed(3),
+    baselineMsPerFileMedian: +median(baseMs).toFixed(3),
+    speedup: +(Math.min(...baseMs) / Math.min(...liveMs)).toFixed(3),
+    speedupMedian: +median(ratios).toFixed(3),
+    spreadPct: +(((Math.max(...liveMs) - Math.min(...liveMs)) / Math.min(...liveMs)) * 100).toFixed(1),
+    minSpeedup: +(Math.min(...ratios)).toFixed(3),
+    maxSpeedup: +(Math.max(...ratios)).toFixed(3),
     // A speedup is only a claim if the measurement can support it. The php
     // profile moved 19.21 -> 22.31 ms/file between two consecutive runs of
     // IDENTICAL code, and a 5-rep A/B on a busy shared box showed a 106%
@@ -128,6 +141,8 @@ writeFileSync(path.join(ROOT, "validation/m12/results/php-perf-ab.json"), JSON.s
 try { execSync(`rm -f ${TMP}`) } catch { /* the baseline module is disposable */ }
 
 console.log(`php A/B vs ${BASELINE} over ${sample.length} files x ${REPS} interleaved reps`)
-console.log(`  live ${art.speed.liveMsPerFile} ms/file | baseline ${art.speed.baselineMsPerFile} ms/file | speedup ${art.speed.speedup}x (run spread ${art.speed.spreadPct}%)`)
+console.log(`  live min ${art.speed.liveMsPerFile} / median ${art.speed.liveMsPerFileMedian} ms/file`)
+console.log(`  base min ${art.speed.baselineMsPerFile} / median ${art.speed.baselineMsPerFileMedian} ms/file`)
+console.log(`  speedup min-estimator ${art.speed.speedup}x (median-estimator ${art.speed.speedupMedian}x) — per-round range ${art.speed.minSpeedup}x..${art.speed.maxSpeedup}x, spread ${art.speed.spreadPct}%`)
 console.log(`  output identical: ${art.outputIdentical ? "YES" : `NO — ${diffs.length} file(s): ${diffs.slice(0, 5).join(", ")}`}`)
 console.log(`  speed verdict: ${art.speed.verdict}`)
