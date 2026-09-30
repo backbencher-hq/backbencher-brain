@@ -1218,6 +1218,24 @@ const dropJsonImports = (r: any) => ({
   relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "imports"),
 })
 
+const dropJsonExtends = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "extends"),
+})
+
+// The regression this lane actually shipped twice: an `allOf` `$ref` that names a
+// SIBLING FILE (`dataTypeBase.json#`) is composition too, not just an import. Requiring
+// `#/` drops it and reports success — 1,222 edges instead of 1,225, with every gate
+// still green, because the missing three were a subset nobody was counting.
+const jsonExtendsLocalFormOnly = (r: any) => ({
+  ...r,
+  relationships: (r.relationships ?? []).filter(
+    (x: any) =>
+      String(x.type ?? x.relationshipType ?? "").toLowerCase() !== "extends" ||
+      !String(x.target ?? "").startsWith("AllOf.definitions."),
+  ),
+})
+
 function fabricateBashDynamicCommandCalls(r: any) {
   const fabricated: any[] = []
   for (const x of (r.relationships ?? []) as any[]) {
@@ -11942,6 +11960,144 @@ export const MUTANTS: Mutant[] = [
     description: "R8 (M60) regression: the trigger surface goes back to DEAD — detection returns an empty array while the analyzer still claims `hasFrameworkIntelligence: true`, which is the pre-fix observable measured on a real Django model and a real Flask app (both `[]`) and on 0 of 187 corpus files. Caught by python/framework-surface-pins, whose metadata pin expects [Django, Flask, pytest].",
     transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), detectedFrameworks: [], framework: undefined, frameworkPatterns: [] } }),
   },
+  // --------------------------------------------------------------------------
+  // M14 deep review (PY-4, PY-6, PY-11, PY-13, PY-14). One per fix, because a fix
+  // with no mutant is a fix with nothing able to notice it coming back.
+  // --------------------------------------------------------------------------
+  {
+    id: "python/rel-key-drops-the-site-line",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "PY-6 REVERT: the relationship dedup key goes back to (type, source, target) with NO LINE, " +
+      "which is STRICTLY COARSER than the store's own (source, type, target, line) key. Python makes " +
+      "this idiomatic rather than exotic because the canonical property is a getter/setter pair: both " +
+      "`def`s are real declarations and both published as symbols (measured: L50 and L54 in ansible's " +
+      "`_collection_config.py`), and ONE `contains` edge was emitted — so the setter was unreachable " +
+      "from its class and bb_graph/bb_impact could not reach it. 6 missing `contains` over 120 corpus " +
+      "files before the fix, 0 after. The transform is the pre-fix key exactly: keep the FIRST edge for " +
+      "a (type, source, target) triple and drop the rest, which is what a coarser key does. Caught by " +
+      "python/external-override's sibling shape and by any fixture with two same-named members; the " +
+      "assertion that matters is the EDGE COUNT, not a name, because two symbols sharing a name is the " +
+      "whole defect.",
+    transform: r => {
+      const kept = new Set<string>()
+      const relationships: any[] = []
+      for (const x of (r.relationships ?? []) as any[]) {
+        const k = `${x.type}\u0000${x.source}\u0000${x.target}`
+        if (kept.has(k)) continue
+        kept.add(k)
+        relationships.push(x)
+      }
+      return { ...r, relationships }
+    },
+  },
+  {
+    id: "python/uppercase-callee-dropped",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "PY-11 REVERT: an uppercase callee that is not a class declared in THIS file produces NO " +
+      "relationship at all, instead of a `calls` edge. Measured over 300 pinned corpus files: 1,152 " +
+      "uppercase callees, 263 became `instantiates`, and 889 — 77.2% — produced nothing, of which 368 " +
+      "named a class the file EXPLICITLY IMPORTS. `module = AnsibleModule(...)`, file after file, with " +
+      "nothing in the graph. The transform drops every `calls` edge whose target starts uppercase, " +
+      "which is the pre-fix observable. Caught by python/module-all-exports' class surface and by the " +
+      "call-shape fixtures, and the assertion is the EDGE COUNT because the dropped edges are the ones " +
+      "no fixture happened to name.",
+    transform: r => ({
+      ...r,
+      relationships: ((r.relationships ?? []) as any[]).filter((x) => {
+        if (x.type !== "calls") return true
+        const t = String(x.target ?? "")
+        return !(t.length > 0 && t[0] === t[0].toUpperCase() && t[0] !== t[0].toLowerCase())
+      }),
+    }),
+  },
+  {
+    id: "python/module-scope-spelled-global",
+    language: "python",
+    defectClass: "wrong-identity",
+    description:
+      "PY-4 REVERT: a statement with no enclosing function or class attributes its relationships to the " +
+      "LITERAL STRING \"global\" — a python KEYWORD used as a scope name. Three things were wrong at " +
+      "once: it is not a name anything can be navigated to (the M60 R7 class, the same one markdown hit " +
+      "when an empty ATX heading published a symbol named `#`); it is absent from the indexer's " +
+      "GENERIC_SOURCE_NAMES (`unknown, SCSS_FILE_SCOPE, window, exports, default, GlobalScope`), the " +
+      "list of names the store knows are synthetic scopes, so python's took a path no other lane's " +
+      "takes; and it contradicted the same analyzer's own `imports` edges in the same file, which " +
+      "already used the module stem. Caught by python/module-all-exports, whose expected `from` is the " +
+      "module name — a lane spelling the scope `global` cannot match it.",
+    transform: r => {
+      const stem = String((r as any).filePath ?? "").split("/").pop()?.replace(/\.py$/, "") ?? ""
+      // The analyzer publishes the NORMALISED stem (PY-13), so the pre-fix spelling is
+      // reached by mapping the normalised form back. Comparing against the raw stem
+      // matches nothing, which is how the first version of this mutant became a no-op
+      // that reported 0 -> 0 failures and looked like a survivor rather than a mistake.
+      const normalised = stem.replace(/[^A-Za-z0-9_]/g, "_")
+      const rename = (s: unknown): unknown => (s === normalised ? "global" : s)
+      return {
+        ...r,
+        relationships: ((r.relationships ?? []) as any[]).map((x) => ({ ...x, source: rename(x.source) })),
+      }
+    },
+  },
+  {
+    id: "python/module-name-unnormalised",
+    language: "python",
+    defectClass: "wrong-identity",
+    description:
+      "PY-13 REVERT: the module scope is the filename stem VERBATIM, so `my-module.py` publishes the " +
+      "scope `my-module` — not a valid python identifier, not typeable, and not a name a symbol could " +
+      "carry. Found by writing the PY-12 fixture: the harness refused to match the expected `from` " +
+      "because the analyzer spelled the module with a hyphen in it. Caught by python/module-all-exports, " +
+      "whose file is `module-all-exports.py` and whose every export edge must be sourced from " +
+      "`module_all_exports` — the unnormalised spelling matches nothing.",
+    transform: r => {
+      const stem = String((r as any).filePath ?? "").split("/").pop()?.replace(/\.py$/, "") ?? ""
+      // Same correction as the sibling: the analyzer emits the NORMALISED stem, so the
+      // pre-fix observable is that normalisation mapped back to the raw one.
+      const normalised = stem.replace(/[^A-Za-z0-9_]/g, "_")
+      const mangle = (s: unknown): unknown => (s === normalised ? stem : s)
+      return {
+        ...r,
+        relationships: ((r.relationships ?? []) as any[]).map((x) => ({
+          ...x,
+          source: mangle(x.source),
+          target: mangle(x.target),
+        })),
+      }
+    },
+  },
+  {
+    id: "python/dunder-all-tuple-ignored",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "PY-14 REVERT: `exports` is read only from a `list` literal, so `__all__ = (\"a\", \"b\")` " +
+      "publishes nothing. The tuple spelling is ordinary older python, and measured over 400 pinned " +
+      "corpus files: 16 `__all__` assignments, 13 lists and 3 tuples that produced no edge at all — 19% " +
+      "of a module's declared public surface invisible for a reason that has nothing to do with the " +
+      "author. Caught by python/module-all-exports, whose first `__all__` is a TUPLE, so a lane that " +
+      "reads only lists satisfies every other expectation in the file and misses these three.",
+    transform: r => {
+      // A list-only lane pushes only the entries a LIST declared, so the revert is
+      // "drop every export whose declaring form was a tuple". The form is on the edge
+      // rather than in this transform, which is the point: the first version had to
+      // reconstruct it from fixture strings and produced a filter that returned true
+      // unconditionally — a no-op that reported 0 -> 0 and read as a survivor.
+      const dropped = new Set(
+        ((r.exports ?? []) as any[]).filter((e) => e.type === "list_item" && e.form === "tuple").map((e) => e.name),
+      )
+      return {
+        ...r,
+        relationships: ((r.relationships ?? []) as any[]).filter(
+          (x) => !(x.type === "exports" && dropped.has(String(x.target))),
+        ),
+        exports: ((r.exports ?? []) as any[]).filter((e) => !dropped.has(e.name)),
+      }
+    },
+  },
   {
     id: "python/framework-import-order-pick",
     language: "python",
@@ -14196,6 +14352,20 @@ export const MUTANTS: Mutant[] = [
     defectClass: "dishonest-identity",
     description: "BD-array-identity regression: an element's own keys are attributed to the ARRAY rather than to the element, so `a` reads as inside `objs` when it is inside `objs[0]` (json-contract)",
     transform: jsonArrayChildOwnerIsArray,
+  },
+  {
+    id: "json/extends-dropped",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description: "BD-allOf-extends regression: `allOf` stops emitting `extends`, restoring the omission the ontology gate falsified — composition is the one JSON Schema keyword that means a superset (json-contract)",
+    transform: dropJsonExtends,
+  },
+  {
+    id: "json/extends-local-form-only",
+    language: "json",
+    defectClass: "missing-relationship-type",
+    description: "BD-allOf-extends regression: only the intra-document `$ref` form composes, so an `allOf` naming a sibling file stops emitting `extends` — the exact subset bug, 3 corpus edges (json-contract)",
+    transform: jsonExtendsLocalFormOnly,
   },
   {
     id: "bash/orphan-edge-source",
