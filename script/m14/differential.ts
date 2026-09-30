@@ -3148,22 +3148,41 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
  * The rule is uniform, so what varies is what counts as a MEMBER, and scala's
  * answer differs from kotlin's in a way worth stating:
  *
- *   - a CONSTRUCTOR is a member, and its published name is the literal
- *     `constructor` — NOT the class's name. So a scala class publishes
- *     `C contains constructor`, where a kotlin class publishes `Money contains
- *     Money`. Scala has no `X contains X` row at all.
- *   - a class parameter is a member only when it is a `val`/`var`. In
- *     `class C(val a: Int, b: String)` only `a` is a field; `b` is a
- *     constructor argument, not a member, and is not extracted at all.
+ *   - a CONSTRUCTOR is a member of a CLASS or an ENUM that declares a parameter
+ *     list, and its published name is the literal `constructor` — NOT the class's
+ *     name. So a scala class publishes `C contains constructor`, where a kotlin
+ *     class publishes `Money contains Money`. Scala has no `X contains X` row at
+ *     all. An OBJECT and a TRAIT publish no constructor (`trait T1(val a: Int)`
+ *     publishes only its members).
+ *   - a class parameter is a field when it is declared `val`/`var`, and in a CASE
+ *     class it is a field whether or not the source says so. In
+ *     `class C(val a: Int, b: String)` only `a` is published; in
+ *     `case class Q(a: Int)` both `a` and `b`-shaped parameters are.
  *   - a trait's ABSTRACT members are members (`def a: Int` and `val b: String`
  *     with no body both publish).
- *   - a nested type is a member (`C contains Inner`).
+ *   - a nested type is a member (`C contains Inner`), and so is a local type
+ *     alias inside a method (`m contains Cancelable`).
+ *   - an ENUM's CASES are members (`Color contains Red`).
+ *   - a `given` is an OWNER as well as a member (`O contains named2`,
+ *     `named2 contains anonymous_Ord`), and an anonymous `given` publishes
+ *     `given_<n>` from a per-file counter.
+ *   - a `val`/`var` whose nearest owner is a METHOD is not extracted at all.
  *   - a companion object is NOT flattened into its class. Its members are its
- *     own — see SDJ-2, because the two still collide on NAME.
+ *     own — see SDJ-4, because the two still collide on NAME.
+ *
+ * M60/S1 (2026-09-30): this oracle was REWRITTEN around a single owner model
+ * (nearest enclosing owner; one skip rule for method-local vals). The first
+ * version carried three ad-hoc rules — a template_body scan, a method-local-def
+ * scan, and an anonymous-class scan — and between them they both MISSED real
+ * analyzer rows and FABRICATED truth rows. Both directions were measured; see
+ * the M60/S1 note inside and reviews/scala/m60-deep-review.md.
  */
 export function deriveScalaContainsTruth(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  // Keyed on (label, from, target): the harness's analyzer side dedupes by
+  // (label, target) and its truth loop is set-based, so including `from` here
+  // only ever makes the truth STRICTLY more informative, never fewer rows.
   const push = (from: string, target: string): void => {
     if (!from || !target) return
     const t = stripNameQuoting(String(target).trim())
@@ -3182,14 +3201,6 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     }
     return null
   }
-  const firstNamedOf = (n: any, types: string[]): any => {
-    if (!n) return null
-    for (const t of types) {
-      const c = namedChildOf(n, t)
-      if (c) return c
-    }
-    return null
-  }
   // ALL children, not just named ones. `val` and `var` in a class parameter are
   // ANONYMOUS tokens: `class B(protected var a: Int)` gives
   //   class_parameter > var("var") > identifier > : > type_identifier
@@ -3198,6 +3209,9 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   // every real field of the class. Measured: that single mistake produced all
   // 112 unexplained contains rows on a 60-file cats-effect draw (IORuntimeBuilder's
   // nine `protected var` params, MonadCancelOps_'s `private val wrapped`, ...).
+  // The SAME blindness applies to `case`: a `case class` marker is an anonymous
+  // token too, and every one of a case class's parameters is a field whether or
+  // not it is written `val`.
   const hasChildOfType = (n: any, t: string): boolean => {
     for (let i = 0; i < n.childCount; i++) {
       const c = n.child(i)
@@ -3205,44 +3219,47 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     }
     return false
   }
-  const declName = (n: any): string => firstNamedOf(n, ["identifier"])?.text ?? ""
+  // The DECLARED NAME of a definition. `name:` first, because a name node's own
+  // type varies with what the name IS: an identifier (`def m`), an
+  // operator_identifier (`def !>`), a type_identifier (`type Alias = Int`). The
+  // old `firstNamedOf(n, ["identifier"])` did not merely miss two of those — for
+  // `def !>(x: Int)` it found NO identifier on the definition and fell through to
+  // the parameter, publishing `K contains x` for a method named `!>`. That was a
+  // FABRICATION in the truth: 13 such names in 5 files on a 400-file cats-effect
+  // draw, 61 in 20 files on scala3 (IO.scala <* *> >> !> &> <&, SyncIO.scala,
+  // CaptureSet.scala, Mode.scala, StdNames.scala, ...).
+  const declName = (n: any): string => {
+    const f = n.childForFieldName?.("name")
+    if (f) return String(f.text)
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && (c.type === "identifier" || c.type === "type_identifier")) return String(c.text)
+    }
+    return ""
+  }
 
   const TYPE_DECLS = new Set([
     "class_definition", "object_definition", "trait_definition", "enum_definition",
   ])
-  // The declarations a type body makes. `val_definition`/`var_definition` carry
-  // modifiers as siblings (`final lazy val h = 4` is still a val_definition), so
-  // the kind is the node type, not the text.
-  const MEMBER_DECLS = new Set([
-    "val_definition", "var_definition", "function_definition", "function_declaration",
-    "type_definition", "class_definition", "object_definition", "trait_definition",
-    "enum_definition",
+  const FN_DECLS = new Set(["function_definition", "function_declaration"])
+  // A FUNCTION SCOPE is a method OR a lambda. Both gate the val rule below, and
+  // the lambda half is what the first version of this oracle missed: it is the
+  // whole of the 56 rows cats-effect's test suites contribute
+  // (`ticked("...") { implicit ticker => val r0 = ... }` parses as
+  // `block > lambda_expression > val_definition`, so the val's nearest owner is
+  // the SUITE — a class — and an owner-only test publishes it).
+  const FN_SCOPE = new Set([
+    "function_definition", "function_declaration", "lambda_expression",
+  ])
+  const VAL_DECLS = new Set([
+    "val_definition", "var_definition", "val_declaration", "var_declaration",
   ])
 
-  // The nearest enclosing DECLARATION, for attributing an anonymous class and a
-  // method's local definitions. A function wins over its enclosing type, which is
-  // what makes `new Runnable { ... }` inside a def belong to the def and the same
-  // expression in a val belong to the class.
-  const resolveOwner = (start: any): string => {
-    let p: any = start
-    while (p) {
-      if (p.type === "function_definition" || p.type === "function_declaration") {
-        const nm = declName(p)
-        if (nm) return nm
-      }
-      if (TYPE_DECLS.has(p.type)) {
-        const nm = declName(p)
-        if (nm) return nm
-      }
-      p = p.parent
-    }
-    return ""
-  }
   // An anonymous class expression: `new T { ... }`. Detected STRUCTURALLY — a
   // node carrying a `new` token AND a template_body — because the pinned grammar
-  // wraps the type differently for a plain (`type_identifier`) and a qualified
-  // or generic (`generic_type`) supertype, and a text or node-type test would
-  // have to enumerate the shapes.
+  // wraps the type differently for a plain (`type_identifier`), a qualified or
+  // generic (`generic_type`), and a mixed (`compound_type`) supertype, and a
+  // `new { ... }` with no supertype has the template_body as its FIRST child.
   const isAnonymousClassNode = (n: any): boolean => {
     if (namedChildOf(n, "template_body") === null) return false
     for (let i = 0; i < n.childCount; i++) {
@@ -3251,115 +3268,237 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     }
     return false
   }
-  // `anonymous_<T>` where T is the supertype as written with its type ARGUMENTS
-  // stripped: `new java.util.concurrent.Callable[String] { ... }` publishes
-  // `anonymous_java.util.concurrent.Callable`.
+  // `anonymous_<T>` where T is the supertype's HEAD type with its type ARGUMENTS
+  // stripped. Walked structurally, and "" when no head type is reachable, so an
+  // unnameable supertype takes the canonical `anonymous_object` fallback rather
+  // than publishing source text as a symbol name.
   const anonymousName = (n: any): string => {
-    let typeText = ""
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i)
-      if (!c || c.type === "template_body") continue
-      if (c.type === "type_identifier" || c.type === "generic_type" || c.type === "stable_type_identifier") {
-        typeText = c.text
-        break
+    const head = (t: any, guard: number): string => {
+      if (!t || guard > 8) return ""
+      switch (t.type) {
+        case "type_identifier":
+          return String(t.text)
+        case "compound_type": {
+          const base = t.childForFieldName?.("base")
+          return head(base ?? t.namedChild(0), guard + 1)
+        }
+        case "applied_constructor_type":
+        case "generic_type":
+          return head(t.namedChild(0), guard + 1)
+        case "stable_type_identifier": {
+          // `java.util.concurrent.Callable` arrives RIGHT-NESTED:
+          //   stable_identifier( stable_identifier(java, util), concurrent )
+          // so the segments must be collected RECURSIVELY — a flat scan of the
+          // direct children drops `concurrent` and publishes
+          // `anonymous_concurrent.Callable`.
+          const segs: string[] = []
+          const collectStable = (t: any, guard: number): void => {
+            if (!t || guard > 8) return
+            for (let i = 0; i < t.namedChildCount; i++) {
+              const c = t.namedChild(i)
+              if (!c || c.type === "type_identifier") continue
+              if (c.type === "stable_identifier") collectStable(c, guard + 1)
+              else if (c.type === "identifier") segs.push(String(c.text))
+            }
+          }
+          collectStable(t, 0)
+          let last = ""
+          for (let i = 0; i < t.namedChildCount; i++) {
+            const c = t.namedChild(i)
+            if (c && c.type === "type_identifier") last = String(c.text)
+          }
+          if (!last) return ""
+          return segs.length > 0 ? `${segs.join(".")}.${last}` : last
+        }
+        default:
+          return ""
       }
     }
-    const bracket = typeText.indexOf("[")
-    if (bracket >= 0) typeText = typeText.slice(0, bracket)
-    return `anonymous_${typeText || "object"}`
+    let ty: any = null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type !== "template_body") { ty = c; break }
+    }
+    const head_ = head(ty, 0)
+    const bracket = head_.indexOf("[")
+    const stripped = bracket >= 0 ? head_.slice(0, bracket) : head_
+    return `anonymous_${stripped || "object"}`
   }
-  // The members a body declares, as a list of names.
-  const bodyMembers = (body: any): string[] => {
-    const out: string[] = []
-    for (let i = 0; i < body.namedChildCount; i++) {
-      const d = body.namedChild(i)
-      if (d && MEMBER_DECLS.has(d.type)) {
-        const nm = declName(d)
-        if (nm) out.push(nm)
+
+  // The names a `val`/`var` declares. FOUR shapes, and the first two are
+  // refusals, not readings:
+  //   `val (a, b) = pair`  -> tuple_pattern — a run-time VALUE shape with no
+  //       single name; publishing "(a, b)" gives a name nothing can spell.
+  //   `val A, B = V`      -> identifiers — TWO declared names, each published.
+  //   `val v = ...`       -> `pattern` field.
+  //   `val v: Int`        -> `name` field: an ABSTRACT member (a trait's
+  //       `val v: Int`, a var_declaration) parses as val_declaration /
+  //       var_declaration and carries NO `pattern` at all. Reading only
+  //       `pattern` found none of a trait's abstract fields — measured on
+  //       `trait T { def abs: Int; val v: Int; var w: Int }`, which publishes
+  //       `T->abs`, `T->v` and `T->w`.
+  const valNames = (n: any): string[] => {
+    const p = n.childForFieldName?.("pattern") ?? n.childForFieldName?.("name")
+    if (!p) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") return [String(c.text)]
       }
+      return []
+    }
+    if (p.type === "tuple_pattern") return []
+    if (p.type === "identifiers") {
+      const out: string[] = []
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && c.type === "identifier") out.push(String(c.text))
+      }
+      return out
+    }
+    return [String(p.text)]
+  }
+
+  // Class parameters that become FIELDS. `val`/`var` is the general rule; a CASE
+  // class makes every parameter a field, because Scala declares case-class
+  // parameters as vals whether or not the source writes it. Measured on both
+  // halves: `case class Q(a: Int, val b: Int)` publishes `a` and `b`, while
+  // `class R(a: Int)` publishes neither a constructor field nor `a`.
+  const fieldParams = (params: any, isCase: boolean): string[] => {
+    const out: string[] = []
+    for (let i = 0; i < params.namedChildCount; i++) {
+      const param = params.namedChild(i)
+      if (!param || param.type !== "class_parameter") continue
+      if (!isCase && !hasChildOfType(param, "val") && !hasChildOfType(param, "var")) continue
+      const nm = declName(param)
+      if (nm) out.push(nm)
     }
     return out
   }
 
-  const walk = (n: any): void => {
+  // M60/S1 — THE OWNER MODEL. One rule, replacing the three ad-hoc rules the
+  // first contains oracle carried:
+  //
+  //   An owner is a declaration that is ITSELF a symbol and can own: a type
+  //   (class / object / trait / enum), a METHOD, a `given`, or an anonymous
+  //   class. A member is attributed to its NEAREST enclosing owner.
+  //
+  // The nearest-owner formulation is what makes every measured shape fall out
+  // rather than needing its own rule (40+ controlled probes,
+  // script/m14/tmp/cases-b-local-val.txt .. cases-f-final.txt):
+  //
+  //   `val v = { val b = 2; b }`     -> a val is NOT an owner, so `b`'s owner is K
+  //   `extension (s: String) { def a }` -> an extension is NOT an owner, so `a`'s owner is O
+  //   `new R { val c = 3 }` inside a def -> the anonymous class IS an owner, so `c`'s
+  //                                    owner is anonymous_R, NOT the enclosing def
+  //   `val o = new R { val i = new R2 { val j = 1 } }` -> o:R, R:i, R:R2, R2:j
+  //
+  // AND the ONE skip rule: a `val`/`var` inside a FUNCTION SCOPE is not
+  // extracted at all. A function scope is a method OR a LAMBDA, and it is
+  // CLEARED again by the next type / given / anonymous class — which is why the
+  // rule keys on the nearest SCOPE BOUNDARY, not on the declaration form:
+  //
+  //   def m() = { val a = 1; a }                    -> skipped   (method scope)
+  //   class K { val f = (x: Int) => { val y = x } }  -> skipped   (lambda scope)
+  //   ticked("...") { implicit t => val r0 = ... }   -> skipped   (lambda scope)
+  //   class K { val v = { val b = 2; b } }           -> PUBLISHED (no scope at all)
+  //   def m() = { class In { val q = 1 } }           -> PUBLISHED (class resets)
+  //   def m() = { new R { val c = 3 } }              -> PUBLISHED (anon resets)
+  //   given h: Ord[Int] = { val z = 1; ... }         -> PUBLISHED (given resets)
+  //   class K { { var i = 0; while (i<3) { val t = i } } } -> PUBLISHED (a block
+  //                                                    is not a scope boundary)
+  //
+  // This is the question SDJ-2(b) recorded as open ("a local val IS extracted
+  // when it is not directly in a method body — establish which scope decides
+  // it"). It is answered by measurement: 24 controlled cases in
+  // script/m14/tmp/cases-b-local-val.txt .. cases-j-scope.txt.
+  //
+  // The published approximation this leaves behind, stated rather than hidden:
+  // a `val` in a bare BLOCK in a class or object body IS published as a member
+  // (`UnsafeUnboundedSuite contains q`), because nothing in that path is a
+  // function scope. It is block-local, not API. See SDJ-3.
+  let givenCounter = 0
+  const walk = (n: any, owner: string, inFnScope: boolean): void => {
+    let nextOwner = owner
+    let nextInFn = inFnScope
+
     if (TYPE_DECLS.has(n.type)) {
-      const owner = declName(n)
-      if (owner) {
-        // A constructor is a member only when the declaration HAS a parameter
-        // list — `class Inner` (no parens) publishes no constructor symbol, while
-        // `class C(val a: Int)` publishes exactly one.
-        if (namedChildOf(n, "class_parameters")) push(owner, "constructor")
-        // Class parameters are members only when declared `val`/`var`.
-        const cp = namedChildOf(n, "class_parameters")
-        if (cp) {
-          // The parameters arrive in TWO shapes, and the grammar gives no
-          // warning that it has switched:
-          //   class C(val a: Int)                 -> class_parameters > arguments > class_parameter
-          //   class C protected (val a: Int)      -> class_parameters > class_parameter
-          // An ACCESS MODIFIER between the name and the paren drops the
-          // `arguments` wrapper. Reading only the wrapped form found no
-          // parameters at all in `final class IORuntimeBuilder protected (...)`,
-          // which is 9 fields — measured as 112 unexplained contains rows on a
-          // 60-file cats-effect draw, every one a constructor `val`/`var`.
-          // Both shapes are read; the truth is the union of the parameters the
-          // declaration actually has.
-          const paramLists: any[] = [cp]
-          for (let i = 0; i < cp.namedChildCount; i++) {
-            const c = cp.namedChild(i)
-            if (c && c.type === "arguments") paramLists.push(c)
-          }
-          for (const list of paramLists) {
-            for (let i = 0; i < list.namedChildCount; i++) {
-              const param = list.namedChild(i)
-              if (!param || param.type !== "class_parameter") continue
-              if (hasChildOfType(param, "val") || hasChildOfType(param, "var")) {
-                const nm = declName(param)
-                if (nm) push(owner, nm)
-              }
+      const nm = declName(n)
+      if (nm) {
+        if (owner) push(owner, nm)
+        nextOwner = nm
+        nextInFn = false
+        // A CONSTRUCTOR is a member only for a class or an enum that HAS a
+        // parameter list — `class Inner` (no parens) publishes no constructor
+        // symbol, while `class C()` and `class C(val a: Int)` publish exactly one.
+        // An OBJECT never publishes one: handleObject has no class_parameters
+        // path, and `object O(val a: Int)` is not valid Scala anyway (the pinned
+        // grammar rejects it). A TRAIT never publishes one either: `trait
+        // T1(val a: Int)` publishes `T1->m` and nothing else, so deriving a
+        // constructor and a field here would be two fabricated rows.
+        if (n.type === "class_definition" || n.type === "enum_definition") {
+          const cp = namedChildOf(n, "class_parameters")
+          if (cp) {
+            push(nm, "constructor")
+            // The parameters arrive in TWO shapes, and the grammar gives no
+            // warning that it has switched:
+            //   class C(val a: Int)            -> class_parameters > arguments > class_parameter
+            //   class C protected (val a: Int) -> class_parameters > class_parameter
+            // An ACCESS MODIFIER between the name and the paren drops the
+            // `arguments` wrapper. Reading only the wrapped form found no
+            // parameters at all in `final class IORuntimeBuilder protected (...)`,
+            // which is 9 fields — measured as 112 unexplained contains rows on a
+            // 60-file cats-effect draw, every one a constructor `val`/`var`.
+            const lists: any[] = [cp]
+            for (let i = 0; i < cp.namedChildCount; i++) {
+              const c = cp.namedChild(i)
+              if (c && c.type === "arguments") lists.push(c)
             }
-          }
-        }
-        const body = namedChildOf(n, "template_body")
-        if (body) for (const nm of bodyMembers(body)) push(owner, nm)
-      }
-    }
-    // OWNER KIND 2 — a METHOD owns its local definitions. A local `def` is
-    // extracted and attributed to the enclosing function (`m contains loc1`);
-    // a local `val`/`var` is NOT extracted at all, so deriving one here would
-    // invent a row the analyzer does not publish. The asymmetry is real and was
-    // measured on both halves: `def m() = { def loc1 = 1; val loc2 = 2 }` gives
-    // `m->loc1` and nothing for loc2.
-    if (n.type === "function_definition" || n.type === "function_declaration") {
-      const fname = declName(n)
-      const blk = namedChildOf(n, "block")
-      if (fname && blk) {
-        for (let i = 0; i < blk.namedChildCount; i++) {
-          const d = blk.namedChild(i)
-          if (d && d.type === "function_definition") {
-            const nm = declName(d)
-            if (nm) push(fname, nm)
+            for (const list of lists) for (const pn of fieldParams(list, hasChildOfType(n, "case"))) push(nm, pn)
           }
         }
       }
-    }
-    // OWNER KIND 3 — an ANONYMOUS class is contained by its nearest enclosing
-    // declaration AND contains its own members. Both halves publish: a val in a
-    // class gives `E->anonymous_Runnable` and `anonymous_Runnable->body`, while
-    // the same expression inside a def gives `m->anonymous_Runnable` — which is
-    // why the owner has to be resolved by declaration, not by the class.
-    if (isAnonymousClassNode(n)) {
+    } else if (FN_DECLS.has(n.type)) {
+      const nm = declName(n)
+      if (nm) {
+        if (owner) push(owner, nm)
+        nextOwner = nm
+      }
+      nextInFn = true
+    } else if (n.type === "lambda_expression") {
+      // A lambda has no name and owns nothing — it is purely a scope boundary.
+      nextInFn = true
+    } else if (n.type === "given_definition") {
+      // An anonymous `given` has no name to publish, so the analyzer names it
+      // `given_<n>` from a PER-FILE counter that advances only for the
+      // anonymous ones — a named `given` between two anonymous ones does not
+      // move it (measured: `given anonA`, `given Ord[String]`, `given anonB`
+      // publishes anonA, given_1, anonB).
+      const nm = declName(n) || `given_${++givenCounter}`
+      if (owner) push(owner, nm)
+      nextOwner = nm
+      nextInFn = false
+    } else if (isAnonymousClassNode(n)) {
       const anon = anonymousName(n)
-      const owner = resolveOwner(n.parent)
       if (owner) push(owner, anon)
-      const body = namedChildOf(n, "template_body")
-      if (body) for (const nm of bodyMembers(body)) push(anon, nm)
+      nextOwner = anon
+      nextInFn = false
+    } else if (VAL_DECLS.has(n.type)) {
+      // The one skip rule. A val is not an owner, so `nextOwner` is unchanged.
+      if (!inFnScope) for (const nm of valNames(n)) push(owner, nm)
+    } else if (n.type === "type_definition") {
+      const nm = declName(n)
+      if (owner && nm) push(owner, nm)
+    } else if (n.type === "simple_enum_case" || n.type === "full_enum_case") {
+      const nm = declName(n)
+      if (owner && nm) push(owner, nm)
     }
+
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
-      if (c) walk(c)
+      if (c) walk(c, nextOwner, nextInFn)
     }
   }
-  walk(root)
+  walk(root, "", false)
   return edges
 }
 
@@ -3781,6 +3920,82 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
       if (fn && args && (fn.type === "import" || (fn.type === "identifier" && fn.text === "require"))) {
         const modPath = modulePath(firstStringChild(args))
         if (modPath) push(`${modPath}:*`)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
+/**
+ * M60 (2026-09-30): the JAVASCRIPT `extends` ORACLE.
+ *
+ * WHY IT EXISTS. `extends` has been in the javascript comparison set since the base
+ * allowlist admitted it, and `deriveJavaScriptEdges` derived NO `extends` truth at
+ * all — not a partial rule, none. Every class-inheritance edge the analyzer emitted
+ * was therefore unmatched, i.e. `unexplained`. It stayed invisible for as long as
+ * it did because the rotating samples happened not to contain a file with a class
+ * that extends anything: at 200 and 300 files the lane read `unexplained=0`, and at
+ * 400 it read `unexplained=2`. Both readings were true and neither was informative.
+ * This is the imports gap's twin — a label in the compared set with no truth behind
+ * it — and it is the same shape as X1 with the sides swapped: there the ORACLE was
+ * behind and the two agreed on being wrong; here the ANALYZER is ahead and the
+ * truth is silent, so the disagreement is visible and unactionable.
+ *
+ * THE ROWS THAT EXPOSED IT, both in
+ * svelte/packages/svelte/src/internal/client/dom/elements/custom-element.js:
+ *
+ *   L18  extends -> HTMLElement   SvelteElement = class extends HTMLElement {
+ *   L297 extends -> SvelteElement  let Class = class extends SvelteElement {
+ *
+ * Both are CLASS EXPRESSIONS, and the first is an assignment target rather than a
+ * declarator — the shape M60/JD4 fixed on the analyzer side ("there was no case for
+ * it at all, so `const K = class extends Base { … }` produced no extends edge"). The
+ * analyzer was repaired and the truth was not, which is the ordinary way a shared
+ * rule drifts: one side moves, the other does not, and nothing notices until the
+ * corpus happens to contain the shape.
+ *
+ * DERIVED FROM THE GRAMMAR, NOT FROM THE ANALYZER. The base comes from the node's
+ * own `class_heritage` child, and the target is that child's TEXT — so `extends a.b`
+ * yields `a.b` rather than a guess at the leaf, matching the shape the analyzer
+ * publishes. Both node kinds are covered, declaration and expression, because the
+ * difference between them is where the class is NAMED and not whether it has a
+ * parent.
+ */
+export function deriveJavaScriptExtends(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const walk = (n: any): void => {
+    if (n.type === "class_declaration" || n.type === "class") {
+      const heritage = (() => {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "class_heritage") return c
+        }
+        return null
+      })()
+      if (heritage) {
+        // The base is the heritage's own expression: an identifier, or a
+        // member_expression for `extends a.b`. `class_heritage` is a CHILD of the
+        // class, not a field on it, so it is found by descent — the same mistake
+        // the CSS import oracle made with a grandchild, and the same fix.
+        let base: any = null
+        for (let i = 0; i < heritage.namedChildCount; i++) {
+          const c = heritage.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "member_expression")) { base = c; break }
+        }
+        if (base) {
+          const target = String(base.text ?? "").trim()
+          const k = "extends|" + target
+          if (target && !seen.has(k)) {
+            seen.add(k)
+            edges.push({ label: "extends", from: "(class)", target })
+          }
+        }
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) {
@@ -19312,6 +19527,13 @@ async function main() {
         for (const e of deriveJavaScriptImportEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // The `extends` oracle. The label was in the compared set with NO truth
+        // behind it, so every class-inheritance edge the analyzer emitted read as
+        // unexplained — invisible only because the rotating samples rarely met a
+        // class that extends anything.
+        for (const e of deriveJavaScriptExtends(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "vue" || lang === "svelte") {
         // M37.21 #611: web-embedded-script CALLS truth (the JD-oracle gap).
@@ -20294,8 +20516,19 @@ async function main() {
     }
 
     if (process.env.BB_F5_SHOW_SAMPLES) {
+      // UNEXPLAINED first: a confident edge with no truth match is a real
+      // disagreement between the two sides, whereas a HEURISTIC row is the
+      // analyzer's own declared low-confidence claim. Printing the heuristic bucket
+      // without the unexplained one is how a genuine fabrication gets filed as
+      // suspicion, which is the one classification error this file cannot afford.
+      for (const u of samples.filter((x: any) => x.dir === "UNEXPLAINED").slice(0, 12)) {
+        console.log(`  [UNEXPLAINED] ${u.file} L${u.line} ${u.label}->${u.target}@${u.confidence} ${JSON.stringify(u.metadata ?? {})}`)
+      }
       for (const h of samplesHeuristic.slice(0, 12)) {
         console.log(`  [HEURISTIC] ${h.file} L${h.line} ${h.label}->${h.target}@${h.confidence} ${JSON.stringify(h.metadata ?? {})}`)
+      }
+      for (const m of samples.filter((x: any) => x.dir === "MISSING").slice(0, 6)) {
+        console.log(`  [MISSING] ${m.file} ${m.label}->${m.target}`)
       }
     }
     if (sample.length === 0) {
