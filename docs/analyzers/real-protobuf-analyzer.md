@@ -182,7 +182,7 @@ that is the more useful number to see.
 | Grammar census | 117 declared node types, 93 observed, **all 50 classified** and consistent with the analyzer |
 | Contract battery | 6 hand-derived cases — 47 symbols, 58 relationships, 4 imports; **8/8 mutations caught** |
 | Production path | `ASTEngine.detectLanguage(".proto")` returns `protobuf`; `ASTEngine.parseFile` on 293 files: **293/293 byte-identical** to a direct analyzer call; 2,605/2,605 ranges span their own name; 657 doc-comment anchors verified not stolen |
-| Robustness | 32 degenerate fixtures, **5,000-level nest**, no throw, no self-loop, no duplicate id, every run idempotent, linearity ratio 0.94× |
+| Robustness | 32 degenerate fixtures, **5,000-level nest**, no throw, no self-loop, no duplicate id, every run idempotent, and **counted** work is linear in depth: 3,509 / 7,009 / 14,009 / 28,009 nodes visited at depths 500 / 1,000 / 2,000 / 4,000 — exactly 2× per doubling, against a 2.2× bound |
 | No regex / no text scan | **0 regular expressions**; 35 `.text` reads, all classified as leaf values; 0 structural whole-node reads |
 
 ## Two properties that are easy to get wrong
