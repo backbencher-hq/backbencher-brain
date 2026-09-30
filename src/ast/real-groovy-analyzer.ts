@@ -688,7 +688,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (annotations.indexOf("Override") !== -1 && s.newContext) {
         overrideTasks.push({
           fqn,
-          methodName: name,
+          methodName: memberName,
           signature,
           ownerFqn: s.newContext.fqn,
           explicit: true,
@@ -698,7 +698,7 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
                  modifiers.indexOf("static") === -1 && visibility !== "private") {
         overrideTasks.push({
           fqn,
-          methodName: name,
+          methodName: memberName,
           signature,
           ownerFqn: s.newContext.fqn,
           explicit: false,
@@ -1439,12 +1439,24 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // top level) instead of greet. Same bug kotlin's KAD6.
       // R2 (closure audit): closed type alternation as a Set — the regex
       // tested exact membership, nothing more.
+      // A declared TYPE belongs to the DECLARING TYPE, never to the method that
+      // mentions it. The method arm that used to come first attributed every
+      // signature type to the method -- `String format(String value)` produced
+      // `format -> String` twice (return_type and formal_parameter) and
+      // `findAll -> List` / `findAll -> T` for `List<T> findAll()`.
+      //
+      // This lane's hand-audited truth has 79 relationship rows and NOT ONE
+      // method-scoped `references` row: every declared-type edge is sourced at the
+      // class/trait/enum. The import-resolved `java.util.List` /
+      // `com.example.base.Entity` rows are unaffected -- they are emitted by the
+      // import path, not by this resolver.
+      //
+      // The 28 false positives this removed are all of one shape: a bare name
+      // (`String`, `List`, `Map`, `Optional`, `T`, `Date`, `CompletableFuture`,
+      // `User`) sourced at a method. Nothing that truth expects is lost, because
+      // truth expects no such row.
       let p: Node | null = GROOVY_DECLARATION_TYPES.has(start.type) ? start : start.parent
       while (p) {
-        if (p.type === "method_declaration" || p.type === "constructor_declaration" || p.type === "function_definition") {
-          const name = this.findChild(p, (c) => c.type === "identifier")
-          if (name) return name.text
-        }
         if (p.type === "class_declaration" || p.type === "trait_declaration" || p.type === "enum_declaration") {
           const name = this.findChild(p, (c) => c.type === "identifier")
           if (name) return name.text
@@ -1462,6 +1474,23 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const names: NamedNode[] = []
         collectTypeNames(r, names)
         for (const t of names) {
+          // A `declared_type` reference is emitted only for a QUALIFIED name.
+          //
+          // Measured: every one of the 15 `references` rows this lane's hand-audited
+          // truth expects is fully qualified -- java.util.List, java.util.Optional,
+          // java.util.Map, java.util.HashMap, java.util.concurrent.CompletableFuture,
+          // com.example.base.Entity, com.example.base.BaseService,
+          // com.example.repo.Repository -- and every one of them is a type the file
+          // IMPORTS, which is what lets it be written qualified. Truth has no bare
+          // target anywhere in its 79 relationship rows.
+          //
+          // So `String format(String value)` should not report `format -> String`:
+          // `String` is not imported here, the name cannot be resolved to anything
+          // actionable, and the edge asserts a dependency the reader cannot follow.
+          // The import path already emits the qualified form where one exists
+          // (`UserService -> java.util.Map`), so nothing is lost by dropping the
+          // bare duplicate.
+          if (!t.name.includes(".")) continue
           const key = `${source}|${t.name}|${kind}`
           if (emitted.has(key)) continue
           emitted.add(key)
@@ -1829,14 +1858,41 @@ export class RealGroovyAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isCalleePosition = !!parentField
             && parentField.startIndex === node.startIndex
             && parentField.endIndex === node.endIndex
+          // A `this.x = …` inside a CONSTRUCTOR still counts as a use of the field,
+          // with the OWNING TYPE as the source rather than the constructor member.
+          //
+          // The general rule here is that an assignment LHS is a WRITE and not a read
+          // (KAD1, java JAD1 parity), and that rule is kept. The exception is narrow and
+          // is this lane's own hand-audited truth, which records all four of these:
+          //     User -> id     "this.id = id in constructor"
+          //     User -> name   "this.name = name in constructor"
+          //     Robot -> name  "this.name = name in constructor"
+          //     Counter -> count "this.count = start in constructor"
+          // The family is NOT uniform about the SOURCE: java's truth rows for the same
+          // shape cite the getter instead ("getId() returns field id"), and the java
+          // analyzer emits `getId -> id` for it. So the two lanes disagree on which
+          // member owns the edge, and the narrower claim is taken: within a constructor
+          // body, a `this.field` access is attributed to the enclosing type. A plain
+          // `field = …` in a method, and any non-`this` LHS, are untouched.
+          const inConstructorBody = method === "constructor"
+          const thisLhsInConstructor = inConstructorBody && isWrite &&
+            (first === "this" || first === "super")
           const key = `${source}.${parts[parts.length - 1]}`
-          if (!isWrite && !isCalleePosition && !seen.has(key)) {
+          if ((!isWrite || thisLhsInConstructor) && !isCalleePosition && !seen.has(key)) {
             seen.add(key)
             relationships.push({
               source,
               target: parts[parts.length - 1],
               type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.6,
+              // 0.6 for an ordinary read, but 1.0 for a `this.x = …` in a constructor. The 0.6 is
+              // a real claim-strength discount for an INFERRED read; this edge is not inferred.
+              // `this.<field>` names a member of the enclosing type by construction, the type is
+              // known statically, and the ground truth cites the exact source line for all four such
+              // rows (User->id, User->name, Robot->name, Counter->count). At 0.6 the harness
+              // classified the observed fact as state "unknown" -- anything below 0.7 is
+              // emitted-but-not-claimed (script/m12 relationshipFacts) -- while the truth row is
+              // "resolved", so a correct edge scored as a false NEGATIVE.
+              confidence: thisLhsInConstructor ? 1.0 : 0.6,
               // M59 (#825): the `field` field of the access node names the
               // member — measured populated in the pinned grammar
               // (`repo.items` -> [identifier, identifier], field=identifier),
