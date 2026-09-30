@@ -103,6 +103,7 @@ const CERTIFIED_GATES = [
   // Measured wall-clock on the reference box: regressions 76s, verify-security
   // 27s, S1 21s, S2 34s, S3 35s, X1-X8 165s = ~6 min total.
   "script/m15/verify-security-regressions.ts",
+  "script/m15/verify-security-precision.ts",
   "script/verify-security.ts",
   "script/m20/verify-security-flow-boundary.ts",
   "script/m20/verify-security-adversarial.ts",
