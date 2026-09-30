@@ -116,10 +116,14 @@ coverage honestly means populating the companion index, not guessing.
   | phpmyadmin@4061095a | 1,232 | 55,402 | 55,402 (100%) | 0 | 0 | 0 |
   | **combined** | **4,139** | **95,231** | **95,231 (100%)** | **0** | **0** | **0** |
 
-- Line-number contract (M60): audited on a 150-file strided sample —
-  **0 of 5,830 relationships lack `line_number` (0.00%)**, across every kind
-  (`calls` 1501, `uses` 2162, `contains` 904, `imports` 664, `instantiates` 325,
-  `references` 158, `extends` 89, `implements` 27).
+- Line-number contract (M60), audited on a 150-file strided sample:
+  - **relationships: 0 of 5,830 lack `line_number` (0.00%)** — every kind
+    (`calls` 1501, `uses` 2162, `contains` 904, `imports` 664, `instantiates`
+    325, `references` 158, `extends` 89, `implements` 27)
+  - **symbols: 0 of 1,187 lack a start or end line (0.00%)**
+  - complexity is carried by **666/666 callables (100% of methods)**, sum 1,086.
+    Complexity is a per-callable metric, so the 521 non-callable symbols
+    correctly carry none — that is the expected shape, not a gap.
 - Grammar pin: registered in `script/m14/verify-grammar-pins.ts` as
   `unnamed-build-sha-only` — sha256 `d4df6a6ff08c…`, 1,058,041 B, 432 ids /
   157 named / 31 fields, **0 php drifts**. There is no vendored source and no
