@@ -39,6 +39,10 @@
 //   D. IDENTITY   every fact names both ends and a real stored row id that
 //                 exists in this project.
 //   E. NO LEAK    no fact carries a row belonging to another project.
+//   J/K/L/M FOUR SURFACES no corpus can reach: a project with no cross-language
+//                  rows at all, a MEMBER-driven truncation, own-first precedence at
+//                  limit 1, and the absence note's project scope. Asking what the gate
+//                  did NOT cover is what found the fifth defect.
 //   I. HOVER DOOR the IDE door does not leak in EITHER direction, with the
 //                  controls that make that non-vacuous, and M13/M14 each break one
 //                  of the two predicates so both are proved load-bearing.
@@ -645,6 +649,164 @@ async function main(): Promise<void> {
     }
   }
 
+  // ── J/K/L/M: the four surfaces no corpus can reach ─────────────────────────
+  //
+  // Asking what this gate does NOT cover found a fifth defect in the tool (§M), and
+  // three surfaces that turned out to be correct but had never been run. All four
+  // need fixtures, because none of them is reachable from an index that is rich in
+  // cross-language rows — which is all this gate had ever run on.
+  //
+  // Every fixture below uses PAIRABLE rows: the two ends sit in files of genuinely
+  // different languages. That is not decoration. GAP3's first draft seeded a
+  // `.ts -> .ts` own row, so the row was unpairable, so the tool correctly refused
+  // to emit it, and the probe reported a precedence failure that was entirely the
+  // probe's own fault. A failing assertion is a question about the fixture before
+  // it is a question about the code.
+  {
+    // One builder for all four, in its own data dir so no fixture can touch the
+    // corpus under test. Reuses the exit-hook registry, so a failing run cleans up
+    // like every other temp dir here.
+    const gapDir = mkdtempSync(join(tmpdir(), "cl1-gap-"))
+    TEMP_DIRS.push(gapDir)
+    const gapProjects: Record<string, string> = {
+      empty: "cl1gapempty00000000000000000000000000000",
+      memberTrunc: "cl1gapmemtr00000000000000000000000000000",
+      precedence: "cl1gapprec00000000000000000000000000000",
+      scopeA: "cl1gapscopeA0000000000000000000000000000",
+      scopeB: "cl1gapscopeB0000000000000000000000000000",
+    }
+    for (const id of Object.values(gapProjects)) mkdirSync(join(gapDir, "projects", id), { recursive: true })
+    let gapRaw: Record<string, any> = {}
+    const savedGapData = process.env.BB_DATA_DIR
+    process.env.BB_DATA_DIR = gapDir
+    try {
+      const { BrainDatabase: GapDb } = await import(join(ROOT, "src", "brain", "database.ts"))
+      for (const [key, id] of Object.entries(gapProjects)) gapRaw[key] = await GapDb.getRawInstance(id as any)
+      const GFile = (k: string, fid: string, name: string, language: string) =>
+        gapRaw[k].prepare("INSERT OR REPLACE INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)")
+          .run(fid, gapProjects[k], `/g/${name}`, name, language, `h-${fid}`)
+      const GSym = (k: string, sid: string, fid: string, name: string, owner?: string) =>
+        gapRaw[k].prepare("INSERT OR REPLACE INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score, owner_symbol_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+          .run(sid, gapProjects[k], fid, name, "function", 1, 1, 0, 10, 1, owner ?? null)
+      const GRel = (k: string, rid: string, src: string, tgt: string) =>
+        gapRaw[k].prepare("INSERT OR REPLACE INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism) VALUES (?,?,?,?,?,?,?,?)")
+          .run(rid, gapProjects[k], src, tgt, "calls", 0.9, 1, "name-resolution")
+      /** Call the tool inside a fixture project. `getRawInstance` reads
+       *  BB_DATA_DIR at call time, so the variable has to be in scope for the READ
+       *  as well as the build — the same scoping bug that killed the earlier S1/S2
+       *  wiring, one level up. */
+      const gapAsk = async (k: string, symbol: string, extra: Record<string, unknown> = {}) => {
+        const saved = process.env.BB_DATA_DIR
+        process.env.BB_DATA_DIR = gapDir
+        try {
+          const hs = createToolHandlers()
+          const r: any = await (hs as any).bb_cross_language({ symbol, ...extra }, { projectId: gapProjects[k], projectPath: "/g" } as any)
+          return JSON.parse(r.content[0].text)
+        } finally { process.env.BB_DATA_DIR = saved }
+      }
+
+      // ── J: a project with no cross-language rows at all ──────────────────
+      // The most common real-world case, and the one the gate's own corpus
+      // precondition makes unreachable: it refuses a corpus with zero cross rows.
+      GFile("empty", "j-f1", "only.ts", "typescript")
+      GSym("empty", "j-s1", "j-f1", "jLonely")
+      {
+        // CONTROL — the project really is empty of cross-language rows. Without
+        // it, "no rows" and "the fixture failed to build" are the same answer.
+        const rows = (gapRaw.empty.prepare("SELECT COUNT(*) AS n FROM brain_relationship WHERE is_cross_language = 1").get() as any).n
+        check("CL1 J: the empty fixture really has no cross-language rows (control)", rows === 0, `rows=${rows}`)
+        const p = await gapAsk("empty", "jLonely")
+        check("CL1 J: a project with no cross-language rows answers with a DECLARED absence", p.declaredAbsent === true, `declaredAbsent=${p.declaredAbsent}`)
+        check("CL1 J: and an empty fact set, not an error", (p.facts ?? []).length === 0 && (p.memberFacts ?? []).length === 0, `facts=${(p.facts ?? []).length}`)
+        check("CL1 J: the name is still reported as present in the index (absence is about ROWS, not existence)", p.copyCount === 1, `copyCount=${p.copyCount}`)
+        check("CL1 J: and the reason is stated, not implied", typeof p.absenceNote === "string" && p.absenceNote.length > 0, `note=${String(p.absenceNote).slice(0, 60)}`)
+      }
+
+      // ── K: truncation driven by the MEMBER section ───────────────────────
+      // own = 0, member = 6, limit 4. The only shape where `memberFacts.slice(0,
+      // remaining)` is genuinely partial — F2/F3 always truncate a hub with own
+      // rows, so `remaining` is 0 before members are considered.
+      GFile("memberTrunc", "k-ft", "owner.ts", "typescript")
+      GFile("memberTrunc", "k-fc", "members.clj", "clojure")
+      GSym("memberTrunc", "k-owner", "k-ft", "kOwner")
+      for (let i = 0; i < 6; i++) {
+        GFile("memberTrunc", `k-mf${i}`, `m${i}.clj`, "clojure")
+        GSym("memberTrunc", `k-ms${i}`, `k-mf${i}`, `kMember${i}`, "k-owner")
+        GFile("memberTrunc", `k-cf${i}`, `caller${i}.ts`, "typescript")
+        GSym("memberTrunc", `k-cs${i}`, `k-cf${i}`, `kCaller${i}`)
+        GRel("memberTrunc", `k-r${i}`, `k-cs${i}`, `k-ms${i}`)
+      }
+      {
+        const full = await gapAsk("memberTrunc", "kOwner")
+        check("CL1 K: the fixture is the shape that only the member path can truncate", full.ownFactCount === 0 && full.memberFactCount === 6, `own=${full.ownFactCount} member=${full.memberFactCount}`)
+        const p = await gapAsk("memberTrunc", "kOwner", { limit: 4 })
+        check("CL1 K: the member section honours the budget", p.memberFactCount === 4 && p.pairCount === 4, `member=${p.memberFactCount} pair=${p.pairCount}`)
+        check("CL1 K: a member-driven truncation is declared, not silent", p.truncated === true, `truncated=${p.truncated}`)
+        check("CL1 K: and the true total is the whole union, not the shown part", p.totalCountIfKnown === 6, `total=${p.totalCountIfKnown}`)
+        check("CL1 K: the reason attributes the drop to the member section", /on its members/.test(String(p.truncationReason)), String(p.truncationReason).slice(0, 90))
+      }
+
+      // ── L: own-first precedence at limit 1 ───────────────────────────────
+      // The handler states the intent: one budget over the union, own rows first,
+      // and the rows naming the symbol itself must never be crowded out by a
+      // member's edges. At limit 1 that intent is a single fact, and it must be
+      // the owner's.
+      GFile("precedence", "p-fts", "owner.ts", "typescript")
+      GFile("precedence", "p-fmc", "member.clj", "clojure")
+      GSym("precedence", "p-owner", "p-fts", "pTarget")
+      GSym("precedence", "p-mem", "p-fmc", "pMember", "p-owner")
+      GFile("precedence", "p-foc", "owncaller.clj", "clojure") // .clj -> .ts owner = pairable
+      GSym("precedence", "p-ocs", "p-foc", "pOwnCaller")
+      GRel("precedence", "p-r-own", "p-ocs", "p-owner")
+      for (let i = 0; i < 2; i++) {
+        GFile("precedence", `p-fmc${i}`, `memcaller${i}.ts`, "typescript") // .ts -> .clj member = pairable
+        GSym("precedence", `p-mcs${i}`, `p-fmc${i}`, `pMemCaller${i}`)
+        GRel("precedence", `p-r-m${i}`, `p-mcs${i}`, "p-mem")
+      }
+      {
+        const at1 = await gapAsk("precedence", "pTarget", { limit: 1 })
+        const at2 = await gapAsk("precedence", "pTarget", { limit: 2 })
+        const at4 = await gapAsk("precedence", "pTarget", { limit: 4 })
+        check("CL1 L: the fixture holds 1 pairable own row and 2 pairable member rows", at4.totalCountIfKnown === 3, `total=${at4.totalCountIfKnown}`)
+        check("CL1 L: at limit 1 the OWN row wins the budget (a member's edge never crowds out the symbol's own)", at1.ownFactCount === 1 && at1.memberFactCount === 0, `own=${at1.ownFactCount} member=${at1.memberFactCount}`)
+        check("CL1 L: and the one fact shown is the owner's, named as the self side", (at1.facts?.[0]?.self?.symbol) === "pTarget", `self=${at1.facts?.[0]?.self?.symbol}`)
+        check("CL1 L: the dropped member row is declared, not vanished", at1.truncated === true && at1.totalCountIfKnown === 3, `truncated=${at1.truncated} total=${at1.totalCountIfKnown}`)
+        check("CL1 L: at limit 2 the member row appears and truncation is still declared", at2.pairCount === 2 && at2.memberFactCount === 1 && at2.truncated === true, `pair=${at2.pairCount} member=${at2.memberFactCount}`)
+        check("CL1 L: at limit 4 nothing is dropped and nothing claims truncation", at4.pairCount === 3 && at4.truncated === false, `pair=${at4.pairCount} truncated=${at4.truncated}`)
+        check("CL1 L: the answer is never larger than the budget at any limit", [at1, at2, at4].every((r: any) => r.pairCount === Math.min(r.limit, r.totalCountIfKnown)), [at1, at2, at4].map((r: any) => `${r.limit}:${r.pairCount}/${r.totalCountIfKnown}`).join(" "))
+      }
+
+      // ── M: the absence note's SCOPE (M63.CL4) ────────────────────────────
+      // The same name in TWO projects, cross-language rows in one and not the
+      // other. All three queries bind a projectId, so the answer covers one
+      // project — and the note used to say "anywhere in the index", which is a
+      // claim about the whole store. With both projects real this was false as
+      // written (lane/cl-absence-scope.ts measured CLAIM_IS_FALSE: true).
+      for (const k of ["scopeA", "scopeB"] as const) {
+        GFile(k, `${k}-f1`, "x.ts", "typescript")
+        GSym(k, `${k}-s1`, `${k}-f1`, "jScopedName")
+      }
+      GFile("scopeB", "scopeB-f2", "z.clj", "clojure")
+      GSym("scopeB", "scopeB-s2", "scopeB-f2", "jCallerInB")
+      GRel("scopeB", "scopeB-r1", "scopeB-s2", "scopeB-s1")
+      {
+        // CONTROL — the other project really does hold a row for this name. If the
+        // insert had failed, the scoping would be untestable and the check below
+        // would pass for the wrong reason.
+        const elsewhere = (gapRaw.scopeB.prepare(
+          "SELECT COUNT(*) AS n FROM brain_relationship r JOIN brain_symbol ts ON ts.id = r.target_symbol_id WHERE r.is_cross_language = 1 AND ts.name = 'jScopedName'",
+        ).get() as any).n
+        check("CL1 M: another project really does hold a cross-language row for this name (control)", elsewhere === 1, `rowsElsewhere=${elsewhere}`)
+        const p = await gapAsk("scopeA", "jScopedName")
+        check("CL1 M: the absence for THIS project is still correctly declared", p.declaredAbsent === true, `declaredAbsent=${p.declaredAbsent}`)
+        check("CL1 M: and the note does not claim the whole index", !/anywhere in the index/i.test(String(p.absenceNote)), String(p.absenceNote).slice(0, 100))
+        check("CL1 M: it scopes the claim to the project that was actually searched", /in THIS PROJECT/i.test(String(p.absenceNote)), String(p.absenceNote).slice(0, 100))
+      }
+    } finally {
+      process.env.BB_DATA_DIR = savedGapData
+    }
+  }
+
   // ── The errors ─────────────────────────────────────────────────────────────
   {
     const missing = await call("bb_cross_language", { symbol: "zz_cl1_absent_symbol_xyz" })
@@ -663,7 +825,7 @@ async function main(): Promise<void> {
    * mutants.length` already fails on an anchor miss, because the miss is recorded
    * as not-caught and `mutants.length` counts what was DECLARED.
    */
-  const MUTANT_FLOOR = 13
+  const MUTANT_FLOOR = 14
   const componentSrc = readFileSync(COMPONENT, "utf8")
   const mutants: Array<{ id: string; name: string; file: "handler" | "component"; from: string; to: string; probe: (m: any, raw: any, projectId: string) => Promise<boolean> }> = [
     {
@@ -747,6 +909,24 @@ async function main(): Promise<void> {
           const p = JSON.parse(out.content[0].text)
           return (p.facts ?? []).some((f: any) => typeof f.pair === "string" && f.pair.includes("unknown"))
         })
+      },
+    },
+    {
+      // M63.CL4 — the absence note widened back to "anywhere in the index". A
+      // wording fix with no mutant is a wording fix the next editor silently
+      // undoes, and this one is the tool's strongest claim: it is what a caller
+      // reads instead of checking. The seeded fixture is the only construction
+      // that can tell the two wordings apart — one project holding rows for the
+      // name, the project being asked about holding none.
+      id: "M15", name: "the absence note claims the whole index instead of the searched project", file: "handler",
+      from: "no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}'",
+      to: "no stored cross-language rows anywhere in the index for '${symbol}'",
+      probe: async (m) => {
+        const seed = await seedScopePair()
+        if (!seed) return false
+        const p = JSON.parse((await (m.createToolHandlers() as any).bb_cross_language({ symbol: seed.name }, seed.ctxA as any)).content[0].text)
+        // Caught when the note makes the claim the fixture disproves.
+        return /anywhere in the index/i.test(String(p.absenceNote)) && seed.rowsElsewhere === 1
       },
     },
     {
@@ -901,6 +1081,42 @@ async function main(): Promise<void> {
          AND (SELECT COUNT(*) FROM brain_symbol s2 WHERE s2.project_id = ? AND s2.name = ss.name) = 1 LIMIT 1`).get(pid, pid) as any
     return row?.name ?? (r.prepare("SELECT name FROM brain_symbol WHERE project_id = ? LIMIT 1").get(pid) as any).name
   }
+  /** Two projects holding the same name, cross-language rows in one and not the
+   *  other. Built fresh for M15 because a mutant runs against a MUTATED handler
+   *  and cannot share section J's fixture objects — the mutation harness re-imports
+   *  the module, so any state it captured from the real one is not in scope.
+   *
+   *  Returns null when it cannot be built, and the probe treats null as NOT CAUGHT
+   *  rather than passing: an unplantable mutant must not bank as caught. */
+  async function seedScopePair(): Promise<{ name: string; ctxA: any; rowsElsewhere: number } | null> {
+    const dir = mkdtempSync(join(tmpdir(), "cl1-scope-"))
+    TEMP_DIRS.push(dir)
+    const A = "cl1m15scopeA0000000000000000000000000000"
+    const B = "cl1m15scopeB0000000000000000000000000000"
+    for (const id of [A, B]) mkdirSync(join(dir, "projects", id), { recursive: true })
+    const saved = process.env.BB_DATA_DIR
+    process.env.BB_DATA_DIR = dir
+    try {
+      const { BrainDatabase: Db } = await import(join(ROOT, "src", "brain", "database.ts"))
+      const rawA = await Db.getRawInstance(A as any)
+      const rawB = await Db.getRawInstance(B as any)
+      const NAME = "m15ScopedName"
+      const f = (raw: any, fid: string, pid: string, file: string, language: string) =>
+        raw.prepare("INSERT OR REPLACE INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)").run(fid, pid, `/m/${file}`, file, language, `h-${fid}`)
+      const s = (raw: any, sid: string, pid: string, fid: string, name: string) =>
+        raw.prepare("INSERT OR REPLACE INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?)").run(sid, pid, fid, name, "function", 1, 1, 0, 10, 1)
+      f(rawA, "m15a-f1", A, "x.ts", "typescript"); s(rawA, "m15a-s1", A, "m15a-f1", NAME)
+      f(rawB, "m15b-f1", B, "x.ts", "typescript"); s(rawB, "m15b-s1", B, "m15b-f1", NAME)
+      f(rawB, "m15b-f2", B, "z.clj", "clojure"); s(rawB, "m15b-s2", B, "m15b-f2", "m15CallerInB")
+      rawB.prepare("INSERT OR REPLACE INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence, is_cross_language, bridge_mechanism) VALUES (?,?,?,?,?,?,?,?)")
+        .run("m15b-r1", B, "m15b-s2", "m15b-s1", "calls", 0.9, 1, "name-resolution")
+      const rowsElsewhere = (rawB.prepare("SELECT COUNT(*) AS n FROM brain_relationship r JOIN brain_symbol ts ON ts.id = r.target_symbol_id WHERE r.is_cross_language = 1 AND ts.name = ?").get(NAME) as any).n
+      return { name: NAME, ctxA: { projectId: A, projectPath: "/m" }, rowsElsewhere }
+    } finally {
+      process.env.BB_DATA_DIR = saved
+    }
+  }
+
   /** The seeded states, for the mutants whose subject the corpora cannot
    *  produce. Reading these from the CORPUS is how M11 came to be recorded as
    *  not-caught when it had simply been unprobeable: no corpus has a file with no

@@ -1953,8 +1953,17 @@ const handlers: Record<string, ToolHandler> = {
       // An empty answer now requires that NEITHER the copies NOR their members
       // hold a stored row.
       declaredAbsent: shownCount === 0,
+      // SCOPE, and it used to be wrong. M63.CL4: this read "anywhere in the
+      // index", but all three queries bind a projectId as their first parameter,
+      // so the search covered exactly one project. With the same name present in
+      // a second project that DOES hold cross-language rows for it, the sentence
+      // was false as written — measured, with both projects real
+      // (lane/cl-absence-scope.ts: CLAIM_IS_FALSE). An agent reads this instead of
+      // checking, so an overclaim here is worse than an overclaim in a count.
+      // Absence for THIS project is still correct and still declared; only the
+      // universality was wrong.
       absenceNote: shownCount === 0
-        ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its members — absence declared, never guessed`
+        ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its members — absence declared, never guessed`
         : null,
       // The symptom that produced this change, stated in the answer itself: the
       // symbol is silent and its members are not. A caller reading only
