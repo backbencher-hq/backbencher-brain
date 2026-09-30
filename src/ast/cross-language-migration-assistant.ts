@@ -60,6 +60,12 @@ export namespace CrossLanguageMigrationAssistant {
      */
     endpointsResolved: boolean
     /**
+     * False for a structural edge (`contains`, `exports`) that records nesting
+     * or declaration rather than an integration point. Shown as evidence, not
+     * charged as work — see {@link isStructuralRelationship}.
+     */
+    isIntegrationPoint: boolean
+    /**
      * True when the edge's files look like test code. A migrating engineer needs
      * this split: measured, 55.3% of a cobra plan's evidence is test callers, and
      * a flat per-edge cost makes that dominate the headline number.
@@ -99,6 +105,8 @@ export namespace CrossLanguageMigrationAssistant {
       test: number
       /** Edges with an endpoint that is not an indexed symbol; not charged. */
       unresolvable: number
+      /** Containment/export edges: shown as evidence, not charged as work. */
+      structural: number
       /** Edges the indexer marked as crossing a language boundary. */
       crossLanguage: number
       /** Of the resolved edges, how many carry a line. */
@@ -1045,6 +1053,32 @@ export namespace CrossLanguageMigrationAssistant {
   }
 
   /**
+   * Is this relationship an integration point a port must satisfy, or a
+   * structural edge that records nesting?
+   *
+   * Measured on cobra: 2401 `calls`, 831 `uses`, 805 `references`, 284
+   * `instantiates`, 200 `imports` — and 792 `contains` plus 8 `exports`. That
+   * last pair is ~15% of all edges and none of it is work a migrating engineer
+   * does: `contains` is emitted by the indexer as an auto-generated ownership
+   * edge ("owner contains member") whose `line_number` is the MEMBER'S
+   * DECLARATION LINE, not a call site (see the M59/#821 comment at the emit
+   * site in parallel-indexer.ts). Billing 2 hours to "update the place that
+   * contains this function" is billing for nothing.
+   *
+   * `exports` is likewise declarative: it records that a symbol is exported.
+   *
+   * Everything else — `calls`, `uses`, `references`, `imports`, `instantiates`,
+   * `extends`, `implements`, `overrides`, and any type this list has not seen —
+   * is an integration point. An UNKNOWN type is charged, not waved through:
+   * guessing that a new kind is structural would understate the work.
+   */
+  const STRUCTURAL_RELATIONSHIP_TYPES: ReadonlySet<string> = new Set(["contains", "exports"])
+
+  export function isStructuralRelationship(relationshipType: string): boolean {
+    return STRUCTURAL_RELATIONSHIP_TYPES.has(String(relationshipType ?? "").trim().toLowerCase())
+  }
+
+  /**
    * Analyzes a component (symbol) in the AST and generates a deep migration plan
    * to a target language, mapping dependencies and calculating risk/effort.
    *
@@ -1070,18 +1104,46 @@ export namespace CrossLanguageMigrationAssistant {
       return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
     }
     if (matches.length > 1) {
+      // Two shapes of collision, only one of which is a real ambiguity.
+      //
+      // SAME FILE, different case: Go and many other languages treat `Execute`
+      // and `execute` as one component in one file. Measured on cobra: five such
+      // pairs, all in one file. Refusing there is noise — the caller asked for
+      // one component in one file and there is only one component in one file.
+      // An exact-case match resolves it unambiguously.
+      const files = new Set(matches.map((s) => s.file))
+      const exact = matches.filter((s) => s.name === String(symbolName ?? "").trim())
+      if (files.size === 1 && exact.length === 1) {
+        log.debug(`planMigration: resolved case-variant name '${symbolName}' to '${exact[0].name}' in ${[...files][0]}`)
+        return buildPlan(exact[0], targetLanguage, source)
+      }
       const candidates = matches.map((s) => ({ id: s.id, name: s.name, language: s.language, file: s.file }))
       return {
         ok: false,
         refusal: {
           reason: "ambiguous-symbol",
-          detail: `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); re-run against one file's symbol id or rename to disambiguate`,
+          detail:
+            files.size === 1
+              ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
+              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); re-run against one file's symbol id or rename to disambiguate`,
           candidates,
         },
       }
     }
-    const symbol = matches[0]
+    return buildPlan(matches[0], targetLanguage, source)
+  }
 
+  /**
+   * Build the plan for an already-resolved symbol. Split out of
+   * {@link planMigration} so that a case-variant name resolved inside one file
+   * takes exactly the same path as an exact match — a resolution rule that only
+   * worked on the happy path would be a second implementation of the planner.
+   */
+  function buildPlan(
+    symbol: { id: string; name: string; type?: string; language: string; file: string; metadata?: any },
+    targetLanguage: string,
+    source: MigrationSource,
+  ): MigrationOutcome {
     const resolvedSource = resolveSourceLanguage(symbol.language)
     if (!resolvedSource.language) {
       return { ok: false, refusal: { reason: "unsupported-source", detail: resolvedSource.reason ?? "unsupported source language" } }
@@ -1135,6 +1197,7 @@ export namespace CrossLanguageMigrationAssistant {
             bridgeMechanism: r.bridgeMechanism ?? null,
             isCrossFile: r.isCrossFile ?? (sourceFile !== targetFile),
             endpointsResolved,
+            isIntegrationPoint: !isStructuralRelationship(r.type),
             isTestEvidence: isTestPath(sourceFile) || isTestPath(targetFile),
           }
           return [id, entry] as const
@@ -1156,12 +1219,23 @@ export namespace CrossLanguageMigrationAssistant {
     //    to update its callers — but the split is reported, because 55.3% of a
     //    cobra plan's evidence is test code and an undifferentiated number is
     //    not interpretable.
-    const charged = relationshipEvidence.filter((e) => e.endpointsResolved)
+    // Charged = resolvable AND an integration point. Two separate reasons an edge
+    // is not billed: an endpoint that is not an indexed symbol (it cannot be
+    // located), and a structural edge (it records nesting, not a call to update).
+    const structural = relationshipEvidence.filter((e) => !e.isIntegrationPoint)
+    const integration = relationshipEvidence.filter((e) => e.isIntegrationPoint)
+    const charged = integration.filter((e) => e.endpointsResolved)
     const breakdown = {
       total: relationshipEvidence.length,
       production: charged.filter((e) => !e.isTestEvidence).length,
       test: charged.filter((e) => e.isTestEvidence).length,
-      unresolvable: relationshipEvidence.length - charged.length,
+      // Within the INTEGRATION points only. This used to be
+      // `total - integration.length`, which is the structural count — so
+      // `unresolvable` and `structural` always reported the same number and the
+      // breakdown double-counted. The corpus suite caught it; the visible symptom
+      // was "2 structural, 2 unresolvable" on a plan with one of each.
+      unresolvable: integration.length - charged.length,
+      structural: structural.length,
       crossLanguage: relationshipEvidence.filter((e) => e.isCrossLanguage).length,
       withLine: charged.filter((e) => e.line != null).length,
       withConfidence: charged.filter((e) => e.confidence != null).length,
@@ -1177,7 +1251,7 @@ export namespace CrossLanguageMigrationAssistant {
     let complexityScore = 2
 
     if (charged.length > 5) {
-      riskFactors.push(`High coupling: ${charged.length} resolvable indexed relationships (${breakdown.production} production, ${breakdown.test} test).`)
+      riskFactors.push(`High coupling: ${charged.length} resolvable integration points (${breakdown.production} production, ${breakdown.test} test).`)
       complexityScore += 3
       riskLevel = "High"
     }
@@ -1192,10 +1266,19 @@ export namespace CrossLanguageMigrationAssistant {
       complexityScore += 1
       if (riskLevel === "Low") riskLevel = "Medium"
     }
+    if (breakdown.structural > 0) {
+      // Not a risk of the CODE and not a limit of the index: an accounting
+      // statement, so a reader comparing two plans knows they are comparable.
+      riskFactors.push(`${breakdown.structural} structural relationship${breakdown.structural === 1 ? "" : "s"} (containment or export) recorded but not charged; only integration points are billed.`)
+    }
     if (breakdown.unresolvable > 0) {
       // Not a risk of the CODE — a limit of what the index can see. Stated as
       // such, and it does not move the band.
-      riskFactors.push(`${breakdown.unresolvable} indexed relationship${breakdown.unresolvable === 1 ? "" : "s"} have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`)
+      riskFactors.push(
+        breakdown.unresolvable === 1
+          ? "1 indexed relationship has an endpoint that is not an indexed symbol, so the port cannot be scoped from it."
+          : `${breakdown.unresolvable} indexed relationships have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`,
+      )
     }
 
     // The index does not record per-file imports, so a component's LIBRARY
@@ -1244,7 +1327,7 @@ export namespace CrossLanguageMigrationAssistant {
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
 
-    log.debug(`planMigration: produced plan for '${symbolName}' -> ${normalizedTargetLanguage}`)
+    log.debug(`buildPlan: produced plan for '${symbol.name}' -> ${normalizedTargetLanguage}`)
 
     return {
       ok: true,
