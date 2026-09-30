@@ -305,7 +305,7 @@ function batchLoadRows(raw: CoreDatabase, ids: string[], paths: string[]): Map<s
   return rows
 }
 
-function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: RowFreshnessStatus; reason: string } {
+function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: RowFreshnessStatus; reason: RowFreshnessReason } {
   const stat = statFor(row.path)
   if (!stat.exists) return { status: "missing", reason: "file-gone" }
   // mtime+size fast path (must match the indexer's stat convention).
@@ -328,11 +328,49 @@ function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: 
   }
 }
 
+/**
+ * M64.R: why a row was classified as it was.
+ *
+ * This was a bare `Map<string, string>` whose possible values were only
+ * documented in a comment, so a consumer had to read the implementation to know
+ * the vocabulary — and bb_health, the one consumer that wanted to publish the
+ * breakdown, discarded it instead. Named here, exported, and used as the key
+ * type of a tally that is initialised with every value present.
+ *
+ * The nesting under status is fixed and is what makes the categories a
+ * partition rather than a list:
+ *
+ *   fresh   ← "metadata-fast-path" | "hash-match"
+ *   stale   ← "hash-differs"
+ *   missing ← "file-gone" | "unreadable" | "no-row"
+ *
+ * `metadata-fast-path` is the one to read carefully: it is a verdict reached
+ * WITHOUT reading the file, from an mtime+size match. `hash-match` read the
+ * bytes. Both are reported "fresh" and they are not the same claim.
+ */
+export type RowFreshnessReason =
+  | "no-row"
+  | "file-gone"
+  | "unreadable"
+  | "metadata-fast-path"
+  | "hash-match"
+  | "hash-differs"
+
+/** Every value, so a tally can be built without a lookup table at each site. */
+export const ROW_FRESHNESS_REASONS: readonly RowFreshnessReason[] = [
+  "no-row",
+  "file-gone",
+  "unreadable",
+  "metadata-fast-path",
+  "hash-match",
+  "hash-differs",
+]
+
 export interface RowsFreshnessResult {
   /** fileId (or filePath when the row had no fileId) -> status. */
   statuses: Map<string, RowFreshnessStatus>
-  /** same keys -> why ("no-row" | "file-gone" | "unreadable" | "metadata-fast-path" | "hash-match" | "hash-differs") */
-  reasons: Map<string, string>
+  /** same keys -> why. Typed, not a bare string: see RowFreshnessReason. */
+  reasons: Map<string, RowFreshnessReason>
   summary: FreshnessSummary
 }
 
@@ -376,7 +414,7 @@ export function resolveRowsFreshnessDetailed(
   const byId = batchLoadRows(raw, [...uniqueIds], [...uniquePaths])
 
   const statuses = new Map<string, RowFreshnessStatus>()
-  const reasons = new Map<string, string>()
+  const reasons = new Map<string, RowFreshnessReason>()
   for (const id of uniqueIds) {
     const row = byId.get(id)
     if (!row) {
