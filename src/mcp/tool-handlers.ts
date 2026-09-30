@@ -955,8 +955,12 @@ const handlers: Record<string, ToolHandler> = {
       const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
-        ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
-        ...d.dependents.map((x) => ({ fileId: x.fileId })),
+        // Neither list ships a file id any more — a file id is
+        // `<40-hex project id>:<relative path>`, so it repeated the path it sat
+        // next to (56,540 of 121,340 bytes on a 20-file page of this repo's own
+        // src). The path is the locator; resolve it to a row id here, once.
+        ...d.dependencies.filter((x) => !x.external && x.resolution !== "unresolved").map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
+        ...d.dependents.map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
       ])
       const first = deps[0]
       // Every other collection mode states how many items it returned; this
@@ -1007,8 +1011,9 @@ const handlers: Record<string, ToolHandler> = {
           onRows: (statuses) => {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
-              for (const x of d.dependencies) if (!x.external && x.fileId) x.stale = statuses.get(x.fileId) !== "fresh"
-              for (const x of d.dependents) x.stale = statuses.get(x.fileId) !== "fresh"
+              for (const x of d.dependencies)
+                if (!x.external && x.resolution !== "unresolved") x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
+              for (const x of d.dependents) x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
             }
           },
         },

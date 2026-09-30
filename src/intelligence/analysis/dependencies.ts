@@ -264,8 +264,26 @@ export async function getFileDependencies(
     results.push({
       file: file.relativePath,
       fileId: file.id,
-      dependencies: deps.slice(0, MAX_ROW_ENTRIES),
-      dependents: dependents.slice(0, MAX_ROW_ENTRIES),
+      // The dependent list carries the project-relative PATH only. It used to
+      // carry `fileId` as well, and a file id is
+      // `<40-hex project id>:<relative path>` — so every one of a file's
+      // dependents repeated the path it sat next to, and a 20-file page of
+      // backbencher-brain/src rendered 121,340 bytes (~34k tokens) of which a
+      // third was the duplicate. The path IS the locator: the handler resolves
+      // freshness from it, and the row above carries the id for the file the
+      // row is about.
+      // Neither list carries `fileId`. A file id is
+      // `<40-hex project id>:<relative path>`, so it repeats the path the entry
+      // sits next to; the path IS the locator, and the row above carries the id
+      // for the file the row is about. On a 20-file page of
+      // backbencher-brain/src the two lists were 56,540 of 121,340 bytes.
+      // Resolution is kept — it is the part that is not derivable from a path.
+      dependencies: deps.slice(0, MAX_ROW_ENTRIES).map((d) => ({
+        path: d.path,
+        external: d.external,
+        resolution: d.resolution,
+      })),
+      dependents: dependents.slice(0, MAX_ROW_ENTRIES).map((d) => ({ path: d.path })),
       dependenciesTotal,
       dependentsTotal,
       dependenciesTruncated: dependenciesTotal > MAX_ROW_ENTRIES,
