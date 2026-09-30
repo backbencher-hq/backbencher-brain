@@ -5086,6 +5086,17 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/underscore-fn-not-declared",
+    language: "zig",
+    defectClass: "dangling-edge",
+    description:
+      "Z46 regression: the blank-identifier refusal returns to the FUNCTION branch. `const _ = 1;` is a discard and must mint nothing (Z8/GO5), but `pub fn _(msgid: [*:0]const u8) …` is a REAL callable declaration \u2014 the gettext convention, and the whole i18n entry point of ghostty. With it excluded the analyzer publishes `calls (global) -> _` for a function it declined to declare: a dangling edge pointing at a name the index will never resolve. Caught by the dangling-target invariant in `zigw-invariants.ts`, which asks whether an edge's target is declared at FILE SCOPE with no symbol published. CALIBRATED by reverting the fix by hand and watching the invariant report the dangling edge.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((x: any) => x.name !== "_"),
+    }),
+  },
+  {
     id: "zig/reason-code-dropped",
     language: "zig",
     defectClass: "edge-traceability",
