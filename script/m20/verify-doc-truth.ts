@@ -39,6 +39,21 @@ function check(label: string, condition: boolean, detail: string): void {
   else { failures.push(`${label} — ${detail}`); console.log(`  FAIL: ${label} — ${detail}`) }
 }
 
+/** A check that could not run because its fixture is absent. Disclosed, never a pass. */
+function sk(label: string, reason: string): void {
+  checks++
+  record(label, "skip", reason)
+}
+const recorded: Array<{ label: string; outcome: string; detail: string }> = []
+function record(label: string, outcome: "pass" | "fail" | "skip", detail: string): void {
+  if (typeof detail !== "string" || detail.length === 0) {
+    throw new Error(`verify-doc-truth: check "${label}" has no detail — a check that cannot explain itself cannot be trusted`)
+  }
+  recorded.push({ label, outcome, detail })
+  const mark = outcome === "pass" ? "  ok:" : outcome === "fail" ? "  FAIL:" : "  SKIP:"
+  console.log(`${mark} ${label} — ${detail}`)
+}
+
 /** A negative twin: the SAME predicate must reject the shape the defect makes. */
 function negative(label: string, rejected: boolean, detail: string): void {
   negativeCases++
@@ -429,6 +444,68 @@ try {
     const maintainer = await doc({ mode: "project", limit: 20, audience: "maintainer" })
     check("audience changes the output", JSON.stringify(user.sections) !== JSON.stringify(maintainer.sections),
       `user=${user.sections.map((s) => s.id).join("|")} maintainer=${maintainer.sections.map((s) => s.id).join("|")}`)
+  }
+
+  // ── T18: a prose-language symbol is never given a fabricated docstring ──
+  // A markdown symbol's "name" is a heading, and `*` is the BOLD delimiter, so
+  // the comment scanner above a heading reads the previous English line as if it
+  // were a JSDoc block. The merge guarded a free function that nothing called
+  // while every live call site went through SourceReader.docstring, so the
+  // fabrication was still reachable — this is the check that would have caught
+  // it.
+  {
+    const md = mkdtempSync(path.join(tmpdir(), "bb-m20-d3-md-"))
+    try {
+      // line 1 bold prose, line 2 a heading: the exact fabrication shape.
+      writeFileSync(path.join(md, "NOTES.md"), ["*Fix:** only run one indexing write per pass.", "## Contract", "", "Some explanatory paragraph.", "## Decis*ons", ""].join("\n"))
+      const mdPid = getProjectId(md)
+      await indexProjectParallel(mdPid, md, {})
+      const mdRaw: any = await BrainDatabase.getRawInstance(mdPid as any)
+      const mdSymbols = Number((mdRaw.prepare("SELECT count(*) c FROM brain_symbol WHERE project_id=? AND name LIKE '%Decis%'").get(mdPid) as any)?.c ?? 0)
+      if (!mdSymbols) {
+        sk("T18: a prose-language symbol is never given a fabricated docstring", "the markdown analyzer published no symbol for the fixture, so there is nothing to fabricate a docstring FOR")
+      } else {
+        const mdDoc = await generateDocumentation(mdPid, md, { mode: "coverage", limit: 40 })
+        const claims = mdDoc.sections.flatMap((s) => s.facts).filter((f) => f.statement.includes("is documented"))
+        const fabricated = claims.filter((f) => /only run one indexing write/.test(f.statement))
+        check("T18: a prose-language symbol is never given a fabricated docstring", fabricated.length === 0,
+          `${mdSymbols} markdown symbol(s); documented-claims=${claims.length}; fabricated-from-bold-prose=${fabricated.length}${fabricated.length ? ` e.g. ${JSON.stringify(fabricated[0]?.statement.slice(0, 90))}` : ""}`)
+        // And the honest outcome: the symbol is reported UNDOCUMENTED, not
+        // silently absent.
+        const undocumented = mdDoc.sections.flatMap((s) => s.facts).filter((f) => f.statement.includes("is undocumented"))
+        check("T18: a prose-language symbol is reported undocumented rather than dropped", undocumented.length > 0 || mdDoc.unknowns.length > 0,
+          `undocumented-claims=${undocumented.length} unknowns=${mdDoc.unknowns.length}`)
+      }
+      rmSync(md, { recursive: true, force: true })
+      rmSync(path.dirname(BrainDatabase.getDbPath(mdPid)), { recursive: true, force: true })
+    } catch (error) {
+      check("T18: markdown fixture", false, error instanceof Error ? error.message : String(error))
+      try { rmSync(md, { recursive: true, force: true }) } catch { /* best effort */ }
+    }
+  }
+
+  // ── T19: an edge whose target is a SYMBOL names that symbol, for EVERY
+  // relationship type the analyzer publishes — not the hand-listed set. ──
+  {
+    const raw2: any = await BrainDatabase.getRawInstance(projectId as any)
+    const types = (raw2.prepare("SELECT DISTINCT relationship_type FROM brain_relationship WHERE project_id=?").all(projectId) as any[]).map((r) => String(r.relationship_type))
+    // `contains` legitimately points at a file (a module contains a file), so it
+    // is excluded; everything else that exists in the index must name a symbol.
+    const FILE_DIRECTED = new Set(["contains"])
+    const directed = types.filter((t) => !FILE_DIRECTED.has(t))
+    check("T19: the fixture publishes at least one symbol-directed edge type", directed.length > 0,
+      `types=${JSON.stringify(types)} symbolDirected=${JSON.stringify(directed)}`)
+    const d = await doc({ mode: "project", limit: 30 })
+    const typeById = new Map(d.citations.map((c) => [c.id, c.relationshipType ?? ""]))
+    const offenders = allFacts(d).filter((f) => {
+      const t = typeById.get(f.citationIds[0] ?? "")
+      return Boolean(t) && !FILE_DIRECTED.has(t) && namesAFile(f.statement)
+    })
+    check("T19: every symbol-directed edge names a SYMBOL, whatever its type", offenders.length === 0,
+      `${offenders.length} offender(s) across types ${JSON.stringify([...new Set(allFacts(d).map((f) => typeById.get(f.citationIds[0] ?? "")).filter((t) => t && !FILE_DIRECTED.has(t)))])}: ${JSON.stringify(offenders.slice(0, 2).map((f) => f.statement))}`)
+    negative("T19: the symbol-directed predicate discriminates by type",
+      FILE_DIRECTED.has("contains") && !FILE_DIRECTED.has("calls") && namesAFile("M contains src/x.ts") && !namesAFile("M calls add"),
+      "'contains' may name a file; 'calls' may not, and the file-naming predicate flags only the first")
   }
 
   // ── T17 (D19): the staleness footer describes this tool ────────────────
