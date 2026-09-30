@@ -1068,15 +1068,48 @@ searching for `name="xmlns"` went looking and found an **unrelated**
 there at a real file and line. A line-gate that cries wolf gets ignored, and then
 it is not a gate.
 
-**M18 — entity references implemented, accounting NOT yet closed.** 12,066
-`EntityRef` sites across 268 files (7,643 satisfied, 4,423 dangling), 24
-`PEReference` nodes. The implementation emits 772 collapsed `entity_reference`
-edges (353 in-document, 419 unresolved) with 0 line violations, but the **collapse
-occurrence sum is unverified** — the accounting run timed out, so nothing yet
-shows those 772 edges account for all 12,066 sites. `PEReference` is not
-implemented, and the ruling that inside an internal subset it is a `DeclSep`
-separator while outside one it is a real parameter-entity use is not written down.
-**Not claimed as done.**
+**M18 — CLOSED, and the accounting found more than it was written for.** The
+round ended with a note that entity references were implemented but their
+collapse accounting was unverified: 12,066 sites measured, hundreds of edges
+emitted, and nothing connecting the two numbers. `script/m12/xml-entity-accounting.mts`
+states an **accounting identity** — the sum of collapsed edge `occurrences` must
+equal the `EntityRef` nodes in the tree — and is written to be cheap, because the
+first attempt accumulated every symbol and edge in one process and died on memory.
+It found three defects:
+
+  - **the five predefined entities were being called undefined.** `&lt; &gt; &amp;
+    &apos; &quot;` are declared by the specification itself in every document
+    (XML 1.0 §4.6) — the same argument X8 settled for the `xml`/`xmlns` prefixes,
+    and the same shape of knowledge as `BUILTIN_NAMESPACE_URIS`, already in the
+    analyzer. The resolver had two answers and all of them took the wrong one:
+    **4,575 sites across 180 files** stamped `resolvable: "unresolved"` with
+    `danglingEntityReference: true`. Not caution — the analyzer asserting a
+    well-formed document references an entity nothing defines. Deliberately
+    exactly five: `&nbsp;` and `&d;` are not predefined and stay unresolved, and
+    the fixture asserts both halves in one document.
+  - **an entity's replacement text is its own document.** `<!ENTITY shout
+    "&greeting; THERE">` is a real dependency, dropped because an `EntityRef` was
+    only collected under an OWNING ELEMENT and replacement text has no element
+    above it. The owner is the DECLARING ENTITY. This was **611 of the 651-site
+    shortfall**; `lol_ig_content.xml` was the extreme at 147 sites and 1 edge. The
+    first fix's `!isParameter` guard was over-broad — `t8a.xml`'s parameter entity
+    contains a predefined reference the document genuinely makes.
+  - **a 256-character cap on a name that came from the file.** `bigentname.xml`
+    names an entity **3,965 characters** long: the declaration was published
+    (uncapped) and both uses were dropped (capped), so the graph carried the
+    symbol and none of its uses.
+
+  Final: **11,940 sites · 908 collapsed edges · 11,919 accounted.** The 21-site
+  residual is **declared, pinned by file and size, and failure-proven in both
+  directions** — a changed size, an unlisted file, or a vanished entry each exit
+  1, so closing a residual later turns the gate red until its entry is removed.
+  Each entry carries a ruling rather than an excuse: 10 sites are `&lt;` inside a
+  DTD ATTLIST default (owner unadjudicated, **OWED**), 2 sit inside a namespace
+  URI that no processor expands (**RULED**: not a reference), 5 are recorded as
+  unexplained rather than explained. The transferable lesson is the gate's own
+  summary, which counted two resolvability classes and silently dropped the
+  third, so 474 + 42 read as a complete account of 885 — the defect the script
+  exists to catch, one level down.
 
 **M21 — the encoding-recovery figure was quoted three ways.** 26/1,085/187 in the
 review, 27/1,555/244 in a later re-measure, **22/1,537/229** now. These are three
