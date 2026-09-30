@@ -106,15 +106,29 @@ coverage honestly means populating the companion index, not guessing.
 - Corpora (both restored at their pins, both reproducible):
   - `phpunit@c8d6921fb601b6988854cd84a672f06c1e49f80e` — 3,231 tracked `.php`
   - `phpmyadmin@4061095a59e1769128776ad24154cc7058de51aa` — 1,232 tracked `.php`
-- Differential, 60-file samples, tree-truth coverage:
-  - phpunit: **361/361 covered (100%), MISSING=0, unexplained=0, heuristic=0**
-  - phpmyadmin: **2942/2943 covered (100%), MISSING=1, unexplained=0, heuristic=0**
-  - The single phpmyadmin MISSING is the require/include rule, not a coverage
-    gap: `derivePhpEdges` in `script/m14/differential.ts:452` still pushes
-    `references` for include paths while the analyzer now files them as
-    `imports`. The oracle mirror is one line behind; a phpunit sample with no
-    `require`/`include` measures MISSING=0, which is why the number is
-    sample-dependent.
+- **Differential over the FULL corpus of both repos** — not the canonical
+  60-file sample, because a sample can miss a whole edge class and a full sweep
+  cannot:
+
+  | corpus | files | tree-truth | covered | missing | unexplained | heuristic |
+  |---|---|---|---|---|---|---|
+  | phpunit@c8d6921f | 2,907 | 39,829 | 39,829 (100%) | 0 | 0 | 0 |
+  | phpmyadmin@4061095a | 1,232 | 55,402 | 55,402 (100%) | 0 | 0 | 0 |
+  | **combined** | **4,139** | **95,231** | **95,231 (100%)** | **0** | **0** | **0** |
+
+- Line-number contract (M60): audited on a 150-file strided sample —
+  **0 of 5,830 relationships lack `line_number` (0.00%)**, across every kind
+  (`calls` 1501, `uses` 2162, `contains` 904, `imports` 664, `instantiates` 325,
+  `references` 158, `extends` 89, `implements` 27).
+- Grammar pin: registered in `script/m14/verify-grammar-pins.ts` as
+  `unnamed-build-sha-only` — sha256 `d4df6a6ff08c…`, 1,058,041 B, 432 ids /
+  157 named / 31 fields, **0 php drifts**. There is no vendored source and no
+  `PIN.md`, so the source↔wasm proof does not apply and the grammar is not
+  rebuildable offline; that limit is recorded in the entry rather than papered
+  over.
+- Parse census over all 3,231 phpunit files: **2 error files, 0 crashes**, and
+  both errors are intentional test fixtures (`…/parse-error/src/CannotBeParsed.php`
+  and a partial-function-application `?` placeholder).
 - Grammar upgrade: npm `tree-sitter-php` 0.24.2 fixed **15/17** previously
   failing files with **0 regressions** (PHP 8.4 property hooks, pipe operator,
   `new Class()->method()` dereference, readonly anonymous classes, a vendor
@@ -163,7 +177,8 @@ rather than guessing one (see the audit above).
 Two are declared in `script/m14/spec/php-completeness.json` and are
 deliberate, not forgotten:
 
-1. **HTML/text interpolation outside `<?php` blocks** — `php_tag`,
+1. **(Ruled, not a gap — see PHPD31/PHPD32; the lane declares 0 gaps.)**
+   HTML/text interpolation outside `<?php` blocks — `php_tag`,
    `text_interpolation`, `encapsed_string`, `heredoc`, `nowdoc`. The
    interpolated HTML is not PHP and its `$var` slots are not PHP symbols, so
    they are outside this analyzer's contract. The in-PHP string-interpolation
@@ -173,8 +188,11 @@ deliberate, not forgotten:
    `preprocessor`, `shell_comment`, `hash_bang_line`. These are
    configuration and shell, not PHP declarations.
 
-Both are candidates for promotion from `gap` to `RULED` so the lane stops
-reporting them as unfinished work; neither blocks any gate.
+Both were adjudicated to `RULED` (PHPD31, PHD32) on 2026-09-29 — the lane now
+declares zero gaps. Neither was a coverage or extraction defect: both described
+a deliberate language boundary. PHPD33 additionally rules OUT an `exports` kind
+for php: make and python emit it syntactically (`export`, `__all__`), PHP has no
+export syntax, and a semantic version would be unverifiable from one file.
 
 ### Performance
 
