@@ -210,7 +210,9 @@
     ],
     "untestedCodePaths": 3,
     "note_untested": "Found by asking the census which declared types the corpus never fires, and then asking what the analyzer claims to do with THOSE. A `case` label is a claim, not a test. See reviews/make/master-review.md section 12.",
-    "concatenatedVariableName": "A `variable_reference` whose NAME is a concatenation -- `$(PAPEROPT_$(PAPER))` parses as variable_reference -> concatenation -> word + variable_reference -- was read by looking for a `word` child, found none, and emitted nothing. The name is built at expand time so no file can declare it, but the READ is real: phpmyadmin/docs/Makefile declares PAPEROPT_a4 and PAPEROPT_letter then reads `$(PAPEROPT_$(PAPER))`, so that edge is the only thing connecting the two declarations to the read that selects between them. Found when the corpus reached 100 files: recall fell 1.000000 -> 0.999643 with 2 edges MISSING, and the oracle derived them without consulting the analyzer. Fixed; the edge is `uses` because no file can declare a computed name, and 3 mutants guard it (drop it, relabel it `references`, publish only the `word` prefix)."
+    "concatenatedVariableName": "A `variable_reference` whose NAME is a concatenation -- `$(PAPEROPT_$(PAPER))` parses as variable_reference -> concatenation -> word + variable_reference -- was read by looking for a `word` child, found none, and emitted nothing. The name is built at expand time so no file can declare it, but the READ is real: phpmyadmin/docs/Makefile declares PAPEROPT_a4 and PAPEROPT_letter then reads `$(PAPEROPT_$(PAPER))`, so that edge is the only thing connecting the two declarations to the read that selects between them. Found when the corpus reached 100 files: recall fell 1.000000 -> 0.999643 with 2 edges MISSING, and the oracle derived them without consulting the analyzer. Fixed; the edge is `uses` because no file can declare a computed name, and 3 mutants guard it (drop it, relabel it `references`, publish only the `word` prefix).",
+    "m12CorpusBreadth": "The M12 corpus gates measured 14 of 102 files because `git ls-files` was given bare pathspecs, which git matches from the root. tf-aws-components reported 1 Makefile when it has 53. Found only by reading the gate's file count against the differential's.",
+    "sparseCheckoutMisreported": "Three perl5 files are in the git index but not materialised, and were reported as analyzer crashes. A missing file is not a crash; they are now disclosed as `absent` in both artifacts."
   },
   "survivingMutantsFoundAndFixed": [
     "make/accept-keywords-as-names SURVIVED the first run: the fixtures had no forbid on the `export` keyword, so a mutant resurrecting 6 bad edges changed nothing. A surviving mutant is a hole in the suite, not a pass.",
@@ -230,15 +232,16 @@
     "M12.0.F4 mutants": "18/18 caught",
     "M12 contract probe": "44/44 — was 25/34 on first execution",
     "M12 node-types compare": "passed — 35 live references, 0 phantom",
-    "M12 corpus errors": "passed — 14/14 clean, 0 crashes, 0 error nodes, grammar residual PINNED TO ZERO",
-    "M12 corpus measure": "passed — 630 symbols / 2,490 relationships",
+    "M12 corpus errors": "passed — 14/14 -> 102/102 files, 0 error files, 0 error nodes, 0 crashes, residual pinned to zero, and 3 `absent` files (perl5/Cross, perl5/win32 x2) DISCLOSED rather than counted as crashes: they are in the git index but not materialised, a sparse checkout, and a file that is not there is not a crash",
+    "M12 corpus measure": "passed — 14 -> 102 files, 1,811 symbols / 5,896 relationships, 0 error files, 0 crashes, absent disclosed",
     "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
     "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately.",
-    "F3 fixtures": "7/7 — substitution-and-automatic extended with the concatenated-name shape",
-    "F4 mutants": "24/24 caught, 0 survivors",
-    "completeness": "44/44 classified (33 handled, 11 correctly silent), A-H 8/8 — ERROR added to handled_verified and MISSING to internal_silent, the convention bash/fsharp/html/java/javascript/kotlin all use, after completeness-inventory began appending the universal pair",
+    "F3 fixtures": "8/8 — added make/vpath-assignment for MAKE-G1",
+    "F4 mutants": "27/27 caught, 0 survivors — 3 added for MAKE-G1",
+    "completeness": "44/44 classified (32 handled, 11 correctly silent), A-H 8/8. 1 OPEN gap: MAKE-G2. G1 closed by an analyzer change, G3/G4 by measured grammar patches, ERROR->handled_verified and MISSING->internal_silent per the convention six other lanes use.",
     "never-fired audit": "The census's `never fired` list is the highest-signal line in the lane and was being read as a coverage percentage. Cross-referencing it against what the analyzer claims to handle found 5 types with a code path and ZERO tests (private/override/undefine/unexport/shell_assignment, all at 0 of 99 corpus occurrences) and 1 that produced nothing (vpath_directive). Three of those paths were BROKEN: the one-line `private VAR = v` / `override VAR := v` spelling lost its flag because the walker reads the directive before the nested assignment; `undefine VAR` was an UNREACHABLE branch because its operand is a bare word in the `variable` field with no named children, so the child search could never match; and `unexport` cleared the metadata flag while leaving the `exports` edge, so the symbol table and the graph disagreed. All fixed, all pinned. Real corpus fact corrected: `override CFLAGS += ...` at tree-sitter-lua/Makefile:25 now records isOverride. Corpus counts are UNCHANGED (1781/5880) because none of these constructs appear in the corpus except that one annotation.",
-    "F5 differential": "tf-aws-components 100% covered 0 missing 0 unexplained; consul 100% 0/0; recall 1.000000 precision 1.000000 over 100 files, 2,515/2,515 lines"
+    "F5 differential": "tf-aws-components 100% covered 0 missing 0 unexplained; consul 100% 0/0; recall 1.000000 precision 1.000000 over 100 files, 2,515/2,515 lines",
+    "M12 corpus breadth (fixed)": "The gate was measuring 14 of 102 files. `git ls-files '*.mk' Makefile GNUmakefile makefile` uses bare pathspecs, which git matches FROM THE ROOT: `Makefile` matched ./Makefile and nothing under a directory, so tf-aws-components reported 1 Makefile when it has 53. The enumerator now lists everything and filters with the same rule the by-RULE sweep uses."
   },
   "notClosed": {
     "gaps": [
@@ -293,5 +296,31 @@
       "shellVariable": 12
     },
     "note": "every class is a deliberate `uses`/evidenceClass decision, not a true dangler; see script/m14/tmp/make/dangle-adjudication.json"
+  },
+  "gaps": {
+    "open": [
+      {
+        "id": "MAKE-G2",
+        "kind": "CORRECTNESS DEFECT",
+        "summary": ".RECIPEPREFIX is not parsed, so a Makefile that sets it loses every recipe line. 0 of 100 corpus files set it. A complete, measured external scanner is RETAINED at grammars/tree-sitter-make/recipeprefix/ and is not wired: it satisfies requirement (1) a comment between recipe lines must not end the recipe, and fails requirement (2) the prefix must be able to lead a rule. Making it satisfy (2) breaks (1) across 3 real corpus files with 36 error nodes. Reproducible in one command: bun run script/m14/tmp/make/recipeprefix-conflict.mts"
+      }
+    ],
+    "closed": [
+      {
+        "id": "MAKE-G1",
+        "by": "analyzer",
+        "summary": "VPATH = now declares VPATH with metadata.searchPaths; a read of it becomes `references` rather than `uses`"
+      },
+      {
+        "id": "MAKE-G3",
+        "by": "grammar patch P1",
+        "summary": "target: export VAR = value"
+      },
+      {
+        "id": "MAKE-G4",
+        "by": "grammar patch P2",
+        "summary": "$$( cmd ) as a shell command, not a make expansion"
+      }
+    ]
   }
 }

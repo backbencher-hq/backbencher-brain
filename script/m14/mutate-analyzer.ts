@@ -14845,6 +14845,57 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "make/drop-vpath-assignment",
+    language: "make",
+    defectClass: "lost-declaration",
+    description:
+      "Reverts MAKE-G1: `VPATH = src:include` is no longer modelled. VPATH is a GNU Make builtin whose value a makefile may set, exactly like CURDIR or MAKEFILE_LIST, and the sibling `vpath %.c src` directive has always been recorded -- so the two spellings of one feature were deliberately asymmetric, and the asymmetry cost a real edge: because VPATH was never declared, a read of it fell to `uses`, the class the lane reserves for names NOTHING can declare, even though this file is the thing that declares it.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((x: any) => x.name !== "VPATH"),
+      relationships: (r.relationships ?? []).filter((x: any) => x.target !== "VPATH" && x.source !== "VPATH"),
+    }),
+  },
+  {
+    id: "make/label-vpath-read-as-uses",
+    language: "make",
+    defectClass: "wrong-edge-label",
+    description:
+      "Keeps the VPATH declaration but relabels the read of it from `references` to `uses` -- the exact split the lane exists to keep honest. `references` is emitted iff THIS file declares the name; `uses` carries a builtin / external / automatic class and asserts a declaration that does not exist. Only the label changes, which is the shape no count-based gate can see.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "references" && x.target === "VPATH" ? { ...x, type: "uses" } : x),
+    }),
+  },
+  {
+    id: "make/declare-vpath-search-directories",
+    language: "make",
+    defectClass: "fabricated-symbol",
+    description:
+      "Invents a symbol for each search directory in a `VPATH =` value. `src`, `include` and `vendor` are PATHS the file looks in, not declarations it makes, and the strings appear in essentially every Makefile in existence as bare words -- so this floods the graph with path-shaped symbols and makes the completeness census report a declaration rate that is an artefact of a colon-separated value. A related mutant publishes `VPATH -> src` as a dependency, which is the category error the dangle adjudication exists to prevent.",
+    transform: r => {
+      const vpath = (r.symbols ?? []).find((x: any) => x.name === "VPATH")
+      const dirs: string[] = vpath?.metadata?.searchPaths ?? []
+      if (dirs.length === 0) return r
+      const owner = (r.symbols ?? []).find((x: any) => x.kind === "module")
+      if (!owner) return r
+      const extra = dirs.map((d) => ({
+        id: `sym-${d}`, name: d, kind: "constant", range: vpath.range,
+        metadata: { nodeType: "VPATH_assignment", fabricated: true },
+      }))
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), ...extra],
+        relationships: [...(r.relationships ?? []), ...dirs.map((d) => ({
+          source: owner.name, target: d, type: "contains", confidence: 1,
+          line_number: vpath.range?.start?.line, line: vpath.range?.start?.line,
+          metadata: { role: "declaration", evidenceClass: "declared_in_file" },
+        }))],
+      }
+    },
+  },
+  {
     id: "make/ignore-brace-expansion-form",
     language: "make",
     defectClass: "wrong-edge-target",
