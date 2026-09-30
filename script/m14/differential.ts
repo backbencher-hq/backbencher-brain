@@ -14923,6 +14923,16 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
 // block (dead branches, the 73-of-604 member-arg misclassification, unhandled
 // `val`, no `new`-prefix instantiates); this oracle implements the SPEC, so they
 // surface as MISSING/unexplained on the lane's first honest row.
+/**
+ * SUPERSEDED — the harness no longer calls this. Kept ONLY so that
+ * script/m14/tmp/fs-oracle-edges.ts, which predates the import, still runs; that probe now
+ * prefers the lane oracle too.
+ *
+ * It is here because it was here, and that is the whole hazard: it derives six labels and not
+ * `contains`, so leaving it in a file where a reader assumes "the F# oracle" means this one
+ * guarantees that the next person re-registers a label and gets 2,159 phantom defects. Delete
+ * it once the probe no longer imports it.
+ */
 export function deriveFsharpEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -20297,9 +20307,27 @@ async function main() {
         // branches, the `args:`-field method split, `val` declarations, the
         // `new`-prefix instantiates, `inherit` is always extends), which is
         // exactly what the first row is for.
-        for (const e of deriveFsharpEdges(root)) {
+        // The lane's ORACLE, imported — not the 249-line in-file copy that used to sit here.
+        //
+        // That copy derived six labels and NOT `contains`, so when `contains` entered the
+        // compared set it was scored against an oracle with no rule to find it: every
+        // `contains` edge the analyzer emitted read as UNEXPLAINED, which is how a harness
+        // that filters the analyzer side and not the truth side turns a missing rule into an
+        // accusation. 2,159 rows, none of them a defect in the analyzer.
+        //
+        // The two copies had already drifted by 523 lines. Over the same 120 files the lane
+        // oracle derives 11,718 `contains` rows and agrees with the analyzer on ALL of them —
+        // 0 missing, 0 unexplained — while the in-file copy derives none. Two implementations
+        // of one truth is not redundancy, it is a second opinion that nobody adjudicates.
+        //
+        // `result?.symbols` is passed because `contains` is the one label that is ABOUT symbols:
+        // an edge from a container to a name only exists if that name was published. Every
+        // other language at this call site already takes them the same way.
+        const { deriveFsharpEdges: deriveFsharpEdgesLane } = await import("./fsharp-truth-oracle")
+        for (const e of deriveFsharpEdgesLane(root, (result as any)?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+
       }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
