@@ -790,7 +790,55 @@ consequences of the pattern rather than of the individual rows.
 hierarchy). `instantiates` is the one C-specific type the truth asks for and the
 analyzer does not emit, and that is the second open question below.
 
-### CGD20: a function-local type is not an execution artifact (OPEN RULING, #959)
+### #961: a function-local type is a compile-time type, and it is published
+
+**Ruled, not open.** CGD20 (real-c-analyzer.ts:1512) read
+`if (scopeManager.isInsideFunction()) break` as *"function-local struct definitions are
+execution artifacts (C-D1) — no scope, no symbol, no field registration."* That reading
+does not survive contact with C. **A struct definition emits no code.** The local
+*variable* is the execution artifact; the type is a compile-time fact whose *visibility*
+the block merely limits.
+
+Measured: **20 function-local named types carrying 65 members across 15 files, none
+published.** They are used, not decoration — `deps/jemalloc/test/unit/malloc_io.c:14`
+`struct test_s` (6 members, 4 references), `src/ebuckets.c:2230` `struct TestParams` (the
+benchmark's parameter table), `src/listpack.c:1920` `struct pick`,
+`src/module.c:4590` `KeyMetaConfAllVersions`, `src/module.c:7568` `typemethods.v2`–`v5`.
+
+**The decisive argument was in this lane's own output.** The payload already published
+`uses local_type_in_use -> index` and `-> order` — uses of members of a type CGD20
+declined to declare. Those edges were unresolvable: the only way to resolve `index` was
+the declaration that had been suppressed. A lane that will not publish a type is not
+consistent about declining uses **of** it.
+
+**The name is qualified by the enclosing function, because the bare name does not
+survive the corpus.** 3 of the 20 collide with a file-scope type — `transfer`
+(`curl/lib/vssh/libssh2.c:3465`), `entry` (`curl/tests/libtest/lib1915.c:35`),
+`clar_counter` (`libgit2/deps/clar/clar/counter.h:86`). So a local type publishes as
+`lpRandomEntries.pick`. Every step of that path is a real symbol, so a `contains` edge
+anchored on it resolves — which is what distinguishes it from the block-scope naming the
+contract forbids (`block_1920` names nothing).
+
+**CGD20's original concern was right, and the qualification fixes it at the cause.**
+CGD20 cited member leakage (`BackupSubCommandEnum`, `MB_enum`). That happened because an
+anonymous local enum published as the **placeholder** `anonymous_enum` with its members
+owned by that placeholder — two symbols with one name in a file, and file-scope
+EnumMembers. `c/macro-wrapped-heading-917` pinned the *symptom* (three forbids on
+`BufSize`, `PlainSize`, `anonymous_enum`). Qualifying the type fixes the leak: the members
+are now owned by `cmpp_stream` and `plain_stream`. Those forbids were replaced with
+positive rows asserting the correct shape, and `anonymous_enum` **stays forbidden** — the
+placeholder is still wrong, it simply is no longer needed.
+
+**Result: `contains` against clang is 852/852 = 100.00%, 0 missed.** The oracle had to
+be updated for the naming, and the update is itself the point: it keyed on clang's bare
+tag and so reported all 31 newly-published local members as missing — a miss the oracle
+invented by demanding the *less* precise name, which is the #958 defect mirrored. It now
+matches a payload owner against clang's path by **suffix**.
+
+`c/function-local-type-959` — written while this was open, deliberately asserting neither
+way — now pins the settled behaviour.
+
+### CGD20 as it stood (superseded by #961)
 
 Adjudicating the last two `contains` misses from `contains-vs-clang.ts` —
 `listpack.c:1920`'s `struct pick` — turned up a **class**, not an instance. CGD20
