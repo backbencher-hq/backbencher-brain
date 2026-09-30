@@ -71,6 +71,17 @@
  * the F5 harness. Module name is the file's basename WITHOUT its extension, which is
  * what the analyzer emits and what the contract probe pins.
  */
+/** A `$ref` that names a document rather than pointing inside one. Mirrors the
+ *  corpus shapes: a relative path, optionally with a `#fragment`, and not a URL. */
+function isFileNamingRef(refPath: string): boolean {
+  if (refPath.length === 0) return false
+  if (refPath.startsWith("#/")) return false
+  if (refPath.startsWith("http://") || refPath.startsWith("https://")) return false
+  const withoutFragment = refPath.split("#")[0]
+  const ext = withoutFragment.slice(withoutFragment.lastIndexOf(".") + 1).toLowerCase()
+  return ["json", "jsonc", "json5", "yaml", "yml", "avsc", "avdl", "proto"].includes(ext)
+}
+
 export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest?: boolean }): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   // An npm manifest declares, under these four keys, a map of package name to
@@ -201,17 +212,32 @@ export function deriveJsonEdges(root: any, scriptName: string, opts?: { manifest
         }
       }
       if (key === "$ref" && value.type === "string") {
-        // The enclosing key of a `$ref` tells us whether it composes. The path
-        // writes an array index with BRACKETS (`…allOf[0].$ref`), which two earlier
-        // attempts got wrong — one matched only the object form and one stripped a
-        // dot-separated index, each finding 1 edge where the corpus has 1,226.
-        const bracket = here.lastIndexOf("[")
-        const owner = bracket > 0 && here.endsWith("]") ? here.slice(0, bracket) : here
+        // The enclosing key of a `$ref` tells us whether it composes. TWO strips are
+        // needed, in this order, and the first version did only the second: `here` is
+        // the path OF THE `$ref` NODE (`…allOf[0].$ref`), not of its parent, so the
+        // trailing `]` test is false, the index never comes off, `owner` never ends
+        // with `.allOf`, and the rule emits literally nothing — 1,225 analyzer edges
+        // read as 1,208 fabrications. A rule that silently matches nothing still looks
+        // like a rule that found nothing, which is how a green suite hides a hole.
+        let owner = here
+        const lastDot = owner.lastIndexOf(".")
+        if (lastDot >= 0) owner = owner.slice(0, lastDot) // drop the `.$ref` itself
+        const bracket = owner.lastIndexOf("[")
+        if (bracket > 0 && owner.endsWith("]")) owner = owner.slice(0, bracket)
         if (owner.endsWith(".allOf")) {
           const ptr = unquote(value)
-          if (ptr.startsWith("#/")) {
+          // Two ref forms count as composition, derived from the SEEN shapes rather
+          // than an assumed one: `#/…` inside the document, and a sibling file with a
+          // fragment (`dataTypeBase.json#`), which the `imports` rule already treats as
+          // a file-naming ref. Written from the grammar of the corpus, not from the
+          // analyzer, so agreement is evidence rather than a shared assumption.
+          const isDoc = ptr.startsWith("#/")
+          const isFile = !isDoc && isFileNamingRef(ptr)
+          if (isDoc) {
             const pointed = `${scriptName}.${ptr.slice(2).replaceAll("/", ".")}`
             if (pathToName.has(pointed)) composed.push({ from: owner, target: pointed })
+          } else if (isFile) {
+            composed.push({ from: owner, target: ptr })
           }
         }
         refs.push({ from: here, refPath: unquote(value) })
