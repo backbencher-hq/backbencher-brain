@@ -698,11 +698,67 @@ verification, not any oracle at all:
 |---|---|---|---|
 | `calls` | yes | 4 facts | `call-edge-fidelity.ts` (measured) |
 | `uses` | yes | 17 facts | `field-access-uses.ts` (this wave) |
-| `contains` | yes | 16 facts | none |
+| `contains` | yes | 16 facts | `contains-vs-clang.ts` (this wave) |
 | `imports` | yes | 6 facts | none |
 | `references` | yes | 8 facts | none |
 | `exports` | yes | via `c-completeness` | none |
 | `instantiates` | **no** | 1 fact, unmet | n/a |
+
+### `contains` against clang, and two real defects it found
+
+`script/m14/tmp/c-audit/contains-vs-clang.ts` judges every `contains` edge against
+**clang 14** — a different parser with a different recovery strategy, so agreement is
+evidence rather than a tautology. This matters because the `calls` and `uses` probes
+judge the payload against **tree-sitter, the same parser the analyzer uses**: they are
+sound about emission and structurally blind about a member the grammar never produced.
+A payload and the grammar that produced it always agree, and that agreement is not
+evidence about the grammar.
+
+Measured on `redis/src` (150 files offered): 20 judged, 59 declare no record of their
+own, 71 not measurable. 57 records, **322 members, 99.38% agreement, 0 phantom
+members clang does not have, 2 missed.** Reach is reported, never assumed, and every
+unmeasurable file carries a named reason — the probe was built after a first version
+returned a bare `null` and reported curl as "0 of 100 measurable, no diagnostic",
+which reads exactly like a clean result.
+
+**Two genuine defects, both invisible to every tree-sitter-based counter:**
+
+1. **#957 — a member inside a preprocessor conditional was never published.**
+   `struct eventNotifier { #ifdef HAVE_EVENT_FD int efd; #else int pipefd[2];
+   #endif }` (redis/src/eventnotifier.h:19-25) parses with the `preproc_ifdef` as a
+   DIRECT child of `field_declaration_list` and **no `field_declaration` at that
+   level**, so iterating named children found nothing. The struct was published with
+   a symbol and **zero** `contains` edges. The member extractor now descends into both
+   arms. A conditional member is a real member — the project compiles with one arm and
+   the struct is unusable without it — and since the preprocessor is textual (C-D2) the
+   payload publishes **both** arms, the honest superset.
+2. **#958 — a nested member of an anonymous aggregate got a placeholder owner.**
+   `struct R { union { const char *str; struct { const char *str; const char
+   *format; } verbatim_str; } val; }` (redis/src/call_reply.c:30-38) published
+   `CallReply.val.verbatim_str.str` under the owner path **`anonymous_union.verbatim_str`**,
+   because `inlineAggregateOwnerName` asked the *union* for its name and an anonymous
+   union has only the placeholder. The correct path composes from the member that
+   carries the outer aggregate: `R.val.verbatim_str`.
+
+**The probe needed five corrections before it could convict anything, and in every
+case the analyzer was right and the probe was not:**
+
+- It compared clang's **whole translation unit** against a per-file payload, so it
+  reported 7.40% agreement and 1,001 "missed" members in files that declare no type at
+  all (`adlist.c` defines no record; `list` lives in `adlist.h`).
+- It **flattened** nested anonymous aggregates into the parent, when the payload
+  publishes them owner-qualified — 39 phantom misses on `bio_job.fd_args -> type` and
+  its five siblings, every one of which the analyzer had published correctly.
+- It then looked for the naming `FieldDecl` **inside** the anonymous record, when clang
+  emits it as the **next sibling** — which turned those 39 into 37 *phantom* members.
+- Its include roots were a fixed list from `DIR/..`, so `deps/lua/src/lua.h` was
+  missing and 67 of 100 files were unparseable for a header that **exists**.
+- The root scan was **unbounded**, walking out of `redis/` into the sibling
+  `abseil-cpp` and putting an unrelated C++ tree on the include path.
+
+That is ten confident wrong numbers across this lane's instrumentation, and the
+containment check, the owner-path key, and the named-reason reporting are all
+consequences of the pattern rather than of the individual rows.
 
 `extends` / `implements` / `overrides` are absent by ruling (C-D1, no class
 hierarchy). `instantiates` is the one C-specific type the truth asks for and the
@@ -842,7 +898,7 @@ The containment check exists because of that, not because of the two rows it fix
 | gate | result | how it was run |
 | --- | --- | --- |
 | M14.0.F3 fixtures | **29/29 pass** (18 pre-existing + 11 new) | `bun run script/m14/run-fixtures.ts --lang c` |
-| M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
 | C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 4 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |

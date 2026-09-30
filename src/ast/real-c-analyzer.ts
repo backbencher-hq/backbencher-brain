@@ -2717,8 +2717,53 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // trailing-marker case and a confidently wrong one everywhere else.
     const hasUnnamedBitfield = this.bodyHasUnnamedBitfield(bodyList)
     if (bodyList) {
-      for (let i = 0; i < bodyList.namedChildCount; i++) {
-        const field = bodyList.namedChild(i)
+      // #957: a member declared inside a preprocessor CONDITION is a member.
+      //
+      // `struct eventNotifier { #ifdef HAVE_EVENT_FD int efd; #else int pipefd[2];
+      // #endif } eventNotifier;` (redis/src/eventnotifier.h:19-25) parses with the
+      // `preproc_ifdef` as a DIRECT child of the `field_declaration_list` and NO
+      // `field_declaration` at that level, so iterating named children found nothing
+      // to publish and the struct was emitted with a symbol and ZERO `contains`
+      // edges. Found by contains-vs-clang.ts, which is the first oracle in this
+      // lane to judge `contains` against a parser that is not the one the analyzer
+      // uses -- every tree-sitter-based counter had reported this file as clean,
+      // because the payload and the parse agree that there is no field_declaration
+      // to find. Agreement between a payload and the grammar that produced it is not
+      // evidence about the grammar.
+      //
+      // A conditional member is a REAL member: the project compiles with one of the
+      // arms, and the struct is unusable without it. The preprocessor is textual
+      // (C-D2), so the analyzer cannot know WHICH arm -- it publishes every arm's
+      // members, which is the honest superset and matches what a C consumer needs to
+      // see. `pipefd` and `efd` coexisting in one payload is a true statement about
+      // the two possible compilations, and is the same shape as the macro-mediated
+      // members already published for #908.
+      const memberNodes: Node[] = []
+      const collectMembers = (list: Node) => {
+        for (let i = 0; i < list.namedChildCount; i++) {
+          const child = list.namedChild(i)
+          if (!child) continue
+          if (child.type === "preproc_ifdef" || child.type === "preproc_if") {
+            // Only the CONDITION is directive text; both arms are code.
+            for (let j = 0; j < child.namedChildCount; j++) {
+              const arm = child.namedChild(j)
+              if (!arm) continue
+              if (arm.type === "field_declaration") memberNodes.push(arm)
+              else if (arm.type === "preproc_else" || arm.type === "preproc_elif") {
+                // An `#else` arm's members are nested one level deeper.
+                for (let k = 0; k < arm.namedChildCount; k++) {
+                  const inner = arm.namedChild(k)
+                  if (inner?.type === "field_declaration") memberNodes.push(inner)
+                }
+              }
+            }
+            continue
+          }
+          memberNodes.push(child)
+        }
+      }
+      collectMembers(bodyList)
+      for (const field of memberNodes) {
         // #950: an INLINE aggregate member -- `struct { ... } name;` or
         // `union { ... } name;`. Its fields are registered under a synthetic key
         // before the member guard below, and the member record picks the key up.
@@ -3864,9 +3909,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ownerSpecifier = body.parent
     if (!ownerSpecifier) return null
     if (ownerSpecifier.type !== "struct_specifier" && ownerSpecifier.type !== "union_specifier") return null
+
+    // #958: when the OWNER is itself an inline aggregate, the owner's own name is
+    // not the type's name -- it is the MEMBER that carries it, one level further
+    // out. `struct R { union { ... struct { ... } verbatim_str; ... } val; }` has
+    // `verbatim_str` inside the union's field_declaration_list, whose owner
+    // specifier is the ANONYMOUS union, so `specifierOwnName` returns the
+    // placeholder `anonymous_union` and the path came out as
+    // `anonymous_union.verbatim_str` (redis/src/call_reply.c:30-38, where
+    // `CallReply.val.verbatim_str.str` and `.format` were published under a
+    // placeholder owner while the union's own members got the right path).
+    //
+    // The correct path composes from the member that carries the outer aggregate:
+    // the outer specifier's own `field_declaration` names it (`val`), and THAT
+    // specifier's owner is named `R`. So the answer is `R.val.verbatim_str`, and
+    // the same question for the outer aggregate itself (`R.val`) already had a
+    // working answer, which is why the two disagreed.
     const ownerName = this.specifierOwnName(ownerSpecifier)
     if (!ownerName) return null
-    return `${ownerName}.${memberName.text.trim()}`
+    const carried = this.inlineAggregateOwnerName(ownerSpecifier)
+    return carried ? `${carried}.${memberName.text.trim()}` : `${ownerName}.${memberName.text.trim()}`
   }
 
   /**
