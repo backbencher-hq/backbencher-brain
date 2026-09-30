@@ -2931,6 +2931,203 @@ function scalaHeadTypeName(typeNode: any): string {
   return String(typeNode.text).replace(/\[[^\[\]]*\]/g, "").replace(/<[^<>]*>/g, "").trim()
 }
 
+/**
+ * M60 (S1, scala deep review, 2026-09-27): the `uses` truth.
+ *
+ * Scala emits 8 labels and the allowlist compared 5. `uses`, `contains` and
+ * `references` — 59–62% of everything the analyzer publishes — were compared by
+ * nothing. This is the first of the three.
+ *
+ * Two emission sites, both at confidence 0.9:
+ *
+ *   1. `expression_use` — a read of a name:
+ *        - a string-template interpolation reads the interpolated identifier;
+ *        - `x.y` reads the RECEIVER (`x`) — receiver-only, because the analyzer
+ *          never guesses method-vs-field (the D3 ruling);
+ *        - `this.y` / `super.y` read the FIELD instead, since there is no
+ *          receiver name to read;
+ *        - a `field_expression` that IS a call's `function` is skipped: the call
+ *          edge already carries it;
+ *        - a write LHS is skipped, gated by SPAN — both `=` (an
+ *          `assignment_expression`) and `op=` (an `infix_expression` whose
+ *          operator is a compound assign) put the written name first.
+ *   2. `scala_extension_method` — `extension (x: T) def name` / an implicit
+ *      class's receiver type, marked `isExtension`.
+ *
+ * Two gates worth stating because they are easy to get backwards:
+ *
+ *   - a CAPITALIZED receiver is never a read. `Foo.bar` is a reference to the
+ *     type `Foo`, not a read of a local named `Foo` (the G3 ruling), so those go
+ *     to the `references` graph instead.
+ *   - the write gate is by SPAN, never by text, and it must cover `op=` as well
+ *     as `=` — `o.n += 1` parses as an `infix_expression`, not an assignment, so
+ *     a gate that only knows `assignment_expression` treats every compound
+ *     write as a read.
+ */
+export function deriveScalaUsesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (from: string, target: string): void => {
+    if (!target) return
+    const t = stripNameQuoting(String(target).trim())
+    if (!t) return
+    const k = `uses|${from}|${t}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "uses", from: from || "(script)", target: t })
+  }
+
+  const namedChildOf = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const firstNamedOf = (n: any, types: string[]): any => {
+    if (!n) return null
+    for (const t of types) {
+      const c = namedChildOf(n, t)
+      if (c) return c
+    }
+    return null
+  }
+  const field = (n: any, name: string): any => {
+    try { return n?.childForFieldName?.(name) ?? null } catch { return null }
+  }
+  // The receiver: descend the LEFT SPINE and take the leaf, but only if that
+  // leaf is an `identifier` — so `a.b.c` reads `a`.
+  //
+  // The "only if" is the whole rule, and my first version got it wrong. A full
+  // DFS for the leftmost identifier ANYWHERE makes `100.millis` read `millis`,
+  // because the receiver `100` is a literal and the DFS steps over it to the
+  // field. But there is no receiver NAME in `100.millis` to read — the method is
+  // called on an integer literal — so the correct answer is to emit nothing.
+  // Measured: that single difference produced all 52 MISSING rows on a 60-file
+  // cats-effect draw, every one of them a name reached by stepping over a
+  // non-identifier receiver.
+  const leftmostIdentifier = (n: any): any => {
+    if (!n) return null
+    if (n.type === "identifier") return n
+    const first = n.namedChild(0)
+    return first ? leftmostIdentifier(first) : null
+  }
+  const isCapitalized = (t: string): boolean => {
+    if (!t) return false
+    const c = t.charCodeAt(0)
+    return c >= 65 && c <= 90
+  }
+  // Compound-assignment operators. `o.n += 1` is an `infix_expression`, so the
+  // write gate has to know about it or every compound write reads as a read.
+  const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "++", "--", "<<=", ">>=", "&=", "|=", "^="])
+  const isWriteLhs = (n: any): boolean => {
+    const p = n?.parent
+    if (!p) return false
+    if (p.type === "assignment_expression") {
+      const lhs = p.namedChild(0)
+      return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+    }
+    if (p.type === "infix_expression") {
+      const op = field(p, "operator")?.text ?? p.namedChild(1)?.text ?? ""
+      if (!COMPOUND_ASSIGN_OPS.has(op)) return false
+      const lhs = p.namedChild(0)
+      return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
+    }
+    return false
+  }
+  // The enclosing declaration that owns the read. A function wins over its
+  // enclosing class, so a read inside `def f` attributes to `f`.
+  const resolveSource = (start: any): string => {
+    let p: any = start && (start.type === "function_definition" || start.type === "function_declaration")
+      ? start
+      : start ? start.parent : null
+    while (p) {
+      if (p.type === "function_definition" || p.type === "function_declaration") {
+        const nm = field(p, "identifier") ?? firstNamedOf(p, ["identifier"])
+        if (nm) return nm.text
+      }
+      if (
+        p.type === "class_definition" || p.type === "object_definition" ||
+        p.type === "trait_definition" || p.type === "enum_definition"
+      ) {
+        const nm = field(p, "identifier") ?? firstNamedOf(p, ["identifier"])
+        if (nm) return nm.text
+      }
+      p = p.parent
+    }
+    return "(script)"
+  }
+
+  const walk = (n: any): void => {
+    if (n.type === "interpolation") {
+      const id = n.namedChild(0)
+      if (id && id.type === "identifier") push(resolveSource(n.parent), id.text)
+    } else if (n.type === "field_expression") {
+      // A field_expression that IS a call's function is carried by the call edge.
+      const parent = n.parent
+      const fnField = parent && parent.type === "call_expression" ? field(parent, "function") : null
+      const isCallFn = !!parent && parent.type === "call_expression" && !!fnField && fnField.id === n.id
+      if (!isCallFn && !isWriteLhs(n)) {
+        const recv = leftmostIdentifier(n)
+        if (recv && (recv.text === "this" || recv.text === "super")) {
+          const leaf = field(n, "field")
+          if (leaf && leaf.text.length > 0) push(resolveSource(n.parent), leaf.text)
+        } else if (recv && recv.text.length > 0 && !isCapitalized(recv.text)) {
+          push(resolveSource(n.parent), recv.text)
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+
+  // ── the extension-receiver class ─────────────────────────────────────────
+  // `extension (x: T) { def name = ... }` and the implicit-class form
+  // `(x: T) { def name = ... }` both declare that `name` USES the receiver type
+  // `T`. Only a non-method declaration: for a `def` the receiver is part of the
+  // method's own signature, which the declared-type graph owns.
+  {
+    const walk2 = (n: any): void => {
+      if (n.type === "function_definition" || n.type === "function_declaration") {
+        const isMethod = /^\s*def\s/.test(n.text ?? "")
+        if (!isMethod) {
+          const recvNode = field(n, "extension") ?? firstNamedOf(n, ["extension", "receiver_type"])
+          const recvType = recvNode ? collectTypeNames(recvNode) : []
+          const nm = field(n, "identifier") ?? firstNamedOf(n, ["identifier"])
+          if (nm && recvType.length > 0) push(nm.text, recvType[0])
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk2(c)
+      }
+    }
+    walk2(root)
+  }
+
+  return edges
+}
+
+/** Every `type_identifier` under a node, first-occurrence order. Scala's
+ *  extension receiver is a type position, so the published name is the TYPE. */
+function collectTypeNames(n: any): string[] {
+  const out: string[] = []
+  const w = (x: any): void => {
+    if (x.type === "type_identifier") {
+      const t = stripNameQuoting(x.text)
+      if (!out.includes(t)) out.push(t)
+      return
+    }
+    for (let i = 0; i < x.namedChildCount; i++) { const c = x.namedChild(i); if (c) w(c) }
+  }
+  if (n) w(n)
+  return out
+}
+
 export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -19163,6 +19360,12 @@ async function main() {
         for (const e of deriveScalaEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 S1: scala `uses` — one of three labels the analyzer emitted and
+        // the allowlist dropped. 660 edges on cats-effect, 697 on scala3, from two
+        // emission sites, compared by nothing before this.
+        for (const e of deriveScalaUsesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
@@ -19568,6 +19771,13 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          // M60 S1 (2026-09-27): scala joins the uses-audited set. Measured
+          // before this change: scala emitted 8 labels and the allowlist compared
+          // 5, so uses/contains/references — 59-62% of everything the analyzer
+          // publishes — were compared by nothing. Enabling the oracle without the
+          // allowlist entry would have measured zero covered edges, the same G7
+          // shape documented for the kotlin and powershell lanes.
+          ...(lang === "scala" ? ["uses"] : []),
           // M60 K6 (2026-09-27): kotlin joins the references-audited set. 5,669
           // edges on the primary corpus from ten declared-type positions plus
           // the import class, with no oracle and no allowlist entry. The java
