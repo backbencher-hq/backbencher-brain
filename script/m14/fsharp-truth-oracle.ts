@@ -639,10 +639,28 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
             // contract, not that one of them has a bug. Deciding it needs a decision about
             // what `calls` and `instantiates` mean to the family, not another predicate —
             // and it is filed as the lane's largest open item in reviews/fsharp/closure.md.
-            // The property contract, enforced where the edge would be created. `owner` is
-            // still the inherited one, so a suppressed call cannot leak to the enclosing
-            // member either — it simply does not exist, which is what the analyzer does.
-            if (!suppressCalls) emit("calls", owner, leaf, node)
+            if (suppressCalls) {
+              // nothing — the property contract, enforced where the edge would be created
+            } else if (owner === "constructor" && cur.length && leaf === leafOf(cur[cur.length - 1]!)) {
+              // CONSTRUCTOR CHAINING. F# spells a secondary constructor's invocation of its
+              // own primary constructor as a bare application with no `new` token:
+              //
+              //     new(outputDirectory, useResultsCache) = FSharpDependencyManager(…, null)
+              //
+              // Both implementations agreed on the source and the target and disagreed only on
+              // the LABEL — 14 MISSING `calls` against 14 UNEXPLAINED `instantiates` per 120
+              // corpus files, which is what an undecided contract looks like from the outside.
+              //
+              // The discriminator is narrow and is the family's, not a spelling rule: the
+              // callee is the ENCLOSING TYPE of the constructor. An earlier attempt keyed on
+              // "any type this file declares" and was reverted — it fired on ordinary calls to
+              // same-named bindings and moved the differential from 202/151 to 297/246. The
+              // difference between the two is the whole difference between a rule and a
+              // coincidence: this one names a type the constructor is a member of.
+              emit("instantiates", owner, leaf, node)
+            } else {
+              emit("calls", owner, leaf, node)
+            }
           }
         }
       }
