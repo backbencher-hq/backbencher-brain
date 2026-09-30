@@ -1,91 +1,1507 @@
 {
   "schemaVersion": 1,
-  "truthSource": "manual_audit",
-  "source": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type — M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, generic parameters, lifetimes, tuple indices. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) — never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println — one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id — field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls (::new() -> new, paired with calls — documented); implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only — no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse — production companion-index wiring tracked by M12.44 (same note as Java/C/C++).",
+  "truthSource": "manual_audit (re-grounded 2026-09-29, RUST-MR: 4 rows retargeted to the receiver-type rule, 15 R13 declared-type/constructor rows added, each with its own source-line adjudication)",
+  "source": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type \u2014 M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, lifetimes, tuple indices. GENERIC PARAMETERS are no longer in this list and the change is deliberate: a generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent (R13), while a type ANNOTATION that uses one (`repository: T`) is a use and publishes. Declared-type references (params, returns, field types, const/static types, alias RHSs \u2014 R13) are part of the surface, and `references` is the TYPE surface: rust puts module dependencies in the imports array only, so a `use` declaration still emits no `references` edge. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) \u2014 never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println \u2014 one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id \u2014 field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls, which name the RECEIVER TYPE (Vec::new() -> instantiates Vec, paired with calls) \u2014 the pre-fix `::new() -> new` target named a function rather than a type and was retired 2026-09-29; implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only \u2014 no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse \u2014 production companion-index wiring tracked by M12.44 (same note as Java/C/C++). DEFERRED-RULE NOTE (2026-09-29): a CONSTRUCTOR call publishes `instantiates` for its receiver type ONLY when that type is declared in the same file, so std/foreign receivers stay silent \u2014 `Vec::new()` emits `calls -> new` and NO `instantiates`, in Negative.rs line 10 and storage.rs line 12 alike. A STRUCT LITERAL is unaffected (it names a type that must be in-file to parse as a literal) and a receiver declared in another file of the same parse stays silent too, because M12 is per-file. Three separate truth rows had this wrong in three different directions before the rule was written down here.",
   "facts": [
-    {"id": "sym:Negative.rs:9:function:normalize", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.rs", "line": 9, "attributes": {"name": "normalize", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "pub fn normalize<'a, T: Debug + Clone>(...) -> free function symbol"}},
-    {"id": "sym:Negative.rs:21:function:compute", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.rs", "line": 21, "attributes": {"name": "compute", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "pub fn compute(input: i32) -> i32 -> free function symbol"}},
-    {"id": "sym:Negative.rs:27:struct:ForwardOnly", "layer": "ast_extraction", "kind": "symbol", "file": "Negative.rs", "line": 27, "attributes": {"name": "ForwardOnly", "symbolKind": "struct"}, "evidence": {"authority": "manual_audit", "reference": "struct ForwardOnly; unit struct — a real declaration -> struct symbol"}},
-    {"id": "rel:Negative.rs:calls:normalize:new", "layer": "relationships", "kind": "relationship", "file": "Negative.rs", "sourceId": "normalize", "targetId": "new", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "Vec::new() constructor call -> calls edge"}},
-    {"id": "rel:Negative.rs:instantiates:normalize:new", "layer": "relationships", "kind": "relationship", "file": "Negative.rs", "sourceId": "normalize", "targetId": "new", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "Vec::new() Rust constructor -> instantiates edge (paired with calls, documented)"}},
-    {"id": "rel:Negative.rs:calls:normalize:clone", "layer": "relationships", "kind": "relationship", "file": "Negative.rs", "sourceId": "normalize", "targetId": "clone", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "item.clone() method call -> calls edge"}},
-    {"id": "rel:Negative.rs:calls:normalize:push", "layer": "relationships", "kind": "relationship", "file": "Negative.rs", "sourceId": "normalize", "targetId": "push", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "result.push(doubled) method call -> calls edge"}},
-    {"id": "rel:Negative.rs:calls:normalize:println", "layer": "relationships", "kind": "relationship", "file": "Negative.rs", "sourceId": "normalize", "targetId": "println", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "println!(...) macro invocation -> calls edge to the macro name"}},
-    {"id": "sym:service.rs:5:module:storage", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 5, "attributes": {"name": "storage", "symbolKind": "module"}, "evidence": {"authority": "manual_audit", "reference": "mod storage; submodule declaration -> module symbol"}},
-    {"id": "sym:service.rs:9:trait:Repository", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 9, "attributes": {"name": "Repository", "symbolKind": "trait"}, "evidence": {"authority": "manual_audit", "reference": "pub trait Repository<T> -> trait symbol"}},
-    {"id": "sym:service.rs:10:method:add", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 10, "attributes": {"name": "add", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "fn add(&mut self, item: T); trait method (no pub — private to the trait) -> method symbol owned by Repository"}},
-    {"id": "sym:service.rs:11:method:find", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 11, "attributes": {"name": "find", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "fn find(&self, id: u32) -> Option<&T>; trait method -> method symbol owned by Repository"}},
-    {"id": "sym:service.rs:14:struct:User", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 14, "attributes": {"name": "User", "symbolKind": "struct"}, "evidence": {"authority": "manual_audit", "reference": "pub struct User { ... } -> struct symbol"}},
-    {"id": "sym:service.rs:15:property:id", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 15, "attributes": {"name": "id", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "pub id: u32 — pub field -> property symbol owned by User"}},
-    {"id": "sym:service.rs:16:property:name", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 16, "attributes": {"name": "name", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "pub name: String — pub field -> property symbol owned by User"}},
-    {"id": "sym:service.rs:19:impl:User", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 19, "attributes": {"name": "User", "symbolKind": "impl"}, "evidence": {"authority": "manual_audit", "reference": "impl User { ... } inherent impl block -> impl symbol named after the type (M11 contract)"}},
-    {"id": "sym:service.rs:20:method:new", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 20, "attributes": {"name": "new", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn new(id: u32, name: &str) -> User -> method symbol owned by User (constructors keep their fn name)"}},
-    {"id": "sym:service.rs:24:method:display_name", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 24, "attributes": {"name": "display_name", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn display_name(&self) -> String -> method symbol owned by User"}},
-    {"id": "sym:service.rs:29:enum:Status", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 29, "attributes": {"name": "Status", "symbolKind": "enum"}, "evidence": {"authority": "manual_audit", "reference": "pub enum Status { ... } -> enum symbol"}},
-    {"id": "sym:service.rs:30:enum_member:Active", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 30, "attributes": {"name": "Active", "symbolKind": "enum_member"}, "evidence": {"authority": "manual_audit", "reference": "Active variant -> enum_member symbol owned by Status"}},
-    {"id": "sym:service.rs:31:enum_member:Inactive", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 31, "attributes": {"name": "Inactive", "symbolKind": "enum_member"}, "evidence": {"authority": "manual_audit", "reference": "Inactive variant -> enum_member symbol owned by Status"}},
-    {"id": "sym:service.rs:34:struct:UserService", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 34, "attributes": {"name": "UserService", "symbolKind": "struct"}, "evidence": {"authority": "manual_audit", "reference": "pub struct UserService<T: Repository<User>> -> struct symbol (generic params not part of the name)"}},
-    {"id": "sym:service.rs:35:property:repository", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 35, "attributes": {"name": "repository", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "repository: T — no pub -> private property symbol owned by UserService"}},
-    {"id": "sym:service.rs:36:property:counter", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 36, "attributes": {"name": "counter", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "counter: u32 — no pub -> private property symbol owned by UserService"}},
-    {"id": "sym:service.rs:39:impl:UserService", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 39, "attributes": {"name": "UserService", "symbolKind": "impl"}, "evidence": {"authority": "manual_audit", "reference": "impl<T: Repository<User>> UserService<T> -> impl symbol named after the type (generics stripped)"}},
-    {"id": "sym:service.rs:40:method:new", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 40, "attributes": {"name": "new", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn new(repository: T) -> Self -> method symbol owned by UserService"}},
-    {"id": "sym:service.rs:44:method:create", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 44, "attributes": {"name": "create", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn create(&mut self, name: &str) -> User -> method symbol owned by UserService"}},
-    {"id": "sym:service.rs:51:method:find", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 51, "attributes": {"name": "find", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn find(&self, id: u32) -> Option<&User> -> method symbol owned by UserService"}},
-    {"id": "sym:service.rs:56:function:make_default_service", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 56, "attributes": {"name": "make_default_service", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "pub fn make_default_service() -> UserService<MemoryStorage> -> free function symbol"}},
-    {"id": "sym:service.rs:61:function:transform", "layer": "ast_extraction", "kind": "symbol", "file": "service.rs", "line": 61, "attributes": {"name": "transform", "symbolKind": "function"}, "evidence": {"authority": "manual_audit", "reference": "pub fn transform(values: &[i32]) -> Vec<i32> -> free function symbol"}},
-    {"id": "rel:service.rs:instantiates:new:User", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "new", "targetId": "User", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "User { id, name: ... } struct literal construction in User::new -> instantiates edge"}},
-    {"id": "rel:service.rs:calls:new:to_string", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "new", "targetId": "to_string", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "name.to_string() method call -> calls edge (one edge per pair)"}},
-    {"id": "rel:service.rs:calls:display_name:format", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "display_name", "targetId": "format", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "format!(...) macro invocation -> calls edge"}},
-    {"id": "rel:service.rs:instantiates:new:UserService", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "new", "targetId": "UserService", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "UserService { repository, counter: 0 } struct literal construction in UserService::new -> instantiates edge"}},
-    {"id": "rel:service.rs:calls:create:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "new", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "User::new(self.counter, name) constructor call -> calls edge"}},
-    {"id": "rel:service.rs:instantiates:create:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "new", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "User::new(...) Rust constructor -> instantiates edge (paired with calls, documented)"}},
-    {"id": "rel:service.rs:uses:create:counter", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "counter", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "self.counter += 1 — non-call field access -> uses edge"}},
-    {"id": "rel:service.rs:calls:create:add", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "add", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.repository.add(user) member call -> calls edge (call-target field expression skipped from uses)"}},
-    {"id": "rel:service.rs:uses:create:repository", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "repository", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "self.repository receiver field access -> uses edge"}},
-    {"id": "rel:service.rs:calls:create:unwrap", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "unwrap", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain ...cloned().unwrap() -> calls edge"}},
-    {"id": "rel:service.rs:calls:create:cloned", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "cloned", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain self.repository.find(...).cloned() -> calls edge"}},
-    {"id": "rel:service.rs:calls:create:find", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "create", "targetId": "find", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.repository.find(self.counter - 1) member call -> calls edge"}},
-    {"id": "rel:service.rs:calls:find:find", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "find", "targetId": "find", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.repository.find(id) member call from find -> calls edge"}},
-    {"id": "rel:service.rs:uses:find:repository", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "find", "targetId": "repository", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "self.repository receiver field access -> uses edge"}},
-    {"id": "rel:service.rs:calls:make_default_service:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "make_default_service", "targetId": "new", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "MemoryStorage::new() and UserService::new(storage) — two constructor call sites -> two calls edges (distinct call sites, not duplicates)"}},
-    {"id": "rel:service.rs:instantiates:make_default_service:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "make_default_service", "targetId": "new", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "MemoryStorage::new() and UserService::new(storage) — two constructor call sites -> two instantiates edges"}},
-    {"id": "rel:service.rs:calls:transform:collect", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "transform", "targetId": "collect", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain ...collect() -> calls edge"}},
-    {"id": "rel:service.rs:calls:transform:filter", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "transform", "targetId": "filter", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain ...filter(|v| ...) -> calls edge"}},
-    {"id": "rel:service.rs:calls:transform:map", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "transform", "targetId": "map", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain ...map(|v| ...) -> calls edge"}},
-    {"id": "rel:service.rs:calls:transform:iter", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "transform", "targetId": "iter", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "chain values.iter() -> calls edge"}},
-    {"id": "rel:service.rs:contains:Repository:add", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "Repository", "targetId": "add", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "trait Repository contains method add"}},
-    {"id": "rel:service.rs:contains:Repository:find", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "Repository", "targetId": "find", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "trait Repository contains method find"}},
-    {"id": "rel:service.rs:contains:User:id", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "User", "targetId": "id", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "struct User contains property id"}},
-    {"id": "rel:service.rs:contains:User:name", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "User", "targetId": "name", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "struct User contains property name"}},
-    {"id": "rel:service.rs:contains:User:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "User", "targetId": "new", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl User contains method new"}},
-    {"id": "rel:service.rs:contains:User:display_name", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "User", "targetId": "display_name", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl User contains method display_name"}},
-    {"id": "rel:service.rs:contains:Status:Active", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "Status", "targetId": "Active", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "enum Status contains variant Active"}},
-    {"id": "rel:service.rs:contains:Status:Inactive", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "Status", "targetId": "Inactive", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "enum Status contains variant Inactive"}},
-    {"id": "rel:service.rs:contains:UserService:repository", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "UserService", "targetId": "repository", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "struct UserService contains property repository"}},
-    {"id": "rel:service.rs:contains:UserService:counter", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "UserService", "targetId": "counter", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "struct UserService contains property counter"}},
-    {"id": "rel:service.rs:contains:UserService:new", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "UserService", "targetId": "new", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl UserService contains method new"}},
-    {"id": "rel:service.rs:contains:UserService:create", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "UserService", "targetId": "create", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl UserService contains method create"}},
-    {"id": "rel:service.rs:contains:UserService:find", "layer": "relationships", "kind": "relationship", "file": "service.rs", "sourceId": "UserService", "targetId": "find", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl UserService contains method find"}},
-    {"id": "sym:storage.rs:6:struct:MemoryStorage", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 6, "attributes": {"name": "MemoryStorage", "symbolKind": "struct"}, "evidence": {"authority": "manual_audit", "reference": "pub struct MemoryStorage { ... } -> struct symbol"}},
-    {"id": "sym:storage.rs:7:property:items", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 7, "attributes": {"name": "items", "symbolKind": "property"}, "evidence": {"authority": "manual_audit", "reference": "items: Vec<User> — no pub -> private property symbol owned by MemoryStorage"}},
-    {"id": "sym:storage.rs:10:impl:MemoryStorage", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 10, "attributes": {"name": "MemoryStorage", "symbolKind": "impl"}, "evidence": {"authority": "manual_audit", "reference": "impl MemoryStorage { ... } inherent impl block -> impl symbol"}},
-    {"id": "sym:storage.rs:11:method:new", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 11, "attributes": {"name": "new", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "pub fn new() -> MemoryStorage -> method symbol owned by MemoryStorage"}},
-    {"id": "sym:storage.rs:16:impl:MemoryStorage", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 16, "attributes": {"name": "MemoryStorage", "symbolKind": "impl"}, "evidence": {"authority": "manual_audit", "reference": "impl super::Repository<User> for MemoryStorage trait impl block -> impl symbol named after the implemented type"}},
-    {"id": "sym:storage.rs:17:method:add", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 17, "attributes": {"name": "add", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "fn add(&mut self, item: User) -> method symbol owned by MemoryStorage (no pub -> private)"}},
-    {"id": "sym:storage.rs:21:method:find", "layer": "ast_extraction", "kind": "symbol", "file": "storage.rs", "line": 21, "attributes": {"name": "find", "symbolKind": "method"}, "evidence": {"authority": "manual_audit", "reference": "fn find(&self, id: u32) -> Option<&User> -> method symbol owned by MemoryStorage (no pub -> private)"}},
-    {"id": "rel:storage.rs:instantiates:new:MemoryStorage", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "new", "targetId": "MemoryStorage", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "MemoryStorage { items: Vec::new() } struct literal construction -> instantiates edge"}},
-    {"id": "rel:storage.rs:calls:new:new", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "new", "targetId": "new", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "Vec::new() constructor call from new -> calls edge"}},
-    {"id": "rel:storage.rs:instantiates:new:new", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "new", "targetId": "new", "attributes": {"type": "instantiates"}, "evidence": {"authority": "manual_audit", "reference": "Vec::new() Rust constructor -> instantiates edge (paired with calls, documented)"}},
-    {"id": "rel:storage.rs:implements:MemoryStorage:Repository", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "MemoryStorage", "targetId": "Repository", "attributes": {"type": "implements"}, "evidence": {"authority": "manual_audit", "reference": "impl super::Repository<User> for MemoryStorage -> implements edge (trait path resolves to the leaf name Repository)"}},
-    {"id": "rel:storage.rs:calls:add:push", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "add", "targetId": "push", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.items.push(item) member call -> calls edge"}},
-    {"id": "rel:storage.rs:uses:add:items", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "add", "targetId": "items", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "self.items receiver field access -> uses edge"}},
-    {"id": "rel:storage.rs:calls:find:find", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "find", "targetId": "find", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.items.iter().find(|u| ...) closure method call from find -> calls edge"}},
-    {"id": "rel:storage.rs:calls:find:iter", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "find", "targetId": "iter", "attributes": {"type": "calls"}, "evidence": {"authority": "manual_audit", "reference": "self.items.iter() member call -> calls edge"}},
-    {"id": "rel:storage.rs:uses:find:items", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "find", "targetId": "items", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "self.items receiver field access -> uses edge"}},
-    {"id": "rel:storage.rs:uses:find:id", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "find", "targetId": "id", "attributes": {"type": "uses"}, "evidence": {"authority": "manual_audit", "reference": "u.id == id — field access on the closure parameter -> uses edge"}},
-    {"id": "rel:storage.rs:contains:MemoryStorage:items", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "MemoryStorage", "targetId": "items", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "struct MemoryStorage contains property items"}},
-    {"id": "rel:storage.rs:contains:MemoryStorage:new", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "MemoryStorage", "targetId": "new", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl MemoryStorage contains method new"}},
-    {"id": "rel:storage.rs:contains:MemoryStorage:add", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "MemoryStorage", "targetId": "add", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl MemoryStorage contains method add"}},
-    {"id": "rel:storage.rs:contains:MemoryStorage:find", "layer": "relationships", "kind": "relationship", "file": "storage.rs", "sourceId": "MemoryStorage", "targetId": "find", "attributes": {"type": "contains"}, "evidence": {"authority": "manual_audit", "reference": "impl MemoryStorage contains method find"}}
+    {
+      "id": "sym:Negative.rs:9:function:normalize",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.rs",
+      "line": 9,
+      "attributes": {
+        "name": "normalize",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn normalize<'a, T: Debug + Clone>(...) -> free function symbol"
+      }
+    },
+    {
+      "id": "sym:Negative.rs:21:function:compute",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.rs",
+      "line": 21,
+      "attributes": {
+        "name": "compute",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn compute(input: i32) -> i32 -> free function symbol"
+      }
+    },
+    {
+      "id": "sym:Negative.rs:27:struct:ForwardOnly",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.rs",
+      "line": 27,
+      "attributes": {
+        "name": "ForwardOnly",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct ForwardOnly; unit struct \u2014 a real declaration -> struct symbol"
+      }
+    },
+    {
+      "id": "rel:Negative.rs:calls:normalize:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "normalize",
+      "targetId": "new",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Vec::new() constructor call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:Negative.rs:calls:normalize:clone",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "normalize",
+      "targetId": "clone",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "item.clone() method call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:Negative.rs:calls:normalize:push",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "normalize",
+      "targetId": "push",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "result.push(doubled) method call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:Negative.rs:calls:normalize:println",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "normalize",
+      "targetId": "println",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "println!(...) macro invocation -> calls edge to the macro name"
+      }
+    },
+    {
+      "id": "sym:service.rs:5:module:storage",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 5,
+      "attributes": {
+        "name": "storage",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "mod storage; submodule declaration -> module symbol"
+      }
+    },
+    {
+      "id": "sym:service.rs:9:trait:Repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 9,
+      "attributes": {
+        "name": "Repository",
+        "symbolKind": "trait"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub trait Repository<T> -> trait symbol"
+      }
+    },
+    {
+      "id": "sym:service.rs:10:method:add",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 10,
+      "attributes": {
+        "name": "add",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "fn add(&mut self, item: T); trait method (no pub \u2014 private to the trait) -> method symbol owned by Repository"
+      }
+    },
+    {
+      "id": "sym:service.rs:11:method:find",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 11,
+      "attributes": {
+        "name": "find",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "fn find(&self, id: u32) -> Option<&T>; trait method -> method symbol owned by Repository"
+      }
+    },
+    {
+      "id": "sym:service.rs:14:struct:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 14,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct User { ... } -> struct symbol"
+      }
+    },
+    {
+      "id": "sym:service.rs:15:property:id",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 15,
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub id: u32 \u2014 pub field -> property symbol owned by User"
+      }
+    },
+    {
+      "id": "sym:service.rs:16:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 16,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub name: String \u2014 pub field -> property symbol owned by User"
+      }
+    },
+    {
+      "id": "sym:service.rs:19:impl:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 19,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "impl"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl User { ... } inherent impl block -> impl symbol named after the type (M11 contract)"
+      }
+    },
+    {
+      "id": "sym:service.rs:20:method:new",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 20,
+      "attributes": {
+        "name": "new",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn new(id: u32, name: &str) -> User -> method symbol owned by User (constructors keep their fn name)"
+      }
+    },
+    {
+      "id": "sym:service.rs:24:method:display_name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 24,
+      "attributes": {
+        "name": "display_name",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn display_name(&self) -> String -> method symbol owned by User"
+      }
+    },
+    {
+      "id": "sym:service.rs:29:enum:Status",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 29,
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub enum Status { ... } -> enum symbol"
+      }
+    },
+    {
+      "id": "sym:service.rs:30:enum_member:Active",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 30,
+      "attributes": {
+        "name": "Active",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Active variant -> enum_member symbol owned by Status"
+      }
+    },
+    {
+      "id": "sym:service.rs:31:enum_member:Inactive",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 31,
+      "attributes": {
+        "name": "Inactive",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Inactive variant -> enum_member symbol owned by Status"
+      }
+    },
+    {
+      "id": "sym:service.rs:34:struct:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 34,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct UserService<T: Repository<User>> -> struct symbol (generic params not part of the name)"
+      }
+    },
+    {
+      "id": "sym:service.rs:35:property:repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 35,
+      "attributes": {
+        "name": "repository",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "repository: T \u2014 no pub -> private property symbol owned by UserService"
+      }
+    },
+    {
+      "id": "sym:service.rs:36:property:counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 36,
+      "attributes": {
+        "name": "counter",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "counter: u32 \u2014 no pub -> private property symbol owned by UserService"
+      }
+    },
+    {
+      "id": "sym:service.rs:39:impl:UserService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 39,
+      "attributes": {
+        "name": "UserService",
+        "symbolKind": "impl"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl<T: Repository<User>> UserService<T> -> impl symbol named after the type (generics stripped)"
+      }
+    },
+    {
+      "id": "sym:service.rs:40:method:new",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 40,
+      "attributes": {
+        "name": "new",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn new(repository: T) -> Self -> method symbol owned by UserService"
+      }
+    },
+    {
+      "id": "sym:service.rs:44:method:create",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 44,
+      "attributes": {
+        "name": "create",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn create(&mut self, name: &str) -> User -> method symbol owned by UserService"
+      }
+    },
+    {
+      "id": "sym:service.rs:51:method:find",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 51,
+      "attributes": {
+        "name": "find",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn find(&self, id: u32) -> Option<&User> -> method symbol owned by UserService"
+      }
+    },
+    {
+      "id": "sym:service.rs:56:function:make_default_service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 56,
+      "attributes": {
+        "name": "make_default_service",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn make_default_service() -> UserService<MemoryStorage> -> free function symbol"
+      }
+    },
+    {
+      "id": "sym:service.rs:61:function:transform",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "service.rs",
+      "line": 61,
+      "attributes": {
+        "name": "transform",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn transform(values: &[i32]) -> Vec<i32> -> free function symbol"
+      }
+    },
+    {
+      "id": "rel:service.rs:instantiates:new:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "User { id, name: ... } struct literal construction in User::new -> instantiates edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:new:to_string",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "to_string",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "name.to_string() method call -> calls edge (one edge per pair)"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:display_name:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "display_name",
+      "targetId": "format",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "format!(...) macro invocation -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:instantiates:new:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "UserService { repository, counter: 0 } struct literal construction in UserService::new -> instantiates edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:create:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "new",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "User::new(self.counter, name) constructor call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:instantiates:create:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 45 `let user = User::new(self.counter, name);` \u2014 the constructor names its receiver type `User`; the pre-fix target `new` named the function."
+      }
+    },
+    {
+      "id": "rel:service.rs:uses:create:counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "counter",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.counter += 1 \u2014 non-call field access -> uses edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:create:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "add",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.repository.add(user) member call -> calls edge (call-target field expression skipped from uses)"
+      }
+    },
+    {
+      "id": "rel:service.rs:uses:create:repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "repository",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.repository receiver field access -> uses edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:create:unwrap",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "unwrap",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain ...cloned().unwrap() -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:create:cloned",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "cloned",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain self.repository.find(...).cloned() -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:create:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "find",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.repository.find(self.counter - 1) member call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:find:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "find",
+      "targetId": "find",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.repository.find(id) member call from find -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:uses:find:repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "find",
+      "targetId": "repository",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.repository receiver field access -> uses edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:make_default_service:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "make_default_service",
+      "targetId": "new",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "MemoryStorage::new() and UserService::new(storage) \u2014 two constructor call sites -> two calls edges (distinct call sites, not duplicates)"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:transform:collect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "transform",
+      "targetId": "collect",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain ...collect() -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:transform:filter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "transform",
+      "targetId": "filter",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain ...filter(|v| ...) -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:transform:map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "transform",
+      "targetId": "map",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain ...map(|v| ...) -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:calls:transform:iter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "transform",
+      "targetId": "iter",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "chain values.iter() -> calls edge"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:Repository:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "Repository",
+      "targetId": "add",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "trait Repository contains method add"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:Repository:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "Repository",
+      "targetId": "find",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "trait Repository contains method find"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:User:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "User",
+      "targetId": "id",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct User contains property id"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:User:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "User",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct User contains property name"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:User:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "User",
+      "targetId": "new",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl User contains method new"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:User:display_name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "User",
+      "targetId": "display_name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl User contains method display_name"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:Status:Active",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "Status",
+      "targetId": "Active",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status contains variant Active"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:Status:Inactive",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "Status",
+      "targetId": "Inactive",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status contains variant Inactive"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:UserService:repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "UserService",
+      "targetId": "repository",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct UserService contains property repository"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:UserService:counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "UserService",
+      "targetId": "counter",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct UserService contains property counter"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:UserService:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "UserService",
+      "targetId": "new",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl UserService contains method new"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:UserService:create",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "UserService",
+      "targetId": "create",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl UserService contains method create"
+      }
+    },
+    {
+      "id": "rel:service.rs:contains:UserService:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "UserService",
+      "targetId": "find",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl UserService contains method find"
+      }
+    },
+    {
+      "id": "sym:storage.rs:6:struct:MemoryStorage",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 6,
+      "attributes": {
+        "name": "MemoryStorage",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub struct MemoryStorage { ... } -> struct symbol"
+      }
+    },
+    {
+      "id": "sym:storage.rs:7:property:items",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 7,
+      "attributes": {
+        "name": "items",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "items: Vec<User> \u2014 no pub -> private property symbol owned by MemoryStorage"
+      }
+    },
+    {
+      "id": "sym:storage.rs:10:impl:MemoryStorage",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 10,
+      "attributes": {
+        "name": "MemoryStorage",
+        "symbolKind": "impl"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl MemoryStorage { ... } inherent impl block -> impl symbol"
+      }
+    },
+    {
+      "id": "sym:storage.rs:11:method:new",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 11,
+      "attributes": {
+        "name": "new",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "pub fn new() -> MemoryStorage -> method symbol owned by MemoryStorage"
+      }
+    },
+    {
+      "id": "sym:storage.rs:16:impl:MemoryStorage",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 16,
+      "attributes": {
+        "name": "MemoryStorage",
+        "symbolKind": "impl"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl super::Repository<User> for MemoryStorage trait impl block -> impl symbol named after the implemented type"
+      }
+    },
+    {
+      "id": "sym:storage.rs:17:method:add",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 17,
+      "attributes": {
+        "name": "add",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "fn add(&mut self, item: User) -> method symbol owned by MemoryStorage (no pub -> private)"
+      }
+    },
+    {
+      "id": "sym:storage.rs:21:method:find",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "storage.rs",
+      "line": 21,
+      "attributes": {
+        "name": "find",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "fn find(&self, id: u32) -> Option<&User> -> method symbol owned by MemoryStorage (no pub -> private)"
+      }
+    },
+    {
+      "id": "rel:storage.rs:instantiates:new:MemoryStorage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "new",
+      "targetId": "MemoryStorage",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "MemoryStorage { items: Vec::new() } struct literal construction -> instantiates edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:calls:new:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "new",
+      "targetId": "new",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Vec::new() constructor call from new -> calls edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:implements:MemoryStorage:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "implements"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl super::Repository<User> for MemoryStorage -> implements edge (trait path resolves to the leaf name Repository)"
+      }
+    },
+    {
+      "id": "rel:storage.rs:calls:add:push",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "add",
+      "targetId": "push",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.items.push(item) member call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:uses:add:items",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "add",
+      "targetId": "items",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.items receiver field access -> uses edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:calls:find:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "find",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.items.iter().find(|u| ...) closure method call from find -> calls edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:calls:find:iter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "iter",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.items.iter() member call -> calls edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:uses:find:items",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "items",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "self.items receiver field access -> uses edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:uses:find:id",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "id",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "u.id == id \u2014 field access on the closure parameter -> uses edge"
+      }
+    },
+    {
+      "id": "rel:storage.rs:contains:MemoryStorage:items",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "items",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct MemoryStorage contains property items"
+      }
+    },
+    {
+      "id": "rel:storage.rs:contains:MemoryStorage:new",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "new",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl MemoryStorage contains method new"
+      }
+    },
+    {
+      "id": "rel:storage.rs:contains:MemoryStorage:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "add",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl MemoryStorage contains method add"
+      }
+    },
+    {
+      "id": "rel:storage.rs:contains:MemoryStorage:find",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "find",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "impl MemoryStorage contains method find"
+      }
+    },
+    {
+      "id": "rel:Negative.rs:references:normalize:Vec",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.rs",
+      "sourceId": "normalize",
+      "targetId": "Vec",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 9 `pub fn normalize<'a, T: Debug + Clone>(items: &'a [T]) -> Vec<T>` \u2014 the RETURN type names `Vec`. This is the R13 declared-type reference surface (params/returns/field types), which this truth predates; the primitive half of the old 'no type-reference edges' note still holds (`i32`/`u32` emit nothing)."
+      }
+    },
+    {
+      "id": "rel:service.rs:instantiates:make_default_service:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "make_default_service",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 58 `UserService::new(storage)` \u2014 the second constructor site in this function, distinct from `MemoryStorage::new()` on line 57."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:create:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "create",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 44 `pub fn create(&mut self, name: &str) -> User` \u2014 the RETURN type names `User` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:display_name:String",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "display_name",
+      "targetId": "String",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 24 `pub fn display_name(&self) -> String` \u2014 the RETURN type names `String` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:find:Option",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "find",
+      "targetId": "Option",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 51 `pub fn find(&self, id: u32) -> Option<&User>` \u2014 the RETURN type's outer name is `Option` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:find:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "find",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 51, the `User` leaf inside `Option<&User>` \u2014 a scoped/qualified type contributes its LEAF, the same R16 rule the where-clause side uses."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:make_default_service:MemoryStorage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "make_default_service",
+      "targetId": "MemoryStorage",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 56 `pub fn make_default_service() -> UserService<MemoryStorage>` \u2014 the generic ARGUMENT of the return type names `MemoryStorage` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:make_default_service:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "make_default_service",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 56 \u2014 the RETURN type names `UserService` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:new:T",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "T",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 40 `pub fn new(repository: T) -> Self` \u2014 a type ANNOTATION using the impl's generic parameter is a use. The generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent; that distinction is R13's, and the old truth conflated the two."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:new:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 20 `pub fn new(id: u32, name: &str) -> User` \u2014 the RETURN type names `User` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:new:UserService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "new",
+      "targetId": "UserService",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 40 `-> Self` \u2014 D2 resolves `Self` to the enclosing impl's type, `UserService`, and R13 then publishes it as a declared-type reference."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:transform:Vec",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "transform",
+      "targetId": "Vec",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 61 `pub fn transform(values: &[i32]) -> Vec<i32>` \u2014 the RETURN type names `Vec` (R13)."
+      }
+    },
+    {
+      "id": "rel:service.rs:references:User:String",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "service.rs",
+      "sourceId": "User",
+      "targetId": "String",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 16 `pub name: String` \u2014 a FIELD's declared type is part of the R13 surface."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:MemoryStorage:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 7 `items: Vec<User>` \u2014 the `User` leaf of the field's declared type (R13 + R16's leaf rule)."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:add:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "add",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 17 `fn add(&mut self, item: User)` \u2014 a PARAMETER's declared type is part of the R13 surface."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:find:Option",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "Option",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 21 `fn find(&self, id: u32) -> Option<&User>` \u2014 the RETURN type's outer name (R13)."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:find:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "find",
+      "targetId": "User",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 21, the `User` leaf inside `Option<&User>` \u2014 a qualified type contributes its LEAF (R16's rule on the declared-type side)."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:MemoryStorage:Vec",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "MemoryStorage",
+      "targetId": "Vec",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 7 `items: Vec<User>` \u2014 the `Vec` leaf of the field's declared type (R13 + R16's leaf rule)."
+      }
+    },
+    {
+      "id": "rel:storage.rs:references:new:MemoryStorage",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "storage.rs",
+      "sourceId": "new",
+      "targetId": "MemoryStorage",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "line 11 `pub fn new() -> MemoryStorage` \u2014 the RETURN type names `MemoryStorage`, which IS declared in this file (R13)."
+      }
+    }
   ]
 }

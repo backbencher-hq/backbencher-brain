@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "550d33aa2a5f00260410143a403ae8418b2fb641819716a8a2ec5e87f746d13a",
-        "bytes": 112454
+        "sha256": "81a024737cf09a5a87ee9788cbee0117aa6bcf1976cb8bc5dcd456f26b22fde2",
+        "bytes": 113381
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -92,11 +92,11 @@
         "bytes": 568
       },
       "validation/m12/ground-truth/rust.json": {
-        "sha256": "33fce2cc7132a82a9994ed780c5fa265b4b296e43f6911c41ebc97fa8ed20f0f",
-        "bytes": 29062
+        "sha256": "1264739010a318f10071c66945a8ea3e482feb52b565b0becfddb02effde07b9",
+        "bytes": 46601
       }
     },
-    "digest": "82a0e9fe508378074c86bc2a49ab97c305c764539df3fd2c1600971414da576d",
+    "digest": "a71e6717a5359d14373da3a9ec889d795ef33718dfc97139900556ee36dd90d0",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-rust_tree-sitter-rust.wasm",
       "sha256": "f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57",
@@ -108,8 +108,8 @@
         "bytes": 73496
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "3ef5c84b249fc269394e4d79820680909243f9bff49b6f0ece45a390b3458685",
-        "bytes": 299105
+        "sha256": "e67ae350e81bf16325da214220c775f305285811d431ad40d7838bd43b5add63",
+        "bytes": 300560
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "1e14aec9a5b1cee1ff27ec65c02c13ee3c245e011c6757d20f8ce3c3af463bb3",
@@ -120,8 +120,8 @@
         "bytes": 140727
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "bd5173a3244c35b15d6997e7f238e3ba3b3efc9292bd4316a897be97f4d60eba",
-        "bytes": 200361
+        "sha256": "1eace941aedfd45ab8d9128aaec336100fe2303acb15df0b8b880483d750b37e",
+        "bytes": 201452
       },
       "src/ast/real-csharp-analyzer.ts": {
         "sha256": "8154a968f2c68a47821004ccdb18ec77fe9873fb23104113355997ec1e49d451",
@@ -144,8 +144,8 @@
         "bytes": 88509
       },
       "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "f048b4a7d8267c8e29b38394b7be7a9a1c18deda433d2a6b3b0105de23cca84d",
-        "bytes": 102916
+        "sha256": "02754989ebc83251bad4044020c3663adbe0dd4b08ddda2bdecf77a10a061568",
+        "bytes": 106196
       },
       "src/ast/real-go-analyzer.ts": {
         "sha256": "fc9a18f52faad8159aa95240e7850f045ffd79db269b8b9736c484e5812fdab4",
@@ -280,13 +280,13 @@
         "bytes": 89051
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "968cbd3dfb2e45892154a3eb82b5fa944248e23b82a13786987a7aaca7ea2625",
-        "bytes": 114846
+        "sha256": "adcb0f2469111148ef017cb938f4ce164419e0f5ad40f5e4cec8b17cd6dfc83e",
+        "bytes": 115914
       }
     }
   },
-  "truthSource": "manual_audit",
-  "truthReference": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type — M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, generic parameters, lifetimes, tuple indices. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) — never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println — one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id — field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls (::new() -> new, paired with calls — documented); implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only — no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse — production companion-index wiring tracked by M12.44 (same note as Java/C/C++).",
+  "truthSource": "manual_audit (re-grounded 2026-09-29, RUST-MR: 4 rows retargeted to the receiver-type rule, 15 R13 declared-type/constructor rows added, each with its own source-line adjudication)",
+  "truthReference": "Independent hand audit of validation/m12/fixtures/rust/*.rs against Rust semantics and the M11 Rust contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: modules -> module; traits -> trait (methods -> method); structs (incl. unit structs) -> struct with fields -> property; impl blocks -> impl (named after the implemented type — M11 contract); methods -> method; constructors keep their fn name (new); enums -> enum with variants -> enum_member; free functions -> function; pub use re-exports stay in imports (no dangling references edge). Noise (negative contract): function-local let bindings, closure parameters, primitive types, lifetimes, tuple indices. GENERIC PARAMETERS are no longer in this list and the change is deliberate: a generic parameter LIST (`<T: Repository<User>>`) is a declaration and stays silent (R13), while a type ANNOTATION that uses one (`repository: T`) is a use and publishes. Declared-type references (params, returns, field types, const/static types, alias RHSs — R13) are part of the surface, and `references` is the TYPE surface: rust puts module dependencies in the imports array only, so a `use` declaration still emits no `references` edge. Rust fields default to private; only pub fields are public. Relationships (family contract, matches Java M12.01 / C M12.16 / C++ M12.17): contains = REAL container ownership only (trait->method, struct->property, impl->method, enum->variant) — never `global contains X` or `root contains X`; calls = method/function -> callee leaf name (member calls self.repository.add -> add, chains values.iter().map()... each emit one calls edge, macros println! -> println — one edge per pair, never calls+uses for the same pair); uses = non-call field access only (self.counter, u.id — field_identifier only, tuple indices like tuple.0 are not symbols and emit nothing; call-target field expressions skip the uses walk); instantiates = struct literals (User { ... } -> User) and Rust constructor calls, which name the RECEIVER TYPE (Vec::new() -> instantiates Vec, paired with calls) — the pre-fix `::new() -> new` target named a function rather than a type and was retired 2026-09-29; implements = trait impl (MemoryStorage -> Repository, leaf trait name; generic/qualified trait paths super::Repository<User> resolve to the leaf Repository); extends = trait bounds (trait Foo: Bar). Imports (use declarations) are captured in the imports array only — no references edge (Java-family contract, unlike C's include dependencies which target header files). Cross-file declarations (User in service.rs, used in storage.rs) do not resolve in a per-file parse — production companion-index wiring tracked by M12.44 (same note as Java/C/C++). DEFERRED-RULE NOTE (2026-09-29): a CONSTRUCTOR call publishes `instantiates` for its receiver type ONLY when that type is declared in the same file, so std/foreign receivers stay silent — `Vec::new()` emits `calls -> new` and NO `instantiates`, in Negative.rs line 10 and storage.rs line 12 alike. A STRUCT LITERAL is unaffected (it names a type that must be in-file to parse as a literal) and a receiver declared in another file of the same parse stays silent too, because M12 is per-file. Three separate truth rows had this wrong in three different directions before the rule was written down here.",
   "fixtureDir": "validation/m12/fixtures/rust",
   "fixtures": [
     "Negative.rs",
@@ -309,29 +309,30 @@
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": false,
+    "passed": true,
     "metrics": {
-      "expected": 84,
+      "expected": 100,
       "observedResolved": 100,
-      "truePositive": 80,
-      "falsePositive": 20,
-      "falseNegative": 4,
+      "truePositive": 100,
+      "falsePositive": 0,
+      "falseNegative": 0,
       "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 0.8,
-      "recall": 0.9523809523809523,
-      "falsePositiveRate": 0.2,
-      "falseNegativeRate": 0.047619047619047616,
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
       "unknownRate": 0
     },
-    "earliestFailingLayer": "relationships",
+    "earliestFailingLayer": null,
     "truePositiveIds": [
       "rel:Negative.rs:calls:normalize:clone",
       "rel:Negative.rs:calls:normalize:new",
       "rel:Negative.rs:calls:normalize:println",
       "rel:Negative.rs:calls:normalize:push",
+      "rel:Negative.rs:references:normalize:Vec",
       "rel:service.rs:calls:create:add",
       "rel:service.rs:calls:create:cloned",
       "rel:service.rs:calls:create:find",
@@ -358,8 +359,21 @@
       "rel:service.rs:contains:UserService:find",
       "rel:service.rs:contains:UserService:new",
       "rel:service.rs:contains:UserService:repository",
+      "rel:service.rs:instantiates:create:User",
+      "rel:service.rs:instantiates:make_default_service:UserService",
       "rel:service.rs:instantiates:new:User",
       "rel:service.rs:instantiates:new:UserService",
+      "rel:service.rs:references:User:String",
+      "rel:service.rs:references:create:User",
+      "rel:service.rs:references:display_name:String",
+      "rel:service.rs:references:find:Option",
+      "rel:service.rs:references:find:User",
+      "rel:service.rs:references:make_default_service:MemoryStorage",
+      "rel:service.rs:references:make_default_service:UserService",
+      "rel:service.rs:references:new:T",
+      "rel:service.rs:references:new:User",
+      "rel:service.rs:references:new:UserService",
+      "rel:service.rs:references:transform:Vec",
       "rel:service.rs:uses:create:counter",
       "rel:service.rs:uses:create:repository",
       "rel:service.rs:uses:find:repository",
@@ -373,6 +387,12 @@
       "rel:storage.rs:contains:MemoryStorage:new",
       "rel:storage.rs:implements:MemoryStorage:Repository",
       "rel:storage.rs:instantiates:new:MemoryStorage",
+      "rel:storage.rs:references:MemoryStorage:User",
+      "rel:storage.rs:references:MemoryStorage:Vec",
+      "rel:storage.rs:references:add:User",
+      "rel:storage.rs:references:find:Option",
+      "rel:storage.rs:references:find:User",
+      "rel:storage.rs:references:new:MemoryStorage",
       "rel:storage.rs:uses:add:items",
       "rel:storage.rs:uses:find:id",
       "rel:storage.rs:uses:find:items",
@@ -409,79 +429,21 @@
       "symbol:storage.rs:6:struct:MemoryStorage",
       "symbol:storage.rs:7:property:items"
     ],
-    "falsePositiveIds": [
-      "rel:Negative.rs:references:normalize:Vec",
-      "rel:service.rs:instantiates:create:User",
-      "rel:service.rs:instantiates:make_default_service:UserService",
-      "rel:service.rs:references:User:String",
-      "rel:service.rs:references:create:User",
-      "rel:service.rs:references:display_name:String",
-      "rel:service.rs:references:find:Option",
-      "rel:service.rs:references:find:User",
-      "rel:service.rs:references:make_default_service:MemoryStorage",
-      "rel:service.rs:references:make_default_service:UserService",
-      "rel:service.rs:references:new:T",
-      "rel:service.rs:references:new:User",
-      "rel:service.rs:references:new:UserService",
-      "rel:service.rs:references:transform:Vec",
-      "rel:storage.rs:references:MemoryStorage:User",
-      "rel:storage.rs:references:MemoryStorage:Vec",
-      "rel:storage.rs:references:add:User",
-      "rel:storage.rs:references:find:Option",
-      "rel:storage.rs:references:find:User",
-      "rel:storage.rs:references:new:MemoryStorage"
-    ],
-    "falseNegativeIds": [
-      "rel:Negative.rs:instantiates:normalize:new",
-      "rel:service.rs:instantiates:create:new",
-      "rel:service.rs:instantiates:make_default_service:new",
-      "rel:storage.rs:instantiates:new:new"
-    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
     "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": {
-      "expected": [
-        {
-          "id": "rel:Negative.rs:instantiates:normalize:new",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "Negative.rs",
-          "sourceId": "normalize",
-          "targetId": "new",
-          "attributes": {
-            "type": "instantiates"
-          },
-          "evidence": {
-            "authority": "manual_audit",
-            "reference": "Vec::new() Rust constructor -> instantiates edge (paired with calls, documented)"
-          }
-        }
-      ],
-      "observed": [
-        {
-          "id": "rel:Negative.rs:references:normalize:Vec",
-          "layer": "relationships",
-          "kind": "relationship",
-          "file": "Negative.rs",
-          "sourceId": "normalize",
-          "targetId": "Vec",
-          "attributes": {
-            "type": "references"
-          },
-          "state": "resolved"
-        }
-      ]
-    }
+    "minimizedFailure": null
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:rust",
-      "wallTimeMs": 229.231783,
-      "userCpuMs": 182.238,
-      "systemCpuMs": 16.588,
-      "peakRssBytes": 257089536,
-      "rssDeltaBytes": 1310720,
+      "wallTimeMs": 160.303768,
+      "userCpuMs": 179.533,
+      "systemCpuMs": 9.889,
+      "peakRssBytes": 253378560,
+      "rssDeltaBytes": 1572864,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
