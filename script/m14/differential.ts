@@ -3137,6 +3137,146 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   return edges
 }
 
+/**
+ * M60 (S2, scala deep review, 2026-09-27): the `contains` truth.
+ *
+ * 2,881 edges on cats-effect, 2,420 on scala3, from ONE emission site: every
+ * symbol carrying an `ownerName` publishes `owner contains member` at
+ * confidence 1.0, with the line taken from the symbol's own range and omitted
+ * when the symbol has none (never written as 0 — #820).
+ *
+ * The rule is uniform, so what varies is what counts as a MEMBER, and scala's
+ * answer differs from kotlin's in a way worth stating:
+ *
+ *   - a CONSTRUCTOR is a member, and its published name is the literal
+ *     `constructor` — NOT the class's name. So a scala class publishes
+ *     `C contains constructor`, where a kotlin class publishes `Money contains
+ *     Money`. Scala has no `X contains X` row at all.
+ *   - a class parameter is a member only when it is a `val`/`var`. In
+ *     `class C(val a: Int, b: String)` only `a` is a field; `b` is a
+ *     constructor argument, not a member, and is not extracted at all.
+ *   - a trait's ABSTRACT members are members (`def a: Int` and `val b: String`
+ *     with no body both publish).
+ *   - a nested type is a member (`C contains Inner`).
+ *   - a companion object is NOT flattened into its class. Its members are its
+ *     own — see SDJ-2, because the two still collide on NAME.
+ */
+export function deriveScalaContainsTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (from: string, target: string): void => {
+    if (!from || !target) return
+    const t = stripNameQuoting(String(target).trim())
+    if (!t) return
+    const k = `contains|${from}|${t}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "contains", from, target: t })
+  }
+
+  const namedChildOf = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const firstNamedOf = (n: any, types: string[]): any => {
+    if (!n) return null
+    for (const t of types) {
+      const c = namedChildOf(n, t)
+      if (c) return c
+    }
+    return null
+  }
+  // ALL children, not just named ones. `val` and `var` in a class parameter are
+  // ANONYMOUS tokens: `class B(protected var a: Int)` gives
+  //   class_parameter > var("var") > identifier > : > type_identifier
+  // with no named `var` child at all. Scanning `namedChild` therefore finds
+  // nothing and drops every `val`/`var` constructor parameter — which is to say
+  // every real field of the class. Measured: that single mistake produced all
+  // 112 unexplained contains rows on a 60-file cats-effect draw (IORuntimeBuilder's
+  // nine `protected var` params, MonadCancelOps_'s `private val wrapped`, ...).
+  const hasChildOfType = (n: any, t: string): boolean => {
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c && c.type === t) return true
+    }
+    return false
+  }
+  const declName = (n: any): string => firstNamedOf(n, ["identifier"])?.text ?? ""
+
+  const TYPE_DECLS = new Set([
+    "class_definition", "object_definition", "trait_definition", "enum_definition",
+  ])
+  // The declarations a type body makes. `val_definition`/`var_definition` carry
+  // modifiers as siblings (`final lazy val h = 4` is still a val_definition), so
+  // the kind is the node type, not the text.
+  const MEMBER_DECLS = new Set([
+    "val_definition", "var_definition", "function_definition", "function_declaration",
+    "type_definition", "class_definition", "object_definition", "trait_definition",
+    "enum_definition",
+  ])
+
+  const walk = (n: any): void => {
+    if (TYPE_DECLS.has(n.type)) {
+      const owner = declName(n)
+      if (owner) {
+        // A constructor is a member only when the declaration HAS a parameter
+        // list — `class Inner` (no parens) publishes no constructor symbol, while
+        // `class C(val a: Int)` publishes exactly one.
+        if (namedChildOf(n, "class_parameters")) push(owner, "constructor")
+        // Class parameters are members only when declared `val`/`var`.
+        const cp = namedChildOf(n, "class_parameters")
+        if (cp) {
+          // The parameters arrive in TWO shapes, and the grammar gives no
+          // warning that it has switched:
+          //   class C(val a: Int)                 -> class_parameters > arguments > class_parameter
+          //   class C protected (val a: Int)      -> class_parameters > class_parameter
+          // An ACCESS MODIFIER between the name and the paren drops the
+          // `arguments` wrapper. Reading only the wrapped form found no
+          // parameters at all in `final class IORuntimeBuilder protected (...)`,
+          // which is 9 fields — measured as 112 unexplained contains rows on a
+          // 60-file cats-effect draw, every one a constructor `val`/`var`.
+          // Both shapes are read; the truth is the union of the parameters the
+          // declaration actually has.
+          const paramLists: any[] = [cp]
+          for (let i = 0; i < cp.namedChildCount; i++) {
+            const c = cp.namedChild(i)
+            if (c && c.type === "arguments") paramLists.push(c)
+          }
+          for (const list of paramLists) {
+            for (let i = 0; i < list.namedChildCount; i++) {
+              const param = list.namedChild(i)
+              if (!param || param.type !== "class_parameter") continue
+              if (hasChildOfType(param, "val") || hasChildOfType(param, "var")) {
+                const nm = declName(param)
+                if (nm) push(owner, nm)
+              }
+            }
+          }
+        }
+        const body = namedChildOf(n, "template_body")
+        if (body) {
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const d = body.namedChild(i)
+            if (!d || !MEMBER_DECLS.has(d.type)) continue
+            const nm = declName(d)
+            if (nm) push(owner, nm)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
 export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -19375,6 +19515,11 @@ async function main() {
         for (const e of deriveScalaUsesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 S2: scala `contains` — 2,881 edges on cats-effect, 2,420 on
+        // scala3, from one emission site, compared by nothing before this.
+        for (const e of deriveScalaContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
@@ -19787,6 +19932,8 @@ async function main() {
           // allowlist entry would have measured zero covered edges, the same G7
           // shape documented for the kotlin and powershell lanes.
           ...(lang === "scala" ? ["uses"] : []),
+          // M60 S2 (2026-09-27): scala joins the contains-audited set.
+          ...(lang === "scala" ? ["contains"] : []),
           // M60 K6 (2026-09-27): kotlin joins the references-audited set. 5,669
           // edges on the primary corpus from ten declared-type positions plus
           // the import class, with no oracle and no allowlist entry. The java
