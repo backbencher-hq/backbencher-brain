@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12",
+  "language": "php",
+  "purpose": "attribute WITHIN-analyzer cost for the php lane; NOT the end-to-end throughput record",
+  "repo": "$HOME/fixtures/repositories/phpunit",
+  "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+  "generatedAt": "2026-09-30T03:03:37.254Z",
+  "sample": "200 tracked .php files, deterministic strided slice of 3231",
+  "bytes": 310036,
+  "bytesPerFile": 1550,
+  "totals": {
+    "parseMs": 407.8,
+    "analyzeMs": 3434.6,
+    "endToEndMs": 3842.4,
+    "msPerFile": 19.21,
+    "analyzerMsPerFile": 17.17,
+    "parseSharePct": 10.61
+  },
+  "phases": {
+    "parse": 407.8,
+    "collectPhpFileScope": 182.4,
+    "mainWalk": 3251.9,
+    "postPasses": 0.2
+  },
+  "phaseSharePct": {
+    "parse": 10.61,
+    "collectPhpFileScope": 4.75,
+    "mainWalk": 84.63,
+    "postPasses": 0.01
+  },
+  "symbols": 6,
+  "relationships": 22,
+  "interpretation": "msPerFile is NOT comparable to the differential baseline's 6.3-9.5 ms/file. Two measured reasons: (1) this includes parse, which the baseline's warm-pool loop excludes; (2) the strided slice is file-EQUAL not byte-equal, so it is dragged by the large vendored sources under tools/.phpstan/ and tests/**/vendor/ that a first-N sorted slice would miss. Use bytesPerFile and the PHASE SPLIT, not msPerFile, to compare. The phase split is the robust result: it is a ratio over one measured run and is insensitive to which files were sampled.",
+  "note": "parse is tree-sitter WASM and sits OUTSIDE the analyzer. postPasses walk the SYMBOL TABLE, not the tree, so they cannot be the cost driver the way a repeated full-tree walk can — every namedChild()/childForFieldName() crosses the JS<->WASM boundary, which is why a separate full-tree walk (collectPhpFileScope) is reported separately from the fused mainWalk rather than merged into it."
+}
