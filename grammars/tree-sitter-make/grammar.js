@@ -87,13 +87,6 @@ export default grammar({
   conflicts: $ => [
     [$.concatenation, $._paren_text],
     [$.variable_reference, $._paren_text],
-    // Exposing a declared prefix at the head of a rule shifts the lex states, which
-    // surfaces a `concatenation` / `_line_text` ambiguity in the value that follows.
-    // Same shape as the `_paren_text` entry above -- a concatenation that could
-    // equally be plain line text -- so it is declared for the reason those two are:
-    // a static precedence would discard one reading for EVERY input rather than only
-    // for the inputs where it is wrong.
-    [$.concatenation, $._line_text],
   ],
 
   extras: $ => [
@@ -154,45 +147,35 @@ export default grammar({
     // The branch is added to the RULE (not to export_directive) because that is
     // where the colon has already been consumed and the assignment has not yet
     // started, which is the only place the form is unambiguous.
-    // A DECLARED recipe prefix may also lead a RULE: make strips it there too, and
-    // `>build: deps` is the ordinary way to write `.RECIPEPREFIX` at all. Without
-    // this the rule line is an ERROR and the rule is swallowed into the previous
-    // recipe, which is how this fixture failed with `clean:` turning up inside
-    // `build`'s recipe as a `recipe_line`.
-    //
-    // It is a SEPARATE ALTERNATIVE, never an `optional` at the head of the plain
-    // form, and both earlier attempts at the optional were wrong in ways worth
-    // recording:
-    //
-    //   - allowing the TAB there too gave one character two readings. In make a
-    //     leading tab is a RECIPE, not insignificant whitespace, so `a:` / tab /
-    //     `# note` / tab read the second tab as a rule with an empty prefix, found
-    //     no `:`, and lost the recipe -- 36 error nodes across three real corpus
-    //     files, rejected by the corpus A/B.
-    //
-    //   - allowing the external token alone made the PLAIN form nullable at its
-    //     head, and that is what actually split the recipe: a nullable head changes
-    //     the reduce decision after a recipe's NL, so the tab after an ordinary
-    //     comment stopped resuming the recipe. The corpus could not see this -- 0 of
-    //     the 100 files put a comment between two recipe lines -- and a four-line
-    //     synthetic repro did.
-    //
-    // A separate alternative is non-nullable by construction: the plain form is
-    // byte-for-byte what it always was. And the scanner DECLINES the external token
-    // whenever the tracked prefix is the default tab, so a makefile that never
-    // mentions `.RECIPEPREFIX` cannot reach the new alternative at all.
+      // `_ordinary_rule` is UNCHANGED BY P3, and that is a MEASURED decision rather
+      // than an oversight. An earlier version of this patch added a branch letting a
+      // declared prefix lead a RULE, on the belief that "make strips it there too".
+      // GNU Make 4.3, asked directly, says otherwise:
+      //
+      //     $ printf '.RECIPEPREFIX = >\n>all:\n>\t@echo ok\n' | make -f -
+      //     Makefile:2: *** recipe commences before first target.  Stop.
+      //
+      // Because `>` is the recipe prefix, `>all:` IS a recipe line, and a recipe may
+      // not come before the first target. The spelling that runs leaves the rule
+      // UNPREFIXED:
+      //
+      //     .RECIPEPREFIX = >
+      //     all:
+      //     >	@echo ok
+      //
+      // So the prefixed-rule branch was a FABRICATED construct: it accepted input
+      // make rejects. It was also the sole cause of the ambiguity this branch's
+      // conflict declared -- with the prefix legal at both a recipe continuation and
+      // a rule, a comment between two prefixed rules was ambiguous, the greedy
+      // `repeat` won, and the second RULE was swallowed into the first recipe.
+      // Deleting the branch removes the fabrication and the ambiguity together, and
+      // with it the `[$.concatenation, $._line_text]` conflict it required.
+      //
+      // The rule form is now byte-for-byte what upstream shipped, and that is the
+      // property worth protecting: P3 can only ever ADD a recipe prefix, never change
+      // how a rule is read. Verified against real make, not inferred.
+      //
     _ordinary_rule: $ => prec.right(choice(
-      seq(
-        $._recipeprefix,
-        $._targets,
-        choice(':', '&:', '::'),
-        optional(WS),
-        optional($._prerequisites),
-        choice(
-          $.recipe,
-          NL,
-        ),
-      ),
       seq(
         $._targets,
         choice(':', '&:', '::'),
