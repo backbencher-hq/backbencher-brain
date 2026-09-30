@@ -1318,7 +1318,8 @@ export class RealObjectiveCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // Walk struct_declaration → struct_declarator → (pointer/reference) →
   // identifier to find the declared property/ivar name.
-  private findDeclaredName(node: Node): string | null {    const walkForIdentifier = (n: Node | null): Node | null => {
+  private findDeclaredName(node: Node): string | null {
+    const walkForIdentifier = (n: Node | null): Node | null => {
       if (!n) return null
       if (n.type === "identifier") return n
       for (let i = 0; i < n.namedChildCount; i++) {
