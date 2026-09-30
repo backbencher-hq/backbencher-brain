@@ -93,8 +93,24 @@ export class RealJuliaAnalyzer {
    */
   private foreignMarked = new Set<string>()
 
+  /**
+   * `call_expression` nodes that are the LEFT-HAND SIDE of a short-form declaration, i.e.
+   * `f(x) = …` rather than an invocation. Julia writes a function definition with the same node
+   * type as a call, so without this the declaration reads as the function calling itself.
+   * Cleared per `analyze()` for the same reason as `foreignMarked`.
+   */
+  private declSites = new Set<number>()
+
+  /**
+   * `type_head` nodes belonging to a type DECLARATION, so a type is not recorded as referencing
+   * itself. Cleared per `analyze()` like the other per-file sets.
+   */
+  private typeHeadSites = new Set<number>()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     this.foreignMarked.clear()
+    this.declSites.clear()
+    this.typeHeadSites.clear()
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -117,6 +133,25 @@ export class RealJuliaAnalyzer {
       const node = frame.node
       if (frame.isExit) {
         depth--
+        // RESTORE the scope this node was entered with. The frame already carries it and the
+        // comment below claimed this was what the frame was for, but the handler only counted
+        // depth, so `activeScope` was a value that DRIFTED FORWARD for the whole file: the last
+        // declaration to advance it owned every later sibling.
+        //
+        // It took the product path to see it. On a module-less unit sample every function was
+        // declared, so each one re-advanced the scope and the leak was invisible. Through
+        // `ASTEngine.parseFile` on a file whose last function is `describe(s::Shape)::String = …`
+        // — which this analyzer did not recognise as a declaration at all — the body of
+        // `describe` was attributed to `Area`, the PREVIOUS function:
+        //
+        //     Area -calls-> describe@17
+        //     Area -calls-> string@17        <- actually describe's body
+        //     Area -calls-> typeof@17
+        //
+        // So one unrecognized declaration did not merely lose itself, it reassigned the ownership
+        // of everything after it. Frames are pushed exit-first with children reversed, so children
+        // always pop before their parent's exit frame and restoring here is well-ordered.
+        activeScope = frame.activeScope
         continue
       }
       const scope = frame.activeScope
@@ -162,6 +197,19 @@ export class RealJuliaAnalyzer {
           })
           declaredTypes.add(name)
           if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
+
+          // A type's OWN HEAD is not a reference. `struct Circle{T<:Real} <: Shape` names Circle in
+          // its own type head, and the `parametrized_type_expression` case below reads that as a
+          // reference — so every struct published a reference to ITSELF (`Shapes -references->
+          // Circle@6`), which is a declaration stating itself. Recorded so the reference cases can
+          // tell a type head from a type USE; `Vector{T}` in an annotation is still a real one.
+          if (nameNode) this.typeHeadSites.add(nameNode.id)
+
+          // A type's BODY belongs to the type, not to the enclosing module: `radius::T` inside
+          // `struct Circle{T<:Real}` is a fact about Circle, including the bound on Circle's own
+          // type parameter. Without advancing the scope, `Shapes -references-> T` attributed a
+          // type parameter to the module that has no such parameter.
+          activeScope = name
 
           // The SUBTYPE edge, and it is the only inheritance Julia has. `struct S <: A` puts a
           // `where`-less `binary_expression` (or a `comparison_operator` chain) between the type
@@ -216,7 +264,18 @@ export class RealJuliaAnalyzer {
         case "assignment": {
           // `f(x) where {T} = …` wraps the call in a `where_expression`; unwrap before demanding
           // a `call_expression`, or every `where`-form declaration is silently skipped.
-          const lhs = this.unwrapWhere(this.pos(node, 0) ?? node)
+          let lhs = this.unwrapWhere(this.pos(node, 0) ?? node)
+          // `describe(s::Shape)::String = …` puts the RETURN TYPE on the left, so the assignment's
+          // first child is a `typed_expression`, not a `call_expression` — and the declaration was
+          // invisible. Measured through the product path: a file declaring `Area` twice and
+          // `describe` once published TWO functions, not three, and `describe`'s body was
+          // misattributed (see the exit-frame note). `x::Int = 5` is ALSO a `typed_expression`, so
+          // the wrapper is unwrapped only when what it wraps is a CALL — that is exactly what
+          // separates a function declaration with a return type from a typed variable.
+          if (lhs.type === "typed_expression") {
+            const inner = this.pos(lhs, 0)
+            if (inner && inner.type === "call_expression") lhs = inner
+          }
           if (lhs.type !== "call_expression") break
           const name = this.calleeName(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
@@ -227,6 +286,12 @@ export class RealJuliaAnalyzer {
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, declarationForm: "short_form_assignment", hasBlockBody: false },
           })
+          // The DECLARATION's own left-hand side is the same `call_expression` node the call case
+          // looks for, so walking into it emitted `Area -calls-> Area` — the function calling
+          // itself, once per declaration. Julia has no such thing: `f(x) = …` DEFINES f, it does
+          // not invoke it. The node is recorded so the call case can tell a declaration site from
+          // an invocation, which is a distinction the tree does not make on its own.
+          this.declSites.add(lhs.id)
           if (scope) relationships.push(this.rel(scope, "contains", name, node, 1.0))
           // Parameters are deliberately NOT published as symbols. That is this repo's standing
           // negative contract — `SymbolKind` has no Parameter member at all, and swift/kotlin/
@@ -314,6 +379,7 @@ export class RealJuliaAnalyzer {
 
         // ---------------------------------------------------------------- calls and construction
         case "call_expression": {
+          if (this.declSites.has(node.id)) break
           const callee = this.calleeName(node)
           if (!callee || IMPLICIT_OR_CONSTANT.has(callee)) break
           const isCtor = declaredTypes.has(callee) || TYPE_DECLARATIONS.has(callee)
@@ -403,6 +469,7 @@ export class RealJuliaAnalyzer {
 
         case "parametrized_type_expression": {
           // `Vector{T}` — the base type is a reference and T is a parameter, not a read.
+          if (this.withinTypeHead(node)) break
           const base = this.firstNamedChildOfType(node, "identifier")
           if (base && scope) relationships.push(this.rel(scope, "references", base.text.trim(), node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
@@ -724,6 +791,25 @@ export class RealJuliaAnalyzer {
   }
 
   /**
+  /**
+   * Is this node inside the `type_head` of a type DECLARATION?
+   *
+   * Checked by walking ancestors rather than the immediate parent, because the depth varies with
+   * the shape of the head: `struct Circle <: Shape` puts the `parametrized_type_expression` two
+   * levels down (`type_head > binary_expression > …`) while `struct Circle{T} <: Shape` puts it
+   * three, and a parent-only test silently missed the second. A guard that only sometimes fires
+   * is worse than none, because it leaves a self-reference edge on exactly the generic types that
+   * most need to be right.
+   */
+  private withinTypeHead(node: Node): boolean {
+    let cur: Node | null = node
+    for (let i = 0; i < 5 && cur; i++) {
+      if (this.typeHeadSites.has(cur.id)) return true
+      cur = cur.parent ?? null
+    }
+    return false
+  }
+
   /** The C symbol a `ccall(...)` call targets, with its library when the two-tuple form gives one. */
   private ccallTarget(call: Node): { symbol: string; library: string | null } | null {
     const args = this.firstNamedChildOfType(call, "argument_list")
