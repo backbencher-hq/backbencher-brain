@@ -3413,7 +3413,20 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
       }
       return []
     }
-    if (p.type === "tuple_pattern") return []
+    // M60/S12: a `val`'s pattern is a NAME only when it is a name. The
+    // tuple_pattern refusal (S1.19) was for ONE of five shapes; the other four
+    // published the PATTERN'S SOURCE TEXT — `State(queue, size)`,
+    // `selfRef :: regularRef`, `vdef @ ValDef(_, tpt, rhs)`, `_`,
+    // `s"${RootPackageName @ _}/"`. None is spellable by a reference, so none can
+    // be joined to anything. The census that makes the list exhaustive is
+    // script/m14/tmp/scala-val-pattern-census.ts: scala3 15,216 val/var
+    // definitions are identifier 14704 / tuple_pattern 375 / case_class_pattern
+    // 91 / infix_pattern 23 / capture_pattern 10 / identifiers 8 /
+    // operator_identifier 3 / interpolated_string_expression 2, and cats-effect
+    // 3,577 are identifier 3396 / tuple_pattern 123 / wildcard 54 /
+    // case_class_pattern 4. So the NAME shapes are `identifier`, `identifiers`
+    // and `operator_identifier`.
+    if (p.type !== "identifier" && p.type !== "identifiers" && p.type !== "operator_identifier") return []
     if (p.type === "identifiers") {
       const out: string[] = []
       for (let i = 0; i < p.namedChildCount; i++) {
