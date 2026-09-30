@@ -1741,10 +1741,33 @@ const handlers: Record<string, ToolHandler> = {
     // caller lives in. `describe` renders one endpoint out of the engine's own
     // node map — already computed by the traversal, previously discarded here
     // — so each edge is self-contained and needs no second call.
+    // A symbol id is `<projectHash40>:<path>:<name>:<line>`, and the hash is the
+    // same for every symbol in one answer — so it is repeated on BOTH endpoints
+    // of every edge, twice per edge, to say something the payload already states
+    // once in `root.id`. Measured: a median id is 65-80 characters of which 40
+    // is that hash, and `from.id` + `to.id` is 28.6% of every edge's bytes.
+    //
+    // So the per-edge copy drops the hash. It stays a plain string and stays
+    // resolvable: prepend the hash from `root.id` to get the stored id back.
+    // `root.id` itself is left FULL, deliberately — it appears once, so it costs
+    // ~80 bytes, and it is the one place a reader can find the hash this
+    // compaction depends on. Stripping it would save nothing and remove the only
+    // way to undo the rest.
+    //
+    // Conservative by construction: only a first segment that is exactly 40 hex
+    // characters is dropped, so an `ext:` node, a foreign id shape, and anything
+    // this lane has not seen come back untouched rather than guessed at.
+    const compactId = (id: string): string => {
+      if (typeof id !== "string" || id.length <= 41) return id
+      const at = id.indexOf(":")
+      if (at !== 40) return id
+      if (!/^[0-9a-f]{40}$/.test(id.slice(0, at))) return id
+      return id.slice(at + 1)
+    }
     const describe = (id: string) => {
       const n = (result.nodes as Record<string, any> | undefined)?.[id]
       if (!n) return null
-      return { id: n.id, name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+      return { id: compactId(n.id), name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
     }
     // A stored relationship id is
     //   `<projectHash>:rel:<projectHash>:<sourceSymbolId>:<kind>:<occurrence>`
