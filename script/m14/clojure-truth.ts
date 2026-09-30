@@ -128,8 +128,8 @@ const DEF_HEADS = new Set([
  * `contains` and `uses` derivations both need the namespace IN FORCE AT A GIVEN
  * FORM, not the file's first one, so both read this.
  */
-function namespaceTimeline(root: Node): NsCtx[] {
-  const out: NsCtx[] = []
+function namespaceTimeline(root: Node): { at: number; name: string }[] {
+  const out: { at: number; name: string }[] = []
   // The DATA RULE, applied to namespace forms. An `(ns …)` inside a `quote`, a
   // syntax quote, a `comment` or a `#_` discard does not switch this file's
   // namespace — it is a string the reader will evaluate somewhere else. Two real
@@ -151,7 +151,7 @@ function namespaceTimeline(root: Node): NsCtx[] {
       if (NON_CODE_HEADS.has(nm)) return
       if ((nm === "ns" || nm === "in-ns") && n.namedChildCount > 1) {
         const v = namespaceNameOf(n.namedChild(1))
-        if (v) out.push({ at: n.startIndex, name: v, aliases: aliasTableOf(n) })
+        if (v) out.push({ at: n.startIndex, name: v })
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, depth) }
@@ -161,90 +161,8 @@ function namespaceTimeline(root: Node): NsCtx[] {
   return out
 }
 
-type NsCtx = { at: number; name: string; aliases: Map<string, string> }
-
-/**
- * The alias table an `ns`/`in-ns` form declares: `[clojure.string :as str]` maps
- * `str` to `clojure.string`, and `[prefix [sub :as a]]` maps `a` to `prefix.sub`.
- *
- * This was MISSING, and its absence is why `implements` derived the right NUMBER
- * of edges (444) with none of the KEYS matching: the analyzer resolves every
- * protocol name through `resolveQualified`, so `(extend-type T alias/P …)` is
- * published as `real.ns/P` while the truth published `alias/P`. 403 edges right
- * and 403 wrong — which is what a missing resolution step looks like from the
- * outside, and a reminder that matching COUNTS is not matching FACTS.
- */
-function aliasTableOf(nsForm: Node): Map<string, string> {
-  const m = new Map<string, string>()
-  for (let ci = 1; ci < nsForm.namedChildCount; ci++) {
-    const clause = nsForm.namedChild(ci)
-    if (!clause || clause.type !== "list_lit") continue
-    const ck = executionHead(clause)
-    const kw = ck && ck.type === "kwd_lit" ? (ck.childForFieldName("name")?.text ?? "") : ""
-    if (!LIB_KEYWORDS.has(kw)) continue
-    for (let k = 1; k < clause.namedChildCount; k++) {
-      const spec = clause.namedChild(k)
-      if (!spec || spec.type !== "vec_lit") continue
-      const first = spec.namedChild(0)
-      if (!first) continue
-      if (first.type === "sym_lit") {
-        const lib = symName(first)
-        for (let q = 1; q < spec.namedChildCount; q++) {
-          const c = spec.namedChild(q)
-          if (c && c.type === "kwd_lit") {
-            const key = c.childForFieldName("name")?.text ?? ""
-            if (key === "as" || key === "as-alias") {
-              const a = spec.namedChild(q + 1)
-              if (a && a.type === "sym_lit") m.set(symName(a), lib)
-            }
-          }
-        }
-        continue
-      }
-      if (first.type === "vec_lit") {
-        const prefix = first.namedChild(0)
-        const prefixName = prefix && prefix.type === "sym_lit" ? symName(prefix) : ""
-        if (!prefixName) continue
-        for (let q = 1; q < first.namedChildCount; q++) {
-          const c = first.namedChild(q)
-          if (c && c.type === "vec_lit") {
-            const sub = c.namedChild(0)
-            const subName = sub && sub.type === "sym_lit" ? symName(sub) : ""
-            for (let r = 1; r < c.namedChildCount; r++) {
-              const kk = c.namedChild(r)
-              if (kk && kk.type === "kwd_lit" && (kk.childForFieldName("name")?.text ?? "") === "as") {
-                const a = c.namedChild(r + 1)
-                if (a && a.type === "sym_lit" && subName) m.set(symName(a), `${prefixName}.${subName}`)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return m
-}
-
-/** The alias table in force at a byte offset, merged across every ns form so far. */
-function aliasesAt(timeline: NsCtx[], idx: number): Map<string, string> {
-  const m = new Map<string, string>()
-  for (const t of timeline) {
-    if (t.at > idx) break
-    for (const [k, v] of t.aliases) m.set(k, v)
-  }
-  return m
-}
-
-/** `alias/name` -> `real.ns/name`; a bare or unknown name is returned unchanged. */
-function resolveAlias(name: string, aliases: Map<string, string>): string {
-  const slash = name.indexOf("/")
-  if (slash <= 0) return name
-  const resolved = aliases.get(name.slice(0, slash))
-  return resolved ? `${resolved}${name.slice(slash)}` : name
-}
-
 /** The namespace in force at a byte offset. */
-function nsAt(timeline: NsCtx[], idx: number): string {
+function nsAt(timeline: { at: number; name: string }[], idx: number): string {
   let name = ""
   for (const t of timeline) { if (t.at <= idx) name = t.name; else break }
   return name
@@ -320,16 +238,6 @@ function walk(root: Node, onList: (node: Node, src: string) => void): void {
       if (DEF_HEADS.has(nm) || isDefLikeHead(nm)) {
         const dn = defNameOf(n)
         if (dn) nextOwner = dn
-      } else if (nm === "fn" || nm === "fn*") {
-        // A `fn` LITERAL IS A FUNCTION and the analyzer names it
-        // `lambda_<row>_<col>` (0-based row, as the analyzer spells it). Without
-        // this frame the truth attributed everything inside a lambda to the
-        // ENCLOSING defn: `(new IllegalArgumentException …)` inside a `fn` inside
-        // `assoc` was published as `assoc -> IllegalArgumentException` where the
-        // analyzer says `lambda_191_1 -> …`. Same cause as the `uses` owner
-        // audit — attribution is a separate question from existence, and a truth
-        // that answers the wrong one produces a confident wrong edge.
-        nextOwner = `lambda_${n.startPosition.row}_${n.startPosition.column}`
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, nextOwner, depth) }
@@ -711,53 +619,6 @@ export function deriveClojureReferencesTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
   const st: Node[] = [root]
-  // THE SECOND SOURCE, and the one that accounted for 4,784 of the 4,840
-  // residuals: a reference is not only the ns CLAUSE, it is also a USE of an
-  // ALIASED name. The analyzer emits `references: <ns> -> <lib>` wherever a
-  // qualified head's alias resolves to a different namespace — at the CALL's
-  // line, not at the require — and both the generic call branch and the
-  // threading-step branch do it. So `(-> x (str/join "," xs))` in a file that
-  // aliased `str` to `clojure.string` produces a dependency edge at the step's
-  // own line, which is the only place a reader learns the thread step reaches
-  // into another library.
-  //
-  // A SELF-QUALIFIED call (`corpus.invalid-arity.order/def` inside that very
-  // namespace) is a lexical no-op as a dependency and never a self-loop, so
-  // `resolvedNs !== currentNamespace` is part of the RULE and not a guard added
-  // afterwards.
-  const timeline = namespaceTimeline(root)
-  const walkAliasedUses = (): void => {
-    walk(root, (node) => {
-      if (node.type !== "list_lit") return
-      if (isLibspecSite(node) || isCaseConstant(node)) return
-      const h = executionHead(node)
-      if (!h || h.type !== "sym_lit") return
-      const form = symName(h)
-      if (NON_CODE_HEADS.has(form)) return
-      const al = aliasesAt(timeline, node.startIndex)
-      const ns = nsAt(timeline, node.startIndex)
-      const mark = (name: string, line: number) => {
-        const slash = name.indexOf("/")
-        if (slash <= 0) return
-        const resolved = al.get(name.slice(0, slash))
-        if (!resolved || resolved === ns) return
-        const id = `references|${ns}->${resolved}@${line}`
-        if (seen.has(id)) return
-        seen.add(id)
-        out.push({ label: "references", from: ns, to: resolved, line })
-      }
-      mark(form, h.startPosition.row + 1)
-      if (form === "->" || form === "->>" || form === "some->" || form === "some->>" || form === "cond->" || form === "cond->>" || form === "doto") {
-        for (let i = 2; i < node.namedChildCount; i++) {
-          const step = node.namedChild(i)
-          if (!step) continue
-          const sh = step.type === "list_lit" ? executionHead(step) : step
-          if (!sh || sh.type !== "sym_lit") continue
-          mark(symName(sh), sh.startPosition.row + 1)
-        }
-      }
-    })
-  }
   while (st.length > 0) {
     const n = st.pop()!
     if (n.type === "list_lit") {
@@ -797,7 +658,6 @@ export function deriveClojureReferencesTruth(root: Node): RelEdge[] {
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
   }
-  walkAliasedUses()
   return out
 }
 
@@ -851,7 +711,6 @@ function supertypeArgOf(node: Node, from: number): string | null {
 export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
-  const tl = namespaceTimeline(root)
   walk(root, (node, owner) => {
     if (node.type !== "list_lit") return
     if (isLibspecSite(node) || isCaseConstant(node)) return
@@ -859,9 +718,8 @@ export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
     if (!h || h.type !== "sym_lit") return
     const form = symName(h)
     if (form === "comment" || form === "quote") return
-    const cls0 = ctorClassOf(node)
-    if (!cls0) return
-    const cls = resolveAlias(cls0, aliasesAt(tl, node.startIndex))
+    const cls = ctorClassOf(node)
+    if (!cls) return
     const line = h.startPosition.row + 1
     const id = `${owner}->${cls}@${line}`
     if (seen.has(id)) return
@@ -874,35 +732,18 @@ export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
 /**
  * TRUTH for `implements` / `extends` — what a type or extension declares.
  *
- * These were the two rules I got most wrong: the first version derived 26 truth
- * edges against 444 emitted, which indicts the DERIVATION and not the analyzer.
- * Rewritten against the analyzer's five emission sites, each of which is a
- * different shape:
+ * A `deftype`/`defrecord` names SUPER TYPES after its own name; a protocol's
+ * first method names a method, not a type, so only the TYPE POSITION counts.
+ * `extend-type` and `extend-protocol` name a target type and a protocol;
+ * `proxy`/`reify` name supertypes positionally.
  *
- * 1. `(defrecord R Docstring? [fields…] Proto…)` — protocols start at index
- *    **3**, not 2, because index 2 is the FIELD VECTOR. Every one is
- *    `implements`; a record does not extend anything on this label.
- * 2. `(reify P …)` — every child from index 1 is a protocol, and the SOURCE is
- *    the ENCLOSING CONTEXT, not the reify (a reify has no name of its own).
- * 3. `(extend-protocol P Type …)` — index 1 is the PROTOCOL, and each child
- *    from index 2 is a TYPE THAT EXTENDS IT, so the child is the SOURCE. My
- *    first version stopped after the first child.
- * 4. `(extend-type Type P …)` — index 1 is the TYPE and each child from index 2
- *    is a protocol, so the SOURCE is index 1. My first version had this
- *    backwards: it emitted `Type -> enclosing` instead of `Type -> Protocol`.
- * 5. `(proxy [Super Iface…] …)` — inside the VECTOR, the FIRST entry is
- *    `extends` and the rest are `implements`, and the source is again the
- *    enclosing context. My first version emitted `extends` for all of them and
- *    used the proxy's own name as the source.
- *
- * The enclosing context is the active function's name, or the namespace at the
- * top level — the same attribution `uses` gets, so it is read from the same
- * walk rather than a second one that could disagree.
+ * Both labels are derived because the analyzer emits both and neither had a
+ * gate. `extends` is the `Object`-level position and is kept distinct, which is
+ * the analyzer's own convention.
  */
 export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
-  const tl = namespaceTimeline(root)
   const add = (label: string, from: string, to: string, line: number) => {
     if (!from || !to) return
     const id = `${label}|${from}->${to}@${line}`
@@ -910,81 +751,81 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
     seen.add(id)
     out.push({ label, from, to, line })
   }
-  const isDefTypeish = (form: string) => form === "deftype" || form === "defrecord"
-  walk(root, (node, ctx) => {
+  walk(root, (node, owner) => {
     if (node.type !== "list_lit") return
     if (isLibspecSite(node) || isCaseConstant(node)) return
     const h = executionHead(node)
     if (!h || h.type !== "sym_lit") return
     const form = symName(h)
-    // The edge's line is the PROTOCOL/interface node's own line, not the form
-    // head's. `(deftype Date … (inst-ms* …) Object (toString …))` in core.clj
-    // puts the head on 7061 and `Object` on 7062, and the analyzer emits 7062 —
-    // the line a reader follows to find the type declaration. A whole-form line
-    // made all 403 `implements` keys wrong while the COUNTS matched exactly,
-    // which is the most misleading failure a completeness gate can have.
-    const protoLine = (n: Node): number => n.startPosition.row + 1
-    // The analyzer resolves EVERY protocol and type name through
-    // `resolveQualified`, so the truth must too — see `aliasTableOf`.
-    const al = aliasesAt(tl, node.startIndex)
-    const R = (n: string): string => resolveAlias(n, al)
-    // A `reify`/`proxy` builds an ANONYMOUS type, and the analyzer's C9 branch
-    // walks their bodies with `previousActiveFunction: null`, so its `ctxName`
-    // falls back to the NAMESPACE rather than the enclosing function. Observed:
-    // `(proxy [ThreadLocal] …)` in clojure/instant.clj is published as
-    // `clojure.instant -> ThreadLocal`, not as the `thread-local-utc-date-format`
-    // defn the naive walk attributes it to. The namespace is also the
-    // conservative choice — an anonymous type belongs to no named function.
-    const ctxNs = nsAt(tl, node.startIndex)
-
-    if (isDefTypeish(form)) {
-      // 1. protocols from index 3 — index 2 is the field vector.
+    const line = h.startPosition.row + 1
+    if (form === "deftype" || form === "defrecord" || form === "definterface") {
       const own = defNameOf(node)
       if (!own) return
-      for (let pi = 3; pi < node.namedChildCount; pi++) {
-        const c = node.namedChild(pi)
-        if (!c || c.type !== "sym_lit") continue
-        add("implements", own, R(symName(c)), protoLine(c))
-      }
-      return
-    }
-    if (form === "reify") {
-      // 2. every child from 1 is a protocol; the source is the ENCLOSING CONTEXT.
-      for (let i = 1; i < node.namedChildCount; i++) {
-        const c = node.namedChild(i)
-        if (c && c.type === "sym_lit") add("implements", ctxNs, R(symName(c)), protoLine(c))
-      }
-      return
-    }
-    if (form === "extend-protocol") {
-      // 3. index 1 is the protocol; each child from 2 is a TYPE that extends it.
-      const proto = node.namedChild(1)
-      const protoName = proto && proto.type === "sym_lit" ? R(symName(proto)) : ""
-      if (!protoName) return
+      // position 0 head, 1 name, 2.. supertypes (past metadata/docstring/map)
       for (let i = 2; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
-        if (c && c.type === "sym_lit") add("implements", R(symName(c)), protoName, protoLine(c))
+        if (!c) break
+        if (c.type === "str_lit" || c.type === "map_lit" || c.type === "meta_lit") continue
+        if (c.type === "sym_lit") {
+          const sup = symName(c)
+          add(i === 2 ? "extends" : "implements", own, sup, line)
+          continue
+        }
+        break
       }
       return
     }
     if (form === "extend-type") {
-      // 4. index 1 is the TYPE; each child from 2 is a protocol it extends.
-      const t = node.namedChild(1)
-      const typeName = t && t.type === "sym_lit" ? R(symName(t)) : ""
-      if (!typeName) return
-      for (let i = 2; i < node.namedChildCount; i++) {
+      // (extend-type T & P (m …)) — T is the target, P the protocol.
+      for (let i = 1; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
-        if (c && c.type === "sym_lit") add("implements", typeName, R(symName(c)), protoLine(c))
+        if (!c) break
+        if (c.type === "kwd_lit") continue
+        if (c.type !== "sym_lit") break
+        const nm = symName(c)
+        if (i === 1) add("implements", nm, owner, line)
+        else add("implements", owner, nm, line)
+        if (i >= 2) break
       }
       return
     }
-    if (form === "proxy") {
-      // 5. inside the VECTOR: first extends, the rest implement, source = context.
-      const ifaces = node.namedChild(1)
-      if (!ifaces || ifaces.type !== "vec_lit") return
-      for (let i = 0; i < ifaces.namedChildCount; i++) {
-        const c = ifaces.namedChild(i)
-        if (c && c.type === "sym_lit") add(i === 0 ? "extends" : "implements", ctx, R(symName(c)), protoLine(c))
+    if (form === "extend-protocol") {
+      const proto = node.namedChild(1)
+      const protoName = proto && proto.type === "sym_lit" ? symName(proto) : ""
+      if (!protoName) return
+      for (let i = 2; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "kwd_lit") continue
+        if (c.type !== "sym_lit") break
+        add("implements", symName(c), protoName, line)
+        break
+      }
+      return
+    }
+    if (form === "reify" || form === "proxy") {
+      let from = 1
+      if (form === "proxy") {
+        // (proxy [Super …] Name …) — the vector is supertypes, the NEXT is the
+        // class being built.
+        const supVec = node.namedChild(1)
+        const cls = node.namedChild(2)
+        if (supVec && supVec.type === "vec_lit" && cls && cls.type === "sym_lit") {
+          const clsName = symName(cls)
+          for (let i = 0; i < supVec.namedChildCount; i++) {
+            const s = supVec.namedChild(i)
+            if (s && s.type === "sym_lit") add("extends", clsName, symName(s), line)
+          }
+          return
+        }
+        from = 1
+      }
+      for (let i = from; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "str_lit" || c.type === "map_lit" || c.type === "meta_lit" || c.type === "vec_lit") continue
+        if (c.type === "sym_lit") { add("extends", owner, symName(c), line); continue }
+        break
       }
     }
   })
