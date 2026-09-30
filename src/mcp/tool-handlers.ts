@@ -66,6 +66,19 @@ function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | 
   }
 }
 
+// bb_security response bounds. The two WINDOW values are what the agent sees;
+// the CENSUS cap is how many findings `recordRun` persists so that a capped
+// scan can never auto-resolve findings that were merely not looked at
+// (completeAnalysisRun resolves any prior `open` finding absent from the set).
+// Exported so the security verifiers can pin them rather than re-deriving
+// magic numbers that used to be inline literals.
+export const SECURITY_FINDINGS_WINDOW = 20
+export const SECURITY_SUSPICIOUS_WINDOW = 5
+/** Cap for the live (non-recording) scan. Matches the engine's own default. */
+export const SECURITY_SCAN_CAP = 500
+/** Cap for the recording scan — large enough that a real project is not truncated. */
+export const SECURITY_RECORD_RUN_CENSUS_CAP = 50_000
+
 export interface ToolContext {
   projectPath: string
   projectId: string
@@ -1240,43 +1253,102 @@ const handlers: Record<string, ToolHandler> = {
       const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
+    // A1: `recordRun` persists a SNAPSHOT whose completeness decides whether
+    // still-real findings are auto-resolved. `completeAnalysisRun` marks every
+    // prior `open` finding that is absent from the persisted set as `resolved`,
+    // so a scan capped at the engine default (500) silently resolved everything
+    // past 500 on a project that really had them. `bb_patterns` already guards
+    // this with a census cap + a cap note (tool-handlers.ts:1174-1224); the
+    // security path had no guard at all. Recording asks for a census-sized
+    // scan; the DISPLAY still renders the ordinary window.
+    const recordRun = args.recordRun === true
+    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(
+      projectId,
+      { maxResults: recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP },
+    )
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
     const summary = result?.summary
     // M35.S2: a stale taint/flow finding says so — security honesty. History
     // paths (above) keep their recorded state; this is the live read.
+    //
+    // B3: the unvalidated-source rows are ALSO derived from indexed files, so
+    // they are resolved for freshness too. They were left out, which presented
+    // stale observations as current fact. `derivedStaleness` filters null, and
+    // `file` is now honestly `null` when neither endpoint resolved (it was the
+    // `"?"` sentinel, which resolved to nothing and counted as `missing`).
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
+    const derived = derivedStaleness(rawDb, projectId as any, [...findings, ...suspicious].map((f: any) => f.file))
+    // A1: the engine's own census vs. what is on screen. Silence here is what
+    // made a 5000-flow project read as "20 findings" with no indication that
+    // 4980 were unseen — the same contract bb_visualize and bb_search use.
+    const capNote = result?.truncatedFindings > 0
+      ? ` — CAPPED at ${(recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP).toLocaleString("en-US")}; ${result.deduplicatedFlows} findings exist and ${result.truncatedFindings} were not examined`
+      : ""
+    const countLine =
+      `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} finding(s)` +
+      `${result?.truncatedFindings ? ` (${result.truncatedFindings} beyond the cap)` : ""};` +
+      ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} finding(s)` +
+      `${suspicious.length ? ` and ${Math.min(suspicious.length, SECURITY_SUSPICIOUS_WINDOW)} of ${suspicious.length} unvalidated observation(s)` : ""}]`
+    // B2: the severity counts are the indexer's, and `taint.ts` now normalizes
+    // severity into exactly these five buckets, so the head line cannot print
+    // "0 critical" above a list of critical findings.
     const head = summary
-      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
+      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
       : `security findings (${findings.length})`
-    const lines = findings.slice(0, 20).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
+    const where = (f: any) => (f.file ? `${f.file}:${f.line ?? "?"}` : "<unresolved location>")
+    const lines = findings.slice(0, SECURITY_FINDINGS_WINDOW).map(
+      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}${finding.sourceType ? ` <- ${finding.sourceType}` : ""}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${finding.file && derived.isStale(finding.file) ? " [stale]" : ""}`,
     )
-    const sourceLines = suspicious.slice(0, 5).map(
-      (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
-    )
-    if (args.recordRun === true) {
+    // B1: the two observation states are DIFFERENT facts and were rendered with
+    // one sentence. `source_only` genuinely has no sink ("no sink reached").
+    // `unresolved` has a RESOLVED SINK and is missing the source — the old
+    // text claimed the opposite for it, on the exact rows the indexer's
+    // heuristic detectors produce (they write `source_symbol_id = NULL`).
+    // B2 again: these rows carry the indexer's real severity (an isolated
+    // command-injection sink is `critical`) and were all printed as `[info]`.
+    const sourceLines = suspicious.slice(0, SECURITY_SUSPICIOUS_WINDOW).map((source: any) => {
+      const isSourceOnly = source.state === "source_only"
+      return `  [${source.severity}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}${source.symbol ? ` ${source.symbol}` : ""} @ ${where(source)} (${isSourceOnly ? "no sink reached" : "sink found; source endpoint not resolved to an indexed symbol"})${source.file && derived.isStale(source.file) ? " [stale]" : ""}`
+    })
+    if (recordRun) {
       const findingCount = findings.length
       const recorded = await executeAnalysis({
         projectId,
         kind: "security",
         input: { options: args },
         persist: () => findings.map((finding: any): AnalysisFindingInput => ({
-          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
-          rule: finding.label ?? finding.type ?? "security",
+          // A7: the persisted identity must be stable across runs AND distinct
+          // per sink. The old key was `file:line:label`, which put a DISPLAY
+          // label in the identity: re-labelling a vulnerability type would
+          // resolve the old finding and mint a new one for a flow that never
+          // changed. The key is now the normalized type + sink type + location,
+          // so re-grading `severity` is a repeat and only a genuine move or
+          // change of vulnerability type produces a new row.
+          fingerprint: `taint:${finding.type}:${finding.sinkType ?? "?"}:${finding.file ?? "?"}:${finding.line ?? "?"}`,
+          rule: finding.type ?? "security",
           title: finding.label ?? finding.type ?? "security finding",
           severity: finding.severity ?? "medium",
-          confidence: finding.confidence ?? null,
+          // A7: the engine calibrates 0.7/0.4/0.3 by state; the legacy mapping
+          // dropped it, so this read `?? null` and every persisted security
+          // finding recorded NULL confidence.
+          confidence: typeof finding.confidence === "number" ? finding.confidence : null,
+          // A7: likewise `evidence` was always `[]` — history recorded security
+          // findings with no evidence at all.
           evidence: finding.evidence ?? [],
+          limitations: finding.limitations ?? [],
+          evidenceClass: "static_finding",
+          engine: "taint@intelligence",
           location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
           state: finding.mitigated ? "mitigated" : undefined,
         })),
       })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded${capNote}` + (lines.length ? "\n" + lines.join("\n") : "") + countLine + (sourceLines.length ? `\n\nunvalidated sources (not persisted):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n${derived.footer}` : ""))
     }
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
+    // The zero-findings case still states the census. "clean" alone is
+    // indistinguishable from "found nothing" when the scan was capped or the
+    // index has no taint rows at all, and those are very different facts.
+    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  no findings with both endpoints resolved") + countLine + (sourceLines.length ? `\n\nunvalidated observations (leads, not confirmed exploitable paths):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
   },
 
   bb_visualize: async (args, { projectId }) => {
