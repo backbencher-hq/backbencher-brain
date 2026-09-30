@@ -8413,6 +8413,20 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    // RUST-MR: a TRAIT method SIGNATURE's parameter declares, and for the same
+    // reason a fn-pointer type's does: there is no body, so
+    // `collectFunctionBindings` (which collects `function_item` only) leaves no
+    // bound-name set to exclude the name by. Found at FULL extent over 2,598
+    // files — cargo's src/compiler/mod.rs:142-143 — and not by the 550-file
+    // sample, which is why the full-extent run is its own gate rather than a
+    // bigger version of the same one.
+    id: "rust/reemit-signature-param-reads",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "RUST-MR: a trait method signature's PARAMETER emits a `uses` edge when its name also resolves (a use-imported leaf of the same name)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "exec", target: "on_stdout_line", line_number: 42, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }] }),
+  },
+  {
     id: "go/drop-bare-uses",
     language: "go",
     defectClass: "relationship-loss",
