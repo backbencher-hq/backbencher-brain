@@ -858,6 +858,15 @@ export namespace ASTEngine {
           languageWasmPath = resolveWasm("tree-sitter-powershell/tree-sitter-powershell.wasm")
           break
         }
+        // The Solidity pin names the wired bytes at `wasm/tree-sitter-solidity.wasm`
+        // (script/m14/verify-grammar-pins.ts, LANES.solidity), byte-identical to the
+        // npm tarball tree-sitter-solidity@1.2.13. The resolver keys on the basename,
+        // so this spelling and the pin's `wired` field name the same file — a swap
+        // here is a swap the pin gate catches.
+        case "solidity": {
+          languageWasmPath = resolveWasm("tree-sitter-solidity.wasm")
+          break
+        }
         // M60 VB wave. The wasm name is the GRAMMAR's name, not the language's:
         // the lane reads `tree-sitter-vbnet`, and the pin's `wired` field names
         // the same file, so a swap of the wasm here is a swap the pin catches.
@@ -1821,6 +1830,8 @@ export namespace ASTEngine {
         return new (await import("./real-fsharp-analyzer")).RealFsharpAnalyzer()
       case "powershell":
         return new (await import("./real-powershell-analyzer")).RealPowershellAnalyzer()
+      case "solidity":
+        return new (await import("./real-solidity-analyzer")).RealSolidityAnalyzer()
       case "make":
         return new (await import("./real-makefile-analyzer")).RealMakefileAnalyzer()
       case "xml":
