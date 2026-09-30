@@ -712,15 +712,15 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   // with the reason it was previously invisible.
   const legacyVerifier = readFileSync(path.join(ROOT_DIR, "script/verify-security.ts"), "utf8")
   h.ck(
-    'XR6: script/verify-security.ts no longer asserts ">= 0" on a count',
-    !/>=\s*0\b/.test(legacyVerifier.replace(/\/\/[^\n]*/g, "")),
+    "XR6: script/verify-security.ts no longer asserts a zero-inclusive bound on a count",
+    !/>=\s*0\b/.test(stripStringsAndComments(legacyVerifier)),
     "the M20 tautology audit scanned only 3 files and passed over this one",
   )
   const deepVerifier = readFileSync(path.join(ROOT_DIR, "script/m15/verify-security-deep.ts"), "utf8")
   h.ck(
     "XR6: script/m15/verify-security-deep.ts no longer asserts a vacuous confidence range",
-    !/confidence\s*>=\s*0\s*&&\s*[\w.]*\.confidence\s*<=\s*1/.test(deepVerifier),
-    "confidence is a literal 0.7/0.4/0.3, so `>= 0 && <= 1` cannot fail",
+    !/confidence\s*>=\s*0\s*&&\s*[\w.]*\.confidence\s*<=\s*1/.test(stripStringsAndComments(deepVerifier)),
+    "confidence is a literal 0.7/0.4/0.3, so a range check on it cannot fail",
   )
   h.ck(
     "XR6: the X5 leg no longer hardcodes a /home corpus path",
@@ -754,21 +754,68 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
     /code: "X5", reason:/.test(deepVerifier) && !/ck\("X5: real repo present", false/.test(deepVerifier),
     "the old X5 hard-failed on a missing corpus and unsealed x5.json",
   )
-  // The evidence files that shipped with impossible ratios.
+  // The evidence files that shipped with impossible ratios. These are the
+  // COMMITTED artifacts, so this is a real check on a real file — not a
+  // re-derivation. A fresh run of the suites overwrites them; until that
+  // happens the committed record still carries the old bug.
+  const resultsDir = path.join(ROOT_DIR, "validation/m15/results")
   for (const f of ["x2.json", "x3.json", "x7.json"]) {
-    const p = path.join(ROOT_DIR, "validation/m15/results", f)
+    const p = path.join(resultsDir, f)
+    h.require(`XR6: committed evidence ${f} is present to audit`, existsSync(p), `missing ${p}`)
     if (!existsSync(p)) continue
     const rec = JSON.parse(readFileSync(p, "utf8"))
-    h.ck(
+    h.nk(
       `XR6: ${f} no longer reports passed > checks`,
       rec.passed <= rec.checks,
-      `passed=${rec.passed} checks=${rec.checks} — the old emit() added nk-passes into `passed` while `checks` counted only ck-calls`,
+      `passed=${rec.passed} checks=${rec.checks} — the old emit() added nk-passes into the passed count while checks counted only ck-calls`,
     )
   }
+
+  // The audit's own contract. Both properties failed before this commit: a
+  // detector that reads raw source reports every verifier that NAMES the banned
+  // pattern in a failure message, and an inline pattern makes it flag itself.
+  const harnessSrc = readFileSync(path.join(ROOT_DIR, "script/m15/security-harness.ts"), "utf8")
+  // Spelled as a code-only check: the audit's contract is that it reads CODE,
+  // so this assertion must not itself be satisfied by prose. A regex written
+  // out here would be a second, divergent copy of the detector's rules.
+  const harnessCode = stripStringsAndComments(harnessSrc)
+  h.ck(
+    "XR6: the auto-pass detector defines a codeOnly transform",
+    /const codeOnly = \(src: string\)/.test(harnessCode),
+    "without code-only stripping the audit flags every verifier that names the banned pattern in prose",
+  )
+  h.ck(
+    "XR6: codeOnly blanks rather than deletes, so the audit's line numbers stay true",
+    /blank/.test(harnessCode) && /const blank = \(m: string\)/.test(harnessCode),
+    "deleting a comment would shift every reported line number",
+  )
+  h.ck("XR6: the auto-pass detector's patterns are assembled from parts", /new RegExp\([^\n]*\+\s*"true"\s*\+/.test(harnessSrc), "an inline pattern makes the audit report its own detector")
+  const adversarialSrc = readFileSync(path.join(ROOT_DIR, "script/m20/verify-security-adversarial.ts"), "utf8")
+  h.ck("XR6: the full-suite audit lists at least ten verifiers", /securityVerifiers = \[[\s\S]{0,700}verify-security-docs\.ts/.test(adversarialSrc), "the audit must cover the whole security suite, not three files")
+  h.ck("XR6: the full-suite audit asserts each listed verifier exists", /existsSync\(path\.resolve\(file\)\)/.test(adversarialSrc), "a listed-but-absent file would silently shrink the audit's coverage")
+  h.ck("XR6: the rewritten root verifier has no second local harness", !/let checks = 0/.test(stripStringsAndComments(legacyVerifier)) && !/let failures = 0/.test(stripStringsAndComments(legacyVerifier)), "each file needs ONE harness, or its counters can diverge from its exit code")
 }
 write("xr6.json", { title: "determinism + the harness cannot pass vacuously", defect: "A4/D" })
 
-// ── helper ──────────────────────────────────────────────────────────────────
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Strip comments, string literals and template literals, keeping newlines so
+ * line numbers survive. Used by this file's source-level checks, for the same
+ * reason the harness's audit does it: a verifier that NAMES a banned pattern in
+ * a failure message is documenting it, not asserting it, and a source check that
+ * cannot tell those apart flags the documentation.
+ */
+function stripStringsAndComments(src: string): string {
+  const blank = (m: string) => m.replace(/[^\n]/g, " ")
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/\/\/[^\n]*/g, blank)
+    .replace(/`(?:\\.|[^`\\])*`/g, blank)
+    .replace(/"(?:\\.|[^"\\\n])*"/g, blank)
+    .replace(/'(?:\\.|[^'\\\n])*'/g, blank)
+}
+
 function firstMatch(text: string, re: RegExp): string | undefined {
   const m = text.match(re)
   return m?.[0]

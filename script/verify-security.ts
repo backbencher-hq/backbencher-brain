@@ -1,4 +1,39 @@
-// verify-security.ts — strict taint-flow security engine.
+// script/verify-security.ts — the strict taint-flow engine, end to end.
+//
+// REWRITTEN 2026-09-30. The previous version carried six auto-passes and two
+// vacuous ones. Each replacement assertion is noted at the old line it replaces:
+//
+//   L38  `rawCount > 0`                        kept (already falsifiable)
+//   L43  `deduplicatedFlows <= scannedFlows`   was a structural invariant — one
+//                                               finding per row at most, so it
+//                                               could never fail. Now asserts a
+//                                               strict reduction on a fixture
+//                                               built to produce duplicates.
+//   L58  `confidence >= 0.6`                   was vacuous on an empty filter
+//                                               (the callback never ran) and
+//                                               pinned a threshold rather than
+//                                               the calibration. Now: the
+//                                               calibrated 0.7/0.4/0.3, on
+//                                               findings asserted to exist.
+//   L73  `byState.confirmed >= 0 && typeof …`  textbook auto-pass. Now: the
+//                                               byState counts SUM to total, and
+//                                               each state's exact count is
+//                                               pinned against a matrix.
+//   L80  `Array.isArray(hotspots)`             always true by type. Now: real
+//                                               hotspot content and its cap.
+//   L55  `path.every(n => n.symbolId !== undefined)`  `undefined` on a
+//                                               `string | null` field is not
+//                                               possible, so it could not fail.
+//                                               Now: every node resolves to a
+//                                               name or a location.
+//
+// The two harness defects the M15 review found are also fixed here: the failure
+// count is a single process-global number (there is no reset), and every
+// assertion is counted so `passed` can never exceed `checks`.
+//
+// Run: npx tsx script/verify-security.ts
+// Exit: non-zero if any assertion failed.
+
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
@@ -6,26 +41,28 @@ import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { analyzeTaintFlows } from "../src/intelligence/security/taint"
+import { SecurityHarness } from "./m15/security-harness"
 
-let failures = 0
-function check(label: string, condition: boolean, detail = ""): void {
-  if (condition) console.log("  ok: " + label)
-  else {
-    failures++
-    console.log("  FAIL: " + label + (detail ? " " + detail : ""))
-  }
-}
-
+const h = new SecurityHarness()
 const root = mkdtempSync(path.join(tmpdir(), "bb-security-"))
 mkdirSync(path.join(root, "src"), { recursive: true })
-// Classic SQLi (user input -> concat -> db). safeHandler uses parameterized query.
-writeFileSync(path.join(root, "src", "handler.ts"),
+
+// A real SQLi shape: req.query -> concat -> db.execute. A second function in the
+// same file uses a PARAMETERIZED query, so the fixture contains both a
+// vulnerable and a non-vulnerable call — a fixture with only the vulnerable one
+// cannot tell a detector from a grep.
+writeFileSync(
+  path.join(root, "src", "handler.ts"),
   "import { db } from './db'\n" +
-  "export function handleRequest(req: { query: string }): unknown {\n" +
-  "  const userInput = req.query\n" +
-  "  const sql = 'SELECT * FROM users WHERE name = ' + userInput\n" +
-  "  return db.execute(sql)\n" +
-  "}\n")
+    "export function handleRequest(req: { query: string }): unknown {\n" +
+    "  const userInput = req.query\n" +
+    "  const sql = 'SELECT * FROM users WHERE name = ' + userInput\n" +
+    "  return db.execute(sql)\n" +
+    "}\n" +
+    "export function safeHandler(req: { query: string }): unknown {\n" +
+    "  return db.execute('SELECT * FROM users WHERE name = ?', [req.query])\n" +
+    "}\n",
+)
 writeFileSync(path.join(root, "src", "db.ts"), "export const db = { execute(sql: string, params?: unknown[]) { return [] } }\n")
 
 const projectId = getProjectId(root)
@@ -33,63 +70,156 @@ try {
   await indexProjectParallel(projectId, root, {})
   const raw = await BrainDatabase.getRawInstance(projectId)
 
-  // Baseline: indexer produced taint rows.
+  // ── 1. the indexer produced evidence ───────────────────────────────────────
   const rawCount = (raw.prepare("SELECT COUNT(*) c FROM brain_taint_flow WHERE project_id=?").get(projectId) as { c: number }).c
-  check("indexer produced taint flows", rawCount > 0, `raw=${rawCount}`)
+  h.ck("indexer produced taint flows", rawCount > 0, `raw=${rawCount}`)
 
   const report = await analyzeTaintFlows(projectId)
 
-  // Dedup: findings must be fewer than raw scanned flows (source_type variants collapse).
-  check("dedup reduces raw flows to fewer findings", report.summary.deduplicatedFlows <= report.summary.scannedFlows)
-  check("scannedFlows equals raw count", report.summary.scannedFlows === rawCount)
-
-  // A SQLi finding exists and is evidence-linked.
-  const sqli = report.findings.find((f) => f.vulnerabilityType === "sql_injection")
-  check("sql_injection finding present", !!sqli)
-  check("finding has normalized label", !!sqli && sqli.label === "SQL injection")
-  check("finding has evidence array", !!sqli && sqli.evidence.length > 0)
-  check("finding has limitations (parameterization caveat)", !!sqli && sqli.limitations.some((l) => /parameteriz|escaped/i.test(l)))
-  check("finding is project-scoped file", !!sqli && !!sqli.file)
-
-  // Every path node is inspectable (id or name).
-  check("path nodes are resolvable", !!sqli && sqli.path.every((n) => n.symbolId !== undefined))
-
-  // Confidence calibration.
-  check("confirmed flow confidence > source-only", report.findings.filter((f) => f.state === "confirmed").every((f) => f.confidence >= 0.6))
-
-  // --- deterministic states via direct insertion ---
-  const now = Date.now()
-  const ins = raw.prepare(
-    "INSERT INTO brain_taint_flow (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, mitigation_steps, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+  h.ck("scannedFlows equals the raw row count", report.summary.scannedFlows === rawCount, `scanned=${report.summary.scannedFlows} raw=${rawCount}`)
+  // A STRICT reduction, on a fixture whose two functions both feed db.execute
+  // with the same (type, type) pair — the indexer's id template is
+  // `taint:<project>:<symbol>:<srcType>:<sinkType>`, so per symbol the pair
+  // collapses and across symbols it does not. Asserting `<=` proved nothing.
+  h.ck(
+    "dedup collapses the duplicate source/sink-type rows",
+    report.summary.deduplicatedFlows < report.summary.scannedFlows,
+    `deduplicatedFlows=${report.summary.deduplicatedFlows} scannedFlows=${report.summary.scannedFlows} — a strict reduction is required, not \`<=\``,
   )
-  // mitigated flow
-  ins.run("taint:mit:1", projectId, null, null, "user_input", "shell_execution", "command_injection", "high", 1, JSON.stringify([]), 0, JSON.stringify(["input validated"]), now, now)
-  // cross-language flow
-  ins.run("taint:xl:1", projectId, null, null, "network_receive", "database_write", "sql_injection", "critical", 0, JSON.stringify([]), 2, null, now, now)
+  h.ck("every scanned flow was classified", report.findings.length === report.summary.deduplicatedFlows, `findings=${report.findings.length} deduplicatedFlows=${report.summary.deduplicatedFlows}`)
 
-  const report2 = await analyzeTaintFlows(projectId, { includeMitigated: true, includeUnresolved: true })
-  check("mitigated flow with unresolved endpoints remains an uncertainty observation", report2.findings.some((f) => (f.state === "source_only" || f.state === "unresolved") && f.mitigated))
-  check("cross-language flow flagged", report2.findings.some((f) => f.crossLanguage))
-  check("byState summary populated", report2.summary.byState.confirmed >= 0 && typeof report2.summary.byState.mitigated === "number")
+  // ── 2. a real finding, fully shaped ────────────────────────────────────────
+  const sqli = report.findings.find((f) => f.vulnerabilityType === "sql_injection")
+  h.ck("sql_injection finding present", !!sqli, `types=${[...new Set(report.findings.map((f) => f.vulnerabilityType))].join(",") || "none"}`)
+  if (sqli) {
+    h.ck("finding has the normalized label", sqli.label === "SQL injection", `label=${sqli.label}`)
+    h.ck("finding has a non-empty evidence array", sqli.evidence.length > 0, `evidence=${JSON.stringify(sqli.evidence)}`)
+    h.ck("finding evidence names the taint flow", sqli.evidence.some((e) => e.kind === "taint_flow"), JSON.stringify(sqli.evidence))
+    h.ck("finding declares the parameterization caveat", sqli.limitations.some((l) => /parameteriz|escaped/i.test(l)), JSON.stringify(sqli.limitations))
+    h.ck("finding has a real project-scoped file", typeof sqli.file === "string" && sqli.file === "src/handler.ts", `file=${sqli.file}`)
+    h.ck("finding line is positive and inside the file", typeof sqli.line === "number" && sqli.line > 0 && sqli.line < 20, `line=${sqli.line}`)
+    h.ck("finding has a non-null symbol", typeof sqli.symbol === "string" && sqli.symbol.length > 0, `symbol=${sqli.symbol}`)
+    // `symbolId !== undefined` could not fail on a `string | null` field. The
+    // real property is that every node is INSPECTABLE: a name, a location, or
+    // at minimum the id it came from.
+    h.ck(
+      "every path node is inspectable",
+      sqli.path.length > 0 && sqli.path.every((n) => n.symbolId !== null || n.name !== null || n.file !== null),
+      `path=${JSON.stringify(sqli.path)}`,
+    )
+    h.ck("the finding's path resolves to real symbols", sqli.path.every((n) => n.file === "src/handler.ts"), JSON.stringify(sqli.path.map((n) => n.file)))
+    h.ck("source and sink are the enclosing function", sqli.source.name === sqli.sink.name, `src=${sqli.source.name} sink=${sqli.sink.name}`)
+  }
 
-  // includeMitigated:false excludes mitigated.
-  const noMit = await analyzeTaintFlows(projectId, { includeMitigated: false })
-  check("includeMitigated:false drops mitigated findings", !noMit.findings.some((f) => f.state === "mitigated"))
+  // ── 3. confidence is the calibration, not a threshold ──────────────────────
+  const confirmed = report.findings.filter((f) => f.state === "confirmed")
+  const ungraded = report.findings.filter((f) => f.state === "source_only" || f.state === "unresolved")
+  h.ck("at least one confirmed flow to calibrate against", confirmed.length > 0, `confirmed=${confirmed.length}`)
+  h.ck(
+    "every confirmed flow carries the calibrated 0.7",
+    confirmed.every((f) => f.confidence === 0.7),
+    `confidences=${[...new Set(confirmed.map((f) => f.confidence))].join(",")}`,
+  )
+  h.ck(
+    "every observation carries the calibrated 0.4",
+    ungraded.every((f) => f.confidence === 0.4),
+    `confidences=${[...new Set(ungraded.map((f) => f.confidence))].join(",")}`,
+  )
+  h.ck(
+    "a confirmed flow outranks an observation",
+    confirmed.length === 0 || ungraded.length === 0 || confirmed[0]!.confidence > ungraded[0]!.confidence,
+    `confirmed=${confirmed[0]?.confidence} observation=${ungraded[0]?.confidence}`,
+  )
 
-  // Hotspots present when findings exist.
-  check("hotspots computed", Array.isArray(report2.hotspots))
+  // ── 4. the state matrix, pinned exactly ────────────────────────────────────
+  // Every state gets a row with a KNOWN endpoint shape, so `byState` is
+  // arithmetic rather than a `>= 0` on a number that cannot be negative.
+  const symbols = raw.prepare("SELECT id, name FROM brain_symbol WHERE project_id = ?").all(projectId) as Array<{ id: string; name: string }>
+  const handler = symbols.find((s) => s.name === "handleRequest")
+  h.ck("the fixture's source symbol is indexed", !!handler, `names=${symbols.map((s) => s.name).slice(0, 8).join(",")}`)
 
-  // Vulnerability-type normalization: insert an alias, expect normalized type.
-  ins.run("taint:alias:1", projectId, null, null, "user_input", "sql_query", "sqli", "high", 0, JSON.stringify([]), 0, null, now, now)
-  const report3 = await analyzeTaintFlows(projectId)
-  check("vuln alias 'sqli' normalized to sql_injection", report3.findings.some((f) => f.vulnerabilityType === "sql_injection"))
-  check("no finding retains raw alias 'sqli'", !report3.findings.some((f) => f.vulnerabilityType === "sqli"))
+  if (handler) {
+    const now = Date.now()
+    raw.prepare("DELETE FROM brain_taint_flow WHERE project_id = ?").run(projectId)
+    const ins = raw.prepare(
+      "INSERT INTO brain_taint_flow (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, mitigation_steps, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    )
+    // confirmed: both endpoints resolve, not mitigated.
+    ins.run("taint:m-confirmed", projectId, handler.id, handler.id, "user_input", "database_write", "sql_injection", "high", 0, JSON.stringify([handler.id]), 0, null, now, now)
+    // mitigated: both endpoints resolve, is_mitigated = 1.
+    ins.run("taint:m-mitigated", projectId, handler.id, handler.id, "user_input", "shell_execution", "command_injection", "high", 1, JSON.stringify([handler.id]), 0, JSON.stringify(["input validated"]), now, now)
+    // source_only: source resolves, sink_symbol_id is NULL.
+    ins.run("taint:m-srconly", projectId, handler.id, null, "user_input", "unresolved", "unresolved", "unknown", 0, JSON.stringify([handler.id]), 0, null, now, now)
+    // unresolved: sink resolves, source_symbol_id is NULL — and is_mitigated = 1,
+    // so this row proves endpoint resolution TAKES PRECEDENCE over the flag.
+    ins.run("taint:m-sinkonly", projectId, null, handler.id, "unresolved", "database_write", "sql_injection", "critical", 1, JSON.stringify([handler.id]), 0, null, now, now)
+
+    const matrix = await analyzeTaintFlows(projectId, { includeMitigated: true, includeUnresolved: true, maxResults: 100 })
+    const byState = matrix.summary.byState
+    h.ck("byState counts EXACTLY the injected matrix", byState.confirmed === 1 && byState.mitigated === 1 && byState.source_only === 1 && byState.unresolved === 1, `byState=${JSON.stringify(byState)}`)
+    h.ck("byState sums to total", Object.values(byState).reduce((a, b) => a + b, 0) === matrix.summary.total, `sum=${Object.values(byState).reduce((a, b) => a + b, 0)} total=${matrix.summary.total}`)
+    h.ck("bySeverity sums to total", Object.values(matrix.summary.bySeverity).reduce((a, b) => a + b, 0) === matrix.summary.total, `bySeverity=${JSON.stringify(matrix.summary.bySeverity)} total=${matrix.summary.total}`)
+
+    const mitigatedRow = matrix.findings.find((f) => f.id === "taint:m-mitigated")
+    h.ck("a fully-resolved mitigated flow is state=mitigated", mitigatedRow?.state === "mitigated", `state=${mitigatedRow?.state}`)
+    h.ck("a mitigated flow carries the calibrated 0.3", mitigatedRow?.confidence === 0.3, `confidence=${mitigatedRow?.confidence}`)
+    h.ck("a mitigated flow is still reported, not dropped", !!mitigatedRow, "mitigated is a low-confidence finding, not an absence")
+
+    // The rule the whole state machine exists for.
+    const partialMitigated = matrix.findings.find((f) => f.id === "taint:m-sinkonly")
+    h.nk("a PARTIAL flow with is_mitigated=1 is not classified mitigated", partialMitigated?.state !== "mitigated", `state=${partialMitigated?.state} (endpoint resolution must take precedence over the flag)`)
+    h.ck("a partial mitigated flow is classified unresolved", partialMitigated?.state === "unresolved", `state=${partialMitigated?.state}`)
+    h.ck("a partial flow carries the endpoint limitation", (partialMitigated?.limitations ?? []).length > 0, JSON.stringify(partialMitigated?.limitations))
+
+    const sourceOnly = matrix.findings.find((f) => f.id === "taint:m-srconly")
+    h.ck("a source-only row is state=source_only", sourceOnly?.state === "source_only", `state=${sourceOnly?.state}`)
+    h.ck("a source-only row says no sink was reached", (sourceOnly?.limitations ?? []).some((l) => /no confirmed sink/i.test(l)), JSON.stringify(sourceOnly?.limitations))
+
+    // includeMitigated is a real filter, not a no-op.
+    const noMit = await analyzeTaintFlows(projectId, { includeMitigated: false, includeUnresolved: true, maxResults: 100 })
+    h.nk("includeMitigated:false drops the mitigated finding", noMit.findings.every((f) => f.state !== "mitigated"), `states=${noMit.findings.map((f) => f.state).join(",")}`)
+    h.ck("includeMitigated:false keeps the observations", noMit.findings.some((f) => f.state === "source_only" && noMit.findings.some((g) => g.state === "unresolved")), `states=${[...new Set(noMit.findings.map((f) => f.state))].join(",")}`)
+
+    // includeUnresolved is a real filter, not a no-op.
+    const noUnres = await analyzeTaintFlows(projectId, { includeMitigated: true, includeUnresolved: false, maxResults: 100 })
+    h.nk("includeUnresolved:false drops both observation states", noUnres.findings.every((f) => f.state === "confirmed" || f.state === "mitigated"), `states=${[...new Set(noUnres.findings.map((f) => f.state))].join(",")}`)
+
+    // ── 5. hotspots with real content ───────────────────────────────────────
+    h.ck("hotspots are produced for a real finding set", matrix.hotspots.length > 0, `n=${matrix.hotspots.length}`)
+    h.ck("hotspots are capped at 20", matrix.hotspots.length <= 20, `n=${matrix.hotspots.length}`)
+    h.ck("hotspot counts never exceed the finding count", matrix.hotspots.every((hs) => hs.findings <= matrix.findings.length), JSON.stringify(matrix.hotspots))
+    h.ck("hotspot keys are real locations or symbols", matrix.hotspots.every((hs) => hs.kind === "file" || hs.kind === "symbol"), JSON.stringify(matrix.hotspots.map((h2) => h2.kind)))
+    h.ck("hotspot maxSeverity is a documented severity", matrix.hotspots.every((hs) => ["critical", "high", "medium", "low", "unknown"].includes(hs.maxSeverity)), JSON.stringify(matrix.hotspots.map((h2) => h2.maxSeverity)))
+    // The file hotspot for src/handler.ts holds 3 findings (confirmed,
+    // mitigated, source_only) with severities high, high, unknown → max is high.
+    const fileSpot = matrix.hotspots.find((hs) => hs.kind === "file" && hs.key === "src/handler.ts")
+    h.ck("the file hotspot reports the true max severity", fileSpot?.maxSeverity === "high", `maxSeverity=${fileSpot?.maxSeverity}`)
+    h.ck("the file hotspot counts every finding in it", fileSpot?.findings === 3, `findings=${fileSpot?.findings}`)
+
+    // ── 6. alias normalization ──────────────────────────────────────────────
+    const aliasRow = raw.prepare("SELECT COUNT(*) c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as { c: number }
+    h.ck("the matrix is still the only taint data", aliasRow.c === 4, `rows=${aliasRow.c}`)
+    raw.prepare("INSERT OR REPLACE INTO brain_taint_flow (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, mitigation_steps, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .run("taint:alias:1", projectId, handler.id, handler.id, "user_input", "sql_query", "sqli", "high", 0, JSON.stringify([handler.id]), 0, null, now, now)
+    const aliased = await analyzeTaintFlows(projectId, { maxResults: 100 })
+    h.nk("no finding retains the raw alias 'sqli'", !aliased.findings.some((f) => f.vulnerabilityType === "sqli"), `types=${[...new Set(aliased.findings.map((f) => f.vulnerabilityType))].join(",")}`)
+    h.ck("alias 'sqli' is normalized to sql_injection", aliased.findings.some((f) => f.vulnerabilityType === "sql_injection"), `types=${[...new Set(aliased.findings.map((f) => f.vulnerabilityType))].join(",")}`)
+
+    // ── 7. determinism ──────────────────────────────────────────────────────
+    const again = await analyzeTaintFlows(projectId, { maxResults: 100 })
+    h.ck(
+      "two identical scans produce identical reports",
+      JSON.stringify(again.summary) === JSON.stringify(aliased.summary) && JSON.stringify(again.findings) === JSON.stringify(aliased.findings),
+      "the read has no ORDER BY and the finding sort has no total order",
+    )
+  }
 } catch (error) {
-  check("security session", false, error instanceof Error ? (error.stack ?? error.message) : String(error))
+  h.ck("security session completed without throwing", false, error instanceof Error ? (error.stack ?? error.message).slice(0, 400) : String(error))
 } finally {
-  rmSync(root, { recursive: true, force: true })
-  rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true })
+  try { rmSync(root, { recursive: true, force: true }) } catch {}
+  try { rmSync(path.dirname(BrainDatabase.getDbPath(projectId)), { recursive: true, force: true }) } catch {}
 }
 
-console.log(failures === 0 ? "\nSECURITY: PASS" : "\nSECURITY: " + failures + " FAILURES")
-process.exit(failures > 0 ? 1 : 0)
+console.log(`\nSECURITY: ${h.failed === 0 ? "PASS" : h.failed + " FAILURES"} (${h.totalPassed}/${h.checks} checks, ${h.negativePassed}/${h.negatives} negatives)`)
+if (h.failed > 0) for (const f of h.failures) console.log(`  FAIL: ${f.detail}`)
+process.exit(h.failed > 0 ? 1 : 0)

@@ -573,15 +573,21 @@ emit("X7", "M15.X7", "non-TypeScript language coverage", "x7.json")
   h.ck("X8: the harness never reports passed > checks", probe.totalPassed <= probe.checks, `passed=${probe.totalPassed} checks=${probe.checks}`)
   h.ck("X8: positive and negative assertions are counted separately", probe.passed === 1 && probe.negativePassed === 0, `positives=${probe.passed} negatives=${probe.negativePassed}`)
 
-  // The anti-auto-pass audit, run over this file and its siblings.
-  auditForAutoPass(h, "X8: auto-pass audit", [
-    { file: "script/m15/verify-security-deep.ts", text: readFileSync(path.join(ROOT_DIR, "script/m15/verify-security-deep.ts"), "utf8") },
-    { file: "script/m15/verify-security-regressions.ts", text: readFileSync(path.join(ROOT_DIR, "script/m15/verify-security-regressions.ts"), "utf8") },
-    { file: "script/verify-security.ts", text: readFileSync(path.join(ROOT_DIR, "script/verify-security.ts"), "utf8") },
-    { file: "script/m20/verify-security-flow-boundary.ts", text: readFileSync(path.join(ROOT_DIR, "script/m20/verify-security-flow-boundary.ts"), "utf8") },
-    { file: "script/m20/verify-security-adversarial.ts", text: readFileSync(path.join(ROOT_DIR, "script/m20/verify-security-adversarial.ts"), "utf8") },
-    { file: "script/m20/verify-security-history.ts", text: readFileSync(path.join(ROOT_DIR, "script/m20/verify-security-history.ts"), "utf8") },
-  ])
+  // The auto-pass audit, over this file and its siblings. The full-suite audit
+  // (all 11 security verifiers) lives in m20/verify-security-adversarial.ts;
+  // this is the same detector over the files this suite depends on.
+  const audited = [
+    "script/m15/verify-security-deep.ts",
+    "script/m15/verify-security-regressions.ts",
+    "script/verify-security.ts",
+    "script/m20/verify-security-flow-boundary.ts",
+    "script/m20/verify-security-adversarial.ts",
+    "script/m20/verify-security-history.ts",
+  ]
+  for (const file of audited) {
+    h.ck(`X8: audited verifier exists: ${file}`, existsSync(path.join(ROOT_DIR, file)), "listed in the audit but not on disk")
+  }
+  auditForAutoPass(h, "X8: auto-pass audit", audited.map((file) => ({ file, text: readFileSync(path.join(ROOT_DIR, file), "utf8") })))
 }
 emit("X8", "M15.X8", "entry-point parity + determinism + anti-vacuity", "x8.json")
 
