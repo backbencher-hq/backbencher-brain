@@ -1088,39 +1088,46 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Read from the RIGHT-HAND SIDE only: taking every `name` leaf in the node
     // would include the LHS, producing a `Params uses Params` self-edge.
     if (nameNode) {
-      for (const leaf of this.collectTypeNameLeaves(node, nameNode)) {
-        if (leaf === name) continue
+      for (const leaf of this.collectTypeNameLeafNodes(node, nameNode)) {
+        if (leaf.text.trim() === name) continue
+        // The line is the LEAF's, not the declaration's. A multi-line synonym
+        // (`type ConnectionError =` / `  ConnectionError1` / `  | Maybe ByteString`)
+        // cited its own first line for every `uses` edge, so
+        // `uses ConnectionError -> Maybe` pointed at the `type` keyword and the
+        // name was on neither the cited line nor — for a multi-line RHS — on any
+        // line the reader would land on. The edge belongs to the declaration, but
+        // the DESTINATION is where the type is written.
         this.pushRel(
           ctx,
           name,
-          leaf,
+          leaf.text.trim(),
           ASTEngine.RelationshipType.Uses,
           1.0,
           { evidenceClass: "declared_type" },
-          this.lineOf(node),
+          this.lineOf(leaf),
         )
       }
     }
     return true
   }
 
-  // Type names reachable in a subtree, skipping the subtree rooted at `skip`.
+  // Type-name leaves reachable in a subtree, skipping the subtree rooted at
+  // `skip`, returned as NODES so a caller can cite each one's own line.
   // Haskell type expressions nest arbitrarily (`Map.Map ByteString ByteString`
   // is apply → qualified(name) + name), so this walks rather than reading one
   // level, and it takes `name` and `constructor` only: a `variable` in a type
   // position is a type PARAMETER (`f a`), not a type, and publishing `a` as a
   // use of some type named `a` is exactly the fabrication the declared-type
   // contract forbids.
-  private collectTypeNameLeaves(node: Node, skip: Node | null, out: string[] = []): string[] {
+  private collectTypeNameLeafNodes(node: Node, skip: Node | null, out: Node[] = []): Node[] {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c === skip) continue
       if (c.type === "name" || c.type === "constructor") {
-        const t = c.text.trim()
-        if (t && !out.includes(t)) out.push(t)
+        if (c.text.trim() && !out.some((o) => o.text === c.text)) out.push(c)
         continue
       }
-      this.collectTypeNameLeaves(c, null, out)
+      this.collectTypeNameLeafNodes(c, null, out)
     }
     return out
   }

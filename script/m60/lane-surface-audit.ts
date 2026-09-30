@@ -114,6 +114,17 @@ const isPlaceholderName = (n: string, kind: string): boolean => {
 const CONTRACT_LITERALS: Record<string, ReadonlySet<string>> = {
   constructor: new Set(["constructor"]),
   operator: new Set(["method", "operator", "function"]),
+  // A name the LANGUAGE assigns rather than the source spelling it. Haskell: a
+  // file with no `module` header IS module Main (Haskell 2010 §5.1 — "This
+  // module declaration is missing, so the module is named Main"). The analyzer
+  // synthesises it so that `imports` and `contains` edges have an owner that
+  // exists in the index instead of dangling on the empty string, and the name
+  // therefore cannot be written in the file.
+  //
+  // Disclosed here rather than waived at the check site, because the alternative
+  // is a gate that reports a correct module name as a violation and is therefore
+  // a gate people learn to ignore.
+  main: new Set(["module"]),
 }
 
 function filesUnder(dir: string, exts: string[], out: string[] = [], cap = 100000): string[] {
@@ -237,7 +248,14 @@ async function main() {
           const k = String(s.kind ?? "?")
           kinds.set(k, (kinds.get(k) ?? 0) + 1)
           const n = String(s.name ?? "")
-          if (isPlaceholderName(n, k)) {
+          // A placeholder is a name the analyzer INVENTS. If the source writes the
+          // name itself, it is a real declaration and no sentinel reading applies —
+          // postgrest's `unknown :: Value ByteString` is the encoder for
+          // PostgreSQL's `unknown` type, an ordinary top-level function, and the
+          // `^(unknown|...)$` placeholder regex reported it as a violation. A gate
+          // that calls a correct name a defect is a gate people learn to ignore,
+          // so the test is "synthetic AND unwritten", not "looks like a sentinel".
+          if (isPlaceholderName(n, k) && !src.includes(n)) {
             badNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: JSON.stringify(n), kind: k, line: s.range?.startLine })
           } else if (synthesizedNames.has(n)) {
             // A name the analyzer declares it invented. Counted and disclosed with the
