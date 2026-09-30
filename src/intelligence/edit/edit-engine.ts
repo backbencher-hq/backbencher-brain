@@ -111,7 +111,23 @@ export function resolveSafeEditPath(projectPath: string, requested: string): str
   // it is the nearest existing directory that will hold it.
   const realExisting = realpathSync(existing)
   if (!inside(root, realExisting)) {
-    throw new Error(`path escapes project root: ${requested}${raw === existing ? "" : ` (via ${existing})`}`)
+    // TWO DISTINCT REFUSALS, and the wording is load-bearing rather than
+    // cosmetic. script/m13/verify-edit-unit asserts the exact phrase "through
+    // symlink" for a symlink pointing outside the project and a plain escape for
+    // `../`, and it is right to: they are different failures with different
+    // causes. A `../` is a caller who built a bad path; a symlink escape is a
+    // link inside the project pointing at something outside it, which is a
+    // property of the PROJECT and not of the request. A caller told only
+    // "escapes project root" cannot tell whether to fix their path or go and look
+    // at the tree.
+    //
+    // The first version of this rewrite collapsed both into one message and the
+    // gate failed on the wording — correctly. The refusal was still safe; only
+    // the diagnosis had been lost.
+    const viaSymlink = realExisting !== existing
+    throw new Error(
+      `path escapes project root${viaSymlink ? " through symlink" : ""}: ${requested}${raw === existing ? "" : ` (via ${existing})`}`,
+    )
   }
   if (raw !== existing) {
     // Creating a new file, possibly in directories that do not exist yet. The
