@@ -43,7 +43,28 @@ const CENSUS = path.join(ROOT, "validation/m60/results/solidity-type-census.json
 const argv = process.argv.slice(2)
 
 const nt = JSON.parse(fs.readFileSync(path.join(ROOT, "grammars/tree-sitter-solidity/src/node-types.json"), "utf8"))
-const declared: string[] = nt.filter((n: any) => n.named).map((n: any) => n.type).sort()
+const grammarDeclared: string[] = nt.filter((n: any) => n.named).map((n: any) => n.type).sort()
+
+/**
+ * The universe is 126, not 124, and the difference is not a detail.
+ *
+ * `node-types.json` declares 124 named types. The GATE that reads this section
+ * (`completeness-inventory.ts`) builds its universe from the wasm's own
+ * `nodeTypeForId` walk and then adds an explicit universal `["ERROR", "MISSING"]`
+ * pair, because tree-sitter produces both on every parser while listing neither
+ * in the wasm ABI. So the gate asks about 126 and a spec built from the 124 is
+ * told seven types are in no bucket — which is what the first run of this section
+ * reported, with all seven of them being the five types this section DID classify
+ * (in a shape the gate does not read) plus ERROR and MISSING.
+ *
+ * Both corrections are made here rather than by editing the gate, for the reason
+ * the gate itself gives: "when they disagree, one of them is wrong, and the fix is
+ * never to delete the correct row." The gate's 126 is right — ERROR and MISSING
+ * are real node types the analyzer reads on every file — and this section's 124
+ * was the incomplete side.
+ */
+const UNIVERSAL_RECOVERY = ["ERROR", "MISSING"]
+const declared: string[] = [...grammarDeclared, ...UNIVERSAL_RECOVERY].sort()
 const analyzerSrc = fs.readFileSync(path.join(ROOT, "src/ast/real-solidity-analyzer.ts"), "utf8")
 const namedByAnalyzer = new Set<string>()
 for (const m of analyzerSrc.matchAll(/case "([a-z_0-9]+)":/g)) namedByAnalyzer.add(m[1])
@@ -101,6 +122,44 @@ const DECISIONS: Record<string, { decision: string; rationale: string }> = {
   },
 }
 
+/**
+ * tree-sitter's universal recovery vocabulary, ruled here rather than left to look
+ * like an oversight. `ERROR` is a subtree the parser could not parse and `MISSING`
+ * is a token it INSERTED to keep going — the second is the more dangerous of the
+ * two, because a fabricated token carries no error and no gate keyed on `hasError`
+ * can see it. SOL-6 rules both silent, and the rule is by SOURCE LINE rather than
+ * by subtree: on the fixture that exists to test it, the parser's ERROR covers only
+ * `is not ) valid solidity ( at`, and the tokens `this` and `all` are SIBLINGS of
+ * it. So the ruling is not "an ERROR node emits nothing" but "no symbol and no
+ * relationship may carry a line the parser invented", which covers both node types
+ * and every sibling they leave behind.
+ */
+DECISIONS["ERROR"] = {
+  decision: "internal_silent — and the refusal is by SOURCE LINE, not by subtree",
+  rationale:
+    "SOL-6. An `ERROR` subtree is text the parser could not parse, so every symbol " +
+    "and relationship under it is a guess. The subtree is not the whole region: on " +
+    "validation/m14/fixtures/solidity/recovery-regions-sol6.sol the parser emits an " +
+    "ERROR covering only `is not ) valid solidity ( at` plus a MISSING `;`, and the " +
+    "tokens `this` and `all` are SIBLINGS of that ERROR node, outside its subtree. " +
+    "The first version of SOL-6 skipped the subtree and published a symbol named " +
+    "`all` and a type reference `this` — the parser's guess about garbage, stored as " +
+    "graph fact. So the rule is a pre-pass over ERROR/MISSING line spans, consulted " +
+    "by both emit helpers. The corpus cannot exercise it: 0 damaged files over all " +
+    "389 production files, which is exactly why the fixture forces an ERROR on purpose.",
+}
+DECISIONS["MISSING"] = {
+  decision: "internal_silent — the more dangerous of the pair, for a stated reason",
+  rationale:
+    "A MISSING node is a token the parser INSERTED so it could keep going, so it " +
+    "carries no error of its own: `tree.rootNode.hasError` is true because of it, but " +
+    "the node is fabricated content rather than a report of damage. Every " +
+    "instrument in this repo keyed on `hasError` therefore sees the FILE and not the " +
+    "insertion. SOL-6's line-range rule covers it: the inserted token's line is in the " +
+    "recovery set, so nothing is emitted from it. Pinned by " +
+    "recovery-regions-sol6, whose parser emits a MISSING `;` on line 7.",
+}
+
 const BUCKETS = ["handled_verified", "internal_silent", "gap", "design_decision"] as const
 
 const out = {
@@ -143,7 +202,11 @@ for (const t of declared) {
   const n = counts[t] ?? 0
   const base = { type: t, corpusCount: n, namedByAnalyzer: namedByAnalyzer.has(t) }
   if (DECISIONS[t]) {
-    out.design_decision.decisions.push({ ...base, ...DECISIONS[t] })
+    // `node_type` is the key completeness-inventory.ts READS for a decision row;
+    // the first draft used `type`, so the gate reported five correctly-ruled types
+    // as unclassified. A field name the consumer does not read is indistinguishable
+    // from a missing row.
+    out.design_decision.decisions.push({ node_type: t, ...base, ...DECISIONS[t] })
   } else if (namedByAnalyzer.has(t)) {
     out.handled_verified.types.push(t)
   } else if (SILENCE_REASONS[t]) {
