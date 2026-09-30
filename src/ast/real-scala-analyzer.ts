@@ -1111,12 +1111,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         : start.parent
       while (p) {
         if (p.type === "function_definition" || p.type === "function_declaration") {
-          const name = this.findChild(p, "identifier")
-          if (name) return name.text
+          const name = this.scalaDeclaredNameOf(p)
+          if (name) return name
         }
         if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition" || p.type === "enum_definition") {
-          const name = this.findChild(p, "identifier")
-          if (name) return name.text
+          const name = this.scalaDeclaredNameOf(p)
+          if (name) return name
         }
         p = p.parent
       }
@@ -1386,12 +1386,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         : start ? start.parent : null
       while (p) {
         if (p.type === "function_definition" || p.type === "function_declaration") {
-          const name = this.findChild(p, "identifier")
-          if (name) return name.text
+          const name = this.scalaDeclaredNameOf(p)
+          if (name) return name
         }
         if (p.type === "class_definition" || p.type === "object_definition" || p.type === "trait_definition" || p.type === "enum_definition") {
-          const name = this.findChild(p, "identifier")
-          if (name) return name.text
+          const name = this.scalaDeclaredNameOf(p)
+          if (name) return name
         }
         p = p.parent
       }
@@ -2749,12 +2749,29 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // aliased) because `parts` IS the target.
     let moduleLine = node.startPosition.row + 1
 
+    // M60/S7: quoting is not part of a NAME, so it is stripped from every
+    // segment of the module path — the same rule createSymbol applies to every
+    // symbol (M60 #924, whose comment states that factory is "the one place
+    // every published scala name is built"). handleImport was the one site that
+    // built a published name from raw node text, so
+    // `import scala.language.`2.13`` published an `imp.module` AND a
+    // `references` target of "scala.language.`2.13`" — a name no other edge can
+    // spell, since the only other way to write that package is
+    // `scala.language.2.13` (and `2.13` is backticked precisely because it is
+    // not a legal Scala identifier). The reference could not join to anything.
+    //
+    // Measured on the full corpus (script/m14/tmp/scala-quoting-census.ts):
+    // 658 of 23,650 import declarations in scala3 carry a backticked path
+    // segment; cats-effect has 0 of 1,337. The 60-file lane rotation drew 8 of
+    // them, which is why the differential saw the disagreement at all.
+    const part = (text: string): string => stripScalaQuoting(text)
+
     for (let i = 0; i < node.childCount; i++) {
       const child = node.child(i)
       if (!child) continue
 
       if (child.type === "identifier" || child.type === ".") {
-        if (child.type === "identifier") { parts.push(child.text); moduleLine = child.startPosition.row + 1 }
+        if (child.type === "identifier") { parts.push(part(child.text)); moduleLine = child.startPosition.row + 1 }
       } else if (child.type === "namespace_wildcard") {
         selectors.push({ local: "*", imported: "*" })
       } else if (child.type === "namespace_selectors") {
@@ -2773,7 +2790,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
             const imported = sel.namedChild(0)
             const local = sel.namedChild(1)
             if (imported && local) {
-              parts.push(imported.text)
+              parts.push(part(imported.text))
               moduleLine = imported.startPosition.row + 1
               selectors.push({ local: local.text, imported: imported.text })
             }
@@ -2786,7 +2803,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const original = child.namedChild(0)
         const alias = child.namedChild(1)
         if (original && original.type === "identifier") {
-          parts.push(original.text)
+          parts.push(part(original.text))
           moduleLine = original.startPosition.row + 1
           selectors.push({ local: alias && alias.type === "identifier" ? alias.text : original.text, imported: original.text })
         }
@@ -2837,6 +2854,34 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (node.type === "identifier") return node
     const first = node.namedChild(0)
     return first ? this.leftmostIdentifier(first) : null
+  }
+
+  /**
+   * The DECLARED NAME of a definition, read from its `name:` FIELD.
+   *
+   * M60/S8: this replaces "first child of type identifier", which is wrong for
+   * an operator-named method. `def <&[B](that: IO[B]): IO[A]` carries its name
+   * as an `operator_identifier`, so the first `identifier` child is the TYPE
+   * PARAMETER `B` — and `resolveSource` then attributed every reference inside
+   * that method to a type parameter named `B`. Two failures in one: the edge's
+   * source is a binding rather than a declaration, and because the edge dedupe
+   * key is (source, target, kind), every operator-named method in a file
+   * collapses onto ONE bogus source, so the edge COUNT drops too.
+   *
+   * Measured on cats-effect/core/shared/src/main/scala/cats/effect/IO.scala,
+   * where the operators `<*`, `<&`, `*>`, `>>`, `!>`, `&>` are the only sources
+   * the derived truth attributes references to and the analyzer does not: 26
+   * rows on the whole cats-effect corpus, and the whole of a 60-file rotation
+   * read clean because the draw did not include this file.
+   *
+   * The lane's comparison matches on (label, target), so it cannot see a wrong
+   * SOURCE at all — which is why this survived the `uses` audit at 100% too:
+   * collectExpressionUses carries the same resolveSource.
+   */
+  private scalaDeclaredNameOf(node: Node): string | null {
+    const f = node.childForFieldName?.("name")
+    if (f) return f.text
+    return this.findChild(node, "identifier")?.text ?? null
   }
 
   private findChild(node: Node, type: string): Node | null {

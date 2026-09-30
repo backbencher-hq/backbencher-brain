@@ -3535,6 +3535,359 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   return edges
 }
 
+export function deriveScalaReferencesTruth(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const emitted = new Set<string>()
+  // The analyzer's own dedupe key is (source, target, kind) PER FILE, so two
+  // declarations of the same type in one scope produce one edge. The harness
+  // collapses the analyzer side by (label, target) anyway; keeping the kind in
+  // the key here is strictly more informative and cannot lose a row.
+  const push = (source: string, target: string, kind: string): void => {
+    if (!source || !target) return
+    const t = stripNameQuoting(String(target).trim())
+    if (!t) return
+    const key = `${source}|${t}|${kind}`
+    if (emitted.has(key)) return
+    emitted.add(key)
+    edges.push({ label: "references", from: source, target: t })
+  }
+
+  // ── helpers, each mirroring the SHAPE it reads and never the analyzer's state ──
+
+  const childOfType = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  const namedChildOfType = (n: any, t: string): any => {
+    if (!n) return null
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === t) return c
+    }
+    return null
+  }
+  // ≡ /type$/ on the node type, or the two exact type-identifier forms.
+  // Deliberately NOT `includes("identifier")`: that would admit the `name:`
+  // identifier of the declaration itself.
+  const isTypePosition = (t: string): boolean =>
+    t.endsWith("type") || t === "type_identifier" || t === "stable_type_identifier"
+
+  const TYPE_DECLS = new Set([
+    "class_definition", "object_definition", "trait_definition", "enum_definition",
+  ])
+  const FN_DECLS = new Set(["function_definition", "function_declaration"])
+
+  // The nearest enclosing DECLARATION's name — the source of a reference.
+  // Read from the `name:` FIELD, so an operator-named method (`def !>`) is named
+  // `!>` and not by its first parameter. The analyzer's resolveSource uses
+  // "first child of type identifier", which for `def !>(x: Int)` is `x`; that
+  // divergence is a SOURCE-side defect and is measured separately (it cannot
+  // affect this label's coverage, because the lane matches on (label, target)).
+  const declName = (n: any): string => {
+    const f = n.childForFieldName?.("name")
+    return f ? String(f.text) : ""
+  }
+  const resolveSource = (start: any): string => {
+    let p: any = FN_DECLS.has(start?.type) ? start : start?.parent
+    while (p) {
+      if (FN_DECLS.has(p.type) || TYPE_DECLS.has(p.type)) {
+        const nm = declName(p)
+        if (nm) return nm
+      }
+      p = p.parent
+    }
+    return "(script)"
+  }
+
+  // The type NAMES inside a type expression, depth-first. Two nodes STOP the
+  // walk: `type_identifier` (a bare name) and `stable_type_identifier` (a
+  // qualified name — `js.Object` is one target, not two). Everything else is
+  // transparent, which is what makes `List[Map[K, V]]` publish List, Map, K
+  // and V.
+  const collectTypeNames = (n: any, out: Array<{ name: string; line: number }>): void => {
+    if (!n) return
+    const add = (raw: string): void => {
+      if (raw === "throws") return
+      if (out.some((x) => x.name === raw)) return
+      out.push({ name: raw, line: n.startPosition.row + 1 })
+    }
+    if (n.type === "type_identifier") { add(String(n.text)); return }
+    if (n.type === "stable_type_identifier") { add(String(n.text)); return }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) collectTypeNames(c, out)
+    }
+  }
+
+  const leafOf = (raw: string): string => (raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw)
+
+  const emit = (decl: any, roots: any[], kind: string, sourceOverride?: string, leafOnly = false): void => {
+    const source = sourceOverride ?? resolveSource(decl)
+    for (const r of roots) {
+      if (!r) continue
+      const names: Array<{ name: string; line: number }> = []
+      collectTypeNames(r, names)
+      for (const { name } of names) push(source, leafOnly ? leafOf(name) : name, kind)
+    }
+  }
+
+  // The analyzer's primary-type rewrite for import edges: a file's import
+  // references carry the file's first top-level TYPE, not the "(script)"
+  // sentinel, when the file declares one. Derived here from the declaration
+  // list (not from the analyzer's symbol table — hygiene 6), so it is an
+  // independent statement of the same rule.
+  const primaryTypeName = (): string => {
+    let best = ""
+    let bestStart = Number.POSITIVE_INFINITY
+    const scan = (n: any): void => {
+      if (TYPE_DECLS.has(n.type)) {
+        const nm = declName(n)
+        if (nm && n.startIndex < bestStart) { best = nm; bestStart = n.startIndex }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scan(c)
+      }
+    }
+    scan(root)
+    return best
+  }
+
+  // ── class 1: IMPORTS ──────────────────────────────────────────────────────
+  // `import a.b.{c, d as e}` publishes the dotted module with the RENAMED
+  // segment restored (`scala.collection.{immutable => im}` -> the module keeps
+  // `immutable`), because the edge names the module, and the alias is not part
+  // of it. A wildcard selector contributes nothing to the path.
+  const importPathOf = (n: any): string => {
+    const parts: string[] = []
+    for (let i = 0; i < n.childCount; i++) {
+      const child = n.child(i)
+      if (!child) continue
+      if (child.type === "identifier") parts.push(String(child.text))
+      else if (child.type === "namespace_selectors") {
+        for (let j = 0; j < child.childCount; j++) {
+          const sel = child.child(j)
+          if (!sel) continue
+          if (sel.type === "identifier") { /* a plain selector is not part of the path */ }
+          else if (sel.type === "arrow_renamed_identifier") {
+            const imported = sel.namedChild(0)
+            if (imported) parts.push(String(imported.text))
+          }
+        }
+      } else if (child.type === "as_renamed_identifier") {
+        const original = child.namedChild(0)
+        if (original && original.type === "identifier") parts.push(String(original.text))
+      }
+    }
+    return parts.join(".")
+  }
+
+  // ── class 2: THROW TARGETS ───────────────────────────────────────────────
+  // `throw new IllegalArgumentException("x")` — a call-shaped throw, whose
+  // callee leaf names the type (S1.14); `throw ex` names the identifier;
+  // `throw a.b` keeps the dotted path; a bare instance_expression prefers the
+  // generic_type's HEAD so `new List[Int](x)` is `List` and not `List[Int]`.
+  const throwTargetOf = (thrown: any): string => {
+    if (!thrown) return ""
+    if (thrown.type === "instance_expression") {
+      const typeNode = thrown.namedChild(0)
+      if (!typeNode) return ""
+      return typeNode.type === "generic_type" ? String(typeNode.namedChild(0)?.text ?? typeNode.text) : String(typeNode.text)
+    }
+    if (thrown.type === "identifier") return String(thrown.text)
+    if (thrown.type === "call_expression") {
+      const callee = thrown.childForFieldName("function")
+      if (!callee) return ""
+      const kids: string[] = []
+      for (let i = 0; i < callee.namedChildCount; i++) {
+        const c = callee.namedChild(i)
+        if (c && c.type === "identifier") kids.push(String(c.text))
+      }
+      if (kids.length > 0) return kids[kids.length - 1]
+      const t = String(callee.text)
+      const b = t.indexOf("(")
+      return b >= 0 ? t.slice(0, b).split("[")[0] : t.split("[")[0]
+    }
+    if (thrown.type === "field_expression") return String(thrown.text)
+    return ""
+  }
+
+  // ── class 3: the DECLARED-TYPE graph ─────────────────────────────────────
+  const importPaths: string[] = []
+  const walk = (n: any): void => {
+    switch (n.type) {
+      case "throw_expression":
+      case "throw": {
+        const target = throwTargetOf(n.namedChild(0))
+        if (target) push(resolveSource(n), target, "throw_target")
+        break
+      }
+      case "import_declaration": {
+        const p = importPathOf(n)
+        if (p) importPaths.push(p)
+        break
+      }
+      case "given_definition": {
+        const roots: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && isTypePosition(c.type)) roots.push(c)
+        }
+        if (roots.length) emit(n, roots, "given_definition")
+        break
+      }
+      case "class_parameter":
+      case "parameter": {
+        emit(n, [n], n.type)
+        break
+      }
+      case "val_definition":
+      case "var_definition":
+      case "val_declaration":
+      case "var_declaration": {
+        const roots: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && isTypePosition(c.type)) roots.push(c)
+        }
+        if (roots.length) emit(n, roots, n.type)
+        break
+      }
+      case "annotation": {
+        const gt = namedChildOfType(n, "generic_type")
+        if (gt && gt.namedChild(0)?.text === "throws") {
+          const argsNode = namedChildOfType(gt, "type_arguments")
+          if (argsNode) emit(n, [argsNode], "throws_annotation")
+        }
+        break
+      }
+      case "function_definition":
+      case "function_declaration": {
+        let sawParams = false
+        const hasParamsClause = namedChildOfType(n, "parameters") !== null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "parameters") { sawParams = true; continue }
+          // A `@throws[T]` clause parses as generic_type("throws", [T]) and
+          // sits BEFORE the parameter list; the `throws` token itself is not a
+          // reference, its ARGUMENTS are.
+          if (c.type === "generic_type" || c.type === "type_identifier" || c.type === "function_type" || c.type === "tuple_type" || c.type === "stable_type_identifier") {
+            if (!sawParams && c.namedChild(0)?.text === "throws") {
+              const argsNode = namedChildOfType(c, "type_arguments")
+              if (argsNode) emit(n, [argsNode], "throws_annotation")
+              continue
+            }
+            // A PARAMETERLESS def (`def size: Int`) has no parameters clause, so
+            // its type child IS the return type. A type child BEFORE the
+            // parameter list of a def that HAS one is neither (it is the
+            // `@throws` form, handled above).
+            const isReturn = sawParams || !hasParamsClause
+            emit(n, [c], c.type === "tuple_type" ? "tuple_type" : (isReturn ? "return_type" : "annotation_type"))
+          }
+        }
+        break
+      }
+      case "call_expression": {
+        const fn = n.childForFieldName?.("function")
+        const fnText = fn ? String(fn.text) : ""
+        if (fnText.endsWith("asInstanceOf") || fnText.endsWith("isInstanceOf")) {
+          const args = n.childForFieldName?.("arguments") ?? namedChildOfType(n, "type_arguments")
+          if (args) emit(n, [args], fnText.endsWith("asInstanceOf") ? "cast_target" : "instanceof_check")
+        }
+        break
+      }
+      case "generic_function": {
+        // `x.asInstanceOf[T]` parses as generic_function, not call_expression.
+        const fe = namedChildOfType(n, "field_expression")
+        const tail = fe ? String(fe.namedChild(fe.namedChildCount - 1)?.text ?? "") : ""
+        if (tail === "asInstanceOf" || tail === "isInstanceOf") {
+          const args = namedChildOfType(n, "type_arguments")
+          if (args) emit(n, [args], tail === "asInstanceOf" ? "cast_target" : "instanceof_check")
+        }
+        break
+      }
+      case "typed_pattern": {
+        const last = n.namedChild(n.namedChildCount - 1)
+        if (last) emit(n, [last], "pattern_type")
+        break
+      }
+      case "case_class_pattern": {
+        const first = n.namedChild(0)
+        if (first) emit(n, [first], "pattern_type")
+        break
+      }
+      case "derives_clause": {
+        // LEAF targets only: `derives scala.util.hashing.Hashing` references
+        // `Hashing`, the family last-segment convention (the G6 pin).
+        emit(n, [n], "derives_clause", undefined, true)
+        break
+      }
+      case "type_definition": {
+        // The alias's own NAME is the source, and its type PARAMETERS are
+        // bindings rather than references, so both are excluded from the RHS.
+        const tName = namedChildOfType(n, "type_identifier") ?? namedChildOfType(n, "identifier")
+        if (tName) {
+          const rhs: any[] = []
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c !== tName && c.type !== "type_parameters") rhs.push(c)
+          }
+          emit(n, rhs, "type_definition", String(tName.text))
+        }
+        break
+      }
+      case "self_type": {
+        const last = n.namedChild(n.namedChildCount - 1)
+        if (last) emit(n, [last], "self_type")
+        break
+      }
+      case "field_expression": {
+        // `Foo.bar` as a METHOD VALUE references the type `Foo`. A call
+        // position is skipped (the call edge carries it) and a lowercase
+        // receiver is a read, not a reference (G8).
+        const p = n.parent
+        const isCallFn = p && p.type === "call_expression" && p.childForFieldName?.("function")?.startIndex === n.startIndex
+        if (!isCallFn) {
+          const recv = leftmostIdentifier(n)
+          if (recv && recv.text.length > 0) {
+            const c0 = recv.text.charCodeAt(0)
+            if (c0 >= 65 && c0 <= 90) push(resolveSource(n), String(recv.text), "field_expression")
+          }
+        }
+        break
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+
+  const leftmostIdentifier = (node: any): any => {
+    let n: any = node
+    for (let guard = 0; n && guard < 32; guard++) {
+      if (n.type === "identifier") return n
+      n = n.namedChild(0)
+    }
+    return null
+  }
+
+  walk(root)
+
+  // The import edges are emitted LAST, on the file's primary top-level type when
+  // it declares one and on the "(script)" sentinel otherwise — the analyzer does
+  // the same rewrite as a post-pass, and it has to be a post-pass because the
+  // primary type is usually declared AFTER the imports.
+  const primary = primaryTypeName()
+  for (const p of importPaths) push(primary || "(script)", p, "import")
+  return edges
+}
+
 export function deriveScalaEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -19861,6 +20214,16 @@ async function main() {
         for (const e of deriveScalaContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 S4: scala `references` — 7,330 edges on cats-effect and 7,751 on
+        // scala3 at 200 files, the largest class the analyzer published and,
+        // with uses and contains, the last one compared by nothing. Three
+        // classes: imports, throw targets, and the declared-type graph (sixteen
+        // positions). Before this the allowlist dropped every one of them, so
+        // the lane could not have caught a type reference going missing even
+        // once — the same shape the kotlin K6 and the #910 c-imports gaps record.
+        for (const e of deriveScalaReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "groovy") {
         // M37.21 #610: groovy calls oracle (JD-oracle gap, java precedent).
@@ -20281,6 +20644,13 @@ async function main() {
           // precedent is the largest single change in that lane's review and
           // this is the same shape, one corpus over.
           ...(lang === "kotlin" ? ["references"] : []),
+          // M60 S4: scala joins the references-audited set — 7,330 edges on the
+          // primary corpus at 200 files, 42% of everything the analyzer
+          // publishes, compared by nothing before this. Enabling the oracle
+          // without the allowlist entry would have measured zero covered edges
+          // (the G7 shape), and enabling the allowlist without the oracle would
+          // have reported every reference as fabrication. Both halves land here.
+          ...(lang === "scala" ? ["references"] : []),
           // JD14 (M60, 2026-09-26): javascript joins the CONTAINS-audited set.
           // The label was excluded by construction before this change, so the
           // lane could not have caught containment going missing even once — and
