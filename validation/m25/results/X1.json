@@ -2,23 +2,33 @@
   "issue": "507",
   "code": "X1",
   "milestone": "M25",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 37,
-  "passed": 37,
-  "failed": 0,
-  "failures": [],
+  "passed": 28,
+  "failed": 9,
+  "failures": [
+    "X1: E4 verifier passes at HEAD — exit=1",
+    "X1: V1 verifier passes at HEAD — exit=1",
+    "X1: E5 verifier passes at HEAD — exit=1",
+    "X1: D1 verifier passes at HEAD — exit=1",
+    "X1: D1i verifier passes at HEAD — exit=1",
+    "X1: v1 completion bar audited item-by-item — zero violations — bar1: no fork verified at I4 (or all forks blocked with owner waiver — not recorded)",
+    "X1: E4 regeneration run passes — exit=1",
+    "X1: V1 evidence byte-identical modulo generatedAt",
+    "X1: D1 regeneration run passes — exit=1"
+  ],
   "negativeCases": 3,
   "suiteExits": {
     "E1": 0,
     "E2": 0,
     "E3": 0,
-    "E4": 0,
-    "V1": 0,
-    "E5": 0,
+    "E4": 1,
+    "V1": 1,
+    "E5": 1,
     "E6": 0,
     "E7": 0,
-    "D1": 0,
-    "D1i": 0
+    "D1": 1,
+    "D1i": 1
   },
   "section6": [
     {
@@ -62,10 +72,10 @@
       "where": "planted HERE against the status surface's law-budget"
     }
   ],
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "currentCommit": "60eb13ef336ab90173fd7df14e6d387c8f1ccdfd",
   "verifierCommand": "npx tsx script/m25/verify-closure.ts",
   "evidenceFile": "X1.json",
-  "generatedAt": "2026-09-20T02:22:46.483Z",
+  "generatedAt": "2026-09-29T06:54:37.213Z",
   "limitations": [
     "Editor-leg regeneration is 're-runs green at the same HEAD', not byte-identity: E5/E6/D1-install evidence embeds live timings and machine data by design; their freshness at HEAD is the governance stale-commit gate's contract.",
     "The completion bar's publish item is met at the pipeline level (E4 verified; live OpenVSX publish is owner-gated via OVSX_PAT and recorded blocked-with-reason — the waiver decision stays the owner's).",
@@ -73,7 +83,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:22:46.484Z",
-    "contentSha256": "29eb6a62060bfd6f1d3afeb8511fbada8960a3df49db6a22a23113e3c27cb776"
+    "sealedAt": "2026-09-29T06:54:37.215Z",
+    "contentSha256": "6eaeac5cc5579310c2bd29d7e484472eb2fc59a60c75b3db84d3f54e038f660c"
   }
 }
