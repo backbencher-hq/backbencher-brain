@@ -266,7 +266,16 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-python-analyzer.md"],
     differentialCheck: "differential-python",
     perfKey: "cython:python",
-    requiredKinds: ["calls", "extends", "instantiates", "uses", "contains", "imports", "references"],
+    // PY-12. `overrides` and `exports` were MISSING from this list while the analyzer
+    // emitted both (measured over 150 ansible files: calls 8,797, uses 5,813, contains
+    // 1,720, imports 1,211, references 630, overrides 428, extends 188, instantiates 78,
+    // exports 9). Section B checks that every REQUIRED kind is pinned by a fixture, so a
+    // kind that is emitted but not required cannot fail — which is the gate-blind zone
+    // this whole review is about, and it is not hypothetical: `overrides` is the relation
+    // PY-6, PY-7 and PY-8 all concern, and while it sat outside the required list the
+    // gate had nothing to say about any of them. `exports` was worse: emitted, unpinned
+    // by ANY fixture, and unrequired, so nothing in the repository could see it at all.
+    requiredKinds: ["calls", "extends", "instantiates", "uses", "contains", "imports", "references", "overrides", "exports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "python/payload-and-complexity" },
     },
