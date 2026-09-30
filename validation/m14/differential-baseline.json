@@ -3,7 +3,12 @@
   "loadContext": {
     "loadAvgStart": 41.85,
     "loadAvgEnd": 39.16,
-    "sliceCount": 1
+    "sliceCount": 1,
+    "solidityRow": {
+      "loadAvg1AtPerf": 14.75,
+      "perfIsQualified": false,
+      "why": "M60: a perFileMs measured above loadAvg1 ~8 is contention, not a lane budget. A sibling lane's artifact published 228 -> 246 -> 91 ms/file across three runs of an UNCHANGED analyzer, and nothing recorded the machine, so a reader could not tell. This row's 5.3 ms/file is therefore recorded WITH its load and flagged unqualified; the number is a measurement, not a budget, and the surface measure's own perfIsQualified carries the same verdict for the 389-file corpus draw."
+    }
   },
   "counts": {
     "java": {
@@ -1461,7 +1466,7 @@
         "avgMsPerFile": 1.408,
         "filesMeasured": 185,
         "loadAvg1AtMeasure": 30.85,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
       },
       "sampleSetHash": "def94838c364b04e"
@@ -1478,7 +1483,7 @@
         "avgMsPerFile": 13.964,
         "filesMeasured": 191,
         "loadAvg1AtMeasure": 29.77,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
       },
       "sampleSetHash": "13f8825d05114cf8"
@@ -1532,8 +1537,8 @@
       },
       "grammarResidual": {
         "files": 15,
-        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment — the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
-        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained — a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
+        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment \u2014 the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
+        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained \u2014 a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
       },
       "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
     },
@@ -1567,10 +1572,19 @@
         "avgMsPerFile": 21.691,
         "filesMeasured": 160,
         "loadAvg1AtMeasure": 35.63,
-        "method": "analyze() only, min of 5 runs after 2 warmups — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs after 2 warmups \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
       },
       "sampleSetHash": "dd6619b1d6986840"
+    },
+    "solidity:solidity": {
+      "missing": 2,
+      "unexplained": 18,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 5.3
+      },
+      "sampleSetHash": "e9708e750546e983"
     }
   },
   "hashes": {
@@ -1626,6 +1640,7 @@
     "grails-core:css": "13f8825d05114cf8",
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
-    "element-plus:scss": "dd6619b1d6986840"
+    "element-plus:scss": "dd6619b1d6986840",
+    "solidity:solidity": "e9708e750546e983"
   }
 }

@@ -767,6 +767,41 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   },
   title: "powershell wave (M14 #277, PS-G1..PS-G8, PSD1..PSD6)",
 },
+  // M60 Solidity lane. `requiredKinds` are the nine the ontology declares and this
+  // lane EMITS as edges; `imports` is deliberately modelled as an import-annotated
+  // `references` edge (`metadata.import: true`), the settled convention for this repo
+  // and the same reason PowerShell's list omits it — so it is checked through that
+  // annotation and through `expectImports` rather than as its own kind.
+  //
+  // `floorResidual` is the HONEST F5 floor rather than a clean 0/0, and it is the
+  // reason the section carries one at all. Measured on the 60-file draw: 99.9%
+  // coverage, 2 MISSING, 18 unexplained. Both residues are itemised into classes
+  // with reasons in validation/m60/results/solidity-unexplained-adjudication.json —
+  // the 8 MISSING rows are all one class (a `type(IFoo).interfaceId` mention of an
+  // interface declared in ANOTHER file, which a per-file analyzer cannot see), and
+  // the unexplained rows are `uses` naming a member of a built-in type, which
+  // Solidity offers no syntax to separate from a project member. Both are SCOPE
+  // limits with a named class each, not fabrications rounded away — and a 0/0 floor
+  // here would have been a claim, not a measurement.
+  solidity: {
+  id: "solidity",
+  wasm: "tree-sitter-solidity.wasm",
+  classification: "solidity-completeness.json",
+  fixturesDir: "validation/m14/fixtures/solidity",
+  docs: ["docs/analyzers/real-solidity-analyzer.md"],
+  differentialCheck: "differential-solidity",
+  perfKey: "solidity:solidity",
+  floorResidual: {
+    missing: 2,
+    unexplained: 18,
+    ruling: "SOL-SCOPE",
+  },
+  requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports"],
+  payloads: {
+    complexity: { key: "expectComplexity", pin: "solidity/branches-sol (every branch construct in the language, so a branch set that loses one drops the number below 12 and fails)" },
+  },
+  title: "solidity wave (M60, SOL-1..SOL-14) — grammar pinned byte-identical to npm tree-sitter-solidity@1.2.13, zero local patches",
+},
   scss: {
   id: "scss",
   wasm: "tree-sitter-scss.wasm",
