@@ -51,6 +51,27 @@ export interface MigrationPlanResult {
     withConfidence: number
   }
   dependencyOrder: string[]
+  /** The order grouped into parallel-workable layers; waves[0] can start now. */
+  waves: string[][]
+  /**
+   * How much of the integration surface this request actually covers.
+   *
+   * Measured on cobra, the number that motivated this: for requests of 1, 2, 4,
+   * 8 and 16 symbols, 99.8%, 99.6%, 99.4%, 99.4% and 98.6% of the cited
+   * integration points have their OTHER endpoint outside the requested set. The
+   * tool was printing a confident effort total for what is, in effect, one to
+   * two per cent of the work. `completeness` is the in-scope ratio and
+   * `outOfScope` names the gap instead of absorbing it into a total.
+   */
+  scope: {
+    integrationPoints: number
+    inScope: number
+    outOfScope: number
+    unresolvable: number
+    /** inScope / integrationPoints, 0..1; null when no edges are indexed at all. */
+    completeness: number | null
+    statement: string
+  }
   dependencyGraph: MigrationDependencyGraph
   unsupported: Array<{
     symbolName: string
@@ -214,6 +235,46 @@ export function computeDependencyOrder(symbolNames: string[], relationships: Mig
   return { order, graph: { edges, unresolvedDependencies, cycles, orderingStatus } }
 }
 
+/**
+ * Group the dependency order into migration WAVES: the sets a team can work on
+ * in parallel, in the order they unblock each other.
+ *
+ * A dependency-first total order is not an answer to "where do we start". A team
+ * wants the first batch. Wave 0 holds every requested symbol with no unresolved
+ * in-scope dependency; wave n holds those that become startable only after
+ * wave n-1.
+ *
+ * Derived arithmetic over the same edge set the order uses — no new constants
+ * and no new claim. If the graph is cyclic, a cycle's members land in whichever
+ * wave their other dependencies put them, so `orderingStatus` must be read
+ * alongside: a cyclic graph does not decompose into waves.
+ */
+export function computeMigrationWaves(order: string[], relationships: MigrationDependencyEdge[]): string[][] {
+  const position = new Map<string, number>()
+  order.forEach((name, index) => position.set(name, index))
+  const depth = new Map<string, number>()
+  for (const name of order) {
+    let d = 0
+    for (const edge of relationships) {
+      if (edge.dependent !== name) continue
+      // Only an IN-SCOPE, resolvable dependency can push a wave. An edge to a
+      // symbol outside the request is a SCOPE GAP, not an ordering constraint —
+      // treating it as one would park every component behind a dependency the
+      // caller never asked to migrate.
+      if (!position.has(edge.dependency)) continue
+      d = Math.max(d, (depth.get(edge.dependency) ?? 0) + 1)
+    }
+    depth.set(name, d)
+  }
+  const waves: string[][] = []
+  for (const name of order) {
+    const d = depth.get(name) ?? 0
+    while (waves.length <= d) waves.push([])
+    waves[d].push(name)
+  }
+  return waves
+}
+
 export async function generateMigrationPlans(projectId: string, request: MigrationRequest): Promise<MigrationPlanResult> {
   const requestedNames = request.symbolNames.map((name) => String(name).trim()).filter(Boolean)
   // Deduplicate CASE-SENSITIVELY, preserving the caller's spelling.
@@ -321,6 +382,34 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const deduplicated = requestedNames.length - uniqueNames.length
   const capped = uniqueNames.length - names.length
 
+  // Scope completeness: an integration point is IN scope when its other endpoint
+  // is one of the requested symbols. Everything else is a caller the caller did
+  // not ask about, and a port that ignores them does not work.
+  const requestedIds = new Set(plans.map((plan) => plan.symbolId))
+  let scopeIntegrationPoints = 0
+  let scopeInScope = 0
+  let scopeUnresolvable = 0
+  for (const plan of plans) {
+    for (const edge of plan.relationshipEvidence ?? []) {
+      if (edge.isIntegrationPoint === false) continue
+      scopeIntegrationPoints++
+      if (edge.endpointsResolved !== true) {
+        scopeUnresolvable++
+        continue
+      }
+      const other = edge.sourceSymbolId === plan.symbolId ? edge.targetSymbolId : edge.sourceSymbolId
+      if (other && requestedIds.has(other)) scopeInScope++
+    }
+  }
+  const scopeOutOfScope = scopeIntegrationPoints - scopeInScope
+  const completeness = scopeIntegrationPoints ? scopeInScope / scopeIntegrationPoints : null
+  const scopeStatement =
+    scopeIntegrationPoints === 0
+      ? "no integration points are indexed for these components, so this request covers no known integration surface"
+      : completeness !== null && completeness < 0.5
+        ? `${scopeInScope} of ${scopeIntegrationPoints} integration points (${(completeness * 100).toFixed(1)}%) are inside this request; ${scopeOutOfScope} belong to components that were not asked for, so these plans alone are NOT a complete migration`
+        : `${scopeInScope} of ${scopeIntegrationPoints} integration points (${((completeness ?? 0) * 100).toFixed(1)}%) are inside this request`
+
   // The per-edge evidence split, aggregated. A flat per-edge cost makes a plan
   // look enormous when most of its edges are test callers: measured 55.3% on
   // cobra. Reporting the split is what makes the number interpretable.
@@ -345,6 +434,15 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     plans,
     evidenceTotals,
     dependencyOrder,
+    waves: computeMigrationWaves(dependencyOrder, graphRelationships),
+    scope: {
+      integrationPoints: scopeIntegrationPoints,
+      inScope: scopeInScope,
+      outOfScope: scopeOutOfScope,
+      unresolvable: scopeUnresolvable,
+      completeness,
+      statement: scopeStatement,
+    },
     dependencyGraph,
     unsupported,
     methodology,
@@ -386,6 +484,12 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     // `effort=` lines were both presented as totals and differed by 8h on a
     // two-symbol mutual-call request, with nothing explaining why.
     `total effort: ${result.effort.totalHours}h (${result.effort.reconciliation})`,
+    // The scope line goes near the TOP, not in a footnote: a total effort number
+    // read without it is the number most likely to be quoted in a plan and acted
+    // on. Measured on cobra, this line is the difference between "328h" and
+    // "328h, for 0.2% of the surface".
+    `scope: ${result.scope.statement}`,
+    ...(result.waves.length ? [`waves: ${result.waves.map((wave, i) => `${i + 1}[${wave.join(", ")}]`).join(" -> ")}`] : []),
     `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested}; ${result.truncation.deduplicated} duplicate, ${result.truncation.capped} over the 100-symbol cap)` +
       (result.truncation.cappedNames.length
         ? `\ndropped by the cap, NOT planned: ${result.truncation.cappedNames.slice(0, 20).join(", ")}${result.truncation.cappedNames.length > 20 ? `, … and ${result.truncation.cappedNames.length - 20} more` : ""}`

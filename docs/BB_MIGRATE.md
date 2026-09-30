@@ -11,6 +11,10 @@ tool.
 
 - one plan per supported symbol, each carrying its `symbolId` and `sourceFile`
 - `dependencyOrder`, a deterministic topological order with dependency nodes first
+- `waves` — that order grouped into parallel-workable layers; `waves[0]` is what
+  a team can start today
+- `scope` — how much of the component's integration surface this request actually
+  covers, and a sentence saying so
 - `dependencyGraph` — resolved edges, unresolved dependencies, cycles, and
   `orderingStatus` (`complete`, `partial`, `cyclic`, `no-edges`)
 - `relationshipEvidence` — per edge: id, type, both symbol ids, both external
@@ -206,6 +210,63 @@ edge is structural would understate the work, and that is the worse error.
 ```
 evidence: 14 production + 147 test integration points, 1 structural, 1 unresolvable
 ```
+
+## Scope: how much of the work this request actually covers
+
+An integration point is **in scope** when its other endpoint is one of the
+requested symbols. Everything else belongs to a component the caller did not ask
+about — and a port that ignores it does not work.
+
+This is not a formality. Measured on cobra, for a request of the top 1, 2, 4, 8
+and 16 symbols by fan-in:
+
+| symbols requested | integration points cited | inside the request | outside |
+|---|---|---|---|
+| 1 | 519 | 1 | **99.8%** |
+| 2 | 680 | 3 | **99.6%** |
+| 4 | 772 | 5 | **99.4%** |
+| 8 | 835 | 5 | **99.4%** |
+| 16 | 1017 | 14 | **98.6%** |
+
+A single `bb_migrate` request for the most-connected function in a repository
+covers about one in five hundred of its integration points. The tool now says so
+on the line directly under the effort total, because a total read without its
+qualification is the number most likely to be quoted in a plan and acted on:
+
+```
+total effort: 526h (per-plan effort sums to the methodology total)
+scope: 0 of 260 integration points (0.0%) are inside this request; 260 belong
+to components that were not asked for, so these plans alone are NOT a complete
+migration
+waves: 1[AddCommand, execute, getCommand]
+```
+
+`scope` carries `integrationPoints`, `inScope`, `outOfScope`, `unresolvable`,
+`completeness` (the in-scope ratio, or `null` when no edges are indexed at all),
+and the `statement` above. The wording follows the number: a request covering
+under half its surface is told so, and a request covering nearly all of it is
+not.
+
+**This is a property of the request, not a defect in the tool.** Asking about
+three functions will always cover a small part of a repository. The point is
+that the tool states it rather than printing a confident total and letting the
+gap be inferred.
+
+## Waves: where to start
+
+`dependencyOrder` is a total order; a team wants the first batch. `waves` groups
+it by dependency depth: **wave 0 is everything with no unresolved in-scope
+dependency**, wave 1 becomes startable once wave 0 lands, and so on.
+
+An edge to a symbol *outside* the request is a scope gap, not an ordering
+constraint, and does **not** push a wave. Treating it as one would park every
+component behind a dependency nobody was asked to migrate.
+
+Derived arithmetic over the same edge set the order uses — no new constants. A
+relationship's **source is the dependent** and its target is the dependency, so
+`middle` calling `bottom` puts `middle` in a later wave. If the graph is cyclic,
+a cycle's members land wherever their other dependencies put them, so read
+`orderingStatus` alongside: a cyclic graph does not decompose into waves.
 
 ## Effort: one number, reconciled
 
