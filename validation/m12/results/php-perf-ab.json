@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12",
+  "language": "php",
+  "purpose": "noise-proof A/B: speed change AND output equality, reported separately",
+  "baseline": "HEAD",
+  "live": "src/ast/real-php-analyzer.ts",
+  "corpus": "$HOME/fixtures/repositories/phpunit",
+  "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
+  "generatedAt": "2026-09-30T07:52:51.779Z",
+  "sample": "150 of 3231 tracked .php files (deterministic strided)",
+  "reps": 15,
+  "method": "interleaved A,B per round; median of per-round ratios; output compared field-by-field on every file before timing",
+  "outputIdentical": true,
+  "outputDiffFiles": [],
+  "speed": {
+    "estimator": "min-of-reps (primary); median reported for contrast",
+    "liveMsPerFile": 10.366,
+    "baselineMsPerFile": 10.395,
+    "liveMsPerFileMedian": 11.118,
+    "baselineMsPerFileMedian": 11.704,
+    "speedup": 1.003,
+    "speedupMedian": 1.003,
+    "spreadPct": 30.5,
+    "minSpeedup": 0.916,
+    "maxSpeedup": 1.255,
+    "verdict": "INDETERMINATE (spread too high to claim a speedup)"
+  }
+}

@@ -968,10 +968,23 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         //
         // The prefix is the declaration's own namespace_name child; each grouped
         // member is prefix + "\\" + member, which is the FQN PHP actually binds.
+        // Resolve the group prefix ONLY when a group is actually present. The
+        // naive form scanned a declaration's children for `namespace_name`
+        // unconditionally, which is wasted work on EVERY plain `use App\X;` —
+        // and plain use is the overwhelming majority in real code. The scan
+        // also read `.text` (a JS<->WASM crossing) for nothing on the common
+        // path. Same output, strictly less work.
         let groupPrefix = ""
         for (let i = 0; i < node.namedChildCount; i++) {
-          const pn = node.namedChild(i)
-          if (pn && pn.type === "namespace_name") groupPrefix = pn.text
+          const child = node.namedChild(i)
+          if (!child) continue
+          if (child.type === "namespace_use_group") {
+            for (let k = 0; k < node.namedChildCount; k++) {
+              const pn = node.namedChild(k)
+              if (pn && pn.type === "namespace_name") { groupPrefix = pn.text; break }
+            }
+            break
+          }
         }
         for (let i = 0; i < node.namedChildCount; i++) {
           let child = node.namedChild(i)
