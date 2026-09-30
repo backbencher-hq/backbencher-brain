@@ -192,6 +192,42 @@ and its replacement is necessarily a substring of what it removes. The property
 worth asserting is that the file *changes*, which subsumes the no-op case. This is
 in the record because the checker was wrong in the safe-looking direction.
 
+### 5.1 Baseline a gate result against HEAD before calling it a regression
+
+Verification runs against the exact tree being committed, not against
+HEAD-plus-changed-files: the index is turned into a commit object with
+`git commit-tree` (which writes no ref, so nothing in the shared repository moves),
+a worktree is checked out from it, and every gate runs there.
+
+The first run of that was red on `verify-tool-docs` — and the honest reading of a
+red is not "this commit broke something". It is: **was it red before?** So the
+script takes a baseline at pure HEAD and reports the *delta*:
+
+```
+=== baseline: stale artifacts at PURE HEAD (before this commit) ===
+    docs/tools/bb_cross_language.md is missing or stale
+    docs/tools/bb_impact.md is missing or stale
+
+=== verdict on tool docs ===
+  this commit REPAIRS (present at HEAD, gone now):
+    docs/tools/bb_cross_language.md is missing or stale
+  unchanged from HEAD — the remaining staleness is inherited, not introduced:
+    docs/tools/bb_impact.md is missing or stale
+```
+
+The baseline was red because another agent's commit changed the curated text in
+`script/verify-tool-docs.ts` — which is also where this lane's `bb_cross_language`
+entry was swept in from the shared tree — without regenerating the artifacts that
+feed it. So HEAD was already failing this check with none of this work present. A
+gate that blocks on *any* red would have blocked on someone else's; a gate that
+reports a raw FAIL would have looked like this commit's fault. Only the delta
+distinguishes them, and only the delta can say that a commit is an improvement
+while the tree is still red.
+
+The remaining `bb_impact.md` staleness is deliberately left uncommitted: that
+artifact is another agent's half-regenerated work, and staging it would take an
+unfinished regeneration into this commit.
+
 ## 6. The production path, and residue
 
 ### 6.1 Through the real MCP server, over stdio, from `dist/`
