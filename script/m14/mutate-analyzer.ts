@@ -756,6 +756,13 @@ function cleanEdgeLinePerSet() {
 }
 
 export interface Mutant {
+  /** A retired mutant keeps its record and its transform but is not run. It is
+   *  retired only when it can no longer be shown to fail, because a pin that
+   *  cannot fail is a false assurance. The reason is recorded in
+   *  `retirementReason` and the surface it covered is re-pinned by a gate. */
+  retired?: boolean
+  retiredOn?: string
+  retirementReason?: string
   id: string
   language: string
   defectClass: string
@@ -2640,6 +2647,9 @@ export const MUTANTS: Mutant[] = [
     id: "sql/sweep-stops-at-a-declaration",
     language: "sql",
     defectClass: "symbol-loss",
+    retired: true,
+    retiredOn: "2026-09-28",
+    retirementReason: "RETIRED, NOT DELETED, and not because the pass stopped mattering — the opposite. The sweep stopped descending at a declaration node, so a declaration NESTED INSIDE another was unreachable; on database/schema.sql that was 401 of 3,557 symbols. Under the shipped grammar it measures 0 recovered declarations on ALL THREE corpora (ProxiCall 0, postgrest 0, PostgreSQL extensions 0), because the grammar no longer buries a declaration inside another declaration — the only thing the sweep existed to undo. A mutant cannot fail when its pass has no contribution to remove, so leaving it in the suite produced a RED mutation run, which is worse than either fixing it or removing it. The pass stays in the analyzer as insurance for damage the grammar still cannot handle, and script/m60/verify-sql-resync.ts carries an S1-sweep-watch assertion that FAILS if the sweep ever starts contributing again without this bar being re-baselined — so the day the sweep matters, the suite says so. RESTORE THIS MUTANT then, and delete the watch.",
     description:
       "The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable. That is the ordinary shape after error recovery buries a statement: on database/schema.sql a function body the grammar could not finish swallows the rest of the file, and the CREATE TABLE nodes after it are children of that function's `function_body`. Measured on that file alone: 401 of its 3,557 symbols — 1,980 published before the fix, 3,557 after — and the corpus's most-referenced tables (business_profiles, business_content, business_locations) were among the casualties. The analyzer REPORTS the count as `ambiguity.sweepDeclarationsRecovered`, which is what makes the pre-fix state reconstructable: this mutant drops exactly the declarations the sweep alone contributed, which is what the old sweep's `continue` produced. Caught by sql/sqld10-qualified-and-recovery, whose `after_damage` symbol exists only if the sweep descends through the declaration.",
     transform: (r: any) => {
@@ -10123,11 +10133,11 @@ export const MUTANTS: Mutant[] = [
   // re-introduces the silent drop or breaks the guess-tier contract; the
   // external-override fixture pins must kill all of them.
   {
-    id: "php/drop-external-override-guess",
+    id: "php/re-add-external-override-guess",
     language: "php",
-    defectClass: "relationship-loss",
-    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — php external-override pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
+    defectClass: "relationship-fabrication",
+    description: "M12.PHP-OVERRIDE-AUDIT regression: RE-ADDS the removed 0.5 first-parent-guess external-base override (AuditService.handle -> ExternalBase.handle, reasonCode=first-parent-guess, evidenceClass=inferred) — the fabrication that script/m12/php-override-audit.ts measured 66.7%-false (or worse) on phpunit@c8d6921f. Caught by the external-override fixture's forbidRelationships, which now pins that an unverifiable external base emits NO override edge at any confidence. This mutant is deliberately INVERTED from the old php/drop-external-override-guess: once the guess was removed from the analyzer, a mutant that filtered the edge became a no-op and survived, proving nothing. The contract is now 'never emit it', so the mutant must inject it.",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "overrides", source: "AuditService.handle", target: "ExternalBase.handle", confidence: 0.5, metadata: { reasonCode: "first-parent-guess", evidenceClass: "inferred" } } as any] }),
   },
   {
     id: "ruby/drop-external-override-guess",
@@ -13908,27 +13918,6 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
-    id: "sql/sweep-stops-at-a-declaration-RETIRED-unfixtureable",
-    language: "sql",
-    defectClass: "symbol-loss",
-    retired: true,
-    retiredOn: "2026-09-27",
-    description:
-      "RETIRED, NOT DELETED, and not because the pass stopped mattering. The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable — on database/schema.sql that was 401 of 3,557 symbols, and the corpus's most-referenced tables were among the casualties. The pass is still worth MORE than when this mutant was written: measured under the shipped plpgsql grammar it recovers 77 declarations across 8 ProxiCall files and 375 across 79 PostgreSQL extension files. The mutant became unfixtureable because the shipped plpgsql scaffolding stopped collapsing the SMALL cases: sqld9's `RAISE EXCEPTION` body and sqld10's damaged file both parse cleanly now, so nothing in the fixture lane buries a declaration inside another declaration any more. A green-but-vacuous mutant is worse than no mutant, so it is retired here with its reason recorded, and the pass's value is pinned by corpus assertions S1/S2 in script/m60/verify-sql-resync.ts instead. RESTORE THIS MUTANT when a fixture shape exists that still buries a declaration inside another declaration under the shipped grammar — a templating shape (SQLD12 probe: `CREATE TABLE {{ ref('x') }}`) was tried and does NOT, because the declarations either side of it stay reachable and the sweep never fires. The transform below is the pre-fix behaviour and is kept so restoring it is a one-line change.",
-    transform: (r: any) => {
-      const recovered = Number((r.metadata ?? {}).ambiguity?.sweepDeclarationsRecovered ?? 0)
-      if (!recovered) return r
-      // The sweep appends what it finds, so the pre-fix state is the result minus
-      // the sweep's own contribution.
-      const syms = r.symbols ?? []
-      return {
-        ...r,
-        symbols: syms.slice(0, Math.max(0, syms.length - recovered)),
-        metadata: { ...(r.metadata ?? {}), ambiguity: { ...((r.metadata ?? {}).ambiguity ?? {}), sweepDeclarationsRecovered: 0 } },
-      }
-    },
-  },
-  {
     id: "sql/execute-literal-recovery-removed",
     language: "sql",
     defectClass: "symbol-loss",
@@ -14730,6 +14719,59 @@ export const MUTANTS: Mutant[] = [
         // the pre-fix shape: a prerequisite whose source is the module rather
         // than a target did not exist, because such a rule emitted nothing
         return !/^[^\s/\\]+\.(mk)?$/.test(String(x.source)) === false
+      }),
+    }),
+  },
+  {
+    id: "make/apply-private-and-override-flags-eagerly",
+    language: "make",
+    defectClass: "lost-annotation",
+    description:
+      "Reverts the deferral that keeps `private VAR = v` and `override VAR := v` from losing their flag. The walker reaches the directive BEFORE the assignment nested inside it, so applying the flag at the point of the directive targets a symbol that does not exist yet and the annotation is dropped -- silently, and only in the one-line spelling that is actually written. The two-line form (`VAR = v` then `private VAR = w`) still works, which is why this survived having a code path at all.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        if (x.name !== "SECRET" && x.name !== "OVERRIDDEN") return x
+        const m = x.metadata ?? {}
+        const { isPrivate, isOverride, ...rest } = m
+        return { ...x, metadata: rest }
+      }),
+    }),
+  },
+  {
+    id: "make/keep-the-exports-edge-after-unexport",
+    language: "make",
+    defectClass: "wrong-relationship-metadata",
+    description:
+      "REPRODUCES the pre-fix output for `unexport NAME` rather than reverting a line of code: the edge is ADDED BACK, exactly as it survived the unexport before the fix. Mutating an existing relationship cannot express this defect, because after the fix that relationship does not exist -- a transform that looks for it is a silent no-op that would report itself CAUGHT-by-nobody. The shape it adds is the one the pre-fix analyzer published: the symbol table said `isExported: false` while the graph still carried an `exports` edge, so a consumer reading relationships got the opposite answer from one reading symbols.",
+    transform: r => {
+      const rels = r.relationships ?? []
+      const already = rels.some((x: any) => x.type === "exports" && x.target === "EXPORTED")
+      if (already) return r
+      return {
+        ...r,
+        relationships: [...rels, {
+          source: "directive-flags.mk", target: "EXPORTED", type: "exports",
+          confidence: 1.0, line_number: 7, line: 7,
+          metadata: { via: "export_directive", evidenceClass: "export_directive" },
+        }],
+      }
+    },
+  },
+  {
+    id: "make/mislabelled-directive-flags",
+    language: "make",
+    defectClass: "wrong-metadata-key",
+    description:
+      "Reverts the metadata keys from the camelCase the file uses everywhere else (isMakeVariable, isExported, isBuiltin) to the `is${type}` interpolation that produced isprivate / isoverride / isundefine. A key rename is not cosmetic here: those were the names script/m14/spec/make-completeness.json claimed the analyzer wrote, so the spec and the index disagreed while both looked correct.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((x: any) => {
+        const m = x.metadata ?? {}
+        if (m.isPrivate) return { ...x, metadata: { ...m, isprivate: true, isPrivate: undefined } }
+        if (m.isOverride) return { ...x, metadata: { ...m, isoverride: true, isOverride: undefined } }
+        if (m.isUndefine) return { ...x, metadata: { ...m, isundefine: true, isUndefine: undefined } }
+        return x
       }),
     }),
   },
@@ -16164,7 +16206,13 @@ async function main() {
   }
 
   const mutantFilter = process.env.BB_MUTANT_ONLY
+  // Retired mutants are NOT run, and are REPORTED rather than skipped in
+  // silence. This support was removed by a branch merge once, which let a
+  // retired mutant run again and survive — the worst outcome, because the run
+  // went red for a pass nobody was still relying on.
+  const retired = MUTANTS.filter((m) => m.retired)
   const selected = MUTANTS.filter((m) => {
+    if (m.retired) return false
     // Dev-only iteration filter (unset in gates): BB_MUTANT_ONLY="svelte/" or a full mutant id.
     if (!mutantFilter) return true
     return mutantFilter.endsWith("/") ? m.id.startsWith(mutantFilter) : m.id === mutantFilter
