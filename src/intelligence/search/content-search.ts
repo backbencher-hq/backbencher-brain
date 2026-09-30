@@ -712,8 +712,19 @@ function matchContentRows(
   // condition is not a heuristic: a whole question is essentially never a
   // contiguous substring of a body, which is why a natural-language query
   // returned 0 of 15 results on rake and fell through to a 50-dimensional hash.
+  //
+  // But it only applies to a query that DESCRIBES something in words. A single
+  // token names one thing, and camel-case splitting manufactures extra terms
+  // out of it: `acheReq` tokenises to ["ache", "req"], after which every symbol
+  // containing "ache" — which is inside "Cache" — comes back as a hit.
+  // Measured on the s03 fixture, `acheReq` returned handleRequest,
+  // handle_request, serializeCacheEntry and deserializeCache…, none of which
+  // contains what was asked for. A query that appears NOWHERE must be able to
+  // come back empty; splitting it into pieces it never had is what took that
+  // away.
   const terms = contentQueryTerms(query)
-  if (terms.length === 0) return { rows: [], mode: "phrase", truncated: false }
+  const isSingleToken = !/\s/.test(query.trim())
+  if (terms.length === 0 || isSingleToken) return { rows: [], mode: "phrase", truncated: false }
 
   const scored: Array<{ row: CorpusRow; score: number; all: number; hitTerms: string[] }> = []
   for (const row of corpus) {
