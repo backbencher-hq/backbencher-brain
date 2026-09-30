@@ -38,6 +38,24 @@
  * shadow set would be incapable of disagreeing with it, and a shadow set is
  * precisely where both measured defects lived.
  *
+ * ## Measured state
+ *
+ * 71.9% agreement over 300 tracked files: 2,328 edges agree, 727 the analyzer
+ * lacks, 181 it invents. It is not finished and it is not wired into any gate.
+ * Most of the remaining divergence is still this oracle's own error rather than a
+ * finding, so a number this low must never be cited as assurance — it is a rule
+ * under test, and each of the five rules below was confirmed by probe against the
+ * language before being encoded.
+ *
+ * Progress is recorded because the movement is the evidence that the rule is
+ * converging rather than being fitted: 46.3% at the first run, 61.2% once
+ * `references` was split into its two surfaces, 64.0% when the arrow-parameter
+ * defect the oracle itself surfaced was fixed in the analyzer, 64.9% and back
+ * down to 71.9% around a module-level-const case, and 69.9% when a method
+ * signature's mentions were routed to their owner. Two experiments made it
+ * WORSE and were reverted with the measurement kept: treating a whole arrow as
+ * declarator-owned, and splitting a declarator's initializer by surface.
+ *
  * ## Positions that are NOT references
  *
  * Each of these is a place where a name is written but the mention does not
@@ -226,7 +244,12 @@ function typePositionNodes(root: any): Set<string> {
 }
 
 /** Node types whose mentions are attributed to the declaration that CONTAINS them. */
-const OWNED_BY_OWNER = new Set(["property_signature", "public_field_definition"])
+const OWNED_BY_OWNER = new Set([
+  "property_signature",
+  "public_field_definition",
+  "method_signature",
+  "abstract_method_signature",
+])
 
 /** True when `n` sits inside a function-like body, i.e. it is a LOCAL. */
 function insideFunctionBody(n: any): boolean {
@@ -362,7 +385,7 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
    * not a reference to a file declaration. Nested function-like scopes push and
    * pop their own bindings.
    */
-  const collect = (n: any, sourceName: string, bound: Set<string>): void => {
+  const collect = (n: any, sourceName: string, bound: Set<string>, surface: "all" | "type" | "expr" = "all"): void => {
     if (!n) return
     const t = n.type
 
@@ -453,7 +476,14 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       // target, not `NodeJS`. The base of a `generic_type` is likewise the name
       // the file spells.
       const typeSurface = t === "type_identifier" || t === "nested_type_identifier" || isTypePos(n)
+      // `surface` exists so a subtree CAN be walked once per surface; the
+      // declarator split it was added for measured WORSE (42.1% vs 71.3% over 300
+      // files) because routing expression mentions to the owner drops the
+      // annotated-declarator case that the previous rule handled. Left in place,
+      // defaulted to "all", so the measurement is not lost with the code.
+      const surfaceOk = surface === "all" || (surface === "type" ? typeSurface : !typeSurface)
       const mentionable =
+        surfaceOk &&
         name !== sourceName &&
         !childBound.has(name) &&
         (typeSurface ? !PRIMITIVES.has(name) : declared.has(name)) &&
@@ -492,14 +522,58 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
     // owns nothing: `const y = Ty` inside `f` is a mention BY `f`, and making
     // `y` a source instead restarts the walk with an empty binding set, which
     // loses the enclosing function's parameters and invents edges to them.
+    // A function expression or arrow bound to a declarator is OWNED by that
+    // declarator: `const absorb = (chunk: Buffer | string) => {…}` writes `Buffer`
+    // in the arrow's own parameter type, and the arrow is `absorb`. Measured: the
+    // analyzer attributes that mention to `absorb`, while the first draft of this
+    // oracle attributed it to the enclosing FUNCTION — same site, two sources, so
+    // it showed up as a MISSING and an EXTRA for one occurrence.
+    const fnLikeValue =
+      n.type === "variable_declarator" &&
+      (() => {
+        const v = n.childForFieldName?.("value")
+        return !!v && (v.type === "arrow_function" || v.type === "function_expression" || v.type === "generator_function")
+      })()
     const sourceable =
       name !== null &&
       /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) &&
       n.type !== "public_field_definition" &&
       n.type !== "property_signature" &&
-      (n.type !== "variable_declarator" || !!n.childForFieldName?.("type"))
+      n.type !== "method_signature" &&
+      n.type !== "abstract_method_signature" &&
+      (n.type !== "variable_declarator" || !!n.childForFieldName?.("type") || fnLikeValue)
     let becameSource: string | null = null
-    if (sourceable) {
+    if (fnLikeValue) {
+      // `const absorb = (chunk: Buffer) => {…}` splits across TWO owners, and the
+      // split is measured rather than tidied. The arrow's SIGNATURE belongs to the
+      // declarator — the analyzer publishes `absorb -> Buffer` for `Buffer` in
+      // `chunk: Buffer` — while the arrow's BODY belongs to the ENCLOSING
+      // declaration, which publishes `f -> CAP` for a `CAP` read inside the arrow.
+      // One arrow, two sources, decided by which surface the mention is on. The
+      // first draft of this oracle made the whole arrow declarator-owned and so
+      // reported the body reads as MISSING and the signature reads as EXTRA for the
+      // same sites; the split is what the analyzer actually does, and it is
+      // recorded here as a measured asymmetry rather than smoothed over.
+      const value = n.childForFieldName("value")
+      const fnParams = value?.childForFieldName?.("parameters")
+      const bound = new Set<string>()
+      if (fnParams) for (const b of paramNames(fnParams)) bound.add(b)
+      if (fnParams) for (const tp of named(fnParams)) {
+        const pat = tp?.childForFieldName?.("pattern")
+        if (pat) collect(pat.childForFieldName?.("type") ?? tp, name!, new Set(bound))
+      }
+      if (value) {
+        // `owner ?? name`: a module-level `const f = () => { … }` has no enclosing
+        // declaration, so its body is the declarator's own. Passing `owner` alone
+        // dropped every module-level function-valued const and cost 5 points of
+        // agreement, which is how that mistake was found.
+        const bodySource = owner ?? name!
+        for (const c of named(value)) {
+          if (c && fnParams && c.startIndex === fnParams.startIndex && c.endIndex === fnParams.endIndex) continue
+          collect(c, bodySource, new Set(bound))
+        }
+      }
+    } else if (sourceable) {
       becameSource = name
       const bound = new Set<string>()
       const fp = n.childForFieldName?.("parameters")
