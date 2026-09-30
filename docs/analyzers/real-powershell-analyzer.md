@@ -180,7 +180,7 @@ ordinary form of the same construct.
 | # | Limit | Construct | Errors | Cause |
 | --- | --- | --- | --- | --- |
 | 1 | `hash-in-interpolation` | `"$Repo#$PR"` | 1 | `#` in a variable NAME; the name class is `/[a-zA-Z0-9_]+\|\?/` |
-| 2 | `ddash-quoted-interp` | `--git-dir="$RepoRoot/.git"` | 2 | **native and product runtimes disagree** — see below |
+| 2 | `ddash-quoted-interp` | `--git-dir="$RepoRoot/.git"` | 2 | **the wired wasm predates G10**, which is the patch for it — see below |
 | 3 | `multiplier-suffix-case` | `$($_.Length/1KB)` | 1 | suffix listed lowercase-only, fatal in operand position |
 | 4 | `invokation-path-slash` | `& $Destination/pwsh -x` | 2 | `path_command_name_token` allows `\` but not `/` |
 | 5 | `invokation-path-slash-literal` | `& /usr/bin/pwsh` | 2 | same cause; fails with no variable involved |
@@ -191,11 +191,15 @@ changed, 0 newly broken, 5 newly clean. They are not admitted because F11 on
 `web-tree-sitter@0.25.9` has not run — a wasm build needs load < 8 and the machine has
 been at ~30. **Native safety is not product effect**, which is limit 2's lesson.
 
-**Limit 2 is the one that must be fixed against the product runtime directly.** It parses
-on native tree-sitter 0.26.9 and fails on the pinned 0.25.9, with the *same* wasm and the
-*same* patch set. A fourth design validated natively would be validated on the one
-runtime where the construct already works, which is close to unfalsifiable — so it waits
-for a build. Full measurement in `reviews/powershell/grammar-worklist.md`.
+**Limit 2 was diagnosed wrong, and the correction matters more than the limit.** It
+appeared to be a native/product runtime divergence. It is not: web-tree-sitter 0.27.0
+produces output *identical* to 0.25.9 for this case. The real cause is that **the wired
+wasm does not contain G10 at all** — the patch that addresses this construct — so the
+limit is a build boundary, not a grammar gap. A behavioural probe
+(`script/m60/powershell-patch-liveness.ts`) reports **8 of 9 claimed patches live and
+G10 absent**, and exits non-zero. The pin record claims G10; the pin gate cannot see the
+disagreement because this lane has no vendored-source entry, so its source↔wasm check
+does not run. See `reviews/powershell/grammar-worklist.md`.
 
 ### Fixed, and no longer listed as limitations
 
