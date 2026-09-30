@@ -1833,7 +1833,28 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (args) {
           for (let i = 0; i < args.namedChildCount; i++) {
             const arg = args.namedChild(i)
-            if (arg && (arg.type === "simple_symbol" || arg.type === "string" || arg.type === "identifier")) {
+            // A macro argument must be a LITERAL name: a `simple_symbol`
+            // (`belongs_to :account`) or a `string` (`belongs_to "author"`).
+            //
+            // `identifier` used to be accepted here, and an identifier argument
+            // is a VARIABLE, so the association's name is unknowable:
+            //
+            //     def delegated_type(role)          # activerecord delegated_type.rb
+            //       belongs_to role, polymorphic: true
+            //     end
+            //
+            // published `uses:->role` AND a `Property` SYMBOL named `role` on the
+            // class — a class that has no such method, named after a local. The
+            // analyzer already applies exactly this rule one branch above, to
+            // `include`/`extend`/`prepend`: "a DYNAMIC mixin — the concrete module
+            // is unknowable, and pinning it fabricates implements/extends against
+            // a local's name". The association family was simply never held to
+            // the standard its own sibling branch sets.
+            //
+            // Found by the exact M60 line audit (rb-line-audit.ts), where these
+            // are 20 of the 22 violations over all 8,528 files — `contains -> name`
+            // and `contains -> role` claiming a class contains its own parameter.
+            if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
               let name = this.stripSymbolColon(arg.text)
               if (arg.type === "string") name = this.stripQuotes(arg.text)
               // `anonBinding` set => this macro is written inside the block of
