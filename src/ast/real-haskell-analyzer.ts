@@ -70,7 +70,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       declaredFunctions: new Set(),
       classMethods: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
-      currentModule: undefined,
+      // A file with no `module` header is module `Main` — the language rule.
+      // Defaulted HERE, before the walk, because the import edge is pushed during
+      // it and read `currentModule || ""`; defaulting in the post-loop was too
+      // late and still produced `imports -> Distribution.Simple` with no source.
+      currentModule: "Main",
       currentFunction: undefined,
       seenRels: new Set(),
     }
@@ -362,6 +366,29 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         framework: frameworks[i],
         patterns: [{ type: "usage", detected: true, description: `${frameworks[i]} usage detected` }],
       })
+    }
+
+    // A file with NO `module` header is module Main — that is the language rule,
+    // not a convenience. Without this the import path emitted
+    // `imports -> Distribution.Simple` with an EMPTY SOURCE for postgrest's
+    // Setup.hs, which is the same defect class the VB lane gates on ("no empty
+    // symbol names"): an edge whose owner cannot be resolved to anything in the
+    // index. Synthesising the module also gives its members an owner, so the
+    // post-loop below can emit `contains Main -> ...` against a module that
+    // actually exists rather than dangling.
+    if (!ctx.symbols.some((s) => s.kind === ASTEngine.SymbolKind.Module)) {
+      ctx.symbols.push({
+        name: "Main",
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        ownerName: "",
+        visibility: "public",
+        metadata: { haskellSpecific: true, isImplicitMain: true },
+      })
+      for (const s of ctx.symbols) {
+        if (s.kind !== ASTEngine.SymbolKind.Module && !s.ownerName && !s.scope) s.ownerName = "Main"
+      }
     }
 
     // Post-loop: contains for owned symbols — module → members, type →
