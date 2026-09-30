@@ -894,7 +894,8 @@ try {
         && property.length > 0 && property.every((statement) => !statement.includes("no parameter list")),
       `with-args rendered: ${withArgs[0]?.slice(0, 90) ?? "(absent)"}; ` +
       `without-args rendered: ${withoutArgs[0]?.slice(0, 130) ?? "(absent)"}; ` +
-      `property rendered: ${property[0]?.slice(0, 90) ?? "(absent)"} — the property takes no arguments, so a caveat on it would be nonsense`)
+      `property rendered: ${property[0]?.slice(0, 90) ?? "(absent)"} — and it carries NO caveat, because the fixture's index records a parameter list for no property at all, so the absence is the expected shape there rather than a gap. ` +
+      `A hand-written list of kinds that take arguments gets this wrong in both directions: it excluded property, which does carry parameter lists for 343 symbols in the typescript index, and it would have added a caveat to every field in a project whose index never records them.`)
     negative("T30 the false-signature predicate convicts both defect shapes",
       claimsNoArguments("function Malloc() is defined in a/b.h at lines 1-9.") === true
         && claimsNoArguments("method application() is defined in a.rb at lines 8-10.") === true

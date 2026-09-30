@@ -252,10 +252,25 @@ affects.
   An absent list now renders as an absent list: the parentheses are omitted, and
   the caveat rides on the signature itself rather than only in `limitations`,
   because that fact is rendered as this mode's API and as `feature` mode's Entry
-  points and a bare name invites exactly the wrong reading. The caveat is scoped
-  to the symbol kinds that take arguments, measured per kind: `function` is 18%
-  empty and `property` is 99% empty, so a caveat attached to a field or a class
-  would be nonsense.
+  points and a bare name invites exactly the wrong reading. The caveat is
+  **measured per project, not looked up in a list**: the generator asks the index
+  which symbol kinds it records parameter lists for, and a symbol of such a kind
+  without one is a gap the document names. A hand-written list of "kinds that
+  take arguments" is a guess, and it was wrong in both directions — it excluded
+  `property`, which does carry parameter lists for 343 symbols in the typescript
+  index, and it would have attached a caveat to every field in a project whose
+  index never records them. The measured rule gets `rake` right (209 `method`,
+  3 `function`, so no `property` caveat) and `typescript` right (11 071
+  `function`, 10 856 `method`, 343 `property`, 132 `constructor`), with nothing
+  to maintain as analyzers add symbol kinds.
+
+  Those kinds cannot be settled by reading source instead, and the attempt is
+  worth recording: scanning one line for a bracket pair after the name reported
+  **100% for every type** — `variable Is(require("./is"))`,
+  `enum_member Key(enum)`, `class Symbol(members/exports/parent)` — because a
+  one-line window cannot tell a declaration's argument list from a call or a cast
+  on the same line. A measurement that returns the same answer for everything is
+  a measurement of nothing.
 - **Inferred** facts are bounded conclusions supported by multiple evidence
   items, such as “this symbol is an entry point because it is exported and has
   incoming route-like references.” They include confidence and citations.
