@@ -5,11 +5,13 @@
 - Analyzer file: `src/ast/real-groovy-analyzer.ts`
 - Parser: patched `tree-sitter-groovy` (WASM in `wasm/tree-sitter-groovy.wasm`; grammar source vendored at `grammars/tree-sitter-groovy/`; also mirrored to `~/.bb/wasm`)
 - Build toolchain (verified, replaces an earlier unverified claim): **`tree-sitter-cli` 0.25.1 + `tree-sitter-java` 0.23.5**, then `tree-sitter generate && tree-sitter build --wasm`. No emscripten: the CLI's bundled WASI toolchain is sufficient. `grammar.js` does `require("tree-sitter-java/grammar.js")`, so the grammar **cannot be generated at all** without that package installed.
-- **Reproducibility check.** `tree-sitter build --wasm` is *not* byte-reproducible — two builds of identical source differ, and the same offset separates a rebuild from the shipped artifact — so the artifact is verified by **behaviour**, not by hash. `script/m59/groovy-grammar-ab.mts` parses every corpus file with both wasms and compares the ERROR/MISSING count and a hash of the node-type sequence. Current result: **7,114 files, 7,114 identical parse trees, 0 differences, 1,232 ERROR/MISSING on both sides.** Run it before trusting any grammar change:
+- Shipped wasm sha256: `f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04`.
+  Current corpus baseline: **215 of 7,114 files** fail to parse, 1,205 ERROR/MISSING nodes.
+- **Reproducibility check.** `tree-sitter build --wasm` is *not* byte-reproducible — two builds of identical source differ, and the same offset separates a rebuild from the shipped artifact — so the artifact is verified by **behaviour**, not by hash. `script/m59/groovy-grammar-ab.mts` parses every corpus file with both wasms and compares the ERROR/MISSING count and a hash of the node-type sequence. Current result: **7,114 files, 7,114 identical parse trees, 0 differences, 1,205 ERROR/MISSING on both sides.** Run it before trusting any grammar change:
   ```
   npx tsx script/m59/groovy-grammar-ab.mts /tmp/rebuild.wasm
   ```
-- Parse-error triage: `script/m59/groovy-parse-triage.mts` groups the 218 corpus failures by normalised first-error signature, separating templates from real source. Current split: 56 template / 162 real-source files, 437 / 795 ERROR/MISSING nodes, 100 distinct signatures.
+- Parse-error triage: `script/m59/groovy-parse-triage.mts` groups the 218 corpus failures by normalised first-error signature, separating templates from real source. Current split: 56 template / 159 real-source files, 437 / 768 ERROR/MISSING nodes, 100 distinct signatures.
 - Language detection: extension `.groovy` / `.gradle` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealGroovyAnalyzer`
 
