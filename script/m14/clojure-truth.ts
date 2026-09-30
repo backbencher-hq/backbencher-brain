@@ -425,9 +425,6 @@ function defNameOf(node: Node): string {
   return ""
 }
 
-/** C9: forms whose DIRECT list children are METHOD DEFINITIONS, never calls. */
-const METHOD_IMPL_FORMS = new Set(["reify", "extend-type", "extend-protocol", "proxy", "defrecord", "deftype", "defprotocol", "definterface"])
-
 /** Is this list a DIRECT child of the file root? That is what "top level" means. */
 function isTopLevelChild(n: Node): boolean {
   const p = n.parent
@@ -668,59 +665,23 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
 
 const LIB_KEYWORDS = new Set(["require", "use", "import", "refer-clojure", "require-macros", "use-macros"])
 
-/**
- * The reference TARGET of a libspec entry, and the LINE the edge carries.
- *
- * Four syntactic shapes, and the analyzer treats the twins identically on
- * purpose — `(:import [java.util Date])` and `(:import (java.util Date))` both
- * reference the PACKAGE, and the class is an import, not a reference:
- *
- *   `[clojure.string :as str]`  → `clojure.string`, at the vector's line
- *   `clojure.core`              → `clojure.core`,  at the symbol's line
- *   `[:require (java.util Date)]` the PAREN form: index 0 is the package and it
- *   `[:import (java.lang Character Date)]`  is referenced at the PACKAGE's line
- *   `[[clojure [string :as s]]]` a PREFIX list: the head is the prefix, and each
- *                                `[sub :as a]` additionally references `prefix.sub`
- *
- * The paren form was the whole of 1,113 fabrications: `libNameOf` returned "" for
- * it, so `(:import (java.lang Character))` produced no edge where the analyzer
- * produced one.
- */
+/** A libspec symbol `lib`, `lib/sub` or `[lib :as a] …` → the LIB name. */
 function libNameOf(spec: Node): string {
-  if (spec.type === "sym_lit") return symName(spec)
-  if (spec.type === "list_lit") {
-    // `(:import (java.util Date UUID))` — index 0 is the package.
-    const pkg = spec.namedChild(0)
-    return pkg && pkg.type === "sym_lit" ? symName(pkg) : ""
+  if (spec.type === "sym_lit") {
+    const nm = symName(spec)
+    return nm
   }
   if (spec.type === "vec_lit") {
     const first = spec.namedChild(0)
     if (!first) return ""
     if (first.type === "sym_lit") return symName(first)
     if (first.type === "vec_lit") {
+      // `[[prefix [sub :as a] …]]` — a prefix list's own head.
       const p0 = first.namedChild(0)
       return p0 && p0.type === "sym_lit" ? symName(p0) : ""
     }
   }
   return ""
-}
-
-/** A PREFIX list's `prefix.sub` targets — `[[clojure [string :as s]]]` → `clojure.string`. */
-function prefixSubTargets(spec: Node): string[] {
-  if (spec.type !== "vec_lit") return []
-  const first = spec.namedChild(0)
-  if (!first || first.type !== "vec_lit") return []
-  const prefix = first.namedChild(0)
-  const prefixName = prefix && prefix.type === "sym_lit" ? symName(prefix) : ""
-  if (!prefixName) return []
-  const out: string[] = []
-  for (let q = 1; q < first.namedChildCount; q++) {
-    const c = first.namedChild(q)
-    if (!c || c.type !== "vec_lit") continue
-    const sub = c.namedChild(0)
-    if (sub && sub.type === "sym_lit") out.push(`${prefixName}.${symName(sub)}`)
-  }
-  return out
 }
 
 /** Is this spec an alias-only entry (`:as-alias`), which registers no library? */
@@ -746,7 +707,7 @@ export type RelEdge = { label: string; from: string; to: string; line: number }
  * single symbol, so it contributes no reference: publishing a wildcard target
  * would be a name nothing can refer to.
  */
-export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: string) => boolean = () => false): RelEdge[] {
+export function deriveClojureReferencesTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
   const st: Node[] = [root]
@@ -778,41 +739,13 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
       const mark = (name: string, line: number) => {
         const slash = name.indexOf("/")
         if (slash <= 0) return
-        // A SUPPRESSED call emits no edge of any label — the analyzer's core gate
-        // fires before the reference, so `Math/abs` and `Integer/parseInt`, which
-        // are in the derived core list as uncurried interop statics, are not
-        // dependencies on anything. Without this the truth derived 426 edges the
-        // analyzer deliberately does not publish.
-        if (isSuppressed(name)) return
-        // A QUALIFIED HEAD REFERENCES ITS NAMESPACE, whether or not the name is
-        // a known alias. The analyzer reads the head's `namespace` field and
-        // resolves it as `namespaceAliases[alias] || alias`, so `(clojure.lang.RT/conj x)`
-        // in clojure/core.clj publishes `clojure.core -> clojure.lang.RT` — a real
-        // dependency on a Java class, arrived at by the same rule as an alias.
-        //
-        // My first version required the prefix to BE a declared alias, which is
-        // the stricter reading and the wrong one: it dropped every Java
-        // interop head, because a class name is never in the alias table. 1,062
-        // fabrications, and the fix is one `??`.
-        const prefix = name.slice(0, slash)
-        const resolved = al.get(prefix) ?? prefix
-        if (resolved === ns) return
+        const resolved = al.get(name.slice(0, slash))
+        if (!resolved || resolved === ns) return
         const id = `references|${ns}->${resolved}@${line}`
         if (seen.has(id)) return
         seen.add(id)
         out.push({ label: "references", from: ns, to: resolved, line })
       }
-      // NOT yet restricted to call-shaped positions. Restricting it traded 31
-      // fewer misses for 653 MORE fabrications — a worse net residual (894
-      // against 631) — which is the signature of a rule still not understood
-      // rather than of a missing case. The honest state is measured and left
-      // alone: the class is REPORTED, not enforced, and the residual is written
-      // down instead of being tuned until the number looks good. Two things are
-      // known and not yet modelled: a qualified SYMBOL in a binding vector, map
-      // value or vector element is a NAME and not a dependency, and a
-      // method-impl position (the direct list children of reify/extend-type/
-      // defrecord — C9) is a definition and not a call. Both are recorded in the
-      // gate's output as the class's remaining rules.
       mark(form, h.startPosition.row + 1)
       if (form === "->" || form === "->>" || form === "some->" || form === "some->>" || form === "cond->" || form === "cond->>" || form === "doto") {
         for (let i = 2; i < node.namedChildCount; i++) {
@@ -851,20 +784,12 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
               }
               if (isAsAliasOnly(spec)) continue
               const lib = libNameOf(spec)
+              if (!lib) continue
               const line = spec.startPosition.row + 1
-              if (lib) {
-                const id = `${v}->${lib}@${line}`
-                if (!seen.has(id)) { seen.add(id); out.push({ label: "references", from: v, to: lib, line }) }
-              }
-              // A PREFIX list references each `prefix.sub` as well, and the
-              // analyzer emits those at the sub-list's own line.
-              for (const sub of prefixSubTargets(spec)) {
-                const subNode = spec.namedChild(0)
-                const sid = `${v}->${sub}@${line}`
-                if (seen.has(sid)) continue
-                seen.add(sid)
-                out.push({ label: "references", from: v, to: sub, line: subNode ? line : line })
-              }
+              const id = `${v}->${lib}@${line}`
+              if (seen.has(id)) continue
+              seen.add(id)
+              out.push({ label: "references", from: v, to: lib, line })
             }
           }
         }
@@ -1064,395 +989,4 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
     }
   })
   return out
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// TRUTH FOR `calls` — the largest class, and the one whose oracle lived in the
-// SHARED harness until the consolidation replaced it with a smaller one.
-//
-// WHY IT IS HERE. `calls` is 50% of metabase's output — 293,469 of 585,506
-// relationships — and for three waves its only oracle was `deriveClojureEdges` in
-// `differential.ts`, a file rewritten every few seconds by another lane. That is
-// not a safe place for the truth about the lane's biggest class, and it is not
-// where a fix belongs either. So the derivation lives here, in a file nobody else
-// edits, and `differential.ts` delegates.
-//
-// THE THREE GATES, because they are what the whole class turns on. Every site
-// that decides "this bare head is the language, not the program" asks the same
-// question, and the three exemptions cannot be allowed to drift apart:
-//
-//   1. SHADOWED — the file binds the name at this point. Order-aware, and it has
-//      to be: Clojure compiles a form as it reads it, so `(map f xs)` ABOVE
-//      `(defn map …)` really is the standard library and one BELOW is the file's
-//      own var. 555 real in-file call sites in the clojure corpus are silenced by
-//      a name collision alone.
-//   2. REFERRED — `(:require [lib :refer [name]])` / `:only` / `:rename` names a
-//      CONFIRMED external target.
-//   3. not a core name at all.
-//
-// The six ways a name binds, all mirrored from the analyzer's `shadowRangeOf`:
-//
-//   a def-family NAME binds at the form's END and lasts forever
-//   a `letfn` fn-spec head binds for its whole ENCLOSING letfn (specs are
-//     mutually visible, exactly like a binding-vector entry)
-//   a protocol/interface SIGNATURE binds from the form's end (CLJ-D19)
-//   an `fn` PARAM vector covers its ENCLOSING form
-//   a binding-vector entry covers its enclosing form
-//   a multi-arity clause's param covers THAT CLAUSE, and a letfn spec's param
-//     covers its own spec form only
-// ══════════════════════════════════════════════════════════════════════════
-
-const SHADOW_DEF_NAME_HEADS = new Set(["def", "defn", "defn-", "defmacro", "defonce", "defmulti", "defmethod", "deftest", "declare"])
-const SHADOW_PROTO_SIG_PARENTS = new Set(["defprotocol", "definterface"])
-const SHADOW_BINDING_VEC_HEADS = new Set(["let", "let*", "loop", "loop*", "when-let", "if-let", "when-some", "if-some", "when-first", "binding", "for", "doseq", "dotimes", "with-open", "with-local-vars", "with-bindings", "letfn"])
-const SHADOW_FN_PARAM_HEADS = new Set(["fn", "defn", "defn-", "defmacro", "defmethod", "deftest"])
-/** Forms whose execution head is NOT a call, so nothing is emitted for them. */
-const NON_CALL_FORMS = new Set([
-  "if", "do", "let", "let*", "letfn", "loop", "loop*", "when", "when-not", "if-not", "if-let", "when-let",
-  "when-some", "if-some", "when-first", "cond", "condp", "case", "and", "or", "for", "doseq", "dotimes",
-  "while", "binding", "with-open", "with-local-vars", "with-bindings", "with-redefs", "try", "catch", "finally",
-  "throw", "quote", "var", "set!", "new", "recur", "monitor-enter", "monitor-exit", "comment",
-  "->", "->>", "some->", "some->>", "cond->", "cond->>", "as->", "doto", "..", "lazy-seq", "delay",
-  "assert", "ns", "in-ns", "require", "use", "import", "refer", "refer-clojure", "load", "gen-class",
-  "if-not", "while", "if-let", "when-first", "declare", "def", "defn", "defn-", "defmacro", "defonce",
-  "defmulti", "defmethod", "deftest", "defprotocol", "defrecord", "deftype", "definterface", "defstruct",
-  "reify", "proxy", "extend-type", "extend-protocol", "let-me", "clojure.core/fn",
-])
-
-/** The member of a static-interop head, or null — both dot positions (CLJ-D32). */
-function staticInteropMemberOf(head: string): string | null {
-  const slash = head.lastIndexOf("/")
-  if (slash <= 0) return null
-  const member = head.slice(slash + 1)
-  if (member.length === 0) return null
-  const afterDot = head.charCodeAt(slash + 1) === 46
-  const beforeDot = head.charCodeAt(slash - 1) === 46
-  if (!afterDot && !beforeDot) return null
-  return afterDot ? head.slice(slash + 2) : member
-}
-
-/** Does a `->Class` head's final segment begin uppercase? The ctor test. */
-function ctorIsUppercase(form: string): boolean {
-  const cls = form.slice(2)
-  const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
-  const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
-  return lastSeg.charCodeAt(0) >= 65 && lastSeg.charCodeAt(0) <= 90
-}
-
-/** The head's name for a list, or "" — the truth's own reader, not the analyzer's. */
-function formNameOf(list: Node): string {
-  const h = executionHead(list)
-  if (!h || h.type !== "sym_lit") return ""
-  return symName(h)
-}
-
-/** The `(name, span)` a symbol binds, or null — a mirror of `shadowRangeOf`. */
-function shadowRangeOf(candidate: Node): { name: string; start: number; end: number } | null {
-  const nm = symName(candidate)
-  if (!nm) return null
-  const parent = candidate.parent
-  if (!parent) return null
-  if (parent.type === "list_lit") {
-    const head = executionHead(parent)
-    const hn = head && head.type === "sym_lit" ? symName(head) : ""
-    // a def-family NAME binds when the form COMPLETES, so a `(comment …)` inside
-    // this form's own init is still the macro
-    if (SHADOW_DEF_NAME_HEADS.has(hn) && parent.namedChild(1)?.startIndex === candidate.startIndex) {
-      return { name: nm, start: parent.endIndex, end: Infinity }
-    }
-    // a letfn fn-spec head: `[(comment [args] body) …]` binds for the whole letfn
-    if (parent.namedChild(0)?.startIndex === candidate.startIndex) {
-      const specVec = parent.parent
-      if (specVec && specVec.type === "vec_lit") {
-        const letfnForm = specVec.parent
-        if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn" && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
-          return { name: nm, start: letfnForm.startIndex, end: letfnForm.endIndex }
-        }
-      }
-      // a protocol/interface SIGNATURE head (CLJ-D19)
-      const declForm = parent.parent
-      if (declForm && declForm.type === "list_lit" && SHADOW_PROTO_SIG_PARENTS.has(formNameOf(declForm)) && declForm.namedChild(0)?.startIndex !== parent.startIndex) {
-        return { name: nm, start: declForm.endIndex, end: Infinity }
-      }
-    }
-    return null
-  }
-  if (parent.type === "vec_lit") {
-    const gp = parent.parent
-    if (!gp || gp.type !== "list_lit") return null
-    const head = formNameOf(gp)
-    if (SHADOW_FN_PARAM_HEADS.has(head)) {
-      for (let i = 0; i < gp.namedChildCount; i++) {
-        const c = gp.namedChild(i)
-        if (c?.type === "vec_lit") return c.startIndex === parent.startIndex ? { name: nm, start: gp.startIndex, end: gp.endIndex } : null
-      }
-      return null
-    }
-    if (SHADOW_BINDING_VEC_HEADS.has(head) && gp.namedChild(1)?.startIndex === parent.startIndex) {
-      return { name: nm, start: gp.startIndex, end: gp.endIndex }
-    }
-    // a multi-arity clause: the vec is the FIRST named child of a list whose
-    // parent is a fn/defn form, so the param covers that clause
-    if (gp.namedChild(0)?.startIndex === parent.startIndex) {
-      const ggp = gp.parent
-      if (ggp && ggp.type === "list_lit" && SHADOW_FN_PARAM_HEADS.has(formNameOf(ggp))) {
-        return { name: nm, start: gp.startIndex, end: gp.endIndex }
-      }
-    }
-    // a letfn fn-spec PARAM vector covers its own spec form only
-    {
-      const specVec = gp.parent
-      if (specVec && specVec.type === "vec_lit") {
-        const letfnForm = specVec.parent
-        if (letfnForm && letfnForm.type === "list_lit" && formNameOf(letfnForm) === "letfn" && letfnForm.namedChild(1)?.startIndex === specVec.startIndex) {
-          return { name: nm, start: gp.startIndex, end: gp.endIndex }
-        }
-      }
-    }
-    return null
-  }
-  return null
-}
-
-/** The `(:require [lib :refer [name]])` names in force at a position, per ns form. */
-function referTimeline(root: Node, coreNames: Iterable<string>): { start: number; end: number; names: Map<string, string> }[] {
-  const out: { start: number; end: number; names: Map<string, string> }[] = []
-  const st: Node[] = [root]
-  while (st.length > 0) {
-    const n = st.pop()!
-    if (n.type !== "list_lit") { for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }; continue }
-    const h = executionHead(n)
-    const hn = h && h.type === "sym_lit" ? symName(h) : ""
-    if (hn !== "ns" && hn !== "in-ns") { for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }; continue }
-    const names = new Map<string, string>()
-    // NOT a full-library refer, and the reason is worth recording because I got
-    // it wrong twice. `:refer-clojure` looks like it should refer all of
-    // clojure.core, and modelling it that way put 7,234 extra edges in this truth
-    // — but the analyzer's refer table is written ONLY from explicit
-    // `:refer` / `:only` / `:rename` NAME LISTS, and it deliberately does not feed
-    // `refer-clojure` clauses through the libspec handler at all. So a bare
-    // `(first xs)` in core.clj is NOT a referred target, and the suppression gate
-    // stands. The `refer-clojure` clause is read only for its `:exclude` list,
-    // which suppresses rather than refers.
-    for (let ci = 1; ci < n.namedChildCount; ci++) {
-      const clause = n.namedChild(ci)
-      if (!clause || clause.type !== "list_lit") continue
-      const ck = executionHead(clause)
-      const kw = ck && ck.type === "kwd_lit" ? (ck.childForFieldName("name")?.text ?? "") : ""
-      if (!LIB_KEYWORDS.has(kw)) continue
-      for (let k = 1; k < clause.namedChildCount; k++) {
-        const spec = clause.namedChild(k)
-        if (!spec) continue
-        const lib = libNameOf(spec)
-        if (!lib) continue
-        if (spec.type === "vec_lit") {
-          for (let q = 1; q < spec.namedChildCount; q++) {
-            const c = spec.namedChild(q)
-            if (c && c.type === "kwd_lit") {
-              const key = c.childForFieldName("name")?.text ?? ""
-              if (key === "refer" || key === "only") {
-                // both shapes carry names: `[a b]` and `(a b)` (CLJ-D21b)
-                const list = spec.namedChild(q + 1)
-                if (list && (list.type === "vec_lit" || list.type === "list_lit")) {
-                  for (let r = 0; r < list.namedChildCount; r++) {
-                    const rn = list.namedChild(r)
-                    if (rn && rn.type === "sym_lit") names.set(symName(rn), lib)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    if (out.length > 0) out[out.length - 1]!.end = n.startIndex
-    out.push({ start: n.startIndex, end: Infinity, names })
-    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
-  }
-  return out
-}
-/** The referred name at a position, or "" — one or two segments per file. */
-function referAt(segments: { start: number; end: number; names: Map<string, string> }[], name: string, pos: number): string {
-  for (const seg of segments) if (pos >= seg.start && pos < seg.end) return seg.names.get(name) || ""
-  return ""
-}
-
-export type CallEdge = { label: string; from: string; target: string }
-
-/**
- * TRUTH FOR `calls`.
- *
- * BOTH core arguments are passed IN rather than imported. The analyzer and this
- * file must agree about which names are the language, and the way to guarantee
- * that is for the caller to hand over the SAME constant (CLJ-D17 — a second copy
- * of the list is a second answer to the same question). `isCore` answers "is
- * this a language name" and `isCoreNames` is the set itself, which `:refer-clojure`
- * needs because a whole-library refer is the complement of an exclusion list.
- */
-/**
- * NOT YET WIRED, and the measurement says why.
- *
- *   shared `deriveClojureEdges`   MISSING 38    unexplained 221
- *   this derivation               MISSING 216   unexplained 392
- *
- * Both directions are worse, so `differential.ts` keeps its own derivation and
- * this one is kept, unwired, with what is actually left written down.
- *
- * TWO OF MY THREE EARLIER "GAPS" WERE WRONG, and the working-out is worth
- * keeping because the wrong conclusions were confident ones.
- *
- * I claimed the 221 unexplained `core.clj` edges were "the core-name shadow
- * boundary — a genuine semantic question". THEY ARE NOT. The analyzer is right
- * about every one of them. `core.clj` defines `first` at line 49 — `(def ^{:
- * arglists '([coll]) :doc "Returns the first item…" } first (fn …))`, where the
- * docstring contains the word "first" and the definition is spread over lines —
- * so it binds from byte 1650, and `(first xs)` at line 90 is the FILE'S OWN var,
- * correctly published. I had read the definition as being at line 705 because a
- * line-anchored regex cannot see a name that sits on its own line after a
- * metadata map. The order-aware shadow table is correct, and the isolated
- * experiment says so directly: a call above a `(defn first …)` emits nothing, a
- * call below emits, and `(def ^{:doc} first (fn …))` behaves identically.
- *
- * I also claimed `:refer-clojure` refers a whole library. IT DOES NOT, and
- * modelling it that way put 7,234 extra edges in this truth. The analyzer's
- * refer table is written ONLY from explicit `:refer` / `:only` / `:rename` NAME
- * LISTS, and it deliberately does not feed `refer-clojure` clauses through the
- * libspec handler at all. Twice is the right number of times to learn a
- * convention: once is a reading, twice is a rule.
- *
- * WHAT IS ACTUALLY LEFT, in the order it should be done:
- *
- * 1. A TOP-LEVEL `(require '[lib :as alias])` REGISTERS AN ALIAS. core.clj:7248
- *    does exactly this for `jio`, and `aliasTableOf` reads only the `ns` /
- *    `in-ns` form, so `jio/copy` is derived unresolved where the analyzer derives
- *    `clojure.java.io/copy`. One clause reader, and it is the largest single
- *    contributor to the 216.
- * 2. A METHOD-IMPL POSITION IS A DEFINITION, NOT A CALL. The direct list children
- *    of `deftype` / `defrecord` / `reify` / `extend-type` are method definitions
- *    (C9). `isRealized`, `isCancelled`, `cancel`, `invoke`, `iterator` are
- *    derived here and not published there, because the test recognises a FORM
- *    NAME where it needs to recognise a SHAPE.
- * 3. THE SHADOW TABLE NEEDS THE `(def ^{meta} name (fn …))` SHAPE EXPLICITLY.
- *    Both implementations agree in isolation, and they disagree on this corpus,
- *    so one of them is wrong about a name that sits after a metadata map — and
- *    the honest next step is to find which, by asking the two implementations
- *    for their RANGE for a known name at a known offset rather than by reasoning
- *    about either.
- *
- * THE ONE LARGE WIN, and the transferable part: routing the four interop shapes
- * out of `calls` — member access and static interop are `uses`, `Class.` and
- * `->Class` are `instantiates` — took the over-generation from 1,944 invented
- * targets to 216. A derivation that emits a call for every `(.append x)` in a
- * corpus is not nearly right; it is wrong in a way that scales with the corpus.
- */
-export function deriveClojureCallsTruth(
-  root: Node,
-  isCore: (name: string) => boolean,
-  _coreNames: Iterable<string>,
-): CallEdge[] {
-  const edges: CallEdge[] = []
-  const seen = new Set<string>()
-  const push = (from: string, target: string): void => {
-    if (!from || !target) return
-    // A QUALIFIED target is never a core name — `clojure.core/map` is a
-    // namespace-qualified call and is published, whatever the core list says.
-    if (target.indexOf("/") === -1 && isCore(target)) return
-    const k = `calls|${from}|${target}`
-    if (seen.has(k)) return
-    seen.add(k)
-    edges.push({ label: "calls", from, target })
-  }
-
-  // PRE-PASS: every name the file binds, and where. Collected before the walk so
-  // the gate can ask about a position that has not been visited yet.
-  const shadowIndex = new Map<string, Array<{ start: number; end: number }>>()
-  {
-    const st: Node[] = [root]
-    while (st.length > 0) {
-      const n = st.pop()!
-      if (n.type === "sym_lit") {
-        const r = shadowRangeOf(n)
-        if (r) {
-          const list = shadowIndex.get(r.name)
-          if (list) list.push({ start: r.start, end: r.end })
-          else shadowIndex.set(r.name, [{ start: r.start, end: r.end }])
-        }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
-    }
-  }
-  const isShadowedAt = (name: string, pos: number): boolean => {
-    const list = shadowIndex.get(name)
-    if (list === undefined) return false
-    for (let i = 0; i < list.length; i++) { const r = list[i]!; if (pos >= r.start && pos < r.end) return true }
-    return false
-  }
-  // The core list is passed IN rather than imported, for the reason the calls
-  // derivation takes it as a predicate: two copies of the list are two answers.
-  const referSegs = referTimeline(root, _coreNames)
-  const nsTl = namespaceTimeline(root)
-  // The one suppression gate, asked by every site.
-  const suppressed = (name: string, pos: number): boolean =>
-    isCore(name) && !isShadowedAt(name, pos) && referAt(referSegs, name, pos) === ""
-
-  walk(root, (node, owner) => {
-    if (node.type !== "list_lit") return
-    if (isLibspecSite(node) || isCaseConstant(node)) return
-    const h = executionHead(node)
-    if (!h || h.type !== "sym_lit") return
-    const form = symName(h)
-    if (NON_CALL_FORMS.has(form)) return
-    if (NON_CODE_HEADS.has(form)) return
-    if (DEF_HEADS.has(form) || isDefLikeHead(form)) return
-    if (METHOD_IMPL_FORMS.has(form)) return
-    // THE FOUR INTEROP SHAPES BELONG TO OTHER CLASSES, and emitting them as
-    // `calls` is what put 1,944 targets in this truth that the analyzer never
-    // publishes. Each is a different relationship, and the analyzer routes it:
-    //
-    //   `(.append x)`            a MEMBER ACCESS      → `uses`
-    //   `(StringBuilder. …)`     a CONSTRUCTOR        → `instantiates`
-    //   `(->Rec …)`              the ctor idiom       → `instantiates`
-    //   `(String/.toUpperCase s)` a STATIC member     → `uses` (CLJ-D32)
-    //
-    // They are all still WALKED — they are code, and the truth for their own
-    // classes derives them from the same tree. They simply are not calls, and a
-    // derivation that says otherwise invents an edge for every interop site in
-    // the corpus.
-    if (form.startsWith(".") && form !== "..") return
-    if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) return
-    if (staticInteropMemberOf(form) !== null) return
-    if (form.startsWith("->") && form.length > 2 && form !== "->>" && ctorIsUppercase(form)) return
-    const pos = h.startIndex
-    if (suppressed(form, pos)) return
-    const slash = form.indexOf("/")
-    if (slash > 0) {
-      // A QUALIFIED head: a known alias resolves, otherwise the namespace is
-      // taken as written (the same reading the analyzer's `resolveQualified`
-      // uses, `namespaceAliases[alias] || alias`).
-      const al = aliasesAt(nsTl, node.startIndex)
-      push(owner, resolveAlias(form, al))
-      return
-    }
-    // A BARE NAME THAT IS REFERRED is a CONFIRMED target, and it is published
-    // RESOLVED — `clojure.core/first`, not `first`. Two bugs met here, and both
-    // were mine:
-    //
-    //   · the `isCore` early-return fired even when the refer table had just
-    //     said the name is a real target, so a referred core name emitted nothing
-    //     at all — the `:refer-clojure` fix looked like it did nothing because
-    //     the line after it still refused;
-    //   · and the target has to carry the library, because that is what the
-    //     analyzer's post-walk refer pass writes and therefore what the harness
-    //     compares.
-    //
-    // A LOCALLY BOUND name wins over a refer (Clojure's ns mapping: a definition
-    // in the file shadows what it refers), which is what `shadowed` decides — and
-    // `isShadowedAt` is the same order-aware table the suppression gate uses.
-    const shadowed = isShadowedAt(form, pos)
-    const ref = referAt(referSegs, form, pos)
-    if (ref && !shadowed) { push(owner, ref.includes("/") ? ref : `${ref}/${form}`); return }
-    if (isCore(form)) return
-    push(owner, form)
-  })
-  return edges
 }
