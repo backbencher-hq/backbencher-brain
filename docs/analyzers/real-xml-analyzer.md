@@ -264,12 +264,31 @@ follows. It should not be quoted as though it were the corpus result.
 
 ### The corpus differential, and why its recall is not reported
 
-A second, larger instrument — `fixtures/xml/probes/corpus-differential.mts` —
-builds an **independent oracle** from the parse tree and compares class by class
-over the whole manifest. Over 7,975 files it reports the analyzer emitting 657,432
+A second, larger instrument — `$HOME/fixtures/xml/probes/corpus-differential.mts`,
+**outside version control** — builds an **independent oracle** from the parse tree and compares class by class
+over the whole manifest. Its last full run reported the analyzer emitting 657,432
 symbols and 228,194 relationships, 228,194/228,194 of them carrying a line, 0
 symbols without an owner, 0 names containing whitespace or NUL, and 0 files
 unrouteable.
+
+**Those figures predate the M18 entity-reference work and are not current.** The
+analyzer now emits `entity_reference` edges, so the relationship count moved and
+this run has not been redone. Quoting it as the analyzer's present output would be
+quoting a measurement of a build that no longer exists; the honest state is that
+the number is stale and the re-measure is owed (see `reviews/xml/master-review.md`,
+owed item 9). The **in-repo** M14 differential, by contrast, is pinned and current:
+
+```
+grails-core:xml  files=60  truth=1487  covered=1487 (100%)
+                MISSING=0  analyzer-edges=1099  unexplained=0 (0%)  17.5 ms/file
+full grails-core sweep: 314 files, missing=0, unexplained=0
+```
+
+That lane's coverage is `contains` only, and it rests on **one corpus of six** —
+`maven` is 0/0 over 3,250 files, while `libxslt` (2,012 / 1,377), `libxml2`
+(3,281 / 4,244), `cxf` (602 / 319) and `docx4j` (548 / 192) disagree, dominated by
+DTD/XSD declaration classes the oracle does not derive. That is oracle coverage
+rather than analyzer defects, and it is the largest piece of work left on the lane.
 
 It also reports `contains-attribute` recall **0.910** and 76,372 spurious
 relationships, and **both numbers are the oracle's error**. On
@@ -301,7 +320,7 @@ the one shown above to be wrong.
 
 ## Corpus validation
 
-- Manifest: `fixtures/xml/repositories/MANIFEST.json` — six repositories at pinned
+- Manifest: `$HOME/fixtures/xml/repositories/MANIFEST.json` (also outside version control) — six repositories at pinned
   revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
   `*.xsl`, `*.xslt`, `*.svg`, `*.rng`), deterministic lexicographic order.
   grails-core's 314 are 146 xml + 9 xsd + 4 dtd + 155 svg, so a lane that measured
@@ -334,17 +353,63 @@ run names files that are expected to fail and fails the run if they succeed.
 - Complexity: `validation/m12/results/xml-corpus-complexity.json`
 - Shape safety: `validation/m12/results/xml-shape-safety.json`
 - Corpus differential: `fixtures/xml/out/corpus-differential.json`, runner
-  `fixtures/xml/probes/corpus-differential.mts`
+  `fixtures/xml/probes/corpus-differential.mts`. **These two are outside version
+  control** — `fixtures/` is a sibling worktree at `$HOME/fixtures/`,
+  not a path relative to this repository, so the bare form above reads as a repo
+  path and resolves to nothing. 35 probe files and 32 output files live there and
+  are **not** reproducible from a clone; the durable ones still need moving in.
+  The M14 in-repo gates below do not have this problem, which is the reason the
+  numbers above are quoted from those and not from these.
 - Lane registration and per-language record: `script/m14/completeness-inventory.ts`
   → `script/m14/spec/xml-completeness.json`, emitted by
   `script/m14/emit-xml-completeness.ts`
-- M14 fixtures: `validation/m14/fixtures/xml/` (8), mutants via
-  `script/m14/mutate-analyzer.ts` (9)
+- M14 fixtures: `validation/m14/fixtures/xml/` (15), mutants via
+  `script/m14/mutate-analyzer.ts` (16, all caught)
+- Declared-name line contract: `script/m12/xml-declared-name-lines.mts` — 8,889
+  files, 52,651 declaration anchors, **0 mis-anchored**; 43 offenders and exit 1
+  with the fix reverted
+- Encoding recovery: `script/m12/xml-encoding-recovery.mts` — 22 files, 1,537
+  symbols, 229 relationships, **with the predicate written into the script**
 - Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
   `script/m14/verify-grammar-pins.ts`
 - Evidence scripts: `script/m12/xml-corpus-errors.ts`,
   `xml-corpus-measure.ts`, `xml-node-types-compare.ts`,
   `xml-contract-probe.ts`, and `regex-census.ts`
+
+## Where a declaration's line comes from
+
+A vocabulary declaration is written in an **attribute**, and a formatted document
+routinely puts that attribute — or the value itself — on a different line from the
+tag that opens the declaration:
+
+```xml
+<xsl:with-param          ← not where the name is
+    name="content"      ← the name
+```
+
+A symbol and a `contains` edge therefore report **the line carrying the value**,
+not the line carrying the tag:
+
+| shape | anchor | example |
+| --- | --- | --- |
+| attribute and value on one line | the `Attribute` | `<xsd:attribute name="x" type="…"/>` |
+| attribute and value on different lines | the `AttValue` | `<xsd:element name=` ⏎ `"InvalidModificationFault"` (`cxf/wsn/wsdl/rp-2.xsd`) |
+| value with surrounding whitespace | the line carrying it, after the trim XSD value normalization performs | `name=" xmlns"` (`libxml2/…/spectest.xml`) |
+
+The **structural** span is not lost. `metadata.elementRange` carries the element's
+own range whenever a declared name was used, so a consumer that wants "where does
+this element start" has it and a consumer that wants "where is this name written"
+has `range`. Before this the two readings shared one field and one of them had to
+be wrong.
+
+Gated by `script/m12/xml-declared-name-lines.mts`, which reads the analyzer's
+output and goes back to the **source text** — it cannot tell a wrong line from a
+right one by agreeing with the analyzer. Pinned by fixture
+`xml/xsd-declared-name-lines` (all three shapes) and mutant
+`xml/declared-name-anchored-to-the-tag`.
+
+This is the same rule as the `ExternalID` line contract above and the `#861` web
+family finding, reached from the declaration side.
 
 ### The two grammar repairs
 
