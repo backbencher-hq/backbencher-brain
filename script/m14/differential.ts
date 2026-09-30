@@ -793,8 +793,27 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
       "grails-profiles/web/templates/",
       "grails-profiles/rest-api/templates/",
       "grails-profiles/plugin/templates/",
-      "grails-profiles/base/skeleton/",
       "grails-test-examples/mongodb/gson-templates/",
+      // Every `skeleton/` root, in ONE entry, replacing the single hardcoded
+      // `grails-profiles/base/skeleton/`. Matched by substring, so this covers all seven
+      // shipped profiles AND the `grails-spring-security/rest/testapp-profile/features/*/
+      // skeleton/` app templates.
+      //
+      // The hardcoded one was measurably incomplete: 9 corpus files fail to parse purely
+      // because their own package line is a placeholder -- `package
+      // @grails.codegen.defaultPackage@` -- and they live under `plugin/`,
+      // `rest-api/` and `rest-api-plugin/` skeletons, not `base/`. Those 9 files and 38
+      // ERROR/MISSING nodes were being counted as grammar defects. The triage that found
+      // them ranks them as their own cluster (signature `package @ID@`, 9 files, 38
+      // errors); see script/m59/groovy-parse-triage.mts.
+      //
+      // 47 `.groovy` files in the corpus sit under some `skeleton/` root. Most of them
+      // happen to parse (the placeholders are in their PATHS, and git tracks paths with
+      // the placeholder in the directory name), so this exclusion removes 47 parseable
+      // files too. That is a real 0.66% reduction of the measured universe and it is
+      // counted and reported by the audit rather than absorbed silently: these are
+      // generator inputs, not programs, exactly like `src/main/templates/`.
+      "/skeleton/",
     ],
   },
 
