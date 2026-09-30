@@ -173,14 +173,16 @@
       {
         "id": "MAKE-G1",
         "node_type": "VPATH_assignment",
-        "status": "OPEN",
-        "description": "`VPATH = src` is a declared node type the analyzer does not model, so the search path is not recorded. 0 occurrences across all 99 corpus files, so there is no evidence to design against and no regression to guard. The sibling `vpath_directive` (the functional form) IS recorded, so the two spellings of the same feature are deliberately asymmetric pending corpus evidence for the assignment form."
+        "status": "FIXED",
+        "description": "CLOSED. `VPATH = src:include` is the ASSIGNMENT spelling of the search path, and the sibling `vpath %.c src` DIRECTIVE had been recorded all along -- so the two spellings of one feature were deliberately asymmetric pending corpus evidence that never came (0 occurrences in 100 pinned files).\n\nThe asymmetry was not cosmetic, which is what made this worth doing rather than leaving as a coverage note. Because `VPATH` was never DECLARED, a reference to it fell to `uses` -- the class this lane reserves for names that NOTHING can declare -- yet in a file that sets `VPATH = ...` this file is exactly the thing that declares it. `CFLAGS = -I$(VPATH)` was published as a read of something undeclared, which is the lane's own definition of asserting a declaration that does not exist, stated backwards.\n\n`VPATH` is now a `constant`: a GNU Make builtin whose value a makefile may set, exactly like `CURDIR` or `MAKEFILE_LIST`. The read becomes a `references` edge. The directories are recorded as a LIST in `metadata.searchPaths`, because the value is colon-separated on the page and a consumer asking where the makefile looks for a prerequisite wants the list rather than the spelling. The directories are deliberately NOT symbols: they are paths the file looks IN, not declarations it makes, and those strings appear in essentially every Makefile in existence. Pinned by make/vpath-assignment with 4 forbidden shapes and 3 mutants (drop the declaration, relabel the read `uses`, invent a symbol per directory).",
+        "fixedBy": "analyzer: a `VPATH_assignment` case in src/ast/real-makefile-analyzer.ts; pinned by make/vpath-assignment and 3 mutants"
       },
       {
         "id": "MAKE-G2",
         "node_type": "RECIPEPREFIX_assignment",
         "status": "OPEN",
-        "description": "`.RECIPEPREFIX = >` changes what a recipe line looks like, so ignoring it means recipe lines using a non-default prefix are not recognized as recipes. 0 occurrences in this corpus (every one of the 99 files uses a tab), so the exposure is unmeasured rather than known to be zero — recorded as open precisely because \"no corpus evidence\" is not the same claim as \"no risk\"."
+        "description": "A real correctness defect, and the only open gap in this lane that is one. `.RECIPEPREFIX = >` is GNU Make 3.82+; the pinned grammar hardcodes the recipe prefix to a tab and leaves `// TODO external parser for .RECIPEPREFIX` where the value belongs, so a Makefile that sets it has every recipe line parsed as an ERROR node and the analyzer reports a build file that does nothing. 0 of the 100 pinned corpus files set it, which is a fact about the corpus and not about the language.\n\nWHY IT IS STILL OPEN, PRECISELY. A finished external scanner is retained under grammars/tree-sitter-make/recipeprefix/ and the conflict is reproducible in one command (`bun run script/m14/tmp/make/recipeprefix-conflict.mts`). The two requirements are in direct conflict:\n  (1) a comment between two recipe lines must not end the recipe -- an ordinary makefile shape, present in 3 of the 100 corpus files;\n  (2) the declared prefix must be able to LEAD A RULE (`>a: deps`), because make strips it there too and that is the normal way to write the feature at all.\nThe scanner satisfies (1) and fails (2): the recipe-only variant passes the corpus with zero regressions. Adding `optional(prefix)` to `_ordinary_rule` satisfies (2) and BREAKS (1) -- the corpus A/B rejected it with 36 new error nodes across boundary/Makefile (12), nomad/GNUmakefile (17) and tf-aws-components/Makefile (10). Neither half is wired: half-supporting a construct is worse than declaring the gap, because a reader cannot tell which half works. This is a tree-sitter LEX-STATE problem rather than scanner logic, and the next attempt has a written direction.",
+        "attempted": "A complete external scanner was written, built and measured, and is retained at grammars/tree-sitter-make/recipeprefix/ (scanner.c, the patched grammar, and the diff). It is NOT wired, and the reason is precise rather than a dead end: see the README there. Measured with it: node surface unchanged at 44 named / 24 fields, corpus A/B over all 100 files 0 error nodes with 0 files regressed, and every recipe-line shape measured clean. It is unwired because it satisfies only HALF the feature."
       },
       {
         "id": "MAKE-G3",
@@ -200,7 +202,6 @@
     "summary": {
       "declared_named_types": 44,
       "unmodelled_or_unexercised_open": [
-        "MAKE-G1",
         "MAKE-G2"
       ],
       "fixed_by_measured_grammar_patch": [
@@ -208,7 +209,10 @@
         "MAKE-G4"
       ],
       "residual_error_nodes": 0,
-      "note": "G1/G2 remain OPEN and are corpus-COVERAGE gaps (0 occurrences in 99 files), not correctness defects: no corpus evidence is not the same claim as no risk."
+      "note": "ONE gap remains open: MAKE-G2, a real correctness defect (.RECIPEPREFIX) with a finished, measured, retained patch that cannot yet be wired because two requirements conflict -- documented and reproducible at grammars/tree-sitter-make/recipeprefix/README.md and script/m14/tmp/make/recipeprefix-conflict.mts. G1, G3 and G4 are closed.",
+      "fixed_by_analyzer_change": [
+        "MAKE-G1"
+      ]
     }
   },
   "design_decision": {

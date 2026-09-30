@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process"
 import { makeCorpus, REPOS_ROOT } from "./make-corpus"
-import { writeFileSync } from "node:fs"
+import { writeFileSync, existsSync } from "node:fs"
 import { parseFile } from "../../src/ast/pool-worker"
 
 // Make has no single language-representative repository: the ecosystem is a
@@ -31,7 +31,25 @@ import { parseFile } from "../../src/ast/pool-worker"
 const errors: { repo: string; file: string; count: number; rows: number[] }[] = []
 const hasErrorNoNode: { repo: string; file: string; reportedRows: number[] }[] = []
 const crashes: { repo: string; file: string; error: string }[] = []
+/**
+ * A file the git INDEX lists but the checkout does not contain.
+ *
+ * `perl5` is a sparse/partial checkout: `git ls-files` reports three Makefiles
+ * under `Cross/` and `win32/` that are not materialised on disk. Those are not
+ * analyzer crashes, and recording them as one is the kind of misclassification that
+ * makes a gate red for the wrong reason and teaches its reader to ignore it.
+ *
+ * They are counted and DISCLOSED rather than dropped, because the opposite mistake
+ * is the one this lane already made: the enumerator used to report 14 files when the
+ * corpus held 102, and a silent skip is exactly how that went unnoticed. So the
+ * gate states how many files it measured and how many it could not, and the
+ * `passed` verdict requires the measured count to be the whole tracked set MINUS a
+ * disclosed absent set — not merely non-zero.
+ */
+const absent: { repo: string; file: string }[] = []
 for (const f of files) {
+  // A tracked file the checkout does not contain is ABSENT, not a crash: see above.
+  if (!existsSync(f.abs)) { absent.push({ repo: f.repo, file: f.file }); continue }
   try {
     const parsed = await parseFile(f.abs, process.cwd())
     const fileErrors = parsed.errors ?? []
@@ -79,6 +97,10 @@ const result = {
   revisions,
   extensions: ["Makefile", "GNUmakefile", "makefile", "*.mk"],
   trackedFiles: files.length,
+  // Disclosed, not silent: the gate states how many files it could not read rather
+  // than quietly measuring a smaller corpus. See the note above `absent`.
+  absent: absent.map((a) => `${a.repo}/${a.file}`),
+  absentCount: absent.length,
   errorFiles: errors.length,
   errorNodes: errors.reduce((sum, item) => sum + item.count, 0),
   crashFiles: crashes.length,
