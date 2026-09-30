@@ -234,15 +234,35 @@ function containerOwnerName(n: Node): string | undefined {
   while (p) {
     if (p.type === "class_declaration") return p.childForFieldName("name")?.text
     if (p.type === "class") {
-      // A class EXPRESSION: its own declared name wins, else the binding it is
-      // assigned to — by declarator OR by plain assignment. The assignment form
-      // is not a corner case: it is how a custom-element base is written
-      // (svelte `packages/svelte/src/internal/client/dom/elements/
-      // custom-element.js`: `SvelteElement = class extends HTMLElement { … }`),
-      // and omitting it left 20 members ownerless on a 400-file production draw
-      // even after the declarator form was handled.
-      const own = p.childForFieldName("name")?.text
-      if (own) return own
+      // A class EXPRESSION is owned by the BINDING it is assigned to — by
+      // declarator OR by plain assignment. The assignment form is not a corner
+      // case: it is how a custom-element base is written (svelte
+      // `packages/svelte/src/internal/client/dom/elements/custom-element.js`:
+      // `SvelteElement = class extends HTMLElement { … }`), and omitting it left
+      // 20 members ownerless on a 400-file production draw even after the
+      // declarator form was handled.
+      //
+      // X11 (2026-09-28): this used to prefer the class expression's OWN declared
+      // name over its binding, and that produced a DANGLING owner. Measured:
+      // `const D = class Inner { m(){} }` published `contains Inner->m` while the
+      // symbol table held only `D:constant` and `m:method` — `Inner` was named by
+      // no symbol anywhere in the file, so the containment edge pointed at a name
+      // the graph does not contain. The anonymous form was already right
+      // (`const E = class { m(){} }` -> `contains E->m`), which is what made this
+      // a defect and not a design choice: the same construct gave two answers
+      // depending on whether the author happened to name the expression.
+      //
+      // The binding is the right owner, and not only because it is a symbol. The
+      // lane's own ruling (javascript-completeness design_decision 30) holds that
+      // a class expression deliberately emits NO Class symbol, because it is a
+      // VALUE expression and the binding that holds it is its identity. So the
+      // own-name preference contradicted the ruling as well as the graph: the
+      // ruling says the binding is the identity, and the edge named the one thing
+      // the ruling says is not emitted.
+      //
+      // With no binding at all — `runIt(class Inner { m(){} })` — the member stays
+      // ownerless, which is the same honest silence the object-literal branch
+      // below already takes. `Inner` would name nothing there either.
       return bindingNameAbove(p)
     }
     if (p.type === "object") {
