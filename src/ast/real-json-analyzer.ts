@@ -502,8 +502,18 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (bracket > 0 && parent.endsWith("]")) parent = parent.slice(0, bracket)
       if (!parent.endsWith(".allOf")) continue
       const refPath = ref.metadata?.refPath as string | undefined
-      if (!refPath || !refPath.startsWith("#/")) continue
-      const target = this.referenceTarget(ctx, refPath)
+      if (!refPath) continue
+      // A `$ref` inside `allOf` may point INSIDE the document (`#/…`) or at a SIBLING
+      // FILE (`dataTypeBase.json#` — a relative file ref with a fragment, which
+      // isFileNamingRef already recognises and which `imports` already emits). The
+      // file form is still composition: "inherits from the schema in that file".
+      // Requiring `#/` silently dropped it, which is the same class of error as the
+      // bracketed-index bug — a predicate written against the shape assumed rather
+      // than the shape observed, quietly covering a subset and reporting success.
+      const isLocal = refPath.startsWith("#/")
+      const isSiblingFile = !isLocal && this.isFileNamingRef(refPath)
+      if (!isLocal && !isSiblingFile) continue
+      const target = isLocal ? this.referenceTarget(ctx, refPath) : refPath
       ctx.relationships.push({
         source: parent,
         target,
@@ -513,6 +523,8 @@ export class RealJsonAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: {
           jsonSpecific: true,
           composition: "allOf",
+          refForm: isLocal ? "intra_document" : "sibling_file",
+          resolvedPath: isLocal,
           note: "allOf is a superset-of relationship; anyOf/oneOf are alternatives and emit only `references`",
           evidenceClass: "structural",
         },
