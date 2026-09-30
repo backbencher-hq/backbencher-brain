@@ -860,7 +860,24 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             pushedName = oName
             nextParentClass = oName
           }
-          this.extractObject(n, symbols, ctx, pClass)
+          // M60 M3 (master review): the owner rule that aa6a2beb applied to
+          // properties, and the local-function / local-class fixes applied to
+          // functions and type declarations, applied here. An `object` is a
+          // MEMBER of a class exactly when it is declared in that class's body;
+          // one declared inside a function is local to it.
+          //
+          // The master review found this by SWEEPING the call sites rather than
+          // by reasoning about them, and the sweep is what made it findable:
+          // `extractObject` was one of only two extractor call sites still
+          // passing an ungated `pClass`, the other being `type_alias`. Fixing
+          // the three sites I had happened to notice left two live, which is
+          // the strongest argument yet for enumerating a defect class instead
+          // of fixing it where it surfaces.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition = pt === "class_body" || pt === "enum_class_body"
+            this.extractObject(n, symbols, ctx, isMemberPosition ? pClass : undefined)
+          }
           break
         }
         case "property_declaration":
@@ -922,6 +939,8 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           // symbol (kind 'type', matching the JVM-family record/typealias
           // convention). The aliased RHS types are referenced separately by
           // extractDeclaredTypeRefs.
+          const pt = n.parent?.type
+          const isMemberPosition = pt === "class_body" || pt === "enum_class_body" || pt === "source_file"
           const tName = this.findChildByType(n, ["type_identifier", "simple_identifier"])
           if (tName) {
             const tModifiers = this.extractModifiers(n, ctx)
@@ -931,8 +950,20 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
               range: this.symbolRange(n),
               scope: this.currentScope(ctx),
               visibility: this.determineVisibility(tModifiers, ctx),
-              ownerName: pClass,
-              ownerKind: pClass ? ASTEngine.SymbolKind.Class : undefined,
+              // M60 M3 (master review): same owner rule, same sweep. A type
+              // alias is a MEMBER of a class exactly when it is declared in that
+              // class's body. One declared inside a function is local to it, and
+              // the class does not contain it:
+              //
+              //   class Host3 { fun f() { typealias T = Int; val x: T = 1 } }
+              //   published: T[owner=Host3], contains Host3->T
+              //
+              // This is the same phantom containment as aa6a2beb's init-block
+              // local and the local-class fix, in the one remaining ungated
+              // extractor call site. Found by enumerating every site that passes
+              // a parentClass, not by looking for this shape.
+              ownerName: isMemberPosition ? pClass : undefined,
+              ownerKind: isMemberPosition && pClass ? ASTEngine.SymbolKind.Class : undefined,
               decorators: this.extractAnnotations(n, ctx),
               metadata: {
                 modifiers: tModifiers,
