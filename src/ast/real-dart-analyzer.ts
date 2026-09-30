@@ -1475,6 +1475,58 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
 
+      // A `qualified` name is the SAME member read as `identifier` + `selector`,
+      // parsed the other way round, and only one of the two shapes was handled.
+      //
+      // `mode == M.off` parses as `equality_expression(identifier(M),
+      // selector(.off))`, so the branch above reads the member and publishes
+      // `uses source -> off`. `case M.off:` parses as a single `qualified` node
+      // under a `constant_pattern`, so nothing read it: the string "qualified"
+      // appeared NOWHERE in this analyzer, and a switch case naming a declared
+      // enum member or constant published no edge of any kind — not `uses`, not
+      // `references`, nothing. Measured over ProxiCall/lib: 78 such constant
+      // patterns in 82 files, every one a false negative, led by
+      // `case WalletOperationType.recipientLookup:` and
+      // `case SessionOfflineBannerMode.offline =>`. The same text, the same
+      // meaning, two node shapes, and only the common one was read.
+      //
+      // SCOPE, deliberately narrow. This fires only where a `qualified` sits
+      // under a `constant_pattern`, which is unambiguous: it names a constant
+      // being TESTED (`case M.off:`, `if (x case M.off)`). A `qualified` in a TYPE
+      // position (`prefix.Type` in an annotation) is a different question — it
+      // names a type, and whether that deserves a `uses` edge is a family
+      // decision this lane has not made. Widening to every `qualified` would
+      // answer that question by accident, so it stays open and visible.
+      if (t === "qualified" && n.parent?.type === "constant_pattern") {
+        const segs = n.text.split(".")
+        const member = segs[segs.length - 1]
+        const head = segs.length > 1 ? segs[segs.length - 2] : null
+        if (member && !this.isDartGlobalBuiltin(member) && member !== head) {
+          // A named constructor is still a construction: `case Foo.named:` tests
+          // the constructor `Foo.named`, so it instantiates Foo (DT-A), the same
+          // way the selector branch above treats a `Foo.named` tear-off.
+          if (head !== null && isCapitalized(head) && namedCtors.has(`${head}.${member}`)) {
+            relationships.push({
+              source: callSource,
+              target: head,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.95,
+              line_number: this.nodeLine(n),
+              metadata: { isNamedConstructor: true, isConstantPattern: true },
+            })
+          } else {
+            relationships.push({
+              source: callSource,
+              target: member,
+              type: ASTEngine.RelationshipType.Uses,
+              confidence: 0.9,
+              line_number: this.nodeLine(n),
+              metadata: { isMemberRead: true, isConstantPattern: true },
+            })
+          }
+        }
+      }
+
       // DT-F+ (#752): BARE identifier member reads. The selector branch above
       // only sees dotted reads (`this.count`, `obj.count`), so a plain
       // `return count;` on a declared field emitted NOTHING (probe-confirmed:
