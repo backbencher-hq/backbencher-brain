@@ -13,7 +13,7 @@
 Most lanes in this file pin bytes that are byte-identical to a published package. This one
 cannot, and the reason is that **Objective-C runs a patched grammar**.
 
-`wasm/tree-sitter-objc.wasm` (5,625,076 B) is a rebuild of the vendored
+`wasm/tree-sitter-objc.wasm` (5,625,072 B, sha256 520bf5e0…) is a rebuild of the vendored
 `grammars/tree-sitter-objc/grammar.js`, which is upstream 3.0.2 plus four rules this
 repository added. npm's own `tree-sitter-objc@3.0.2` wasm is 5,317,155 B and is a different
 build. Byte-identity is therefore not available as a provenance kind, and the interesting
@@ -102,6 +102,17 @@ identifier, so `method_selector` claimed it and the method was published as
 Objective-C:** that is not a typo in a name, it is a method that does not exist, carrying a
 `contains` row a consumer would route calls to, while the real selector is the one that vanishes.
 
+**Open, and deliberately not patched — the fourth Apple macro shape.** A bracketing
+`NS_ASSUME_NONNULL_BEGIN`-style macro whose successor is a `typedef` rather than an
+`@`-declaration is still unhandled: the pair parses as a K&R `function_definition` and the
+declaration is lost (1 declaration, 1 file, 3 ERROR nodes). The only rule measured for it
+improved the corpus by 8 symbols and 11 relationships with zero losses, and was **reverted**:
+it fired in exactly one place, resisted ten minimal reproductions, and its behaviour flipped
+when the rule's position in the `rules` object changed and nothing else did. The full negative
+result, and what a real fix would have to do instead, are recorded in `grammar.js` next to the
+rule's absence. Enum recovery is therefore 164/164 members across 34 of 35 declarations
+(98.78%), not 100%.
+
 ## What is vendored, and what is not
 
 `grammar.js` (patched), `package.json`, `tree-sitter.json`, `LICENSE`, `README.md`, `queries/`,
@@ -132,8 +143,10 @@ mkdir -p <grammar>/node_modules/tree-sitter-c && cp -r package/* <grammar>/node_
 cd <grammar> && tree-sitter generate && tree-sitter build --wasm --output <out>.wasm .
 ```
 
-A rebuild of the committed patched source is 5,625,079 B against the wired 5,625,076 B — a
-3-byte difference, and analyzer-identical on all 329 routed files. That is the standing standard
+A rebuild of the committed patched source is 5,625,072 B against the wired 5,625,072 B —
+byte-identical on this build, and behaviourally identical on all 329 routed files in every case;
+the standard below is behavioural, not by hash, because a wasm build carries its emscripten
+version, compiler flags and section order and two correct builds of one source need not agree, and analyzer-identical on all 329 routed files. That is the standing standard
 for this lane: **behaviourally, not by hash.**
 
 ## The hazard this pin exists to retire
