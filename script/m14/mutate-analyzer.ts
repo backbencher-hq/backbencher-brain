@@ -16421,6 +16421,16 @@ export const MUTANTS: Mutant[] = [
         : x)),
     }),
   },
+  {
+    id: "clojure/special-form-treated-as-call",
+    language: "clojure",
+    defectClass: "fabricated-relationship",
+    description: "F5-cert (derived calls oracle): the special-form check runs AFTER the shadow rule instead of before it, so core.clj's own `(defmacro fn ...)` at :4748 makes every `(fn ...)` below it a call to a var - 212 fabricated edges - special-form-not-a-call forbids catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "anon", target: "fn", line_number: 17, confidence: 0.9, metadata: {} }],
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
