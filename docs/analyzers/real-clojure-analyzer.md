@@ -269,7 +269,25 @@ the spec vecs themselves rather than `ns`-style clauses, so one spec reader serv
 both shapes. Before this, `jio` at `core.clj:7248`, `str/replace` and
 `ns/find-namespaces-in-dir` were the last unresolved targets in the corpus.
 
-On the 143-file clojure corpus the derived oracle and the previous hand-rolled
-implementation agree edge for edge (4,693 edges; 38 missing, 221 unexplained),
-which is the point: the remaining disagreement is now a single question about the
-analyzer rather than two implementations drifting apart.
+**Special forms (CLJ-D41).** The shadow rule above has one exception that is not
+an exception at all: `clojure/core.clj:4748` is `(defmacro fn …)`, so core.clj
+redefines `fn` as a bootstrap macro and the shadow rule published every `(fn …)`
+below it as a call to the file's own var — 212 edges, all wrong. `fn` is a
+*special form*; a file defining it does not turn it into a var. The special-form
+set is closed, is consulted **before** the shadow rule rather than after it, and
+tests the whole head rather than a prefix, so `fnan?` remains an ordinary var.
+
+The 38/221 first measured for the previous hand-rolled implementation were, in
+part, this same class seen from the other side: the analyzer stays silent for
+`fn` but still emits `fn*` and `loop`, so its own special-form handling is
+partial. That asymmetry is the remaining open question, not a truth gap.
+
+## Where the derived `calls` oracle stands
+
+On the 143-file clojure corpus the derivation reports 5,981 truth edges with
+**4 missing and 189 unexplained**, against the hand-rolled implementation's
+4,693 with 38 missing and 221 unexplained — better on both axes, which is the
+condition for replacing it. The 4 missing and 189 unexplained are a single
+question about the analyzer, dominated by fabricated self-edges: the analyzer
+emits `calls: looped -> looped` for a `defn` whose body opens with a form of
+the same name, and `lambda_83_6`-style targets for anonymous functions.
