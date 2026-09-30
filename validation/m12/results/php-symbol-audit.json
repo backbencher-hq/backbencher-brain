@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12",
+  "language": "php",
+  "purpose": "phantom-symbol detection: can a differential prove this? NO — precision/recall only shows analyzer and oracle AGREE",
+  "corpora": [
+    "$HOME/fixtures/repositories/phpunit",
+    "$HOME/fixtures/repositories/phpmyadmin"
+  ],
+  "perCorpusSample": 600,
+  "filesScanned": 1200,
+  "symbolsScanned": 9906,
+  "distinctKindName": 6408,
+  "byKind": {
+    "method": 5588,
+    "property": 1859,
+    "namespace": 1166,
+    "class": 1112,
+    "enum_member": 62,
+    "constant": 50,
+    "interface": 35,
+    "enum": 20,
+    "function": 12,
+    "trait": 2
+  },
+  "suspicious": 0,
+  "suspiciousDetail": [],
+  "history": "php has had phantom symbols removed before (Laravel Eloquent getAttribute/setAttribute, WordPress wp_add_* hooks) — see validation/m12/corpus-manifest.json. A phantom is invisible to precision/recall when the oracle is wrong the same way, which is why this check exists separately.",
+  "generatedAt": "2026-09-30T07:15:35.626Z"
+}
