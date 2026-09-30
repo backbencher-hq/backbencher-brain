@@ -46,7 +46,11 @@ may carry uniqueness (`:: * Input *a = ...`)" while `type_variable` was a bare
 line wrapped the whole file in an `ERROR` spanning 1,328 lines.
 
 **Result: 1,524 → 1,656 parse-clean files (69.9% → 76.0%), ERROR nodes 25,683 →
-24,738.** 128 grammar tests and the repo's 312-file cache-free regression gate
+24,738.** Released as **tree-sitter-clean v1.2.8** (`7dfe6d12`), published to npm,
+crates.io and PyPI on 2026-09-30; the pin below records the release commit and
+the two facts that govern how its hash may be used — a wasm build is not
+byte-deterministic, and npm ships no wasm, so the reproducible contract is the
+surface digests, not the file hash. 128 grammar tests and the repo's 312-file cache-free regression gate
 back each step.
 
 ### The ceiling is real, and it is measured
