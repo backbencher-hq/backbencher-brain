@@ -13006,9 +13006,28 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       // name "IO"), so a depth search for `name` here returned "IO" and
       // published `contains Module -> IO` for a type the module never declares.
       // Only the named-type declarations may use that search.
-      if (d.type === "function" || d.type === "bind") {
+      if (d.type === "function" || d.type === "bind" || d.type === "signature") {
         const head = d.namedChild(0)
         return head?.type === "variable" ? head.text : ""
+      }
+      if (d.type === "instance") {
+        // The instance symbol is named by its TARGET TYPE, and the class in a
+        // qualified head (`instance Config.ConnectionString.Constructs a b`) is
+        // a `qualified` node, not a `name` -- so the generic path below returned
+        // the CLASS ("Constructs") and published `contains Module -> Constructs`
+        // for a class the module does not declare.
+        const tp = d.namedChildren.find((c: any) => c.type === "type_patterns")
+        if (!tp) return ""
+        const direct = tp.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
+        if (direct) return direct.text
+        if (tp.namedChildren.some((c: any) => c.type === "list")) return "[]"
+        // an applied head: `ExceptT Error` names ExceptT, and `C1 c` names C1.
+        // A bare `variable` is a type PARAMETER, never the target.
+        const par = tp.namedChildren.find((c: any) => c.type === "parens")
+        const ap = par?.namedChildren.find((c: any) => c.type === "apply")
+        const first = ap?.namedChild(0)
+        if (first) return first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+        return ""
       }
       const deep = (x: any, depth: number): any => {
         for (const c of x.namedChildren) {
@@ -13050,7 +13069,8 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     // lookup finds every GADT constructor and no ordinary one.
     const deepName = (x: any, depth: number): any => {
       for (const c of x.namedChildren) {
-        if (c.type === "constructor" || c.type === "name" || c.type === "variable") return c
+        if (c.type === "constructor" || c.type === "name" || c.type === "variable" ||
+            c.type === "constructor_operator" || c.type === "operator" || c.type === "infix_id") return c
       }
       if (depth <= 2) {
         for (const c of x.namedChildren) {
@@ -13158,10 +13178,16 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
           if (direct) target = direct.text
           else if (tp.namedChildren.some((c: any) => c.type === "list")) target = "[]"
           else {
+            // the applied HEAD names the type; a bare `variable` sibling is a
+            // type PARAMETER and must never become the target
             const par = tp.namedChildren.find((c: any) => c.type === "parens")
             const ap = par?.namedChildren.find((c: any) => c.type === "apply")
             const first = ap?.namedChild(0)
             if (first) target = first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+            else {
+              const v = tp.namedChildren.find((c: any) => c.type === "variable")
+              if (!v) target = ""
+            }
           }
         }
         if (!cls || !target) {
