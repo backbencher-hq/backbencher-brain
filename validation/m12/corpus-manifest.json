@@ -655,24 +655,88 @@
         "corpusSymbols": 3073,
         "corpusRelationships": 4276,
         "grammarErrorFiles": 0,
-        "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup. [corrected 2026-09-20 (#897): grammarErrorFiles now matches the measured artifact validation/m12/results/php-corpus-errors.json — enforced by script/m12/verify-corpus-claims.ts] [updated 2026-09-28: fixtureFacts 49 -> 66 after the M12.PHP-IMPORTS ground-truth re-file (require_once references -> imports, plus the two use-clause imports facts). Two defects closed with measurements: the 0.5 first-parent-guess overrides edge was removed — script/m12/php-override-audit.ts decided 18 of the guesses against the real declaring file and 12 were FALSE (66.7% floor), and removing it took heuristic 198 -> 0 on phpunit and 171 -> 0 on phpmyadmin with coverage unchanged; and `imports` is now really emitted (the ontology always promised it), which is what the file-level reader keys on at src/lsp/graph_request.ts:256.]",
+        "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup. [corrected 2026-09-20 (#897): grammarErrorFiles now matches the measured artifact validation/m12/results/php-corpus-errors.json — enforced by script/m12/verify-corpus-claims.ts] [updated 2026-09-28: fixtureFacts 49 -> 66 after the M12.PHP-IMPORTS ground-truth re-file (require_once references -> imports, plus the two use-clause imports facts). Two defects closed with measurements: the 0.5 first-parent-guess overrides edge was removed — script/m12/php-override-audit.ts decided 18 of the guesses against the real declaring file and 12 were FALSE (66.7% floor), and removing it took heuristic 198 -> 0 on phpunit and 171 -> 0 on phpmyadmin with coverage unchanged; and `imports` is now really emitted (the ontology always promised it), which is what the file-level reader keys on at src/lsp/graph_request.ts:256.] [updated 2026-09-29: both declared gaps adjudicated to RULED (PHPD31/PHPD32) so the lane declares ZERO gaps; `exports` ruled out for php (PHPD33) with reasons; the grammar was added to the pin table as sha-only; and the differential was run over the FULL corpus of both repos — 4,139 files, 95,231 truth edges, 100% covered, 0 missing / 0 unexplained / 0 heuristic.]",
         "measuredAt": "2026-08-19T16:44:00.000Z",
         "secondCorpus": {
           "name": "phpmyadmin",
           "revision": "4061095a59e1769128776ad24154cc7058de51aa",
           "trackedPhpFiles": 1232,
-          "why": "M37.16 second corpus. phpmyadmin is include-heavy (it wires the whole app through require_once), so it exercises the include-path rule that phpunit barely touches, and its 2,907-file Laravel-free classic-OOP style differs from phpunit's testing framework.",
-          "measuredAt": "2026-09-28T23:40:00.000Z",
+          "why": "M37.16 second corpus: include-heavy (it wires the app through require_once), so it exercises the include-path rule phpunit barely touches.",
+          "measuredAt": "2026-09-29T23:50:00.000Z",
           "differential": {
-            "sample": 60,
-            "treeTruth": 2943,
-            "covered": 2942,
+            "scope": "FULL CORPUS (not a sample)",
+            "files": 1232,
+            "treeTruth": 55402,
+            "covered": 55402,
             "coveragePct": "100%",
-            "missing": 1,
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0
+          }
+        },
+        "fullCorpusDifferential": {
+          "measuredAt": "2026-09-29T23:50:00.000Z",
+          "note": "The differential was run over EVERY tracked .php file in both corpora, not the canonical 60-file sample. A sample can miss a whole edge class; the full sweep cannot. Both corpora are 100% covered with zero missing, zero unexplained and zero heuristic edges.",
+          "phpunit": {
+            "files": 2907,
+            "treeTruth": 39829,
+            "covered": 39829,
+            "coveragePct": "100%",
+            "missing": 0,
             "unexplained": 0,
             "heuristic": 0,
-            "note": "The single MISSING is the require/include rule, not a coverage gap: derivePhpEdges in script/m14/differential.ts:452 still pushes `references` for include paths while the analyzer now files them as `imports` (M12.PHP-IMPORTS). The oracle mirror is one line out of date and is owned alongside that file's other in-flight work. phpunit samples that contain no require/include measure MISSING=0."
+            "sampleSetHash": "7feec2ffa6626bca"
+          },
+          "phpmyadmin": {
+            "files": 1232,
+            "treeTruth": 55402,
+            "covered": 55402,
+            "coveragePct": "100%",
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0,
+            "sampleSetHash": "ef6aa3cce6f906d4"
+          },
+          "combined": {
+            "files": 4139,
+            "treeTruth": 95231,
+            "covered": 95231,
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0
           }
+        },
+        "lineNumberContract": {
+          "measuredAt": "2026-09-29T23:45:00.000Z",
+          "note": "M60 line contract audited on a 150-file strided sample: every relationship kind carries a line_number.",
+          "sample": 150,
+          "relationships": 5830,
+          "missingLineNumber": 0,
+          "pct": "0.00%",
+          "perKind": {
+            "calls": 1501,
+            "uses": 2162,
+            "contains": 904,
+            "imports": 664,
+            "instantiates": 325,
+            "references": 158,
+            "extends": 89,
+            "implements": 27
+          }
+        },
+        "parseCensus": {
+          "total": 3231,
+          "errorFiles": 2,
+          "crashFiles": 0,
+          "errorFilesAre": "both intentional test fixtures: tests/end-to-end/code-coverage/_files/parse-error/src/CannotBeParsed.php (deliberately unparseable) and tests/end-to-end/test-doubles/_files/TestDoubleAndPartialFunctionApplicationTest.php (partial-function-application `?` placeholder)",
+          "measuredAt": "2026-09-29T23:48:00.000Z"
+        },
+        "grammarPin": {
+          "wired": "wasm/tree-sitter-php.wasm",
+          "sha256": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7",
+          "bytes": 1058041,
+          "provenanceKind": "unnamed-build-sha-only",
+          "note": "Registered 2026-09-29 in script/m14/verify-grammar-pins.ts. php was previously ABSENT from the pin table, so its bytes were governed by nothing. The npm tree-sitter-php 0.24.2 claim in the doc is NOT offline-re-derivable (not a package.json dep, tarball not vendored), so the pin is deliberately sha-only; no vendored source and no PIN.md, so the source<->wasm proof is not applicable and the grammar is not rebuildable offline."
         }
       }
     },
