@@ -236,8 +236,7 @@ function walk(root: Node, onList: (node: Node, src: string) => void): void {
       if (nsTimeline.length > 0 && isTopLevelChild(n)) owner = nsAt(nsTimeline, n.startIndex)
       onList(n, owner)
       if (DEF_HEADS.has(nm) || isDefLikeHead(nm)) {
-        const nmNode = n.namedChild(1)
-        const dn = nmNode?.type === "sym_lit" ? symName(nmNode) : ""
+        const dn = defNameOf(n)
         if (dn) nextOwner = dn
       }
     }
@@ -294,6 +293,44 @@ function isCaseConstant(n: Node): boolean {
     if (exec[pos]!.startIndex === n.startIndex) return true
   }
   return false
+}
+
+
+/**
+ * THE NAME A DEF-FAMILY FORM BINDS, looking past the things that may sit
+ * between the head and the name.
+ *
+ * Clojure puts metadata on a definition's name constantly — `^:private`,
+ * `^{:doc "…"}`, `^{:clj-kondo/ignore [...]}` — and the analyzer reads past all of
+ * it. The truth read only `namedChild(1)`, so `(deftest ^:parallel tricky …)` and
+ * metabase's `(deftest ^:parallel complicated-test-1 …)` under a
+ * `^{:clj-kondo/ignore …}` each produced an edge with a target that was not the
+ * name. A truth that guesses wrong about WHICH name a form binds is worse than
+ * one that derives nothing, because its answer looks like a real finding.
+ *
+ * The scan is positional, not clever: past the head, skip every metadata form,
+ * then skip a docstring and an attribute map, and the first SYMBOL_LIT left is
+ * the name. A def form with no symbol in any of those positions binds nothing,
+ * which is the honest answer.
+ */
+function defNameOf(node: Node): string {
+  // ONLY metadata is skipped, and the scan stops at the first thing that is not
+  // metadata. An earlier version also skipped docstrings and attribute maps,
+  // which let the scan reach PAST the name on a form whose second child is not
+  // one — and it then picked up an ARGUMENT: metabase/cmd/reset_password.clj
+  // produced `contains -> email-address` for the `let` parameter of
+  // `(cmd.db/user-id-and-active-by-email email-address)`, and
+  // revisions/impl/dashboard.clj produced one for `num-cards-diff`. Ten
+  // fabricated edges to fix two real ones is a bad trade, and the lesson is the
+  // narrow one: skip exactly the case that occurs, and stop at everything else.
+  let i = 1
+  while (i < node.namedChildCount) {
+    const c = node.namedChild(i)
+    if (!c) return ""
+    if (c.type === "meta_lit") { i++; continue }
+    return c.type === "sym_lit" ? symName(c) : ""
+  }
+  return ""
 }
 
 /** Is this list a DIRECT child of the file root? That is what "top level" means. */
@@ -484,9 +521,7 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
     // only promises to.
     if (nm === "declare") return
     if (!DEF_HEADS.has(nm) && !isDefLikeHead(nm)) return
-    const nameNode = node.namedChild(1)
-    if (!nameNode || nameNode.type !== "sym_lit") return
-    const dn = symName(nameNode)
+    const dn = defNameOf(node)
     if (!dn) return
     // THE OWNER IS THE NAMESPACE, AT EVERY DEPTH. A `defn` interns a var in the
     // current namespace whatever encloses it lexically — `(defn outer [] (defn
