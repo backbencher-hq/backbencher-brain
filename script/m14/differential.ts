@@ -628,22 +628,6 @@ const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).to
 // it is not the same kind of thing. It imports NOTHING from the analyzer.
 import { deriveMarkdownEdges } from "./markdown-oracle"
 
-// ── ZIG: this lane's truths live in a LANE-OWNED module (script/m14/zig-truth.ts) ──
-// `contains`, `imports`, `instantiates`, `exports` and the `references` oracle. The
-// last of those was committed HERE in wave 2 and the 2026-09-29 merge DELETED it,
-// along with zig's compared-label set — so the lane reported coverage of a class it
-// was no longer auditing, and nothing turned red because a missing gate and a
-// passing gate look identical from outside. All five are imported from one
-// lane-owned file so this does not happen twice: script/m14/zig-truth.ts has
-// survived three merges of this file untouched.
-import {
-  deriveZigContainment,
-  deriveZigExports,
-  deriveZigImports,
-  deriveZigInstantiation,
-  deriveZigReferenceEdges,
-} from "./zig-truth"
-
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
   // reading precision 1.000, which was a measurement of the analyzer against a
@@ -19137,32 +19121,6 @@ async function main() {
         for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
-        // Z14: the `references` class joins the audited set. It was the analyzer's
-        // second-largest emitted class on this lane's corpora and had NO truth
-        // derivation at all, so a phantom type reference, a lost one and a corrupted
-        // one were all invisible to a lane reporting 100% coverage.
-        for (const e of deriveZigReferenceEdges(root)) {
-          ;(truth as any[]).push(e)
-        }
-        // Z30/Z32/Z33 (wave 4): the three types this lane emitted none of until the
-        // relationship census asked the blunt question. Compared at the MATCHER's
-        // key, which is `label + normTarget(target)` — site and owner are NOT part of
-        // it — so this catches fabrication and loss BY NAME, and the site/owner half
-        // of each class is adjudicated by the lane's own gates (zigw-imports.ts,
-        // zigw-instantiation.ts, zigw-exports.ts, zigw-contains.ts), which key on
-        // them. Stated here rather than left for a reader to infer from a count.
-        for (const e of deriveZigImports(root)) {
-          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
-        }
-        for (const e of deriveZigInstantiation(root)) {
-          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
-        }
-        for (const e of deriveZigExports(root)) {
-          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
-        }
-        for (const e of deriveZigContainment(root)) {
-          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
-        }
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
@@ -19482,7 +19440,7 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped

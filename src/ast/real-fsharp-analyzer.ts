@@ -46,6 +46,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
+    /**
+     * The names this run has PUBLISHED as symbols, maintained as they are pushed.
+     *
+     * This is the invariant every relationship's SOURCE must satisfy, and it is the one the
+     * structural rules kept getting wrong in both directions. A guard that refuses whenever a
+     * declaration is nested refuses `isAttribute -> FSharpEntity`, where the binding is a
+     * local inside an active pattern and IS published as a function; a guard that does not
+     * refuse publishes `argInfo -> ArgReprInfo`, where the binding is a local and is NOT
+     * published. Neither defect is visible downstream, because one edge resolves to a
+     * perfectly good symbol and the other resolves to nothing, and a graph consumer has no way
+     * to tell those apart from the shape of the edge alone.
+     *
+     * Membership is exact because a declaration's symbol is pushed when the walk visits the
+     * declaration, and the declared-type emission happens while walking its SUBTREE — so by
+     * the time a name is tested, the walk has already published it if it publishes it at all.
+     */
+    const publishedNames = new Set<string>()
+    const publish = (s: ASTEngine.UniversalSymbol): void => {
+      if (s?.name) publishedNames.add(s.name)
+      symbols.push(s)
+    }
 
     // M59.A7 dim 8 (the haskell precedent): every relationship carries the line
     // of the node that BEARS it, dedup-keyed WITH that line so two same-shape
@@ -177,7 +198,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
           const name = nameNode.text
-          symbols.push({
+          publish({
             name,
             kind: type === "namespace" ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
@@ -274,7 +295,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isExtensionOnly =
             isExtensionBody && !typeNamesDeclaredInFile.has(name) && !typeExtensionsPublished.has(name)
           if (!isExtensionBody || isExtensionOnly) {
-            symbols.push({
+            publish({
               name,
               kind,
               range: this.nodeToRange(node),
@@ -306,7 +327,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const field of fields) {
               const fieldName = this.findChild(field, (n) => n.type === "identifier")
               if (!fieldName?.text) continue
-              symbols.push({
+              publish({
                 name: fieldName.text,
                 kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(field),
@@ -325,7 +346,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               for (const c of cases) {
                 const caseNameNode = this.findDescendant(c, (n) => n.type === "identifier")
                 if (caseNameNode && caseNameNode.text) {
-                  symbols.push({
+                  publish({
                     name: caseNameNode.text,
                     kind: ASTEngine.SymbolKind.EnumMember,
                     range: this.nodeToRange(c),
@@ -344,7 +365,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const c of cases) {
               const caseNameNode = this.findDescendant(c, (n) => n.type === "identifier")
               if (caseNameNode && caseNameNode.text) {
-                symbols.push({
+                publish({
                   name: caseNameNode.text,
                   kind: ASTEngine.SymbolKind.EnumMember,
                   range: this.nodeToRange(c),
@@ -553,7 +574,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               // (`member private this.Reset()`), and neither `internal` nor `private`
               // is part of the library's importable surface.
               const memberAccess = this.accessModifierOf(node, null)
-              symbols.push({
+              publish({
                 name,
                 kind,
                 range: this.nodeToRange(node),
@@ -628,7 +649,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: "constructor",
             kind: ASTEngine.SymbolKind.Constructor,
             range: this.nodeToRange(node),
@@ -645,7 +666,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "property_or_ident")
         if (nameNode && nameNode.text) {
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
@@ -680,7 +701,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (iface) {
           const { written, leaf } = iface
           const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: "new " + written,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
@@ -714,7 +735,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "active_pattern") {
         // One function symbol named by the full active pattern, e.g. (|Even|Odd|)
-        symbols.push({
+        publish({
           name: node.text,
           kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
@@ -725,7 +746,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `exception NotFound of string` — NotFound is under long_identifier.
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier")
         if (nameNode && nameNode.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
@@ -742,7 +763,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // .dcl/.icl merge precedent).
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode?.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
@@ -773,7 +794,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (attrNameNode && attrNameNode.text) {
           const attrText = attrNameNode.text
           if (attrText.includes("TypeProvider") || attrText.includes("TypeProviderAssembly")) {
-            symbols.push({
+            publish({
               name: attrText,
               kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
@@ -885,7 +906,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "compiler_directive_decl") {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Macro,
             range: this.nodeToRange(node),
@@ -933,7 +954,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // FS-D4: the R9 declared-type reference graph. See extractDeclaredTypeRefs.
-    this.extractDeclaredTypeRefs(rootNode, pushRel)
+    this.extractDeclaredTypeRefs(rootNode, pushRel, publishedNames)
 
     // FS-D8: the EXPORT surface. F#'s importable units are the ones an `open` can
     // bind:
@@ -1502,6 +1523,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: Record<string, any>,
       line?: number,
     ) => void,
+    /**
+     * The names this run has published as symbols. Passed in rather than reached for because
+     * this pass is a SEPARATE walk from the one that publishes them — the R9 graph is
+     * extracted after the main traversal — so the set is threaded rather than captured, and
+     * the ordering that makes membership exact (a declaration's symbol is published before
+     * its subtree is walked) is a property of the CALLER, not of this method.
+     */
+    publishedNames: Set<string>,
   ): void {
     const PREDEFINED = new Set([
       "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
@@ -1731,20 +1760,21 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             : this.declaredBindingName(enclosingCallable)
         if (cName) return { source: cName, declaredOn: "local_annotation" }
       }
-      // The fallback is for a genuinely TOP-LEVEL binding — and only that. If `decl` is
-      // nested inside another declaration then it is a local or a member, the enclosing
-      // callable above owns it, and reaching here means the walk above did not find it. The
-      // old behaviour published the local's own name in that case, which produced
-      // `argInfo -> ArgReprInfo` in Symbols.fs for a `let argInfo` that the analyzer does not
-      // publish as a symbol at all: an edge with no other end, whose only defect is invisible
-      // because the name looks like a perfectly good one.
+      // The fallback publishes a name ONLY if this run has already published it as a symbol.
       //
-      // So the fallback now REFUSES when `decl` is nested, rather than publishing a name that
-      // may belong to nothing. A top-level `let annotated : Bar` has no declaration ancestor
-      // and is unaffected — that is the fixture case this fallback exists for.
-      if (this.outermostCallableAbove(decl, isCallable) || this.findAncestor(decl, isDecl, 40)) return null
+      // A structural guard was tried here first and was wrong in both directions, which is
+      // what the membership test exists to settle. Refusing every nested declaration refuses
+      // `isAttribute -> FSharpEntity`, where the binding is a local inside an active pattern
+      // and IS published as a function; not refusing publishes `argInfo -> ArgReprInfo`,
+      // where the binding is a local and is NOT published, and the edge has no other end.
+      // Neither defect is visible downstream: one resolves to a perfectly good symbol and the
+      // other to nothing, and an edge's shape alone does not distinguish them.
+      //
+      // `publishedNames` is exact here rather than approximate: a declaration's symbol is
+      // pushed when the walk visits the declaration, and this runs while walking its subtree.
       const name = this.declaredBindingName(decl)
-      if (name) return { source: name, declaredOn: pos }
+      if (name && publishedNames.has(name)) return { source: name, declaredOn: pos }
+      return null
       return null
     }
 
