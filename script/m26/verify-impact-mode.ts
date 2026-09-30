@@ -745,7 +745,10 @@ async function main(): Promise<void> {
       {
         name: "M19 the ambiguity check dropped (a name several symbols share is answered about one of them)",
         home: "component",
-        from: "const nameIsUnambiguous = nameCandidates.length === 1 || (nameCandidates.length > 1 && hintMatchesRoot)",
+        // M63.T2: ambiguity is judged on the TRUE count, not on the bounded
+        // candidate list — H10 caught the capped version publishing 32 for a
+        // name 36 symbols share. The anchor follows the shipped condition.
+        from: "const nameIsUnambiguous = nameTotal === 1 || ((nameTotal === null || nameTotal > 1) && hintMatchesRoot)",
         to: "const nameIsUnambiguous = true",
         // The other half of the same condition. The M44 gate covers a HINTED
         // ambiguous name; this covers the hint-less one, and without the check
