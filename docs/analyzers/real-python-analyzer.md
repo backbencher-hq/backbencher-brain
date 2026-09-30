@@ -6,6 +6,16 @@
 - Parser: `tree-sitter-python` **0.25.0** (npm, latest — upgraded from the stale
   pre-0.25.0 pin in M12.27; WASM at `wasm/tree-sitter-python.wasm`, loaded by
   `engine.ts` via `resolveWasm`)
+- Grammar **pinned** (`PY-2`): sha256 `16108b50df4e…`, 457,883 B, with the full enumerable
+  surface recorded. The registry copy at `~/.bb/wasm/tree-sitter-python.wasm` (476,105 B, a
+  different sha) is recorded as **`differs`** — an attributed fact, not a silent divergence.
+  It matters because the two builds disagree about the *language*: the registry build fails to
+  parse PEP 678 `except*`, produces an ERROR node on valid Python 3.11, and drops a handler
+  from the tree, where the repo build parses it cleanly (the exercising file,
+  `cython/tests/run/test_except_star.py` with 66 sites, is one of python's own named corpora).
+  Which build loads was decided by a path list rather than a hash — the M49 W16 incident
+  rather than a near miss of it. 137 of 267 shared types sit at different ids; the analyzer
+  makes **0** numeric node-id comparisons, so extraction is unaffected by the shift.
 - Language detection: extensions `.py` / `.pyi` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealPythonAnalyzer`
 
@@ -28,15 +38,15 @@
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `call` → callee leaf (member expressions reduce to leaf: `self.store.get()` → `get`); source = enclosing function/method leaf name; builtins filtered (full `PYTHON_BUILTINS` set), dunders (`__x__`) filtered; `super()` filtered; nested functions (e.g. `wrapper` inside `logged`) and function locals (`store`, `service`) never change the call source | 0.9 |
+| calls | ✅ | `call` → callee leaf (member expressions reduce to leaf: `self.store.get()` → `get`); source = enclosing function/method leaf name; builtins filtered (full `PYTHON_BUILTINS` set), dunders (`__x__`) filtered; `super()` filtered; nested functions (e.g. `wrapper` inside `logged`) and function locals (`store`, `service`) never change the call source. **PY-11:** an UPPERCASE callee not declared in this file is a `calls` edge, not a dropped one — measured 889 of 1,152 such callees (77.2%, 368 of them explicitly imported) produced NO relationship before the fix, and `module = AnsibleModule(...)` is the shape, once per file, across a corpus | 0.9 |
 | extends | ✅ | `class_definition` → base-class argument list (`Repository[User]` → leaf `Repository`); `Generic[T]` → `Generic`; dotted `a.b` → `b`; `Enum` bases detected for kind | 1.0 |
 | instantiates | ✅ | uppercase-head call with the target in the O(1) `declaredTypes` set (in-file class/enum only — imported classes like `TypeVar` are external, no in-file target); Python has no `new` keyword | 0.9 |
 | imports | ✅ | `import_statement` / `import_from_statement` → module leaf → `${modulePath}:${item}`; relative imports (`from .models import User`) → module leaf | 1.0 |
-| exports | ✅ | `__all__` list literal → each string item; module-level names | 1.0 |
-| overrides | ✅ | method whose name exists on the FIRST (leftmost) base class (Python MRO) — resolved via extends + cross-file harness companion; `UserService.__init__ → BaseService.__init__` | 0.95 |
+| exports | ✅ | `__all__` assigned a `list` **or** `tuple` literal → each string item; module-level names. **PY-14:** tuple-only reading left 3 of 16 corpus `__all__` assignments (19%) publishing nothing. Each edge and each `exports` entry records the **declaring form** (`dunderAllForm` / `form`) — provenance, since `list` and `tuple` are one declaration to `from mod import *`. A `NAME` in the literal, a concatenation, and `.extend()` are declared boundaries (pinned as forbids) | 1.0 |
+| overrides | ✅ | method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, enum members, record fields | 1.0 |
-| uses | — | not emitted for `self.x` attribute access (family contract: no field-access uses) | — |
-| references | — | covered by imports/exports/calls leaf identities | — |
+| uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
+| references | — | not emitted; name identity is carried by imports/exports/calls, and a second edge for the same fact doubles the graph without adding information | — |
 | depends | — | not emitted (covered by imports) | — |
 
 ## Supported constructs
@@ -44,7 +54,7 @@
 - Modules: `import x`, `from x import y`, relative imports (`from .models import ...`) — `__init__.py`
 - Classes: bases (incl. generic subscripts `Repository[User]`), class-body assignments → Property, enum subclasses → Enum + EnumMember, `__init__` → method — `models.py`, `Service.py`
 - Functions: def, async def, nested functions (never symbols), decorators (metadata only) — `service.py`
-- Inheritance: multi-base extends + first-base overrides — `Service.py` (`UserService(BaseService, Repository)`)
+- Inheritance: multi-base extends + **MRO-ordered** overrides — `Service.py` (`UserService(BaseService, Repository)`)
 - Exports: `__all__` — `__init__.py`
 - Comprehension helpers: synthetic `_comprehension_helper` module functions are real AST artifacts (tree-sitter synthetic), kept as functions
 
@@ -73,6 +83,111 @@
   `symbols.some()` scan), and override/extends lookups use maps. The tracked
   production measurement is versioned at
   `validation/m12/results/python-corpus-complexity.json`.
+
+## Module scope
+
+`metadata`-free statements are attributed to the **module scope**, which is the filename stem
+normalised to a legal Python identifier. Two defects lived here:
+
+- **PY-4** — the scope was the literal string `"global"`, a *keyword* used as a name. Not
+  navigable, absent from the indexer's `GENERIC_SOURCE_NAMES` (the list of names the store
+  knows are synthetic scopes), and contradicting the same analyzer's own `imports` edges, which
+  already used the module stem.
+- **PY-13** — the stem was used verbatim, so `my-module.py` published the scope `my-module`:
+  not a valid identifier, not a name a symbol could carry. Now normalised, with a leading digit
+  prefixed so the result is legal rather than legal-looking.
+
+## Frameworks
+
+`metadata.framework` is a **single primary pick**, so the table admits frameworks only — never
+libraries. Detection is by **import root read from the parsed AST**, never by text, and the
+table is one root per line so a marker that stops matching is a visible deletion.
+
+**Measured, and the reason the table grew (PY-15).** Over 3,271 corpus files carrying 160
+distinct non-stdlib import roots, **7 of the 9 declared roots fired zero times** — `celery`,
+`django`, `fastapi`, `flask`, `sqlalchemy`, `starlette`, `tornado` — and only `pytest` (1,010
+sites) and `aiohttp` (1) matched anything. The original census had established *reachability* by
+parsing a minimal Django model and a minimal Flask app; reachability was reported as coverage,
+and a table whose rows fire looks identical to a table whose rows do not. `ansible` — the
+corpus's dominant framework at 3,452 sites across 322 directories — was absent, leaving 1,059
+files with no primary framework. Four roots added: `ansible`, `setuptools`, `sphinx`, and
+`unittest`, the last being the **standard library's** own test framework (132 corpus files)
+while `pytest` was already present. Testing frameworks sort **last**, so the primary pick is the
+application framework in a file that imports both.
+
+**PY-17 — there are two python framework tables and the field is their union.**
+`enhanceWithFrameworkIntelligence` merges `FrameworkDetector.detectPythonFrameworks` into the
+same metadata, so neither table alone explains what a consumer reads: `pandas`, `numpy`,
+`tensorflow` and `pytorch` come only from the shared detector; `starlette`, `sqlalchemy`,
+`aiohttp`, `celery`, `ansible`, `setuptools`, `sphinx` and `unittest` only from this lane; and
+`django`, `flask`, `fastapi`, `tornado` and `pytest` are in **both** and free to drift.
+
+**PY-16 — Cython is not recorded here.** It is the corpus's second-largest root (260
+lower-case + 169 capitalised sites) and it is a *dialect*, and no lane in this repository
+publishes a `dialect` field, so the only way to record it would be as a framework. Pinned by
+exhaustion: `python/framework-marker-coverage` asserts `detectedFrameworks` as an exact ordered
+list, so adding a Cython marker fails on purpose.
+
+## Complexity envelope
+
+Zero O(n²) on the measured corpus. The `instantiates` check is an O(1) `declaredTypes` set
+lookup (it was a per-uppercase-call `symbols.some()` scan); override and extends resolution go
+through maps; the MRO walk is bounded by the base list; the relationship dedup key is a `Set`.
+
+Measured over the pinned corpus: **3,271 files, 23,911 symbols, 99,743 relationships in 66.7s
+via `ASTEngine.parseFile`, 0 parse errors.** The dedup key includes the edge's **site line**
+(**PY-6**): keying on `(type, source, target)` is strictly coarser than the store's own
+`(source, type, target, line)` key, and python makes that bite because the canonical property
+is a getter/setter pair — both `def`s are real symbols, and one `contains` edge was emitted, so
+the setter was unreachable from its class. 6 missing `contains` over 120 files before the fix,
+0 after.
+
+## Differential ground truth
+
+`validation/m12/results/python-differential.json` is a **mirror** (`truthSource:
+"manual_audit"`, 108 facts, 5 `unknown`, two synthetic fixtures), so it cannot falsify the
+analyzer — it was written by reading the same source the analyzer reads.
+
+An **independent** oracle now exists and derives truth from the tree without importing the
+analyzer: `script/m14/oracles/python-truth.ts` (`contains`, `extends`, `overrides`, `calls`,
+`instantiates`) with a runnable comparator in `python-truth-diff.ts`. Latest run over 400
+pinned corpus files:
+
+| Type | Agreed | Missing | Unexplained |
+| --- | --- | --- | --- |
+| `contains` | 4,213 | 1 | 1 |
+| `extends` | 540 | 1 | 0 |
+| `overrides` | 220 | 0 | 0 |
+| `calls` | 11,383 | 8 | 8 |
+| `instantiates` | 119 | 3 | 8 |
+
+**4,973 of 4,975 structural edges agreed**, and most of the 21 residual are the *oracle's* bugs
+— seven were found and documented during the run, which is the state a differential should
+reach before it is trusted to say anything. The comparator separates a **confirmed guess** from
+a **refuted** one, which is how the 1,163 refuted `overrides` guesses above are reported rather
+than folded into the agreed count.
+
+**A retracted finding, recorded because it is the more useful half of the story.** This review
+previously claimed that 37.8% of `overrides` edges resolved ambiguously, on the strength of a
+37.8% figure. That figure was an artefact of measuring the **analyzer** instead of the
+**store**: the indexer keys symbols on `${scope || ownerName}.${name}` as well as `name`, so an
+`Owner.method` source is an **exact** hit and the ambiguous leaf fallback is never reached. An
+end-to-end index of a three-class file (`Base.__eq__`, `A.__eq__`, `B.__eq__`, two overriding)
+resolved both edges to the correct owner, 2 of 2 exact, and did so identically with the
+proposed fix disabled. A python `qualifiedName` publication and a shared-indexer resolution
+reorder were both written to "fix" it and both reverted — see **PY-3** in the review.
+
+## Evidence pointers
+
+| Claim | Artefact |
+| --- | --- |
+| grammar bytes, sha256, both-direction drift | `validation/m14/grammar-pins.json` (lane `python`) |
+| 11 fixtures | `validation/m14/fixtures/python/` |
+| 25 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
+| node-type classification, 0 unclassified | `script/m14/spec/python-completeness.json` |
+| independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
+| the measurements and the defects | `reviews/python/master-review.md` |
+| lane contract | `docs/analyzers/python.md` |
 
 ## Census
 
