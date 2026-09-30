@@ -568,18 +568,156 @@ it was unbounded and crashed).
   thirteenth was a **real missing edge**: `rel:Negative.c:references:pick_color:Color`,
   a function's typedef-spelled return type, which CGD34's parent-only gate had
   been suppressing for every such function. Fixed (#935); the probe now reports 80.
-- **The artifact cannot be regenerated in this checkout.** The F5 harness reads
-  `CORPUS_ROOT = $HOME/fixtures/repositories` (overridable with
-  `BB_CORPUS_ROOT`), that path does not exist here, and the run aborts on the first
-  pinned repo. No script in the tree writes `c-differential.json` by that name, so
-  the artifact's producer is not present either. **The M12 differential is a
-  FIXTURE differential, though**, which is why the drift is measurable here at all
-  — and that is the argument for keeping the fixture-based probe as the lane's
-  standing check on its own pinned truth.
+- **The artifact cannot be regenerated in this checkout, and the reason is NOT the
+  corpus path.** The F5 harness reads
+  `CORPUS_ROOT = $HOME/fixtures/repositories`, which does not exist here,
+  but that is overridable with `BB_CORPUS_ROOT` and pointing it at the real root
+  does not help. The C lane's registered corpora are **`sqlite` (primary) and `jq`
+  (second)** (`LANG_REPOS.c` / `LANG_REPOS_SECOND.c` in `differential.ts:368,512`)
+  and **neither exists in this corpus root**, which holds `curl`, `libgit2` and
+  `redis` instead. The run aborts on the first missing pin, and `--repo` cannot
+  help because there is no registered C corpus to point it at. So the C
+  differential has no runnable configuration here at all, which is consistent with
+  the artifact recording **39 of its 65 input hashes as stale** — including
+  `src/ast/real-c-analyzer.ts` itself (recorded `091f9498bd`, actual `6306c1afd2`)
+  and 30 other lanes' analyzers. It describes a tree that no longer exists.
+  No script in the tree writes `c-differential.json` by that name, so its producer
+  is absent too. Two owner decisions follow, and both are shared-harness changes:
+  repoint the C lane at a corpus that exists, or ship `sqlite`/`jq`. **The M12
+  differential is a FIXTURE differential, though** — `truthSource: manual_audit`
+  over `validation/m12/fixtures/c/*.{c,h}` — which is why the drift above is
+  measurable here at all, and that is the argument for keeping the fixture-based
+  probe as the lane's standing check on its own pinned truth.
+- **The truth is itself mis-pointed on `uses`, and that is a finding, not a
+  cleanup.** Of the 5 unproduced facts, 3 are field accesses whose struct is
+  declared in another file (`uses:buffer_create:capacity/length/data`) — **C-D2
+  forbids resolving those**, so the analyzer is right and the truth asks for
+  something the declared limit forbids. The same fixture's `point_distance` does
+  `a->x` on an equally cross-file `Point` and the truth pins **no** row for it, so
+  the truth is inconsistent with itself on identical constructs. The 2 remaining
+  rows (`uses:module_init:initialized`, `uses:module_shutdown:initialized`) are
+  assignment targets, i.e. the write-vs-read question below. **Fixing the analyzer
+  to satisfy these 5 rows would have broken correct code.**
 - **This wave's change is byte-identical on the M12 fixtures**: the previous
   commit's analyzer and this one produce identical relationship sets on
   `Module.c`, `Module.h`, `Negative.c` and `module_config.h`, so none of the
   drift above is attributable to it.
+
+## Field-access `uses`: adjudicated against the parse
+
+`script/m14/tmp/c-audit/field-access-uses.ts` compares every field-access `uses`
+edge against the parse, per (field name, line), in both directions — the same
+instrument shape as `call-edge-fidelity.ts`, applied to the second-largest
+relationship class. Measured over 200 files per corpus:
+
+| corpus | files | parse accesses | payload field `uses` | over-emitted |
+|---|---|---|---|---|
+| `redis/src` | 200 | 42,344 | 4,602 | **0** |
+| `curl/lib` | 200 | 11,037 | 1,019 | **0** |
+| `libgit2/include` | 93 | 0 | 2 | **0** |
+
+**Zero over-emissions in the direction the probe can convict.** A `uses` edge to a
+field with no field access on that line is wrong under any reading, and there are
+none. `uses` is sound in that direction at corpus scale, which no fixture-scale
+oracle could have told us.
+
+### What the probe cannot convict, and why that is stated rather than counted
+
+The probe does **not** claim a defect count for the miss direction, and the number
+it prints for that bucket (14,802 on `redis/src`) is explicitly labelled as *not* a
+defect count. The payload resolves a field only by typing the base expression —
+reading the local's declared struct and walking the chain. The probe has no such
+resolution, and its test ("a field of that name exists somewhere in this file") is
+far weaker, so nearly every access through a pointer whose struct lives in another
+file lands in that bucket as a false accusation. C-D2 forbids the payload from
+resolving those. Measuring the miss direction honestly needs the payload's own
+owner attribution, which is the thing under test. The first draft of this probe
+called 14,637 of them defects; the number was meaningless and the probe now says
+so in its own output.
+
+### The write-target gap, measured and characterised
+
+One construct is provably and consistently omitted, verified in isolation across
+every form:
+
+| form | `uses` published |
+|---|---|
+| `return p->f` | yes |
+| `p->f++` | yes |
+| `if (p->f)` | yes |
+| `p->f + p->g` | yes |
+| `p->f[0]` | yes |
+| `(*p)->f` | yes |
+| **`p->f = v`** | **no** |
+
+Measured write targets with no edge: **4,125** (`redis/src`, 200 files), **826**
+(`curl/lib`, 200 files). This is a **contract disagreement, not a defect**: the
+M12 truth pins `uses:buffer_create:capacity` for `buf->capacity = clamp(...)`, a
+write, so truth says a write is a `uses` and the analyzer says it is not. There is
+no `writes` relationship type in the ontology, so the fact is currently
+representable nowhere. **This is an open decision, and it is the owner's call** —
+see the two open questions below. `c/field-access-offsetof-955` records the
+analyzer's current behaviour in a `forbidRelationships` row without settling it, so
+whichever way it is decided, the fixture changes rather than the code silently.
+
+### Macro-argument field names: correct, and now pinned
+
+`redis/src/cluster_legacy.h:268-284` is seventeen consecutive
+`static_assert(offsetof(clusterMsg, <field>) == N, ...)` lines. There is no `->` and
+no `.` — the field is a bare identifier in a macro argument, so the parse has no
+`field_expression` for it, and the payload publishes the correct edge anyway:
+
+```
+uses global -> sig  @268  {"relationshipType":"identifier_usage","nodeType":"field_identifier"}
+```
+
+The probe's first run reported all of these (74 across `redis/src`) as phantom
+over-emissions, and *"a field name at file scope is not a use of anything"* is a
+plausible-looking fix that would have deleted the only record that those fields are
+load-bearing. This is **#908's failure mode one relationship type over** — there
+macro-named *callees* were nearly suppressed, here macro-argument *field names*
+were — and the M12 truth cannot catch it, because the truth pins `uses` only for
+`a->x` and says nothing about a field named in a macro argument. Hence
+`c/field-access-offsetof-955` plus the `c/field-name-in-macro-argument` mutant:
+a correct behaviour with no fixture is a behaviour one refactor away from being
+removed as a bug.
+
+The same fixture also pins the limit in the other direction: `HEADER_SIG(h)`
+publishes `calls header_sig -> HEADER_SIG` and does **not** resolve the macro *body*
+to the field. Expanding `((h)->sig)` to reach `sig` is macro-body resolution, which
+this lane does not perform.
+
+## Relationship oracle status
+
+Correcting a claim made earlier in this lane's own history: `contains` is **not**
+unaudited. The M12 truth carries 16 hand-audited `contains` facts, and they are
+checked by `m12-truth-drift.ts`. What the relationship types lack is **corpus-scale**
+verification, not any oracle at all:
+
+| type | emitted | fixture oracle | corpus oracle |
+|---|---|---|---|
+| `calls` | yes | 4 facts | `call-edge-fidelity.ts` (measured) |
+| `uses` | yes | 17 facts | `field-access-uses.ts` (this wave) |
+| `contains` | yes | 16 facts | none |
+| `imports` | yes | 6 facts | none |
+| `references` | yes | 8 facts | none |
+| `exports` | yes | via `c-completeness` | none |
+| `instantiates` | **no** | 1 fact, unmet | n/a |
+
+`extends` / `implements` / `overrides` are absent by ruling (C-D1, no class
+hierarchy). `instantiates` is the one C-specific type the truth asks for and the
+analyzer does not emit, and that is the second open question below.
+
+### Two open questions, both needing an owner's ruling
+
+1. **Is a write to a field a `uses`?** The truth says yes, the analyzer says no,
+   4,951 measured instances in 400 files. Either the analyzer grows the rule or
+   the truth drops 3 rows. There is no `writes` type, so "neither" is also a
+   defensible answer that needs recording.
+2. **`instantiates`:** re-add the C allocation semantic the M12 truth defines
+   ("allocator calls — C-specific"), or amend the truth and record the ruling.
+   Right now the oracle wants a relationship the analyzer refuses, with no decision
+   on the record.
 
 ## Corpus validation
 
@@ -609,10 +747,10 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **27/27 pass** (18 pre-existing + 9 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **28/28 pass** (18 pre-existing + 10 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 34/34 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
