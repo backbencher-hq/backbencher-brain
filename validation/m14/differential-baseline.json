@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 41.85,
-    "loadAvgEnd": 39.16,
+    "loadAvgStart": 16.74,
+    "loadAvgEnd": 17.5,
     "sliceCount": 1
   },
   "counts": {
@@ -1571,6 +1571,15 @@
         "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
       },
       "sampleSetHash": "dd6619b1d6986840"
+    },
+    "grails-core:xml": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 17.5
+      },
+      "sampleSetHash": "30e8a9b5f186db8b"
     }
   },
   "hashes": {
@@ -1626,6 +1635,7 @@
     "grails-core:css": "13f8825d05114cf8",
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
-    "element-plus:scss": "dd6619b1d6986840"
+    "element-plus:scss": "dd6619b1d6986840",
+    "grails-core:xml": "30e8a9b5f186db8b"
   }
 }
