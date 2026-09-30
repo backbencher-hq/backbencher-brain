@@ -719,6 +719,64 @@ analyzer does not emit, and that is the second open question below.
    Right now the oracle wants a relationship the analyzer refuses, with no decision
    on the record.
 
+## Call edges in preprocessor directive conditions (#956)
+
+A `call_expression` on a preprocessor **directive line** is directive text, not
+code. `#if !defined(A) && !defined(B)` never executes and `defined` is a
+preprocessor *operator*, not a callable name, so `calls global -> defined` is a
+fabricated edge.
+
+`call-edge-fidelity.ts` measured **61 over-emitted call sites** over 200 files per
+corpus, every one of them this shape — `curl_trc.c:554/575/590/598`,
+`protocol.c:92/120/147`, `http.c:690-692/735-739/822`, `openldap.c:936-937`,
+`cf-ip-happy.c:76/79`, `curl_sha512_256.c:303`, plus 7 in redis.
+
+The class survived because **the `uses` path has refused it since CGD40 and the
+`calls` path had neither guard**. The guard existed on the sibling branch and nobody
+asked why the two differed.
+
+### The guard, and the regression the first version caused
+
+The fix is `this.isHashLineMention(node)` — a call whose physical line starts with
+`#` is directive text whatever its ancestors say. Two things were wrong on the way
+there and both are recorded because each is a way this lane's own instruments lie:
+
+1. **The first guard used `isDirectiveConditionText(node) || isHashLineMention(node)`
+   and suppressed 15 REAL calls.** `curl_sasl.c:531-545`, `cfilters.c`, `strerr.c`;
+   agreement fell 99.97% → 99.89%. The reason is structural: a `preproc_ifdef` owns
+   both its condition **and** its guarded body, so walking up from a call inside the
+   body reaches the preproc node. Measured ancestor chain for
+   `curl_sasl.c:534 sasl_choose_gsasl(data, &sctx)` — real code on a line that does
+   not start with `#` — is `ERROR < preproc_ifdef`. The structural test answers "is
+   any ancestor a directive" when the question is "is **this token** directive text".
+   Caught only because the probe measures the under-emission direction; a
+   before/after `git stash` diff of the two numbers is what made it undeniable.
+2. **Folding the guard into `if (fnNode && !suppressCall)` made the #954 mutant
+   SURVIVE**, because the wrapper short-circuits the whole callee-type ladder that
+   #954's revert restores. One guard silently disarming another. It is now folded
+   into the *emit* condition instead, and #954 is **retired as superseded** — its
+   defect was a call from a directive line, which #956 now covers by the more
+   general rule. The #954 guard is still present and still load-bearing for a
+   directive-free non-name callee; its `fact` still runs on the clean analyzer.
+
+### Measured after
+
+| corpus | before | after |
+|---|---|---|
+| `redis/src` | 43,995 / 44,002 = 99.98% | **43,995 / 43,995 = 100.00%** |
+| `libgit2/src` | 23,747 / 23,748 = 100.00% | 23,747 / 23,748 = 100.00% |
+| `curl/lib` | 23,564 / 23,624 = 99.75% | **23,564 / 23,576 = 99.95%** |
+
+Pinned by `c/call-in-directive-condition-956` (authored from the **damaged** shape —
+a clean `#if defined(X)` emits no `call_expression` at all, so a tidy fixture would
+pass the fix without testing it) and the `c/call-in-directive-condition` mutant.
+
+**Residual, and not yet adjudicated: 6 over-emissions in `curl/lib`**
+(`http.c:691/692/737/738/739`, `openldap.c:937`) and 6 under-emissions in curl,
+1 in libgit2. The over-emissions are the *neighbours* of a mid-expression
+`#ifndef`: both sides see `Curl_checkProxyheaders@691`, so the analyzer's edge is
+correct and the probe's multiset is what does not balance. Not fixed, not dismissed.
+
 ## Corpus validation
 
 - The corpus is **three independently cloned repositories**, one of which is the
@@ -747,10 +805,10 @@ analyzer does not emit, and that is the second open question below.
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **28/28 pass** (18 pre-existing + 10 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **29/29 pass** (18 pre-existing + 11 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 4 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
