@@ -3018,9 +3018,43 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
     const c = t.charCodeAt(0)
     return c >= 65 && c <= 90
   }
-  // Compound-assignment operators. `o.n += 1` is an `infix_expression`, so the
-  // write gate has to know about it or every compound write reads as a read.
-  const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "++", "--", "<<=", ">>=", "&=", "|=", "^="])
+  // Is this infix operator an ASSIGNMENT? The rule is the LANGUAGE rule, not a
+  // hand-list, and both sides of this lane have now got a hand-list wrong in
+  // opposite directions.
+  //
+  // M60/S9 (the oracle's error, the direction of phantom WRITES): `++` and `--`
+  // were in the set. Scala has no `++=`-style `++` and no `--` assignment —
+  // `a ++ b` concatenates and `a -- b` subtracts, and both are READS. With `--`
+  // in the set, `val newElems = approx.elems -- elems` (CaptureSet.scala:997)
+  // lost its read, and `Const(this.elems ++ that.elems)` lost both of its reads:
+  // 10 unexplained rows on a 400-file scala3 draw, all of them this.
+  //
+  // M60/S10 (the analyzer's error, the direction of MISSING writes): its list
+  // had removed `++=`, `&&=`, `||=` on the claim that they are "NOT Scala
+  // operators (no legal parse produces them)". A grammar lexes an
+  // `operator_identifier` and has no table of legal operators, so a
+  // user-defined one is indistinguishable at parse time; dotty DEFINES
+  // `def ++=`. Measured on 400 scala3 files
+  // (script/m14/tmp/scala-assign-op-census.ts): 105 `++=`, 20 `::=`, 16 `:=`,
+  // 6 `&~=`, 5 `||=`, 3 `+++=`, 2 `&&=`, 1 `:=+`, 1 `~~=` — and, on the other
+  // side of the test, 4 `===` and 2 `frozen_=:=`, which end in `=` and are
+  // COMPARISONS.
+  //
+  // So: ends with `=`, and not a comparison, and not an arrow. Comparisons are
+  // the ones ending in `==`/`<=`/`>=` or carrying `=:=`/`<:`; arrows are `=>`,
+  // `<-`, `<:`, `>:` and `=:`. Both halves are needed — `==`, `<=`, `>=` and
+  // `=>` all end in `=`, and `===` ends in `==`.
+  const COMPOUND_ASSIGN_OPS = new Set([
+    "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=",
+  ])
+  const operatorIsAssignment = (op: string): boolean => {
+    if (!op || !op.endsWith("=")) return false
+    if (COMPOUND_ASSIGN_OPS.has(op)) return true
+    if (op.endsWith("==") || op.endsWith("<=") || op.endsWith(">=")) return false
+    if (op.includes("=:=") || op.includes("<:<")) return false
+    if (op === "=>" || op === "<-" || op === "<:" || op === ">:" || op === "=:") return false
+    return true
+  }
   const isWriteLhs = (n: any): boolean => {
     const p = n?.parent
     if (!p) return false
@@ -3030,7 +3064,7 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
     }
     if (p.type === "infix_expression") {
       const op = field(p, "operator")?.text ?? p.namedChild(1)?.text ?? ""
-      if (!COMPOUND_ASSIGN_OPS.has(op)) return false
+      if (!operatorIsAssignment(op)) return false
       const lhs = p.namedChild(0)
       return !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
     }
@@ -3038,21 +3072,30 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   }
   // The enclosing declaration that owns the read. A function wins over its
   // enclosing class, so a read inside `def f` attributes to `f`.
+  //
+  // M60/S8-b: the name is read from the `name:` FIELD. The previous fallback
+  // "first identifier child" returns a PARAMETER for an operator-named method,
+  // so every read inside `def ==(that: Mode)` attributed to `that` rather than
+  // to `==` — and since push() keys on (from, target), the two operator methods
+  // `==` and `!=` collapsed onto one source. This is the oracle-side mirror of
+  // the analyzer's own defect of the same shape, and it is invisible to the lane
+  // (which matches on (label, target)) and visible to a count-based comparison.
   const resolveSource = (start: any): string => {
     let p: any = start && (start.type === "function_definition" || start.type === "function_declaration")
       ? start
       : start ? start.parent : null
+    const nameOf = (d: any): string => String(field(d, "name")?.text ?? "")
     while (p) {
       if (p.type === "function_definition" || p.type === "function_declaration") {
-        const nm = field(p, "identifier") ?? firstNamedOf(p, ["identifier"])
-        if (nm) return nm.text
+        const nm = nameOf(p)
+        if (nm) return nm
       }
       if (
         p.type === "class_definition" || p.type === "object_definition" ||
         p.type === "trait_definition" || p.type === "enum_definition"
       ) {
-        const nm = field(p, "identifier") ?? firstNamedOf(p, ["identifier"])
-        if (nm) return nm.text
+        const nm = nameOf(p)
+        if (nm) return nm
       }
       p = p.parent
     }
@@ -3086,13 +3129,14 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   walk(root)
 
   // ── the extension-receiver class ─────────────────────────────────────────
-  // `extension (x: T) { def name = ... }` and the implicit-class form both
-  // declare that `name` USES the receiver type `T`. Only a non-method
-  // declaration: for a `def` the receiver belongs to the method's own
-  // signature, which the declared-type graph owns.
+  // `extension (x: T) { def name = ... }` declares that `name` USES the
+  // receiver type `T`, and so does a def carrying modifiers
+  // (`private inline def isGlobalTerminal`), a def nested inside another def
+  // inside the extension, and a one-line `extension (b: Boolean) def toInt = ...`.
+  // The rule does NOT depend on what encloses the extension.
   //
-  // Two things my first version got wrong, both found by adjudicating eight
-  // analyzer-only rows on scala3's repl/ and project/:
+  // Three things my first version got wrong, and each was found by adjudicating
+  // analyzer-only rows on scala3's repl/, project/ and semanticdb/:
   //
   //  1. The receiver lives on an `extension_definition` ANCESTOR, not on the
   //     function. I looked for a field named `extension` on the
@@ -3102,25 +3146,34 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
   //     the first type identifier would publish `List` and miss every generic
   //     receiver. And a trailing `?` is stripped — exactly one, for Scala 3's
   //     nullable-extension form `String.?(...)`.
+  //  3. (M60/SDJ-1) The gate `/^\s*def\s/.test(node.text)` was INVERTED in
+  //     effect: a function_definition's text starts with `def` UNLESS it carries
+  //     modifiers, so the arm fired for `private inline def` and not for a bare
+  //     `def`. The analyzer carried the mirror-image inversion (`!isMethod`,
+  //     where isMethod asks whether the walk parent is a TYPE), so the two sides
+  //     were wrong on COMPLEMENTARY subsets. Measured on 400 files
+  //     (script/m14/tmp/scala-extension-census.ts): scala3 has 648 defs inside an
+  //     extension block and the analyzer published 237 of them; cats-effect has
+  //     no extension block at all.
+  //
+  // The gate is now simply "an extension_definition ancestor exists", which is
+  // what the walk below already establishes.
   {
     const isReceiverTypeNode = (t: string): boolean => t.endsWith("_type") || t.includes("type_identifier")
     const walk2 = (n: any): void => {
       if (n.type === "function_definition" || n.type === "function_declaration") {
-        const isMethod = /^\s*def\s/.test(n.text ?? "")
-        if (!isMethod) {
-          let anc: any = n.parent
-          while (anc && anc.type !== "extension_definition") anc = anc.parent
-          if (anc) {
-            const pc = namedChildOf(anc, "parameters")
-            const p0 = pc && pc.namedChild(0) ? pc.namedChild(0) : null
-            if (p0) {
-              for (let j = 0; j < p0.namedChildCount; j++) {
-                const tc = p0.namedChild(j)
-                if (tc && isReceiverTypeNode(tc.type)) {
-                  const t = tc.text
-                  push(namedChildOf(n, "identifier")?.text ?? "", t.endsWith("?") ? t.slice(0, -1) : t)
-                  break
-                }
+        let anc: any = n.parent
+        while (anc && anc.type !== "extension_definition") anc = anc.parent
+        if (anc) {
+          const pc = namedChildOf(anc, "parameters")
+          const p0 = pc && pc.namedChild(0) ? pc.namedChild(0) : null
+          if (p0) {
+            for (let j = 0; j < p0.namedChildCount; j++) {
+              const tc = p0.namedChild(j)
+              if (tc && isReceiverTypeNode(tc.type)) {
+                const t = tc.text
+                push(String(n.childForFieldName?.("name")?.text ?? ""), t.endsWith("?") ? t.slice(0, -1) : t)
+                break
               }
             }
           }

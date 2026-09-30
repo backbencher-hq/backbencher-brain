@@ -3,13 +3,48 @@ import { ASTEngine } from "./engine"
 import { findDeclaringParent } from "./override-context"
 
 /**
- * SCD1: compound-assignment operators parse as infix_expression; the LHS of
- * one of THESE ops is a write. `==`/`<=`/`>=` also end in `=` but are
- * comparisons (reads) — excluded on purpose.
- * S1 hygiene (M49 #715): `++=`, `&&=`, `||=` are NOT Scala operators (no
- * legal parse produces them) — removed from the gate as dead entries.
+ * SCD1: is this infix operator an ASSIGNMENT?
+ *
+ * The gate started as a hand-list, and two claims made about it were false on
+ * real code, in opposite directions.
+ *
+ * FALSE, in the direction of missing writes: `++=`, `&&=`, `||=` were removed
+ * from the list with the note "NOT Scala operators (no legal parse produces
+ * them) — dead entries". A grammar has no table of legal Scala operators; it
+ * lexes an `operator_identifier`, so a user-defined one is indistinguishable
+ * from a built-in at parse time. dotty DEFINES `def ++=` (MutableSet.scala:31,
+ * SepCheck.scala:152, Implicits.scala:2183) and uses it 105 times in 400 files.
+ * Measured over 400 scala3 files (script/m14/tmp/scala-assign-op-census.ts),
+ * the infix operators ending in `=` that the hand-list did not know:
+ *
+ *     105 ++=    20 ::=    16 :=     6 &~=     5 ||=     3 +++=
+ *       2 &&=     1 :+=     1 ~~=
+ *
+ * and the ones that end in `=` but are NOT assignments: 4 `===` and 2
+ * `frozen_=:=`, both comparisons.
+ *
+ * FALSE, in the direction of phantom writes (that one was the ORACLE's, fixed
+ * there): `++` and `--` were in the list, and Scala has neither `++=`-style
+ * `++` nor `--` as an assignment — `a ++ b` concatenates and `a -- b`
+ * subtracts, and both are reads.
+ *
+ * So the rule is the LANGUAGE rule, stated once: an infix operator is an
+ * assignment when it ends with `=` and is not a comparison and not an arrow.
+ * Comparisons are the ones ending in `==`, `<=` or `>=`, or carrying `=:=` /
+ * `<:<`; the arrows are `=>`, `<-`, `<:`, `>:` and `=:`. Both halves are needed:
+ * `==`, `<=`, `>=`, `=>` all end in `=`, and `===` ends in `==`.
  */
 const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>="])
+function scalaOperatorIsAssignment(op: string): boolean {
+  if (!op || !op.endsWith("=")) return false
+  // The built-in compound assignments, enumerated so the set is visible rather
+  // than implied; the checks below are what make the rule CORRECT for the rest.
+  if (COMPOUND_ASSIGN_OPS.has(op)) return true
+  if (op.endsWith("==") || op.endsWith("<=") || op.endsWith(">=")) return false
+  if (op.includes("=:=") || op.includes("<:<")) return false
+  if (op === "=>" || op === "<-" || op === "<:" || op === ">:" || op === "=:") return false
+  return true
+}
 
 /**
  * S1.17 (M49 #715): does this parameter-type signature carry a GENERIC TYPE
@@ -1410,7 +1445,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The read side of `h.value = h.value + 1` still emits (span check
       // hits only the LHS occurrence).
       const p = n.parent
-      const isCompoundAssign = p !== null && p.type === "infix_expression" && COMPOUND_ASSIGN_OPS.has(p.childForFieldName?.("operator")?.text ?? p.namedChild(1)?.text ?? "")
+      const isCompoundAssign = p !== null && p.type === "infix_expression" && scalaOperatorIsAssignment(p.childForFieldName?.("operator")?.text ?? p.namedChild(1)?.text ?? "")
       const lhs = p && (p.type === "assignment_expression" || isCompoundAssign) ? p.namedChild(0) : null
       if (lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex) return
       const source = resolveSource(n.parent)
@@ -2424,7 +2459,25 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbol.metadata!.typeParameters = fnTypeParams
     }
 
-    if (extensionReceiverType && !isMethod) {
+    // M60/SDJ-1: the polarity of this gate was INVERTED, and it is the whole of
+    // SDJ-1's residual. `isMethod` asks whether the walk parent is a TYPE, so
+    // `!isMethod` meant "emit the extension receiver only when the extension is
+    // nested inside a METHOD" — and dropped it for the far more common shape,
+    // an extension block directly in an object, class or trait. The rule has no
+    // dependence on where the extension sits: a def inside an
+    // `extension_definition` uses that extension's receiver type.
+    //
+    // Measured on 400 files (script/m14/tmp/scala-extension-census.ts):
+    // scala3 has 131 extension blocks holding 648 defs; this gate published 237
+    // of them and dropped 382. cats-effect has 0 extension blocks at all, which
+    // is why a corpus-level reading of this gate looks clean there.
+    //
+    // The ORACLE carried the same inversion from the other side — its gate was
+    // `/^\s*def\s/.test(node.text)`, which is false for a def carrying modifiers
+    // (`private inline def isGlobalTerminal`) and true for a bare one. So the two
+    // sides were wrong on COMPLEMENTARY subsets and agreed, by accident, only on
+    // a plain def inside an extension nested in a type.
+    if (extensionReceiverType) {
       relationships.push({
         source: name,
         target: extensionReceiverType,
