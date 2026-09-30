@@ -9803,6 +9803,61 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).filter((x: any) => !(x.name === "activeKeys" && x.metadata?.isTopLevelAccessor)) }),
   },
   {
+    id: "dart/constant-pattern-qualified-unread",
+    language: "dart",
+    defectClass: "false-negative",
+    description: "R1 (3d4d7fa4) regression: a `qualified` name under a `constant_pattern` stops being read, so a switch case naming a declared enum member publishes no edge again. The pre-fix shape is not a guess — it is what the analyzer did for its whole life, because the string 'qualified' appeared NOWHERE in 2,784 lines of it: `mode == M.off` parses as `identifier(M)` plus `selector(.off)` and the DT-F pass saw the selector, while `case M.off:` parses as ONE `qualified` node and nothing read it. Two node shapes, same text, one handled. Recovery measured at the time: 2,405 edges over ProxiCall/lib, 516 naming a symbol declared in the same file, 0 relationships removed, 0 duplicates introduced. The transform deletes every `uses` edge carrying `isConstantPattern` — exactly the surface the fix added — and leaves the expression-shaped edge alone, so the fixture's CONTRAST pin (`sameTextInExpression -> recipientLookup`, already working before the fix) still passes and the mutant can only be caught by the pattern pins.",
+    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(String(x.type) === 'uses' && x.metadata?.isConstantPattern)) }),
+  },
+  {
+    id: "dart/record-type-dropped-from-payload",
+    language: "dart",
+    defectClass: "payload-corruption",
+    description: "R2 (7c574834) regression: the type extractors' node allowlist loses `record_type`, so every Dart 3 record type vanishes from the payload again. All three extractors (parameter, return, field) accepted a fixed five-node list — type_identifier, function_type, nullable_type, void_type — and a record fell through every one: `void f((int, String) p)` typed its parameter `dynamic`, and `({int a, String b}) f()` published no return type at all, so the function looked untyped. DARTD6 and DARTD13 could both be right about their mechanism and still lose every record. The transform rewrites any record-shaped parameter or return type back to `dynamic`, restoring the pre-fix degradation exactly. Measured recovery at the time: 27 return types and 1 parameter over 1,294 ProxiCall/lib files, with 0 relationships changed.",
+    transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => ({
+      ...s,
+      parameters: (s.parameters ?? []).map((p: any) => ({ ...p, type: /^[({\\]/.test(String(p.type ?? '')) ? 'dynamic' : p.type })),
+      ...(typeof s.returnType === 'string' && /^[({\\]/.test(s.returnType) ? { returnType: 'dynamic' } : {}),
+    })) }),
+  },
+  {
+    id: "typescript/arrow-parameter-shadow-reference",
+    language: "typescript",
+    defectClass: "noise-fabrication",
+    description: "R15 (243dc36f) regression: an arrow function's parameters stop shadowing a same-named file-level symbol, so a read inside the arrow resolves by NAME to the unrelated module declaration. `function f(bbEntry: string) { return (root) => root() }` republishes `references f->root` against a module-level `function root()`. It fell through R12 and R13 for a structural reason: an arrow is not a named declaration, so the reference pass never rebinds its current symbol when it descends into one, and the ENCLOSING function stays current — whose parameter list is a different one (`bbEntry`), so the shadow set was well-formed and simply lacked the name. Measured at the time: 227 false `references` over 1000 tracked files in 66 of them, the largest of the three shadowing defects. The transform re-adds a `references` edge from every symbol to any file-level symbol whose name equals one of the symbol's own parameters, which is the pre-fix arrow shape because the arrow's parameters never reached the shadow set. The fixture's `shadowDoesNotLeak -> file` expectation is the pin that keeps the fix scoped.",
+    transform: (r: any) => {
+      const symbols = (r.symbols ?? []) as any[]
+      const rels = (r.relationships ?? []) as any[]
+      const declared = new Set(symbols.map((x: any) => x.name))
+      const word = (raw: string): string[] => {
+        const out: string[] = []
+        let tok = ""
+        for (let i = 0; i <= raw.length; i++) {
+          const ch = raw[i] ?? ""
+          const ok = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_' || ch === '$'
+          if (ok) tok += ch
+          else { if (tok) out.push(tok); tok = '' }
+        }
+        return out
+      }
+      const seen = new Set(rels.filter((x: any) => String(x.type) === 'references').map((x: any) => x.source + '|' + x.target))
+      const extra: any[] = []
+      for (const s of symbols) {
+        for (const prm of s.parameters ?? []) {
+          const raw = typeof prm === 'string' ? prm : ((prm as any)?.name ?? '')
+          for (const nm of word(String(raw))) {
+            if (nm === s.name || !declared.has(nm)) continue
+            const k = s.name + '|' + nm
+            if (seen.has(k)) continue
+            seen.add(k)
+            extra.push({ source: s.name, target: nm, type: 'references', confidence: 1.0, metadata: {} })
+          }
+        }
+      }
+      return extra.length > 0 ? { ...r, relationships: [...rels, ...extra] } : r
+    },
+  },
+  {
     id: "dart/accessor-pair-collapsed",
     language: "dart",
     defectClass: "symbol-loss",
