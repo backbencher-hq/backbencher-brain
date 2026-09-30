@@ -495,7 +495,12 @@ function buildResults(
       symbolType: row.symbolType,
       language: row.language,
       matchType: "content",
-      snippet: row.docstring ? firstLine(row.docstring) : (row.qualifiedName || row.name),
+      // When the match came from the BODY and there is no docstring, the first
+      // body line is the honest snippet: it shows why this symbol matched rather
+      // than repeating its name.
+      snippet: row.docstring
+        ? firstLine(row.docstring)
+        : (row.sourceText ? firstLine(row.sourceText) : (row.qualifiedName || row.name)),
       complexity: row.complexity,
       _relevance: 1,
     })
@@ -542,10 +547,13 @@ function rankWithFts5(
   if (candidates.length < 2) return candidates
   const table = "__bb_content_fts_" + Math.random().toString(36).slice(2, 10)
   try {
-    raw.exec("CREATE VIRTUAL TABLE " + table + " USING fts5(id UNINDEXED, name, qualified_name, docstring)")
-    const insert = raw.prepare("INSERT INTO " + table + " (id, name, qualified_name, docstring) VALUES (?, ?, ?, ?)")
+    // The body is a FOURTH indexed column, not an afterthought: bm25 is the only
+    // IDF-aware ranker in the product, and leaving the body out of it would mean
+    // the one retriever that can weight a rare word properly never saw it.
+    raw.exec("CREATE VIRTUAL TABLE " + table + " USING fts5(id UNINDEXED, name, qualified_name, docstring, source_text)")
+    const insert = raw.prepare("INSERT INTO " + table + " (id, name, qualified_name, docstring, source_text) VALUES (?, ?, ?, ?, ?)")
     for (const row of candidates) {
-      insert.run(row.id, row.name, row.qualifiedName ?? "", row.docstring ?? "")
+      insert.run(row.id, row.name, row.qualifiedName ?? "", row.docstring ?? "", row.sourceText ?? "")
     }
     const terms = query.split(/\s+/).filter(Boolean).map(ftsQuote).join(" OR ")
     if (!terms) return candidates
