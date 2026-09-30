@@ -5,8 +5,7 @@
 - Analyzer: `src/ast/real-sql-analyzer.ts`
 - Grammar: **patched** `@derekstride/tree-sitter-sql` 0.3.11, built from its own upstream
   source with eight rule groups added; wired at `wasm/tree-sitter-sql.wasm`
-  (sha256 `486ec2159ecff99bfb94c1549c3e1306594b252f653e13d920e2fdddcff99369`, 12,555,354 B;
-  826 node types, 62 fields)
+  (sha256 `848e08124724…`, 12,620,599 B; 825 node types, 62 fields)
 - Wiring: `ASTEngine.parseFile` → `RealSqlAnalyzer`; the engine also hands the analyzer its
   loaded grammar through `RealSqlAnalyzer.setGrammar` in `parseRaw` (see *Recovery passes*)
 - Corpora: `proxicall@1f3e3567` (441 tracked SQL files), `postgrest@978b169` (32), and — added
@@ -176,6 +175,7 @@ than argued.
 | **V4** | plpgsql statement scaffolding, 17 rules + 16 keywords, reusing `$._expression` | **Blocked on first build.** −36 % ProxiCall error nodes, +9.4 % structure, but it regressed the pinned `block-declarations` contract case (53/54) |
 | **V5** | V4 plus the DECLARE section restored and the conflict declared | **Blocked, and it disproved the diagnosis.** It failed the *same* case identically, which is how the real cause was found |
 | **V6** | `optional(';')` restored after `END` in both dollar-quoted body forms, plus `[$.plpgsql_block]` declared | **SHIPPED, superseded by V8.** `errors=0` on the blocking input. Function recall 17.6 % → 37.0 % by the count ratio |
+| **V11** | plpgsql bodies that hold **embedded SQL**, plus an **opaque-body fallback** | **SHIPPED (current).** The body forms repeat `_plpgsql_body_item` rather than `_plpgsql_statement`, so a `BEGIN…END` can contain `SELECT`/`INSERT`/`CREATE TABLE` and not only procedural forms — before this, a plpgsql body produced **zero relationships**. Function symbols on the extension corpus 3,342 → **6,189**, distinct function names 922 → **1,004** of 1,170, table symbols 13 → **91**, relationships 5,253 → **11,765**. The opaque fallback is what makes it safe: a body the scaffolding cannot read degrades to one token instead of failing the rule and taking the declaration with it |
 | **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **SHIPPED (current).** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
 
 Six conflicts were resolved by measurement, not guesswork, and three of them are **declared**
@@ -257,6 +257,11 @@ the record stays in the file, is printed on every run, and is not silently skipp
   the count ratio says 35.8 %. Report the name-based figure: on a versioned extension corpus the
   two disagree by more than 2x because the same function is re-declared in every version script,
   and the count ratio measures repetition rather than coverage.
+- `PERFORM 1 FROM t` does not parse. plpgsql's `PERFORM` takes a full query and the shipped
+  rule accepts only an expression, so `PERFORM my_func(1)` parses and `PERFORM 1 FROM t`
+  does not. This is why sqld12 spells its in-body catalog read as `SELECT`. Fixing it needs a
+  select-without-keyword rule, which is a real grammar change and is filed rather than
+  half-done.
 - **282 of 387 extension files still contain at least one ERROR**, so most of the cascade loss
   remains. The next dominant damage shapes should be re-measured, not assumed.
 - `@placeholder@` templating (154 files) is not addressed; it needs a template token in
